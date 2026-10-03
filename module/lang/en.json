@@ -118,6 +118,8 @@
   "DND5ECOMBAT.PorteAttaqueTenue": "{name} succeeds on the save against {target}'s {item}: the attack goes on.",
   "DND5ECOMBAT.PorteSortDissipe": "{name}'s {spell} dissipates: {reactor}'s {item}.",
   "DND5ECOMBAT.PorteSortTenu": "{name}'s {spell} withstands {reactor}'s {item}.",
+  "DND5ECOMBAT.PorteContreAuto": "{spell} (level {castLevel}) is no higher than {item}'s level {level}: it fails, no roll.",
+  "DND5ECOMBAT.PorteContreTest": "{reactor}: spellcasting ability check {total} vs DC {dc} ({spell}, level {castLevel}).",
   "DND5ECOMBAT.Reglage.aurasOnlyInCombat.nom": "Auras: only in combat",
   "DND5ECOMBAT.Reglage.aurasOnlyInCombat.aide": "Out of combat, passive auras (Aura of Protection…) are no longer computed and their effects are removed from allies. Lightens exploration scenes; the bonus to an out-of-combat save must then be counted by hand.",
   "DND5ECOMBAT.Deplacement.AucunChemin": "No path to that spot.",

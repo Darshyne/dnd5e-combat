@@ -304,6 +304,10 @@
  *     dispel?: true                             Dissipation de la magie (§37.2) : les sorts en cours sur les cibles cessent —
  *                                               d'office jusqu'au niveau 3 ou à celui de l'emplacement, sinon par un test de
  *                                               la caractéristique d'incantation contre DD 10 + niveau (core/dispel.mjs)
+ *     counter?: { level? }                      contresort à la manière de 2014 (§66, SRD 5.1) : l'item, utilisé en réaction à la
+ *                                               porte `castsSpell`, fait échouer d'office un sort de niveau `level` ou moins (défaut :
+ *                                               le niveau de l'item) ; au-delà, test de la caractéristique d'incantation de celui
+ *                                               qui contre, DD 10 + le niveau du sort (core/counter.mjs) — pas de sauvegarde du lanceur
  *     zoneEffects?: true                        les effets de l'activité sont portés tant qu'on est dans sa zone (§37.4,
  *                                               Silence) : comportement `applyActiveEffect` du cœur (adapter/zone-effects.mjs)
  *     rollBonus?: { activity, on }              un dé que la créature ajoute à SON jet raté, après l'avoir vu (§38, Chance du
@@ -453,7 +457,7 @@ export const EFFECT_ENDS = Object.freeze(["casterTurnStart", "casterTurnEnd", "b
 /** Ce qui ouvre une attaque en action Bonus (`bonusAttack.after`). */
 export const BONUS_ATTACK_AFTER = Object.freeze(["critical", "felled"]);
 
-export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges"]);
+export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges"]);
 export const CHOICE_EFFECTS = Object.freeze(["one"]);
 /** §37 : ce qu'une sauvegarde répétée ratée impose en plus (`resave.onFail`) : l'action Esquiver (Malédiction). */
 export const RESAVE_ON_FAIL = Object.freeze(["dodge"]);
@@ -710,6 +714,10 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   }
   if ( ("reactions" in entry) && !(isObject(entry.reactions) && Number.isInteger(entry.reactions.perRound) && (entry.reactions.perRound >= 1) && (Object.keys(entry.reactions).length === 1)) ) {
     errors.push(`${at}reactions : { perRound } (entier ≥ 1)`);
+  }
+  if ( ("counter" in entry) && !(isObject(entry.counter) && Object.keys(entry.counter).every(k => k === "level")
+    && (!("level" in entry.counter) || (Number.isInteger(entry.counter.level) && (entry.counter.level >= 0) && (entry.counter.level <= 9)))) ) {
+    errors.push(`${at}counter : { level? } (niveau de sort, entier de 0 à 9)`);
   }
   if ( ("lastStand" in entry) && !(isObject(entry.lastStand) && Number.isFinite(entry.lastStand.threshold) && (entry.lastStand.threshold >= 0) && (Object.keys(entry.lastStand).length === 1)) ) {
     errors.push(`${at}lastStand : { threshold } (nombre ≥ 0)`);
@@ -1179,6 +1187,7 @@ export function mergeEntries(layers) {
     if ( "orders" in layer ) out.orders = [...layer.orders];
     if ( "reactions" in layer ) out.reactions = { ...layer.reactions };
     if ( "lastStand" in layer ) out.lastStand = { ...layer.lastStand };
+    if ( "counter" in layer ) out.counter = { ...layer.counter };
     if ( "forOneAttack" in layer ) out.forOneAttack = layer.forOneAttack;
     if ( "basicActions" in layer ) out.basicActions = { ...(out.basicActions ?? {}), ...layer.basicActions };
     if ( "secondPhase" in layer ) out.secondPhase = { ...(out.secondPhase ?? {}), ...layer.secondPhase };

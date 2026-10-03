@@ -23,6 +23,7 @@ import { contentOf } from "./content.mjs";
 import { markReactionAdvantage } from "./marks.mjs";
 import { combatantFor, readBudget, currentTurnKey } from "./turn.mjs";
 import { originItemOf } from "./facts.mjs";
+import { resolveCounter } from "./counter.mjs";
 
 export const REACTION_QUERY = `${MODULE_ID}.reaction`;
 
@@ -76,11 +77,16 @@ export function reactionOptions(actor, window, declarations) {
  * §28 : une réaction qu'on ne peut pas payer n'est pas proposée (Bouclier sans emplacement, Calque illusoire déjà utilisé). Sort
  * lancé par un emplacement (`method` « spell » ou « pact ») : un emplacement libre de son niveau ou plus. Activité qui consomme
  * les utilisations de son propre item : il en reste une.
+ * §66 : la copie d'un sort qu'une capacité lance (activité « cast », `flags.dnd5e.cachedFor` : Magie protectrice du Mage du Monster
+ * Manual 2024, qui lance Contresort ou Bouclier) ne prend pas d'emplacement — dnd5e fait payer l'activité qui la lance
+ * (activity/mixin.mjs:609, `spellSlot: false`) : ce sont SES utilisations qui comptent.
  */
 function affordable(activityUuid) {
   const activity = fromUuidSync(activityUuid, { strict: false });
   const item = activity?.item;
   if ( !item ) return true;
+  const linked = (item.type === "spell") ? (item.system.linkedActivity ?? null) : null;
+  if ( linked ) return linkedAffordable(linked);
   const spells = item.actor?.system?.spells ?? {};
   const level = Number(item.system.level) || 0;
   if ( (item.type === "spell") && (level > 0) && ["spell", "pact", undefined, ""].includes(item.system.method) ) {
@@ -92,6 +98,18 @@ function affordable(activityUuid) {
   }
   const ownUses = (activity.consumption?.targets ?? []).some(t => (t.type === "itemUses") && !t.target);
   if ( ownUses && Number(item.system.uses?.max) && !((Number(item.system.uses.value) || 0) > 0) ) return false;
+  return true;
+}
+
+/** §66 : l'activité « cast » qui lance la copie d'un sort a-t-elle encore de quoi payer (utilisations de son item ou les siennes) ? */
+function linkedAffordable(linked) {
+  for ( const target of linked.consumption?.targets ?? [] ) {
+    if ( target.type === "itemUses" ) {
+      const source = (target.target ? linked.actor?.items.get(target.target) : null) ?? linked.item;
+      if ( Number(source?.system.uses?.max) && !((Number(source.system.uses.value) || 0) > 0) ) return false;
+    }
+    if ( (target.type === "activityUses") && Number(linked.uses?.max) && !((Number(linked.uses.value) || 0) > 0) ) return false;
+  }
   return true;
 }
 
@@ -173,7 +191,7 @@ export async function askReaction(actor, payload) {
  * Côté de celui qui réagit : la fenêtre de choix, puis l'utilisation de l'activité choisie. C'est
  * lui qui l'utilise : ses ressources, ses dés.
  */
-export async function handleReactionQuery({ actor: actorUuid, prompt, options, target, auto=false }) {
+export async function handleReactionQuery({ actor: actorUuid, prompt, options, target, auto=false, castLevel=null }) {
   const actor = await fromUuid(actorUuid);
   const buttons = options.map((o, i) => ({ action: `use${i}`, label: o.name, icon: "fa-solid fa-bolt", default: i === 0 }));
   buttons.push({ action: "none", label: game.i18n.localize("DND5ECOMBAT.NePasReagir") });
@@ -224,7 +242,10 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
   // Fortune — le dé ajouté au jet d'attaque de l'allié.
   const penalty = (results && option.penalty) ? await rollInClear(actor, option.penalty, "DND5ECOMBAT.Penalite", option.name) : 0;
   const bonus = (results && option.bonus) ? await rollInClear(actor, option.bonus, "DND5ECOMBAT.Bonus", option.name) : 0;
-  return results ? { reduce, penalty, bonus, disadvantage: option.disadvantage === true, used: option.activity, name: option.name, message: results.message?.id ?? null, halve: option.halve === true,
+  // §66 : contresort à la manière de 2014 (`counter`) — c'est celui qui contre qui fait son test, ici, avec ses dés ; la porte
+  // (runtime/gates.mjs) lit la réponse au lieu d'attendre une sauvegarde du lanceur.
+  const counter = (results && (castLevel !== null)) ? await resolveCounter(actor, activity.item, castLevel) : null;
+  return results ? { counter, reduce, penalty, bonus, disadvantage: option.disadvantage === true, used: option.activity, name: option.name, message: results.message?.id ?? null, halve: option.halve === true,
     uncrit: option.uncrit === true, miss: option.miss === true, absorb: option.absorb === true,
     endCondition: option.endCondition === true } : null;
 }

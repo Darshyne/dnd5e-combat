@@ -10,6 +10,9 @@
  *    consultée (fenêtre de réaction, adapter/reactions.mjs) ; sa réaction vise le lanceur et suit son cours
  *    (sauvegarde de Constitution résolue par le moteur) ; ratée, le sort se dissipe — rien n'est lancé, rien
  *    n'est dépensé (règle 2024 : l'emplacement n'est pas perdu, l'action l'est — non comptée ici, limite).
+ *    §66 : une réaction qui déclare `counter` (contresort à la manière de 2014) ne demande pas de sauvegarde : le sort, au niveau
+ *    où il va être lancé, échoue d'office jusqu'au niveau du contresort, sinon sur un test de celui qui contre (DD 10 + niveau),
+ *    fait chez lui (adapter/reactions.mjs) ; la porte lit sa réponse.
  */
 
 import { MODULE_ID } from "../constants.mjs";
@@ -28,6 +31,7 @@ import { seersOf, foretellFor } from "../adapter/portent.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
+import { castLevelFor } from "../adapter/counter.mjs";
 
 const TERMINAL = new Set([STEPS.DONE, STEPS.MISSED, STEPS.UNDONE]);
 const RESOLUTION_WAIT_MS = 60000;
@@ -43,11 +47,11 @@ async function settled(messageId) {
   return null;
 }
 
-/** Une carte de chat qui dit ce que la porte a décidé (lue par les scénarios : flag `gate`). */
-function tell(actor, key, data, gate) {
+/** Une carte de chat qui dit ce que la porte a décidé (lue par les scénarios : flag `gate`) ; `details` : lignes de plus. */
+function tell(actor, key, data, gate, details=[]) {
   return ChatMessage.implementation.create({
     speaker: ChatMessage.implementation.getSpeaker({ actor }),
-    content: `<p>${loc(key, data)}</p>`,
+    content: [loc(key, data), ...details].map(line => `<p>${line}</p>`).join(""),
     flags: { [MODULE_ID]: { gate } }
   });
 }
@@ -121,15 +125,33 @@ function counterCandidates(activity, origin) {
   return out;
 }
 
-/** Les candidats sont consultés l'un après l'autre ; true si le sort passe, false s'il est dissipé. */
-async function passCounters(activity, origin, candidates, { auto }) {
+/**
+ * Les candidats sont consultés l'un après l'autre ; true si le sort passe, false s'il est dissipé. `castLevel` : le niveau
+ * auquel le sort va être lancé (§66, contresort à la manière de 2014).
+ */
+async function passCounters(activity, origin, candidates, { auto, castLevel }) {
   for ( const { token, actor, options } of candidates ) {
     log(`${origin.name} lance ${activity.item.name} : ${token.name} peut réagir (${options.map(o => o.name).join(", ")})`);
     const answer = await askReaction(actor, {
-      actor: actor.uuid, options, target: origin.uuid, auto,
+      actor: actor.uuid, options, target: origin.uuid, auto, castLevel,
       prompt: { key: "ReactionSort", data: { caster: origin.name, spell: activity.item.name } }
     });
     if ( !answer?.message ) continue;
+    // §66 : contresort à la manière de 2014 — pas de sauvegarde à attendre, celui qui contre a tranché chez lui.
+    if ( answer.counter ) {
+      const c = answer.counter;
+      const failed = c.dissipated === true;
+      log(`${token.name} réagit (${answer.name}) : ${activity.item.name} au niveau ${c.castLevel}, contre de niveau ${c.level} — `
+        + `${c.auto ? "sans jet" : `test ${c.total ?? "?"} contre DD ${c.dc}`} → ${failed ? "sort dissipé" : "le sort passe"}`);
+      const details = [c.auto
+        ? loc("PorteContreAuto", { spell: activity.item.name, castLevel: c.castLevel, item: answer.name, level: c.level })
+        : loc("PorteContreTest", { reactor: token.name, total: c.total ?? "—", dc: c.dc, spell: activity.item.name, castLevel: c.castLevel })];
+      await tell(origin.actor, failed ? "PorteSortDissipe" : "PorteSortTenu", { name: origin.name, spell: activity.item.name, reactor: token.name, item: answer.name },
+        { kind: "counterspell", spell: activity.item.system?.identifier ?? null, caster: origin.uuid, reactor: token.uuid, message: answer.message, dissipated: failed,
+          counter: { castLevel: c.castLevel, level: c.level, auto: c.auto, dc: c.dc, total: c.total ?? null } }, details);
+      if ( failed ) return false;
+      continue;
+    }
     const resolution = await settled(answer.message);
     const target = resolution?.targets.find(t => t.token === origin.uuid) ?? resolution?.targets[0] ?? null;
     const failed = target?.save?.success === false;
@@ -177,7 +199,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const chosen = Array.from(game.user.targets).map(t => t.id);
   (async () => {
     if ( wards.length && !(await passWards(activity, origin, wards)) ) return;
-    if ( candidates.length && !(await passCounters(activity, origin, candidates, { auto })) ) return;
+    if ( candidates.length && !(await passCounters(activity, origin, candidates, { auto, castLevel: castLevelFor(activity, usageConfig) })) ) return;
     let mods = reactors.length ? await askAttackReactions(activity, origin, reactors, { auto }) : null;
     const foretold = seers.length ? await foretellFor(origin, { kind: "attack", item: activity.item.name, auto }) : null;
     if ( foretold ) {

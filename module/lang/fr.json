@@ -118,6 +118,8 @@
   "DND5ECOMBAT.PorteAttaqueTenue": "{name} réussit sa sauvegarde contre {item} de {target} : l'attaque a lieu.",
   "DND5ECOMBAT.PorteSortDissipe": "{spell} de {name} se dissipe : {item} de {reactor}.",
   "DND5ECOMBAT.PorteSortTenu": "{spell} de {name} résiste à {item} de {reactor}.",
+  "DND5ECOMBAT.PorteContreAuto": "{spell} (niveau {castLevel}) ne dépasse pas le niveau {level} de {item} : il échoue sans jet.",
+  "DND5ECOMBAT.PorteContreTest": "{reactor} : test de caractéristique d'incantation {total} contre DD {dc} ({spell}, niveau {castLevel}).",
   "DND5ECOMBAT.Reglage.aurasOnlyInCombat.nom": "Auras : seulement en combat",
   "DND5ECOMBAT.Reglage.aurasOnlyInCombat.aide": "Hors combat, les auras passives (Aura de protection…) ne sont plus calculées et leurs effets sont retirés des alliés. Allège les scènes d'exploration ; le bonus d'une sauvegarde hors combat est alors à compter à la main.",
   "DND5ECOMBAT.Deplacement.AucunChemin": "Aucun chemin jusque-là.",

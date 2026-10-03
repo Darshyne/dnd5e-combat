@@ -69,6 +69,7 @@ export function reactionOptions(actor, window, declarations) {
     disadvantage: stepsOf(d, "disadvantage").length > 0,
     absorb: stepsOf(d, "absorb").length > 0,
     consume: step.consume !== false,
+    approach: step.approach === true,
     advantage: step.advantage === true
   })).filter(o => o.activity && affordable(o.activity)));
 }
@@ -191,6 +192,13 @@ export async function askReaction(actor, payload) {
  * Côté de celui qui réagit : la fenêtre de choix, puis l'utilisation de l'activité choisie. C'est
  * lui qui l'utilise : ses ressources, ses dés.
  */
+/**
+ * §67 : rejoindre la source avant la réaction (`use … approach`). Le chemin et la marche sont au runtime (runtime/actions.mjs,
+ * `reactionApproach`), qui s'inscrit ici : l'adaptateur n'importe pas le runtime.
+ */
+let approachSource = null;
+export function setReactionApproach(fn) { approachSource = fn; }
+
 export async function handleReactionQuery({ actor: actorUuid, prompt, options, target, auto=false, castLevel=null }) {
   const actor = await fromUuid(actorUuid);
   const buttons = options.map((o, i) => ({ action: `use${i}`, label: o.name, icon: "fa-solid fa-bolt", default: i === 0 }));
@@ -212,6 +220,9 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
     token?.setTarget(true, { releaseOthers: true });
   }
   const activity = await fromUuid(option.activity);
+  if ( option.approach && target && approachSource ) {
+    await approachSource(actor, await fromUuid(target), activity).catch(err => console.error(`${MODULE_ID} | approche de la réaction`, err));
+  }
   // §19.6 : « … contre cet ennemi, avec l'avantage » (Riposte) — marque lue au jet qui suit, sur ce client.
   if ( option.advantage ) markReactionAdvantage(option.activity, option.name);
   // Marquée confirmée (la question vient d'être posée) et payée par la réaction, quel que soit

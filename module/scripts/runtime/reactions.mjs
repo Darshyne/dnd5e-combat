@@ -2,7 +2,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { opportunityAttackers, areHostile } from "../core/reaction.mjs";
 import { convertLength } from "../core/units.mjs";
 import {
-  REACTION_QUERY, handleReactionQuery, reactionOptions, reactionState, meleeAttacksOf, reactiveSpellsOf, askReaction, currentAc, opportunityBlocked
+  REACTION_QUERY, handleReactionQuery, setReactionApproach, reactionOptions, reactionState, meleeAttacksOf, reactiveSpellsOf, askReaction, currentAc, opportunityBlocked
 } from "../adapter/reactions.mjs";
 import { combatantFor, readBudget, distanceBetween, positionOf as position } from "../adapter/turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
@@ -18,6 +18,7 @@ import { duplicatesAgainst } from "../adapter/duplicates.mjs";
 import { announce, matching } from "./triggers.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
+import { reactionApproach } from "./actions.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { poolsOf } from "../adapter/absorb.mjs";
 
@@ -472,6 +473,7 @@ export function registerReactions() {
   route("combatTurnChange", (combat, prior) => onEnemyTurnEnd(combat, prior), { executor: true, label: "fenêtre « fin de tour d'un ennemi » non ouverte" });
   // Sur tous les clients : c'est celui qui réagit qui répond à la requête.
   CONFIG.queries[REACTION_QUERY] = handleReactionQuery;
+  setReactionApproach(reactionApproach);   // §67 : la réaction qui rejoint d'abord sa source
 
   // Les attaques d'opportunité se règlent avant le déplacement (runtime/actions.mjs, preMoveToken).
   CONFIG.queries[OPPORTUNITY_QUERY] = handleOpportunityQuery;

@@ -709,6 +709,32 @@ export function rangeStatus(token, target, activity, mode=null) {
   return { out, blind, gap, reach };
 }
 
+/**
+ * §67 : une réaction qui rejoint d'abord la source (« se déplacer jusqu'à sa vitesse vers l'attaquant et l'attaquer » : Frappe
+ * punitive). Hors d'allonge de l'activité, le réacteur s'approche — sa Vitesse entière, quoi qu'il ait dépensé à son tour (c'est
+ * la réaction qui donne ce déplacement), sans attaque d'opportunité (`cleared`, comme un déplacement forcé). Hors combat, pas
+ * de budget à lire : on ne bouge pas. Rend true si la cible est à portée ensuite.
+ * @param {Actor5e} actor            Celui qui réagit.
+ * @param {TokenDocument} target     La source de la fenêtre.
+ * @param {Activity} activity        L'activité de réaction.
+ */
+export async function reactionApproach(actor, target, activity) {
+  const token = actor?.token ?? actor?.getActiveTokens?.(false, true)?.[0] ?? null;
+  const reach = reachCells(activity);
+  if ( !token?.isOwner || !target || !reach ) return false;
+  if ( footprintGap(footprintOf(token), footprintOf(target)) <= reach.normal ) return true;
+  const combatant = combatantFor(actor);
+  const movement = combatant ? movementOf(combatant, readUnitFactors()) : null;
+  if ( !(movement?.speed > 0) || isGrappled(token) ) return false;
+  // Le plafond se compare à l'historique du cœur (ce tour-ci) : ce qui est déjà fait, plus la Vitesse que donne la réaction.
+  const maxCost = movement.spent + movement.speed + historyCosts(token).excluded;
+  const plan = planPath(token, { target, reachCells: reach.normal }, { maxCost });
+  if ( !plan?.waypoints.length ) return false;
+  await walk(token, plan, { cleared: true });
+  log(`${token.name} : rejoint ${target.name} pour sa réaction (${activity.item?.name ?? ""})${plan.arrives ? "" : ", sans l'atteindre"}`);
+  return !!plan.arrives;
+}
+
 export async function engage(token, target, activity, { mode=null, fast=false, usage=null, event=null, choice=null }={}) {
   // §18.22 : un geste de contact sur une cible qui ne s'y prête pas est refusé avant tout déplacement.
   const refusal = contactRefusal(token, target, activity);

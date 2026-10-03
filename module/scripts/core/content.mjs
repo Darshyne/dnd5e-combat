@@ -413,6 +413,9 @@
  *                                                        (moment preAttackRoll ; core/conditions.mjs, `declared`)
  *   { type: "absorb" }                                   avec une réaction `use` au moment allyIsDamaged : la réserve du réacteur (clé
  *                                                        `absorb`, Égide arcanique) prend les dégâts de la créature (§38, Égide projetée)
+ *   { type: "use", target: "source", approach: true }    la réaction rejoint d'abord la source : hors d'allonge, le réacteur
+ *                                                        s'en approche jusqu'à sa vitesse, sans attaque d'opportunité (§67,
+ *                                                        « se déplacer jusqu'à sa vitesse vers l'attaquant et l'attaquer »)
  *   { type: "use", …, consume: false }                  la réaction s'utilise sans rien consommer d'elle-même (la réserve paie)
  *   { type: "bonus", formula }                           avec une réaction `use` avant le jet d'attaque d'un allié (allyAttacks) :
  *                                                        le dé, lancé en clair, ajouté au jet (Présage cosmique, Fortune)
@@ -493,6 +496,7 @@ function validateStep(step, at, errors) {
   if ( (step.type === "use") && ("target" in step) && (step.target !== "source") ) errors.push(`${at}.target : seul « source » est connu`);
   if ( (step.type === "use") && ("advantage" in step) && (step.advantage !== true) ) errors.push(`${at}.advantage : true ou absent`);
   if ( (step.type === "use") && ("consume" in step) && (step.consume !== false) ) errors.push(`${at}.consume : false ou absent`);
+  if ( (step.type === "use") && ("approach" in step) && ((step.approach !== true) || (step.target !== "source")) ) errors.push(`${at}.approach : true, avec target: "source"`);
   if ( "margin" in step ) {
     const mg = step.margin;
     const ok = (typeof mg === "object") && mg && Object.keys(mg).length && Object.entries(mg).every(([k, v]) => ["min", "max"].includes(k) && Number.isFinite(v) && (v >= 0));

@@ -527,3 +527,13 @@ describe("§19.9 : Dhampir et Domaine de la Tombe", () => {
     expect(CONTENT["sentinel-at-deaths-door"].triggers.map(t => t.on)).toEqual(["isHit", "allyIsHit"]);
   });
 });
+
+describe("§67 : une réaction qui rejoint d'abord sa source (use … approach)", () => {
+  it("approach : true, avec target source", () => {
+    expect(validateEntry({ triggers: [{ on: "isDamaged", do: [{ type: "use", target: "source", approach: true }] }] })).toEqual([]);
+  });
+  it("sans target source, ou autre valeur : refusé", () => {
+    expect(validateEntry({ triggers: [{ on: "isDamaged", do: [{ type: "use", approach: true }] }] }).length).toBeGreaterThan(0);
+    expect(validateEntry({ triggers: [{ on: "isDamaged", do: [{ type: "use", target: "source", approach: "oui" }] }] }).length).toBeGreaterThan(0);
+  });
+});

@@ -16,7 +16,7 @@ import { contentOf } from "./content.mjs";
 import { freshBudget, costOf } from "../core/turn.mjs";
 import { convertLength } from "../core/units.mjs";
 import { depthOf, verticalExtent, verticalGap } from "../core/space.mjs";
-import { multiattackOf, useKeysOf } from "./multiattack.mjs";
+import { multiattackOf, useKeysOf, isMultiattackItem } from "./multiattack.mjs";
 import { pendingMetamagic, distantRange } from "./metamagic.mjs";
 
 /** Le combattant d'un acteur dans le combat en cours, ou null hors combat. */
@@ -80,7 +80,7 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
     // M1 (§18.6) : les Attaques multiples d'un monstre, lues dans son texte anglais.
     multiattack: multiattackOf(activity.actor),
     keys: useKeysOf(activity),
-    opensMultiattack: item?.system?.identifier === "multiattack"
+    opensMultiattack: !!item && isMultiattackItem(item)
   };
 }
 
@@ -91,7 +91,7 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
  */
 export function attacksPerAction(actor) {
   const has = identifier => actor.items.some(i => i.system.identifier === identifier);
-  if ( actor.type === "npc" ) return (has("multiattack") && !multiattackOf(actor)) ? 99 : 1;
+  if ( actor.type === "npc" ) return (actor.items.some(isMultiattackItem) && !multiattackOf(actor)) ? 99 : 1;
   const fighter = actor.classes?.fighter?.system.levels ?? 0;
   if ( fighter >= 20 ) return 4;
   if ( fighter >= 11 ) return 3;

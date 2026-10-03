@@ -11,7 +11,8 @@
  *    On y lit l'item parent (`id:`), l'activité d'incantation (`activity:`) et le sort (`spell:`).
  */
 
-import { parseMultiattack, expandPlan, multiattackStatus } from "../core/multiattack.mjs";
+import { parseMultiattack, expandPlan, multiattackStatus, isMultiattackId } from "../core/multiattack.mjs";
+import { identifierOf } from "./content.mjs";
 
 const englishName = item => String(item?.flags?.babele?.originalName ?? item?.name ?? "").toLowerCase();
 
@@ -54,13 +55,19 @@ export function englishDescription(item) {
   return item?.flags?.babele?.originalPayload?.description ?? item?.system?.description?.value ?? "";
 }
 
+/** L'item est-il des Attaques multiples ? */
+export function isMultiattackItem(item) {
+  return isMultiattackId(identifierOf(item).id);
+}
+
 /**
  * Le plan d'Attaques multiples d'un PNJ, ou null (pas un PNJ, pas d'Attaques multiples, texte illisible).
  * @param {Actor5e} actor
  */
 export function multiattackOf(actor) {
   if ( actor?.type !== "npc" ) return null;
-  const item = actor.items.find(i => i.system.identifier === "multiattack");
+  // L'identifiant résolu (source, nom anglais d'origine, nom) : une fiche importée sans identifiant ou traduite compte aussi.
+  const item = actor.items.find(isMultiattackItem);
   if ( !item ) return null;
   return expandPlan(parseMultiattack(englishDescription(item)), catalogOf(actor));
 }

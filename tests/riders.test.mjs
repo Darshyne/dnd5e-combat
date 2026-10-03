@@ -51,6 +51,19 @@ describe("amorce d'une sauvegarde au toucher", () => {
     expect(announcesHitSave("<p>La cible subit en outre l'effet suivant.</p>")).toBe(true);
   });
 
+  it("fiches au format 2014 et leurs traductions : la sauvegarde après « Hit: » / « Touché : »", () => {
+    // Épée courte empoisonnée (synthétique, grammaire 2014) ; Bec de corbeau-garou ; Griffes et Morsure traduites.
+    expect(announcesHitSave("<p>Melee Weapon Attack: [[/attack]] to hit, reach 5 ft., one target. Hit: [[/damage average]] damage, and the target must make a DC 15 Constitution saving throw, taking 24 ([[/r 7d6]]) poison damage on a failed save, or half as much damage on a successful one.</p>")).toBe(true);
+    expect(announcesHitSave("<p>[[/attack extended]], reach 5 ft., one target. Hit: 1 piercing damage in raven form. If the target is a humanoid, it must succeed on a [[/save con 10 format=long]] or be cursed with wereraven lycanthropy.</p>")).toBe(true);
+    expect(announcesHitSave("<p>Attaque d'arme au corps à corps : [[/attack]] au toucher, allonge 1,50 m, une créature. Touché : [[/damage average]] dégâts. Si la cible est une créature, elle doit réussir un jet de sauvegarde de Force DD 13 ou se retrouver &amp;Reference[Prone apply=false].</p>")).toBe(true);
+    expect(announcesHitSave("<p>(Forme hybride uniquement) Attaque d’arme au corps à corps : [[/attack]] pour toucher. Touché : [[/damage average]] dégâts. Si la cible est un humanoïde, elle doit réussir un jet de sauvegarde de Constitution DD 10 ou être maudite.</p>")).toBe(true);
+  });
+
+  it("format 2014 sans « Hit: » : pas de sauvegarde au toucher (Attaque à mains nues, arme magique)", () => {
+    expect(announcesHitSave("<p>Grapple. The target must succeed on a Strength or Dexterity saving throw (it chooses), or it has the Grappled condition.</p>")).toBe(false);
+    expect(announcesHitSave("<p>When you hit a creature with this weapon, it must succeed on a DC 15 Constitution saving throw or be Poisoned.</p>")).toBe(false);
+  });
+
   it("pas au toucher : Otyugh (après un repos long), objets du PHB", () => {
     expect(announcesHitSave("<p>[[/attack extended]]. [[/damage average extended]], and the target has the Poisoned condition. Whenever the Poisoned target finishes a Long Rest, it is subjected to the following effect.</p>")).toBe(false);
     expect(announcesHitSave("<p>See: &amp;Reference[unarmedstrike]</p>")).toBe(false);

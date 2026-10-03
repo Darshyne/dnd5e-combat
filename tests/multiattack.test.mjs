@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseMultiattack, fitMultiattack, attackCount, expandPlan, multiattackStatus, ANY } from "../module/scripts/core/multiattack.mjs";
+import { parseMultiattack, fitMultiattack, attackCount, expandPlan, multiattackStatus, ANY, isMultiattackId } from "../module/scripts/core/multiattack.mjs";
 import { freshBudget, checkUse, spendUse, refundUse } from "../module/scripts/core/turn.mjs";
 
 // Textes anglais de la forme de ceux du Monster Manual 2024 : créatures du SRD 5.2, ou textes synthétiques de même
@@ -212,5 +212,16 @@ describe("ce qui reste (§18.19, HUD)", () => {
   it("tout fait : rien ne reste ; sans plan : rien", () => {
     expect(multiattackStatus(chimera, [ram, bite, claw], candidates)).toEqual({ left: [], spent: ["Ram", "Bite", "Claw", "Breath"] });
     expect(multiattackStatus(null, [], candidates)).toEqual({ left: [], spent: [] });
+  });
+});
+
+describe("isMultiattackId : les Attaques multiples de toute fiche", () => {
+  it("MM 2024, fiche sans identifiant (nom anglais), traductions, nom à précision", () => {
+    for ( const id of ["multiattack", "attaque-multiple", "attaques-multiples", "multiattaque", "multiattack-human-or-hybrid-form-only"] ) {
+      expect(isMultiattackId(id)).toBe(true);
+    }
+  });
+  it("pas une autre capacité", () => {
+    for ( const id of ["multiattacker", "attaque", "bite", "", null, undefined] ) expect(isMultiattackId(id)).toBe(false);
   });
 });

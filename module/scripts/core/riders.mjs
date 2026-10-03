@@ -74,10 +74,23 @@ const DEPENDENT_ACTIVATIONS = new Set(["", "special", "none", "action"]);
 const LEAD_IN = /(subjected to the following effect|must make the following saving throw|soumise? à l'effet suivant|subit (en outre )?l'effet suivant|(doit|devra) (faire|effectuer) (le jet de sauvegarde|la sauvegarde) suivant)/i;
 const NOT_ON_HIT = /\b(Whenever|Each time|Chaque fois|Lorsqu'elle termine|Quand elle termine)\b/i;
 
+/**
+ * Fiches au format 2014 (et leurs traductions) : « Hit: … and the target must make a DC 15 Constitution saving throw »,
+ * « it must succeed on a [[/save con 10]] », « Touché : … elle doit réussir un jet de sauvegarde de Force DD 13 ». Sans
+ * formule d'amorce, on ne la retient qu'APRÈS le « Hit: » / « Touché : » de la description : l'Attaque à mains nues du PHB
+ * (« The target must succeed on a Strength or Dexterity saving throw ») et les armes magiques (« When you hit… ») n'en ont pas.
+ */
+const HIT_MARK = /\b(?:Hit|Touch[ée])\s*:/i;
+const LEAD_IN_2014 = /\bmust\s+(?:make|succeed on)\s+an?\s+(?:DC\s*\d+\s+[A-Za-z]+\s+saving throw|…)|\b(?:doit|devra)\s+(?:réussir|faire|effectuer)\s+un\s+jet\s+de\s+sauvegarde\b/i;
+
 /** La description annonce-t-elle une sauvegarde qui suit le toucher ? */
 export function announcesHitSave(description) {
   const text = String(description ?? "").replace(/\[\[[^\]]*\]\](?:\{[^}]*\})?/g, " … ").replace(/<[^>]+>/g, " ").replace(/’/g, "'");
-  return text.split(/(?<=[.:])\s+/).some(sentence => LEAD_IN.test(sentence) && !NOT_ON_HIT.test(sentence));
+  const onHit = sentence => !NOT_ON_HIT.test(sentence);
+  if ( text.split(/(?<=[.:])\s+/).some(sentence => LEAD_IN.test(sentence) && onHit(sentence)) ) return true;
+  const hit = text.search(HIT_MARK);
+  if ( hit < 0 ) return false;
+  return text.slice(hit).split(/(?<=[.:])\s+/).some(sentence => LEAD_IN_2014.test(sentence) && onHit(sentence));
 }
 
 /**

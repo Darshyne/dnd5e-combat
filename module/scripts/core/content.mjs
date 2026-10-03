@@ -19,7 +19,8 @@
  *                                               Ability » et ses six caractéristiques)
  *     teleport?: { distance, units, activity? } l'utilisation téléporte l'utilisateur (§16.10, B11) : la destination se
  *                                               choisit aussitôt, à `distance` au plus — pour un item sans activité
- *                                               « teleport » de dnd5e (tout le PHB : Foulée brumeuse y est utilitaire)
+ *                                               « teleport » de dnd5e (tout le PHB : Foulée brumeuse y est utilitaire) ;
+ *                                               `then` : id d'une activité de l'item utilisée à l'arrivée (§67 quater)
  *     lineDash?: { reach, units, activity? }    ruée en ligne droite (§57) : à l'utilisation, la case
  *                                               d'arrivée se choisit (jusqu'à la Vitesse, inoccupée, en vue, en ligne droite à
  *                                               travers les créatures, sans attaque d'opportunité) ; l'activité (défaut : celle
@@ -950,7 +951,8 @@ function validateTeleport(teleport, at, errors) {
   if ( !(Number.isFinite(teleport.distance) && (teleport.distance > 0)) ) errors.push(`${at}.distance : nombre positif`);
   if ( (typeof teleport.units !== "string") || !teleport.units ) errors.push(`${at}.units : unité requise`);
   if ( ("activity" in teleport) && !isId(teleport.activity) ) errors.push(`${at}.activity : id d'activité (16 caractères) attendu`);
-  for ( const key of Object.keys(teleport) ) if ( !["distance", "units", "activity"].includes(key) ) errors.push(`${at}.${key} : clé inconnue`);
+  if ( ("then" in teleport) && !isId(teleport.then) ) errors.push(`${at}.then : id d'activité (16 caractères) attendu`);
+  for ( const key of Object.keys(teleport) ) if ( !["distance", "units", "activity", "then"].includes(key) ) errors.push(`${at}.${key} : clé inconnue`);
 }
 
 function validateTargets(targets, at, facts, errors) {

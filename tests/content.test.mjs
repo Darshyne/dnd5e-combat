@@ -537,3 +537,10 @@ describe("§67 : une réaction qui rejoint d'abord sa source (use … approach)"
     expect(validateEntry({ triggers: [{ on: "isDamaged", do: [{ type: "use", target: "source", approach: "oui" }] }] }).length).toBeGreaterThan(0);
   });
 });
+
+describe("§67 quater : une activité à l'arrivée d'une téléportation (teleport.then)", () => {
+  it("then : un id d'activité", () => {
+    expect(validateEntry({ teleport: { distance: 15, units: "ft", activity: "abcdefghijklmnop", then: "ponmlkjihgfedcba" } })).toEqual([]);
+    expect(validateEntry({ teleport: { distance: 15, units: "ft", then: "court" } })).toEqual([expect.stringContaining("then")]);
+  });
+});

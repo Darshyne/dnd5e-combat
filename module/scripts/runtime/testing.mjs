@@ -12,7 +12,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { planPath, stairsOf, cellOf, stairsDestinations } from "../adapter/movement.mjs";
 import { combatantFor, readBudget, movementOf } from "../adapter/turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
-import { moveTo, movementCap, selfTeleportOf, dashStrike, dashTargets, dashProblem, lineDashOf, transpose as transposeIntent, takeStairs as takeStairsIntent } from "./actions.mjs";
+import { moveTo, movementCap, selfTeleportOf, currentTeleport, teleportClick, dashStrike, dashTargets, dashProblem, lineDashOf, transpose as transposeIntent, takeStairs as takeStairsIntent } from "./actions.mjs";
 import { leaderOf, followersOf, follow as followIntent, unfollow as unfollowIntent } from "./follow.mjs";
 import { ownEndingsOf, endingsOn, endFor } from "./action-end.mjs";
 import { escapeGrapple } from "./grapple.mjs";
@@ -288,6 +288,18 @@ function stats({ tokenId }) {
  * runtime/actions.mjs, `onTeleport`) ; accepté, le token se téléporte (action « blink »). Seul le clic lui-même (la
  * planification interactive du cœur) n'est pas joué.
  */
+/** La visée d'une téléportation en cours sur ce client : celle du moteur, et la planification du cœur (`_movementPlanningContext`). */
+function planning() {
+  const ctx = canvas.tokens?._movementPlanningContext ?? null;
+  return { teleporting: currentTeleport()?.token?.name ?? null, planning: ctx?.object?.name ?? null,
+    controlled: canvas.tokens?.controlled.map(t => t.name) ?? [] };
+}
+
+/** §67 ter : le clic du moteur pendant la visée d'une téléportation (un point de la scène), sans la souris. */
+function teleportPick({ x, y }) {
+  return { picked: teleportClick({ x, y }) };
+}
+
 async function teleport({ tokenId, itemId, x, y }) {
   const token = tokenOf({ tokenId });
   const activity = token.actor?.items.get(itemId)?.system.activities?.find(a => selfTeleportOf(a)) ?? null;
@@ -610,4 +622,4 @@ function effectOrigins({ tokenId }) {
   });
 }
 
-export const testApi = Object.freeze({ effectOrigins, enchant, overrideContent, heal, hurt, rollSave, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use });
+export const testApi = Object.freeze({ planning, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use });

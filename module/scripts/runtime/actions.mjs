@@ -156,7 +156,20 @@ export function selfTeleportOf(activity) {
   if ( (activity?.type === "teleport") && (activity.range?.units === "self") && activity.canPlanTeleport ) return { native: true };
   const rule = activity?.item ? contentOf(activity.item).entry?.teleport : null;
   if ( !rule || (rule.activity && (rule.activity !== activity.id)) ) return null;
-  return { native: false, distance: rule.distance, units: rule.units };
+  return { native: false, distance: rule.distance, units: rule.units, then: rule.then ?? null };
+}
+
+/**
+ * §67 quater : l'activité que la téléportation déclare pour l'arrivée (`teleport.then` : « elle peut ensuite forcer chaque
+ * créature à 1,50 m de sa nouvelle position… »), utilisée aussitôt depuis la nouvelle position — une zone sur soi se pose
+ * d'office (runtime/self-area.mjs).
+ */
+async function afterTeleport(activity, rule) {
+  const next = rule.then ? activity.item?.system.activities?.get(rule.then) : null;
+  if ( !next ) return;
+  log(`${activity.item.name} : à l'arrivée, ${next.name || next.item.name}`);
+  await next.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: true } }, { configure: false })
+    .catch(err => console.error(`${MODULE_ID} | activité d'arrivée de la téléportation`, err));
 }
 
 /** Planifie une téléportation déclarée, comme le fait l'activité native (dnd5e teleport.mjs, `planTeleport`). */
@@ -185,6 +198,30 @@ let teleporting = null;
 /** La téléportation dont on choisit la destination sur ce client (`{ token, limit }`, portée dans l'unité de la scène), ou null. */
 export const currentTeleport = () => teleporting;
 
+/**
+ * §67 ter : la planification du cœur (`Token#planMovement`) ne se valide qu'en GLISSANT le token jusqu'à la destination
+ * (canvas/placeables/token.mjs, `_prepareDragLeftDropUpdates` : seul le token planifié est interactif) — un clic au sol n'y fait
+ * rien. Le clic du moteur (ui/pointer.mjs) choisit donc la case sous la souris : la planification du cœur est fermée, et
+ * `teleportSelf` téléporte le token après la même validation (`dnd5e.teleport`). Le glisser du cœur reste possible.
+ */
+export function teleportClick(point) {
+  const tp = teleporting;
+  if ( !tp?.token?.parent ) return false;
+  const at = tp.token.parent.grid.getTopLeftPoint(cellUnder(tp.token, point));
+  tp.chosen = { x: at.x, y: at.y };
+  canvas.tokens._cancelMovementPlanning();
+  return true;
+}
+
+/** Téléporter vers la case choisie d'un clic : la validation de `onTeleport` (et de quiconque écoute), puis un `blink`. */
+async function teleportTo(activity, token, { x, y }) {
+  const elevation = token._source.elevation ?? 0;
+  const plans = [{ token: token.object, plan: { destination: { x, y, elevation } } }];
+  if ( Hooks.call("dnd5e.teleport", activity, plans) === false ) return false;
+  await token.move([{ x, y, elevation, action: "blink", snapped: true }], { [MODULE_ID]: { cleared: true } });
+  return true;
+}
+
 export async function teleportSelf(activity) {
   const rule = selfTeleportOf(activity);
   const token = activity?.getUsageToken?.() ?? activity?.actor?.getActiveTokens?.(false, true)?.[0] ?? null;
@@ -196,7 +233,14 @@ export async function teleportSelf(activity) {
       object.control({ releaseOthers: true });
       refusedTeleports.delete(token.uuid);
       const results = rule.native ? await activity.planTeleport() : await planDeclaredTeleport(activity, object, rule);
-      if ( results?.some(r => r.moved) ) return true;
+      if ( results?.some(r => r.moved) ) { await afterTeleport(activity, rule); return true; }
+      // §67 ter : une destination choisie d'un clic (`teleportClick`) — la planification du cœur, elle, s'est fermée sans rien.
+      const chosen = teleporting.chosen;
+      if ( chosen ) {
+        teleporting.chosen = null;
+        if ( await teleportTo(activity, token, chosen) ) { await afterTeleport(activity, rule); return true; }
+        continue;   // refusée (case prise, hors de vue, trop loin) : la visée se rouvre
+      }
       if ( !refusedTeleports.has(token.uuid) ) return false;   // abandonnée (Échap), pas refusée
     }
     return false;

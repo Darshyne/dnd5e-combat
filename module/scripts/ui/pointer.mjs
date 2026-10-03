@@ -24,7 +24,7 @@ import { contentOf } from "../adapter/content.mjs";
 import { leapOf, rolledDouble, evalRuleFormula, projectilesOf, projectileCount, targetCount } from "../adapter/projectiles.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
 import { movementCap, reachCells, weaponAttacks, basicAttack, hostileTo, moveTo, jumpTo, engage, teleportSelf, selfTeleportOf,
-  approaches, contactAction, contactRefusal, rangeStatus, currentTeleport, castOnTargets, transpose, takeStairs, lineDashOf, dashStrike, dashRefusal, dashPreview } from "../runtime/actions.mjs";
+  approaches, contactAction, contactRefusal, rangeStatus, currentTeleport, teleportClick, castOnTargets, transpose, takeStairs, lineDashOf, dashStrike, dashRefusal, dashPreview } from "../runtime/actions.mjs";
 import { leaderOf, canFollow, follow, unfollow } from "../runtime/follow.mjs";
 import { distanceBetween } from "../adapter/turn.mjs";
 import { movableZoneOf, moveZone, tooFarForZone } from "../runtime/zones.mjs";
@@ -896,6 +896,14 @@ async function cancelInProgress() {
 const corePlanning = () => !!canvas?.tokens?._movementPlanningContext;
 
 function onPointerDown(event) {
+  // §67 ter : pendant la visée d'une téléportation, un clic gauche au sol choisit la destination (le cœur n'accepte qu'un glisser
+  // du token, qui reste possible : un clic sur le token lui-même est laissé au cœur).
+  const tp = currentTeleport();
+  if ( tp && corePlanning() && (event.button === 0) && onBoard(event) && (hoveredToken()?.id !== tp.token.id) ) {
+    down = null;
+    teleportClick(scenePoint(event));
+    return;
+  }
   if ( corePlanning() || placing ) { down = null; return; }
   if ( menu && !menu.contains(event.target) ) closeMenu();
   hideHitChance();

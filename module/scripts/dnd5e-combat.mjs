@@ -47,6 +47,7 @@ import { registerMonk } from "./runtime/monk.mjs";
 import { registerSmite } from "./runtime/smite.mjs";
 import { registerSwallow } from "./runtime/swallow.mjs";
 import { registerBasics } from "./runtime/basics.mjs";
+import { basicActionData } from "./adapter/basics.mjs";
 import { registerGrapple } from "./runtime/grapple.mjs";
 import { registerProne } from "./runtime/prone.mjs";
 import { registerBreaks } from "./runtime/breaks.mjs";
@@ -101,7 +102,7 @@ import { registerOil } from "./runtime/oil.mjs";
  */
 const state = {
   active: false, reason: null, unitFactors: null, routes: describeRoutes, content: contentApi, reports: reportsApi, mcp: testApi,
-  ui: uiApi, light: lightState, approach, scrolls: { spellOf: scrollSpellOf }
+  ui: uiApi, light: lightState, approach, scrolls: { spellOf: scrollSpellOf }, basics: { data: basicActionData }
 };
 
 /** Pourquoi le moteur doit rester en veille dans ce monde, ou null s'il peut tourner. */

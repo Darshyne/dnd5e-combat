@@ -13,5 +13,7 @@ export const MACROS = [
   { file: "reprendre-parchemins.js", name: "4. Reprendre les parchemins de sort",
     img: "icons/sundries/scrolls/scroll-bound-blue-brown.webp" },
   { file: "nettoyage-tas-item-piles.js", name: "5. Retirer les actions de base des tas d'Item Piles",
-    img: "icons/containers/bags/case-leather-tan.webp" }
+    img: "icons/containers/bags/case-leather-tan.webp" },
+  { file: "reparer-creatures.js", name: "6. Réparer les fiches de créatures (identifiants, actions de base CPR)",
+    img: "icons/creatures/abilities/paw-print-pair-purple.webp" }
 ];

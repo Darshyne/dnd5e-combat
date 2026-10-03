@@ -197,6 +197,15 @@ export async function askReaction(actor, payload) {
  * `reactionApproach`), qui s'inscrit ici : l'adaptateur n'importe pas le runtime.
  */
 let approachSource = null;
+
+/** Les cibles d'un jet d'attaque, comme dnd5e les écrit (data/chat-message/fields/targets-field.mjs:32) ; null sans token. */
+function targetDescriptors(tokenDoc) {
+  const token = tokenDoc?.document ?? tokenDoc;
+  const actor = token?.actor;
+  if ( !actor ) return null;
+  const ac = actor.statuses?.has("coverTotal") ? null : actor.system.attributes?.ac?.value;
+  return [{ actor: actor.uuid, ac: ac ?? null, img: token.texture?.src, name: token.name, token: token.uuid }];
+}
 export function setReactionApproach(fn) { approachSource = fn; }
 
 export async function handleReactionQuery({ actor: actorUuid, prompt, options, target, auto=false, castLevel=null }) {
@@ -230,9 +239,16 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
   // §34 : une réaction ne pose pas de gabarit au milieu d'une fenêtre (Éclat protecteur : « une Émanation de 9 m pour repérer »,
   // `prompt: true`) — dnd5e attendrait le clic de pose (activity/mixin.mjs:451, 833) et la fenêtre resterait bloquée.
   // §38 : `consume: false` — la réaction ne consomme rien d'elle-même (Égide projetée : c'est la réserve qui paie les dégâts).
-  const results = await activity.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: false }, ...(option.consume === false ? { consume: false } : {}) }, { configure: false }, {
+  // §67 bis : une attaque contre la source — dnd5e lance le jet d'attaque juste après l'utilisation (attack.mjs:68,
+  // `_triggerSubsequentActions`) en lisant les cibles de l'utilisateur à cet instant (attack.mjs:84) ; la résolution de l'action
+  // qui a ouvert la fenêtre peut les avoir relâchées entre-temps, et le jet partait sans cible (rien à résoudre). Le jet est donc
+  // lancé ici, sa cible écrite dans le message.
+  const aimed = (activity?.type === "attack") ? targetDescriptors(target ? await fromUuid(target) : null) : null;
+  const results = await activity.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: false }, ...(option.consume === false ? { consume: false } : {}),
+    ...(aimed ? { subsequentActions: false } : {}) }, { configure: false }, {
     data: { flags: { [MODULE_ID]: { cost: "reaction", reaction: true, ...(option.reduce ? { reduceOnly: true } : {}) } } }
   });
+  if ( results && aimed ) activity.rollAttack({}, {}, { data: { system: { origin: results.message?.id, targets: aimed } } });
   // §24 : Parade — le jet de l'activité (un soin dans les données, que le moteur n'applique pas : `reduceOnly`) est le montant retiré
   // aux dégâts de l'attaque. dnd5e lance ce jet de lui-même à l'utilisation (heal.mjs:60) ; on l'attend un peu.
   let reduce = 0;

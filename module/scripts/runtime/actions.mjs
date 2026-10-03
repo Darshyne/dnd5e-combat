@@ -710,8 +710,8 @@ export function rangeStatus(token, target, activity, mode=null) {
 }
 
 /**
- * §67 : une réaction qui rejoint d'abord la source (« se déplacer jusqu'à sa vitesse vers l'attaquant et l'attaquer » : Frappe
- * punitive). Hors d'allonge de l'activité, le réacteur s'approche — sa Vitesse entière, quoi qu'il ait dépensé à son tour (c'est
+ * §67 : une réaction qui rejoint d'abord la source (« se déplacer jusqu'à sa vitesse vers l'attaquant et l'attaquer »).
+ * Hors d'allonge de l'activité, le réacteur s'approche — sa Vitesse entière, quoi qu'il ait dépensé à son tour (c'est
  * la réaction qui donne ce déplacement), sans attaque d'opportunité (`cleared`, comme un déplacement forcé). Hors combat, pas
  * de budget à lire : on ne bouge pas. Rend true si la cible est à portée ensuite.
  * @param {Actor5e} actor            Celui qui réagit.

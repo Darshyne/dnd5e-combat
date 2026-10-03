@@ -438,6 +438,36 @@ function reload() {
  * §19.9 : sous quel identifiant le moteur reconnaît chaque item d'un token, d'où il le tient (item, source, compendium, nom) et
  * les clés de contenu qui s'y attachent — pour les items premium sans identifiant (Ravenloft), traduits par Babele.
  */
+/**
+ * L'inventaire des capacités du monde (acteurs du monde, pas les tokens non liés) : une ligne par identifiant et type d'item,
+ * avec qui la porte, ce que le moteur en connaît (`rules` : les clés de contenu), ses activités, ses effets et le début de son
+ * texte anglais d'origine. `types` filtre les types d'item (par défaut tout sauf l'équipement de base et le butin).
+ */
+function inventory({ types=null, textLength=700 }={}) {
+  const skip = new Set(["loot", "container", "class", "subclass", "background", "race"]);
+  const rows = new Map();
+  for ( const actor of game.actors ) {
+    if ( !["character", "npc"].includes(actor.type) ) continue;
+    for ( const item of actor.items ) {
+      if ( types ? !types.includes(item.type) : skip.has(item.type) ) continue;
+      const { id, from } = identifierOf(item);
+      const key = `${item.type}|${id ?? item.name}`;
+      let row = rows.get(key);
+      if ( !row ) {
+        const text = String(item.flags?.babele?.originalPayload?.description ?? item.system?.description?.value ?? "")
+          .replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        row = { identifier: id, from, type: item.type, names: [], actors: [], rules: Object.keys(contentOf(item).entry ?? {}),
+          activities: Array.from(item.system.activities ?? []).map(a => a.type), effects: item.effects.size,
+          level: item.system.level ?? null, source: item._stats?.compendiumSource ?? null, text: text.slice(0, textLength) };
+        rows.set(key, row);
+      }
+      if ( !row.names.includes(item.name) ) row.names.push(item.name);
+      row.actors.push(`${actor.name}${actor.hasPlayerOwner ? " (PJ)" : ""}`);
+    }
+  }
+  return Array.from(rows.values()).sort((a, b) => (b.actors.length - a.actors.length) || String(a.identifier).localeCompare(String(b.identifier)));
+}
+
 function identify({ tokenId }) {
   const actor = tokenOf({ tokenId }).actor;
   return (actor?.items ?? []).map(item => {
@@ -580,4 +610,4 @@ function effectOrigins({ tokenId }) {
   });
 }
 
-export const testApi = Object.freeze({ effectOrigins, enchant, overrideContent, heal, hurt, rollSave, threats, attackReasons, perceived, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use });
+export const testApi = Object.freeze({ effectOrigins, enchant, overrideContent, heal, hurt, rollSave, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use });

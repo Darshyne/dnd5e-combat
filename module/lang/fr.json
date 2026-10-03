@@ -133,6 +133,8 @@
   "DND5ECOMBAT.Ruee.SurPlace": "Ruée : choisissez une autre case que la vôtre.",
   "DND5ECOMBAT.Ruee.Mur": "Ruée : un mur barre la ligne droite.",
   "DND5ECOMBAT.Ruee.PasDeZone": "{item} : pas de zone à poser — les créatures près du trajet sont déjà ciblées.",
+  "DND5ECOMBAT.Reglage.autoUsage.Nom": "Utiliser sans la fenêtre de dnd5e",
+  "DND5ECOMBAT.Reglage.autoUsage.Aide": "Une activité consomme ses ressources, commence la concentration et pose sa zone sans demander (emplacement épuisé : le plus bas disponible). Plus de ressources : la fenêtre s'ouvre pour le MJ seulement ; un joueur reçoit l'avertissement de dnd5e.",
   "DND5ECOMBAT.Reglage.teleportPlanning.Nom": "Téléportation : choisir la destination aussitôt",
   "DND5ECOMBAT.Reglage.teleportPlanning.Aide": "Après Pas brumeux ou Porte dimensionnelle, la visée de la destination s'ouvre tout de suite (sinon, bouton « Téléporter » de la carte).",
   "DND5ECOMBAT.Deplacement.CibleHorsDatteinte": "{name} est hors d'atteinte ce tour-ci.",

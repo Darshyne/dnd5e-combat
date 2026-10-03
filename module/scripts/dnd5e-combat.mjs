@@ -1,6 +1,7 @@
 import { MODULE_ID, MIN_SYSTEM_VERSION } from "./constants.mjs";
 import { readUnitFactors } from "./adapter/units.mjs";
 import { registerEngine } from "./runtime/engine.mjs";
+import { registerUsage } from "./runtime/usage.mjs";
 import { registerConcentration } from "./runtime/concentration.mjs";
 import { registerPilot } from "./runtime/pilot.mjs";
 import { registerDeath } from "./runtime/death.mjs";
@@ -137,6 +138,7 @@ Hooks.once("init", () => {
   registerRecast();   // avant la souris : une relance repasse par la visée et la légalité
   registerPointer();
   registerProjectiles();   // après la visée (les cibles sont désignées), avant la légalité
+  registerUsage();   // §68 : avant la métamagie et la légalité — l'emplacement choisi est celui qu'elles liront
   registerMetamagic();   // §32 : avant registerTurn — le Sort accéléré change le coût que la légalité lit
   registerTurn();
   registerGates();   // après la légalité : une porte ne s'ouvre que pour une utilisation confirmée

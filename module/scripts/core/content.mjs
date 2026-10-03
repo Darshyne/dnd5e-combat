@@ -309,6 +309,9 @@
  *                                               porte `castsSpell`, fait échouer d'office un sort de niveau `level` ou moins (défaut :
  *                                               le niveau de l'item) ; au-delà, test de la caractéristique d'incantation de celui
  *                                               qui contre, DD 10 + le niveau du sort (core/counter.mjs) — pas de sauvegarde du lanceur
+ *     difficultTerrain?: { types?: string[] }   la zone du sort est un terrain difficile (§69) : comportement
+ *                                               `dnd5e.difficultTerrain` posé sur la région si les données ne l'ont pas
+ *                                               (Manuel des joueurs premium : Enchevêtrement, Croissance d'épines…) ; magique
  *     zoneEffects?: true                        les effets de l'activité sont portés tant qu'on est dans sa zone (§37.4,
  *                                               Silence) : comportement `applyActiveEffect` du cœur (adapter/zone-effects.mjs)
  *     rollBonus?: { activity, on }              un dé que la créature ajoute à SON jet raté, après l'avoir vu (§38, Chance du
@@ -461,7 +464,7 @@ export const EFFECT_ENDS = Object.freeze(["casterTurnStart", "casterTurnEnd", "b
 /** Ce qui ouvre une attaque en action Bonus (`bonusAttack.after`). */
 export const BONUS_ATTACK_AFTER = Object.freeze(["critical", "felled"]);
 
-export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges"]);
+export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain"]);
 export const CHOICE_EFFECTS = Object.freeze(["one"]);
 /** §37 : ce qu'une sauvegarde répétée ratée impose en plus (`resave.onFail`) : l'action Esquiver (Malédiction). */
 export const RESAVE_ON_FAIL = Object.freeze(["dodge"]);
@@ -789,6 +792,14 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     }
   }
   if ( "teleport" in entry ) validateTeleport(entry.teleport, `${at}teleport`, errors);
+  if ( "difficultTerrain" in entry ) {
+    const t = entry.difficultTerrain;
+    if ( !isObject(t) ) errors.push(`${at}difficultTerrain : un objet`);
+    else {
+      if ( ("types" in t) && (!Array.isArray(t.types) || !t.types.every(x => (typeof x === "string") && x)) ) errors.push(`${at}difficultTerrain.types : liste de chaînes`);
+      for ( const key of Object.keys(t) ) if ( key !== "types" ) errors.push(`${at}difficultTerrain.${key} : clé inconnue`);
+    }
+  }
   if ( "lineDash" in entry ) {
     const d = entry.lineDash;
     if ( !isObject(d) ) errors.push(`${at}lineDash : un objet`);
@@ -1194,6 +1205,7 @@ export function mergeEntries(layers) {
     if ( "reactions" in layer ) out.reactions = { ...layer.reactions };
     if ( "lastStand" in layer ) out.lastStand = { ...layer.lastStand };
     if ( "counter" in layer ) out.counter = { ...layer.counter };
+    if ( "difficultTerrain" in layer ) out.difficultTerrain = { ...layer.difficultTerrain };   // §69
     if ( "forOneAttack" in layer ) out.forOneAttack = layer.forOneAttack;
     if ( "basicActions" in layer ) out.basicActions = { ...(out.basicActions ?? {}), ...layer.basicActions };
     if ( "secondPhase" in layer ) out.secondPhase = { ...(out.secondPhase ?? {}), ...layer.secondPhase };

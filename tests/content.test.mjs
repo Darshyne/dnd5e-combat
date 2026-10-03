@@ -154,28 +154,29 @@ describe("contenu livré", () => {
       "circle-of-mortality", "cloud-of-daggers", "clouds-jaunt", "command", "confusion", "conjure-animals", "contagion",
       "continual-flame", "corrosive-form", "cosmic-omen", "counterspell", "crown-of-madness", "cunning-action",
       "cunning-strike", "cutting-words", "dancing-lights", "dark-ones-blessing", "dark-ones-own-luck", "darkness",
-      "daylight", "death-burst", "death-throes", "deathless-agility", "deflect-attacks", "devious-strikes", "dimension-door",
-      "disciple-of-life", "dispel-magic", "distant-spell", "divine-fury", "divine-smite", "dominate-beast",
-      "dominate-monster", "dominate-person", "draining-kiss", "dread-ambusher", "dreadful-strikes", "dwarven-resilience",
-      "earthquake", "eldritch-blast", "eldritch-smite", "elemental-affinity", "elemental-fury", "elemental-weapon",
-      "elixir-of-health", "elusive", "empowered-evocation", "energy-drain", "engulf", "enhance-ability", "enlarge-reduce",
-      "ensnaring-strike", "entangling-trail", "evasion", "eyebite", "faerie-fire", "fear", "fear-aura", "fell-word",
-      "feral-strike", "fetid-aura", "fey-ancestry", "find-familiar", "fire-aura", "fire-shield", "fires-burn", "flame-aura",
-      "flame-blade", "flaming-sphere", "flask-of-holy-water", "flesh-to-stone", "flyby", "foe-slayer", "fog-cloud",
-      "forceful-hand", "frenzied-rush", "frenzy", "friends", "frosts-chill", "gaseous-form", "giant-insect", "gibbering",
-      "grasping-hand", "great-weapon-fighting", "great-weapon-master", "greater-portent", "guidance", "guiding-bolt",
-      "gust-of-wind", "haste", "healers-kit", "heat-aura", "heat-metal", "heightened-spell", "hellish-rebuke",
-      "heroic-warrior", "hex", "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-water",
-      "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "illusory-self", "improved-cunning-strike",
-      "innate-sorcery", "instinctive-pounce", "invisibility", "invoke-duplicity", "lamp", "lantern-hooded", "large-form",
-      "leading-evasion", "lesser-restoration", "life-drain", "lifedrinker", "light", "lunar-form", "mage-hand",
-      "magic-missile", "magic-resistance", "marshal-undead", "martial-arts", "melfs-acid-arrow", "mind-sliver",
-      "minor-illusion", "mirror-image", "mislead", "misty-step", "monks-focus", "moonbeam", "moonlight-step",
-      "nimble-escape", "oil", "open-hand-technique", "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade",
-      "pass-without-trace", "path-to-the-grave", "persistent-rage", "phantasmal-force", "phantasmal-killer", "portent",
-      "potent-cantrip", "potion-of-animal-friendship", "potion-of-climbing", "potion-of-diminution", "potion-of-flying",
-      "potion-of-growth", "potion-of-heroism", "potion-of-invisibility", "potion-of-resistance", "potion-of-vitality",
-      "prayer-of-healing", "precise-hunter", "proboscis", "produce-flame", "projected-ward", "protection-from-energy",
+      "daylight", "death-burst", "death-throes", "deathless-agility", "deflect-attacks", "devious-strikes",
+      "dimension-door", "disciple-of-life", "dispel-magic", "distant-spell", "divine-fury", "divine-smite",
+      "dominate-beast", "dominate-monster", "dominate-person", "draining-kiss", "dread-ambusher", "dreadful-strikes",
+      "dwarven-resilience", "earthquake", "eldritch-blast", "eldritch-smite", "elemental-affinity", "elemental-fury",
+      "elemental-weapon", "elixir-of-health", "elusive", "empowered-evocation", "energy-drain", "engulf", "enhance-ability",
+      "enlarge-reduce", "ensnaring-strike", "entangle", "entangling-trail", "evards-black-tentacles", "evasion", "eyebite",
+      "faerie-fire", "fear", "fear-aura", "fell-word", "feral-strike", "fetid-aura", "fey-ancestry", "find-familiar",
+      "fire-aura", "fire-shield", "fires-burn", "flame-aura", "flame-blade", "flaming-sphere", "flask-of-holy-water",
+      "flesh-to-stone", "flyby", "foe-slayer", "fog-cloud", "forceful-hand", "frenzied-rush", "frenzy", "friends",
+      "frosts-chill", "gaseous-form", "giant-insect", "gibbering", "grasping-hand", "grease", "great-weapon-fighting",
+      "great-weapon-master", "greater-portent", "guidance", "guiding-bolt", "gust-of-wind", "haste", "healers-kit",
+      "heat-aura", "heat-metal", "heightened-spell", "hellish-rebuke", "heroic-warrior", "hex", "hideous-laughter",
+      "hills-tumble", "hold-monster", "hold-person", "holy-water", "hunters-mark", "hunters-prey", "hypnotic-pattern",
+      "ice-knife", "illusory-self", "improved-cunning-strike", "innate-sorcery", "instinctive-pounce", "invisibility",
+      "invoke-duplicity", "lamp", "lantern-hooded", "large-form", "leading-evasion", "lesser-restoration", "life-drain",
+      "lifedrinker", "light", "lunar-form", "mage-hand", "magic-missile", "magic-resistance", "marshal-undead",
+      "martial-arts", "melfs-acid-arrow", "mind-sliver", "minor-illusion", "mirror-image", "mislead", "misty-step",
+      "monks-focus", "moonbeam", "moonlight-step", "nimble-escape", "oil", "open-hand-technique",
+      "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade", "pass-without-trace", "path-to-the-grave",
+      "persistent-rage", "phantasmal-force", "phantasmal-killer", "portent", "potent-cantrip",
+      "potion-of-animal-friendship", "potion-of-climbing", "potion-of-diminution", "potion-of-flying", "potion-of-growth",
+      "potion-of-heroism", "potion-of-invisibility", "potion-of-resistance", "potion-of-vitality", "prayer-of-healing",
+      "precise-hunter", "proboscis", "produce-flame", "projected-ward", "protection-from-energy",
       "protection-from-evil-and-good", "protection-from-poison", "prowl", "psychic-defenses", "quickened-spell",
       "radiant-soul", "rage", "raise-dead", "ray-of-enfeeblement", "ray-of-frost", "reckless-attack", "regeneration",
       "relentless-endurance", "relentless-rage", "resistance", "resurrection", "revivify", "rumbling-movement", "sanctuary",
@@ -191,7 +192,7 @@ describe("contenu livré", () => {
       "tinderbox", "toll-the-dead", "torch", "trampling-charge", "tricksters-transposition", "true-resurrection",
       "true-strike", "unarmed-strike", "uncanny-dodge", "undead-fortitude", "vampiric-bite", "vicious-mockery",
       "vile-appearance", "vitriolic-sphere", "vow-of-enmity", "wall-of-fire", "war-caster", "war-priest", "warding-bond",
-      "warding-flare", "watery-rush", "weird", "wild-companion", "wild-resurgence", "witch-bolt", "wrath-of-the-sea",
+      "warding-flare", "watery-rush", "web", "weird", "wild-companion", "wild-resurgence", "witch-bolt", "wrath-of-the-sea",
       "wrathful-smite"
     ]);
     expect(CONTENT["aura-of-protection"].aura.radius).toBe(10);
@@ -542,5 +543,20 @@ describe("§67 quater : une activité à l'arrivée d'une téléportation (telep
   it("then : un id d'activité", () => {
     expect(validateEntry({ teleport: { distance: 15, units: "ft", activity: "abcdefghijklmnop", then: "ponmlkjihgfedcba" } })).toEqual([]);
     expect(validateEntry({ teleport: { distance: 15, units: "ft", then: "court" } })).toEqual([expect.stringContaining("then")]);
+  });
+});
+
+describe("§69 : terrain difficile d'une zone (difficultTerrain)", () => {
+  it("un objet, types optionnels", () => {
+    expect(validateEntry({ difficultTerrain: { types: ["plants"] } })).toEqual([]);
+    expect(validateEntry({ difficultTerrain: {} })).toEqual([]);
+    expect(validateEntry({ difficultTerrain: true })).toEqual([expect.stringContaining("difficultTerrain")]);
+    expect(validateEntry({ difficultTerrain: { types: "plants" } })).toEqual([expect.stringContaining("types")]);
+  });
+});
+
+describe("§69 : la fusion garde difficultTerrain", () => {
+  it("mergeEntries", () => {
+    expect(mergeEntries([null, { difficultTerrain: { types: ["plants"] } }]).difficultTerrain).toEqual({ types: ["plants"] });
   });
 });

@@ -48,9 +48,9 @@ describe("chargement du module", () => {
     ]);
   });
 
-  it("relance d'abord (§16.21), puis la visée (ui), la Métamagie, la légalité (runtime), les portes, sur dnd5e.preUseActivity", () => {
+  it("relance d'abord (§16.21), puis la visée (ui), l'utilisation sans fenêtre (§68), la Métamagie, la légalité (runtime), les portes, sur dnd5e.preUseActivity", () => {
     expect(api.api.routes()["dnd5e.preUseActivity"].map(r => r.label)).toEqual([
-      "relance d'un sort qui dure", "visée : cible attendue", "projectiles : un par cible, le reste enchaîné", "métamagie : sort non modifié", "légalité de l'utilisation", "portes : Sanctuaire, Contresort, réactions avant l'attaque, Présage", "zone sur soi : sans case « Placer le gabarit »", "Témérité : question",
+      "relance d'un sort qui dure", "visée : cible attendue", "projectiles : un par cible, le reste enchaîné", "utilisation sans fenêtre", "métamagie : sort non modifié", "légalité de l'utilisation", "portes : Sanctuaire, Contresort, réactions avant l'attaque, Présage", "zone sur soi : sans case « Placer le gabarit »", "Témérité : question",
       "avaler : Morsure non refusée", "potion : concentration non retirée", "objet lumineux : placé au lancement"
     ]);
   });

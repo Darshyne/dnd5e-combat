@@ -61,5 +61,15 @@ export const SPELL_RULES = Object.freeze({
   // Silence (niveau 2, Clerc, Barde, Rôdeur), `phbsplSilence000` : « une créature entièrement dans la Sphère est immunisée contre les
   // dégâts de tonnerre et Assourdie ; on ne peut pas y lancer de sort à composante verbale » — l'effet « Silenced » de l'item (Assourdi,
   // `silenced` que la légalité lit déjà, §17 ; immunité au tonnerre), porté dans la zone (§37.4).
-  "silence": { zoneEffects: true }
+  "silence": { zoneEffects: true },
+  // §69 : terrain difficile de la zone, perdu par les données du Manuel des joueurs premium (`behaviors` vide ; le SRD de dnd5e
+  // l'a). Enchevêtrement (« le sol de la zone devient un Terrain difficile », plantes), Croissance d'épines (plantes), Toile
+  // d'araignée (toiles), Graisse, Tempête de neige (« Terrain difficile »), Tentacules noirs d'Evard. Croissance végétale et Mur
+  // d'épines (4 m de déplacement par mètre) ne sont pas du terrain difficile ordinaire : non repris.
+  "entangle": { difficultTerrain: { types: ["plants"] } },
+  "spike-growth": { difficultTerrain: { types: ["plants"] } },
+  "web": { difficultTerrain: { types: ["webs"] } },
+  "grease": { difficultTerrain: {} },
+  "sleet-storm": { difficultTerrain: {} },
+  "evards-black-tentacles": { difficultTerrain: {} }
 });

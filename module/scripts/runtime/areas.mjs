@@ -3,7 +3,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { readAreaState, writeAreaState, lastingRegions, isInside, replayAgainst, noteExpiry, expiredRegions } from "../adapter/areas.mjs";
 import { positionOf as position } from "../adapter/turn.mjs";
 import { noteSummonExpiry, expiredSummons } from "../adapter/summons.mjs";
-import { holdZoneEffects } from "../adapter/zone-effects.mjs";
+import { holdZoneEffects, holdDifficultTerrain } from "../adapter/zone-effects.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { announce } from "./triggers.mjs";
@@ -138,6 +138,11 @@ export function registerAreas() {
     const held = await holdZoneEffects(region);
     if ( held ) log(`zone « ${region.name} » : ${held.effects.join(", ")} porté(s) dedans`);
   }, { executor: true, label: "zone : effets portés non posés" });
+  // §69 : terrain difficile perdu par les données (Enchevêtrement du Manuel des joueurs premium…).
+  route("createRegion", async region => {
+    const behavior = await holdDifficultTerrain(region);
+    if ( behavior ) log(`zone « ${region.name} » : terrain difficile posé`);
+  }, { executor: true, label: "zone : terrain difficile non posé" });
   route("updateWorldTime", onWorldTime, { executor: true, label: "zone : durée écoulée, non retirée" });
   route("createToken", async tokenDoc => {
     const at = await noteSummonExpiry(tokenDoc);

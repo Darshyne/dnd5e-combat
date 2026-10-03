@@ -236,9 +236,19 @@ export function movementOf(combatant, factors) {
   // §17.2 : plus le déplacement dépensé pour se relever.
   const budget = readBudget(combatant);
   const spent = historyCosts(token).spent + (Number(budget.climbed) || 0) + (Number(budget.stood) || 0);
+  return { spent, ...speedOf(combatant.actor, factors) };
+}
+
+/**
+ * Vitesse de marche d'un acteur, dans l'unité de la grille (hors combat aussi : §67, la réaction qui rejoint l'attaquant).
+ * @returns {{speed: number, units: string}|null}
+ */
+export function speedOf(actor, factors) {
+  const movement = actor?.system.attributes?.movement;
+  if ( !movement ) return null;
   const gridUnits = canvas.scene?.grid.units ?? movement.units;
   const walk = movement.speeds?.walk ?? movement.walk ?? 0;
   let speed = walk;
   try { speed = convertLength(walk, movement.units, gridUnits, factors); } catch { /* unité inconnue : valeur brute */ }
-  return { spent, speed, units: gridUnits };
+  return { speed, units: gridUnits };
 }

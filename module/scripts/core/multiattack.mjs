@@ -26,11 +26,13 @@
 /**
  * L'identifiant d'Attaques multiples, quelle que soit la fiche : celui du MM 2024 (`multiattack`), ceux que dnd5e tire du nom
  * d'une fiche importée sans identifiant ou traduite (« Attaque multiple », « Attaques multiples », « Multiattaque »), et
- * ceux d'un nom à précision (« Multiattack (Human or Hybrid Form Only) » → `multiattack-human-or-hybrid-form-only`).
+ * ceux d'un nom à précision (« Multiattack (Human or Hybrid Form Only) » → `multiattack-human-or-hybrid-form-only`), et ceux
+ * qu'un module de créatures préfixe (`cos-rahadin-attaques-multiples`, `cos-ithuriel-etoile-attaques-multiples`).
  */
 export function isMultiattackId(id) {
   const s = String(id ?? "");
-  return ["multiattack", "multiattaque", "attaque-multiple", "attaques-multiples"].some(base => (s === base) || s.startsWith(`${base}-`));
+  return ["multiattack", "multiattaque", "attaque-multiple", "attaques-multiples"]
+    .some(base => (s === base) || s.startsWith(`${base}-`) || s.endsWith(`-${base}`));
 }
 
 const NUMBERS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8 };

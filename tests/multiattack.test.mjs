@@ -217,7 +217,8 @@ describe("ce qui reste (§18.19, HUD)", () => {
 
 describe("isMultiattackId : les Attaques multiples de toute fiche", () => {
   it("MM 2024, fiche sans identifiant (nom anglais), traductions, nom à précision", () => {
-    for ( const id of ["multiattack", "attaque-multiple", "attaques-multiples", "multiattaque", "multiattack-human-or-hybrid-form-only"] ) {
+    for ( const id of ["multiattack", "attaque-multiple", "attaques-multiples", "multiattaque", "multiattack-human-or-hybrid-form-only",
+      "cos-rahadin-attaques-multiples", "cos-ithuriel-etoile-attaques-multiples"] ) {
       expect(isMultiattackId(id)).toBe(true);
     }
   });

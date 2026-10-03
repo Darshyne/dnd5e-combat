@@ -65,6 +65,15 @@ function heard(visionSource, config) {
   return true;
 }
 
+const reported = new Set();
+/** Une erreur de la brume ou de l'ouïe, dite une fois (avec sa pile) : l'affichage retombe sur le cœur. */
+function reportOnce(err) {
+  const key = String(err?.message ?? err);
+  if ( reported.has(key) ) return;
+  reported.add(key);
+  console.error(`${MODULE_ID} | perception (brume, ouïe) : ${key}\n${err?.stack ?? ""}`);
+}
+
 /** La sous-classe d'un mode de détection : la vue s'arrête à la brume ; la perception de la lumière entend en dernier recours. */
 function extend(id, mode) {
   const Base = mode.constructor;
@@ -73,9 +82,14 @@ function extend(id, mode) {
   if ( !sight && !listens ) return null;
   const Extended = class extends Base {
     testVisibility(visionSource, tokenMode, config) {
-      const blocked = sight && blockedFor(id, visionSource, config.object);
+      // Ce que le moteur ajoute ne doit jamais casser l'affichage du cœur : une erreur → le test du cœur seul, et la pile une fois.
+      let blocked = false;
+      try { blocked = sight && blockedFor(id, visionSource, config.object); }
+      catch(err) { reportOnce(err); }
       if ( !blocked && super.testVisibility(visionSource, tokenMode, config) ) return true;
-      return listens && tokenMode.enabled && heard(visionSource, config);
+      if ( !listens || !tokenMode.enabled ) return false;
+      try { return heard(visionSource, config); }
+      catch(err) { reportOnce(err); return false; }
     }
   };
   Object.defineProperty(Extended, "name", { value: `${Base.name}${MODULE_ID.replace(/\W/g, "")}` });

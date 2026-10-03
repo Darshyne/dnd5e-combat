@@ -21,6 +21,9 @@ export const TARGETS = Object.freeze({
   "cause-fear": { unaffectedIf: { "target.creatureType": ["construct", "undead"] } },
   // « Une Bête que vous voyez… »
   "dominate-beast": { types: ["beast"] },
+  // §65 : Eau bénite (PHB 2024, et la fiole 2014) — les dégâts radiants ne valent que contre un Fiélon ou un Mort-vivant.
+  "holy-water": { types: ["fiend", "undead"] },
+  "flask-of-holy-water": { types: ["fiend", "undead"] },
   "animal-friendship": { types: ["beast"] },
   // Sommeil 2024 : « les créatures qui ne dorment pas, comme les elfes, ou qui ont l'immunité à l'état Épuisement
   // réussissent automatiquement leurs sauvegardes contre ce sort ». L'immunité se lit ; « ne dort pas » (elfes) non.

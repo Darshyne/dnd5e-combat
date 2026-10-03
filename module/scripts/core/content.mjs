@@ -131,9 +131,11 @@
  *                                               Trait ensorcelé) : l'activité `activity` ne vise qu'elle (début de tour,
  *                                               menu du clic droit) ; au-delà de `range` ou derrière un abri total, la
  *                                               concentration tombe
- *     damageShield?: { effects, formula, oncePerTurn? }
+ *     damageShield?: { effects | worn, formula, oncePerTurn? }
  *                                               le porteur d'un effet de l'item (`effects` : id du profil → type de dégâts)
- *                                               réduit les dégâts de ce type de `formula` (Résistance, §16.46)
+ *                                               réduit les dégâts de ce type de `formula` (Résistance, §16.46) ; `worn` (un type de
+ *                                               dégâts) : le porteur de l'item lui-même, équipé (et harmonisé s'il le faut) — un
+ *                                               anneau qui « réduit les dégâts de froid subis de 2d8 » (§65)
  *     breaksOn?: ("attack"|"damage"|"spell")[] les effets de l'item cessent quand leur porteur fait un jet d'attaque, inflige des
  *                                               dégâts ou lance un sort (Invisibilité, §16.47)
  *     noReactions?: true                        le porteur d'un effet de l'item ne peut pas prendre de Réaction (Tentacules de
@@ -198,9 +200,11 @@
  *                                               Ravenloft) — l'item a des utilisations, une par fois
  *     forOneAttack?: true                       les effets que l'item pose sur son porteur ne valent que pour l'attaque qui a ouvert la
  *                                               réaction : retirés sitôt la CA relue (Parade : « +5 à sa CA contre une attaque »)
- *     basicActions?: { <id d'activité>: "dash"|"disengage"|"dodge"|"hide" }
+ *     basicActions?: { <id d'activité>: "dash"|"disengage"|"dodge"|"hide" | [...] | { choose: [...] } }
  *                                               l'activité prend cette action de base, au coût de son activation (Pas rapide : Foncer
- *                                               ou Se désengager par une action Bonus ; Ruse du Roublard : Se cacher aussi, §20)
+ *                                               ou Se désengager par une action Bonus ; Ruse du Roublard : Se cacher aussi, §20) ;
+ *                                               une liste : toutes à la fois (Défense patiente) ; `{ choose }` : une seule, au choix de
+ *                                               l'auteur à l'utilisation (Échappée agile : Se désengager OU Se cacher, §65)
  *     ignoresCloseCombat?: true                 le porteur de l'item n'a pas le Désavantage au tir quand un ennemi est au contact
  *                                               (capacité déclarée par un module de créatures tiers)
  *     (aura) whileActive?: true                 l'aura n'est tenue que tant que le lanceur porte un effet de l'item
@@ -415,7 +419,7 @@
  * Fonctions pures, aucune dépendance à Foundry.
  */
 
-import { MOMENTS, OUTCOME_MOMENTS, RESAVE_MOMENTS, BEARER_MOMENTS, TURN_MOMENTS, unknownFacts, normalize, PRE_ATTACK_WINDOWS } from "./triggers.mjs";
+import { MOMENTS, OUTCOME_MOMENTS, RESAVE_MOMENTS, BEARER_MOMENTS, TURN_MOMENTS, unknownFacts, normalize, PRE_ATTACK_WINDOWS, DAMAGED_BY } from "./triggers.mjs";
 import { CREATURE_TYPES } from "./eligibility.mjs";
 import { ORDERS } from "./orders.mjs";
 import { LIGHT_ON } from "./light.mjs";
@@ -534,6 +538,11 @@ function validateTrigger(declaration, at, facts, errors) {
     if ( !isId(declaration.fromEffect) ) errors.push(`${at}.fromEffect : id d'effet (16 caractères)`);
     if ( d.via !== "effect" ) errors.push(`${at}.fromEffect : demande via: "effect"`);
   }
+  // §65 : `by: "originSide"` — l'effet ne réagit qu'aux dégâts du lanceur ou de ses alliés (Suggestion).
+  if ( "by" in declaration ) {
+    if ( !DAMAGED_BY.includes(declaration.by) ) errors.push(`${at}.by : ${DAMAGED_BY.join(", ")}`);
+    if ( (d.via !== "effect") || (d.on.length !== 1) || (d.on[0] !== "isDamaged") ) errors.push(`${at}.by : demande via: "effect" et le seul moment isDamaged`);
+  }
   // `oncePerTurn` : une part de dégâts bonus qui ne vaut qu'une fois par tour (Attraction de la mort : « une fois par tour »).
   if ( ("oncePerTurn" in declaration) && ((declaration.oncePerTurn !== true) || (d.on.length !== 1) || (d.on[0] !== "preDamageRoll")) ) {
     errors.push(`${at}.oncePerTurn : true, avec le seul moment preDamageRoll`);
@@ -620,15 +629,17 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   }
   if ( "damageShield" in entry ) {
     const d = entry.damageShield;
-    if ( !isObject(d) || !isObject(d.effects) || !Object.keys(d.effects).length ) errors.push(`${at}damageShield.effects : { id d'effet: type de dégâts }`);
+    const worn = isObject(d) && ("worn" in d);
+    if ( worn && ((typeof d.worn !== "string") || !d.worn || ("effects" in d)) ) errors.push(`${at}damageShield.worn : un type de dégâts (sans effects)`);
+    if ( !isObject(d) || (!worn && (!isObject(d.effects) || !Object.keys(d.effects).length)) ) errors.push(`${at}damageShield.effects : { id d'effet: type de dégâts }`);
     else {
-      for ( const [id, type] of Object.entries(d.effects) ) {
+      for ( const [id, type] of Object.entries(d.effects ?? {}) ) {
         if ( !isId(id) ) errors.push(`${at}damageShield.effects.${id} : id d'effet (16 caractères)`);
         if ( (typeof type !== "string") || !type ) errors.push(`${at}damageShield.effects.${id} : type de dégâts`);
       }
       if ( (typeof d.formula !== "string") || !d.formula.trim() ) errors.push(`${at}damageShield.formula : formule requise`);
       if ( ("oncePerTurn" in d) && (d.oncePerTurn !== true) ) errors.push(`${at}damageShield.oncePerTurn : true ou absent`);
-      for ( const key of Object.keys(d) ) if ( !["effects", "formula", "oncePerTurn"].includes(key) ) errors.push(`${at}damageShield.${key} : clé inconnue`);
+      for ( const key of Object.keys(d) ) if ( !["effects", "worn", "formula", "oncePerTurn"].includes(key) ) errors.push(`${at}damageShield.${key} : clé inconnue`);
     }
   }
   if ( "hitDiceHeal" in entry ) {
@@ -708,7 +719,13 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     if ( !isObject(b) || !Object.keys(b).length ) errors.push(`${at}basicActions : { id d'activité: ${BASIC_ACTION_KINDS.join(" | ")} }`);
     else for ( const [id, kind] of Object.entries(b) ) {
       if ( !isId(id) ) errors.push(`${at}basicActions.${id} : id d'activité (16 caractères)`);
-      // §24 : plusieurs actions pour une activité (Défense patiente : Se désengager et Esquiver).
+      // §24 : plusieurs actions pour une activité (Défense patiente : Se désengager et Esquiver) ; §65 : une au choix.
+      if ( isObject(kind) && !Array.isArray(kind) ) {
+        const ok = Array.isArray(kind.choose) && (kind.choose.length >= 2) && kind.choose.every(k => BASIC_ACTION_KINDS.includes(k))
+          && (Object.keys(kind).length === 1);
+        if ( !ok ) errors.push(`${at}basicActions.${id} : { choose: [au moins deux parmi ${BASIC_ACTION_KINDS.join(", ")}] }`);
+        continue;
+      }
       const kinds = Array.isArray(kind) ? kind : [kind];
       if ( !kinds.length || !kinds.every(k => BASIC_ACTION_KINDS.includes(k)) ) errors.push(`${at}basicActions.${id} : ${BASIC_ACTION_KINDS.join(", ")} (ou une liste)`);
     }

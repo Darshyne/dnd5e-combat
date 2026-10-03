@@ -82,6 +82,20 @@ export const RESAVE_MOMENTS = Object.freeze([...TURN_MOMENTS, "isDamaged"]);
  * Une déclaration sous forme canonique : `on` toujours en liste, `if` et `do` toujours présents,
  * `via` : null (les items de l'acteur) ou "effect" (les effets que l'item a posés sur la créature).
  */
+/** Les déclarations `via: "effect"` qu'on peut restreindre à l'auteur des dégâts (`by`, §65 : Suggestion). */
+export const DAMAGED_BY = Object.freeze(["originSide"]);
+
+/**
+ * §65 : des dégâts viennent-ils du lanceur de l'effet ou d'un de ses alliés ? Même acteur, ou tokens de même disposition
+ * (amicale ou hostile ; une créature neutre n'est l'alliée de personne). Auteur inconnu : non.
+ * @param {{damager: string|null, origin: string|null, damagerDisposition?: number|null, originDisposition?: number|null}} who
+ */
+export function damagedByOriginSide({ damager, origin, damagerDisposition=null, originDisposition=null }) {
+  if ( !damager || !origin ) return false;
+  if ( damager === origin ) return true;
+  return (damagerDisposition !== null) && (damagerDisposition === originDisposition) && [1, -1].includes(damagerDisposition);
+}
+
 export function normalize(declaration, extra={}) {
   const on = Array.isArray(declaration.on) ? declaration.on : [declaration.on];
   return { ...extra, ...declaration, on: on.filter(Boolean), if: declaration.if ?? null, do: declaration.do ?? [], via: declaration.via ?? null };

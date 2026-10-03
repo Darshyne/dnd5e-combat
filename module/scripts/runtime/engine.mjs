@@ -215,7 +215,7 @@ const COMMANDS = {
       const target = await fromUuid(entry.token);
       // §16.46 : ce qu'une défense (Résistance) a retiré aux dégâts.
       for ( const s of hp?.shields ?? [] ) {
-        log(`${target?.name ?? entry.token} : ${s.name} réduit les dégâts de ${s.reduced} (1d4 = ${s.rolled})`);
+        log(`${target?.name ?? entry.token} : ${s.name} réduit les dégâts de ${s.reduced} (${s.formula ?? "1d4"} = ${s.rolled})`);
         if ( target ) notice(target, loc("Retour.Reduit", { item: s.name, n: s.reduced }), "gain");
       }
       // Un effet sous condition (M3, §18.4 : « si la cible est de taille G ou inférieure ») ne passe que si elle tient.

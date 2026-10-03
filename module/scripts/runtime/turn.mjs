@@ -7,7 +7,7 @@ import {
   distanceBetween, usageTokenOf as usageToken, currentTurnKey, freshBudgetFor, movementOf } from "../adapter/turn.mjs";
 import { usageLimitProblems, markUsedThisTurn, applyLowestSlot } from "../adapter/limits.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
-import { basicActionOf, basicActionOfActivity } from "../adapter/basics.mjs";
+import { basicActionOf, basicActionOfActivity, basicChoiceOf } from "../adapter/basics.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { isRaging } from "../adapter/rage.mjs";
 import { enemiesSeeing } from "../adapter/hide.mjs";
@@ -183,7 +183,21 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     ui.notifications.warn(loc("Souci.noSlot", { item: activity.item.name }));
     return false;
   }
-  for ( const key of ["choice", "attackMode", "saveChoice", "legendary", "autoReact", "recast", "cost", "damageType", "order", "cleave", "metamagic"] ) {
+  // §65 : une action de base au choix (Échappée agile : Se désengager OU Se cacher) — demandée avant tout, puis l'utilisation repart.
+  const choices = basicChoiceOf(activity);
+  if ( choices && !choices.includes(usageConfig[MODULE_ID]?.basicChoice) ) {
+    foundry.applications.api.DialogV2.wait({
+      window: { title: activity.item.name },
+      content: `<p>${loc("ActionAuChoix")}</p>`,
+      buttons: choices.map((kind, i) => ({ action: kind, label: loc(`Action.${kind}.Nom`), default: i === 0 })),
+      rejectClose: false
+    }).then(kind => {
+      if ( !choices.includes(kind) ) return;
+      activity.use({ ...usageConfig, [MODULE_ID]: { ...(usageConfig?.[MODULE_ID] ?? {}), basicChoice: kind } }, dialogConfig, messageConfig);
+    });
+    return false;
+  }
+  for ( const key of ["choice", "attackMode", "saveChoice", "legendary", "autoReact", "recast", "cost", "damageType", "order", "cleave", "metamagic", "basicChoice"] ) {
     const value = usageConfig[MODULE_ID]?.[key];
     if ( value && messageConfig ) foundry.utils.setProperty(messageConfig, `data.flags.${MODULE_ID}.${key}`, value);
   }
@@ -196,7 +210,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const { combatant, budget, own, request } = use;
   const range = assessRange(activity);
   // Furtivité : il faut être hors du champ de vision de tout ennemi (règle 2024, adapter/hide.mjs).
-  const seenBy = (basicActionOfActivity(activity) === "hide") ? (enemiesSeeing(usageToken(activity)) ?? []) : [];
+  const seenBy = (basicActionOfActivity(activity, usageConfig[MODULE_ID]?.basicChoice) === "hide") ? (enemiesSeeing(usageToken(activity)) ?? []) : [];
   // §16.8 : « choisissez un Humanoïde » — les cibles désignées d'un autre type ne seront pas affectées.
   const origin = usageToken(activity);
   const wrongType = Array.from(game.user.targets).filter(t => (t.document !== origin) && t.actor)
@@ -332,7 +346,9 @@ async function onUsageMessage(message) {
   const basic = basicActionOf(activity.item);
   const kind = BASIC_ACTION_FLAGS[basic] ? basic : null;
   // §19.6 : une activité qui prend une action de base au coût de son activation (Pas rapide : Foncer par une action Bonus).
-  const declared = contentOf(activity.item).entry?.basicActions?.[activity.id] ?? null;
+  // §65 : une action au choix ne vaut que celle choisie à l'utilisation (notée sur la carte).
+  const declared = basicChoiceOf(activity) ? basicActionOfActivity(activity, message.getFlag(MODULE_ID, "basicChoice"))
+    : (contentOf(activity.item).entry?.basicActions?.[activity.id] ?? null);
   const request = kind ? null : monkRequest(activity, requestFor(activity, message.getFlag(MODULE_ID, "cost") ?? null,
     { attackMode: message.getFlag(MODULE_ID, "attackMode") ?? null }), before);
   // §24 : une frappe du Déluge de coups — gratuite, décomptée, et notée sur la carte (Technique de la main ouverte).

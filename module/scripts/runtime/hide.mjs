@@ -26,11 +26,11 @@ async function endHiding(actor, why) {
   ui.notifications.info(loc("Furtivite.Fin", { name: actor.name }));
 }
 
-async function onPostUse(activity) {
+async function onPostUse(activity, usageConfig) {
   const actor = activity.actor;
   if ( !actor ) return;
   // L'item Furtivité, ou une activité qui prend l'action Se cacher (Ruse du Roublard, par une action Bonus : §20).
-  if ( basicActionOfActivity(activity) === "hide" ) {
+  if ( basicActionOfActivity(activity, usageConfig?.[MODULE_ID]?.basicChoice) === "hide" ) {
     const rolls = await actor.rollSkill({ skill: "ste", target: HIDE_DC }, { configure: false });
     const total = rolls?.[0]?.total;
     if ( !Number.isFinite(total) ) return;
@@ -48,7 +48,7 @@ async function onPostUse(activity) {
 }
 
 export function registerHide() {
-  route("dnd5e.postUseActivity", activity => { onPostUse(activity).catch(err => console.error(`${MODULE_ID} | furtivité`, err)); },
+  route("dnd5e.postUseActivity", (activity, usageConfig) => { onPostUse(activity, usageConfig).catch(err => console.error(`${MODULE_ID} | furtivité`, err)); },
     { label: "furtivité" });
   // « Vous cessez d'être caché aussitôt après… un jet d'attaque » : après le jet, qui a profité de l'invisibilité.
   route("dnd5e.rollAttackV2", (rolls, { subject }={}) => {

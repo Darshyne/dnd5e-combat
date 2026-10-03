@@ -14,13 +14,26 @@ import { originItemOf } from "./facts.mjs";
 
 const currentTurnKey = () => (game.combat?.started ? turnKeyOf(game.combat.round, game.combat.turn) : null);
 
-/** Les boucliers de dégâts que porte l'acteur : `{ effect, type, rule }`. */
+/** Un objet porté qui protège (§65) : équipé, et harmonisé s'il exige une harmonisation. */
+function worn(item) {
+  if ( !item?.system?.equipped ) return false;
+  return (item.system.attunement !== "required") || !!item.system.attuned;
+}
+
+/**
+ * Les boucliers de dégâts que porte l'acteur : `{ effect, type, rule }` — `effect` est le document qui garde la marque « une fois
+ * par tour » et donne son nom : l'effet de l'item, ou l'item porté lui-même (`worn`).
+ */
 function shieldsOf(actor) {
   const out = [];
+  for ( const item of actor?.items ?? [] ) {
+    const rule = contentOf(item)?.entry?.damageShield;
+    if ( rule?.worn && worn(item) ) out.push({ effect: item, type: rule.worn, rule });
+  }
   for ( const effect of actor?.appliedEffects ?? actor?.effects ?? [] ) {
     if ( effect.disabled || effect.isSuppressed ) continue;
     const rule = contentOf(originItemOf(effect))?.entry?.damageShield;
-    if ( !rule ) continue;
+    if ( !rule?.effects ) continue;
     // Le profil d'origine : noté par dnd5e sur l'effet appliqué (`system.origin.profile`, effect-application.mjs:255), sinon
     // la source de la copie.
     const source = String(effect._stats?.duplicateSource ?? effect._stats?.compendiumSource ?? "");
@@ -49,7 +62,7 @@ export async function applyDamageShields(actor, damages) {
     if ( !result.reduced ) continue;
     out = result.damages;
     if ( rule.oncePerTurn && key ) await effect.setFlag(MODULE_ID, "shieldTurn", key).catch(() => {});
-    done.push({ name: effect.name, type, reduced: result.reduced, rolled: roll.total });
+    done.push({ name: effect.name, type, reduced: result.reduced, rolled: roll.total, formula: rule.formula });
   }
   return { damages: out, done };
 }

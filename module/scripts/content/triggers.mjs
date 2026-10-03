@@ -156,6 +156,8 @@ export const TRIGGERS = Object.freeze({
   // l'effet posé (Neutralisé ; Charmé et Neutralisé). Secouer la créature (une action d'un autre) reste à la main.
   "sleep": [{ on: "isDamaged", via: "effect", do: [{ type: "remove" }] }],
   "hypnotic-pattern": [{ on: "isDamaged", via: "effect", do: [{ type: "remove" }] }],
+  // §65 : Suggestion — « la suggestion prend fin si vous ou vos alliés infligez des dégâts à la cible » : seulement ces dégâts-là.
+  "suggestion": [{ on: "isDamaged", via: "effect", by: "originSide", do: [{ type: "remove" }] }],
   // §42.2 : Apaisement des émotions — « cette indifférence prend fin si la cible subit des dégâts » : le seul effet
   // « Indifference » (cb3KFq1j9UkOUV2l) ; l'autre option (Charmé et Effrayé supprimés) ne cesse pas sur dégâts.
   "calm-emotions": [{ on: "isDamaged", via: "effect", fromEffect: "cb3KFq1j9UkOUV2l", do: [{ type: "remove" }] }],

@@ -19,9 +19,18 @@ export function basicActionOf(item) {
  * L'action de base que prend une activité : celle de son item d'action de base, sinon celle que le contenu déclare pour elle
  * (`basicActions` : Ruse du Roublard, « Se cacher » par une action Bonus — §20).
  */
-export function basicActionOfActivity(activity) {
+export function basicActionOfActivity(activity, chosen=null) {
   if ( !activity?.item ) return null;
-  return basicActionOf(activity.item) ?? contentOf(activity.item).entry?.basicActions?.[activity.id] ?? null;
+  const declared = contentOf(activity.item).entry?.basicActions?.[activity.id] ?? null;
+  // §65 : une action au choix (Échappée agile) — celle que l'auteur a choisie à l'utilisation, sinon aucune.
+  if ( declared?.choose ) return declared.choose.includes(chosen) ? chosen : null;
+  return basicActionOf(activity.item) ?? declared;
+}
+
+/** §65 : les actions de base parmi lesquelles l'auteur choisit à l'utilisation de cette activité, ou null. */
+export function basicChoiceOf(activity) {
+  const declared = activity?.item ? contentOf(activity.item).entry?.basicActions?.[activity.id] : null;
+  return Array.isArray(declared?.choose) ? declared.choose : null;
 }
 
 /** Attaque à mains nues 2024 : une arme « naturelle », une attaque et la sauvegarde « Lutte / Bousculade ». */

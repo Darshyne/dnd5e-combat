@@ -5,7 +5,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { select, stepsOf, BEARER_MOMENTS } from "../core/triggers.mjs";
+import { select, stepsOf, BEARER_MOMENTS, damagedByOriginSide } from "../core/triggers.mjs";
 import { declarationsOf, declarationsOfEffects, factsFor, tokenOf, consumedMarks } from "../adapter/triggers.mjs";
 import { usageTokenOf } from "../adapter/turn.mjs";
 import { resaveAgainst } from "../adapter/areas.mjs";
@@ -212,12 +212,45 @@ async function onAttackRolled(message) {
  * B4 `resave` — elle rejoue la sauvegarde (Domination, Fou rire). MJ actif uniquement.
  * Limite : à 0 PV sans PV temporaires, les PV ne baissent plus et le hook ne vient pas.
  */
+/** Délai au-delà duquel l'auteur noté des derniers dégâts ne vaut plus (des PV écrits à la main ensuite n'en ont pas). */
+const DAMAGER_FRESH_MS = 10000;
+
+/**
+ * §65 : `dnd5e.preApplyDamage`, sur le client qui applique : l'auteur des dégâts (l'acteur du message de dégâts — carte du moteur
+ * en `origin`, bouton de dnd5e en `originatingMessage`) part dans la même écriture que les PV ; inconnu (barre du token,
+ * dégâts tapés), il est effacé. Lu par `onDamaged` pour les déclarations `by: "originSide"`.
+ */
+function recordDamager(actor, amount, updates, options) {
+  if ( !(amount > 0) || !actor ) return;
+  const message = [options?.origin, options?.originatingMessage].find(m => m instanceof ChatMessage) ?? null;
+  const damager = message?.getAssociatedActor?.() ?? null;
+  updates[`flags.${MODULE_ID}.damagedBy`] = { uuid: damager?.uuid ?? null, at: Date.now() };
+}
+
+/** La disposition du token d'un acteur sur la scène affichée, ou null. */
+function dispositionOf(actor) {
+  const token = actor ? tokenOf(actor) : null;
+  return (token?.document ?? token)?.disposition ?? null;
+}
+
+/** §65 : les dégâts que l'acteur vient de subir viennent-ils du lanceur de l'effet ou d'un de ses alliés ? */
+function byOriginSide(actor, d) {
+  const noted = actor.getFlag(MODULE_ID, "damagedBy");
+  if ( !noted?.uuid || ((Date.now() - (noted.at ?? 0)) > DAMAGER_FRESH_MS) ) return false;
+  const damager = fromUuidSync(noted.uuid, { strict: false });
+  const origin = d.source ? fromUuidSync(d.source, { strict: false }) : null;
+  return damagedByOriginSide({ damager: damager?.uuid ?? null, origin: origin?.uuid ?? null,
+    damagerDisposition: dispositionOf(damager), originDisposition: dispositionOf(origin) });
+}
+
 function onDamaged(actor, changes) {
   if ( !(changes?.total < 0) || !actor ) return;
   const token = tokenOf(actor);
   const tokenDocument = token?.document ?? token ?? null;
   const declarations = matching("isDamaged", { actor, target: actor, source: null, targetToken: tokenDocument })
-    .filter(d => (d.via === "effect") && d.effect);
+    .filter(d => (d.via === "effect") && d.effect)
+    // §65 : « si vous ou vos alliés lui infligez des dégâts » (Suggestion) — les autres dégâts ne comptent pas.
+    .filter(d => (d.by !== "originSide") || byOriginSide(actor, d));
   if ( !declarations.length ) return;
   return enqueue(`damaged:${actor.uuid}`, async () => {
     for ( const d of declarations ) {
@@ -261,6 +294,7 @@ function onDamaged(actor, changes) {
 export function registerTriggers() {
   route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "dégâts bonus des déclencheurs" });
   route("combatTurnChange", onTurnChange, { executor: true, label: "tour de la créature : déclencheurs interrompus" });
+  route("dnd5e.preApplyDamage", recordDamager, { label: "dégâts subis : auteur non noté" });
   route("dnd5e.damageActor", onDamaged, { executor: true, label: "dégâts subis : effets du porteur non traités" });
   // Trace d'une utilisation (§16.9, contenu `trace: true`) : pas pour un rejeu de zone ni une sauvegarde répétée.
   // Marques consommées (§16.12, B10) : au message du jet d'attaque.

@@ -598,6 +598,7 @@
   "DND5ECOMBAT.Chatiment.TitreFaveur": "Au toucher — {name}",
   "DND5ECOMBAT.Chatiment.QuestionFaveur": "Vous touchez {name}. Ajouter une capacité au coup ?",
   "DND5ECOMBAT.Espece.Acharnement": "{item} : 1 PV",
+  "DND5ECOMBAT.ActionAuChoix": "Quelle action prenez-vous ?",
   "DND5ECOMBAT.Robustesse.Carte": "{item} : sauvegarde de Constitution, DD {dc}",
   "DND5ECOMBAT.Robustesse.Reussite": "{item} : 1 PV",
   "DND5ECOMBAT.Chatiment.AucuneFaveur": "Rien",

@@ -27,6 +27,18 @@ export const EMANATIONS = Object.freeze({
 /** M8 (§18.13) : Régénération — Trolls, Slaads, Oni, Gardien du bouclier, Revenant (le texte dit le reste). */
 export const REGENERATIONS = Object.freeze(["regeneration"]);
 
+/**
+ * §65 : actions de base d'une capacité du Monster Manual, par une action Bonus (activité unique, même id dans tout le MM) :
+ * « takes the Disengage or Hide action » (Échappée agile : gobelins, Panthère, Tigre, Tigre à dents de sabre), « takes the
+ * Dash or Disengage action » (Agilité de l'immortel : rejetons et familiers vampires), « takes the Hide action » (Discrétion dans
+ * les ombres : Ombre, dragons d'ombre…).
+ */
+export const MONSTER_BASIC_ACTIONS = Object.freeze({
+  "nimble-escape": { CcMi6Alf0pup7o81: { choose: ["disengage", "hide"] } },
+  "deathless-agility": { dlHNkpwbTgwm1UwG: { choose: ["dash", "disengage"] } },
+  "shadow-stealth": { ydslIM9mBqNRGOnq: "hide" }
+});
+
 /** §61 : Robustesse de la non-vie — Zombi, Zombi ogre, Zombi tyrannœil (core/fortitude.mjs). */
 export const FORTITUDES = Object.freeze(["undead-fortitude"]);
 

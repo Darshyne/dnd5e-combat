@@ -43,7 +43,13 @@ Ou `api.content.register(source, table)` après coup. Chaque entrée est validé
 
 ## Installation
 
-Pas encore de version publiée : le module s'installe depuis les sources. Le module Foundry est le
+Dans Foundry (ou sur The Forge), *Installer un module* → coller l'URL de manifeste :
+
+```
+https://github.com/Darshyne/dnd5e-combat/releases/latest/download/module.json
+```
+
+Depuis les sources : le module Foundry est le
 sous-dossier `module/`, à copier ou lier dans `Data/modules/dnd5e-combat`. Les compendiums ne sont pas
 versionnés : `npm install` puis `npm run packs`, Foundry fermé.
 

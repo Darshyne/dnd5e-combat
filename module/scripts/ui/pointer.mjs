@@ -17,6 +17,10 @@ import { MODULE_ID } from "../constants.mjs";
 import { footprintGap } from "../core/movement.mjs";
 import { canBeThrown, positionOf, combatantFor, isOwnTurn, readBudget } from "../adapter/turn.mjs";
 import { planPath, previewPath, cellUnder, footprintOf, stairsEntry, stairsDestinations } from "../adapter/movement.mjs";
+import { stormOf, cloudOf, cloudCircle, boltRadiusPx } from "../adapter/storm.mjs";
+import { dressStorm, strike, setBoltAim, freshCloudOf, castStorm } from "../runtime/storm.mjs";
+import { clampToCircle } from "../core/storm.mjs";
+import { askStorm } from "./storm.mjs";
 import { grappleShoveOf, unarmedAttackOf, helpActivityOf } from "../adapter/basics.mjs";
 import { pilotOf, commandActivities, commandLabel, transposeOf } from "../adapter/pilot.mjs";
 import { grappleEffectsOf, grapplerOf } from "../adapter/grapple.mjs";
@@ -148,6 +152,16 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
       startPicking(token, activity, usageConfig, dialogConfig, messageConfig).catch(err => console.error(`${MODULE_ID} | visée multiple`, err));
       return false;
     }
+  }
+  // §70 : Appel de la foudre — « dehors, par temps d'orage ? » avant l'incantation (pas à la relance : le nuage est là).
+  const storm = stormOf(activity?.item);
+  if ( storm && !ours.recast && !("stormy" in ours) && !ours.confirmed && canvas.ready && activity.actor?.isOwner && !cloudOf(activity.item) ) {
+    closeSheetFor(activity);
+    stopTargeting();
+    askStorm(activity, storm.bonus ?? "").then(stormy => (stormy === null) ? null
+      : exclusive(() => castStorm(activity, [usageConfig, dialogConfig, messageConfig], stormy)))
+      .catch(err => console.error(`${MODULE_ID} | orage`, err));
+    return false;
   }
   // §16.35 : un sort de lumière qui invoque un objet (Lumière) — au sol ou sur soi, et la couleur, avant de lancer.
   if ( lightChoiceOf(activity) && !ours.lightChoice && !ours.confirmed && canvas.ready && activity.actor?.isOwner ) {
@@ -339,6 +353,53 @@ async function aimArea(activity, area, then) {
     await then(shape);
   } catch(err) { console.error(`${MODULE_ID} | visée de zone`, err); }
   finally { placing = null; }
+}
+
+/**
+ * §70 : après une utilisation d'Appel de la foudre — à l'incantation, le nuage que dnd5e vient de poser est habillé en orage ;
+ * puis (incantation comme relance) l'éclair se vise sous le nuage : un cercle de 1,50 m suit la souris sans sortir du nuage,
+ * le clic le pose (la résolution le lit), clic droit ou Échap : pas d'éclair (la carte reste sans résolution).
+ */
+async function stormAfterUse(activity, usageConfig) {
+  const ours = usageConfig?.[MODULE_ID] ?? {};
+  let cloud = ours.recast ? cloudOf(activity.item) : null;
+  if ( !cloud ) {
+    cloud = freshCloudOf(activity.item);
+    if ( !cloud ) return;
+    await dressStorm(activity, cloud, { stormy: ours.stormy === true });
+  }
+  await aimBolt(activity, cloud);
+}
+
+async function aimBolt(activity, cloud) {
+  if ( !canvas.ready ) return;
+  const circle = cloudCircle(cloud);
+  if ( !circle ) return;
+  stopTargeting();
+  placing = { activity };
+  setBoltAim({ activity, cloud });
+  ui.notifications.info(loc("Orage.Viser", { item: activity.item.name }));
+  const radius = boltRadiusPx(activity.item, cloud.parent);
+  try {
+    const placed = await canvas.regions.placeRegion({
+      _id: foundry.utils.randomID(), name: activity.item.name, color: "#e8f4ff",
+      shapes: [{ type: "circle", x: circle.center.x, y: circle.center.y, radius }], displayMeasurements: false
+    }, {
+      create: false, allowRotation: false,
+      onMove: ({ position, shape }) => {
+        const at = clampToCircle(position, circle.center, circle.radius);
+        shape.updateSource({ x: at.x, y: at.y });
+        return false;
+      },
+      onRotate: () => false
+    });
+    const shape = placed?.shapes?.length ? placed.shapes[0].toObject() : null;
+    if ( !shape ) return;
+    placing = null;
+    setBoltAim(null);
+    await exclusive(() => strike(activity, cloud, { x: shape.x, y: shape.y }));
+  } catch(err) { console.error(`${MODULE_ID} | visée de l'éclair`, err); }
+  finally { placing = null; setBoltAim(null); }
 }
 
 /** §59 : le bouton « Placer la zone » de la carte d'un cône ou d'une ligne de portée personnelle — la même visée. */
@@ -1386,6 +1447,7 @@ function onTurnChange(combat, prior) {
  * utilisée — le TODO de dnd5e 6 (`_triggerSubsequentActions`, teleport.mjs).
  */
 function onPostUseActivity(activity, usageConfig, results) {
+  if ( results && stormOf(activity?.item) ) return void stormAfterUse(activity, usageConfig).catch(err => console.error(`${MODULE_ID} | orage`, err));
   if ( !results || !setting("teleportPlanning") || !selfTeleportOf(activity) ) return;
   if ( usageConfig?.subsequentActions === false ) return;   // un appelant qui enchaîne lui-même (connecteur, scénarios)
   teleportSelf(activity).catch(err => console.error(`${MODULE_ID} | téléportation`, err));

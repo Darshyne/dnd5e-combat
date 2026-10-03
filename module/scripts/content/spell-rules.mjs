@@ -66,6 +66,9 @@ export const SPELL_RULES = Object.freeze({
   // l'a). Enchevêtrement (« le sol de la zone devient un Terrain difficile », plantes), Croissance d'épines (plantes), Toile
   // d'araignée (toiles), Graisse, Tempête de neige (« Terrain difficile »), Tentacules noirs d'Evard. Croissance végétale et Mur
   // d'épines (4 m de déplacement par mètre) ne sont pas du terrain difficile ordinaire : non repris.
+  // §70 : Appel de la foudre — le nuage (cylindre de 18 m) reste ; chaque lancement vise un éclair de 1,50 m dessous ; « dehors, par
+  // temps d'orage » : +1d10 (question à l'incantation). La relance sans emplacement (`recast`) et l'éclair (`bolt`) : content/bursts.mjs.
+  "call-lightning": { storm: { bonus: "1d10" } },
   "entangle": { difficultTerrain: { types: ["plants"] } },
   "spike-growth": { difficultTerrain: { types: ["plants"] } },
   "web": { difficultTerrain: { types: ["webs"] } },

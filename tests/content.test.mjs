@@ -560,3 +560,12 @@ describe("§69 : la fusion garde difficultTerrain", () => {
     expect(mergeEntries([null, { difficultTerrain: { types: ["plants"] } }]).difficultTerrain).toEqual({ types: ["plants"] });
   });
 });
+
+describe("§70 : orage (storm)", () => {
+  it("un objet, bonus en dés", () => {
+    expect(validateEntry({ storm: { bonus: "1d10" } })).toEqual([]);
+    expect(validateEntry({ storm: {} })).toEqual([]);
+    expect(validateEntry({ storm: { bonus: "beaucoup" } })).toEqual([expect.stringContaining("bonus")]);
+    expect(mergeEntries([null, { storm: { bonus: "1d10" } }]).storm).toEqual({ bonus: "1d10" });
+  });
+});

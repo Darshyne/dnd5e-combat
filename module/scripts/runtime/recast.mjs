@@ -11,6 +11,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
+import { stormOf, cloudOf } from "../adapter/storm.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 
@@ -40,6 +41,8 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     ...(scaling > 0 ? { spell: { ...(usageConfig.spell ?? {}), slot: `spell${(activity.item.system.level ?? 0) + scaling}` } } : {}),
     [MODULE_ID]: { ...(usageConfig[MODULE_ID] ?? {}), recast: true }
   };
+  // §70 : un sort à orage dont le nuage est là — pas de nouvelle zone à poser : l'éclair se vise dessous (ui/pointer.mjs).
+  if ( stormOf(activity.item) && cloudOf(activity.item) ) config.create = { ...(usageConfig.create ?? {}), measuredTemplate: false };
   log(`${activity.item.name} : relancé sans emplacement (concentration en cours)`);
   activity.use(config, { ...(dialogConfig ?? {}), configure: false }, messageConfig);
   return false;

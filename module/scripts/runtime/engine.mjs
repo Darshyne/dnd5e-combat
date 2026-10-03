@@ -44,6 +44,8 @@ import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
+import { stormOf, isBoltRegion } from "../adapter/storm.mjs";
+import { concentrationOn } from "../adapter/summons.mjs";
 import { duplicatesAgainst, duplicateEffectsOf } from "../adapter/duplicates.mjs";
 import { log, loc, isExecutor, waitForDice, whenCanvasReady, notice } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
@@ -636,6 +638,12 @@ function findUsage(activityUuid, { unresolved=false }={}) {
   return null;
 }
 
+/** §70 : la région posée par un sort à orage qui n'est pas un éclair — le nuage. */
+function isCloudRegion(region) {
+  const item = fromUuidSync(region.getFlag("dnd5e", "item") ?? "", { strict: false });
+  return !!stormOf(item) && !isBoltRegion(region);
+}
+
 /** Une zone vient d'être posée : ceux qu'elle recouvre sont les cibles de l'activité. */
 async function onRegionCreated(region) {
   // P2 : une région créée sans tranche d'élévation (connecteur, macro) la reçoit avant qu'on lise qui est dedans.
@@ -648,11 +656,16 @@ async function onRegionCreated(region) {
   if ( !area ) return;
 
   // Zone d'un sort à concentration : elle tombera avec elle (runtime/concentration.mjs).
-  const effect = concentrationEffectOf(findUsage(area.activity));
+  // §70 : le nuage — à défaut du message, la concentration en cours de son sort.
+  const effect = concentrationEffectOf(findUsage(area.activity))
+    ?? (isCloudRegion(region) ? concentrationOn(fromUuidSync(region.getFlag("dnd5e", "item") ?? "", { strict: false })) : null);
   if ( effect ) {
     await tieRegionToConcentration(region, effect);
     log(`zone rattachée à la concentration « ${effect.name} »`);
   }
+
+  // §70 : le nuage d'un sort à orage ne résout rien — c'est l'éclair, visé dessous, qui le fera.
+  if ( isCloudRegion(region) ) { log("orage : nuage posé, en attente de l'éclair"); return; }
 
   const message = findUsage(area.activity, { unresolved: true });
   if ( !message ) return;

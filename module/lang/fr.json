@@ -1,4 +1,9 @@
 {
+  "DND5ECOMBAT.Orage.Question": "Êtes-vous dehors, par temps d'orage ?",
+  "DND5ECOMBAT.Orage.Aide": "Le sort prend alors le contrôle de l'orage en cours au lieu d'en créer un : dégâts +{bonus}.",
+  "DND5ECOMBAT.Orage.Oui": "Oui, sous l'orage (+{bonus})",
+  "DND5ECOMBAT.Orage.Non": "Non",
+  "DND5ECOMBAT.Orage.Viser": "{item} : choisissez le point où tombe la foudre, sous le nuage (clic droit pour renoncer).",
   "DND5ECOMBAT.MidiActif": "Moteur de combat : Midi-QOL est actif dans ce monde. Le moteur reste en veille (un seul propriétaire de la boucle de combat).",
   "DND5ECOMBAT.SystemeTropAncien": "Moteur de combat : dnd5e {version} détecté, 6.0.0 minimum requis. Le moteur reste en veille.",
   "DND5ECOMBAT.ResolutionInterrompue": "Moteur de combat : résolution interrompue (détail en console). Le plateau de dégâts du système reste utilisable.",

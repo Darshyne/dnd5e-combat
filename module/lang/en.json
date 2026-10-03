@@ -1,4 +1,9 @@
 {
+  "DND5ECOMBAT.Orage.Question": "Are you outdoors in stormy conditions?",
+  "DND5ECOMBAT.Orage.Aide": "The spell then takes control of the existing storm instead of creating a new one: damage +{bonus}.",
+  "DND5ECOMBAT.Orage.Oui": "Yes, under the storm (+{bonus})",
+  "DND5ECOMBAT.Orage.Non": "No",
+  "DND5ECOMBAT.Orage.Viser": "{item}: pick where the lightning strikes, under the cloud (right-click to give up).",
   "DND5ECOMBAT.MidiActif": "Combat engine: Midi-QOL is active in this world. The engine stays idle (a single owner for the combat loop).",
   "DND5ECOMBAT.SystemeTropAncien": "Combat engine: dnd5e {version} detected, 6.0.0 minimum required. The engine stays idle.",
   "DND5ECOMBAT.ResolutionInterrompue": "Combat engine: resolution interrupted (details in console). The system damage tray remains usable.",

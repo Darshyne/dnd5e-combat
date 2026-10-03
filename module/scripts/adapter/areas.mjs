@@ -230,6 +230,8 @@ export async function strikeAgainst(activity, source, token, { flavor="DND5ECOMB
 export async function shrinkToBolt(region) {
   const activity = await fromUuid(region.getFlag("dnd5e", "activity") ?? "");
   const rule = activity?.item ? contentOf(activity.item).entry?.bolt : null;
+  // §70 : un sort à orage pose le nuage (qui reste) puis l'éclair, déjà de sa taille (adapter/storm.mjs).
+  if ( rule && contentOf(activity.item).entry?.storm ) return !!region.getFlag(MODULE_ID, "bolt");
   const center = rule ? shapeCenter(region.shapes?.[0]?.toObject?.() ?? region._source.shapes?.[0]) : null;
   if ( !center ) return false;
   const grid = region.parent.grid;

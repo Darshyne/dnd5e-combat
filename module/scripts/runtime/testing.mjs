@@ -8,6 +8,8 @@
  * canevas (murs, polygones des régions).
  */
 
+import { boltAim, setBoltAim, strike } from "./storm.mjs";
+import { cloudOf, cloudCircle } from "../adapter/storm.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { planPath, stairsOf, cellOf, stairsDestinations } from "../adapter/movement.mjs";
 import { combatantFor, readBudget, movementOf } from "../adapter/turn.mjs";
@@ -295,6 +297,65 @@ function planning() {
     controlled: canvas.tokens?.controlled.map(t => t.name) ?? [] };
 }
 
+/** §70 : le clic de la visée de l'éclair (un point de la scène) : la pose du cœur est fermée, l'éclair posé au point. */
+async function stormStrike({ x, y }) {
+  const aim = boltAim();
+  if ( !aim ) return { struck: false };
+  setBoltAim(null);
+  canvas.regions._cancelPlacement?.();
+  const region = await strike(aim.activity, aim.cloud, { x, y });
+  return { struck: !!region, regionId: region?.id ?? null };
+}
+
+/**
+ * §70 : valide la pose de région en cours (`RegionLayer#placeRegion` : celle de dnd5e pour la zone d'un sort, ou la visée de
+ * l'éclair) au point (x, y) de la scène, comme un clic : la forme y est centrée, puis la fin de `#nextPlacement` est rejouée
+ * (client/canvas/layers/regions.mjs:1146-1191 : création si `create`, sinon le document rendu). Une seule forme.
+ */
+async function placeRegionAt({ x, y }) {
+  const ctx = canvas.regions._placementContext;
+  if ( !ctx ) return { placed: false };
+  const { preview, resolve, create, createOptions, preCommit, destroyPreview, preConfirm, regionIndex, regionCount } = ctx;
+  const document = preview.document;
+  const shape = document.shapes[0]?.toObject?.() ?? null;
+  if ( !shape ) return { placed: false };
+  const center = shapeCenterOf(shape);
+  const moved = (shape.type === "polygon")
+    ? { ...shape, points: shape.points.map((v, i) => v + ((i % 2) ? (y - center.y) : (x - center.x))) }
+    : (shape.type === "rectangle") ? { ...shape, x: x - (shape.width / 2), y: y - (shape.height / 2) } : { ...shape, x, y };
+  document.updateSource({ shapes: [moved] });
+  // Comme `#confirmPlacement` : le rappel du demandeur (dnd5e y relève la forme posée, template-placement.mjs:36).
+  if ( preConfirm && (preConfirm({ event: null, document, regionIndex, regionCount, shape: ctx.shape, shapeIndex: 0, shapeCount: 1 }) === false) ) return { placed: false };
+  // `_cancelPlacement` détruit l'aperçu (son document est celui qu'on rend) : on lui en laisse un factice, et on finit comme le cœur.
+  ctx.resolve = () => {};
+  ctx.preview = { destroyed: true };
+  canvas.regions._cancelPlacement();
+  let region = null;
+  if ( !preCommit || ((await preCommit(Object.freeze([document]))) !== false) ) {
+    if ( create ) region = await CONFIG.Region.documentClass.create(document.toObject(), { controlObject: true, ...(createOptions ?? {}), parent: document.parent });
+    else {
+      region = document;
+      if ( destroyPreview ) { region._object = null; region._destroyed = false; }
+    }
+  }
+  resolve(region);
+  if ( (!region || destroyPreview) && !preview.destroyed ) preview.destroy({ children: true });
+  return { placed: true, regionId: create ? region?.id ?? null : null, shape: moved.type };
+}
+
+const shapeCenterOf = shape => (Array.isArray(shape.points)
+  ? { x: shape.points.filter((_, i) => !(i % 2)).reduce((a, b) => a + b, 0) / (shape.points.length / 2),
+      y: shape.points.filter((_, i) => i % 2).reduce((a, b) => a + b, 0) / (shape.points.length / 2) }
+  : (shape.type === "rectangle") ? { x: shape.x + (shape.width / 2), y: shape.y + (shape.height / 2) } : { x: shape.x, y: shape.y });
+
+/** §70 : l'orage d'un item sur la scène (nuage, « déjà là », visée en cours). */
+function storm({ tokenId, itemId }) {
+  const item = tokenOf({ tokenId }).actor?.items.get(itemId);
+  const cloud = cloudOf(item);
+  return { cloud: cloud ? { id: cloud.id, stormy: !!cloud.getFlag(MODULE_ID, "stormy"), behaviors: cloud.behaviors.map(b => b.type),
+    visibility: cloud.visibility, circle: cloudCircle(cloud) } : null, aiming: !!boltAim() };
+}
+
 /** §67 ter : le clic du moteur pendant la visée d'une téléportation (un point de la scène), sans la souris. */
 function teleportPick({ x, y }) {
   return { picked: teleportClick({ x, y }) };
@@ -546,7 +607,7 @@ async function sequencer({ end=null }={}) {
  * qui la coupe (`create.measuredTemplate: false`). Sans emplacement ; la fenêtre de dnd5e, si elle s'ouvre, est relevée puis validée ; réactions du MJ refusées. Rend la carte
  * d'utilisation et les régions nées de cette activité dans les 3 s (une pose interactive, elle, attendrait un clic : rien).
  */
-async function use({ tokenId, itemId, activityType=null }) {
+async function use({ tokenId, itemId, activityType=null, extra=null }) {
   if ( !game.user.isGM ) throw new Error("réservé au MJ");
   const token = canvas.scene?.tokens.get(tokenId);
   const item = token?.actor?.items.get(itemId);
@@ -561,7 +622,7 @@ async function use({ tokenId, itemId, activityType=null }) {
     setTimeout(() => element.querySelector('button[type="submit"], [data-action="use"]')?.click(), 100);
   });
   let used;
-  try { used = await activity.use({ consume: false, [MODULE_ID]: { confirmed: true, autoReact: "none" } }, { configure: true }); }
+  try { used = await activity.use({ consume: false, [MODULE_ID]: { confirmed: true, autoReact: "none", ...(extra ?? {}) } }, { configure: true }); }
   finally { Hooks.off("renderActivityUsageDialog", hook); }
   for ( let i = 0; (i < 30) && !mine().length; i++ ) await new Promise(r => setTimeout(r, 100));
   return {
@@ -622,4 +683,4 @@ function effectOrigins({ tokenId }) {
   });
 }
 
-export const testApi = Object.freeze({ planning, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use });
+export const testApi = Object.freeze({ planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use });

@@ -185,6 +185,33 @@ async function view({ levelId }) {
   return { viewedLevel: canvas.level?.id ?? null };
 }
 
+/**
+ * §62 : ce que le client voit à l'écran par les yeux d'un token — le MJ en prend le contrôle (sa vision devient celle de ce
+ * token), on lit `isVisible` et le filtre de détection de chaque cible (le contour de l'ouïe, ou d'un mode spécial), puis le
+ * contrôle d'avant est rendu.
+ */
+async function perceived({ observerId, targetIds=[] }) {
+  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  const observer = canvas.tokens.get(observerId);
+  if ( !observer ) throw new Error(`token ${observerId} absent de la scène affichée`);
+  const before = canvas.tokens.controlled.map(t => t.id);
+  observer.control({ releaseOthers: true });
+  canvas.perception.update({ initializeVision: true });
+  await new Promise(resolve => setTimeout(resolve, 400));
+  const out = {};
+  for ( const id of targetIds ) {
+    const token = canvas.tokens.get(id);
+    if ( !token ) continue;
+    const visible = token.isVisible;
+    const color = token.detectionFilter?.uniforms?.outlineColor;
+    out[id] = { name: token.name, visible, filter: visible && token.detectionFilter ? (color ? Array.from(color).map(c => Math.round(c * 100) / 100) : "autre") : null };
+  }
+  observer.release();
+  for ( const id of before ) canvas.tokens.get(id)?.control({ releaseOthers: false });
+  canvas.perception.update({ initializeVision: true });
+  return out;
+}
+
 /** Les items signalés en partie par le MJ (SPEC §9.2), pour le bilan relu par Claude. */
 function reports() {
   return { entries: itemReports(), text: reportsText(itemReports()) };
@@ -553,4 +580,4 @@ function effectOrigins({ tokenId }) {
   });
 }
 
-export const testApi = Object.freeze({ effectOrigins, enchant, overrideContent, heal, hurt, rollSave, threats, attackReasons, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use });
+export const testApi = Object.freeze({ effectOrigins, enchant, overrideContent, heal, hurt, rollSave, threats, attackReasons, perceived, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use });

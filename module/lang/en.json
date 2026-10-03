@@ -261,6 +261,7 @@
   "DND5ECOMBAT.Souci.incapacitated": "Incapacitated: no action, Bonus Action or Reaction can be taken.",
   "DND5ECOMBAT.Souci.charmed": "Charmed by {name}: can't attack them or target them with damage or a magical effect.",
   "DND5ECOMBAT.Souci.notSeen": "{name} can't be seen: this spell targets a creature you can see.",
+  "DND5ECOMBAT.Souci.hiddenTarget": "{name} is hidden: you don't know where it is (find it first).",
   "DND5ECOMBAT.Souci.wrongType": "{name} is not {types}: {item} won't affect it.",
   "DND5ECOMBAT.NonAffecte.type": "unaffected: {types} only",
   "DND5ECOMBAT.NonAffecte.immune": "unaffected: immunity ({status})",

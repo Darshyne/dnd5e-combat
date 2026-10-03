@@ -261,6 +261,7 @@
   "DND5ECOMBAT.Souci.incapacitated": "Neutralisé : aucune action, action Bonus ni Réaction possible.",
   "DND5ECOMBAT.Souci.charmed": "Charmé par {name} : impossible de l'attaquer ou de le cibler avec des dégâts ou un effet magique.",
   "DND5ECOMBAT.Souci.notSeen": "{name} n'est pas en vue : ce sort vise une créature que vous voyez.",
+  "DND5ECOMBAT.Souci.hiddenTarget": "{name} est caché : vous ne savez pas où il est (il faut d'abord le trouver).",
   "DND5ECOMBAT.Souci.wrongType": "{name} n'est pas {types} : {item} ne l'affectera pas.",
   "DND5ECOMBAT.NonAffecte.type": "non affecté : {types} seulement",
   "DND5ECOMBAT.NonAffecte.immune": "non affecté : immunité ({status})",

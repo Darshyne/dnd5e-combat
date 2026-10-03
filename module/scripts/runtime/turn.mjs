@@ -15,6 +15,8 @@ import { verbalBlockOf, charmersOf, hostileToCharmer, sightRequired } from "../a
 import { reactionsBlocked } from "../adapter/reactions.mjs";
 import { conditionUseIssues } from "../core/conditions.mjs";
 import { canSee } from "../adapter/vision.mjs";
+import { hiddenDcOf } from "../adapter/search.mjs";
+import { locationUnknown } from "../core/hearing.mjs";
 import { wrongTypeFor, typesLabel } from "../adapter/eligibility.mjs";
 import { pilotOfActor, summonerCombatant, commandPlan, spellCommandOf, summonsOfWith } from "../adapter/pilot.mjs";
 import { freesMovement } from "../adapter/opportunity.mjs";
@@ -204,7 +206,10 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const charmers = hostileToCharmer(activity) ? charmersOf(activity.actor) : new Set();
   const charmed = aimed.filter(t => charmers.has(t.actor.uuid));
   const unseen = (origin && sightRequired(activity)) ? aimed.filter(t => canSee(origin, t.document) === false) : [];
-  if ( !use.lines.length && !range.blocking.length && !seenBy.length && !wrongType.length && !charmed.length && !unseen.length ) return true;
+  // §62 : une créature cachée, ni vue ni perçue autrement, n'a pas de position connue — pas de cible (une zone, si).
+  const lost = (origin && !activity.target?.template?.type) ? aimed.filter(t => !unseen.includes(t)
+    && locationUnknown({ hidden: hiddenDcOf(t.actor) !== null, sees: canSee(origin, t.document) })) : [];
+  if ( !use.lines.length && !range.blocking.length && !seenBy.length && !wrongType.length && !charmed.length && !unseen.length && !lost.length ) return true;
 
   const lines = [
     ...use.lines,
@@ -212,7 +217,8 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     ...(seenBy.length ? [loc("Souci.hideSeen", { names: seenBy.map(t => t.name).join(", ") })] : []),
     ...wrongType.map(t => loc("Souci.wrongType", { name: t.name, types: typesLabel(t.types), item: activity.item.name })),
     ...charmed.map(t => loc("Souci.charmed", { name: t.name })),
-    ...unseen.map(t => loc("Souci.notSeen", { name: t.name }))
+    ...unseen.map(t => loc("Souci.notSeen", { name: t.name })),
+    ...lost.map(t => loc("Souci.hiddenTarget", { name: t.name }))
   ];
   // Une action tentée hors de son tour est souvent une réaction (attaque d'opportunité).
   const asReaction = !!combatant && !own && (request.cost === "action") && (budget.reaction > 0);

@@ -76,6 +76,7 @@ import { registerPurge } from "./runtime/purge.mjs";
 import { registerFeedback } from "./ui/feedback.mjs";
 import { registerTracker } from "./ui/tracker.mjs";
 import { registerLightIndicator, lightState } from "./ui/illumination.mjs";
+import { registerPerception } from "./ui/perception.mjs";
 import { registerVigor } from "./ui/vigor.mjs";
 import { registerAutomation, reportsApi } from "./ui/automation.mjs";
 import { uiApi } from "./ui/api.mjs";
@@ -195,6 +196,7 @@ Hooks.once("init", () => {
   registerFeedback();
   registerTracker();
   registerLightIndicator();
+  registerPerception();   // §62 : la brume cache à l'écran, l'ouïe montre ce qu'on entend
   registerVigor();
   registerCureUi();
   registerKindleUi();   // §52 : boîte à amadou

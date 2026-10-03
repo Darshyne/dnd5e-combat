@@ -2,7 +2,7 @@
   "id": "dnd5e-combat",
   "title": "darsh-dnd · Core (moteur de règles et de combat D&D 5.5)",
   "description": "Cœur de la suite darsh-dnd pour dnd5e 6.x : boucle de combat, résolution, réactions, déplacement et menu contextuel, vision et lumière des règles. Publie une API pour les modules voisins (interface, butin). Exclusif vis-à-vis de Midi-QOL.",
-  "version": "0.167.0",
+  "version": "0.168.0",
   "authors": [
     {
       "name": "Darshyne"

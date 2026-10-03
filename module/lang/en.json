@@ -597,6 +597,8 @@
   "DND5ECOMBAT.Chatiment.TitreFaveur": "On hit — {name}",
   "DND5ECOMBAT.Chatiment.QuestionFaveur": "You hit {name}. Add a feature to the hit?",
   "DND5ECOMBAT.Espece.Acharnement": "{item}: 1 HP",
+  "DND5ECOMBAT.Robustesse.Carte": "{item}: Constitution saving throw, DC {dc}",
+  "DND5ECOMBAT.Robustesse.Reussite": "{item}: 1 HP",
   "DND5ECOMBAT.Chatiment.AucuneFaveur": "Nothing",
   "DND5ECOMBAT.Metamagie.Retenue": "Metamagic kept: {item}",
   "DND5ECOMBAT.Inspiration.Nom": "Bardic Inspiration",

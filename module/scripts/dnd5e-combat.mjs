@@ -31,6 +31,7 @@ import { registerProjectiles } from "./runtime/projectiles.mjs";
 import { registerAuras } from "./runtime/auras.mjs";
 import { registerEmanations } from "./runtime/emanations.mjs";
 import { registerRegeneration } from "./runtime/regeneration.mjs";
+import { registerFortitude } from "./runtime/fortitude.mjs";
 import { registerDrain } from "./runtime/drain.mjs";
 import { registerEmpower } from "./runtime/empower.mjs";
 import { registerDischarge } from "./runtime/discharge.mjs";
@@ -152,6 +153,7 @@ Hooks.once("init", () => {
   registerAuras();
   registerEmanations();
   registerRegeneration();
+  registerFortitude();   // §61 : Robustesse de la non-vie (la sauvegarde due part avec les PV, adapter/death.mjs)
   registerDrain();
   registerEmpower();   // §19.9 : Morsure vampirique (Dhampir)
   registerDischarge();   // §19.9 : Chemin vers la tombe, fin anticipée de la malédiction

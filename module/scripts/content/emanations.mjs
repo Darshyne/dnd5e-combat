@@ -27,6 +27,9 @@ export const EMANATIONS = Object.freeze({
 /** M8 (§18.13) : Régénération — Trolls, Slaads, Oni, Gardien du bouclier, Revenant (le texte dit le reste). */
 export const REGENERATIONS = Object.freeze(["regeneration"]);
 
+/** §61 : Robustesse de la non-vie — Zombi, Zombi ogre, Zombi tyrannœil (core/fortitude.mjs). */
+export const FORTITUDES = Object.freeze(["undead-fortitude"]);
+
 /** M8 (§18.15) : ne provoque pas d'attaque d'opportunité (adapter/opportunity.mjs). */
 /**
  * M8 (§18.16) : drain du maximum de PV. « bite » et « slam » sont des identifiants partagés : seul l'item dont le texte

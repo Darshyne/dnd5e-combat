@@ -23,6 +23,7 @@ import { transformsAtZero, standsAtZero } from "./coven.mjs";
 import { regenerationOf } from "./regeneration.mjs";
 import { relentlessAtZero } from "./rage.mjs";
 import { endureAtZero } from "./species.mjs";
+import { planFortitude, pendingFortitude } from "./fortitude.mjs";
 
 export const DEATH_QUERY = `${MODULE_ID}.deathSave`;
 const DEATH_TIMEOUT = 40000;
@@ -40,7 +41,7 @@ const regeneratesAtZero = actor => !!regenerationOf(actor)?.survivesZero;
 export function isDeadActor(actor) {
   const hp = actor?.system?.attributes?.hp;
   if ( !actor || !hp ) return !!actor?.statuses?.has("dead");
-  return isDead({ hp: hp.value, saves: savesOf(actor) || regeneratesAtZero(actor) || transformsAtZero(actor) || standsAtZero(actor), statuses: Array.from(actor.statuses) });
+  return isDead({ hp: hp.value, saves: savesOf(actor) || regeneratesAtZero(actor) || transformsAtZero(actor) || standsAtZero(actor) || !!pendingFortitude(actor), statuses: Array.from(actor.statuses) });
 }
 
 /** Le message de dégâts est-il un coup critique ? */
@@ -120,8 +121,8 @@ export async function ensureDowned(actor, { afterUpdate=false }={}) {
   const hp = actor?.system?.attributes?.hp;
   if ( !hp ) return null;
   // §19.5 : une créature à seconde phase ne tombe pas, elle change de forme (runtime/coven.mjs).
-  // §22 : Rage implacable — la sauvegarde de Constitution décide d'abord (runtime/barbarian.mjs).
-  if ( (hp.value <= 0) && (transformsAtZero(actor) || standsAtZero(actor) || relentlessAtZero(actor)) ) return null;
+  // §22 : Rage implacable — la sauvegarde de Constitution décide d'abord (runtime/barbarian.mjs) ; §61 : Robustesse de la non-vie.
+  if ( (hp.value <= 0) && (transformsAtZero(actor) || standsAtZero(actor) || relentlessAtZero(actor) || pendingFortitude(actor)) ) return null;
   const regenerates = (hp.value <= 0) && regeneratesAtZero(actor);
   if ( regenerates ) await dropAutoDead(actor);
   const status = downedStatus({ hp: hp.value, saves: savesOf(actor), statuses: Array.from(actor.statuses),
@@ -176,6 +177,9 @@ export function planDamageAtZero(actor, amount, updates, options) {
     return;
   }
   const critical = isCriticalDamage(options);
+  // §61 : Robustesse de la non-vie — la sauvegarde due part avec les PV ; ni échec ni mort tant qu'elle n'est pas jouée.
+  const taken = incoming;
+  if ( planFortitude(actor, { hp: hp.value, through, taken, types: options?.[MODULE_ID]?.takenTypes ?? [], critical }, updates) ) return;
   const outcome = damageAtZero({ hp: hp.value, max: hp.max, through, critical, failures: death.failure ?? 0, saves: savesOf(actor) });
   if ( !outcome.dead && (outcome.failures === null) ) return;
   if ( outcome.failures !== null ) updates["system.attributes.death.failure"] = outcome.failures;

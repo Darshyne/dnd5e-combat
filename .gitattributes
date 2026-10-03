@@ -1,0 +1,40 @@
+# Fins de ligne: LF dans le depot ET dans la copie de travail.
+#
+# "* text=auto" seul ne suffit pas: il normalise l'historique, mais core.autocrlf=true (regle
+# globale de ce PC) reecrit quand meme la copie de travail en CRLF au checkout. C'est ce qui
+# avait mordu coc7-dialogues 0.12.1: une edition scriptee cherchant un motif avec des \n
+# litteraux ne trouve rien et echoue en silence, sans message d'erreur. D'ou "eol=lf".
+#
+# Depots partages Mac <-> PC: le LF partout evite aussi les diffs fantomes ou un fichier
+# entier apparait modifie alors que rien n'a change.
+* text=auto eol=lf
+
+# Compendiums Foundry: magasins LevelDB binaires. Certains de leurs fichiers (LOG, CURRENT,
+# MANIFEST) ont l'air textuels mais ne doivent JAMAIS passer par la normalisation, sinon le
+# pack se corrompt. Regle valable a n'importe quelle profondeur, packs/ pouvant etre imbrique
+# dans un sous-dossier de module.
+**/packs/** -text
+
+# Binaires: l'autodetection de git suffit d'ordinaire, mais autant etre explicite sur les
+# fichiers qu'une conversion abimerait sans bruit.
+*.zip binary
+*.mcpb binary
+*.webp binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.mp3 binary
+*.ogg binary
+*.wav binary
+*.webm binary
+*.mp4 binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+
+# Les .bat sont lus par cmd.exe, qui attend des CRLF: seule exception a la regle du haut.
+*.bat text eol=crlf

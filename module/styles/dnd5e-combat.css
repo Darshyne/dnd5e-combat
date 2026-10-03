@@ -1,0 +1,159 @@
+.dnd5e-combat-result {
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-left: 3px solid var(--color-border-dark-5, #666);
+  font-size: var(--font-size-13, 13px);
+}
+.dnd5e-combat-result p { margin: 0; }
+.dnd5e-combat-result .hit { font-weight: bold; }
+.dnd5e-combat-result .miss { opacity: 0.7; }
+.dnd5e-combat-result .undone { text-decoration: line-through; opacity: 0.6; }
+.dnd5e-combat-result .note { font-style: italic; }
+.dnd5e-combat-result button { margin-top: 4px; line-height: 1.6; }
+.dnd5e-combat-result .pending { font-style: italic; opacity: 0.7; }
+
+/* Journal allégé (réglage chatLight, ui/chat.mjs) : une carte hors de la zone visible du journal n'est ni mise en page
+   ni dessinée ; sa hauteur réelle est retenue une fois vue (auto), 120px en attendant. */
+body.dnd5e-combat-chat-light .chat-log > .message { content-visibility: auto; contain-intrinsic-size: auto 120px; }
+body.dnd5e-combat-chat-light #chat-notifications .message { content-visibility: visible; }   /* les messages qui s'affichent en surimpression, toujours vus */
+
+/* Carte unique (réglage chatCompact, ui/compact.mjs) : les jets d'attaque et de dégâts d'une action sont repliés dans sa carte. */
+body.dnd5e-combat-compact .chat-message.dnd5e-combat-folded { display: none; }
+.dnd5e-combat-rolls { border-bottom: none; }
+.dnd5e-combat-rolls .dnd5e-combat-details { font-size: var(--font-size-11, 11px); line-height: 1.4; padding: 0 6px; width: auto; }
+
+.dnd5e-combat-budget { display: flex; flex: 0 0 100%; align-items: center; gap: 4px; padding: 2px 8px 4px; font-size: var(--font-size-11, 11px); }
+.dnd5e-combat-budget .pip { width: 18px; height: 18px; line-height: 16px; padding: 0; border-radius: 50%; border: 1px solid currentColor; text-align: center; font-weight: bold; background: none; color: inherit; flex: none; }
+.dnd5e-combat-budget .pip.spent { opacity: 0.3; text-decoration: line-through; }
+.dnd5e-combat-budget button.pip { cursor: pointer; }
+.dnd5e-combat-budget .movement { margin-left: auto; }
+.dnd5e-combat-budget .movement.over { color: var(--color-level-error, #c33); font-weight: bold; }
+.dnd5e-combat-budget .dash { flex: none; width: auto; height: 18px; line-height: 16px; padding: 0 6px; font-size: inherit; }
+#combat li.combatant:has(.dnd5e-combat-budget) { flex-wrap: wrap; }
+
+/* ---- souris : mode visée et menu contextuel ---- */
+body.dnd5e-combat-targeting #board { cursor: crosshair !important; }
+
+/* Réticule d'invite (ui/pointer.mjs, showReticle) : grand anneau qui pulse, motif dessous ; rouge sur une cible refusée. */
+body.dnd5e-combat-prompt #board { cursor: none !important; }
+.dnd5e-combat-reticle { position: fixed; z-index: 10000; pointer-events: none; width: 0; height: 0; }
+.dnd5e-combat-reticle[hidden] { display: none; }
+.dnd5e-combat-reticle .ring {
+  position: absolute; left: -30px; top: -30px; width: 60px; height: 60px; border-radius: 50%;
+  border: 3px solid #ffb347; box-shadow: 0 0 12px #ffb347, inset 0 0 8px rgba(255, 179, 71, 0.6);
+  animation: dnd5e-combat-pulse 0.9s ease-in-out infinite;
+}
+.dnd5e-combat-reticle .cross::before, .dnd5e-combat-reticle .cross::after {
+  content: ""; position: absolute; background: #ffb347; box-shadow: 0 0 3px #000;
+}
+.dnd5e-combat-reticle .cross::before { left: -12px; top: -1px; width: 24px; height: 2px; }
+.dnd5e-combat-reticle .cross::after { left: -1px; top: -12px; width: 2px; height: 24px; }
+.dnd5e-combat-reticle .label {
+  position: absolute; top: 38px; left: 0; transform: translateX(-50%); white-space: nowrap;
+  font: 700 16px var(--font-primary, sans-serif); color: #ffb347; text-shadow: 0 0 3px #000, 0 0 6px #000, 0 0 2px #000;
+}
+.dnd5e-combat-reticle.refused .ring { border-color: #ff5a5a; box-shadow: 0 0 12px #ff5a5a, inset 0 0 8px rgba(255, 90, 90, 0.6); }
+.dnd5e-combat-reticle.refused .cross::before, .dnd5e-combat-reticle.refused .cross::after { background: #ff5a5a; }
+.dnd5e-combat-reticle.refused .label { color: #ff7070; }
+@keyframes dnd5e-combat-pulse {
+  0%, 100% { transform: scale(0.85); opacity: 1; }
+  50% { transform: scale(1.25); opacity: 0.55; }
+}
+.dnd5e-combat-menu {
+  position: fixed; z-index: 1000; min-width: 180px; padding: 4px;
+  display: flex; flex-direction: column; gap: 2px;
+  background: rgba(20, 18, 16, 0.95); border: 1px solid #7a6a4f; border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+}
+.dnd5e-combat-menu button {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 10px;
+  border: none; border-radius: 4px; background: transparent; color: #e8e0d0;
+  font-size: 13px; text-align: left; cursor: pointer; line-height: 1.4;
+}
+.dnd5e-combat-menu button:hover { background: rgba(200, 160, 80, 0.25); }
+.dnd5e-combat-menu button i { width: 16px; text-align: center; color: #c8a050; }
+
+/* ---- chance de toucher près du curseur (§15.3) ---- */
+.dnd5e-combat-hitchance {
+  position: fixed; z-index: 1000; pointer-events: none; max-width: 280px; padding: 4px 10px 5px;
+  background: rgba(20, 18, 16, 0.92); border: 1px solid #7a6a4f; border-radius: 6px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6); color: #e8e0d0; font-size: 12px; line-height: 1.35;
+}
+.dnd5e-combat-hitchance[hidden] { display: none; }
+.dnd5e-combat-hitchance .percent { font-size: 20px; font-weight: bold; }
+.dnd5e-combat-hitchance.good .percent { color: #8fd18f; }
+.dnd5e-combat-hitchance.fair .percent { color: #e6c35c; }
+.dnd5e-combat-hitchance.poor .percent { color: #e07a6a; }
+.dnd5e-combat-hitchance .detail { opacity: 0.8; }
+.dnd5e-combat-hitchance .advantage { color: #8fd18f; }
+.dnd5e-combat-hitchance .disadvantage { color: #e07a6a; }
+
+/* ---- curseur selon la situation (§15.3) : posé par ui/pointer.mjs sur body ---- */
+body[data-dnd5e-combat-cursor="move"] #board { cursor: url("../assets/cursors/move.svg") 2 2, pointer !important; }
+body[data-dnd5e-combat-cursor="stairs"] #board { cursor: url("../assets/cursors/stairs.svg") 2 2, pointer !important; }
+body[data-dnd5e-combat-cursor="melee"] #board { cursor: url("../assets/cursors/melee.svg") 2 2, crosshair !important; }
+body[data-dnd5e-combat-cursor="ranged"] #board { cursor: url("../assets/cursors/ranged.svg") 16 16, crosshair !important; }
+body[data-dnd5e-combat-cursor="spell"] #board { cursor: url("../assets/cursors/spell.svg") 7 7, crosshair !important; }
+body[data-dnd5e-combat-cursor="outOfRange"] #board { cursor: url("../assets/cursors/out-of-range.svg") 16 16, not-allowed !important; }
+body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors/invalid.svg") 16 16, not-allowed !important; }
+
+/* ---- fenêtres du combat : compte à rebours avant résolution automatique ---- */
+.dnd5e-combat-countdown { margin: 8px 0 0; }
+.dnd5e-combat-countdown .track { height: 8px; border-radius: 4px; overflow: hidden;
+  background: rgba(0, 0, 0, 0.35); border: 1px solid var(--color-border-light-2, #7a7971); }
+.dnd5e-combat-countdown .bar { height: 100%; transform-origin: left center; background: #6fbf5f;
+  transition: transform 1s linear, background-color 0.5s; }
+.dnd5e-combat-countdown[data-level="mid"] .bar { background: #e6c35c; }
+.dnd5e-combat-countdown[data-level="low"] .bar { background: #e07a6a; }
+.dnd5e-combat-countdown .label { display: block; margin-top: 3px; font-size: 12px; font-style: italic; opacity: 0.75; text-align: right; }
+
+/* fenêtre de réaction : plus grande, plus lisible */
+.dnd5e-combat-reaction .window-content { font-size: 1.15em; }
+.dnd5e-combat-reaction .window-content p { margin: 0.4em 0; line-height: 1.4; }
+.dnd5e-combat-reaction .form-footer button { min-height: 40px; font-size: 1em; }
+.dnd5e-combat-reaction .dnd5e-combat-countdown .track { height: 12px; border-radius: 6px; }
+
+/* §16.39 : formes connues d'un druide */
+.dnd5e-combat-forms { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin: 6px 0; }
+.dnd5e-combat-form { position: relative; display: flex; flex-direction: column; align-items: center; padding: 6px; border-radius: 6px;
+  border: 1px solid var(--color-border-light-2, #7a7971); cursor: pointer; text-align: center; }
+.dnd5e-combat-form:hover { border-color: var(--color-border-highlight, #ff6400); box-shadow: 0 0 6px var(--color-shadow-highlight, #ff6400); }
+.dnd5e-combat-form img { width: 72px; height: 72px; object-fit: contain; border: none; }
+.dnd5e-combat-form .name { font-weight: bold; font-size: 0.9em; line-height: 1.1; margin-top: 4px; }
+.dnd5e-combat-form .cr { font-size: 0.8em; opacity: 0.8; }
+.dnd5e-combat-form.refused { opacity: 0.4; cursor: not-allowed; }
+.dnd5e-combat-form .forget { position: absolute; top: 2px; right: 4px; opacity: 0.6; cursor: pointer; }
+.dnd5e-combat-form .forget:hover { opacity: 1; }
+
+/* §16.44 : ligne d'aide du menu (actions offensives cachées) */
+.dnd5e-combat-menu .hint { padding: 4px 10px; font-size: 0.85em; opacity: 0.7; font-style: italic; border-top: 1px solid rgba(200, 160, 80, 0.3); }
+.dnd5e-combat-menu .hint i { width: 16px; text-align: center; color: #c8a050; }
+
+/* §9.2 : pastille d'automatisation et drapeau de signalement sur la fiche d'acteur (ui/automation.mjs), MJ seulement. */
+.dnd5e-combat-auto { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; flex: none; }
+.dnd5e-combat-auto .badge {
+  display: inline-flex; align-items: center; gap: 3px; padding: 0 5px; border-radius: 8px;
+  font-size: 0.65rem; line-height: 14px; font-weight: 600; text-transform: lowercase; white-space: nowrap; cursor: help;
+  border: 1px solid transparent;
+}
+.dnd5e-combat-auto .badge i { font-size: 0.6rem; }
+.dnd5e-combat-auto .badge.rule { background: #ece1fb; color: #5b2f9a; border-color: #b494e0; }
+.dnd5e-combat-auto .badge.auto { background: #dff1e3; color: #23683a; border-color: #8cc79c; }
+.dnd5e-combat-auto .badge.passive { background: #e3edf7; color: #2d5a86; border-color: #9dbbd9; }
+.dnd5e-combat-auto .badge.manual { background: #f6e3dc; color: #8a3b22; border-color: #d9a591; }
+.dnd5e-combat-auto .flag { font-size: 0.75rem; color: #9a9384; opacity: 0.55; cursor: pointer; }
+.dnd5e-combat-auto .flag:hover { opacity: 1; color: #c0392b; }
+.dnd5e-combat-auto .flag.on { opacity: 1; color: #c0392b; }
+.theme-dark .dnd5e-combat-auto .badge.rule { background: #3b2a55; color: #d6c0f5; border-color: #6d4ea0; }
+.theme-dark .dnd5e-combat-auto .badge.auto { background: #1f3a28; color: #a9e0b8; border-color: #3f7a52; }
+.theme-dark .dnd5e-combat-auto .badge.passive { background: #1f3246; color: #aecbe8; border-color: #3f6386; }
+.theme-dark .dnd5e-combat-auto .badge.manual { background: #452a20; color: #efbca8; border-color: #8a4f39; }
+
+/* §9.2 : panneau « Bilan de la partie » */
+.dnd5e-combat-reports .window-content { gap: 8px; }
+.dnd5e-combat-reports h3 { margin: 6px 0 2px; font-size: 1.1em; border-bottom: 1px solid var(--color-border-light-2, #7a7971); }
+.dnd5e-combat-reports ul { list-style: none; margin: 0; padding: 0; }
+.dnd5e-combat-reports li { display: grid; grid-template-columns: 1fr auto auto; gap: 2px 8px; align-items: baseline; padding: 3px 0; }
+.dnd5e-combat-reports li .note { grid-column: 1 / -1; grid-row: 2; font-style: italic; opacity: 0.85; }
+.dnd5e-combat-reports li .when { font-size: 0.8em; opacity: 0.6; }
+.dnd5e-combat-reports .form-footer { display: flex; gap: 6px; }

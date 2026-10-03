@@ -1,0 +1,16 @@
+{
+  "name": "dnd5e-combat",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "scenario": "node tools/scenario.mjs",
+    "packs": "node tools/packs.mjs",
+    "dist": "node tools/dist.mjs"
+  },
+  "devDependencies": {
+    "@foundryvtt/foundryvtt-cli": "^3.0.4",
+    "classic-level": "^3.0.0",
+    "vitest": "^3.0.0"
+  }
+}

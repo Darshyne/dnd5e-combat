@@ -1,0 +1,76 @@
+{
+  "id": "dnd5e-combat",
+  "title": "darsh-dnd · Core (moteur de règles et de combat D&D 5.5)",
+  "description": "Cœur de la suite darsh-dnd pour dnd5e 6.x : boucle de combat, résolution, réactions, déplacement et menu contextuel, vision et lumière des règles. Publie une API pour les modules voisins (interface, butin). Exclusif vis-à-vis de Midi-QOL.",
+  "version": "0.166.0",
+  "authors": [
+    {
+      "name": "Darshyne"
+    }
+  ],
+  "url": "https://github.com/Darshyne/dnd5e-combat",
+  "license": "https://github.com/Darshyne/dnd5e-combat/blob/main/LICENSE",
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14.367"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "6.0.0"
+        }
+      }
+    ],
+    "conflicts": [
+      {
+        "id": "midi-qol",
+        "type": "module",
+        "reason": "Un seul propriétaire de la boucle de combat."
+      }
+    ]
+  },
+  "esmodules": [
+    "scripts/dnd5e-combat.mjs"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    },
+    {
+      "lang": "fr",
+      "name": "Français",
+      "path": "lang/fr.json"
+    }
+  ],
+  "styles": [
+    "styles/dnd5e-combat.css"
+  ],
+  "packs": [
+    {
+      "name": "outils",
+      "label": "darsh-dnd · Outils du MJ",
+      "path": "packs/outils",
+      "type": "Macro",
+      "system": "dnd5e",
+      "ownership": {
+        "PLAYER": "NONE",
+        "ASSISTANT": "OWNER"
+      },
+      "flags": {}
+    }
+  ],
+  "packFolders": [
+    {
+      "name": "darsh-dnd",
+      "sorting": "m",
+      "packs": [
+        "outils"
+      ]
+    }
+  ]
+}

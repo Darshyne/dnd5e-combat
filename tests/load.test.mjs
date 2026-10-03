@@ -29,7 +29,7 @@ describe("chargement du module", () => {
   });
 
   it("expose ses fonctions de test au connecteur sous api.mcp (call-module-api), et elles seules", () => {
-    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "attackReasons", "budget", "chatCards", "closeWindow", "dash", "effectOrigins", "enchant", "endings", "follow", "followState", "heal", "hurt", "identify", "move", "movement", "overrideContent", "plan", "portent", "reload", "reports", "restoreItem", "rollCard", "rollSave", "runMacro", "saveChance", "sequencer", "setting", "stairs", "stairsAt", "stats", "status", "summonAt", "takeStairs", "teleport", "threats", "transpose", "unfollow", "use", "view", "windows"]);
+    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "attackReasons", "budget", "chatCards", "closeWindow", "dash", "effectOrigins", "enchant", "endings", "follow", "followState", "heal", "hurt", "identify", "move", "movement", "overrideContent", "perceived", "plan", "portent", "reload", "reports", "restoreItem", "rollCard", "rollSave", "runMacro", "saveChance", "sequencer", "setting", "stairs", "stairsAt", "stats", "status", "summonAt", "takeStairs", "teleport", "threats", "transpose", "unfollow", "use", "view", "windows"]);
     expect(Object.isFrozen(api.api.mcp)).toBe(true);
   });
 

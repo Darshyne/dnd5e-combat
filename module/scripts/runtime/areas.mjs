@@ -1,5 +1,6 @@
 import { turnKeyOf, shouldTrigger, markHit, entersArea, stepsInside } from "../core/area.mjs";
 import { MODULE_ID } from "../constants.mjs";
+import { contentOf } from "../adapter/content.mjs";
 import { readAreaState, writeAreaState, lastingRegions, isInside, replayAgainst, noteExpiry, expiredRegions } from "../adapter/areas.mjs";
 import { positionOf as position } from "../adapter/turn.mjs";
 import { noteSummonExpiry, expiredSummons } from "../adapter/summons.mjs";
@@ -38,6 +39,18 @@ function tick(region, token, event, turnKey=currentTurnKey(), { times=1 }={}) {
     log(`${region.name} : ${token.name} (${event})`);
     announce(event, { actor: token.actor, target: token.actor, region: region.uuid, usage: state.usage });
     await replayAgainst(usageMessage, token, { region: region.uuid, event, ...(times > 1 ? { times } : {}) }, { activity: state.activity ?? null });
+    // §75 : une zone à nombre de déclenchements (`zoneCharges` : Cordon de flèches, 4 projectiles) tombe au dernier.
+    const charges = contentOf(usageMessage.getAssociatedActivity?.()?.item).entry?.zoneCharges;
+    if ( charges ) {
+      const fired = (Number(readAreaState(region)?.fired) || 0) + 1;
+      if ( fired >= charges ) {
+        log(`${region.name} : ${fired}/${charges} déclenchements, la zone prend fin`);
+        await region.delete();
+      } else {
+        await writeAreaState(region, { ...readAreaState(region), fired });
+        log(`${region.name} : ${fired}/${charges} déclenchements`);
+      }
+    }
   });
 }
 

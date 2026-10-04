@@ -43,6 +43,10 @@ export const TRIGGERS = Object.freeze({
   "moonbeam": [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }],
   "spirit-guardians": [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }],
   "cloud-of-daggers": [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }],
+  // §75 : Cordon de flèches (version simple, demandée par l'utilisateur) — la sphère de 9 m que pose l'action du sort ; une créature qui y
+  // entre ou y termine son tour reçoit un projectile : la sauvegarde de Dextérité de l'activité sœur (2d4 perforants). Quatre
+  // projectiles (`zoneCharges`, content/spell-rules.mjs), puis le sort prend fin. Les créatures désignées à épargner : au MJ.
+  "cordon-of-arrows": [{ on: ["enter", "turnEnd"], do: [{ type: "replay", activity: "dnd5eactivity000" }] }],
   // Croissance d'épines (§16.20) : « 2d4 perforants pour chaque tranche de 1,50 m parcourue » en y entrant ou dedans.
   "spike-growth": [{ on: "moves", do: [{ type: "replay" }] }],
   "wall-of-fire": [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }],

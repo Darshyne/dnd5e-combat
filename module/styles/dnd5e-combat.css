@@ -110,7 +110,11 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 /* fenêtre de réaction : plus grande, plus lisible */
 .dnd5e-combat-reaction .window-content { font-size: 1.15em; }
 .dnd5e-combat-reaction .window-content p { margin: 0.4em 0; line-height: 1.4; }
-.dnd5e-combat-reaction .form-footer button { min-height: 40px; font-size: 1em; }
+/* §75 : un bouton par ligne, sur toute la largeur — les noms longs (« Bracelet de charme : Protection contre la mort ») passent à
+   la ligne au lieu de déborder. */
+.dnd5e-combat-reaction .form-footer { flex-direction: column; align-items: stretch; gap: 4px; }
+.dnd5e-combat-reaction .form-footer button { min-height: 36px; height: auto; font-size: 1em; white-space: normal; line-height: 1.25;
+  padding: 6px 12px; justify-content: flex-start; text-align: left; }
 .dnd5e-combat-reaction .dnd5e-combat-countdown .track { height: 12px; border-radius: 6px; }
 
 /* §16.39 : formes connues d'un druide */

@@ -202,7 +202,9 @@ export async function askReaction(actor, payload) {
 function activityLabel(d, step) {
   if ( !step.activity ) return d.name;
   const activity = fromUuidSync(`${d.item}.Activity.${step.activity}`, { strict: false });
-  const own = activity?.name || (activity?.type === "cast" ? fromUuidSync(activity.spell?.uuid ?? "", { strict: false })?.name : null);
+  // Le sort d'une activité « cast » : sa copie sur la fiche (traduite par Babele), sinon le compendium (son index peut être en anglais).
+  const own = activity?.name || (activity?.type === "cast"
+    ? (activity.cachedSpell?.name ?? fromUuidSync(activity.spell?.uuid ?? "", { strict: false })?.name) : null);
   return own ? `${d.name} : ${own}` : d.name;
 }
 

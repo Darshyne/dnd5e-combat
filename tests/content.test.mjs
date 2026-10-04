@@ -152,26 +152,26 @@ describe("contenu livré", () => {
       "calm-emotions", "candle", "careful-spell", "cause-fear", "celestial-revelation", "channel-divinity",
       "channel-divinity-cleric", "charging-horn", "charm-monster", "charm-person", "chill-touch", "chromatic-orb",
       "circle-of-mortality", "cloud-of-daggers", "clouds-jaunt", "command", "confusion", "conjure-animals", "contagion",
-      "continual-flame", "corrosive-form", "cosmic-omen", "counterspell", "crown-of-madness", "cunning-action",
-      "cunning-strike", "cutting-words", "dancing-lights", "dark-ones-blessing", "dark-ones-own-luck", "darkness",
-      "daylight", "death-burst", "death-throes", "death-ward", "deathless-agility", "deflect-attacks", "devious-strikes",
-      "dimension-door", "disciple-of-life", "dispel-magic", "distant-spell", "divine-fury", "divine-smite",
-      "dominate-beast", "dominate-monster", "dominate-person", "draining-kiss", "dread-ambusher", "dreadful-strikes",
-      "dwarven-resilience", "earthquake", "eldritch-blast", "eldritch-smite", "elemental-affinity", "elemental-fury",
-      "elemental-weapon", "elixir-of-health", "elusive", "empowered-evocation", "energy-drain", "engulf", "enhance-ability",
-      "enlarge-reduce", "ensnaring-strike", "entangle", "entangling-trail", "evards-black-tentacles", "evasion", "eyebite",
-      "faerie-fire", "fear", "fear-aura", "fell-word", "feral-strike", "fetid-aura", "fey-ancestry", "find-familiar",
-      "fire-aura", "fire-shield", "fires-burn", "flame-aura", "flame-blade", "flaming-sphere", "flask-of-holy-water",
-      "flesh-to-stone", "flyby", "foe-slayer", "fog-cloud", "forceful-hand", "frenzied-rush", "frenzy", "friends",
-      "frosts-chill", "gaseous-form", "giant-insect", "gibbering", "grasping-hand", "grease", "great-weapon-fighting",
-      "great-weapon-master", "greater-portent", "guidance", "guiding-bolt", "gust-of-wind", "haste", "healers-kit",
-      "heat-aura", "heat-metal", "heightened-spell", "hellish-rebuke", "heroic-warrior", "hex", "hideous-laughter",
-      "hills-tumble", "hold-monster", "hold-person", "holy-water", "hunters-mark", "hunters-prey", "hypnotic-pattern",
-      "ice-knife", "illusory-self", "improved-cunning-strike", "innate-sorcery", "instinctive-pounce", "invisibility",
-      "invoke-duplicity", "lamp", "lantern-hooded", "large-form", "leading-evasion", "lesser-restoration", "life-drain",
-      "lifedrinker", "light", "lunar-form", "mage-hand", "magic-missile", "magic-resistance", "marshal-undead",
-      "martial-arts", "melfs-acid-arrow", "mind-sliver", "minor-illusion", "mirror-image", "mislead", "misty-step",
-      "monks-focus", "moonbeam", "moonlight-step", "nimble-escape", "oil", "open-hand-technique",
+      "continual-flame", "cordon-of-arrows", "corrosive-form", "cosmic-omen", "counterspell", "crown-of-madness",
+      "cunning-action", "cunning-strike", "cutting-words", "dancing-lights", "dark-ones-blessing", "dark-ones-own-luck",
+      "darkness", "daylight", "death-burst", "death-throes", "death-ward", "deathless-agility", "deflect-attacks",
+      "devious-strikes", "dimension-door", "disciple-of-life", "dispel-magic", "distant-spell", "divine-fury",
+      "divine-smite", "dominate-beast", "dominate-monster", "dominate-person", "draining-kiss", "dread-ambusher",
+      "dreadful-strikes", "dwarven-resilience", "earthquake", "eldritch-blast", "eldritch-smite", "elemental-affinity",
+      "elemental-fury", "elemental-weapon", "elixir-of-health", "elusive", "empowered-evocation", "energy-drain", "engulf",
+      "enhance-ability", "enlarge-reduce", "ensnaring-strike", "entangle", "entangling-trail", "evards-black-tentacles",
+      "evasion", "eyebite", "faerie-fire", "fear", "fear-aura", "fell-word", "feral-strike", "fetid-aura", "fey-ancestry",
+      "find-familiar", "fire-aura", "fire-shield", "fires-burn", "flame-aura", "flame-blade", "flaming-sphere",
+      "flask-of-holy-water", "flesh-to-stone", "flyby", "foe-slayer", "fog-cloud", "forceful-hand", "frenzied-rush",
+      "frenzy", "friends", "frosts-chill", "gaseous-form", "giant-insect", "gibbering", "grasping-hand", "grease",
+      "great-weapon-fighting", "great-weapon-master", "greater-portent", "guidance", "guiding-bolt", "gust-of-wind",
+      "haste", "healers-kit", "heat-aura", "heat-metal", "heightened-spell", "hellish-rebuke", "heroic-warrior", "hex",
+      "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-water", "hunters-mark", "hunters-prey",
+      "hypnotic-pattern", "ice-knife", "illusory-self", "improved-cunning-strike", "innate-sorcery", "instinctive-pounce",
+      "invisibility", "invoke-duplicity", "lamp", "lantern-hooded", "large-form", "leading-evasion", "lesser-restoration",
+      "life-drain", "lifedrinker", "light", "lunar-form", "mage-hand", "magic-missile", "magic-resistance",
+      "marshal-undead", "martial-arts", "melfs-acid-arrow", "mind-sliver", "minor-illusion", "mirror-image", "mislead",
+      "misty-step", "monks-focus", "moonbeam", "moonlight-step", "nimble-escape", "oil", "open-hand-technique",
       "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade", "parry", "pass-without-trace", "path-to-the-grave",
       "persistent-rage", "phantasmal-force", "phantasmal-killer", "portent", "potent-cantrip",
       "potion-of-animal-friendship", "potion-of-climbing", "potion-of-diminution", "potion-of-flying", "potion-of-growth",
@@ -617,5 +617,13 @@ describe("§74 : dégâts qui dépensent un effet", () => {
   it("spends : un id d'effet", () => {
     expect(validateEntry({ triggers: [{ on: "preDamageRoll", do: [{ type: "damage", formula: "1d8", damageType: "force", spends: "abcdefghijklmnop" }] }] })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "preDamageRoll", do: [{ type: "damage", formula: "1d8", damageType: "force", spends: "x" }] }] })).toEqual([expect.stringContaining("spends")]);
+  });
+});
+
+describe("§75 : zoneCharges", () => {
+  it("entier positif, fusionné", () => {
+    expect(validateEntry({ zoneCharges: 4 })).toEqual([]);
+    expect(validateEntry({ zoneCharges: 0 })).toEqual([expect.stringContaining("zoneCharges")]);
+    expect(mergeEntries([null, { zoneCharges: 4 }]).zoneCharges).toBe(4);
   });
 });

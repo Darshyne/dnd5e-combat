@@ -155,14 +155,16 @@ function makeContext(mcp) {
     /** Les PV d'un token, lus sur le document (delta du token, ou acteur lié) — pas sur le moteur. */
     async hp(token) {
       const { data } = await mcp.call("get-scene-object", { type: "Token", objectId: token.id });
-      if ( data.actorLink ) {
-        const actor = await mcp.call("get-actor", { actorId: token.actorId });
-        return actor.system?.attributes?.hp?.value ?? actor.actor?.system?.attributes?.hp?.value ?? null;
-      }
-      return data.delta?.system?.attributes?.hp?.value ?? null;
+      const own = data.actorLink ? null : (data.delta?.system?.attributes?.hp?.value ?? null);
+      if ( own !== null ) return own;
+      // Acteur lié, ou token non lié dont le delta ne porte pas de PV : ceux de la fiche. Rendre `null` ici faisait réécrire
+      // `null` au token à la remise en état — 0 PV, un Zombi « Mort » pour les scénarios suivants (§82).
+      const actor = await mcp.call("get-actor", { actorId: data.actorId ?? token.actorId });
+      return actor.system?.attributes?.hp?.value ?? actor.actor?.system?.attributes?.hp?.value ?? null;
     },
 
     async setHp(token, value) {
+      if ( (value === null) || (value === undefined) ) throw new Error(`setHp(${token.name ?? token.id}) : PV inconnus, rien n'est écrit`);
       const { data } = await mcp.call("get-scene-object", { type: "Token", objectId: token.id });
       if ( data.actorLink ) await mcp.call("update-actor", { actorId: token.actorId, actorData: { "system.attributes.hp.value": value } });
       else await mcp.call("update-scene-object", { type: "Token", objectId: token.id, data: { "delta.system.attributes.hp.value": value } });
@@ -481,6 +483,10 @@ async function restoreScene(mcp, snap) {
       if ( t.linked ) await mcp.call("update-actor", { actorId: t.actorId, actorData: { "system.attributes.hp.value": t.hp } });
       else await mcp.call("update-scene-object", { type: "Token", objectId: t.id, data: { "delta.system.attributes.hp.value": t.hp } });
       fixed.push(`${t.name} PV ${hp} → ${t.hp}`);
+    } else if ( (t.hp === null) && !t.linked && (hp !== null) && (hp !== undefined) ) {
+      // §82 : token non lié qui héritait des PV de sa fiche ; le scénario lui en a écrit dans son delta — on les retire.
+      await mcp.call("update-scene-object", { type: "Token", objectId: t.id, data: { "delta.system.attributes.hp.-=value": null } });
+      fixed.push(`${t.name} PV ${hp} → ceux de la fiche`);
     }
     const effects = t.linked ? (actor?.effects ?? []) : (data.delta?.effects ?? []);
     const target = t.linked ? { documentType: "Actor", id: t.actorId } : { uuid: `Scene.${snap.sceneId}.Token.${t.id}.Actor.${t.actorId}` };

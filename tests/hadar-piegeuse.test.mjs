@@ -103,3 +103,24 @@ describe("gabarit fourni par le contenu : Yolande, êtres sylvestres (§86)", ()
     expect(validateEntry({ zoneAffects: "everyone" }).length).toBeGreaterThan(0);
   });
 });
+
+describe("manœuvres au toucher (§87)", () => {
+  const facts = { "target.hasEffect": true, "target.hasEffectFrom": true, "source.hasEffect": true, "source.hasEffectFromTarget": true };
+  for ( const id of ["disarming-attack", "distracting-strike", "goading-attack", "menacing-attack", "pushing-attack", "trip-attack", "maneuvering-attack"] ) {
+    it(id, () => {
+      expect(CONTENT[id].hitRider).toMatchObject({ pays: "combat-superiority", weaponDamage: true });
+      expect(validateEntry(CONTENT[id], { facts })).toEqual([]);
+    });
+  }
+  it("repoussante et croc-en-jambe : taille G au plus ; provocante : la sauvegarde sans dégâts", () => {
+    expect(CONTENT["pushing-attack"].hitRider.sizeAtMost).toBe("lg");
+    expect(CONTENT["trip-attack"].triggers).toEqual([{ on: "failedSave", do: [{ type: "status", status: "prone" }] }]);
+    expect(CONTENT["goading-attack"].noDamage).toEqual(["YZDchvLnuCD6xMkF"]);
+  });
+  it("pays : une chaîne, pas avec slot", () => {
+    expect(validateEntry({ hitRider: { pays: "combat-superiority", damage: "mlUC7IiS8ZyTvDpZ" } })).toEqual([]);
+    expect(validateEntry({ hitRider: { pays: "combat-superiority", slot: "pact" } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ hitRider: { pays: "" } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ hitRider: { weaponDamage: "oui" } }).length).toBeGreaterThan(0);
+  });
+});

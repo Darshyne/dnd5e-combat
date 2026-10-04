@@ -369,7 +369,10 @@
  *                                               occulte, §47 bis) ; §78 : `save` — l'activité de sauvegarde de l'item,
  *                                               jouée ensuite contre la cible encore debout ; `item` — seulement avec
  *                                               l'arme de cet identifiant ; un item sans maximum d'utilisations se
- *                                               propose sans compter (Piqué : au MJ de juger la trajectoire)
+ *                                               propose sans compter (Piqué : au MJ de juger la trajectoire) ; §87 : `pays` —
+ *                                               l'identifiant de l'item dont une utilisation paie la faveur (les manœuvres : les dés
+ *                                               de `combat-superiority`) ; `weaponDamage` — les dés ont le type de dégâts de l'arme ;
+ *                                               une faveur à `sizeAtMost` ne joue sa sauvegarde que contre une cible assez petite
  *     potentCantrip?: true                      Sort mineur appuyé (§28) : un tour de magie à dégâts du porteur, raté ou sauvegardé, fait
  *                                               la moitié des dégâts, sans effet
  *     sculptSpells?: true                       Façonneur de sorts (§28) : dans un sort d'Évocation à sauvegarde du porteur, jusqu'à
@@ -1207,7 +1210,9 @@ function validateRogue(entry, at, errors) {
   if ( ("portent" in entry) && !(isObject(entry.portent) && Number.isInteger(entry.portent.dice) && (entry.portent.dice > 0)
     && Object.keys(entry.portent).every(k => k === "dice")) ) errors.push(`${at}portent : { dice } (entier positif)`);
   if ( ("hitRider" in entry) && !(isObject(entry.hitRider) && Object.keys(entry.hitRider).length
-    && Object.keys(entry.hitRider).every(k => ["damage", "effect", "status", "sizeAtMost", "slot", "weapon", "oncePerTurn", "save", "item"].includes(k))
+    && Object.keys(entry.hitRider).every(k => ["damage", "effect", "status", "sizeAtMost", "slot", "weapon", "oncePerTurn", "save", "item", "pays", "weaponDamage"].includes(k))
+    && (!("pays" in entry.hitRider) || ((typeof entry.hitRider.pays === "string") && !!entry.hitRider.pays && !("slot" in entry.hitRider)))
+    && (!("weaponDamage" in entry.hitRider) || (entry.hitRider.weaponDamage === true))
     && (!("slot" in entry.hitRider) || (entry.hitRider.slot === "pact"))
     && (!("weapon" in entry.hitRider) || (typeof entry.hitRider.weapon === "string"))
     && (!("oncePerTurn" in entry.hitRider) || (entry.hitRider.oncePerTurn === true))
@@ -1215,7 +1220,7 @@ function validateRogue(entry, at, errors) {
     && (!("item" in entry.hitRider) || (typeof entry.hitRider.item === "string"))
     && (!("status" in entry.hitRider) || (typeof entry.hitRider.status === "string"))
     && (!("sizeAtMost" in entry.hitRider) || SIZES.includes(entry.hitRider.sizeAtMost))) ) {
-    errors.push(`${at}hitRider : { damage?, effect?, status?, sizeAtMost?, slot?: "pact", weapon?, oncePerTurn?: true, save?, item? }`);
+    errors.push(`${at}hitRider : { damage?, effect?, status?, sizeAtMost?, slot?: "pact", weapon?, oncePerTurn?: true, save?, item?, pays?, weaponDamage?: true }`);
   }
   if ( ("flurry" in entry) && !(isObject(entry.flurry) && isId(entry.flurry.activity) && Number.isInteger(entry.flurry.strikes) && (entry.flurry.strikes > 0)
     && (!("weapons" in entry.flurry) || (typeof entry.flurry.weapons === "boolean"))

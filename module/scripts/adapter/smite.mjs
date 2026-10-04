@@ -88,7 +88,13 @@ export function riderOptions(actor, target, activity=null, attackMode=null) {
     if ( !rule ) continue;
     let left;
     let level = null;
-    if ( rule.slot === "pact" ) {
+    // §87 : la faveur se paie avec une utilisation d'un AUTRE item (les manœuvres : les dés de Supériorité martiale).
+    const payer = rule.pays ? (actor.items.find(i => identifierOf(i).id === rule.pays) ?? null) : null;
+    if ( rule.pays && !payer ) continue;
+    if ( payer ) {
+      const uses = payer.system.uses ?? {};
+      left = Number.isFinite(Number(uses.value)) ? Number(uses.value) : (Number(uses.max) || 0) - (Number(uses.spent) || 0);
+    } else if ( rule.slot === "pact" ) {
       const pact = actor.system?.spells?.pact ?? {};
       left = Number(pact.value) || 0;
       level = Number(pact.level) || 0;
@@ -109,7 +115,7 @@ export function riderOptions(actor, target, activity=null, attackMode=null) {
     const unlimited = left === Infinity;
     const label = (rule.slot === "pact") ? t("FaveurPacte", { item: item.name, level, n: left })
       : (unlimited ? item.name : t("Faveur", { item: item.name, n: left }));
-    out.push({ item, rule, rider: true, free: false, unlimited, level, fits, once: rule.oncePerTurn ? key : null, label });
+    out.push({ item, rule, rider: true, free: false, unlimited, level, fits, payer, once: rule.oncePerTurn ? key : null, label });
   }
   return out;
 }
@@ -151,6 +157,10 @@ export async function spendSmite(actor, option) {
     return;
   }
   if ( option.unlimited ) return;
+  if ( option.payer ) {   // §87
+    await option.payer.update({ "system.uses.spent": (Number(option.payer.system.uses.spent) || 0) + 1 });
+    return;
+  }
   if ( option.free || option.rider ) {
     await option.item.update({ "system.uses.spent": (Number(option.item.system.uses.spent) || 0) + 1 });
     return;
@@ -182,6 +192,15 @@ export async function askSmite(actor, target, options) {
  * Au jet de dégâts d'un coup (`rollDamageForAttack`, client de l'auteur) : la question, puis ce que le jet doit porter —
  * `{ item, level, formula, type, save, target }` —, l'emplacement ou l'utilisation déjà dépensés. null sans châtiment.
  */
+/** §87 : le type de dégâts du coup — celui que porte le jet d'attaque, sinon le premier de l'arme. */
+function weaponDamageType(activity, attackMessage) {
+  const chosen = attackMessage?.getFlag?.(MODULE_ID, "damageType");
+  if ( chosen ) return chosen;
+  const base = activity?.damage?.includeBase !== false ? activity?.item?.system?.damage?.base?.types : null;
+  const parts = activity?.damage?.parts ?? [];
+  return Array.from(base ?? [])[0] ?? Array.from(parts[0]?.types ?? [])[0] ?? null;
+}
+
 export async function chooseSmite(activity, attackMessage) {
   const actor = activity?.actor;
   const targets = attackMessage?.system?.targets ?? [];
@@ -197,8 +216,12 @@ export async function chooseSmite(activity, attackMessage) {
   if ( !dice ) return null;
   await spendSmite(actor, option);
   if ( option.rider ) {
-    return { kind: "rider", item: option.item.uuid, name: option.item.name, ...dice, effect: option.rule.effect ?? null,
-      status: option.fits ? (option.rule.status ?? null) : null, save: option.rule.save ?? null, target: target.uuid };
+    // §87 : les dés au type de dégâts de l'arme (manœuvres) ; la sauvegarde d'une faveur bornée en taille, seulement contre une cible
+    // assez petite (Attaque repoussante, Croc-en-jambe : « Large or smaller »).
+    const weaponType = option.rule.weaponDamage ? weaponDamageType(activity, attackMessage) : null;
+    return { kind: "rider", item: option.item.uuid, name: option.item.name, ...dice, ...(weaponType ? { type: weaponType } : {}),
+      effect: option.rule.effect ?? null, status: option.fits ? (option.rule.status ?? null) : null,
+      save: option.fits ? (option.rule.save ?? null) : null, target: target.uuid };
   }
   return { item: option.item.uuid, name: option.item.name, level: option.level, free: option.free, ...dice,
     save: option.rule.save ?? null, effect: option.rule.effect ?? null,

@@ -154,7 +154,7 @@ describe("contenu livré", () => {
       "circle-of-mortality", "cloud-of-daggers", "clouds-jaunt", "command", "confusion", "conjure-animals", "contagion",
       "continual-flame", "corrosive-form", "cosmic-omen", "counterspell", "crown-of-madness", "cunning-action",
       "cunning-strike", "cutting-words", "dancing-lights", "dark-ones-blessing", "dark-ones-own-luck", "darkness",
-      "daylight", "death-burst", "death-throes", "deathless-agility", "deflect-attacks", "devious-strikes",
+      "daylight", "death-burst", "death-throes", "death-ward", "deathless-agility", "deflect-attacks", "devious-strikes",
       "dimension-door", "disciple-of-life", "dispel-magic", "distant-spell", "divine-fury", "divine-smite",
       "dominate-beast", "dominate-monster", "dominate-person", "draining-kiss", "dread-ambusher", "dreadful-strikes",
       "dwarven-resilience", "earthquake", "eldritch-blast", "eldritch-smite", "elemental-affinity", "elemental-fury",
@@ -602,5 +602,13 @@ describe("§72 : use sur soi", () => {
   it("target: self", () => {
     expect(validateEntry({ triggers: [{ on: "isAttacked", do: [{ type: "use", target: "self", activity: "abcdefghijklmnop" }] }] })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "isAttacked", do: [{ type: "use", target: "ally" }] }] })).toEqual([expect.stringContaining("self")]);
+  });
+});
+
+describe("§73 : wardsAtZero", () => {
+  it("true ou absent, fusionné", () => {
+    expect(validateEntry({ wardsAtZero: true })).toEqual([]);
+    expect(validateEntry({ wardsAtZero: 1 })).toEqual([expect.stringContaining("wardsAtZero")]);
+    expect(mergeEntries([null, { wardsAtZero: true }]).wardsAtZero).toBe(true);
   });
 });

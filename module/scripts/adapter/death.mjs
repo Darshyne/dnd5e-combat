@@ -24,6 +24,7 @@ import { transformsAtZero, standsAtZero } from "./coven.mjs";
 import { regenerationOf } from "./regeneration.mjs";
 import { relentlessAtZero } from "./rage.mjs";
 import { endureAtZero } from "./species.mjs";
+import { wardAtZero } from "./ward.mjs";
 import { planFortitude, pendingFortitude } from "./fortitude.mjs";
 
 export const DEATH_QUERY = `${MODULE_ID}.deathSave`;
@@ -186,6 +187,12 @@ export function planDamageAtZero(actor, amount, updates, options) {
   // §16.11 : ce qu'une réserve (Égide arcanique) a absorbé, inscrit plus tôt dans ce même hook, n'atteint pas la créature.
   const incoming = Math.max(0, amount - (options?.[MODULE_ID]?.absorbed ?? 0));
   const through = incoming - Math.min(hp.temp ?? 0, incoming);
+  // §73 : Protection contre la mort — à 1 PV au lieu de 0 (même tuée sur le coup : elle n'y tombe pas), le sort prend fin.
+  const warded = wardAtZero(actor, through, updates);
+  if ( warded ) {
+    options[MODULE_ID] = { ...(options[MODULE_ID] ?? {}), endured: warded.name };
+    return;
+  }
   // §31 : Acharnement (Orc) — à 1 PV au lieu de 0, sans échec ni mort (sauf tué sur le coup).
   const endured = endureAtZero(actor, through, updates);
   if ( endured ) {

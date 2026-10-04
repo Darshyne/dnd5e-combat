@@ -75,6 +75,7 @@ export function reactionOptions(actor, window, declarations) {
     bonus: stepsOf(d, "bonus")[0]?.formula ?? null,
     disadvantage: stepsOf(d, "disadvantage").length > 0,
     absorb: stepsOf(d, "absorb").length > 0,
+    interpose: stepsOf(d, "interpose").length > 0,
     consume: step.consume !== false,
     approach: step.approach === true,
     advantage: step.advantage === true
@@ -293,7 +294,7 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
   // (runtime/gates.mjs) lit la réponse au lieu d'attendre une sauvegarde du lanceur.
   const counter = (results && (castLevel !== null)) ? await resolveCounter(actor, activity.item, castLevel) : null;
   return results ? { counter, reduce, penalty, bonus, disadvantage: option.disadvantage === true, used: option.activity, name: option.name, message: results.message?.id ?? null, halve: option.halve === true,
-    uncrit: option.uncrit === true, miss: option.miss === true, absorb: option.absorb === true,
+    uncrit: option.uncrit === true, miss: option.miss === true, absorb: option.absorb === true, interpose: option.interpose === true,
     endCondition: option.endCondition === true } : null;
 }
 

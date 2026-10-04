@@ -12,9 +12,9 @@ const GRAVE_KNIGHT = `<p>The [[lookup @name lowercase]] regains … Hit Points a
 
 describe("Régénération (M8)", () => {
   it("lit ce qui la coupe, et qui survit à 0 PV", () => {
-    expect(readRegeneration(TROLL)).toEqual({ needsHp: false, stoppedBy: ["acid", "fire"], survivesZero: true });
-    expect(readRegeneration(MIRE_BEAST)).toEqual({ needsHp: true, stoppedBy: [], survivesZero: false });
-    expect(readRegeneration(GRAVE_KNIGHT)).toEqual({ needsHp: false, stoppedBy: ["fire", "radiant"], survivesZero: true });
+    expect(readRegeneration(TROLL)).toEqual({ needsHp: false, silveredBy: [], stoppedBy: ["acid", "fire"], survivesZero: true });
+    expect(readRegeneration(MIRE_BEAST)).toEqual({ needsHp: true, silveredBy: [], stoppedBy: [], survivesZero: false });
+    expect(readRegeneration(GRAVE_KNIGHT)).toEqual({ needsHp: false, silveredBy: [], stoppedBy: ["fire", "radiant"], survivesZero: true });
   });
 
   it("au début du tour", () => {
@@ -42,5 +42,18 @@ describe("Régénération (M8)", () => {
     expect(CONTENT.regeneration).toEqual({ regeneration: true });
     expect(validateEntry(CONTENT.regeneration)).toEqual([]);
     expect(validateEntry({ regeneration: "oui" })).toHaveLength(1);
+  });
+});
+
+describe("§78 : Régénération d'un lycanthrope (arme argentée)", () => {
+  const WERE = "<p>The wereraven regains 10 hit points at the start of its turn if it hasn’t taken necrotic damage or bludgeoning, piercing, or slashing damage from a silvered weapon since its last turn. It dies only if it starts its turn with 0 hit points and doesn&#39;t regenerate.</p>";
+  it("nécrotique toujours, contondant/perforant/tranchant seulement d'une arme argentée", () => {
+    expect(readRegeneration(WERE)).toEqual({ needsHp: false, stoppedBy: ["necrotic"], silveredBy: ["bludgeoning", "piercing", "slashing"], survivesZero: true });
+  });
+  it("une arme ordinaire ne la coupe pas, une arme argentée oui", () => {
+    const r = readRegeneration(WERE);
+    expect(stopsRegeneration(r.stoppedBy, ["piercing"], r.silveredBy, [])).toBe(false);
+    expect(stopsRegeneration(r.stoppedBy, ["piercing"], r.silveredBy, ["piercing"])).toBe(true);
+    expect(stopsRegeneration(r.stoppedBy, ["necrotic"], r.silveredBy, [])).toBe(true);
   });
 });

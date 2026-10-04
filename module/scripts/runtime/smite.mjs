@@ -90,6 +90,13 @@ async function applyRider(smite, item, resolution) {
     await target.actor.toggleStatusEffect(smite.status, { active: true });
     log(`${smite.name} : ${target.name} reçoit « ${smite.status} »`);
   }
+  // §78 : la sauvegarde de la faveur (Piqué : Force ou À terre), jouée sur la cible encore debout.
+  const save = smite.save ? item.system.activities?.get(smite.save) : null;
+  const source = save ? (item.actor?.getActiveTokens(false, true)[0] ?? null) : null;
+  if ( save && source && ((target.actor.system.attributes?.hp?.value ?? 0) > 0) ) {
+    log(`${smite.name} : ${target.name} fait sa sauvegarde`);
+    await strikeAgainst(save, source, target, { flavor: "DND5ECOMBAT.Chatiment.Carte" });
+  }
 }
 
 export function registerSmite() {

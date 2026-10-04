@@ -30,7 +30,7 @@ export function secondPhaseOf(actor) {
     if ( !rule ) continue;
     const activity = item.system.activities?.get(rule.activity);
     const uuid = activity?.profiles?.[0]?.uuid;
-    if ( (activity?.type === "transform") && uuid ) return { item, activity, uuid, keepConditions: rule.keepConditions !== false };
+    if ( (activity?.type === "transform") && uuid ) return { item, activity, uuid, keepConditions: rule.keepConditions !== false, keepHp: rule.keepHp === true };
   }
   return null;
 }
@@ -41,7 +41,7 @@ export function formChangeOf(activity) {
   const rule = contentOf(item).entry?.changesForm;
   if ( !rule || (rule.activity !== activity.id) || (activity.type !== "transform") ) return null;
   const uuid = activity.profiles?.[0]?.uuid;
-  return uuid ? { item, activity, uuid, keepConditions: rule.keepConditions !== false } : null;
+  return uuid ? { item, activity, uuid, keepConditions: rule.keepConditions !== false, keepHp: rule.keepHp === true } : null;
 }
 
 /** À 0 PV, la créature change-t-elle de forme au lieu de tomber ? */
@@ -149,6 +149,8 @@ async function swapForm(actor, phase) {
     return null;
   }
   const from = actor.name;
+  // §78 : `keepHp` — les PV de la forme quittée (lus avant l'échange), dans la limite du maximum de la nouvelle.
+  const kept = phase.keepHp ? Math.max(0, Number(actor.system.attributes?.hp?.value) || 0) : null;
   // `keepConditions: false` : la nouvelle forme ne reprend aucun état de l'ancienne.
   const conditions = phase.keepConditions ? keptConditions(actor) : [];
   // La concentration de l'ancienne forme prend fin (ses effets sur les autres avec elle, par dnd5e).
@@ -158,8 +160,10 @@ async function swapForm(actor, phase) {
 
   const proto = target.prototypeToken.toObject();
   // Un token lié n'a pas de delta à réécrire ; un token non lié repart d'un delta vierge — complet : le cœur refuse `delta: {}`
-  // (« _id, system, items, effects, flags may not be undefined », vu en jeu le 2026-09-26).
-  const blank = proto.actorLink ? {} : { delta: { _id: document.delta?.id ?? document.id, system: {}, items: [], effects: [], flags: {} } };
+  // (« _id, system, items, effects, flags may not be undefined », vu en jeu le 2026-09-26). §78 : un token LIÉ qui devient non lié
+  // n'a pas de delta (null) — on n'en écrit pas, le cœur refuse ce delta-là comme mise à jour partielle ; il part de la fiche.
+  const blank = (proto.actorLink || !document._source?.delta) ? {}
+    : { delta: { _id: document.delta?.id ?? document.id, system: {}, items: [], effects: [], flags: {} } };
   await document.update({
     actorId: target.id, actorLink: proto.actorLink, name: proto.name || target.name,
     texture: proto.texture, width: proto.width, height: proto.height, ring: proto.ring, ...blank
@@ -169,9 +173,12 @@ async function swapForm(actor, phase) {
   }
   const shaped = document.actor;
   if ( shaped ) {
-    await shaped.update({ "system.attributes.hp.value": shaped.system.attributes.hp.max, [`flags.${MODULE_ID}.${SYNC}`]: foundry.utils.randomID() },
+    const max = Number(shaped.system.attributes.hp.max) || 0;
+    const hp = (kept === null) ? max : Math.min(kept, max);
+    await shaped.update({ "system.attributes.hp.value": hp, [`flags.${MODULE_ID}.${SYNC}`]: foundry.utils.randomID() },
       { dnd5e: { concentrationCheck: false } });
-    const downed = shaped.effects.filter(e => ["dead", "unconscious"].some(id => e.statuses?.has?.(id))).map(e => e.id);
+    // À 0 PV gardés (§78 : la forme qui meurt reprend sa forme véritable), la chute reste : la Régénération ou la mort en décident.
+    const downed = (hp > 0) ? shaped.effects.filter(e => ["dead", "unconscious"].some(id => e.statuses?.has?.(id))).map(e => e.id) : [];
     if ( downed.length ) await shaped.deleteEmbeddedDocuments("ActiveEffect", downed);
     if ( conditions.length ) await shaped.createEmbeddedDocuments("ActiveEffect", conditions);
   }

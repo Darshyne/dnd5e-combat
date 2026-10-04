@@ -92,19 +92,24 @@ export function riderOptions(actor, target, activity=null, attackMode=null) {
       const pact = actor.system?.spells?.pact ?? {};
       left = Number(pact.value) || 0;
       level = Number(pact.level) || 0;
-    } else {
+    } else if ( !(item.system.uses?.max ?? "") ) left = Infinity;   // §78 : sans maximum, sans compter (Piqué)
+    else {
       const uses = item.system.uses ?? {};
       left = Number.isFinite(Number(uses.value)) ? Number(uses.value) : (Number(uses.max) || 0) - (Number(uses.spent) || 0);
     }
     if ( !(left > 0) ) continue;
     if ( rule.weapon && !(meleeWeaponHit(activity, attackMode) && wieldsBound(activity, actor, rule.weapon)) ) continue;
+    // §78 : seulement avec l'arme de cet identifiant (Piqué : l'épée courte).
+    if ( rule.item && (identifierOf(activity?.item ?? {}).id !== rule.item) ) continue;
     const key = identifierOf(item).id ?? item.id;
     if ( rule.oncePerTurn && turn && (actor.getFlag(MODULE_ID, `oncePerTurn.${key}`) === turn) ) continue;
     const size = target?.actor?.system?.traits?.size;
     const fits = !rule.sizeAtMost || !size || (sizes.indexOf(size) <= sizes.indexOf(rule.sizeAtMost));
     if ( !fits && !rule.damage && !rule.effect ) continue;
-    const label = (rule.slot === "pact") ? t("FaveurPacte", { item: item.name, level, n: left }) : t("Faveur", { item: item.name, n: left });
-    out.push({ item, rule, rider: true, free: false, level, fits, once: rule.oncePerTurn ? key : null, label });
+    const unlimited = left === Infinity;
+    const label = (rule.slot === "pact") ? t("FaveurPacte", { item: item.name, level, n: left })
+      : (unlimited ? item.name : t("Faveur", { item: item.name, n: left }));
+    out.push({ item, rule, rider: true, free: false, unlimited, level, fits, once: rule.oncePerTurn ? key : null, label });
   }
   return out;
 }
@@ -145,6 +150,7 @@ export async function spendSmite(actor, option) {
     await actor.update({ "system.spells.pact.value": Math.max(0, value - 1) });
     return;
   }
+  if ( option.unlimited ) return;
   if ( option.free || option.rider ) {
     await option.item.update({ "system.uses.spent": (Number(option.item.system.uses.spent) || 0) + 1 });
     return;
@@ -192,7 +198,7 @@ export async function chooseSmite(activity, attackMessage) {
   await spendSmite(actor, option);
   if ( option.rider ) {
     return { kind: "rider", item: option.item.uuid, name: option.item.name, ...dice, effect: option.rule.effect ?? null,
-      status: option.fits ? (option.rule.status ?? null) : null, target: target.uuid };
+      status: option.fits ? (option.rule.status ?? null) : null, save: option.rule.save ?? null, target: target.uuid };
   }
   return { item: option.item.uuid, name: option.item.name, level: option.level, free: option.free, ...dice,
     save: option.rule.save ?? null, effect: option.rule.effect ?? null,

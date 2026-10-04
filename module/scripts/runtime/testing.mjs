@@ -446,10 +446,11 @@ async function heal({ tokenId, amount }) {
 }
 
 /** §23 : des dégâts à un token, par `applyDamage` (résistances comprises) ; rend ses PV avant et après. */
-async function hurt({ tokenId, amount, type="bludgeoning" }) {
+async function hurt({ tokenId, amount, type="bludgeoning", properties=[] }) {
   const actor = tokenOf({ tokenId }).actor;
   const before = actor.system.attributes.hp.value;
-  await actor.applyDamage([{ value: amount, type }]);
+  // `properties` : celles du jet (« sil » : arme argentée, §78).
+  await actor.applyDamage([{ value: amount, type, properties: new Set(properties) }]);
   return { before, after: actor.system.attributes.hp.value };
 }
 

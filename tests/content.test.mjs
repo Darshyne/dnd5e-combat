@@ -26,7 +26,7 @@ describe("validation d'une entrée", () => {
     const errors = validateEntry({ triggers: [{ on: "onHit", if: { "moon.phase": "full" }, do: [{ type: "smite" }] }] }, { facts });
     expect(errors).toEqual([
       `triggers[0].on : moment « onHit » inconnu (${MOMENTS_LIST})`,
-      "triggers[0].do[0].type : « smite » inconnu (disarm, use, replay, damage, move, status, resave, remove, halve, uncrit, consume, advantage, disadvantage, ward, attackBonus, endCondition, reduce, miss, penalty, bonus, absorb, mark)",
+      "triggers[0].do[0].type : « smite » inconnu (disarm, use, replay, damage, move, status, resave, remove, halve, uncrit, consume, advantage, disadvantage, ward, attackBonus, endCondition, reduce, miss, penalty, bonus, absorb, interpose, mark)",
       "triggers[0].if : fait « moon.phase » inconnu"
     ]);
     expect(validateEntry({ triggers: [{ on: "isHit" }] }, { facts })).toEqual(["triggers[0].do : au moins une étape"]);
@@ -634,5 +634,22 @@ describe("§76 : changesForm", () => {
     expect(validateEntry({ changesForm: { activity: "court" } })).toEqual([expect.stringContaining("changesForm.activity")]);
     expect(validateEntry({ changesForm: { activity: "aaaaaaaaaaaaaaaa", quand: 1 } })).toEqual([expect.stringContaining("clé inconnue")]);
     expect(mergeEntries([null, { changesForm: { activity: "aaaaaaaaaaaaaaaa" } }]).changesForm.activity).toBe("aaaaaaaaaaaaaaaa");
+  });
+});
+
+describe("§78 : forme qui garde ses PV, faveur avec sauvegarde, interposition", () => {
+  const A = "aaaaaaaaaaaaaaaa";
+  it("keepHp dans changesForm et secondPhase", () => {
+    expect(validateEntry({ changesForm: { activity: A, keepHp: true } })).toEqual([]);
+    expect(validateEntry({ secondPhase: { activity: A, keepHp: true } })).toEqual([]);
+    expect(validateEntry({ changesForm: { activity: A, keepHp: 1 } })).toEqual([expect.stringContaining("keepHp")]);
+  });
+  it("hitRider : save (id d'activité) et item (identifiant)", () => {
+    expect(validateEntry({ hitRider: { damage: A, save: A, item: "shortsword", oncePerTurn: true } })).toEqual([]);
+    expect(validateEntry({ hitRider: { damage: A, save: "court" } })).toEqual([expect.stringContaining("hitRider")]);
+  });
+  it("interpose : au moment allyIsDamaged, avec une réaction use", () => {
+    expect(validateEntry({ triggers: [{ on: "allyIsDamaged", do: [{ type: "use" }, { type: "interpose" }] }] })).toEqual([]);
+    expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "use" }, { type: "interpose" }] }] })).toEqual([expect.stringContaining("interpose")]);
   });
 });

@@ -191,9 +191,11 @@
  *     secondPhase?: { activity }                à 0 PV, pas de Mort : l'activité « transform » de l'item (id) change la créature dans
  *                                               la forme de son profil, à ses PV max, même token (même initiative), états gardés
  *                                               (§19.5 : seconde phase)
- *     changesForm?: { activity }                à l'utilisation de cette activité « transform » (id), la créature prend la forme de son
+ *     changesForm?: { activity, keepHp? }       à l'utilisation de cette activité « transform » (id), la créature prend la forme de son
  *                                               profil comme une seconde phase (même token, PV max de la forme, états gardés sauf
- *                                               `keepConditions: false`) — une vraie forme révélée à volonté (§76)
+ *                                               `keepConditions: false`) — une vraie forme révélée à volonté (§76) ; `keepHp` (§78, ici et dans
+ *                                               `secondPhase`) : la forme garde les PV actuels (« son profil reste le même
+ *                                               dans chaque forme » : un lycanthrope), à 0 PV compris
  *     failMargins?: { <id d'effet>: { min?, max? } }
  *                                               l'effet de l'activité de sauvegarde ne va qu'à qui l'a ratée de `min` ou plus (et de
  *                                               `max` au plus) : « si une créature rate le jet de 5 ou plus, elle est aussi
@@ -350,7 +352,7 @@
  *     endurance?: true                          Acharnement (§31) : tombé à 0 PV sans être tué sur le coup, le porteur reste à 1 PV,
  *                                               une utilisation de l'item dépensée
  *     replacesAttack?: true                     l'activité remplace une attaque de l'action Attaquer (Souffle, §31)
- *     hitRider?: { damage?, effect?, status?, sizeAtMost?, slot?, weapon?, oncePerTurn? }
+ *     hitRider?: { damage?, effect?, status?, sizeAtMost?, slot?, weapon?, oncePerTurn?, save?, item? }
  *                                               faveur proposée au jet de dégâts d'une attaque qui touche, contre une
  *                                               utilisation de l'item (Ascendance gigante, §31) : les dés de l'activité
  *                                               `damage`, puis l'effet `effect` de l'item ou l'état `status` posés sur la
@@ -358,7 +360,10 @@
  *                                               `slot: "pact"` : coûte un emplacement de pacte au lieu d'une utilisation (dés
  *                                               lus au niveau de l'emplacement) ; `weapon` : seulement avec une arme enchantée
  *                                               par l'item de cet identifiant (« pact-of-the-blade ») ; `oncePerTurn` (Frappe
- *                                               occulte, §47 bis)
+ *                                               occulte, §47 bis) ; §78 : `save` — l'activité de sauvegarde de l'item,
+ *                                               jouée ensuite contre la cible encore debout ; `item` — seulement avec
+ *                                               l'arme de cet identifiant ; un item sans maximum d'utilisations se
+ *                                               propose sans compter (Piqué : au MJ de juger la trajectoire)
  *     potentCantrip?: true                      Sort mineur appuyé (§28) : un tour de magie à dégâts du porteur, raté ou sauvegardé, fait
  *                                               la moitié des dégâts, sans effet
  *     sculptSpells?: true                       Façonneur de sorts (§28) : dans un sort d'Évocation à sauvegarde du porteur, jusqu'à
@@ -439,6 +444,8 @@
  *                                                        moment preAttackRoll)
  *   { type: "advantage" } · { type: "disadvantage" }     une raison d'avantage ou de désavantage à l'attaque
  *                                                        (moment preAttackRoll ; core/conditions.mjs, `declared`)
+ *   { type: "interpose" }                                avec une réaction `use` au moment allyIsDamaged : le réacteur prend les dégâts
+ *                                                        à la place de la créature (§78, Interposition d'un garou ; les effets restent à elle)
  *   { type: "absorb" }                                   avec une réaction `use` au moment allyIsDamaged : la réserve du réacteur (clé
  *                                                        `absorb`, Égide arcanique) prend les dégâts de la créature (§38, Égide projetée)
  *   { type: "use", target: "self", activity }          §72 : la réaction vise le réacteur lui-même (Protection contre la mort
@@ -466,7 +473,7 @@ import { EMANATION_MOMENTS } from "./emanation.mjs";
 /** Version du schéma. Une surcouche d'une autre version est ignorée avec un avertissement. */
 export const CONTENT_VERSION = 1;
 
-export const STEP_TYPES = Object.freeze(["disarm", "use", "replay", "damage", "move", "status", "resave", "remove", "halve", "uncrit", "consume", "advantage", "disadvantage", "ward", "attackBonus", "endCondition", "reduce", "miss", "penalty", "bonus", "absorb", "mark"]);
+export const STEP_TYPES = Object.freeze(["disarm", "use", "replay", "damage", "move", "status", "resave", "remove", "halve", "uncrit", "consume", "advantage", "disadvantage", "ward", "attackBonus", "endCondition", "reduce", "miss", "penalty", "bonus", "absorb", "interpose", "mark"]);
 /** Les fenêtres « touché » : la créature touchée elle-même, ou une autre qui réagit pour elle (Sentinelle au seuil de la mort). */
 export const HIT_WINDOWS = Object.freeze(["isHit", "allyIsHit"]);
 /** Les actions de base qu'une activité peut prendre au coût de son activation (`basicActions`). */
@@ -610,6 +617,7 @@ function validateTrigger(declaration, at, facts, errors) {
       if ( isObject(s) && (s.type === "damage") && ("onSave" in s) && ((d.on.length !== 1) || (d.on[0] !== "failedSave") || ("to" in s)) ) errors.push(`${at}.do : « onSave » demande le seul moment failedSave, sans « to »`);
       if ( isObject(s) && ["halve", "uncrit", "reduce", "miss", "penalty"].includes(s.type) && !((s.type === "penalty") && preAttackReaction) && (!d.on.some(m => HIT_WINDOWS.includes(m)) || !d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do : « ${s.type} » demande le moment isHit ou allyIsHit et une réaction « use »`);
       if ( isObject(s) && (s.type === "absorb") && !(d.on.includes("allyIsDamaged") && d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do : « absorb » demande le moment allyIsDamaged et une réaction « use »`);
+      if ( isObject(s) && (s.type === "interpose") && !(d.on.includes("allyIsDamaged") && d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do : « interpose » demande le moment allyIsDamaged et une réaction « use »`);
       if ( isObject(s) && (s.type === "bonus") && !(d.on.includes("allyAttacks") && preAttackReaction) ) errors.push(`${at}.do : « bonus » demande le moment allyAttacks et une réaction « use »`);
       if ( isObject(s) && (s.type === "endCondition") && (!d.on.includes("gainsCondition") || !d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do : « endCondition » demande le moment gainsCondition et une réaction « use »`);
     }
@@ -726,7 +734,8 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     if ( !isObject(p) || !isId(p.activity) ) errors.push(`${at}secondPhase.activity : id d'activité (16 caractères) attendu`);
     else {
       if ( ("keepConditions" in p) && (typeof p.keepConditions !== "boolean") ) errors.push(`${at}secondPhase.keepConditions : booléen`);
-      for ( const key of Object.keys(p) ) if ( !["activity", "keepConditions"].includes(key) ) errors.push(`${at}secondPhase.${key} : clé inconnue`);
+      if ( ("keepHp" in p) && (typeof p.keepHp !== "boolean") ) errors.push(`${at}secondPhase.keepHp : booléen`);
+      for ( const key of Object.keys(p) ) if ( !["activity", "keepConditions", "keepHp"].includes(key) ) errors.push(`${at}secondPhase.${key} : clé inconnue`);
     }
   }
   if ( "changesForm" in entry ) {
@@ -734,7 +743,8 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     if ( !isObject(p) || !isId(p.activity) ) errors.push(`${at}changesForm.activity : id d'activité (16 caractères) attendu`);
     else {
       if ( ("keepConditions" in p) && (typeof p.keepConditions !== "boolean") ) errors.push(`${at}changesForm.keepConditions : booléen`);
-      for ( const key of Object.keys(p) ) if ( !["activity", "keepConditions"].includes(key) ) errors.push(`${at}changesForm.${key} : clé inconnue`);
+      if ( ("keepHp" in p) && (typeof p.keepHp !== "boolean") ) errors.push(`${at}changesForm.keepHp : booléen`);
+      for ( const key of Object.keys(p) ) if ( !["activity", "keepConditions", "keepHp"].includes(key) ) errors.push(`${at}changesForm.${key} : clé inconnue`);
     }
   }
   const isMargin = mg => isObject(mg) && Object.keys(mg).length && Object.entries(mg).every(([k, v]) => ["min", "max"].includes(k) && Number.isFinite(v) && (v >= 0));
@@ -1170,14 +1180,15 @@ function validateRogue(entry, at, errors) {
   if ( ("portent" in entry) && !(isObject(entry.portent) && Number.isInteger(entry.portent.dice) && (entry.portent.dice > 0)
     && Object.keys(entry.portent).every(k => k === "dice")) ) errors.push(`${at}portent : { dice } (entier positif)`);
   if ( ("hitRider" in entry) && !(isObject(entry.hitRider) && Object.keys(entry.hitRider).length
-    && Object.keys(entry.hitRider).every(k => ["damage", "effect", "status", "sizeAtMost", "slot", "weapon", "oncePerTurn"].includes(k))
+    && Object.keys(entry.hitRider).every(k => ["damage", "effect", "status", "sizeAtMost", "slot", "weapon", "oncePerTurn", "save", "item"].includes(k))
     && (!("slot" in entry.hitRider) || (entry.hitRider.slot === "pact"))
     && (!("weapon" in entry.hitRider) || (typeof entry.hitRider.weapon === "string"))
     && (!("oncePerTurn" in entry.hitRider) || (entry.hitRider.oncePerTurn === true))
-    && ["damage", "effect"].every(k => !(k in entry.hitRider) || isId(entry.hitRider[k]))
+    && ["damage", "effect", "save"].every(k => !(k in entry.hitRider) || isId(entry.hitRider[k]))
+    && (!("item" in entry.hitRider) || (typeof entry.hitRider.item === "string"))
     && (!("status" in entry.hitRider) || (typeof entry.hitRider.status === "string"))
     && (!("sizeAtMost" in entry.hitRider) || SIZES.includes(entry.hitRider.sizeAtMost))) ) {
-    errors.push(`${at}hitRider : { damage?, effect?, status?, sizeAtMost?, slot?: "pact", weapon?, oncePerTurn?: true }`);
+    errors.push(`${at}hitRider : { damage?, effect?, status?, sizeAtMost?, slot?: "pact", weapon?, oncePerTurn?: true, save?, item? }`);
   }
   if ( ("flurry" in entry) && !(isObject(entry.flurry) && isId(entry.flurry.activity) && Number.isInteger(entry.flurry.strikes) && (entry.flurry.strikes > 0)
     && (!("weapons" in entry.flurry) || (typeof entry.flurry.weapons === "boolean"))

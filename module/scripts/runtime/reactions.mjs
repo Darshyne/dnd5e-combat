@@ -150,12 +150,12 @@ export async function askDamageGuardians(targetUuid, sourceUuid, activity, { aut
     const actor = other.actor;
     if ( !actor || (other === hurtToken) || (other === attacker) || isObjectToken(other) ) continue;
     if ( areHostile(other.disposition, hurtToken.disposition) || ((actor.system.attributes?.hp?.value ?? 0) <= 0) ) continue;
-    const pool = poolsOf(actor).find(p => p.pool > 0);   // d'abord le moins cher : sans égide pleine, rien à proposer
-    if ( !pool ) continue;
+    const pool = poolsOf(actor).find(p => p.pool > 0);   // d'abord le moins cher : sans égide pleine, pas d'absorption
+    // §78 : une Interposition ne demande pas de réserve.
     const options = reactionsOf(actor, "allyIsDamaged", { source: attacker?.actor ?? null, target, activity, self: actor, selfToken: other,
-      sourceToken: attacker, targetToken: hurtToken }, { publish: true }).filter(o => o.absorb);
+      sourceToken: attacker, targetToken: hurtToken }, { publish: true }).filter(o => (o.absorb && pool) || o.interpose);
     if ( !options.length ) continue;
-    log(`${hurtToken.name} va subir des dégâts : ${other.name} peut réagir (${options.map(o => o.name).join(", ")}, réserve ${pool.pool})`);
+    log(`${hurtToken.name} va subir des dégâts : ${other.name} peut réagir (${options.map(o => o.name).join(", ")}${pool ? `, réserve ${pool.pool}` : ""})`);
     const answer = await askReaction(actor, {
       actor: actor.uuid,
       prompt: { key: "ReactionAllieBlesse", data: { name: hurtToken.name, attacker: attacker?.name ?? "" } },
@@ -163,7 +163,8 @@ export async function askDamageGuardians(targetUuid, sourceUuid, activity, { aut
       target: targetUuid,
       auto: auto === "first"
     });
-    if ( answer?.absorb ) return { item: pool.item.uuid, reactor: other.name };
+    if ( answer?.absorb && pool ) return { item: pool.item.uuid, reactor: other.name };
+    if ( answer?.interpose ) return { interpose: other.uuid, reactor: other.name };
   }
   return null;
 }

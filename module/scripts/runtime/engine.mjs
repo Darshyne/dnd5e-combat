@@ -210,9 +210,11 @@ const COMMANDS = {
       // §38 : Égide projetée — avant l'application, un allié peut faire absorber ces dégâts par sa réserve.
       const hurting = (entry.multiplier > 0) && !resolution.plan.heal && rolled.some(d => !["healing", "temphp"].includes(d.type) && (d.value > 0));
       const ward = hurting ? await askDamageGuardians(entry.token, source?.uuid ?? null, activity, { auto: autoReactOf(carrier, resolution) }) : null;
-      if ( ward ) log(`${ward.reactor} : Égide projetée, sa réserve prend les dégâts de ${entry.token}`);
+      if ( ward?.item ) log(`${ward.reactor} : Égide projetée, sa réserve prend les dégâts de ${entry.token}`);
+      // §78 : Interposition — les dégâts passent sur le réacteur ; les effets restent à la cible.
+      if ( ward?.interpose ) log(`${ward.reactor} s'interpose : il prend les dégâts de ${entry.token}`);
       const hp = (entry.multiplier > 0)
-        ? await applyDamageToToken(entry.token, rolled, damageMessage, { multiplier: entry.multiplier, reduction: entry.reduction ?? 0, absorbInto: ward?.item ?? null })
+        ? await applyDamageToToken(ward?.interpose ?? entry.token, rolled, damageMessage, { multiplier: entry.multiplier, reduction: entry.reduction ?? 0, absorbInto: ward?.item ?? null })
         : null;
       const target = await fromUuid(entry.token);
       // §16.46 : ce qu'une défense (Résistance) a retiré aux dégâts.

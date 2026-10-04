@@ -172,7 +172,7 @@ describe("contenu livré", () => {
       "lifedrinker", "light", "lunar-form", "mage-hand", "magic-missile", "magic-resistance", "marshal-undead",
       "martial-arts", "melfs-acid-arrow", "mind-sliver", "minor-illusion", "mirror-image", "mislead", "misty-step",
       "monks-focus", "moonbeam", "moonlight-step", "nimble-escape", "oil", "open-hand-technique",
-      "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade", "pass-without-trace", "path-to-the-grave",
+      "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade", "parry", "pass-without-trace", "path-to-the-grave",
       "persistent-rage", "phantasmal-force", "phantasmal-killer", "portent", "potent-cantrip",
       "potion-of-animal-friendship", "potion-of-climbing", "potion-of-diminution", "potion-of-flying", "potion-of-growth",
       "potion-of-heroism", "potion-of-invisibility", "potion-of-resistance", "potion-of-vitality", "prayer-of-healing",
@@ -610,5 +610,12 @@ describe("§73 : wardsAtZero", () => {
     expect(validateEntry({ wardsAtZero: true })).toEqual([]);
     expect(validateEntry({ wardsAtZero: 1 })).toEqual([expect.stringContaining("wardsAtZero")]);
     expect(mergeEntries([null, { wardsAtZero: true }]).wardsAtZero).toBe(true);
+  });
+});
+
+describe("§74 : dégâts qui dépensent un effet", () => {
+  it("spends : un id d'effet", () => {
+    expect(validateEntry({ triggers: [{ on: "preDamageRoll", do: [{ type: "damage", formula: "1d8", damageType: "force", spends: "abcdefghijklmnop" }] }] })).toEqual([]);
+    expect(validateEntry({ triggers: [{ on: "preDamageRoll", do: [{ type: "damage", formula: "1d8", damageType: "force", spends: "x" }] }] })).toEqual([expect.stringContaining("spends")]);
   });
 });

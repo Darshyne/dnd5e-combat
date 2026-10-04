@@ -27,6 +27,11 @@ export const TRIGGERS = Object.freeze({
   "shield": [{ on: "isHit", do: [{ type: "use" }] }],
   // Esquive instinctive (PHB, roublard 5) : « quand un attaquant que vous voyez vous touche avec un jet d'attaque, vous
   // pouvez utiliser votre réaction pour réduire de moitié les dégâts de l'attaque » (§16.11, B14).
+  // §74 : Parade du Monster Manual 2024 (`mmParry000000000`, Noble, Chevalier…) — « touché par un jet d'attaque de corps à corps
+  // alors qu'il tient une arme : ajoute son bonus de maîtrise à sa CA contre cette attaque, ce qui peut la faire échouer ». L'item n'a
+  // aucun effet : le bonus passe par le rejugement du coup (`penalty` : retiré au jet, c'est-à-dire ajouté à la CA, §33). « Tient
+  // une arme » n'est pas contrôlé.
+  "parry": [{ on: "isHit", if: { "activity.isMelee": true }, do: [{ type: "use" }, { type: "penalty", formula: "@prof" }] }],
   "uncanny-dodge": [{ on: "isHit", if: { "target.seesSource": true }, do: [{ type: "use" }, { type: "halve" }] }],
   // Lien protecteur (PHB) : « chaque fois qu'elle subit des dégâts, vous subissez le même montant » — porté par l'effet
   // « Bonded » de la cible, qui fait déjà résistance, +1 à la CA et aux sauvegardes (§16.11).

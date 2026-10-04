@@ -459,7 +459,8 @@ async function enrich(targets, plan, originUuid, activityUuid=null) {
       cover,
       autoFail: plan.save ? autoFailSave(statuses, plan.save.ability) : null,
       defenceless: !!origin && !!token && isAutoCritical(statuses, areAdjacent(origin, token, factors)),
-      canReact: plan.attack ? await canReactToHit(target.token) : false,
+      // §74 : l'attaque et son auteur sont connus ici — une réaction qui en dépend (Parade : « au corps à corps ») est comptée.
+      canReact: plan.attack ? await canReactToHit(target.token, { activity, source: origin?.actor ?? null }) : false,
       duplicates: plan.attack ? duplicatesAgainst(token?.actor, origin?.actor) : 0,
       // §20 : Esquive totale (Roublard, Moine, monstres) — jugée à l'application (core/action.mjs, `applicationPlan`).
       evasion: !!plan.save && evades(token?.actor),

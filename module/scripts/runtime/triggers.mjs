@@ -7,6 +7,8 @@
 import { MODULE_ID } from "../constants.mjs";
 import { select, stepsOf, BEARER_MOMENTS, damagedByOriginSide } from "../core/triggers.mjs";
 import { declarationsOf, declarationsOfEffects, factsFor, tokenOf, consumedMarks } from "../adapter/triggers.mjs";
+import { identifierOf } from "../adapter/content.mjs";
+import { comesFromItemEffect, originItemOf } from "../adapter/facts.mjs";
 import { usageTokenOf } from "../adapter/turn.mjs";
 import { resaveAgainst } from "../adapter/areas.mjs";
 import { seesBetween } from "../adapter/vision.mjs";
@@ -76,7 +78,7 @@ function onPreRollDamage(config, dialog, message) {
   const typeOf = s => (s.damageType === "weapon") ? weaponType : s.damageType;
   const perTarget = targets.map(target => fire("preDamageRoll", { actor: source, source, target: target.actor, activity, sourceToken: origin, targetToken: target })
     .flatMap(d => stepsOf(d, "damage").filter(s => typeOf(s)).map(s => ({ name: d.name, formula: s.formula, damageType: typeOf(s),
-      once: (d.oncePerTurn === true) ? (d.identifier ?? d.name) : null }))));
+      once: (d.oncePerTurn === true) ? (d.identifier ?? d.name) : null, spends: s.spends ?? null, identifier: d.identifier ?? null }))));
   const candidates = new Map(perTarget.flat().map(s => [partKey(s), s]));
   if ( !candidates.size ) return true;
   // §19.9 : « une fois par tour » (Attraction de la mort) — n'importe quel tour, en combat ; marqué sur l'acteur de l'auteur.
@@ -90,6 +92,12 @@ function onPreRollDamage(config, dialog, message) {
   const dropped = Array.from(candidates.values()).filter(s => !agreed.includes(s) && !spent(s));
   if ( dropped.length ) ui.notifications.warn(loc("DegatsBonusDivergents", { names: dropped.map(s => s.name).join(", ") }));
 
+  // §74 : une part qui dépense un effet de son item porté par l'auteur (Frappe du zéphyr) — il tombe, ces dégâts sont les derniers.
+  for ( const s of agreed.filter(x => x.spends) ) {
+    const spent = (source.appliedEffects ?? source.effects ?? []).filter(e => comesFromItemEffect(e, s.spends)
+      && (!s.identifier || (identifierOf(originItemOf(e) ?? {}).id === s.identifier)));
+    for ( const e of spent ) e.delete().then(() => log(`${s.name} : « ${e.name} » dépensé`), err => console.warn(`${MODULE_ID} | ${e.name} : non retiré`, err));
+  }
   const data = activity.getRollData();
   for ( const s of agreed ) {
     // Même forme qu'une part du système (data/activity/base-activity.mjs:933-939) ; le critique

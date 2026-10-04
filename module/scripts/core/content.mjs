@@ -167,7 +167,9 @@
  *     fortitude?: true                          Robustesse de la non-vie (MM 2024, §61) : des dégâts qui font tomber le porteur à
  *                                               0 PV lui font jeter une sauvegarde de Constitution (DD 5 + dégâts subis), sauf
  *                                               dégâts radiants ou coup critique ; réussie, il reste à 1 PV (core/fortitude.mjs)
- *     noOpportunity?: "always"|"flying"|"afterUse"  ne provoque pas d'attaque d'opportunité (§18.15) : toujours (Agile),
+ *     noOpportunity?: "always"|"flying"|"afterUse"|"whileEffect"
+ *                                               ne provoque pas d'attaque d'opportunité (§18.15) : toujours (Agile),
+ *                                               tant qu'il porte un effet de l'item (§74, Frappe du zéphyr),
  *                                               en volant (Vol rasant), ou le reste du tour après avoir utilisé l'item
  *                                               (« moves … without provoking Opportunity Attacks », lu dans le texte)
  *     drain?: true                              drain du maximum de PV (§18.16) : « égal aux dégâts [nécrotiques] subis », ou une
@@ -516,6 +518,8 @@ function validateStep(step, at, errors) {
       if ( (typeof step.damageType !== "string") || !step.damageType ) errors.push(`${at}.damageType : type de dégâts requis`);
     }
   }
+  // §74 : `spends` — des dégâts bonus qui dépensent un effet de l'item porté par l'auteur (Frappe du zéphyr : « une fois »).
+  if ( (step.type === "damage") && ("spends" in step) && !isId(step.spends) ) errors.push(`${at}.spends : id d'effet de l'item (16 caractères) attendu`);
   if ( (step.type === "use") && ("target" in step) && !["source", "self"].includes(step.target) ) errors.push(`${at}.target : « source » ou « self »`);
   if ( (step.type === "use") && ("advantage" in step) && (step.advantage !== true) ) errors.push(`${at}.advantage : true ou absent`);
   if ( (step.type === "use") && ("consume" in step) && (step.consume !== false) ) errors.push(`${at}.consume : false ou absent`);
@@ -707,7 +711,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     if ( !Array.isArray(b) || !b.length || !b.every(m => BREAK_MOMENTS.includes(m)) ) errors.push(`${at}breaksOn : liste parmi ${BREAK_MOMENTS.join(", ")}`);
   }
   if ( "emanation" in entry ) validateEmanation(entry.emanation, `${at}emanation`, errors);
-  if ( ("noOpportunity" in entry) && !["always", "flying", "afterUse"].includes(entry.noOpportunity) ) errors.push(`${at}noOpportunity : always, flying, afterUse`);
+  if ( ("noOpportunity" in entry) && !["always", "flying", "afterUse", "whileEffect"].includes(entry.noOpportunity) ) errors.push(`${at}noOpportunity : always, flying, afterUse, whileEffect`);
   if ( ("savedEffects" in entry) && (!Array.isArray(entry.savedEffects) || !entry.savedEffects.length || !entry.savedEffects.every(isId)) ) {
     errors.push(`${at}savedEffects : liste d'ids d'effets (16 caractères)`);
   }

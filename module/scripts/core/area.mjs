@@ -122,6 +122,40 @@ export function shouldTrigger(area, { event, token, turnKey }) {
   return (area.turnKey !== turnKey) || !area.hit.includes(token);
 }
 
+/**
+ * §80 : l'activité sœur que la zone rejoue à ce moment — la sienne propre quand la zone en joue plusieurs (`activities`, Faim de
+ * Hadar : froid au début du tour, acide à la fin), sinon la seule (`activity`), sinon null (l'activité qui a posé la zone).
+ * @param {AreaState & {activity?: string|null, activities?: Record<string, string>}} area
+ * @param {string} event
+ */
+export function siblingFor(area, event) {
+  return area?.activities?.[event] ?? area?.activity ?? null;
+}
+
+/**
+ * §80 : sous quelle clé noter « déjà touché ce tour » : la créature, et l'activité quand la zone en joue une par moment — le froid
+ * du début du tour n'empêche pas l'acide de la fin. Une zone à une seule activité garde « une fois par tour » (Rayon de lune).
+ * @param {AreaState & {activities?: Record<string, string>}} area
+ * @param {string} event
+ * @param {string} token  UUID du token.
+ */
+export function hitKey(area, event, token) {
+  const own = area?.activities?.[event];
+  return own ? `${token}#${own}` : token;
+}
+
+/**
+ * §80 : les activités sœurs d'une zone, par moment, à partir de ses déclarations `replay` ; seulement quand elles diffèrent d'un
+ * moment à l'autre (sinon `activity` suffit et rien ne change pour Rayon de lune, Cordon de flèches, Nuage puant).
+ * @param {Array<{on: string[], activity: string|null}>} replays  Pour chaque déclaration : ses moments, l'activité rejouée.
+ * @returns {Record<string, string>|null}
+ */
+export function siblingsByMoment(replays) {
+  const by = {};
+  for ( const { on, activity } of replays ?? [] ) if ( activity ) for ( const m of on ) by[m] = activity;
+  return (new Set(Object.values(by)).size > 1) ? by : null;
+}
+
 /** Note qu'un token vient d'être touché. Changer de tour de jeu efface la mémoire du précédent. */
 export function markHit(area, { token, turnKey }) {
   const hit = area.turnKey === turnKey ? area.hit : [];

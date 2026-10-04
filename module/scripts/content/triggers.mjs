@@ -47,6 +47,13 @@ export const TRIGGERS = Object.freeze({
   // entre ou y termine son tour reçoit un projectile : la sauvegarde de Dextérité de l'activité sœur (2d4 perforants). Quatre
   // projectiles (`zoneCharges`, content/spell-rules.mjs), puis le sort prend fin. Les créatures désignées à épargner : au MJ.
   "cordon-of-arrows": [{ on: ["enter", "turnEnd"], do: [{ type: "replay", activity: "dnd5eactivity000" }] }],
+  // §80 : Faim de Hadar — « Ouvrir le portail » (utilitaire) pose la sphère ; qui commence son tour dedans subit 2d6 de froid
+  // (« Start of Turn Damage », G6bH5mBR3kkEYjYe), qui le termine dedans fait un JS de Dextérité contre 2d6 d'acide (« End of Turn
+  // Save », FGDyvqQz5JQQc5mf). Une activité par moment, chacune une fois par tour.
+  "hunger-of-hadar": [
+    { on: "turnStart", do: [{ type: "replay", activity: "G6bH5mBR3kkEYjYe" }] },
+    { on: "turnEnd", do: [{ type: "replay", activity: "FGDyvqQz5JQQc5mf" }] }
+  ],
   // Croissance d'épines (§16.20) : « 2d4 perforants pour chaque tranche de 1,50 m parcourue » en y entrant ou dedans.
   "spike-growth": [{ on: "moves", do: [{ type: "replay" }] }],
   "wall-of-fire": [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }],
@@ -230,6 +237,10 @@ export const TRIGGERS = Object.freeze({
   // « Lingering Acid » (WHhf4PFHQBDkCAyb), l'activité « End of Turn Damage » (dnd5eactivity200), comme la Flèche acide.
   "vitriolic-sphere": [{ on: "endOfTurn", via: "effect", fromEffect: "WHhf4PFHQBDkCAyb",
     do: [{ type: "damage", to: "bearer", activity: "dnd5eactivity200" }, { type: "remove" }] }],
+  // §80 : Frappe piégeuse — « tant qu'elle est Entravée, la cible subit 1d6 dégâts perforants au début de chacun de ses tours » :
+  // l'effet « Ensnared » (tFGMG3cjQTEeAhv2), l'activité « Start of Turn Damage » (ZWId9mbOE9zFnP6f, au niveau de lancement).
+  "ensnaring-strike": [{ on: "startOfTurn", via: "effect", fromEffect: "tFGMG3cjQTEeAhv2",
+    do: [{ type: "damage", to: "bearer", activity: "ZWId9mbOE9zFnP6f" }] }],
   // Mauvais œil, « Endormi » (5btX5iwwleMMzkvj) : « se réveille s'il subit des dégâts ». (Paniqué, Nauséeux : au MJ.)
   "eyebite": [{ on: "isDamaged", via: "effect", fromEffect: "5btX5iwwleMMzkvj", do: [{ type: "remove" }] }],
   // Absorption des éléments (Xanathar's, livré par un module de créatures tiers) : réaction à des dégâts d'acide, de froid,

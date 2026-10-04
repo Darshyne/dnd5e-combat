@@ -167,7 +167,7 @@ describe("contenu livré", () => {
       "grease", "great-weapon-fighting", "great-weapon-master", "greater-portent", "guidance", "guiding-bolt",
       "gust-of-wind", "haste", "healers-kit", "heat-aura", "heat-metal", "heightened-spell", "hellish-rebuke",
       "heroic-warrior", "hex", "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-water",
-      "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "illusory-self", "improved-cunning-strike",
+      "hunger-of-hadar", "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "illusory-self", "improved-cunning-strike",
       "innate-sorcery", "instinctive-pounce", "invisibility", "invoke-duplicity", "lamp", "lantern-hooded", "large-form",
       "leading-evasion", "lesser-restoration", "life-drain", "lifedrinker", "light", "lunar-form", "mage-hand",
       "magic-missile", "magic-resistance", "marshal-undead", "martial-arts", "melfs-acid-arrow", "mind-sliver",

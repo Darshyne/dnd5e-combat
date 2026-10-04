@@ -1,4 +1,4 @@
-import { turnKeyOf, shouldTrigger, markHit, entersArea, stepsInside } from "../core/area.mjs";
+import { turnKeyOf, shouldTrigger, markHit, entersArea, stepsInside, siblingFor, hitKey } from "../core/area.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { readAreaState, writeAreaState, lastingRegions, isInside, replayAgainst, noteExpiry, expiredRegions } from "../adapter/areas.mjs";
@@ -31,14 +31,14 @@ function tick(region, token, event, turnKey=currentTurnKey(), { times=1 }={}) {
   return enqueue(`area:${region.id}`, async () => {
     const state = readAreaState(region);
     if ( !state?.usage || !isAffectable(token, state) ) return;
-    const context = { event, token: token.uuid, turnKey };
+    const context = { event, token: hitKey(state, event, token.uuid), turnKey };
     if ( !shouldTrigger(state, context) ) return;
     const usageMessage = game.messages.get(state.usage);
     if ( !usageMessage ) return;
     await writeAreaState(region, { ...state, ...markHit(state, context) });
     log(`${region.name} : ${token.name} (${event})`);
     announce(event, { actor: token.actor, target: token.actor, region: region.uuid, usage: state.usage });
-    await replayAgainst(usageMessage, token, { region: region.uuid, event, ...(times > 1 ? { times } : {}) }, { activity: state.activity ?? null });
+    await replayAgainst(usageMessage, token, { region: region.uuid, event, ...(times > 1 ? { times } : {}) }, { activity: siblingFor(state, event) });
     // §75 : une zone à nombre de déclenchements (`zoneCharges` : Cordon de flèches, 4 projectiles) tombe au dernier.
     const charges = contentOf(usageMessage.getAssociatedActivity?.()?.item).entry?.zoneCharges;
     if ( charges ) {

@@ -15,7 +15,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
 import { convertLength } from "../core/units.mjs";
 import { readUnitFactors } from "./units.mjs";
-import { translateShapes, shapeCenter, expiryTime } from "../core/area.mjs";
+import { translateShapes, shapeCenter, expiryTime, siblingsByMoment } from "../core/area.mjs";
 import { stepsOf } from "../core/triggers.mjs";
 import { committedPosition } from "./turn.mjs";
 import { declarationsOfItem } from "./triggers.mjs";
@@ -30,13 +30,17 @@ export function areaRulesOf(activity) {
   if ( !activity?.item ) return null;
   const on = new Set();
   let sibling = null;
+  const perDeclaration = [];
   for ( const d of declarationsOfItem(activity.item) ) {
     const replays = stepsOf(d, "replay");
     if ( !replays.length ) continue;
     d.on.forEach(m => on.add(m));
-    for ( const step of replays ) if ( step.activity && activity.item.system.activities?.get(step.activity) ) sibling = step.activity;
+    let own = null;
+    for ( const step of replays ) if ( step.activity && activity.item.system.activities?.get(step.activity) ) sibling = own = step.activity;
+    perDeclaration.push({ on: d.on, activity: own });
   }
-  return on.size ? { on: Array.from(on), activity: sibling } : null;
+  // §80 : une activité par moment quand elles diffèrent (Faim de Hadar).
+  return on.size ? { on: Array.from(on), activity: sibling, activities: siblingsByMoment(perDeclaration) } : null;
 }
 
 /** La zone d'une activité instantanée n'a plus de raison d'être une fois la résolution close. */

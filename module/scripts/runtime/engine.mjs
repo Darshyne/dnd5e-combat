@@ -694,6 +694,7 @@ async function onRegionCreated(region) {
         ...openArea(rules.on, key, (usage?.area && actsOnPose(rules.on)) ? targets.map(t => t.token) : []),
         usage: message.id,
         activity: rules.activity ?? null,
+        ...(rules.activities ? { activities: rules.activities } : {}),
         exclude: area.excludeOrigin ? area.origin : null,
         // §16.23 : les rejeux de la zone respectent qui elle affecte (Esprits gardiens épargnent les alliés).
         affects: area.affects ?? "", originDisposition: area.originDisposition ?? null

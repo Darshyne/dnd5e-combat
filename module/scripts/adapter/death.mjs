@@ -16,6 +16,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
+import { contentOf } from "./content.mjs";
 import { makesDeathSaves, damageAtZero, needsDeathSave, statusAfterDeathSave, downedStatus, isDead, canStabilize } from "../core/death.mjs";
 import { rollerFor } from "./concentration.mjs";
 import { closeRollDialogAfter } from "./dialogs.mjs";
@@ -37,11 +38,26 @@ function savesOf(actor) {
 /** §18.13 : une Régénération qui fait survivre à 0 PV jusqu'au début du tour (Troll, Revenant). */
 const regeneratesAtZero = actor => !!regenerationOf(actor)?.survivesZero;
 
+/**
+ * §71 : tombée à 0 PV sous une arme `stableAtZero` (Dague des ombres du Familier de vampire : « elle se retrouve Stabilisée ») —
+ * flag écrit dans la MÊME mise à jour que les PV (`planDamageAtZero`), lu par tous les clients avant de poser Mort ou Inconscient.
+ */
+const keptStable = actor => !!actor?.getFlag?.(MODULE_ID, "stableAtZero");
+
+/** Survit à 0 PV sans jets contre la mort : Régénération, ou stabilisée par l'arme qui l'y a fait tomber. */
+const survivesZero = actor => regeneratesAtZero(actor) || keptStable(actor);
+
+/** L'item des dégâts (message de dégâts de dnd5e, `options.originatingMessage`), ou null. */
+function damageItemOf(options) {
+  const message = options?.originatingMessage ?? options?.origin;
+  return message?.getAssociatedActivity?.()?.item ?? message?.getAssociatedItem?.() ?? null;
+}
+
 /** L'acteur est-il mort ? (core/death.mjs, `isDead`) — pour l'abri et le tir au contact. */
 export function isDeadActor(actor) {
   const hp = actor?.system?.attributes?.hp;
   if ( !actor || !hp ) return !!actor?.statuses?.has("dead");
-  return isDead({ hp: hp.value, saves: savesOf(actor) || regeneratesAtZero(actor) || transformsAtZero(actor) || standsAtZero(actor) || !!pendingFortitude(actor), statuses: Array.from(actor.statuses) });
+  return isDead({ hp: hp.value, saves: savesOf(actor) || survivesZero(actor) || transformsAtZero(actor) || standsAtZero(actor) || !!pendingFortitude(actor), statuses: Array.from(actor.statuses) });
 }
 
 /** Le message de dégâts est-il un coup critique ? */
@@ -104,7 +120,7 @@ async function markDead(actor, reason, data={}) {
  * écriture des PV, de façon asynchrone : on la retire aussi à sa création (runtime/regeneration.mjs). Rend true si retirée.
  */
 export async function dropAutoDead(actor) {
-  if ( !regeneratesAtZero(actor) ) return false;
+  if ( !survivesZero(actor) ) return false;
   const auto = actor.effects.filter(e => e.getFlag("dnd5e", "autoDowned") && e.statuses.has("dead")).map(e => e.id);
   if ( !auto.length ) return false;
   await deleteEffects(actor, auto);
@@ -123,7 +139,7 @@ export async function ensureDowned(actor, { afterUpdate=false }={}) {
   // §19.5 : une créature à seconde phase ne tombe pas, elle change de forme (runtime/coven.mjs).
   // §22 : Rage implacable — la sauvegarde de Constitution décide d'abord (runtime/barbarian.mjs) ; §61 : Robustesse de la non-vie.
   if ( (hp.value <= 0) && (transformsAtZero(actor) || standsAtZero(actor) || relentlessAtZero(actor) || pendingFortitude(actor)) ) return null;
-  const regenerates = (hp.value <= 0) && regeneratesAtZero(actor);
+  const regenerates = (hp.value <= 0) && survivesZero(actor);
   if ( regenerates ) await dropAutoDead(actor);
   const status = downedStatus({ hp: hp.value, saves: savesOf(actor), statuses: Array.from(actor.statuses),
     failures: actor.system.attributes.death?.failure ?? 0, regenerates });
@@ -176,6 +192,14 @@ export function planDamageAtZero(actor, amount, updates, options) {
     options[MODULE_ID] = { ...(options[MODULE_ID] ?? {}), endured: endured.name };
     return;
   }
+  // §71 : une arme qui stabilise ce qu'elle fait tomber — ni échec ni mort ; flag écrit avec les PV, Stabilisé posé après.
+  if ( (hp.value > 0) && (through >= hp.value) && contentOf(damageItemOf(options)).entry?.stableAtZero ) {
+    updates[`flags.${MODULE_ID}.stableAtZero`] = true;
+    options[MODULE_ID] = { ...(options[MODULE_ID] ?? {}), death: { stable: true } };
+    return;
+  }
+  // Déjà à 0 et gardée en vie par une telle arme : de nouveaux dégâts suivent la règle ordinaire (un PNJ meurt).
+  if ( (hp.value <= 0) && keptStable(actor) && (through > 0) ) updates[`flags.${MODULE_ID}.-=stableAtZero`] = null;
   const critical = isCriticalDamage(options);
   // §61 : Robustesse de la non-vie — la sauvegarde due part avec les PV ; ni échec ni mort tant qu'elle n'est pas jouée.
   const taken = incoming;
@@ -190,6 +214,14 @@ export function planDamageAtZero(actor, amount, updates, options) {
 export async function settleDamageAtZero(actor, amount, options) {
   const outcome = options?.[MODULE_ID]?.death;
   if ( !outcome ) return null;
+  if ( outcome.stable ) {
+    // §71 : Stabilisé, et la Mort que dnd5e pose d'office sur un PNJ à 0 PV (`autoDowned`) retirée — Inconscient à la place.
+    await setDeathStatus(actor, "stable");
+    await dropAutoDead(actor);
+    await ensureDowned(actor);
+    await announce(actor, "Stabilise", {}, "stable");
+    return outcome;
+  }
   if ( outcome.dead ) {
     const data = outcome.reason === "massive"
       ? { remainder: outcome.through - outcome.before, max: outcome.max }
@@ -277,5 +309,6 @@ export async function clearDeathMarks(actor) {
   // Mort et Stabilisé posés par le moteur ; Stabilisé, quelle que soit sa source (Stabilisation, §16.47).
   const ids = actor.effects.filter(e => e.getFlag(MODULE_ID, "death") || e.statuses.has("stable")).map(e => e.id);
   await deleteEffects(actor, ids);
+  if ( keptStable(actor) ) await actor.unsetFlag(MODULE_ID, "stableAtZero");   // §71
   return ids.length;
 }

@@ -41,7 +41,7 @@ export function registerDeath() {
       if ( token ) notice(token, loc("Espece.Acharnement", { item: endured }), "gain");
     }
     const outcome = await settleDamageAtZero(actor, amount, options);
-    if ( outcome ) log(`${actor.name} : dégâts à 0 PV → ${outcome.dead ? `mort (${outcome.reason})` : `${outcome.failures} échec(s)`}`);
+    if ( outcome ) log(`${actor.name} : dégâts à 0 PV → ${outcome.stable ? "stabilisé par l'arme" : outcome.dead ? `mort (${outcome.reason})` : `${outcome.failures} échec(s)`}`);
   }, { label: "0 PV : mort ou échec non posé" });
   // Sur le client qui a lancé le jet (le joueur, ou le moteur).
   route("dnd5e.rollDeathSaveV2", (rolls, { outcome, subject }) => settleDeathSave(subject, outcome),

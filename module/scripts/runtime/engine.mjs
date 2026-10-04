@@ -232,6 +232,8 @@ const COMMANDS = {
       const { effects: toApply, pushes } = await splitPushes(carrier, allowed);
       for ( const push of pushes ) await forcedMove(source, target, { mode: "push", ...push });
       const effects = await applyEffectsToToken(carrier, entry.token, toApply);
+      if ( toApply.length > effects.length ) log(`${target?.name ?? entry.token} : ${toApply.length - effects.length} effet(s) prévu(s) non posé(s) (${toApply.map(e => e.id).join(", ")})`);
+      else if ( (entry.effects ?? []).length && !toApply.length && !pushes.length ) log(`${target?.name ?? entry.token} : aucun effet à poser (${(entry.effects ?? []).length} prévu(s))`);
       // Étapes d'issue du contenu (SPEC §16) : poussée, traction, état — si leur condition tient pour cette cible.
       for ( const step of entry.steps ?? [] ) {
         const condition = (typeof step.if === "string") ? JSON.parse(step.if) : step.if;   // JSON dans le plan (adapter/usage.mjs)

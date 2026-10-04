@@ -190,10 +190,10 @@ describe("contenu livré", () => {
       "summon-undead", "sunburst", "supreme-healing", "swallow", "swoop", "symbol", "tactical-charge", "tactical-shift",
       "tashas-hideous-laughter", "telekinetic", "thorn-whip", "thrown-weapon-fighting", "thunderous-smite", "thunderwave",
       "tinderbox", "toll-the-dead", "torch", "trampling-charge", "tricksters-transposition", "true-resurrection",
-      "true-strike", "unarmed-strike", "uncanny-dodge", "undead-fortitude", "vampiric-bite", "vicious-mockery",
-      "vile-appearance", "vitriolic-sphere", "vow-of-enmity", "wall-of-fire", "war-caster", "war-priest", "warding-bond",
-      "warding-flare", "watery-rush", "web", "weird", "wild-companion", "wild-resurgence", "witch-bolt", "wrath-of-the-sea",
-      "wrathful-smite"
+      "true-strike", "umbral-dagger", "unarmed-strike", "uncanny-dodge", "undead-fortitude", "vampiric-bite",
+      "vicious-mockery", "vile-appearance", "vitriolic-sphere", "vow-of-enmity", "wall-of-fire", "war-caster", "war-priest",
+      "warding-bond", "warding-flare", "watery-rush", "web", "weird", "wild-companion", "wild-resurgence", "witch-bolt",
+      "wrath-of-the-sea", "wrathful-smite"
     ]);
     expect(CONTENT["aura-of-protection"].aura.radius).toBe(10);
     expect(CONTENT.hex.triggers).toHaveLength(1);
@@ -567,5 +567,16 @@ describe("§70 : orage (storm)", () => {
     expect(validateEntry({ storm: {} })).toEqual([]);
     expect(validateEntry({ storm: { bonus: "beaucoup" } })).toEqual([expect.stringContaining("bonus")]);
     expect(mergeEntries([null, { storm: { bonus: "1d10" } }]).storm).toEqual({ bonus: "1d10" });
+  });
+});
+
+describe("§71 : stabilisée à 0 PV, effets sous condition", () => {
+  it("stableAtZero : true ; effectsIf : une condition", () => {
+    expect(validateEntry({ stableAtZero: true, effectsIf: { "target.atZero": true } }, { facts: { "target.atZero": () => true } })).toEqual([]);
+    expect(validateEntry({ stableAtZero: "oui" })).toEqual([expect.stringContaining("stableAtZero")]);
+    expect(validateEntry({ effectsIf: "target.atZero" })).toEqual([expect.stringContaining("effectsIf")]);
+    const merged = mergeEntries([null, { stableAtZero: true, effectsIf: { "target.atZero": true } }]);
+    expect(merged.stableAtZero).toBe(true);
+    expect(merged.effectsIf).toEqual({ "target.atZero": true });
   });
 });

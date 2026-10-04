@@ -98,6 +98,16 @@ function sizeGate(activity) {
 }
 
 /**
+ * La condition que la cible doit remplir pour recevoir les effets de l'attaque : la porte de taille (M3), et celle que le contenu
+ * déclare (§71, `effectsIf` : « si la cible tombe à 0 PV en raison de cette attaque » → `{ "target.atZero": true }`, jugée après
+ * les dégâts). Les deux : toutes deux.
+ */
+function effectGate(activity) {
+  const conditions = [sizeGate(activity), contentOf(activity.item).entry?.effectsIf ?? null].filter(Boolean);
+  return (conditions.length > 1) ? { all: conditions } : (conditions[0] ?? null);
+}
+
+/**
  * L'activité lance-t-elle des dégâts ? On lit la configuration du jet que dnd5e préparerait (`getDamageConfig`), pas
  * la seule liste des parties : une partie peut être vide (« Grapple » de la Main de Bigby : ni dés ni formule), et des
  * dégâts peuvent venir d'ailleurs (les flammes de la Sphère de feu : partie vide, `(niveau)d6` ajouté par l'invocation,
@@ -301,7 +311,7 @@ function readPlan(message) {
         save: chain?.save ?? null,
         variant: variant ? { activity: variant.activity.uuid, kind: variant.kind, name: variant.activity.name } : null,
         damageFrom: [variant?.activity.uuid, advantage?.uuid].filter(Boolean),
-        effects: [...effectsOf(source, () => "always", sizeGate(source)).filter(e => variant || !chargeOnly(activity).includes(e.id)), ...(chain?.effects ?? [])],
+        effects: [...effectsOf(source, () => "always", effectGate(source)).filter(e => variant || !chargeOnly(activity).includes(e.id)), ...(chain?.effects ?? [])],
         steps: [...outcomeStepsOf(activity.item, "hit", "always"), ...(chain ? outcomeStepsOf(activity.item, "failedSave", "failedSave") : [])]
       } };
     }

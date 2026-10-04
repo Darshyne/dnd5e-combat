@@ -309,6 +309,10 @@
  *                                               porte `castsSpell`, fait échouer d'office un sort de niveau `level` ou moins (défaut :
  *                                               le niveau de l'item) ; au-delà, test de la caractéristique d'incantation de celui
  *                                               qui contre, DD 10 + le niveau du sort (core/counter.mjs) — pas de sauvegarde du lanceur
+ *     stableAtZero?: true                       une cible que l'attaque fait tomber à 0 PV est Stabilisée : ni jet contre
+ *                                               la mort ni mort, même un PNJ (§71, Dague des ombres du Familier de vampire)
+ *     effectsIf?: condition                     les effets de l'attaque ne passent que si la condition tient pour la cible,
+ *                                               jugée après les dégâts (§71 : `{ "target.atZero": true }`)
  *     storm?: { bonus? }                        orage (§70, Appel de la foudre) : la zone de l'item est un nuage qui
  *                                               reste (concentration) ; chaque lancement vise un éclair (`bolt`) dessous ;
  *                                               `bonus` : dés ajoutés quand l'orage était déjà là (question à l'incantation)
@@ -467,7 +471,7 @@ export const EFFECT_ENDS = Object.freeze(["casterTurnStart", "casterTurnEnd", "b
 /** Ce qui ouvre une attaque en action Bonus (`bonusAttack.after`). */
 export const BONUS_ATTACK_AFTER = Object.freeze(["critical", "felled"]);
 
-export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm"]);
+export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf"]);
 export const CHOICE_EFFECTS = Object.freeze(["one"]);
 /** §37 : ce qu'une sauvegarde répétée ratée impose en plus (`resave.onFail`) : l'action Esquiver (Malédiction). */
 export const RESAVE_ON_FAIL = Object.freeze(["dodge"]);
@@ -749,7 +753,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       if ( !kinds.length || !kinds.every(k => BASIC_ACTION_KINDS.includes(k)) ) errors.push(`${at}basicActions.${id} : ${BASIC_ACTION_KINDS.join(", ")} (ou une liste)`);
     }
   }
-  for ( const key of ["dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "sneakAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "noOpportunityAttacks", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "replacesAttack", "stabilizes", "kindles", "castTargets"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key} : true ou absent`);
+  for ( const key of ["stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "sneakAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "noOpportunityAttacks", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "replacesAttack", "stabilizes", "kindles", "castTargets"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key} : true ou absent`);
   validateRogue(entry, at, errors);
   if ( ("cures" in entry) && (!Array.isArray(entry.cures) || !entry.cures.length || !entry.cures.every(s => (typeof s === "string") && s)) ) {
     errors.push(`${at}cures : liste d'identifiants d'état`);
@@ -795,6 +799,10 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     }
   }
   if ( "teleport" in entry ) validateTeleport(entry.teleport, `${at}teleport`, errors);
+  if ( "effectsIf" in entry ) {
+    if ( !isObject(entry.effectsIf) ) errors.push(`${at}effectsIf : une condition (objet)`);
+    else for ( const key of unknownFacts(entry.effectsIf, facts) ) errors.push(`${at}effectsIf : fait « ${key} » inconnu`);
+  }
   if ( "storm" in entry ) {
     const t = entry.storm;
     if ( !isObject(t) ) errors.push(`${at}storm : un objet`);
@@ -1218,6 +1226,8 @@ export function mergeEntries(layers) {
     if ( "counter" in layer ) out.counter = { ...layer.counter };
     if ( "difficultTerrain" in layer ) out.difficultTerrain = { ...layer.difficultTerrain };   // §69
     if ( "storm" in layer ) out.storm = { ...layer.storm };   // §70
+    if ( "stableAtZero" in layer ) out.stableAtZero = layer.stableAtZero;   // §71
+    if ( "effectsIf" in layer ) out.effectsIf = layer.effectsIf;   // §71
     if ( "forOneAttack" in layer ) out.forOneAttack = layer.forOneAttack;
     if ( "basicActions" in layer ) out.basicActions = { ...(out.basicActions ?? {}), ...layer.basicActions };
     if ( "secondPhase" in layer ) out.secondPhase = { ...(out.secondPhase ?? {}), ...layer.secondPhase };

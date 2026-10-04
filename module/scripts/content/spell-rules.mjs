@@ -69,6 +69,11 @@ export const SPELL_RULES = Object.freeze({
   // §70 : Appel de la foudre — le nuage (cylindre de 18 m) reste ; chaque lancement vise un éclair de 1,50 m dessous ; « dehors, par
   // temps d'orage » : +1d10 (question à l'incantation). La relance sans emplacement (`recast`) et l'éclair (`bolt`) : content/bursts.mjs.
   "call-lightning": { storm: { bonus: "1d10" } },
+  // §71 : Dague des ombres (Familier de vampire, Monster Manual 2024, `mmUmbralDagger00`) — « si la cible tombe à 0 point de vie en
+  // raison de cette attaque, elle se retrouve Stabilisée mais subit l'état Empoisonné pendant 1 heure ; tant qu'elle est Empoisonnée,
+  // elle est Paralysée » : l'effet « Empoisonné et Paralysé » de l'item ne passe que si la cible est à 0 PV après les dégâts, et
+  // elle est stabilisée (ni jet contre la mort ni mort, même un PNJ).
+  "umbral-dagger": { stableAtZero: true, effectsIf: { "target.atZero": true } },
   "entangle": { difficultTerrain: { types: ["plants"] } },
   "spike-growth": { difficultTerrain: { types: ["plants"] } },
   "web": { difficultTerrain: { types: ["webs"] } },

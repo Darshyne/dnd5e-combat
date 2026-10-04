@@ -312,6 +312,32 @@ export async function requestSaves(usageMessage, save, targets, { askPlayers=tru
  * @param {Array<{id: string, activity: string}>} refs  Effets du plan (core/action.mjs).
  * @returns {Promise<string[]>}  UUID des effets posés sur la cible.
  */
+/**
+ * §71 : l'effet qu'un profil de l'activité cite, absent de l'item du monde — la Dague des ombres d'un Familier de vampire importé le
+ * 2026-10-04 l'avait perdu (l'activité gardait le profil `dsK5sPtkUMySmyvw`, l'item n'avait plus d'effet). On le prend sur la fiche
+ * d'origine (compendium) : même acteur (`_stats.compendiumSource`, sinon un compendium d'acteurs qui a son id), même item, même effet.
+ * L'effet du compendium s'applique tel quel (dnd5e note sa source, effect-application.mjs:237). Rien d'écrit sur la fiche.
+ */
+async function lostEffectOf(activity, effectId) {
+  const item = activity?.item;
+  const actor = item?.actor;
+  if ( !item || !actor ) return null;
+  const base = actor.isToken ? (actor.baseActor ?? actor) : actor;
+  const sources = [base._stats?.compendiumSource, base.flags?.core?.sourceId].filter(u => typeof u === "string" && u.startsWith("Compendium."));
+  for ( const uuid of sources ) {
+    const source = await fromUuid(uuid).catch(() => null);
+    const effect = source?.items?.get(item.id)?.effects?.get(effectId);
+    if ( effect ) { console.log(`${MODULE_ID} | « ${effect.name} » pris sur la fiche d'origine (${uuid}) : l'item du monde l'a perdu`); return effect; }
+  }
+  for ( const pack of game.packs.filter(p => p.documentName === "Actor") ) {
+    if ( !pack.index.has(base.id) ) continue;
+    const source = await pack.getDocument(base.id).catch(() => null);
+    const effect = source?.items?.get(item.id)?.effects?.get(effectId);
+    if ( effect ) { console.log(`${MODULE_ID} | « ${effect.name} » pris dans ${pack.collection} : l'item du monde l'a perdu`); return effect; }
+  }
+  return null;
+}
+
 export async function applyEffectsToToken(usageMessage, tokenUuid, refs) {
   if ( !refs.length ) return [];
   const actor = (await fromUuid(tokenUuid))?.actor;
@@ -323,8 +349,11 @@ export async function applyEffectsToToken(usageMessage, tokenUuid, refs) {
     const activity = activityFor(usageMessage, ref.activity);
     // §37 : un effet de la réserve (`choice.pool`) n'est pas un profil de l'activité.
     const profile = [...(activity?.effects ?? []), ...poolEffectsOf(activity)].find(e => effectKey(e) === ref.id);
-    const effect = await profile?.getEffect();
-    if ( !effect ) continue;
+    const effect = (await profile?.getEffect()) ?? (profile ? await lostEffectOf(activity, ref.id) : null);
+    if ( !effect ) {
+      console.log(`${MODULE_ID} | effet ${ref.id} introuvable sur ${activity?.item?.name ?? ref.activity}, ni sur sa fiche d'origine`);
+      continue;
+    }
     // §16.8 : immunisée contre l'un de ses états, la créature ne reçoit pas l'effet (Motif hypnotique sans Charmé).
     if ( blockedFor(effect, actor).length ) continue;
     const result = await tray._applyEffectToActor(effect, actor);

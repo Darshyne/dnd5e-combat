@@ -193,7 +193,13 @@ export default {
       await pause(2000);
       const b = await budget();
       ctx.expect(b?.disengaged === true && b?.dodging === true && b?.bonus === 0, `Défense patiente : désengagé ${b?.disengaged}, esquive ${b?.dodging}`);
-      await ctx.nextTurn(); await pause(1500); await ctx.nextTurn(); await pause(2000);
+      // §79 : l'Esquive (état du moteur, l'effet de l'item n'est pas posé) tient pendant le tour du Bandit et tombe au début du
+      // prochain tour du moine.
+      const dodging = async () => (await ctx.effects(monk)).some(e => !e.disabled && (e.statuses ?? []).includes("dodging"));
+      await ctx.nextTurn(); await pause(1500);
+      ctx.expect(await dodging(), "au tour du Bandit, le moine esquive toujours");
+      await ctx.nextTurn(); await pause(2000);
+      ctx.expect(!(await dodging()), "au prochain tour du moine, l'Esquive est tombée");
       await ctx.use({ tokenId: monk.id, itemId: focus, activityId: "0MuRZ0Ur95xQTKFq", consume: true });
       await pause(2000);
       const c = await budget();

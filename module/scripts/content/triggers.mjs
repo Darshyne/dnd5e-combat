@@ -167,6 +167,11 @@ export const TRIGGERS = Object.freeze({
   "hypnotic-pattern": [{ on: "isDamaged", via: "effect", do: [{ type: "remove" }] }],
   // §65 : Suggestion — « la suggestion prend fin si vous ou vos alliés infligez des dégâts à la cible » : seulement ces dégâts-là.
   "suggestion": [{ on: "isDamaged", via: "effect", by: "originSide", do: [{ type: "remove" }] }],
+  // §79 : même fin pour Charme-personne et Charme-monstre (« jusqu'à ce que vous ou vos alliés lui infligiez des dégâts ») et
+  // Amitié avec les animaux (« si vous ou l'un de vos alliés infligez des dégâts à la cible, le sort prend fin »).
+  "charm-person": [{ on: "isDamaged", via: "effect", by: "originSide", do: [{ type: "remove" }] }],
+  "charm-monster": [{ on: "isDamaged", via: "effect", by: "originSide", do: [{ type: "remove" }] }],
+  "animal-friendship": [{ on: "isDamaged", via: "effect", by: "originSide", do: [{ type: "remove" }] }],
   // §42.2 : Apaisement des émotions — « cette indifférence prend fin si la cible subit des dégâts » : le seul effet
   // « Indifference » (cb3KFq1j9UkOUV2l) ; l'autre option (Charmé et Effrayé supprimés) ne cesse pas sur dégâts.
   "calm-emotions": [{ on: "isDamaged", via: "effect", fromEffect: "cb3KFq1j9UkOUV2l", do: [{ type: "remove" }] }],

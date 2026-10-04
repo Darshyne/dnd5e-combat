@@ -14,14 +14,14 @@
  */
 
 const PATTERNS = [
-  // Anglais.
-  { re: /until the (start|end) of (?:its|their|the target's) (?:own )?next turn/gi, who: "target" },
-  { re: /until the (start|end) of (?:your|the (?!target's)[^.;,]{1,60}?'s) next turn/gi, who: "source" },
+  // Anglais. §79 : « before the end of your next turn » (Rayon traçant, Frappe occulte) borne l'effet comme « until ».
+  { re: /(?:until|before) the (start|end) of (?:its|their|the target's) (?:own )?next turn/gi, who: "target" },
+  { re: /(?:until|before) the (start|end) of (?:your|the (?!target's)[^.;,]{1,60}?'s) next turn/gi, who: "source" },
   // Français.
-  { re: /jusqu'(?:au (début)|à la (fin)) de son (?:propre )?tour suivant/gi, who: "target" },
-  { re: /jusqu'(?:au (début)|à la (fin)) du (?:prochain )?tour (?:suivant )?de la cible/gi, who: "target" },
-  { re: /jusqu'(?:au (début)|à la (fin)) de votre (?:prochain )?tour(?: suivant)?/gi, who: "source" },
-  { re: /jusqu'(?:au (début)|à la (fin)) du (?:prochain )?tour suivant (?:du|de la|de l'|des)(?! cible)/gi, who: "source" }
+  { re: /(?:jusqu'(?:au (début)|à la (fin))|avant (?:le (début)|la (fin))) de son (?:propre )?tour suivant/gi, who: "target" },
+  { re: /(?:jusqu'(?:au (début)|à la (fin))|avant (?:le (début)|la (fin))) du (?:prochain )?tour (?:suivant )?de la cible/gi, who: "target" },
+  { re: /(?:jusqu'(?:au (début)|à la (fin))|avant (?:le (début)|la (fin))) de votre (?:prochain )?tour(?: suivant)?/gi, who: "source" },
+  { re: /(?:jusqu'(?:au (début)|à la (fin))|avant (?:le (début)|la (fin))) du (?:prochain )?tour suivant (?:du|de la|de l'|des)(?! cible)/gi, who: "source" }
 ];
 
 const EDGE = { start: "Start", end: "End", "début": "Start", fin: "End" };
@@ -52,7 +52,7 @@ function expiriesIn(sentence) {
   const found = [];
   for ( const { re, who } of PATTERNS ) {
     for ( const m of sentence.matchAll(re) ) {
-      const edge = EDGE[(m[1] ?? m[2] ?? "").toLowerCase()];
+      const edge = EDGE[(m.slice(1).find(Boolean) ?? "").toLowerCase()];
       if ( edge ) found.push({ at: m.index, expiry: `${who}${edge}` });
     }
   }
@@ -65,27 +65,34 @@ function expiriesIn(sentence) {
  *    ailleurs appartient à autre chose (Mot de pouvoir étourdissant : « Speed 0 until the start of your next turn » n'est
  *    pas la durée d'Étourdi ; Technique de la paume : la Renverse n'expire pas avec la Déroute).
  *  - Effet sans état : seulement si `alone` (le texte est la description de l'effet lui-même) et qu'il n'y a qu'une durée.
+ *  - `fallback` (§79) : le texte de l'item d'un effet posé en « 1 tour » générique, durée déjà fausse — si aucune phrase ne
+ *    nomme l'état de l'effet (ou qu'il n'en porte pas), la durée du texte quand il n'en écrit qu'une (Attaque menaçante :
+ *    « Frightened » sans lien ; Chausse-trappes, Taillade, Présence zélée : effets sans état). Des durées différentes : rien.
  * @param {string} html
  * @param {string[]} [statuses]  états de l'effet (« paralyzed »…)
- * @param {{alone?: boolean}} [options]
+ * @param {{alone?: boolean, fallback?: boolean}} [options]
  * @returns {"targetStart"|"targetEnd"|"sourceStart"|"sourceEnd"|null}
  */
-export function expiryFromText(html, statuses=[], { alone=false }={}) {
+export function expiryFromText(html, statuses=[], { alone=false, fallback=false }={}) {
   const text = plainText(html);
   if ( !text ) return null;
   const sentences = text.split(/(?<=[.;:])\s+/);
+  const unique = () => {
+    const all = [...new Set(sentences.flatMap(expiriesIn))];
+    return (all.length === 1) ? all[0] : null;
+  };
   const wanted = new Set(statuses.map(s => String(s).toLowerCase()));
   if ( wanted.size ) {
+    let named = false;
     for ( const sentence of sentences ) {
       // La durée qui SUIT la mention de l'état (Psion githzerai : « (A) Charmed until the start… or (B) Prone » — la
       // Renverse n'a pas la durée du Charme).
       const mention = [...sentence.matchAll(/«(\w+)»/g)].find(m => wanted.has(m[1].toLowerCase()));
+      if ( mention ) named = true;
       const found = mention ? expiriesIn(sentence.slice(mention.index)) : [];
       if ( found.length ) return found[0];
     }
-    return null;
+    return (fallback && !named) ? unique() : null;
   }
-  if ( !alone ) return null;
-  const all = [...new Set(sentences.flatMap(expiriesIn))];
-  return (all.length === 1) ? all[0] : null;
+  return (alone || fallback) ? unique() : null;
 }

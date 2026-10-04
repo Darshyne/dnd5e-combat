@@ -38,11 +38,15 @@ export function setTextExpiry(effect) {
   if ( !item || effect.transfer ) return null;   // un effet passif d'un item de l'acteur n'est pas « posé »
   const statuses = Array.from(effect.statuses ?? []);
   // La description de l'effet qui nomme son état fait foi, même sans durée ; sinon l'item.
-  const expiry = namesStatus(effect.description, statuses)
+  let expiry = namesStatus(effect.description, statuses)
     ? expiryFromText(effect.description, statuses, { alone: true })
     : (expiryFromText(effect.description, statuses, { alone: true })
       ?? expiryFromText(englishDescription(item), statuses)
       ?? expiryFromText(item.system?.description?.value, statuses));
+  // §79 : la durée générique est déjà fausse — le texte de l'item, s'il n'écrit qu'une durée, vaut mieux qu'elle.
+  if ( !expiry && generic && !namesStatus(effect.description, statuses) ) {
+    expiry = expiryFromText(englishDescription(item), statuses, { fallback: true });
+  }
   if ( !expiry ) return null;
   effect.updateSource({ "duration.expiry": expiry, ...(generic ? { "duration.value": null, "duration.units": "" } : {}) });
   return expiry;

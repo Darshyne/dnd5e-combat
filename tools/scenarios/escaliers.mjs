@@ -17,6 +17,7 @@ const NEIGHBOURS = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1]
 const MAX_CANDIDATES = 40;
 
 export default {
+  scene: "keep",   // §83 : étages et escaliers, dans Restored Keep
   name: "escaliers — l'A* du moteur change de niveau par un escalier",
 
   async run(ctx) {

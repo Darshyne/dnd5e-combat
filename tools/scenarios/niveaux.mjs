@@ -8,6 +8,7 @@
  * Sans niveaux sur la scène (un seul niveau), le scénario se déclare non applicable.
  */
 export default {
+  scene: "keep",   // §83 : étages et escaliers, dans Restored Keep
   name: "niveaux — un plancher arrête la zone et l'attaque",
 
   async run(ctx) {

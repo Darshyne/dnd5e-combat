@@ -10,6 +10,7 @@
 const NAMES = ["Paladin", "Guerrier"];
 
 export default {
+  scene: "keep",   // §83 : étages et escaliers, dans Restored Keep
   name: "escalier direct — un clic sur l'escalier change de niveau, sans dialogue",
 
   async run(ctx) {

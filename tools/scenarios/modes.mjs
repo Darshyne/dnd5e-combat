@@ -12,6 +12,7 @@
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 export default {
+  scene: "keep",   // §83 : étages et escaliers, dans Restored Keep
   name: "modes — vol, marche, fouissement : élévation cohérente",
 
   async run(ctx) {

@@ -19,6 +19,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { connect } from "./lib/connector.mjs";
+import { ARENA, RESTORED_KEEP } from "./lib/stages.mjs";
 
 const MODULE_ID = "dnd5e-combat";
 const TERMINAL = new Set(["done", "missed", "undone"]);
@@ -537,6 +538,43 @@ async function restoreScene(mcp, snap) {
   if ( fixed.length ) console.log(`    ↺ filet de sécurité : ${fixed.join(" ; ")}`);
 }
 
+// §83 : la scène de chaque scénario. Dans un monde qui a l'arène de test (`dnd-6`), un scénario s'y joue, sauf `scene: "keep"`
+// (étages, escaliers : Restored Keep) ; la scène active du départ est rétablie à la fin. Sans arène, la scène active, comme avant.
+const scenes = await mcp.call("list-scenes", {}).catch(() => []);
+const sceneList = Array.isArray(scenes) ? scenes : (scenes.scenes ?? []);
+// `ARENE=0` : sans l'arène (la scène active), pour comparer.
+const arenaScene = (process.env.ARENE === "0") ? null : (sceneList.find(s => s.name === ARENA.name) ?? null);
+const keepScene = sceneList.find(s => s.id === RESTORED_KEEP.scene) ?? null;
+const activeAtStart = sceneList.find(s => s.active)?.id ?? null;
+let activeNow = activeAtStart;
+
+/** Active une scène et attend que le client du MJ l'affiche. */
+async function useScene(id) {
+  if ( !id || (activeNow === id) ) return;
+  await mcp.call("activate-scene", { sceneId: id });
+  for ( let i = 0; i < 30; i++ ) {
+    await sleep(500);
+    const { sceneId } = await mcp.call("list-scene-objects", { types: ["Token"] }).catch(() => ({}));
+    if ( sceneId === id ) break;
+  }
+  await sleep(2500);   // le canevas du MJ se dessine (vision, régions) avant que le moteur y lise quoi que ce soit
+  activeNow = id;
+  console.log(`    ⇄ scène : ${sceneList.find(s => s.id === id)?.name ?? id}`);
+}
+
+/** Dans l'arène, chaque token de la distribution à sa place, au sol. */
+async function arrangeArena() {
+  const { objects } = await mcp.call("list-scene-objects", { types: ["Token"] });
+  for ( const t of objects.Token ?? [] ) {
+    const at = ARENA.tokens[t.name];
+    if ( !at ) continue;
+    const { data } = await mcp.call("get-scene-object", { type: "Token", objectId: t.id });
+    if ( (data.x === at[0]) && (data.y === at[1]) && !(data.elevation ?? 0) ) continue;
+    await mcp.call("move-token", { tokenId: t.id, x: at[0], y: at[1], elevation: 0 }).catch(err => console.log(`    ! ${t.name} non replacé : ${err.message}`));
+    await sleep(300);
+  }
+}
+
 let failed = 0;
 let skipped = 0;
 // L'état laissé par le scénario précédent, une fois remis en place : un token qui a bougé ENTRE deux scénarios (un déplacement
@@ -549,6 +587,14 @@ for ( const file of files ) {
   // Un scénario qui attend un clic du MJ (`interactive`) ne se joue que nommé.
   if ( scenario.interactive && !named ) { console.log(`\n· ${scenario.name ?? basename(file)} : interactif, sauté (le nommer pour le jouer)`); skipped++; continue; }
   console.log(`\n▶ ${scenario.name ?? basename(file)}`);
+  if ( arenaScene ) {
+    const target = (scenario.scene === "keep") ? keepScene : arenaScene;
+    if ( target ) {
+      if ( target.id !== activeNow ) previous = null;   // l'état laissé dans l'autre scène ne se compare pas
+      await useScene(target.id);
+      if ( target === arenaScene ) await arrangeArena();
+    }
+  }
   const ctx = makeContext(mcp);
   if ( previous ) {
     const now = await snapshotScene(mcp).catch(() => null);
@@ -595,5 +641,6 @@ for ( const file of files ) {
   if ( ctx.failures.length ) failed++;
   console.log(ctx.failures.length ? `  ✗ ${ctx.failures.length} vérification(s) en défaut` : "  ✓ scénario tenu");
 }
+if ( activeAtStart && (activeNow !== activeAtStart) ) await useScene(activeAtStart);
 console.log(`\n${files.length - skipped - failed}/${files.length - skipped} scénario(s) tenus${skipped ? ` (${skipped} interactif(s) sauté(s))` : ""}`);
 process.exitCode = failed ? 1 : 0;

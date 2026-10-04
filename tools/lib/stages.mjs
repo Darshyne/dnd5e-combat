@@ -21,3 +21,14 @@ export const RESTORED_KEEP = Object.freeze({
     Druide: [3080, 5740], "Rôdeur": [3220, 5740], Barde: [3360, 5740]
   })
 });
+
+/**
+ * §83 : l'arène de test de `dnd-6` — une scène plate, un seul niveau, sans murs, aux dimensions et à la grille de Restored Keep (140 px,
+ * 5 ft) : les coordonnées de référence ci-dessus y valent telles quelles. Un seul Zombi. Le lanceur (tools/scenario.mjs) y joue
+ * tout scénario qui ne demande pas `scene: "keep"` (étages, planchers, escaliers), et y remet chaque token à sa place avant chacun.
+ * Trouvée par son nom ; absente (autre monde), le lanceur joue sur la scène active, comme avant.
+ */
+export const ARENA = Object.freeze({
+  name: "Arène de test",
+  tokens: Object.freeze({ ...RESTORED_KEEP.tokens, "Âme-en-peine": [3640, 5460], Zombi: [2800, 4900] })
+});

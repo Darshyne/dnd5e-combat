@@ -13,6 +13,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const STEPS = [[3, 0], [0, 3], [-3, 0], [0, -3], [2, 2], [-2, -2], [2, -2], [-2, 2]];
 
 export default {
+  scene: "keep",   // §83 : étages et escaliers, dans Restored Keep
   name: "suivre — un token en suit un autre, la boucle refusée, l'ordre qui tombe",
 
   async run(ctx) {

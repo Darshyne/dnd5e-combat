@@ -627,3 +627,12 @@ describe("§75 : zoneCharges", () => {
     expect(mergeEntries([null, { zoneCharges: 4 }]).zoneCharges).toBe(4);
   });
 });
+
+describe("§76 : changesForm", () => {
+  it("id d'activité, clés connues, fusionné", () => {
+    expect(validateEntry({ changesForm: { activity: "aaaaaaaaaaaaaaaa" } })).toEqual([]);
+    expect(validateEntry({ changesForm: { activity: "court" } })).toEqual([expect.stringContaining("changesForm.activity")]);
+    expect(validateEntry({ changesForm: { activity: "aaaaaaaaaaaaaaaa", quand: 1 } })).toEqual([expect.stringContaining("clé inconnue")]);
+    expect(mergeEntries([null, { changesForm: { activity: "aaaaaaaaaaaaaaaa" } }]).changesForm.activity).toBe("aaaaaaaaaaaaaaaa");
+  });
+});

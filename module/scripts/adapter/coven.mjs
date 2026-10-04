@@ -35,6 +35,15 @@ export function secondPhaseOf(actor) {
   return null;
 }
 
+/** §76 : le changement de forme à volonté que déclare l'item de cette activité (`changesForm`, l'activité elle-même), ou null. */
+export function formChangeOf(activity) {
+  const item = activity?.item;
+  const rule = contentOf(item).entry?.changesForm;
+  if ( !rule || (rule.activity !== activity.id) || (activity.type !== "transform") ) return null;
+  const uuid = activity.profiles?.[0]?.uuid;
+  return uuid ? { item, activity, uuid, keepConditions: rule.keepConditions !== false } : null;
+}
+
 /** À 0 PV, la créature change-t-elle de forme au lieu de tomber ? */
 export const transformsAtZero = actor => !!secondPhaseOf(actor);
 
@@ -117,12 +126,26 @@ async function worldActorFor(uuid) {
  */
 export async function enterSecondPhase(actor) {
   const phase = secondPhaseOf(actor);
-  if ( !phase ) return null;
+  return phase ? swapForm(actor, phase) : null;
+}
+
+/**
+ * §76 : l'activité d'un changement de forme à volonté (`changesForm`) vient d'être utilisée : la créature prend sa forme, comme
+ * une seconde phase. MJ actif.
+ * @returns {Promise<{from: string, to: string}|null>}
+ */
+export async function changeForm(activity) {
+  const phase = formChangeOf(activity);
+  return phase ? swapForm(activity.actor, phase) : null;
+}
+
+/** Le token de `actor` change d'acteur pour la forme `phase.uuid` (seconde phase ou changement à volonté). */
+async function swapForm(actor, phase) {
   const target = await worldActorFor(phase.uuid);
   const token = tokenOf(actor);
   const document = token?.document ?? token ?? null;
   if ( !target || !document ) {
-    console.warn(`${MODULE_ID} | ${actor.name} : seconde phase impossible (${target ? "pas de token" : `forme introuvable : ${phase.uuid}`})`);
+    console.warn(`${MODULE_ID} | ${actor.name} : changement de forme impossible (${target ? "pas de token" : `forme introuvable : ${phase.uuid}`})`);
     return null;
   }
   const from = actor.name;

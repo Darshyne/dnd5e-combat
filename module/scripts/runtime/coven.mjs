@@ -4,7 +4,7 @@
  */
 
 import { sharedHpItemOf, shareHp, isSharedWrite, transformsAtZero, enterSecondPhase, covenMembers, standsAtZero, standAtOne,
-  purgeEffects } from "../adapter/coven.mjs";
+  purgeEffects, formChangeOf, changeForm } from "../adapter/coven.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { log, loc } from "./shared.mjs";
 import { burstAtZero } from "./emanations.mjs";
@@ -58,7 +58,21 @@ async function onLastStandUsed(activity) {
   });
 }
 
+/** §76 : une forme révélée à volonté (`changesForm`) — l'échange de token de la seconde phase, après l'utilisation. */
+function onFormChange(activity) {
+  const actor = activity?.actor;
+  if ( !actor || !formChangeOf(activity) || shifting.has(actor.uuid) ) return;
+  shifting.add(actor.uuid);
+  return enqueue(QUEUE, async () => {
+    try {
+      const done = await changeForm(activity);
+      if ( done ) log(`changement de forme : ${done.from} → ${done.to}`);
+    } finally { shifting.delete(actor.uuid); }
+  });
+}
+
 export function registerCoven() {
+  route("dnd5e.postUseActivity", onFormChange, { executor: true, label: "changement de forme non joué" });
   route("dnd5e.postUseActivity", onLastStandUsed, { executor: true, label: "dernier rempart : effets non retirés" });
   route("dnd5e.damageActor", onHpChanged, { executor: true, label: "cercle : PV non partagés" });
   route("dnd5e.healActor", onHpChanged, { executor: true, label: "cercle : soins non partagés" });

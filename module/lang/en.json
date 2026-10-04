@@ -263,7 +263,7 @@
   "DND5ECOMBAT.Action.hide.Texte": "Action: you try to hide. You must be Heavily Obscured or behind Three-Quarters or Total Cover, and out of any enemy's line of sight. DC 15 Dexterity (Stealth) check: on a success you have the Invisible condition while hidden, and your total is the DC to find you (Wisdom (Perception)). You stop hiding after an attack roll or a spell with a Verbal component (automatic), or if you make noise or are found (the GM removes the effect).",
   "DND5ECOMBAT.Souci.hideSeen": "Hide: these enemies can see you — {names}.",
   "DND5ECOMBAT.Souci.silenced": "Silenced: a spell with a Verbal component can't be cast.",
-  "DND5ECOMBAT.Souci.noReactions": "An effect forbids any Reaction until the start of its next turn.",
+  "DND5ECOMBAT.Souci.noReactions": "An effect forbids any Reaction.",
   "DND5ECOMBAT.Guerison.Aucun": "{name}: no condition to end",
   "DND5ECOMBAT.Amadou.Choisir": "Which light source?",
   "DND5ECOMBAT.Marque.Huile": "Covered in oil",
@@ -659,5 +659,10 @@
   "DND5ECOMBAT.Suivi.Debut": "Following {name}",
   "DND5ECOMBAT.Suivi.Fin": "No longer following {name}",
   "DND5ECOMBAT.ZoneSurSoiNonPosee": "Combat engine: the area could not be placed on the caster (details in console). The card’s « Place template » button remains usable.",
-  "DND5ECOMBAT.Chatiment.FaveurPacte": "{item} (pact slot level {level}, {n} left)"
+  "DND5ECOMBAT.Chatiment.FaveurPacte": "{item} (pact slot level {level}, {n} left)",
+  "DND5ECOMBAT.SansCharge.Titre": "No charges left",
+  "DND5ECOMBAT.SansCharge.Texte": "<strong>{name}</strong> has no charges left (uses or spell slot spent). Use it anyway, consuming nothing?",
+  "DND5ECOMBAT.SansCharge.Lancer": "Use anyway",
+  "DND5ECOMBAT.SansCharge.Renoncer": "Cancel",
+  "DND5ECOMBAT.Souci.actionOrBonus": "An effect allows only an action or a Bonus Action on its turn, not both."
 }

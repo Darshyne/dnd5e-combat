@@ -22,7 +22,7 @@ import { MOVABLES } from "./movables.mjs";
 import { LIGHTS, REVEALS_INVISIBLE } from "./lights.mjs";
 import { TETHERS } from "./tethers.mjs";
 import { DAMAGE_SHIELDS, HIT_DICE_HEALS } from "./defenses.mjs";
-import { BREAKS_ON, NO_REACTIONS, CURES, FIGHTING_ADVANTAGE, SAVED_EFFECTS, SIZE_CHANGES, ORDER_LISTS } from "./spells.mjs";
+import { BREAKS_ON, NO_REACTIONS, ACTION_OR_BONUS, CURES, FIGHTING_ADVANTAGE, SAVED_EFFECTS, SIZE_CHANGES, ORDER_LISTS } from "./spells.mjs";
 import { RAVENLOFT } from "./ravenloft.mjs";
 import { ROGUE } from "./rogue.mjs";
 import { FIGHTER } from "./fighter.mjs";
@@ -89,6 +89,7 @@ function build() {
   for ( const [id, rule] of Object.entries(HIT_DICE_HEALS) ) (table[id] ??= {}).hitDiceHeal = rule;
   for ( const [id, moments] of Object.entries(BREAKS_ON) ) (table[id] ??= {}).breaksOn = moments;
   for ( const id of NO_REACTIONS ) (table[id] ??= {}).noReactions = true;
+  for ( const id of ACTION_OR_BONUS ) (table[id] ??= {}).actionOrBonus = true;
   for ( const [id, statuses] of Object.entries(CURES) ) (table[id] ??= {}).cures = statuses;
   for ( const id of FIGHTING_ADVANTAGE ) (table[id] ??= {}).advantageIfFighting = true;
   for ( const [id, effects] of Object.entries(SAVED_EFFECTS) ) (table[id] ??= {}).savedEffects = effects;

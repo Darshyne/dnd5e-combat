@@ -35,6 +35,11 @@ export function reactionsBlocked(actor) {
   return (actor?.effects ?? []).some(e => !e.disabled && !e.isSuppressed && (contentOf(originItemOf(e))?.entry?.noReactions === true));
 }
 
+/** §77 : l'acteur porte-t-il un effet qui ne laisse qu'une action OU une action Bonus par tour (`actionOrBonus` : Nuage fétide) ? */
+export function actionOrBonusOnly(actor) {
+  return (actor?.effects ?? []).some(e => !e.disabled && !e.isSuppressed && (contentOf(originItemOf(e))?.entry?.actionOrBonus === true));
+}
+
 /** §23 : le porteur d'un effet d'item `noOpportunityAttacks` (Poigne électrique) ne fait pas d'attaque d'opportunité. */
 export function opportunityBlocked(actor) {
   return (actor?.effects ?? []).some(e => !e.disabled && !e.isSuppressed && (contentOf(originItemOf(e))?.entry?.noOpportunityAttacks === true));

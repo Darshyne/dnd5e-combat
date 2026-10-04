@@ -263,7 +263,7 @@
   "DND5ECOMBAT.Action.hide.Texte": "Action : vous essayez de vous cacher. Il faut être en Visibilité nulle ou derrière un abri supérieur ou total, et hors du champ de vision de tout ennemi. Test de Dextérité (Discrétion) DD 15 : réussi, vous êtes Invisible tant que vous restez caché, et votre total est le DD pour vous localiser (Sagesse (Perception)). Vous cessez d'être caché après un jet d'attaque ou un sort à composante verbale (automatique), ou si vous faites du bruit ou êtes localisé (le MJ retire l'effet).",
   "DND5ECOMBAT.Souci.hideSeen": "Furtivité : ces ennemis vous voient — {names}.",
   "DND5ECOMBAT.Souci.silenced": "Réduit au silence : impossible de lancer un sort à composante verbale.",
-  "DND5ECOMBAT.Souci.noReactions": "Un effet interdit toute Réaction jusqu'au début de son prochain tour.",
+  "DND5ECOMBAT.Souci.noReactions": "Un effet lui interdit toute Réaction.",
   "DND5ECOMBAT.Guerison.Aucun": "{name} : aucun état à faire cesser",
   "DND5ECOMBAT.Amadou.Choisir": "Quelle source de lumière ?",
   "DND5ECOMBAT.Marque.Huile": "Couvert d'huile",
@@ -659,5 +659,10 @@
   "DND5ECOMBAT.Suivi.Debut": "Suit {name}",
   "DND5ECOMBAT.Suivi.Fin": "Ne suit plus {name}",
   "DND5ECOMBAT.ZoneSurSoiNonPosee": "Moteur de combat : la zone n’a pas pu être posée sur le lanceur (détail en console). Le bouton « Placer la zone » de la carte reste utilisable.",
-  "DND5ECOMBAT.Chatiment.FaveurPacte": "{item} (emplacement de pacte niv. {level}, {n} restant(s))"
+  "DND5ECOMBAT.Chatiment.FaveurPacte": "{item} (emplacement de pacte niv. {level}, {n} restant(s))",
+  "DND5ECOMBAT.SansCharge.Titre": "Plus de charge",
+  "DND5ECOMBAT.SansCharge.Texte": "<strong>{name}</strong> n’a plus de charge (utilisations ou emplacement épuisés). Lancer quand même, sans rien consommer ?",
+  "DND5ECOMBAT.SansCharge.Lancer": "Lancer quand même",
+  "DND5ECOMBAT.SansCharge.Renoncer": "Renoncer",
+  "DND5ECOMBAT.Souci.actionOrBonus": "Un effet ne lui laisse qu’une action ou une action Bonus à son tour, pas les deux."
 }

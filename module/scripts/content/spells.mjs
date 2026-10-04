@@ -16,7 +16,10 @@ export const BREAKS_ON = Object.freeze({
 });
 
 /** Le porteur d'un effet du sort ne peut pas prendre de Réaction (Tentacules de Hadar : jusqu'au début du tour suivant de la cible). */
-export const NO_REACTIONS = Object.freeze(["arms-of-hadar"]);
+export const NO_REACTIONS = Object.freeze(["arms-of-hadar", "fetid-cloud", "slow"]);
+
+/** §77 : « une action ou une action Bonus lors de son tour, pas les deux » — Nuage fétide (Dretch, Monster Manual 2024), Lenteur. */
+export const ACTION_OR_BONUS = Object.freeze(["fetid-cloud", "slow"]);
 
 /**
  * §19 : effets posés seulement sur une sauvegarde RÉUSSIE. Rayon affaiblissant — « sur une réussite, la cible a le Désavantage

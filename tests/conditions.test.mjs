@@ -244,3 +244,18 @@ describe("§16.47 : règles de sorts", () => {
     expect(fightingAdvantage({ targetInCombat: true, hostile: false })).toBe(false);
   });
 });
+
+describe("§77 : une action ou une action Bonus, pas les deux", () => {
+  const budget = (action, bonus, used=0) => ({ action, bonus, attacks: { granted: used ? 2 : 0, used } });
+  it("l'action déjà prise : plus d'action Bonus", () => {
+    expect(conditionUseIssues({ statuses: [], cost: "bonus", actionOrBonus: true, budget: budget(0, 1) })).toEqual(["actionOrBonus"]);
+    expect(conditionUseIssues({ statuses: [], cost: "bonus", actionOrBonus: true, budget: budget(0, 1, 1) })).toEqual(["actionOrBonus"]);
+  });
+  it("l'action Bonus déjà prise : plus d'action", () => {
+    expect(conditionUseIssues({ statuses: [], cost: "action", actionOrBonus: true, budget: budget(1, 0) })).toEqual(["actionOrBonus"]);
+  });
+  it("rien de pris, ou sans l'effet : libre", () => {
+    expect(conditionUseIssues({ statuses: [], cost: "action", actionOrBonus: true, budget: budget(1, 1) })).toEqual([]);
+    expect(conditionUseIssues({ statuses: [], cost: "bonus", budget: budget(0, 1) })).toEqual([]);
+  });
+});

@@ -7,16 +7,19 @@
  *  - Emplacement de sort : celui que dnd5e propose s'il en reste, sinon le plus bas disponible au moins du niveau du sort
  *    (core/usage.mjs), et le niveau de lancement suit (`scaling`). Lancer à un niveau supérieur se choisit ailleurs (tiroir de
  *    la barre de darsh-dnd-ui, qui passe l'emplacement).
- *  - Plus de ressources (aucun emplacement, utilisations de l'activité ou de l'item épuisées) : le MJ voit la fenêtre (il tranche :
- *    lancer sans consommer…) ; un joueur non — dnd5e refuse l'utilisation avec son propre avertissement.
+ *  - Plus de ressources (aucun emplacement, utilisations de l'activité ou de l'item épuisées) : §77, le MJ peut toujours lancer — une
+ *    fenêtre d'avertissement le laisse lancer sans rien consommer, ou renoncer (que la fenêtre de dnd5e soit passée ou non) ; un
+ *    joueur non — dnd5e refuse l'utilisation avec son propre avertissement.
+ *  - §77 : une activité qui dépense ses propres utilisations sans en avoir, quand l'item en porte (donnée du Monster Manual 2024,
+ *    Nuage fétide du Dretch), dépense celles de l'item (corrigé sur la copie de l'item que dnd5e utilise, pas sur la fiche).
  *  - Un vrai choix reste à la fenêtre : profil d'invocation, de transformation ou d'enchantement quand il y en a plusieurs,
  *    commande de bastion.
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { pickSpellSlot } from "../core/usage.mjs";
+import { pickSpellSlot, misplacedSelfUses } from "../core/usage.mjs";
 import { route } from "./router.mjs";
-import { log } from "./shared.mjs";
+import { log, loc } from "./shared.mjs";
 
 export const AUTO_USAGE_SETTING = "autoUsage";
 
@@ -51,9 +54,52 @@ function lacksUses(activity, usageConfig) {
   });
 }
 
-function onPreUse(activity, usageConfig, dialogConfig) {
-  if ( !dialogConfig?.configure || !game.settings.get(MODULE_ID, AUTO_USAGE_SETTING) ) return;
-  if ( !activity?.item || needsChoice(activity) ) return;
+/**
+ * §77 : les utilisations propres d'une activité qui n'en a pas, portées par l'item : réécrites en utilisations de l'item sur la COPIE
+ * de l'item que dnd5e utilise (`Activity#use` clone l'item ; `updateSource` survit à la mise à l'échelle). Rend l'activité à jour.
+ */
+function repairSelfUses(activity) {
+  const targets = Array.from(activity.consumption?.targets ?? []);
+  const wrong = misplacedSelfUses(targets, !!activity.uses?.max, !!activity.item.system.uses?.max);
+  if ( !wrong.length ) return activity;
+  const source = activity.toObject().consumption.targets.map((t, i) => (wrong.includes(i) ? { ...t, type: "itemUses" } : t));
+  // Comme dnd5e pour la mise à l'échelle (activity/mixin.mjs:541-544) : la copie se prépare avec sa fiche, puis ses attributs finaux.
+  const item = activity.item;
+  if ( item.actor ) item.actor._embeddedPreparation = true;
+  item.updateSource({ [`system.activities.${activity.id}.consumption.targets`]: source });
+  if ( item.actor ) delete item.actor._embeddedPreparation;
+  item.prepareFinalAttributes?.();
+  log(`${activity.item.name} : les utilisations de l'activité sont celles de l'item (${activity.item.system.uses.value}/${activity.item.system.uses.max})`);
+  return activity.item.system.activities.get(activity.id) ?? activity;
+}
+
+/** §77 : plus de ressources — le MJ choisit de lancer quand même (rien n'est consommé) ou non ; relance l'utilisation d'origine. */
+async function askForced(activity, usageConfig, messageConfig) {
+  const name = activity.item.name;
+  const ok = await foundry.applications.api.DialogV2.confirm({
+    window: { title: loc("SansCharge.Titre") },
+    content: `<p>${loc("SansCharge.Texte", { name })}</p>`,
+    yes: { label: loc("SansCharge.Lancer"), icon: "fa-solid fa-wand-sparkles" },
+    no: { label: loc("SansCharge.Renoncer") },
+    rejectClose: false
+  }).catch(() => false);
+  if ( !ok ) return log(`${name} : plus de charge, le MJ renonce`);
+  const original = activity.actor?.items.get(activity.item.id)?.system.activities.get(activity.id);
+  if ( !original ) return;
+  log(`${name} : plus de charge, lancé quand même par le MJ (rien n'est consommé)`);
+  await original.use({ ...usageConfig, [MODULE_ID]: { ...(usageConfig[MODULE_ID] ?? {}), forced: true } }, { configure: false }, messageConfig);
+}
+
+function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
+  if ( !activity?.item ) return;
+  activity = repairSelfUses(activity);
+  // §77 : relancée par le MJ sans charge — rien n'est consommé, pas de fenêtre.
+  if ( usageConfig[MODULE_ID]?.forced ) {
+    usageConfig.consume = { ...(usageConfig.consume ?? {}), resources: false, spellSlot: false };
+    dialogConfig.configure = false;
+    return;
+  }
+  const auto = !!dialogConfig?.configure && game.settings.get(MODULE_ID, AUTO_USAGE_SETTING) && !needsChoice(activity);
   let lacking = false;
   const slots = activity.actor?.system.spells;
   const proposed = usageConfig.spell?.slot;
@@ -61,16 +107,19 @@ function onPreUse(activity, usageConfig, dialogConfig) {
     const level = Number(activity.item.system.level) || 0;
     const slot = pickSpellSlot(slots, proposed, level);
     if ( !slot ) lacking = true;
-    else if ( slot !== proposed ) {
+    else if ( auto && (slot !== proposed) ) {
       usageConfig.spell.slot = slot;
       if ( usageConfig.scaling !== false ) usageConfig.scaling = Math.max(0, (Number(slots[slot]?.level) || level) - level);
       log(`${activity.item.name} : plus d'emplacement ${proposed}, lancé avec ${slot}`);
     }
   }
   if ( !lacking ) lacking = lacksUses(activity, usageConfig);
-  // Plus de ressources : la fenêtre pour le MJ seulement.
-  if ( lacking && game.user.isGM ) return;
-  dialogConfig.configure = false;
+  // §77 : plus de ressources — le MJ peut toujours lancer, après avertissement ; un joueur, dnd5e le refuse.
+  if ( lacking && game.user.isGM ) {
+    askForced(activity, usageConfig, messageConfig);
+    return false;
+  }
+  if ( auto ) dialogConfig.configure = false;
 }
 
 export function registerUsage() {
@@ -78,5 +127,5 @@ export function registerUsage() {
     name: `DND5ECOMBAT.Reglage.${AUTO_USAGE_SETTING}.Nom`, hint: `DND5ECOMBAT.Reglage.${AUTO_USAGE_SETTING}.Aide`,
     scope: "world", config: true, type: Boolean, default: true
   });
-  route("dnd5e.preUseActivity", onPreUse, { label: "utilisation sans fenêtre" });
+  route("dnd5e.preUseActivity", onPreUse, { cancellable: true, label: "utilisation sans fenêtre" });
 }

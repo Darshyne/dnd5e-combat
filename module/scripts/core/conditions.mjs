@@ -180,11 +180,17 @@ export function grappleHolds({ grapplerStatuses, withinReach }) {
  * @param {{statuses: string[], cost: string|null}} use  États de l'utilisateur, coût de l'utilisation.
  * @returns {string[]}  ["incapacitated"] ou [].
  */
-export function conditionUseIssues({ statuses, cost, noReactions=false }) {
+export function conditionUseIssues({ statuses, cost, noReactions=false, actionOrBonus=false, budget=null }) {
   if ( !["action", "bonus", "reaction"].includes(cost) ) return [];
   if ( INCAPACITATING.some(s => statuses.includes(s)) ) return ["incapacitated"];
   // §16.47 : « ne peut pas prendre de Réaction » (Tentacules de Hadar).
-  return ((cost === "reaction") && noReactions) ? ["noReactions"] : [];
+  if ( (cost === "reaction") && noReactions ) return ["noReactions"];
+  // §77 : « une action ou une action Bonus lors de son tour, pas les deux » (Nuage fétide du Dretch, Lenteur) — l'autre déjà dépensée.
+  if ( actionOrBonus && budget ) {
+    const actionTaken = (budget.action < 1) || ((budget.attacks?.used ?? 0) > 0);
+    if ( ((cost === "action") && (budget.bonus < 1)) || ((cost === "bonus") && actionTaken) ) return ["actionOrBonus"];
+  }
+  return [];
 }
 
 /**

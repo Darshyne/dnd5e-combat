@@ -13,6 +13,7 @@ import { cloudOf, cloudCircle } from "../adapter/storm.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { planPath, stairsOf, cellOf, stairsDestinations } from "../adapter/movement.mjs";
 import { combatantFor, readBudget, movementOf } from "../adapter/turn.mjs";
+import { useIssues } from "./turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { moveTo, movementCap, selfTeleportOf, currentTeleport, teleportClick, dashStrike, dashTargets, dashProblem, lineDashOf, transpose as transposeIntent, takeStairs as takeStairsIntent } from "./actions.mjs";
 import { leaderOf, followersOf, follow as followIntent, unfollow as unfollowIntent } from "./follow.mjs";
@@ -467,6 +468,14 @@ function threats({ tokenId, point }) {
 }
 
 /** §20 : le budget du tour d'un combattant (action, action Bonus, Foncer, Se désengager, Vitesse à 0, déplacement en plus). */
+/** Ce qui cloche dans une utilisation (légalité du tour, états), sans l'utiliser ; `cost` force le coût (« bonus », « reaction »). */
+function issues({ tokenId, itemId, activityType=null, cost=null }) {
+  const item = tokenOf({ tokenId }).actor?.items.get(itemId);
+  const activity = item?.system.activities.find(a => !activityType || (a.type === activityType));
+  if ( !activity ) throw new Error("activité introuvable");
+  return useIssues(activity, { cost }).lines;
+}
+
 function budget({ tokenId }) {
   const token = tokenOf({ tokenId });
   const combatant = token.actor ? combatantFor(token.actor) : null;
@@ -607,7 +616,7 @@ async function sequencer({ end=null }={}) {
  * qui la coupe (`create.measuredTemplate: false`). Sans emplacement ; la fenêtre de dnd5e, si elle s'ouvre, est relevée puis validée ; réactions du MJ refusées. Rend la carte
  * d'utilisation et les régions nées de cette activité dans les 3 s (une pose interactive, elle, attendrait un clic : rien).
  */
-async function use({ tokenId, itemId, activityType=null, extra=null }) {
+async function use({ tokenId, itemId, activityType=null, extra=null, consume=false }) {
   if ( !game.user.isGM ) throw new Error("réservé au MJ");
   const token = canvas.scene?.tokens.get(tokenId);
   const item = token?.actor?.items.get(itemId);
@@ -622,7 +631,8 @@ async function use({ tokenId, itemId, activityType=null, extra=null }) {
     setTimeout(() => element.querySelector('button[type="submit"], [data-action="use"]')?.click(), 100);
   });
   let used;
-  try { used = await activity.use({ consume: false, [MODULE_ID]: { confirmed: true, autoReact: "none", ...(extra ?? {}) } }, { configure: true }); }
+  // `consume` : comme un vrai clic, ressources dépensées (§77 : sans charge, la fenêtre « Plus de charge » du MJ).
+  try { used = await activity.use({ ...(consume ? {} : { consume: false }), [MODULE_ID]: { confirmed: true, autoReact: "none", ...(extra ?? {}) } }, { configure: true }); }
   finally { Hooks.off("renderActivityUsageDialog", hook); }
   for ( let i = 0; (i < 30) && !mine().length; i++ ) await new Promise(r => setTimeout(r, 100));
   return {
@@ -683,4 +693,4 @@ function effectOrigins({ tokenId }) {
   });
 }
 
-export const testApi = Object.freeze({ planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use });
+export const testApi = Object.freeze({ issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use });

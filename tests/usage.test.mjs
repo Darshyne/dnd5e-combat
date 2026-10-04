@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickSpellSlot } from "../module/scripts/core/usage.mjs";
+import { pickSpellSlot, misplacedSelfUses } from "../module/scripts/core/usage.mjs";
 
 describe("§68 : l'emplacement d'une utilisation sans fenêtre", () => {
   const slots = { spell1: { value: 0, level: 1 }, spell2: { value: 2, level: 2 }, spell3: { value: 1, level: 3 }, pact: { value: 1, level: 2 } };
@@ -11,5 +11,14 @@ describe("§68 : l'emplacement d'une utilisation sans fenêtre", () => {
   it("jamais en dessous du niveau du sort", () => expect(pickSpellSlot(slots, "spell1", 3)).toBe("spell3"));
   it("null : plus aucun emplacement", () => {
     expect(pickSpellSlot({ spell1: { value: 0, level: 1 }, pact: { value: 0, level: 1 } }, "spell1", 1)).toBeNull();
+  });
+});
+
+describe("§77 : utilisations de l'activité posées sur l'item", () => {
+  const self = [{ type: "activityUses", target: "" }, { type: "itemUses", target: "" }, { type: "activityUses", target: "aaaaaaaaaaaaaaaa" }];
+  it("l'activité sans maximum, l'item avec : ses propres utilisations deviennent celles de l'item", () => expect(misplacedSelfUses(self, false, true)).toEqual([0]));
+  it("sinon rien", () => {
+    expect(misplacedSelfUses(self, true, true)).toEqual([]);
+    expect(misplacedSelfUses(self, false, false)).toEqual([]);
   });
 });

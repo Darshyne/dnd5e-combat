@@ -12,7 +12,7 @@ import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { isRaging } from "../adapter/rage.mjs";
 import { enemiesSeeing } from "../adapter/hide.mjs";
 import { verbalBlockOf, charmersOf, hostileToCharmer, sightRequired } from "../adapter/conditions.mjs";
-import { reactionsBlocked } from "../adapter/reactions.mjs";
+import { reactionsBlocked, actionOrBonusOnly } from "../adapter/reactions.mjs";
 import { conditionUseIssues } from "../core/conditions.mjs";
 import { canSee } from "../adapter/vision.mjs";
 import { hiddenDcOf } from "../adapter/search.mjs";
@@ -136,7 +136,7 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
   // §17.3 : Neutralisé (ni action, ni action Bonus, ni Réaction).
   const cost = (request.cost === "free") ? null : (budget ? effectiveCost(budget, request) : request.cost);
   const incapacitated = pilot ? [] : conditionUseIssues({ statuses: Array.from(activity.actor?.statuses ?? []), cost,
-    noReactions: reactionsBlocked(activity.actor) });
+    noReactions: reactionsBlocked(activity.actor), actionOrBonus: !!budget && actionOrBonusOnly(activity.actor), budget });
   // §22 : « en Rage, vous ne pouvez pas lancer de sorts ».
   const raging = isSpellCast(activity.item) && isRaging(activity.actor);   // §48 : lire un parchemin aussi
   const lines = [

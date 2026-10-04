@@ -23,13 +23,17 @@ export function setRestExpiry(effect) {
  * M4 (SPEC §18.7) : un effet posé sans durée prend celle que son texte écrit (« until the end of its next turn »), en
  * expiration native de dnd5e 6 (`targetEnd`…, core/durations.mjs). Lue dans la description de l'effet, sinon dans celle
  * de l'item d'origine (texte anglais d'origine sous Babele, sinon la description telle quelle). Rend l'expiration posée.
+ * §77 : la durée « 1 tour » générique du cœur (`units: "turns"`, expiration `turnStart` / `turnEnd`) ne dit pas de qui : elle compte
+ * les tours de combat de N'IMPORTE QUEL combattant (Nuage fétide du Dretch, Monster Manual 2024 : l'Empoisonné tombait au tour du
+ * combattant suivant). Quand le texte dit qui, il prime.
  */
 export function setTextExpiry(effect) {
   if ( effect.parent?.documentName !== "Actor" ) return null;
   // La source, pas `effect.duration` : préparée par le cœur V14, une durée vide y vaut `value: Infinity`
   // (client/documents/active-effect.mjs:292, `updateDuration`).
   const d = effect._source?.duration ?? {};
-  if ( d.expiry || (Number.isFinite(d.value) && (d.value > 0)) ) return null;
+  const generic = (d.units === "turns") && ["turnStart", "turnEnd"].includes(d.expiry) && ((Number(d.value) || 0) <= 1);
+  if ( !generic && (d.expiry || (Number.isFinite(d.value) && (d.value > 0))) ) return null;
   const item = originItemOf(effect);
   if ( !item || effect.transfer ) return null;   // un effet passif d'un item de l'acteur n'est pas « posé »
   const statuses = Array.from(effect.statuses ?? []);
@@ -40,7 +44,7 @@ export function setTextExpiry(effect) {
       ?? expiryFromText(englishDescription(item), statuses)
       ?? expiryFromText(item.system?.description?.value, statuses));
   if ( !expiry ) return null;
-  effect.updateSource({ "duration.expiry": expiry });
+  effect.updateSource({ "duration.expiry": expiry, ...(generic ? { "duration.value": null, "duration.units": "" } : {}) });
   return expiry;
 }
 

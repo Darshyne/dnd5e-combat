@@ -8,7 +8,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { basicActionOf } from "../adapter/basics.mjs";
+import { basicActionOfActivity } from "../adapter/basics.mjs";
 import { helpMarksOn, helpMarksUsedBy, markHelped } from "../adapter/help.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
@@ -20,7 +20,8 @@ const speakerTokenOf = message => {
 
 async function onUsage(message) {
   const activity = message.getAssociatedActivity?.();
-  if ( basicActionOf(activity?.item) !== "help" ) return;
+  // §72 : l'item Soutien, ou une activité qui le déclare (`basicActions` : Maître des tactiques, à 9 m).
+  if ( basicActionOfActivity(activity) !== "help" ) return;
   const helper = speakerTokenOf(message);
   if ( !helper ) return;
   const targets = (message.system?.targets ?? []).map(t => fromUuidSync(t.token)).filter(t => t && (t !== helper));

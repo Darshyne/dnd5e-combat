@@ -1,4 +1,9 @@
 {
+  "DND5ECOMBAT.Opposition.Resume": "{name} : {skill} {total} contre {target} : {against} {theirs}.",
+  "DND5ECOMBAT.Opposition.Gagne": "Réussite : l'effet est posé.",
+  "DND5ECOMBAT.Opposition.Perdu": "Échec.",
+  "DND5ECOMBAT.Opposition.Egalite": "Égalité : rien ne change.",
+  "DND5ECOMBAT.Opposition.SansCible": "{item} : choisissez d'abord une cible.",
   "DND5ECOMBAT.Orage.Question": "Êtes-vous dehors, par temps d'orage ?",
   "DND5ECOMBAT.Orage.Aide": "Le sort prend alors le contrôle de l'orage en cours au lieu d'en créer un : dégâts +{bonus}.",
   "DND5ECOMBAT.Orage.Oui": "Oui, sous l'orage (+{bonus})",

@@ -62,7 +62,7 @@ describe("chargement du module", () => {
 
   it("enregistre les requêtes entre clients", () => {
     expect(Object.keys(CONFIG.queries).sort()).toEqual([
-      "dnd5e-combat.actionEnd", "dnd5e-combat.allocation", "dnd5e-combat.choice", "dnd5e-combat.cure", "dnd5e-combat.deathSave", "dnd5e-combat.dismissSummon", "dnd5e-combat.enchant", "dnd5e-combat.extinguish", "dnd5e-combat.moveZone", "dnd5e-combat.opportunity", "dnd5e-combat.portent", "dnd5e-combat.reaction", "dnd5e-combat.revertForm", "dnd5e-combat.rollSave", "dnd5e-combat.search", "dnd5e-combat.setTargets", "dnd5e-combat.stabilize", "dnd5e-combat.transform"
+      "dnd5e-combat.actionEnd", "dnd5e-combat.allocation", "dnd5e-combat.choice", "dnd5e-combat.contest", "dnd5e-combat.cure", "dnd5e-combat.deathSave", "dnd5e-combat.dismissSummon", "dnd5e-combat.enchant", "dnd5e-combat.extinguish", "dnd5e-combat.moveZone", "dnd5e-combat.opportunity", "dnd5e-combat.portent", "dnd5e-combat.reaction", "dnd5e-combat.revertForm", "dnd5e-combat.rollSave", "dnd5e-combat.search", "dnd5e-combat.setTargets", "dnd5e-combat.stabilize", "dnd5e-combat.transform"
     ]);
   });
 });

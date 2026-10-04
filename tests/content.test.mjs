@@ -33,7 +33,7 @@ describe("validation d'une entrée", () => {
     expect(validateEntry({ triggers: [{ on: "preDamageRoll", do: [{ type: "damage" }] }] }, { facts })).toEqual([
       "triggers[0].do[0].formula : formule requise", "triggers[0].do[0].damageType : type de dégâts requis"
     ]);
-    expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "use", target: "self" }] }] }, { facts })[0]).toMatch(/target/);
+    expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "use", target: "ally" }] }] }, { facts })[0]).toMatch(/target/);
     expect(validateEntry({ triggers: { on: "isHit", do: [{ type: "use" }] } }, { facts })).toEqual([]);   // une seule, sans liste
   });
 
@@ -578,5 +578,29 @@ describe("§71 : stabilisée à 0 PV, effets sous condition", () => {
     const merged = mergeEntries([null, { stableAtZero: true, effectsIf: { "target.atZero": true } }]);
     expect(merged.stableAtZero).toBe(true);
     expect(merged.effectsIf).toEqual({ "target.atZero": true });
+  });
+});
+
+describe("§72 : sneakAttack en objet", () => {
+  it("dés, toute arme, types", () => {
+    expect(validateEntry({ sneakAttack: true })).toEqual([]);
+    expect(validateEntry({ sneakAttack: { dice: "5d6", anyWeapon: true, alwaysVs: ["undead"] } })).toEqual([]);
+    expect(validateEntry({ sneakAttack: { dice: "beaucoup" } })).toEqual([expect.stringContaining("dice")]);
+    expect(validateEntry({ sneakAttack: "oui" })).toEqual([expect.stringContaining("sneakAttack")]);
+  });
+});
+
+describe("§72 : contest", () => {
+  it("compétence, compétences opposées, effet", () => {
+    expect(validateEntry({ contest: { activity: "zqYhGCNNd41uNShS", skill: "ins", against: ["dec"], effect: "abcdefghijklmnop", exclusive: true } })).toEqual([]);
+    expect(validateEntry({ contest: { skill: "insight", against: [], effect: "x" } }).length).toBe(3);
+    expect(mergeEntries([null, { contest: { skill: "ins", against: ["dec"], effect: "abcdefghijklmnop" } }]).contest.skill).toBe("ins");
+  });
+});
+
+describe("§72 : use sur soi", () => {
+  it("target: self", () => {
+    expect(validateEntry({ triggers: [{ on: "isAttacked", do: [{ type: "use", target: "self", activity: "abcdefghijklmnop" }] }] })).toEqual([]);
+    expect(validateEntry({ triggers: [{ on: "isAttacked", do: [{ type: "use", target: "ally" }] }] })).toEqual([expect.stringContaining("self")]);
   });
 });

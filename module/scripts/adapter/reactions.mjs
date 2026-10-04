@@ -58,7 +58,9 @@ export function reactionState(actor) {
 export function reactionOptions(actor, window, declarations) {
   return eligibleReactions(declarations, window, reactionState(actor)).flatMap(d => stepsOf(d, "use").map(step => ({
     activity: step.activity ? `${d.item}.Activity.${step.activity}` : d.activity,
-    name: d.name, img: d.img, targetSource: step.target === "source", halve: stepsOf(d, "halve").length > 0,
+    // §72 : une activité nommée de l'item (Bracelet de charme : un sort par activité) — le bouton porte son nom.
+    name: activityLabel(d, step), img: d.img, targetSource: step.target === "source", targetSelf: step.target === "self",
+    halve: stepsOf(d, "halve").length > 0,
     endCondition: stepsOf(d, "endCondition").length > 0,
     uncrit: stepsOf(d, "uncrit").length > 0,
     reduce: stepsOf(d, "reduce").length > 0,
@@ -196,6 +198,14 @@ export async function askReaction(actor, payload) {
  * §67 : rejoindre la source avant la réaction (`use … approach`). Le chemin et la marche sont au runtime (runtime/actions.mjs,
  * `reactionApproach`), qui s'inscrit ici : l'adaptateur n'importe pas le runtime.
  */
+/** Le nom du bouton d'une option : l'item, suivi du nom de l'activité visée quand elle en a un (« Bracelet de charme : Cécité/surdité »). */
+function activityLabel(d, step) {
+  if ( !step.activity ) return d.name;
+  const activity = fromUuidSync(`${d.item}.Activity.${step.activity}`, { strict: false });
+  const own = activity?.name || (activity?.type === "cast" ? fromUuidSync(activity.spell?.uuid ?? "", { strict: false })?.name : null);
+  return own ? `${d.name} : ${own}` : d.name;
+}
+
 let approachSource = null;
 
 /** Les cibles d'un jet d'attaque, comme dnd5e les écrit (data/chat-message/fields/targets-field.mjs:32) ; null sans token. */
@@ -224,7 +234,10 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
   const option = options[Number(String(choice ?? "").replace("use", ""))];
   if ( !choice?.startsWith?.("use") || !option ) return null;
 
-  if ( target ) {
+  // §72 : une réaction qui vise le réacteur lui-même ; sinon la source, si la fenêtre en a une.
+  const selfToken = option.targetSelf ? (actor?.token ?? actor?.getActiveTokens?.(false, true)?.[0] ?? null) : null;
+  if ( selfToken ) (selfToken.object ?? selfToken).setTarget?.(true, { releaseOthers: true });
+  else if ( target ) {
     const token = (await fromUuid(target))?.object;
     token?.setTarget(true, { releaseOthers: true });
   }

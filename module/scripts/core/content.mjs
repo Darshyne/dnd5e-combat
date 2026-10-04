@@ -236,9 +236,12 @@
  *                                               quand lui ou un allié (`sees` : qu'il voit) la touche d'un jet d'attaque : l'effet
  *                                               cesse et la cible subit `formula` (données du lanceur), d'un type au choix
  *                                               (Chemin vers la tombe, §19.9)
- *     sneakAttack?: true                        Attaque sournoise (§20) : une fois par tour, les dés de l'item (sa première part de
+ *     sneakAttack?: true | { dice?, anyWeapon?, alwaysVs? }
+ *                                               Attaque sournoise (§20) : une fois par tour, les dés de l'item (sa première part de
  *                                               dégâts, sinon ⌈niveau de roublard / 2⌉d6) s'ajoutent à une attaque qui touche avec une
- *                                               arme de Finesse ou à distance, avec l'Avantage ou un allié à 1,50 m de la cible
+ *                                               arme de Finesse ou à distance, avec l'Avantage ou un allié à 1,50 m de la cible ;
+ *                                               objet (§72, PNJ) : `dice` (« 5d6 »), `anyWeapon` (toute arme), `alwaysVs` (types de
+ *                                               créature contre lesquels ni Avantage ni allié ne sont requis : ["undead"])
  *     sneakBonus?: { formula, firstRound? }     une part de plus quand l'Attaque sournoise touche (du type de l'arme) ; `firstRound` :
  *                                               seulement au premier round du combat (Assassinat : « égaux à votre niveau de Roublard »)
  *     cunningStrikes?: { <clé>: { cost, activity?, requires?, sizeAtMost?, withdraw? } }
@@ -309,6 +312,10 @@
  *                                               porte `castsSpell`, fait échouer d'office un sort de niveau `level` ou moins (défaut :
  *                                               le niveau de l'item) ; au-delà, test de la caractéristique d'incantation de celui
  *                                               qui contre, DD 10 + le niveau du sort (core/counter.mjs) — pas de sauvegarde du lanceur
+ *     contest?: { activity?, skill, against, effect, exclusive? }
+ *                                               test en opposition (§72, Combat perspicace) : l'auteur jette `skill`, la cible la
+ *                                               meilleure de `against` (chez son joueur s'il est connecté) ; gagné, l'effet `effect`
+ *                                               de l'activité est posé sur elle (`exclusive` : ceux posés ailleurs tombent)
  *     stableAtZero?: true                       une cible que l'attaque fait tomber à 0 PV est Stabilisée : ni jet contre
  *                                               la mort ni mort, même un PNJ (§71, Dague des ombres du Familier de vampire)
  *     effectsIf?: condition                     les effets de l'attaque ne passent que si la condition tient pour la cible,
@@ -424,6 +431,9 @@
  *                                                        (moment preAttackRoll ; core/conditions.mjs, `declared`)
  *   { type: "absorb" }                                   avec une réaction `use` au moment allyIsDamaged : la réserve du réacteur (clé
  *                                                        `absorb`, Égide arcanique) prend les dégâts de la créature (§38, Égide projetée)
+ *   { type: "use", target: "self", activity }          §72 : la réaction vise le réacteur lui-même (Protection contre la mort
+ *                                                        lancée par le Bracelet de charme) ; plusieurs `use` d'un même item :
+ *                                                        un bouton par activité, nommé d'après elle
  *   { type: "use", target: "source", approach: true }    la réaction rejoint d'abord la source : hors d'allonge, le réacteur
  *                                                        s'en approche jusqu'à sa vitesse, sans attaque d'opportunité (§67,
  *                                                        « se déplacer jusqu'à sa vitesse vers l'attaquant et l'attaquer »)
@@ -450,7 +460,7 @@ export const STEP_TYPES = Object.freeze(["disarm", "use", "replay", "damage", "m
 /** Les fenêtres « touché » : la créature touchée elle-même, ou une autre qui réagit pour elle (Sentinelle au seuil de la mort). */
 export const HIT_WINDOWS = Object.freeze(["isHit", "allyIsHit"]);
 /** Les actions de base qu'une activité peut prendre au coût de son activation (`basicActions`). */
-export const BASIC_ACTION_KINDS = Object.freeze(["dash", "disengage", "dodge", "hide"]);
+export const BASIC_ACTION_KINDS = Object.freeze(["dash", "disengage", "dodge", "hide", "help"]);   // §72 : « help » (Maître des tactiques)
 /** Les tailles de dnd5e, de la plus petite à la plus grande (`actorSizes`). */
 export const SIZES = Object.freeze(["tiny", "sm", "med", "lg", "huge", "grg"]);
 /** Les étapes qui ne valent qu'avant un jet d'attaque (moment preAttackRoll). */
@@ -471,7 +481,7 @@ export const EFFECT_ENDS = Object.freeze(["casterTurnStart", "casterTurnEnd", "b
 /** Ce qui ouvre une attaque en action Bonus (`bonusAttack.after`). */
 export const BONUS_ATTACK_AFTER = Object.freeze(["critical", "felled"]);
 
-export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf"]);
+export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest"]);
 export const CHOICE_EFFECTS = Object.freeze(["one"]);
 /** §37 : ce qu'une sauvegarde répétée ratée impose en plus (`resave.onFail`) : l'action Esquiver (Malédiction). */
 export const RESAVE_ON_FAIL = Object.freeze(["dodge"]);
@@ -504,7 +514,7 @@ function validateStep(step, at, errors) {
       if ( (typeof step.damageType !== "string") || !step.damageType ) errors.push(`${at}.damageType : type de dégâts requis`);
     }
   }
-  if ( (step.type === "use") && ("target" in step) && (step.target !== "source") ) errors.push(`${at}.target : seul « source » est connu`);
+  if ( (step.type === "use") && ("target" in step) && !["source", "self"].includes(step.target) ) errors.push(`${at}.target : « source » ou « self »`);
   if ( (step.type === "use") && ("advantage" in step) && (step.advantage !== true) ) errors.push(`${at}.advantage : true ou absent`);
   if ( (step.type === "use") && ("consume" in step) && (step.consume !== false) ) errors.push(`${at}.consume : false ou absent`);
   if ( (step.type === "use") && ("approach" in step) && ((step.approach !== true) || (step.target !== "source")) ) errors.push(`${at}.approach : true, avec target: "source"`);
@@ -753,7 +763,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       if ( !kinds.length || !kinds.every(k => BASIC_ACTION_KINDS.includes(k)) ) errors.push(`${at}basicActions.${id} : ${BASIC_ACTION_KINDS.join(", ")} (ou une liste)`);
     }
   }
-  for ( const key of ["stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "sneakAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "noOpportunityAttacks", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "replacesAttack", "stabilizes", "kindles", "castTargets"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key} : true ou absent`);
+  for ( const key of ["stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "noOpportunityAttacks", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "replacesAttack", "stabilizes", "kindles", "castTargets"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key} : true ou absent`);
   validateRogue(entry, at, errors);
   if ( ("cures" in entry) && (!Array.isArray(entry.cures) || !entry.cures.length || !entry.cures.every(s => (typeof s === "string") && s)) ) {
     errors.push(`${at}cures : liste d'identifiants d'état`);
@@ -799,6 +809,19 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     }
   }
   if ( "teleport" in entry ) validateTeleport(entry.teleport, `${at}teleport`, errors);
+  if ( "contest" in entry ) {
+    const c = entry.contest;
+    const skill = x => (typeof x === "string") && /^[a-z]{3}$/.test(x);
+    if ( !isObject(c) ) errors.push(`${at}contest : un objet`);
+    else {
+      if ( ("activity" in c) && !isId(c.activity) ) errors.push(`${at}contest.activity : id d'activité (16 caractères) attendu`);
+      if ( !skill(c.skill) ) errors.push(`${at}contest.skill : clé de compétence (« ins »)`);
+      if ( !Array.isArray(c.against) || !c.against.length || !c.against.every(skill) ) errors.push(`${at}contest.against : liste de clés de compétence`);
+      if ( !isId(c.effect) ) errors.push(`${at}contest.effect : id d'effet (16 caractères) attendu`);
+      if ( ("exclusive" in c) && (c.exclusive !== true) ) errors.push(`${at}contest.exclusive : true ou absent`);
+      for ( const key of Object.keys(c) ) if ( !["activity", "skill", "against", "effect", "exclusive"].includes(key) ) errors.push(`${at}contest.${key} : clé inconnue`);
+    }
+  }
   if ( "effectsIf" in entry ) {
     if ( !isObject(entry.effectsIf) ) errors.push(`${at}effectsIf : une condition (objet)`);
     else for ( const key of unknownFacts(entry.effectsIf, facts) ) errors.push(`${at}effectsIf : fait « ${key} » inconnu`);
@@ -1047,6 +1070,16 @@ function validateEmanation(e, at, errors) {
 
 /** §20 : les parts de plus de l'Attaque sournoise et les Frappes rusées. */
 function validateRogue(entry, at, errors) {
+  if ( "sneakAttack" in entry ) {
+    const s = entry.sneakAttack;
+    if ( (s !== true) && !isObject(s) ) errors.push(`${at}sneakAttack : true, ou { dice?, anyWeapon?, alwaysVs? }`);
+    else if ( isObject(s) ) {
+      if ( ("dice" in s) && !/^\d+d\d+$/.test(String(s.dice)) ) errors.push(`${at}sneakAttack.dice : des dés (« 5d6 »)`);
+      if ( ("anyWeapon" in s) && (s.anyWeapon !== true) ) errors.push(`${at}sneakAttack.anyWeapon : true ou absent`);
+      if ( ("alwaysVs" in s) && (!Array.isArray(s.alwaysVs) || !s.alwaysVs.every(x => (typeof x === "string") && x)) ) errors.push(`${at}sneakAttack.alwaysVs : liste de types de créature`);
+      for ( const key of Object.keys(s) ) if ( !["dice", "anyWeapon", "alwaysVs"].includes(key) ) errors.push(`${at}sneakAttack.${key} : clé inconnue`);
+    }
+  }
   if ( "sneakBonus" in entry ) {
     const b = entry.sneakBonus;
     if ( !isObject(b) || (typeof b.formula !== "string") || !b.formula.trim() ) errors.push(`${at}sneakBonus : { formula, firstRound? }`);
@@ -1228,6 +1261,7 @@ export function mergeEntries(layers) {
     if ( "storm" in layer ) out.storm = { ...layer.storm };   // §70
     if ( "stableAtZero" in layer ) out.stableAtZero = layer.stableAtZero;   // §71
     if ( "effectsIf" in layer ) out.effectsIf = layer.effectsIf;   // §71
+    if ( "contest" in layer ) out.contest = { ...layer.contest };   // §72
     if ( "forOneAttack" in layer ) out.forOneAttack = layer.forOneAttack;
     if ( "basicActions" in layer ) out.basicActions = { ...(out.basicActions ?? {}), ...layer.basicActions };
     if ( "secondPhase" in layer ) out.secondPhase = { ...(out.secondPhase ?? {}), ...layer.secondPhase };

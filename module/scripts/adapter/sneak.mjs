@@ -26,11 +26,14 @@ const currentTurnKey = () => (game.combat?.started ? `${game.combat.id}:${turnKe
 
 /** L'item qui donne l'Attaque sournoise à cet acteur, ou null. */
 export function sneakItemOf(actor) {
-  return Array.from(actor?.items ?? []).find(i => contentOf(i).entry?.sneakAttack === true) ?? null;
+  return Array.from(actor?.items ?? []).find(i => !!contentOf(i).entry?.sneakAttack) ?? null;
 }
 
 /** Les dés d'Attaque sournoise de l'item : sa première part de dégâts, sinon ceux d'un roublard de ce niveau. */
 export function sneakDiceOf(item) {
+  // §72 : les dés que le contenu fixe (PNJ : « 17 (5d6) »).
+  const fixed = contentOf(item).entry?.sneakAttack?.dice;
+  if ( fixed ) return parseDice(fixed);
   const activity = Array.from(item?.system?.activities ?? []).find(a => a.damage?.parts?.length);
   const part = activity?.damage.parts[0];
   const formula = part?.custom?.enabled ? part.custom.formula
@@ -86,13 +89,16 @@ export function sneakAttackFor(activity, attackMessage) {
   if ( !dice ) return null;
   const properties = weapon?.system?.properties;
   const facts = factsFor({ source: actor, target: target.actor, activity, sourceToken: source, targetToken: target });
+  const rule = contentOf(item).entry?.sneakAttack;
   const issue = sneakAttackIssue({
     weapon: (activity.type === "attack") && (weapon?.type === "weapon"),
     finesse: properties?.has?.("fin") === true,
     rangedWeapon: RANGED_WEAPON_TYPES.includes(weapon?.system?.type?.value),
     advantageMode: attackMessage.rolls?.[0]?.options?.advantageMode ?? 0,
     allyNear: facts["source.allyNearTarget"]({ distance: 5, units: "ft" }),
-    spent: sneakSpent(actor)
+    spent: sneakSpent(actor),
+    anyWeapon: rule?.anyWeapon === true,
+    freeTarget: (rule?.alwaysVs ?? []).includes(facts["target.creatureType"])
   });
   return { item, dice, issue, source, target };
 }

@@ -3,6 +3,7 @@ import { readUnitFactors } from "./adapter/units.mjs";
 import { registerEngine } from "./runtime/engine.mjs";
 import { registerUsage } from "./runtime/usage.mjs";
 import { registerStorm } from "./runtime/storm.mjs";
+import { registerContest } from "./runtime/contest.mjs";
 import { registerConcentration } from "./runtime/concentration.mjs";
 import { registerPilot } from "./runtime/pilot.mjs";
 import { registerDeath } from "./runtime/death.mjs";
@@ -151,6 +152,7 @@ Hooks.once("init", () => {
   registerSpace();
   registerConditions();
   registerAreas();
+  registerContest();   // §72 : test en opposition (Combat perspicace)
   registerStorm();   // §70 : Appel de la foudre, le dé de l'orage déjà là
   registerSelfAreas();   // §47 : une zone « sur soi » se pose d'office sur le lanceur
   registerBursts();

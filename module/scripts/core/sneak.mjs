@@ -23,12 +23,15 @@ export const DISADVANTAGE = -1;
  * @param {number} attack.advantageMode    Le mode du jet d'attaque, une fois avantage et désavantage combinés.
  * @param {boolean} attack.allyNear        Un allié non Neutralisé de l'attaquant à 1,50 m de la cible.
  * @param {boolean} [attack.spent]         L'Attaque sournoise a déjà servi ce tour.
+ * @param {boolean} [attack.anyWeapon]     §72 : toute arme convient (Attaque sournoise d'un PNJ).
+ * @param {boolean} [attack.freeTarget]    §72 : la cible est d'un type contre lequel rien n'est requis (« si la cible est un mort-vivant »).
  * @returns {"spent"|"notWeapon"|"weaponKind"|"disadvantage"|"noAdvantage"|null}
  */
-export function sneakAttackIssue({ weapon, finesse, rangedWeapon, advantageMode, allyNear, spent=false }) {
+export function sneakAttackIssue({ weapon, finesse, rangedWeapon, advantageMode, allyNear, spent=false, anyWeapon=false, freeTarget=false }) {
   if ( spent ) return "spent";
   if ( !weapon ) return "notWeapon";
-  if ( !finesse && !rangedWeapon ) return "weaponKind";
+  if ( !anyWeapon && !finesse && !rangedWeapon ) return "weaponKind";
+  if ( freeTarget ) return null;
   if ( advantageMode === ADVANTAGE ) return null;
   if ( advantageMode === DISADVANTAGE ) return "disadvantage";
   return allyNear ? null : "noAdvantage";

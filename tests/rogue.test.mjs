@@ -114,7 +114,7 @@ describe("§20 schéma et contenu du Roublard", () => {
     expect(validateEntry({ cunningStrikes: { x: { cost: 0 } } })).toEqual(["cunningStrikes.x.cost : entier positif (dés)", "cunningStrikes.x : une activité ou withdraw"]);
     expect(validateEntry({ cunningStrikes: { x: { cost: 1, withdraw: true, sizeAtMost: "big" } } })).toEqual(["cunningStrikes.x.sizeAtMost : tiny, sm, med, lg, huge, grg"]);
     expect(validateEntry({ basicActions: { NiI5qEhg9TepZxMh: "hide" } })).toEqual([]);
-    expect(validateEntry({ basicActions: { NiI5qEhg9TepZxMh: "fly" } })).toEqual(["basicActions.NiI5qEhg9TepZxMh : dash, disengage, dodge, hide (ou une liste)"]);
+    expect(validateEntry({ basicActions: { NiI5qEhg9TepZxMh: "fly" } })).toEqual(["basicActions.NiI5qEhg9TepZxMh : dash, disengage, dodge, hide, help (ou une liste)"]);
     expect(validateEntry({ usageLimits: { VGVYnecMRcu0f5Sq: { unmoved: true } } })).toEqual([]);
   });
   it("le contenu livré", () => {
@@ -130,4 +130,12 @@ describe("§20 schéma et contenu du Roublard", () => {
     // Esquive instinctive reste où elle était (table des déclencheurs).
     expect(CONTENT["uncanny-dodge"].triggers[0].on).toBe("isHit");
   });
+});
+
+describe("§72 : Attaque sournoise d'un PNJ", () => {
+  const base = { weapon: true, finesse: false, rangedWeapon: false, advantageMode: 0, allyNear: false };
+  it("toute arme (anyWeapon), avec l'Avantage", () => expect(sneakAttackIssue({ ...base, anyWeapon: true, advantageMode: 1 })).toBe(null));
+  it("sans anyWeapon, une arme ni Finesse ni à distance : non", () => expect(sneakAttackIssue({ ...base, advantageMode: 1 })).toBe("weaponKind"));
+  it("contre un mort-vivant (freeTarget) : ni Avantage ni allié requis", () => expect(sneakAttackIssue({ ...base, anyWeapon: true, freeTarget: true })).toBe(null));
+  it("déjà utilisée ce tour : non, même contre un mort-vivant", () => expect(sneakAttackIssue({ ...base, anyWeapon: true, freeTarget: true, spent: true })).toBe("spent"));
 });

@@ -1,4 +1,9 @@
 {
+  "DND5ECOMBAT.Opposition.Resume": "{name}: {skill} {total} vs {target}: {against} {theirs}.",
+  "DND5ECOMBAT.Opposition.Gagne": "Success: the effect is applied.",
+  "DND5ECOMBAT.Opposition.Perdu": "Failure.",
+  "DND5ECOMBAT.Opposition.Egalite": "Tie: nothing changes.",
+  "DND5ECOMBAT.Opposition.SansCible": "{item}: pick a target first.",
   "DND5ECOMBAT.Orage.Question": "Are you outdoors in stormy conditions?",
   "DND5ECOMBAT.Orage.Aide": "The spell then takes control of the existing storm instead of creating a new one: damage +{bonus}.",
   "DND5ECOMBAT.Orage.Oui": "Yes, under the storm (+{bonus})",

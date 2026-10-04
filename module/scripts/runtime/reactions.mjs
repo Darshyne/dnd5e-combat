@@ -34,7 +34,7 @@ export async function canReactToHit(tokenUuid, { activity=null, source=null }={}
   const token = await fromUuid(tokenUuid);
   const actor = token?.actor;
   // §74 : avec l'attaque quand on la connaît — sans elle, une condition sur l'attaque (« au corps à corps ») ne tenait jamais, et la
-  // fenêtre ne s'ouvrait pas (Parade d'Ireena, vu le 2026-10-04).
+  // fenêtre ne s'ouvrait pas (Parade du Monster Manual, vu le 2026-10-04).
   const context = activity ? { activity, source, target: actor, targetToken: token } : {};
   return !!actor && ((reactionsOf(actor, "isHit", context).length > 0) || (guardiansOf(token, null, activity).length > 0));
 }

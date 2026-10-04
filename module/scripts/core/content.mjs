@@ -326,6 +326,8 @@
  *                                               meilleure de `against` (chez son joueur s'il est connecté) ; gagné, l'effet `effect`
  *                                               de l'activité est posé sur elle (`exclusive` : ceux posés ailleurs tombent)
  *     zoneCharges?: n                           la zone qui dure tombe après n déclenchements (§75, Cordon de flèches : 4)
+ *     noDamage?: [ids d'activité]               le moteur ne lance pas les dégâts de ces activités (§81, Frappe piégeuse : la
+ *                                               donnée en met sur la sauvegarde, le texte n'en donne qu'au début des tours)
  *     wardsAtZero?: true                        l'effet du sort fait tomber à 1 PV au lieu de 0, puis prend fin (§73,
  *                                               Protection contre la mort)
  *     stableAtZero?: true                       une cible que l'attaque fait tomber à 0 PV est Stabilisée : ni jet contre
@@ -498,7 +500,7 @@ export const EFFECT_ENDS = Object.freeze(["casterTurnStart", "casterTurnEnd", "b
 /** Ce qui ouvre une attaque en action Bonus (`bonusAttack.after`). */
 export const BONUS_ATTACK_AFTER = Object.freeze(["critical", "felled"]);
 
-export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "changesForm", "actionOrBonus"]);
+export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "changesForm", "actionOrBonus"]);
 export const CHOICE_EFFECTS = Object.freeze(["one"]);
 /** §37 : ce qu'une sauvegarde répétée ratée impose en plus (`resave.onFail`) : l'action Esquiver (Malédiction). */
 export const RESAVE_ON_FAIL = Object.freeze(["dodge"]);
@@ -853,6 +855,9 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     }
   }
   if ( ("zoneCharges" in entry) && !(Number.isInteger(entry.zoneCharges) && (entry.zoneCharges > 0)) ) errors.push(`${at}zoneCharges : entier positif`);
+  if ( ("noDamage" in entry) && !(Array.isArray(entry.noDamage) && entry.noDamage.length && entry.noDamage.every(id => /^[A-Za-z0-9]{16}$/.test(id))) ) {
+    errors.push(`${at}noDamage : liste d'ids d'activité (16 caractères)`);
+  }
   if ( "effectsIf" in entry ) {
     if ( !isObject(entry.effectsIf) ) errors.push(`${at}effectsIf : une condition (objet)`);
     else for ( const key of unknownFacts(entry.effectsIf, facts) ) errors.push(`${at}effectsIf : fait « ${key} » inconnu`);
@@ -1295,6 +1300,7 @@ export function mergeEntries(layers) {
     if ( "stableAtZero" in layer ) out.stableAtZero = layer.stableAtZero;   // §71
     if ( "wardsAtZero" in layer ) out.wardsAtZero = layer.wardsAtZero;   // §73
     if ( "zoneCharges" in layer ) out.zoneCharges = layer.zoneCharges;   // §75
+    if ( "noDamage" in layer ) out.noDamage = [...layer.noDamage];   // §81
     if ( "effectsIf" in layer ) out.effectsIf = layer.effectsIf;   // §71
     if ( "contest" in layer ) out.contest = { ...layer.contest };   // §72
     if ( "forOneAttack" in layer ) out.forOneAttack = layer.forOneAttack;

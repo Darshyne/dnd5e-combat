@@ -44,6 +44,16 @@ describe("contenu", () => {
     expect(CONTENT["ensnaring-strike"].triggers).toEqual([{ on: "startOfTurn", via: "effect", fromEffect: "tFGMG3cjQTEeAhv2",
       do: [{ type: "damage", to: "bearer", activity: "ZWId9mbOE9zFnP6f" }] }]);
     expect(CONTENT["ensnaring-strike"].actionEnds).toEqual({ tFGMG3cjQTEeAhv2: { by: "other", roll: "check" } });
+    expect(CONTENT["ensnaring-strike"].noDamage).toEqual(["dnd5eactivity000"]);   // §81 : pas de dégâts au lancement
     expect(validateEntry(CONTENT["ensnaring-strike"])).toEqual([]);
+  });
+});
+
+describe("noDamage (§81)", () => {
+  it("liste d'ids d'activité de 16 caractères", () => {
+    expect(validateEntry({ noDamage: ["dnd5eactivity000"] })).toEqual([]);
+    expect(validateEntry({ noDamage: [] }).length).toBeGreaterThan(0);
+    expect(validateEntry({ noDamage: ["court"] }).length).toBeGreaterThan(0);
+    expect(validateEntry({ noDamage: "dnd5eactivity000" }).length).toBeGreaterThan(0);
   });
 });

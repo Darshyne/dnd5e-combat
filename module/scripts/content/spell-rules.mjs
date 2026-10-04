@@ -49,7 +49,9 @@ export const SPELL_RULES = Object.freeze({
   "symbol": { actionEnds: { A1VA7t5gB7ODNsr6: { by: "other", verb: "wake" } } },
   // Frappe piégeuse : la cible, ou toute créature qui l'atteint, peut dépenser une action en test de Force (Athlétisme) contre le
   // DD du lanceur — la cible passe par l'évasion d'une entrave (§16.54) ; ceci ouvre le test à une autre créature.
-  "ensnaring-strike": { actionEnds: { tFGMG3cjQTEeAhv2: { by: "other", roll: "check" } } },
+  // §81 : la sauvegarde du lancement (dnd5eactivity000) porte 1d6 perforants dans la donnée (PHB premium et SRD de dnd5e), que le
+  // texte 2024 ne donne pas : les dégâts ne tombent qu'au début des tours de la cible entravée (« Start of Turn Damage », §80).
+  "ensnaring-strike": { actionEnds: { tFGMG3cjQTEeAhv2: { by: "other", roll: "check" } }, noDamage: ["dnd5eactivity000"] },
   // Hâte (niveau 3), `phbsplHaste00000` : « quand le sort prend fin, la cible est Neutralisée et sa Vitesse est de 0 jusqu'à la fin
   // de son prochain tour » — l'effet « Lethargy » (S5XcFawnnNHO8bUr) posé quand « Hasted » (NEFWcyysYgsE6de3) cesse, d'où que
   // vienne la fin (durée, concentration rompue, dissipation) ; §42.2, runtime/endings.mjs.

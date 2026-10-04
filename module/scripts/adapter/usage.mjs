@@ -114,6 +114,8 @@ function effectGate(activity) {
  * §16.15). Sans cette méthode, la liste des parties.
  */
 function hasDamageParts(activity) {
+  // §81 : des dégâts que la donnée met là où la règle n'en donne pas (Frappe piégeuse : sur la sauvegarde du lancement).
+  if ( contentOf(activity.item).entry?.noDamage?.includes(activity.id) ) return false;
   if ( typeof activity.getDamageConfig !== "function" ) return (activity.damage?.parts?.length ?? 0) > 0;
   try { return (activity.getDamageConfig({})?.rolls ?? []).some(r => (r.parts ?? []).some(part => String(part ?? "").trim())); }
   catch { return (activity.damage?.parts?.length ?? 0) > 0; }

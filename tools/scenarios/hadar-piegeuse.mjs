@@ -88,6 +88,7 @@ export default {
     await ctx.setHp(zombi, 200);
     const restrained = async () => (await ctx.effects(zombi)).some(e => !e.disabled && (e.statuses ?? []).includes("restrained"));
     let caught = false;
+    const castHp = await ctx.hp(zombi);
     for ( let i = 0; (i < 15) && !caught; i++ ) {
       await endConcentration();
       const u = await ctx.use({ tokenId: mage.id, itemId: snare, activityType: "save", targetTokenIds: [zombi.id] });
@@ -96,6 +97,9 @@ export default {
       caught = await restrained();
     }
     if ( !ctx.expect(caught, "Frappe piégeuse : le Zombi est Entravé (15 essais au plus)") ) return;
+    // §81 : la donnée met 1d6 sur la sauvegarde du lancement ; la règle 2024 n'en donne qu'au début des tours.
+    const afterCast = await ctx.hp(zombi);
+    ctx.expect(afterCast === castHp, `lancement : aucun dégât, réussie ou ratée (${castHp} → ${afterCast} PV)`);
     await ctx.startCombat([mage, zombi]);
     let hurt = false;
     for ( let i = 0; (i < 3) && !hurt; i++ ) {

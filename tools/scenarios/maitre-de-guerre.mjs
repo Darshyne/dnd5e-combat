@@ -93,7 +93,7 @@ export default {
       ctx.expect((trip.asked?.labels ?? []).some(l => /Croc|Trip/i.test(l)) && (trip.asked?.labels ?? []).some(l => /provoc|Goading/i.test(l)),
         `la question propose les manœuvres (${(trip.asked?.labels ?? []).join(", ")})`);
       const formula = (trip.damage?.rolls ?? []).map(x => x.formula).join(" | ");
-      ctx.expect(/1d8/.test(formula), `+1d8 au jet de dégâts (${formula})`);
+      ctx.expect(/[12]d8/.test(formula), `+1d8 au jet de dégâts, 2d8 sur un critique (${formula})`);
       ctx.expect(trip.after === trip.before + 1, `un dé de supériorité dépensé (${trip.before} → ${trip.after})`);
       const res = trip.save ? await ctx.settle(trip.save.id).catch(() => null) : null;
       const t = res?.targets?.find(x => x.name === "Bandit");
@@ -171,6 +171,95 @@ export default {
         const formula = (dmg.rolls ?? []).map(x => x.formula).join(" | ");
         ctx.expect(/1d8/.test(formula), `Riposte qui touche : +1d8 aux dégâts (${formula})`);
       } else ctx.log("la Riposte a raté : pas de jet de dégâts à contrôler");
+    }
+
+    // 4. §89 : manœuvres à l'action Bonus (hors combat : le budget du tour n'est pas en jeu ici).
+    await lend("phbmnvFeintingAt");
+    await lend("phbmnvLungingAtt");
+    await lend("phbmnvEvasiveFoo");
+    await lend("phbmnvRally00000");
+    await pause(1200);
+    const refill = () => ctx.call("upsert-actor-item", { actorId: fighter.actorId, itemData: { "system.uses.spent": 0 }, match: { path: "_id", value: superiority } });
+    const pendingFlag = async () => (await ctx.call("get-actor", { actorId: fighter.actorId })).flags?.[MODULE_ID]?.pendingDie ?? null;
+    ctx.restore(() => ctx.call("update-actor", { actorId: fighter.actorId, actorData: { [`flags.${MODULE_ID}.-=pendingDie`]: null } }).catch(() => {}));
+    const swing = async () => {
+      const since = await ctx.lastMessageId();
+      const u = await ctx.use({ tokenId: fighter.id, itemId: sword, activityType: "attack", targetTokenIds: [bandit.id] });
+      await answer(await known(), /^Rien$|^Aucune|^None/i, 3000);   // la question des manœuvres au toucher : rien
+      const r = await ctx.settle(u.usageMessageId, { timeoutMs: 45000 }).catch(() => null);
+      await pause(2500);
+      const msgs = await ctx.messagesSince(since);
+      return { hit: r?.targets?.find(t => t.name === "Bandit")?.hit ?? null, mode: msgs.find(m => m.type === "attack")?.rolls?.[0]?.options?.advantageMode ?? null,
+        damage: (msgs.find(m => m.type === "damage")?.rolls ?? []).map(x => x.formula).join(" | ") };
+    };
+
+    // Feinte : sur le Bandit — aucun dégât, l'effet posé ; l'attaque suivante a l'Avantage ; touchée, +1d8.
+    const feint = await ctx.itemId(fighter.id, "feinting-attack");
+    let feinted = null;
+    for ( let n = 0; (n < 15) && !feinted; n++ ) {
+      await tough(); await refill(); await clearBandit();
+      const hpBefore = await ctx.hp(bandit);
+      await ctx.use({ tokenId: fighter.id, itemId: feint, targetTokenIds: [bandit.id] });
+      await pause(2500);
+      const marked = (await ctx.effects(bandit)).some(e => /Feint/i.test(e.name ?? ""));
+      const hpAfter = await ctx.hp(bandit);
+      if ( n === 0 ) {
+        ctx.expect(marked, "Feinte : l'effet est posé sur le Bandit");
+        ctx.expect(hpAfter === hpBefore, `Feinte : aucun dégât à l'utilisation (${hpBefore} → ${hpAfter})`);
+        ctx.expect((await pendingFlag())?.against === "target", "Feinte : le dé est promis contre le Bandit");
+      }
+      const a = await swing();
+      if ( n === 0 ) ctx.expect(a.mode === 1, `Feinte : l'attaque suivante a l'Avantage (mode ${a.mode})`);
+      if ( a.hit === true ) feinted = a;
+      else if ( n === 0 ) ctx.expect(!(await pendingFlag()), "Feinte : l'attaque a raté, le dé promis est perdu");
+    }
+    if ( ctx.expect(!!feinted, "Feinte suivie d'un coup qui touche (15 essais au plus)") ) {
+      ctx.expect(/1d8/.test(feinted.damage), `Feinte : +1d8 aux dégâts (${feinted.damage})`);
+    }
+    await ctx.removeEffectsNamed(bandit, /Feint/i);
+
+    // Fente : le dé promis au prochain coup au corps à corps.
+    const lunge = await ctx.itemId(fighter.id, "lunging-attack");
+    let lunged = null;
+    for ( let n = 0; (n < 15) && !lunged; n++ ) {
+      await tough(); await refill();
+      if ( !(await pendingFlag()) ) await ctx.use({ tokenId: fighter.id, itemId: lunge });
+      await pause(1500);
+      if ( n === 0 ) ctx.expect((await pendingFlag())?.against === "melee", "Fente : le dé est promis au prochain coup au corps à corps");
+      const a = await swing();
+      if ( a.hit === true ) lunged = a;
+    }
+    if ( ctx.expect(!!lunged, "Fente suivie d'un coup qui touche (15 essais au plus)") ) {
+      ctx.expect(/1d8/.test(lunged.damage), `Fente : +1d8 aux dégâts (${lunged.damage})`);
+      ctx.expect(!(await pendingFlag()), "Fente : la promesse est consommée");
+    }
+
+    // Jeu de jambes évasif : la CA augmente du dé.
+    await refill();
+    const ac0 = (await ctx.engine("stats", { tokenId: fighter.id }))?.ac ?? null;
+    ctx.restore(() => ctx.removeEffectsNamed(fighter, /Evasive|évasif/i));
+    await ctx.use({ tokenId: fighter.id, itemId: await ctx.itemId(fighter.id, "evasive-footwork") });
+    await pause(4000);
+    const ac1 = (await ctx.engine("stats", { tokenId: fighter.id }))?.ac ?? null;
+    ctx.expect((ac0 !== null) && (ac1 > ac0) && (ac1 - ac0 <= 8), `Jeu de jambes évasif : CA ${ac0} → ${ac1} (+1d8)`);
+
+    // Ralliement : des PV temporaires au Clerc (allié).
+    const ally = tokens.find(t => t.name === "Clerc") ? await ctx.token("Clerc") : null;
+    if ( ally ) {
+      await refill();
+      const a0 = await ctx.call("get-actor", { actorId: ally.actorId });
+      const temp0 = a0.system?.attributes?.hp?.temp ?? 0;
+      ctx.restore(() => ctx.call("update-actor", { actorId: ally.actorId, actorData: { "system.attributes.hp.temp": temp0 } }).catch(() => {}));
+      const before = await spent();
+      // `consume: true` : le dé se dépense comme au clic ; le jet de soin est lancé par la carte (le connecteur coupe l'enchaînement
+      // de dnd5e : `subsequentActions: false`), comme `sorts-lot-1`.
+      const u = await ctx.use({ tokenId: fighter.id, itemId: await ctx.itemId(fighter.id, "rally"), targetTokenIds: [ally.id], consume: true });
+      await pause(800);
+      if ( u.usageMessageId ) await ctx.engine("rollCard", { messageId: u.usageMessageId }).catch(() => null);
+      await pause(3500);
+      const temp1 = (await ctx.call("get-actor", { actorId: ally.actorId })).system?.attributes?.hp?.temp ?? 0;
+      ctx.expect(temp1 > temp0, `Ralliement : PV temporaires du Clerc ${temp0} → ${temp1}`);
+      ctx.expect((await spent()) === before + 1, "Ralliement : un dé de supériorité dépensé");
     }
   }
 };

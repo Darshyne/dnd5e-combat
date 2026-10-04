@@ -335,7 +335,10 @@ function readPlan(message) {
       } };
     }
     case "damage":
-      if ( !hasDamageParts(activity) ) return null;
+      // §89 : une activité de dégâts dont le contenu retire les dégâts (`noDamage` : Feinte) pose encore ses effets, comme un utilitaire.
+      if ( !hasDamageParts(activity) ) {
+        return applicableEffectsOf(activity).length ? { ...common, targets, plan: { effects: effectsOf(activity, () => "always") } } : null;
+      }
       // Une activité de dégâts utilisée après le toucher (Frappe occulte, §16.19) porte les étapes « au toucher » du contenu.
       // À gabarit (Nuage de dagues, Croissance d'épines, §16.20), c'est une zone : ses cibles sont ceux qu'elle recouvre.
       // Rejouée par une zone (`areaTick`), personne n'a cliqué : c'est le moteur qui lance les dés.

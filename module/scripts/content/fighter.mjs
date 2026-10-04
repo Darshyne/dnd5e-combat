@@ -73,5 +73,19 @@ export const FIGHTER = Object.freeze({
   // §88 : Riposte — « quand une créature vous rate d'un jet d'attaque au corps à corps, votre Réaction et un dé : une attaque au corps à
   // corps avec une arme ou à mains nues contre elle ; si vous touchez, le dé s'ajoute aux dégâts » : l'activité « Riposte Damage »
   // (QhxT9ZuZXmHGlrnT) paie le dé et le donne ; l'attaque est celle de l'arme (`weapon`).
+  // §89 : manœuvres à l'action Bonus. Fente : Foncer, et le dé promis au prochain coup au corps à corps du tour (« si vous vous
+  // déplacez d'au moins 1,50 m en ligne droite juste avant » : non contrôlé) ; l'activité « dégâts » ne lance rien d'elle-même.
+  "lunging-attack": { basicActions: { aoTn3UKohm5VAuIT: "dash" }, noDamage: ["aoTn3UKohm5VAuIT"], pendingDie: { activity: "aoTn3UKohm5VAuIT", against: "melee" } },
+  // Feinte : une créature à 1,50 m — « l'Avantage à votre prochain jet d'attaque contre elle ce tour-ci ; s'il touche, le dé aux
+  // dégâts ». L'activité « dégâts » ne blesse pas : elle pose l'effet « Feinting Attack » (O7ho6H0UL2rg3Mz9) sur la cible, que
+  // l'attaque suivante de l'auteur consomme avec l'Avantage ; le dé est promis contre elle.
+  "feinting-attack": {
+    noDamage: ["Utu8uaZOMepShbyw"],
+    pendingDie: { activity: "Utu8uaZOMepShbyw", against: "target" },
+    triggers: [{ on: "preAttackRoll", via: "effect", if: { "target.hasEffectFrom": "feinting-attack" }, do: [{ type: "advantage" }, { type: "consume", side: "target" }] }]
+  },
+  // Jeu de jambes évasif : Se désengager, et le dé de supériorité ajouté à la CA jusqu'au début de votre prochain tour (effet
+  // « Evasive AC », vide dans la donnée).
+  "evasive-footwork": { basicActions: { d3RqzIKzhqX82OwP: "disengage" }, rolledAc: { activity: "d3RqzIKzhqX82OwP", effect: "rGEvj6OHUjHan8pq" } },
   "riposte": { triggers: [{ on: "isMissed", if: { "activity.isMelee": true }, do: [{ type: "use", target: "source", activity: "QhxT9ZuZXmHGlrnT", weapon: true }] }] }
 });

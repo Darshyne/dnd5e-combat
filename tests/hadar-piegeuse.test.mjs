@@ -139,3 +139,17 @@ describe("Parade et Riposte du Maître de guerre (§88)", () => {
     expect(validateEntry({ triggers: [{ on: "isMissed", do: [{ type: "use", weapon: true }] }] }).length).toBeGreaterThan(0);
   });
 });
+
+describe("manœuvres à l'action Bonus (§89)", () => {
+  it("Fente, Feinte, Jeu de jambes évasif", () => {
+    expect(CONTENT["lunging-attack"]).toMatchObject({ basicActions: { aoTn3UKohm5VAuIT: "dash" }, noDamage: ["aoTn3UKohm5VAuIT"], pendingDie: { activity: "aoTn3UKohm5VAuIT", against: "melee" } });
+    expect(CONTENT["feinting-attack"].pendingDie).toEqual({ activity: "Utu8uaZOMepShbyw", against: "target" });
+    expect(CONTENT["evasive-footwork"]).toMatchObject({ basicActions: { d3RqzIKzhqX82OwP: "disengage" }, rolledAc: { activity: "d3RqzIKzhqX82OwP", effect: "rGEvj6OHUjHan8pq" } });
+    for ( const id of ["lunging-attack", "feinting-attack", "evasive-footwork"] ) expect(validateEntry(CONTENT[id], { facts: { "target.hasEffectFrom": true } })).toEqual([]);
+  });
+  it("refus", () => {
+    expect(validateEntry({ pendingDie: { activity: "aoTn3UKohm5VAuIT", against: "ranged" } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ pendingDie: { activity: "court", against: "melee" } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ rolledAc: { activity: "d3RqzIKzhqX82OwP" } }).length).toBeGreaterThan(0);
+  });
+});

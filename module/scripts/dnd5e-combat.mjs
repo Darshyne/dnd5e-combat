@@ -48,6 +48,7 @@ import { registerActionEnd } from "./runtime/action-end.mjs";
 import { registerActivityChoice } from "./runtime/activity-choice.mjs";
 import { registerMonk } from "./runtime/monk.mjs";
 import { registerSmite } from "./runtime/smite.mjs";
+import { registerManeuverDice } from "./runtime/maneuver-dice.mjs";
 import { registerSwallow } from "./runtime/swallow.mjs";
 import { registerBasics } from "./runtime/basics.mjs";
 import { basicActionData } from "./adapter/basics.mjs";
@@ -170,6 +171,7 @@ Hooks.once("init", () => {
   registerFighter();   // §21 : Héros du champ d'honneur, styles Armes à deux mains et Armes de jet
   registerMonk();   // §24 : Frappe étourdissante, Technique de la main ouverte
   registerSmite();   // §25 : sorts de châtiment (après registerSneak : les dés du châtiment suivent ceux de l'Attaque sournoise)
+  registerManeuverDice();   // §89 : dés de manœuvre à l'action Bonus (Fente, Feinte, Jeu de jambes évasif)
   registerActivityChoice();   // §42.1 : le choix d'activité de dnd5e, répondu quand il n'y a rien à choisir
   registerCantrips();   // §23 : tours de magie (durées, soins bloqués, Glas, Frappe assurée)
   registerEndings();   // §42.2 : ce qui suit la fin d'un effet (léthargie de Hâte)

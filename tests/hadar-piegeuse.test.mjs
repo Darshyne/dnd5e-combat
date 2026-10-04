@@ -57,3 +57,10 @@ describe("noDamage (§81)", () => {
     expect(validateEntry({ noDamage: "dnd5eactivity000" }).length).toBeGreaterThan(0);
   });
 });
+
+describe("Mur d'épines (§85)", () => {
+  it("entrée et fin de tour : la sœur « Traversal Save », une fois par tour", () => {
+    expect(CONTENT["wall-of-thorns"].triggers).toEqual([{ on: ["enter", "turnEnd"], do: [{ type: "replay", activity: "dMiM7Qec4keU3w7B" }] }]);
+    expect(validateEntry(CONTENT["wall-of-thorns"])).toEqual([]);
+  });
+});

@@ -47,6 +47,10 @@ export const TRIGGERS = Object.freeze({
   // entre ou y termine son tour reçoit un projectile : la sauvegarde de Dextérité de l'activité sœur (2d4 perforants). Quatre
   // projectiles (`zoneCharges`, content/spell-rules.mjs), puis le sort prend fin. Les créatures désignées à épargner : au MJ.
   "cordon-of-arrows": [{ on: ["enter", "turnEnd"], do: [{ type: "replay", activity: "dnd5eactivity000" }] }],
+  // §85 : Mur d'épines — « Create Wall » / « Create Circle » posent la zone (sauvegarde de Dextérité, 7d8 perforants, à la pose) ;
+  // « la première fois qu'une créature entre dans le mur au cours d'un tour, ou qu'elle y termine son tour » : la sœur « Traversal
+  // Save » (dMiM7Qec4keU3w7B, 7d8 tranchants), une fois par tour. Le coût de déplacement ×4 n'est pas repris.
+  "wall-of-thorns": [{ on: ["enter", "turnEnd"], do: [{ type: "replay", activity: "dMiM7Qec4keU3w7B" }] }],
   // §80 : Faim de Hadar — « Ouvrir le portail » (utilitaire) pose la sphère ; qui commence son tour dedans subit 2d6 de froid
   // (« Start of Turn Damage », G6bH5mBR3kkEYjYe), qui le termine dedans fait un JS de Dextérité contre 2d6 d'acide (« End of Turn
   // Save », FGDyvqQz5JQQc5mf). Une activité par moment, chacune une fois par tour.

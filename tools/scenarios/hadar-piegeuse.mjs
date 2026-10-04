@@ -109,5 +109,36 @@ export default {
       if ( after < before ) { hurt = true; ctx.log(`Zombi : ${before} → ${after} PV`); }
     }
     ctx.expect(hurt, "au début du tour du Zombi entravé : dégâts perforants de la Frappe piégeuse");
+    await ctx.call("end-combat", { combatId: ctx.ownCombat }).catch(() => {});
+    ctx.ownCombat = null;
+    await endConcentration();
+    await ctx.removeEffectsNamed(zombi, /Ensnared|piég|Entrav/i);
+
+    // 3. §85 : Mur d'épines — un cercle d'épines sur une case libre ; le Zombi y marche (vrai déplacement du moteur) : la sœur
+    // « Traversal Save » (Dextérité, 7d8 tranchants) se rejoue à l'entrée.
+    const thorns = await ctx.ensureItem(mage, `${PHB}.phbsplWallofThor`, { system: { method: "atwill" } });
+    const grid = await ctx.gridSize();
+    const z0 = await ctx.position(zombi);
+    ctx.restore(() => ctx.call("move-token", { tokenId: zombi.id, x: z0.x, y: z0.y, elevation: 0 }));
+    const cell = { x: z0.x + 3 * grid, y: z0.y };   // trois cases à droite du Zombi
+    const wall = await ctx.use({ tokenId: mage.id, itemId: thorns, activityId: "cgge2ISpX3u70Dof",
+      area: { shape: "circle", x: cell.x + grid / 2, y: cell.y + grid / 2, radius: grid / 2 } });
+    if ( wall.regionId ) ctx.restore(() => ctx.call("delete-scene-object", { type: "Region", objectId: wall.regionId }).catch(() => {}));
+    await sleep(2500);
+    const wallState = wall.regionId ? (await ctx.call("get-scene-object", { type: "Region", objectId: wall.regionId })).data?.flags?.[MODULE_ID]?.area : null;
+    ctx.expect(wallState?.activity === "dMiM7Qec4keU3w7B" && wallState?.on?.includes("enter"),
+      `mur d'épines : zone qui dure, « Traversal Save » à l'entrée (${JSON.stringify(wallState && { on: wallState.on, activity: wallState.activity })})`);
+    const sinceWall = await ctx.lastMessageId();
+    await ctx.engine("move", { tokenId: zombi.id, point: { x: cell.x + grid / 2, y: cell.y + grid / 2 } });
+    let entered = null;
+    for ( const stop = Date.now() + 15000; !entered && (Date.now() < stop); await sleep(800) ) {
+      entered = (await ctx.messagesSince(sinceWall)).find(m => (m.type === "usage") && (tickOf(m)?.event === "enter") && tickOf(m)?.token?.endsWith(zombi.id));
+    }
+    if ( ctx.expect(!!entered, "le Zombi entre dans le mur : la sauvegarde de traversée est rejouée") ) {
+      const r = await ctx.settle(entered.id).catch(() => null);
+      const damage = (await ctx.messagesSince(entered.id)).find(m => m.type === "damage");
+      const formula = (damage?.rolls ?? []).map(x => x.formula).join(" | ");
+      ctx.expect(r?.plan?.save?.ability === "dex" && /7d8/.test(formula), `traversée : sauvegarde de Dextérité, dégâts ${formula || "aucun"}`);
+    }
   }
 };

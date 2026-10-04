@@ -65,5 +65,13 @@ export const FIGHTER = Object.freeze({
   },
   // Attaque manœuvrante : le dé aux dégâts ; « un allié peut se déplacer de la moitié de sa Vitesse par sa Réaction sans provoquer
   // d'attaque d'opportunité de la cible » : au MJ.
-  "maneuvering-attack": { hitRider: { pays: "combat-superiority", damage: "y91hZshSUPoqsrpq", weaponDamage: true } }
+  "maneuvering-attack": { hitRider: { pays: "combat-superiority", damage: "y91hZshSUPoqsrpq", weaponDamage: true } },
+  // §88 : Parade (manœuvre) — « quand une autre créature vous inflige des dégâts d'un jet d'attaque au corps à corps, votre Réaction et un
+  // dé réduisent les dégâts du dé + Force ou Dextérité » : l'activité « soin » (F4UxiihGgkdv4orJ, dé + max(For, Dex), un dé de
+  // supériorité) donne le montant retiré, comme la Déviation d'assaut du Moine.
+  "parry-maneuver": { triggers: [{ on: "isHit", if: { "activity.isMelee": true }, do: [{ type: "use", activity: "F4UxiihGgkdv4orJ" }, { type: "reduce" }] }] },
+  // §88 : Riposte — « quand une créature vous rate d'un jet d'attaque au corps à corps, votre Réaction et un dé : une attaque au corps à
+  // corps avec une arme ou à mains nues contre elle ; si vous touchez, le dé s'ajoute aux dégâts » : l'activité « Riposte Damage »
+  // (QhxT9ZuZXmHGlrnT) paie le dé et le donne ; l'attaque est celle de l'arme (`weapon`).
+  "riposte": { triggers: [{ on: "isMissed", if: { "activity.isMelee": true }, do: [{ type: "use", target: "source", activity: "QhxT9ZuZXmHGlrnT", weapon: true }] }] }
 });

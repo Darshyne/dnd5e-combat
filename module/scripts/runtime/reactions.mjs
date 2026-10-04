@@ -21,6 +21,7 @@ import { log } from "./shared.mjs";
 import { reactionApproach } from "./actions.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { poolsOf } from "../adapter/absorb.mjs";
+import { takeReactionDamage } from "../adapter/marks.mjs";
 
 /** Les réactions qu'un acteur peut proposer dans une fenêtre, d'après le registre. `publish` : le moment a vraiment lieu. */
 function reactionsOf(actor, window, context={}, { publish=false }={}) {
@@ -473,7 +474,22 @@ export async function resolveOpportunity(token, attackers) {
 
 /* -------------------------------------------- */
 
+/**
+ * §88 : Riposte — le dé de supériorité promis au jet de dégâts de l'arme qui riposte (adapter/reactions.mjs, `handleReactionQuery`),
+ * sur le client qui réagit ; du type du premier jet (celui de l'arme).
+ */
+function onReactionDamage(config) {
+  const activity = config?.subject;
+  const mark = activity?.uuid ? takeReactionDamage(activity.uuid) : null;
+  if ( !mark || !config.rolls?.length ) return true;
+  const type = config.rolls[0]?.options?.type ?? null;
+  config.rolls.push({ data: activity.getRollData(), parts: [mark.formula], options: { type, types: type ? [type] : [], properties: [] } });
+  log(`${mark.name} : +${mark.formula} ${type ?? ""}`);
+  return true;
+}
+
 export function registerReactions() {
+  route("dnd5e.preRollDamageV2", onReactionDamage, { cancellable: true, label: "riposte : dé de supériorité" });
   route("combatTurnChange", (combat, prior) => onEnemyTurnEnd(combat, prior), { executor: true, label: "fenêtre « fin de tour d'un ennemi » non ouverte" });
   // Sur tous les clients : c'est celui qui réagit qui répond à la requête.
   CONFIG.queries[REACTION_QUERY] = handleReactionQuery;

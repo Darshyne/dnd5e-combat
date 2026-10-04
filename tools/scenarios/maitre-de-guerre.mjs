@@ -115,5 +115,62 @@ export default {
       const damages = (await ctx.messagesSince(goad.damage?.id ?? goad.save?.id)).filter(m => m.type === "damage");
       ctx.expect(!damages.length, `la sauvegarde n'ajoute pas de dégâts (${damages.length} jet(s) de plus)`);
     }
+
+    // 3. §88 : Parade et Riposte, en réaction aux attaques du Bandit (prises d'office : `autoReact: "first"`).
+    await lend("phbmnvParry00000");
+    await lend("phbmnvRiposte000");
+    await pause(1200);
+    await ctx.call("upsert-actor-item", { actorId: fighter.actorId, itemData: { "system.uses.spent": 0 }, match: { path: "_id", value: superiority } });
+    const hp0 = await ctx.hp(fighter);
+    ctx.restore(() => ctx.setHp(fighter, hp0));
+    const scimitar = await ctx.itemId(bandit.id, "scimitar");
+    const banditAttack = async () => {
+      await ctx.setHp(fighter, hp0); await tough(); await clearBandit();
+      // Dés remis à chaque attaque : les Ripostes des coups ratés les épuiseraient avant le coup qui touche (Parade).
+      await ctx.call("upsert-actor-item", { actorId: fighter.actorId, itemData: { "system.uses.spent": 0 }, match: { path: "_id", value: superiority } });
+      const before = await spent();
+      const since = await ctx.lastMessageId();
+      const u = await ctx.use({ tokenId: bandit.id, itemId: scimitar, activityType: "attack", targetTokenIds: [fighter.id],
+        usageConfig: { [MODULE_ID]: { autoReact: "first" } } });
+      const r = await ctx.settle(u.usageMessageId, { timeoutMs: 45000 }).catch(() => null);
+      await pause(5000);
+      return { r, since, before, after: await spent(), hit: r?.targets?.find(t => t.name === "Guerrier")?.hit ?? null };
+    };
+
+    // Parade : un coup qui touche — un dé dépensé, les dégâts réduits du jet de la Parade.
+    let parried = null;
+    for ( let n = 0; (n < 20) && !parried; n++ ) { const a = await banditAttack(); if ( a.hit === true ) parried = a; }
+    if ( ctx.expect(!!parried, "le Bandit touche le Guerrier (20 essais au plus)") ) {
+      const msgs = await ctx.messagesSince(parried.since);
+      const reaction = msgs.find(m => (m.type === "usage") && m.flags?.[MODULE_ID]?.reaction && /Parade|Parry/i.test(m.flavor ?? m.speaker?.alias ?? JSON.stringify(m.system?.activity ?? "")));
+      const t = parried.r?.targets?.find(x => x.name === "Guerrier");
+      ctx.expect(parried.after === parried.before + 1, `Parade : un dé de supériorité dépensé (${parried.before} → ${parried.after})`);
+      ctx.expect((t?.damage?.reduced ?? t?.reduced ?? 0) > 0 || (t?.damage?.applied ?? 99) < (t?.damage?.total ?? 0),
+        `Parade : dégâts réduits (${JSON.stringify(t?.damage ?? null)})`);
+      ctx.log(`carte de réaction : ${reaction ? "présente" : "non trouvée par le libellé"}`);
+    }
+
+    // Riposte : un coup raté — un dé dépensé, une attaque du Guerrier contre le Bandit ; touché, +1d8 aux dégâts.
+    // Jusqu'à une Riposte qui touche (pour voir le dé aux dégâts) ; à défaut, la dernière qui a eu lieu.
+    let riposted = null;
+    for ( let n = 0; n < 25; n++ ) {
+      const a = await banditAttack();
+      if ( a.hit !== false ) continue;
+      riposted = a;
+      const msgs = await ctx.messagesSince(a.since);
+      if ( msgs.some(m => (m.type === "damage") && (m.speaker?.alias === "Guerrier" || m.alias === "Guerrier")) ) break;
+      await ctx.call("upsert-actor-item", { actorId: fighter.actorId, itemData: { "system.uses.spent": 0 }, match: { path: "_id", value: superiority } });
+    }
+    if ( ctx.expect(!!riposted, "le Bandit rate le Guerrier (20 essais au plus)") ) {
+      ctx.expect(riposted.after === riposted.before + 1, `Riposte : un dé de supériorité dépensé (${riposted.before} → ${riposted.after})`);
+      const msgs = await ctx.messagesSince(riposted.since);
+      const counter = msgs.find(m => (m.type === "attack") && (m.speaker?.alias === "Guerrier" || m.alias === "Guerrier"));
+      ctx.expect(!!counter, "Riposte : le Guerrier attaque le Bandit avec son arme");
+      const dmg = msgs.find(m => (m.type === "damage") && (m.speaker?.alias === "Guerrier" || m.alias === "Guerrier"));
+      if ( dmg ) {
+        const formula = (dmg.rolls ?? []).map(x => x.formula).join(" | ");
+        ctx.expect(/1d8/.test(formula), `Riposte qui touche : +1d8 aux dégâts (${formula})`);
+      } else ctx.log("la Riposte a raté : pas de jet de dégâts à contrôler");
+    }
   }
 };

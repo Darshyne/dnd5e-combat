@@ -20,7 +20,7 @@ import { stepsOf } from "../core/triggers.mjs";
 import { rollerFor } from "./concentration.mjs";
 import { timedWait } from "./dialogs.mjs";
 import { contentOf } from "./content.mjs";
-import { markReactionAdvantage } from "./marks.mjs";
+import { markReactionAdvantage, markReactionDamage } from "./marks.mjs";
 import { combatantFor, readBudget, currentTurnKey } from "./turn.mjs";
 import { originItemOf } from "./facts.mjs";
 import { resolveCounter } from "./counter.mjs";
@@ -78,8 +78,10 @@ export function reactionOptions(actor, window, declarations) {
     interpose: stepsOf(d, "interpose").length > 0,
     consume: step.consume !== false,
     approach: step.approach === true,
-    advantage: step.advantage === true
-  })).filter(o => o.activity && affordable(o.activity)));
+    advantage: step.advantage === true,
+    // §88 : l'attaque se fait avec une arme de corps à corps de l'acteur ; l'activité de l'item paie et donne le dé (Riposte).
+    weapon: step.weapon === true
+  })).filter(o => o.activity && affordable(o.activity) && (!o.weapon || meleeAttacksOf(actor).options.length)));
 }
 
 /**
@@ -107,6 +109,13 @@ function affordable(activityUuid) {
   }
   const ownUses = (activity.consumption?.targets ?? []).some(t => (t.type === "itemUses") && !t.target);
   if ( ownUses && Number(item.system.uses?.max) && !((Number(item.system.uses.value) || 0) > 0) ) return false;
+  // §88 : les utilisations d'un AUTRE item (les manœuvres : Supériorité martiale ; dnd5e a déjà ramené la cible, uuid de compendium ou
+  // identifiant, à l'id de l'item de l'acteur — data/activity/base-activity.mjs, `_remapConsumptionTarget`).
+  for ( const t of activity.consumption?.targets ?? [] ) {
+    if ( (t.type !== "itemUses") || !t.target ) continue;
+    const other = item.actor?.items.get(t.target);
+    if ( other && Number(other.system.uses?.max) && !((Number(other.system.uses.value) || 0) > 0) ) return false;
+  }
   return true;
 }
 
@@ -249,7 +258,17 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
     const token = (await fromUuid(target))?.object;
     token?.setTarget(true, { releaseOthers: true });
   }
-  const activity = await fromUuid(option.activity);
+  let activity = await fromUuid(option.activity);
+  // §88 : Riposte — l'activité de l'item paie (ses consommations : un dé de supériorité) et donne le dé ; l'attaque est celle d'une arme
+  // de corps à corps de l'acteur (la première équipée, `meleeAttacksOf`), contre la source, et le dé s'ajoute à ses dégâts si elle touche.
+  if ( option.weapon && activity ) {
+    const weapon = await fromUuid(meleeAttacksOf(actor).options[0]?.activity ?? "");
+    if ( !weapon ) return null;
+    await payWithoutUse(activity);
+    const formula = riderFormula(activity);
+    if ( formula ) markReactionDamage(weapon.uuid, formula, option.name);
+    activity = weapon;
+  }
   if ( option.approach && target && approachSource ) {
     await approachSource(actor, await fromUuid(target), activity).catch(err => console.error(`${MODULE_ID} | approche de la réaction`, err));
   }
@@ -296,6 +315,25 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
   return results ? { counter, reduce, penalty, bonus, disadvantage: option.disadvantage === true, used: option.activity, name: option.name, message: results.message?.id ?? null, halve: option.halve === true,
     uncrit: option.uncrit === true, miss: option.miss === true, absorb: option.absorb === true, interpose: option.interpose === true,
     endCondition: option.endCondition === true } : null;
+}
+
+/** §88 : dépense ce que l'activité consomme d'utilisations d'items (Riposte : un dé de supériorité), sans l'utiliser. */
+async function payWithoutUse(activity) {
+  for ( const t of activity.consumption?.targets ?? [] ) {
+    if ( t.type !== "itemUses" ) continue;
+    const item = t.target ? activity.actor?.items.get(t.target) : activity.item;
+    if ( !item?.system.uses?.max ) continue;
+    const cost = Number(t.value) || 1;
+    await item.update({ "system.uses.spent": (Number(item.system.uses.spent) || 0) + cost });
+  }
+}
+
+/** §88 : la formule de la première part de dégâts de l'activité, lue avec les données de l'acteur (« @scale…die » → « 1d8 »). */
+function riderFormula(activity) {
+  const part = activity?.damage?.parts?.[0];
+  if ( !part ) return null;
+  const raw = part.custom?.enabled ? part.custom.formula : (part.number && part.denomination ? `${part.number}d${part.denomination}` : null);
+  return raw ? Roll.replaceFormulaData(raw, activity.getRollData?.() ?? activity.actor?.getRollData() ?? {}) : null;
 }
 
 /** Un dé de réaction lancé en clair (sa carte dans le chat) ; son total, 0 si la formule est illisible. */

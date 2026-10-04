@@ -124,3 +124,18 @@ describe("manœuvres au toucher (§87)", () => {
     expect(validateEntry({ hitRider: { weaponDamage: "oui" } }).length).toBeGreaterThan(0);
   });
 });
+
+describe("Parade et Riposte du Maître de guerre (§88)", () => {
+  it("la Parade du PHB a son propre identifiant ; celle du Monster Manual ne change pas", async () => {
+    const { SOURCE_IDENTIFIERS } = await import("../module/scripts/content/sources.mjs");
+    expect(SOURCE_IDENTIFIERS.phbmnvParry00000).toBe("parry-maneuver");
+    expect(CONTENT["parry-maneuver"].triggers[0].do).toEqual([{ type: "use", activity: "F4UxiihGgkdv4orJ" }, { type: "reduce" }]);
+    expect(CONTENT.parry.triggers[0].do).toEqual([{ type: "use" }, { type: "penalty", formula: "@prof" }]);
+  });
+  it("Riposte : use vers la source, avec l'arme", () => {
+    expect(CONTENT.riposte.triggers).toEqual([{ on: "isMissed", if: { "activity.isMelee": true },
+      do: [{ type: "use", target: "source", activity: "QhxT9ZuZXmHGlrnT", weapon: true }] }]);
+    expect(validateEntry(CONTENT.riposte, { facts: { "activity.isMelee": true } })).toEqual([]);
+    expect(validateEntry({ triggers: [{ on: "isMissed", do: [{ type: "use", weapon: true }] }] }).length).toBeGreaterThan(0);
+  });
+});

@@ -549,6 +549,8 @@ function validateStep(step, at, errors) {
   if ( (step.type === "use") && ("advantage" in step) && (step.advantage !== true) ) errors.push(`${at}.advantage : true ou absent`);
   if ( (step.type === "use") && ("consume" in step) && (step.consume !== false) ) errors.push(`${at}.consume : false ou absent`);
   if ( (step.type === "use") && ("approach" in step) && ((step.approach !== true) || (step.target !== "source")) ) errors.push(`${at}.approach : true, avec target: "source"`);
+  // §88 : attaque avec une arme de corps à corps de l'acteur (Riposte).
+  if ( (step.type === "use") && ("weapon" in step) && ((step.weapon !== true) || (step.target !== "source")) ) errors.push(`${at}.weapon : true, avec target: "source"`);
   if ( "margin" in step ) {
     const mg = step.margin;
     const ok = (typeof mg === "object") && mg && Object.keys(mg).length && Object.entries(mg).every(([k, v]) => ["min", "max"].includes(k) && Number.isFinite(v) && (v >= 0));

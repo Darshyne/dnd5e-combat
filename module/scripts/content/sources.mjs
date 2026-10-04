@@ -17,5 +17,8 @@ export const SOURCE_IDENTIFIERS = Object.freeze({
   rhwCSCircleofMOG: "circle-of-mortality",
   rhwCSPathtotheCb: "path-to-the-grave",
   rhwCSSentinelaOa: "sentinel-at-deaths-door",
-  rhwCSDivineRea8I: "divine-reaper"
+  rhwCSDivineRea8I: "divine-reaper",
+  // §88 : la Parade du Maître de guerre (Manuel des joueurs) porte l'identifiant « parry » de la Parade du Monster Manual (§74), dont la
+  // règle diffère (CA + maîtrise contre réduction des dégâts) : reconnue par sa source.
+  phbmnvParry00000: "parry-maneuver"
 });

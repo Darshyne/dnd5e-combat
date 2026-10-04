@@ -64,3 +64,42 @@ describe("Mur d'épines (§85)", () => {
     expect(validateEntry(CONTENT["wall-of-thorns"])).toEqual([]);
   });
 });
+
+describe("Aura sacrée (§86)", () => {
+  it("aura : avantage aux sauvegardes, alliés et soi, tant que le sort tient", () => {
+    const aura = CONTENT["holy-aura"].aura;
+    expect(aura).toMatchObject({ whileActive: true, includeSelf: true, affects: "ally", radius: 30, units: "ft" });
+    expect(aura.changes.map(c => c.key)).toContain("system.abilities.con.save.roll.mode");
+  });
+  it("désavantage des attaquants, sauvegarde d'un Fiélon ou d'un Mort-vivant qui touche au corps à corps", () => {
+    const [disadvantage, retaliation] = CONTENT["holy-aura"].triggers;
+    expect(disadvantage).toMatchObject({ on: "preAttackRoll", via: "effect", do: [{ type: "disadvantage" }] });
+    expect(retaliation).toEqual({ on: "isHit", via: "effect", if: { "activity.isMelee": true, "source.creatureType": ["fiend", "undead"] },
+      do: [{ type: "save", to: "source", activity: "0kylpwRauH0WgW0G" }] });
+    const facts = { "target.hasEffect": true, "activity.isMelee": true, "source.creatureType": true };
+    expect(validateEntry(CONTENT["holy-aura"], { facts })).toEqual([]);
+  });
+  it("étape save : vers la source, une activité", () => {
+    expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "save", to: "source", activity: "0kylpwRauH0WgW0G" }] }] })).toEqual([]);
+    expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "save", to: "bearer", activity: "0kylpwRauH0WgW0G" }] }] }).length).toBeGreaterThan(0);
+    expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "save", to: "source" }] }] }).length).toBeGreaterThan(0);
+  });
+});
+
+describe("gabarit fourni par le contenu : Yolande, êtres sylvestres (§86)", () => {
+  it("selfZone et zoneAffects, validés", () => {
+    const facts = {};
+    for ( const id of ["yolandes-regal-presence", "conjure-woodland-beings"] ) {
+      expect(CONTENT[id].zoneAffects).toBe("enemy");
+      expect(Object.values(CONTENT[id].selfZone)[0]).toEqual({ type: "radius", size: 10, units: "ft" });
+      expect(validateEntry(CONTENT[id], { facts })).toEqual([]);
+    }
+    expect(CONTENT["yolandes-regal-presence"].triggers[1]).toEqual({ on: "failedSave", do: [{ type: "status", status: "prone" }] });
+  });
+  it("refus", () => {
+    expect(validateEntry({ selfZone: { court: { type: "radius", size: 10, units: "ft" } } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ selfZone: { dnd5eactivity000: { type: "cone", size: 10, units: "ft" } } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ selfZone: { dnd5eactivity000: { type: "radius", size: 0, units: "ft" } } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ zoneAffects: "everyone" }).length).toBeGreaterThan(0);
+  });
+});

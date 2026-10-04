@@ -326,6 +326,10 @@
  *                                               meilleure de `against` (chez son joueur s'il est connecté) ; gagné, l'effet `effect`
  *                                               de l'activité est posé sur elle (`exclusive` : ceux posés ailleurs tombent)
  *     zoneCharges?: n                           la zone qui dure tombe après n déclenchements (§75, Cordon de flèches : 4)
+ *     selfZone?: { <id d'activité>: { type, size, units } }  le gabarit d'une activité qui n'en a pas dans la donnée (§86,
+ *                                               Présence royale de Yolande : émanation de 10 ft sur soi) — posé d'office (§47)
+ *     zoneAffects?: "enemy"|"ally"              qui la zone de l'item affecte, quand la donnée ne le dit pas (§86 : « une
+ *                                               créature que vous voyez… vous pouvez la forcer » — les alliés épargnés)
  *     noDamage?: [ids d'activité]               le moteur ne lance pas les dégâts de ces activités (§81, Frappe piégeuse : la
  *                                               donnée en met sur la sauvegarde, le texte n'en donne qu'au début des tours)
  *     wardsAtZero?: true                        l'effet du sort fait tomber à 1 PV au lieu de 0, puis prend fin (§73,
@@ -393,6 +397,9 @@
  *                                                        riposte (§16.9, B9 : moment isHit) : l'attaquant subit ces
  *                                                        dégâts — une formule et son type, ou l'activité de dégâts
  *                                                        de l'item (id), au niveau où le sort a été lancé
+ *   { type: "save", to: "source", activity }             §86, riposte par une sauvegarde (moment isHit) : l'attaquant fait
+ *                                                        la sauvegarde de cette activité de l'item, ses effets s'il la
+ *                                                        rate (Aura sacrée : Aveuglé)
  *   { type: "move", mode: "push"|"pull", distance, units }   déplacement forcé de la cible (moments hit, failedSave) ;
  *                                                        `distance` : un nombre, ou une formule lue sur la source
  *                                                        (« 5 + 5 * @flags.dnd5e.summon.mod », Main puissante) ;
@@ -475,7 +482,7 @@ import { EMANATION_MOMENTS } from "./emanation.mjs";
 /** Version du schéma. Une surcouche d'une autre version est ignorée avec un avertissement. */
 export const CONTENT_VERSION = 1;
 
-export const STEP_TYPES = Object.freeze(["disarm", "use", "replay", "damage", "move", "status", "resave", "remove", "halve", "uncrit", "consume", "advantage", "disadvantage", "ward", "attackBonus", "endCondition", "reduce", "miss", "penalty", "bonus", "absorb", "interpose", "mark"]);
+export const STEP_TYPES = Object.freeze(["disarm", "use", "replay", "damage", "move", "status", "resave", "remove", "halve", "uncrit", "consume", "advantage", "disadvantage", "ward", "attackBonus", "endCondition", "reduce", "miss", "penalty", "bonus", "absorb", "interpose", "mark", "save"]);
 /** Les fenêtres « touché » : la créature touchée elle-même, ou une autre qui réagit pour elle (Sentinelle au seuil de la mort). */
 export const HIT_WINDOWS = Object.freeze(["isHit", "allyIsHit"]);
 /** Les actions de base qu'une activité peut prendre au coût de son activation (`basicActions`). */
@@ -500,7 +507,7 @@ export const EFFECT_ENDS = Object.freeze(["casterTurnStart", "casterTurnEnd", "b
 /** Ce qui ouvre une attaque en action Bonus (`bonusAttack.after`). */
 export const BONUS_ATTACK_AFTER = Object.freeze(["critical", "felled"]);
 
-export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "changesForm", "actionOrBonus"]);
+export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "changesForm", "actionOrBonus"]);
 export const CHOICE_EFFECTS = Object.freeze(["one"]);
 /** §37 : ce qu'une sauvegarde répétée ratée impose en plus (`resave.onFail`) : l'action Esquiver (Malédiction). */
 export const RESAVE_ON_FAIL = Object.freeze(["dodge"]);
@@ -554,6 +561,11 @@ function validateStep(step, at, errors) {
     if ( ("follow" in step) && (typeof step.follow !== "boolean") ) errors.push(`${at}.follow : booléen`);
   }
   if ( (step.type === "status") && ((typeof step.status !== "string") || !step.status) ) errors.push(`${at}.status : état requis`);
+  // §86 : riposte par une sauvegarde — vers l'attaquant, une activité de l'item.
+  if ( step.type === "save" ) {
+    if ( step.to !== "source" ) errors.push(`${at}.to : « source »`);
+    if ( !isId(step.activity) ) errors.push(`${at}.activity : id d'activité (16 caractères) attendu`);
+  }
   if ( step.type === "mark" ) {
     if ( (typeof step.mark !== "string") || !step.mark ) errors.push(`${at}.mark : nom de la marque requis`);
     if ( (typeof step.label !== "string") || !step.label ) errors.push(`${at}.label : clé de traduction requise`);
@@ -855,6 +867,16 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     }
   }
   if ( ("zoneCharges" in entry) && !(Number.isInteger(entry.zoneCharges) && (entry.zoneCharges > 0)) ) errors.push(`${at}zoneCharges : entier positif`);
+  if ( "selfZone" in entry ) {
+    if ( !isObject(entry.selfZone) || !Object.keys(entry.selfZone).length ) errors.push(`${at}selfZone : { id d'activité: gabarit }`);
+    else for ( const [id, t] of Object.entries(entry.selfZone) ) {
+      if ( !isId(id) ) errors.push(`${at}selfZone : « ${id} » n'est pas un id d'activité (16 caractères)`);
+      if ( !isObject(t) || !["radius", "sphere", "circle"].includes(t.type) ) errors.push(`${at}selfZone.${id}.type : radius, sphere, circle`);
+      if ( !(Number.isFinite(t?.size) && (t.size > 0)) ) errors.push(`${at}selfZone.${id}.size : nombre positif`);
+      if ( (typeof t?.units !== "string") || !t.units ) errors.push(`${at}selfZone.${id}.units : unité requise`);
+    }
+  }
+  if ( ("zoneAffects" in entry) && !["enemy", "ally"].includes(entry.zoneAffects) ) errors.push(`${at}zoneAffects : enemy, ally`);
   if ( ("noDamage" in entry) && !(Array.isArray(entry.noDamage) && entry.noDamage.length && entry.noDamage.every(id => /^[A-Za-z0-9]{16}$/.test(id))) ) {
     errors.push(`${at}noDamage : liste d'ids d'activité (16 caractères)`);
   }
@@ -1301,6 +1323,8 @@ export function mergeEntries(layers) {
     if ( "wardsAtZero" in layer ) out.wardsAtZero = layer.wardsAtZero;   // §73
     if ( "zoneCharges" in layer ) out.zoneCharges = layer.zoneCharges;   // §75
     if ( "noDamage" in layer ) out.noDamage = [...layer.noDamage];   // §81
+    if ( "selfZone" in layer ) out.selfZone = JSON.parse(JSON.stringify(layer.selfZone));   // §86
+    if ( "zoneAffects" in layer ) out.zoneAffects = layer.zoneAffects;   // §86
     if ( "effectsIf" in layer ) out.effectsIf = layer.effectsIf;   // §71
     if ( "contest" in layer ) out.contest = { ...layer.contest };   // §72
     if ( "forOneAttack" in layer ) out.forOneAttack = layer.forOneAttack;

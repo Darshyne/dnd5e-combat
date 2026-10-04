@@ -48,6 +48,9 @@ export function activityFor(carrier, uuid=null) {
  */
 /** Qui une zone affecte : `ally`, `enemy`, ou "" (tout le monde) ; une zone « au choix » épargne les alliés. */
 export function areaAffects(activity) {
+  // §86 : ce que le contenu dit de la zone de l'item prime (Présence royale de Yolande : les alliés épargnés).
+  const declared = activity?.item ? contentOf(activity.item).entry?.zoneAffects : null;
+  if ( declared ) return declared;
   const affects = activity?.target?.affects ?? {};
   const type = affects.type ?? "";
   if ( ["ally", "enemy"].includes(type) ) return type;

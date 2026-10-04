@@ -86,5 +86,25 @@ export const SPELL_RULES = Object.freeze({
   "web": { difficultTerrain: { types: ["webs"] } },
   "grease": { difficultTerrain: {} },
   "sleet-storm": { difficultTerrain: {} },
-  "evards-black-tentacles": { difficultTerrain: {} }
+  "evards-black-tentacles": { difficultTerrain: {} },
+  // §86 : Présence royale de Yolande — « Surround Self » (OJHRKWz8JvLzyl9R) n'a pas d'émanation dans la donnée : 10 ft sur soi,
+  // posée d'office ; « une créature que vous voyez… vous pouvez la forcer » : les alliés épargnés. Qui y entre (ou que
+  // l'émanation recouvre) ou y finit son tour : « Emanation Save » (dzeoGwKOPG7PHbyE, Sagesse, 4d6 psychiques), une fois par tour ;
+  // ratée, À terre. « Vous pouvez la pousser de 3 m » : au MJ.
+  "yolandes-regal-presence": {
+    selfZone: { OJHRKWz8JvLzyl9R: { type: "radius", size: 10, units: "ft" } },
+    zoneAffects: "enemy",
+    triggers: [
+      { on: ["enter", "turnEnd"], do: [{ type: "replay", activity: "dzeoGwKOPG7PHbyE" }] },
+      { on: "failedSave", do: [{ type: "status", status: "prone" }] }
+    ]
+  },
+  // §86 : Invocation d'êtres sylvestres — « Cast » (dnd5eactivity000, la sauvegarde de la pose) sans émanation dans la donnée :
+  // 10 ft sur soi ; alliés épargnés ; entrée et fin de tour : « Emanation Save » (UkXLSgFbCBI9CHMf, Sagesse, 5d8 de force), une
+  // fois par tour. (« Se désengager par une action Bonus » : l'activité « Disengage » de l'item.)
+  "conjure-woodland-beings": {
+    selfZone: { dnd5eactivity000: { type: "radius", size: 10, units: "ft" } },
+    zoneAffects: "enemy",
+    triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay", activity: "UkXLSgFbCBI9CHMf" }] }]
+  }
 });

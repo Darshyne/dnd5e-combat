@@ -26,7 +26,7 @@ describe("validation d'une entrée", () => {
     const errors = validateEntry({ triggers: [{ on: "onHit", if: { "moon.phase": "full" }, do: [{ type: "smite" }] }] }, { facts });
     expect(errors).toEqual([
       `triggers[0].on : moment « onHit » inconnu (${MOMENTS_LIST})`,
-      "triggers[0].do[0].type : « smite » inconnu (disarm, use, replay, damage, move, status, resave, remove, halve, uncrit, consume, advantage, disadvantage, ward, attackBonus, endCondition, reduce, miss, penalty, bonus, absorb, interpose, mark)",
+      "triggers[0].do[0].type : « smite » inconnu (disarm, use, replay, damage, move, status, resave, remove, halve, uncrit, consume, advantage, disadvantage, ward, attackBonus, endCondition, reduce, miss, penalty, bonus, absorb, interpose, mark, save)",
       "triggers[0].if : fait « moon.phase » inconnu"
     ]);
     expect(validateEntry({ triggers: [{ on: "isHit" }] }, { facts })).toEqual(["triggers[0].do : au moins une étape"]);
@@ -151,7 +151,7 @@ describe("contenu livré", () => {
       "boon-of-dimensional-travel", "brave", "breath-weapon", "bubble-dash", "bullseye-lantern", "call-lightning",
       "calm-emotions", "candle", "careful-spell", "cause-fear", "celestial-revelation", "channel-divinity",
       "channel-divinity-cleric", "charging-horn", "charm-monster", "charm-person", "chill-touch", "chromatic-orb",
-      "circle-of-mortality", "cloud-of-daggers", "clouds-jaunt", "command", "confusion", "conjure-animals", "contagion",
+      "circle-of-mortality", "cloud-of-daggers", "clouds-jaunt", "command", "confusion", "conjure-animals", "conjure-woodland-beings", "contagion",
       "continual-flame", "cordon-of-arrows", "corrosive-form", "cosmic-omen", "counterspell", "crown-of-madness",
       "cunning-action", "cunning-strike", "cutting-words", "dancing-lights", "dark-ones-blessing", "dark-ones-own-luck",
       "darkness", "daylight", "death-burst", "death-throes", "death-ward", "deathless-agility", "deflect-attacks",
@@ -166,7 +166,7 @@ describe("contenu livré", () => {
       "frenzied-rush", "frenzy", "friends", "frosts-chill", "gaseous-form", "giant-insect", "gibbering", "grasping-hand",
       "grease", "great-weapon-fighting", "great-weapon-master", "greater-portent", "guidance", "guiding-bolt",
       "gust-of-wind", "haste", "healers-kit", "heat-aura", "heat-metal", "heightened-spell", "hellish-rebuke",
-      "heroic-warrior", "hex", "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-water",
+      "heroic-warrior", "hex", "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-aura", "holy-water",
       "hunger-of-hadar", "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "illusory-self", "improved-cunning-strike",
       "innate-sorcery", "instinctive-pounce", "invisibility", "invoke-duplicity", "lamp", "lantern-hooded", "large-form",
       "leading-evasion", "lesser-restoration", "life-drain", "lifedrinker", "light", "lunar-form", "mage-hand",
@@ -193,7 +193,7 @@ describe("contenu livré", () => {
       "tricksters-transposition", "true-resurrection", "true-strike", "umbral-dagger", "unarmed-strike", "uncanny-dodge",
       "undead-fortitude", "vampiric-bite", "vicious-mockery", "vile-appearance", "vitriolic-sphere", "vow-of-enmity",
       "wall-of-fire", "wall-of-thorns", "war-caster", "war-priest", "warding-bond", "warding-flare", "watery-rush", "web", "weird",
-      "wild-companion", "wild-resurgence", "witch-bolt", "wrath-of-the-sea", "wrathful-smite"
+      "wild-companion", "wild-resurgence", "witch-bolt", "wrath-of-the-sea", "wrathful-smite", "yolandes-regal-presence"
     ]);
     expect(CONTENT["aura-of-protection"].aura.radius).toBe(10);
     expect(CONTENT.hex.triggers).toHaveLength(1);

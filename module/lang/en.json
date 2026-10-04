@@ -114,6 +114,7 @@
   "DND5ECOMBAT.Fin.Rate": "{name} fails to free {target}: {source}.",
   "DND5ECOMBAT.FinSurDegats": "{item} ends for {name}, who just took damage.",
   "DND5ECOMBAT.Riposte": "{item}: retaliation against {attacker}",
+  "DND5ECOMBAT.RiposteSauvegarde": "{item}: {attacker} hit {bearer}, saving throw",
   "DND5ECOMBAT.Zone.Choisir": "{item}: click the area's new position (right-click or Escape to cancel).",
   "DND5ECOMBAT.Zone.Viser": "{item}: the area turns around {name} following the mouse — left-click to cast (right-click or Esc to cancel).",
   "DND5ECOMBAT.Zone.TropLoin": "{item}: the area moves {max} {units} at most.",

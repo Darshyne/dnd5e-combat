@@ -47,6 +47,15 @@ export const TRIGGERS = Object.freeze({
   // entre ou y termine son tour reçoit un projectile : la sauvegarde de Dextérité de l'activité sœur (2d4 perforants). Quatre
   // projectiles (`zoneCharges`, content/spell-rules.mjs), puis le sort prend fin. Les créatures désignées à épargner : au MJ.
   "cordon-of-arrows": [{ on: ["enter", "turnEnd"], do: [{ type: "replay", activity: "dnd5eactivity000" }] }],
+  // §86 : Aura sacrée — « les autres créatures ont le Désavantage aux jets d'attaque contre elles » (porté par la copie de l'aura,
+  // content/auras.mjs) ; « quand un Fiélon ou un Mort-vivant touche une créature affectée d'une attaque au corps à corps,
+  // l'attaquant doit réussir un JS de Constitution ou subir l'état Aveuglé jusqu'à la fin de son prochain tour » : la sœur
+  // « Fiend/Undead Save » (0kylpwRauH0WgW0G, effet Aveuglé) jouée contre l'attaquant (étape `save`).
+  "holy-aura": [
+    { on: "preAttackRoll", via: "effect", if: { "target.hasEffect": "holy-aura" }, do: [{ type: "disadvantage" }] },
+    { on: "isHit", via: "effect", if: { "activity.isMelee": true, "source.creatureType": ["fiend", "undead"] },
+      do: [{ type: "save", to: "source", activity: "0kylpwRauH0WgW0G" }] }
+  ],
   // §85 : Mur d'épines — « Create Wall » / « Create Circle » posent la zone (sauvegarde de Dextérité, 7d8 perforants, à la pose) ;
   // « la première fois qu'une créature entre dans le mur au cours d'un tour, ou qu'elle y termine son tour » : la sœur « Traversal
   // Save » (dMiM7Qec4keU3w7B, 7d8 tranchants), une fois par tour. Le coût de déplacement ×4 n'est pas repris.

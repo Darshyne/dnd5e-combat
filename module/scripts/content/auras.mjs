@@ -10,7 +10,14 @@ const ADVANTAGE_ATTACKS_AND_SAVES = ["str", "dex", "con", "int", "wis", "cha"].f
   { key: `system.abilities.${a}.save.roll.mode`, value: "1", type: "add" }
 ]);
 
+/** « Avantage à tous les jets de sauvegarde ». */
+const ADVANTAGE_SAVES = ["str", "dex", "con", "int", "wis", "cha"].map(a => ({ key: `system.abilities.${a}.save.roll.mode`, value: "1", type: "add" }));
+
 export const AURAS = Object.freeze({
+  // §86 : Aura sacrée (PHB 2024) — « vous émettez une aura (Émanation de 9 m) : les créatures de votre choix y ont l'Avantage à
+  // tous leurs jets de sauvegarde » ; l'effet « Holy Protection » de la donnée est vide et « Create Aura » n'a pas de gabarit.
+  // Le Désavantage des attaquants et la sauvegarde d'un Fiélon ou d'un Mort-vivant : content/triggers.mjs.
+  "holy-aura": { whileActive: true, includeSelf: true, affects: "ally", radius: 30, units: "ft", changes: ADVANTAGE_SAVES },
   // Vu en jeu le 2026-09-20 : l'item du module premium PHB 2.2.0 (format 5.x) n'a AUCUNE activité,
   // contrairement à celui du système 6.0. Le rayon ne peut donc pas toujours se lire sur un
   // gabarit : on le prend sur l'échelle de classe (10 ft, 30 ft au niveau 18), 10 ft à défaut.

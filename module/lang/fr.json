@@ -114,6 +114,7 @@
   "DND5ECOMBAT.Fin.Rate": "{name} ne parvient pas à libérer {target} : {source}.",
   "DND5ECOMBAT.FinSurDegats": "{item} cesse pour {name}, qui vient de subir des dégâts.",
   "DND5ECOMBAT.Riposte": "{item} : riposte contre {attacker}",
+  "DND5ECOMBAT.RiposteSauvegarde": "{item} : {attacker} a touché {bearer}, sauvegarde",
   "DND5ECOMBAT.Zone.Choisir": "{item} : cliquez la nouvelle position de la zone (clic droit ou Échap pour renoncer).",
   "DND5ECOMBAT.Zone.Viser": "{item} : la zone tourne autour de {name} en suivant la souris — clic gauche pour lancer (clic droit ou Échap pour renoncer).",
   "DND5ECOMBAT.Zone.TropLoin": "{item} : la zone se déplace de {max} {units} au plus.",

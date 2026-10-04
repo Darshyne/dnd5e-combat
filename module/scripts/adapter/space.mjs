@@ -25,6 +25,7 @@ import { convertLength } from "../core/units.mjs";
 import { committedPosition } from "./turn.mjs";
 import { readUnitFactors } from "./units.mjs";
 import { eyeElevation } from "./cover.mjs";
+import { templateOf } from "./template.mjs";
 
 let available = false;
 export function setSpaceAvailable(value) { available = !!value; }
@@ -49,7 +50,7 @@ export function checkSpaceApi() {
  * @returns {{type: string, size?: number, width?: number, height?: number}|null}
  */
 export function areaOf(activity, scene, dimensions=null) {
-  const template = activity?.target?.template;
+  const template = templateOf(activity);   // §86 : ou celui que le contenu fournit
   const type = template?.type;
   if ( !type ) return null;
   const units = scene.grid.units;
@@ -148,7 +149,7 @@ export function areaOriginOf(region, originToken=null) {
  */
 export function sphereOf(region, activity, originToken=null) {
   if ( !available ) return null;
-  const type = activity?.target?.template?.type;
+  const type = templateOf(activity)?.type;
   if ( (type !== "sphere") && (type !== "circle") ) return null;
   const scene = region.parent;
   const area = areaOf(activity, scene, region.getFlag("dnd5e", "dimensions") ?? null);

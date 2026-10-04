@@ -15,6 +15,7 @@ import { selfAreaShape, aimedAreaShape, aimFrom, cubeBeside } from "../core/self
 import { convertLength } from "../core/units.mjs";
 import { committedPosition, usageTokenOf } from "./turn.mjs";
 import { readUnitFactors } from "./units.mjs";
+import { templateOf } from "./template.mjs";
 
 /**
  * La forme et le token d'une zone à poser d'office, ou null (dnd5e pose comme d'habitude) : portée personnelle, zone
@@ -23,7 +24,7 @@ import { readUnitFactors } from "./units.mjs";
  * @returns {{shape: "emanation"|"circle", token: TokenDocument}|null}
  */
 export function selfAreaOf(activity) {
-  const template = activity?.target?.template;
+  const template = templateOf(activity);   // §86 : ou celui que le contenu fournit
   const shape = selfAreaShape({ rangeUnits: activity?.range?.units, type: template?.type, count: template?.count, size: template?.size });
   if ( !shape ) return null;
   const token = usageTokenOf(activity);
@@ -42,7 +43,7 @@ function toGrid(value, units, scene) {
 
 /** Les dimensions de la zone de l'activité, dans l'unité de la grille. */
 function dimensionsOf(activity, scene) {
-  const target = activity.target.template;
+  const target = templateOf(activity) ?? {};
   return {
     size: toGrid(target.size, target.units, scene),
     width: toGrid(target.width, target.units, scene),
@@ -101,7 +102,7 @@ export function selfAreaRegionData(activity, token, shape) {
   const scene = token.parent;
   const radius = dimensionsOf(activity, scene).size * (scene.grid.size / scene.grid.distance);
   const pos = committedPosition(token);
-  const attached = (shape === "emanation") && !activity.target.template.stationary;
+  const attached = (shape === "emanation") && !templateOf(activity)?.stationary;
   const shapeData = (shape === "emanation")
     ? { type: "emanation", radius,
       base: { type: "token", x: pos.x, y: pos.y, width: pos.width, height: pos.height, shape: pos.shape ?? token._source.shape } }

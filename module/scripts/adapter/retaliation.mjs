@@ -18,6 +18,32 @@ import { MODULE_ID } from "../constants.mjs";
 import { select, stepsOf } from "../core/triggers.mjs";
 import { declarationsOf, declarationsOfEffects, factsFor } from "./triggers.mjs";
 import { applyDamageToToken } from "./messages.mjs";
+import { describeTarget } from "./areas.mjs";
+
+/**
+ * §86 : riposte par une sauvegarde (étape `save`, `to: "source"`) — l'attaquant fait la sauvegarde d'une activité de l'item
+ * (Aura sacrée : Constitution, Aveuglé sur un échec). Même forme que `pulseAgainst` (adapter/areas.mjs) : un message d'utilisation
+ * neuf de l'activité (au niveau de lancement de l'effet porté), l'attaquant pour seule cible, marqué `areaTick` — rien n'est
+ * dépensé, la résolution de sauvegarde habituelle s'applique (DD du lanceur, effets sur un échec). MJ actif uniquement.
+ * @returns {Promise<ChatMessage|null>}
+ */
+export async function saveRetaliation({ declaration, step }, { bearerToken, attackerToken }) {
+  if ( !attackerToken?.actor ) return null;
+  const item = fromUuidSync(declaration.item ?? "", { strict: false });
+  const effect = declaration.effect ? fromUuidSync(declaration.effect, { strict: false }) : null;
+  const scaling = effect?.getFlag?.("dnd5e", "scaling") ?? 0;
+  const scaled = (scaling && item?.scaledClone) ? item.scaledClone(scaling) : item;
+  const activity = scaled?.system?.activities?.get(step.activity);
+  if ( !activity ) return null;
+  const card = await activity.item.system.getCardData({ activity });
+  return ChatMessage.implementation.create({
+    type: "usage",
+    speaker: ChatMessage.implementation.getSpeaker({ actor: item.actor ?? undefined }),
+    flavor: game.i18n.format("DND5ECOMBAT.RiposteSauvegarde", { item: declaration.name ?? item.name, attacker: attackerToken.name, bearer: bearerToken?.name ?? "" }),
+    system: { ...card, targets: [describeTarget(attackerToken)] },
+    flags: { core: { canPopout: true }, [MODULE_ID]: { areaTick: { event: "retaliation", source: bearerToken?.uuid ?? null, token: attackerToken.uuid } } }
+  });
+}
 
 /**
  * Les ripostes que déclenche une attaque qui touche, jugées avant ses dégâts.
@@ -34,7 +60,8 @@ export function retaliationsFor({ bearerToken, attackerToken, activity, attackMo
   if ( !bearer || !attacker || (bearer === attacker) ) return [];
   const declarations = [...declarationsOf(bearer), ...declarationsOfEffects(bearer)];
   const facts = factsFor({ source: attacker, target: bearer, activity, sourceToken: attackerToken, targetToken: bearerToken, attackMode });
-  return select(declarations, "isHit", facts).flatMap(d => stepsOf(d, "damage").filter(s => s.to === "source").map(step => ({ declaration: d, step })));
+  return select(declarations, "isHit", facts).flatMap(d => [...stepsOf(d, "damage"), ...stepsOf(d, "save")]
+    .filter(s => s.to === "source").map(step => ({ declaration: d, step })));
 }
 
 /** Les jets de dégâts d'une riposte : l'activité de dégâts de l'item (au niveau de lancement), ou la formule déclarée. */

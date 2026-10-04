@@ -30,6 +30,7 @@ import { contentOf, castItemOf, entryOfIdentifier } from "./content.mjs";
 import { projectilesOf } from "./projectiles.mjs";
 import { declarationsOfItem } from "./triggers.mjs";
 import { isSpellCast, spellLevelOf, spellSchoolOf } from "./scrolls.mjs";
+import { templateOf } from "./template.mjs";
 import { isPotion, potionOfCast } from "./potions.mjs";
 
 /** Clé stable d'un effet de l'activité (`_id` pour un effet de l'item, `uuid` pour un effet de référence). */
@@ -277,7 +278,8 @@ function casterRules(activity, plan, message=null) {
  * L'activité attend-elle la pose de son gabarit ? Pas une ruée en ligne droite (§57, Frappe du vent) : son gabarit de ligne
  * n'est pas posé, les créatures près du trajet sont les cibles du message (`flags.dnd5e-combat.dash`).
  */
-const templated = (activity, message) => !!activity.target?.template?.type && !message.getFlag?.(MODULE_ID, "dash");
+// §86 : le gabarit de la donnée, ou celui que le contenu fournit (adapter/template.mjs).
+const templated = (activity, message) => !!templateOf(activity)?.type && !message.getFlag?.(MODULE_ID, "dash");
 
 function readPlan(message) {
   const activity = message.getAssociatedActivity?.({ scaled: true });

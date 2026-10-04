@@ -13,7 +13,7 @@ import { current, undoPlan, wantsDamageRoll, isCriticalHit, pendingChoice, pendi
 import { selectAreaTargets, openArea, turnKeyOf, actsOnPose } from "../core/area.mjs";
 import { isAutoCritical, autoFailSave } from "../core/conditions.mjs";
 import { unaffectedBy } from "../adapter/eligibility.mjs";
-import { retaliationsFor, retaliate, inflict } from "../adapter/retaliation.mjs";
+import { retaliationsFor, retaliate, inflict, saveRetaliation } from "../adapter/retaliation.mjs";
 import { readAttackMessage, readDamageMessage, applyDamageToToken, restoreHp, maximizedHealing, rollDamageFor } from "../adapter/messages.mjs";
 import {
   readSaveMessage, readActivityRegion, requestSaves, applyEffectsToToken, applyStatusToToken, applyMarkToToken, splitPushes, removeEffects,
@@ -276,6 +276,12 @@ const COMMANDS = {
       }
       entries.push({ token: entry.token, actor: entry.actor, before: hp?.before ?? null, after: hp?.after ?? null, effects });
       for ( const r of retaliations ) {
+        // §86 : une riposte par une sauvegarde de l'attaquant (Aura sacrée) — sa propre résolution, à part.
+        if ( r.step.type === "save" ) {
+          const asked = await saveRetaliation(r, { bearerToken: struck, attackerToken: source });
+          if ( asked ) log(`${r.declaration.name} : ${source?.name} fait sa sauvegarde en touchant ${struck.name}`);
+          continue;
+        }
         const logged = await retaliate(r, { bearerToken: struck, attackerToken: source });
         if ( logged ) { extra.push(logged); log(`${r.declaration.name} : ${source?.name} subit ${(logged.before.value + logged.before.temp) - (logged.after.value + logged.after.temp)} dégâts en touchant ${struck.name}`); }
       }

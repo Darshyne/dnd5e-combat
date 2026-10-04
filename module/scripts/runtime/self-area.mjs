@@ -21,6 +21,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { selfAreaOf, placeSelfArea, aimedAreaOf, placeAimedArea } from "../adapter/self-area.mjs";
+import { suppliesTemplate } from "../adapter/template.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 
@@ -34,8 +35,10 @@ function place(activity, area) {
 }
 
 function onPreUse(activity, usageConfig, dialogConfig) {
-  if ( usageConfig?.create?.measuredTemplate !== true || !selfAreaOf(activity) ) return;
-  usageConfig.create.measuredTemplate = false;
+  // §86 : un gabarit fourni par le contenu — dnd5e n'a rien prévu de poser (pas de type de zone dans la donnée).
+  const supplied = suppliesTemplate(activity);
+  if ( ((usageConfig?.create?.measuredTemplate !== true) && !supplied) || !selfAreaOf(activity) ) return;
+  usageConfig.create = { ...(usageConfig.create ?? {}), measuredTemplate: false };
   (usageConfig[MODULE_ID] ??= {}).selfArea = true;
   if ( dialogConfig ) {
     dialogConfig.options ??= {};

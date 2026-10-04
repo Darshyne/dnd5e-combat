@@ -449,6 +449,8 @@ async function snapshotScene(mcp) {
       pos: { x: data.x, y: data.y, elevation: data.elevation ?? 0, level: data.level ?? null },
       hp: data.actorLink ? (actor?.system?.attributes?.hp?.value ?? null) : (data.delta?.system?.attributes?.hp?.value ?? null),
       effects: new Set((data.actorLink ? (actor?.effects ?? []) : (data.delta?.effects ?? [])).map(e => e._id)),
+      // §84 : les emplacements de sort restants d'un acteur lié (les scénarios qui consomment vidaient ceux du Clerc).
+      spells: data.actorLink ? Object.fromEntries(Object.entries(actor?.system?.spells ?? {}).map(([k, v]) => [k, v?.value ?? null])) : null,
       items: new Set((actor?.items ?? []).map(i => i._id)),
       // Les données des items de l'acteur, pour rendre celui qui disparaît et remettre une quantité.
       itemData: new Map((actor?.items ?? []).map(i => [i._id, i])),
@@ -488,6 +490,13 @@ async function restoreScene(mcp, snap) {
       // §82 : token non lié qui héritait des PV de sa fiche ; le scénario lui en a écrit dans son delta — on les retire.
       await mcp.call("update-scene-object", { type: "Token", objectId: t.id, data: { "delta.system.attributes.hp.-=value": null } });
       fixed.push(`${t.name} PV ${hp} → ceux de la fiche`);
+    }
+    if ( t.spells && actor ) {
+      const changed = Object.entries(t.spells).filter(([k, v]) => (v !== null) && ((actor.system?.spells?.[k]?.value ?? null) !== v));
+      if ( changed.length ) {
+        await mcp.call("update-actor", { actorId: t.actorId, actorData: Object.fromEntries(changed.map(([k, v]) => [`system.spells.${k}.value`, v])) });
+        fixed.push(`${t.name} : emplacements ${changed.map(([k, v]) => `${k} → ${v}`).join(", ")}`);
+      }
     }
     const effects = t.linked ? (actor?.effects ?? []) : (data.delta?.effects ?? []);
     const target = t.linked ? { documentType: "Actor", id: t.actorId } : { uuid: `Scene.${snap.sceneId}.Token.${t.id}.Actor.${t.actorId}` };

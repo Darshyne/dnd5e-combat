@@ -192,11 +192,13 @@ export default {
     });
 
     await part("Croissance d'épines", async () => {
-      // La zone : trois cases de la colonne (5180 → 5460) ; le Zombi part de 5040 et descend de deux cases dedans.
+      // La zone : trois colonnes sur trois cases (2940 → 3220, 5180 → 5460) ; le Zombi part de 5040 et descend de deux cases dedans.
+      // §84 : depuis le §69 la zone est un terrain difficile, et l'A* du moteur la contourne : une seule colonne laissait le Zombi
+      // passer à côté et n'y entrer qu'à la dernière case (2d4). Trois colonnes : aucun détour n'est moins cher que la traversée.
       await ctx.call("move-token", { tokenId: fighter.id, x: 2800, y: 5460, elevation: 0 });
       await ctx.call("move-token", { tokenId: zombi.id, x: 3080, y: 5040, elevation: 0 });
       await pause(700);
-      await cast("spikes", { activityType: "damage", area: { shape: "rectangle", x: 3080, y: 5180, width: grid, height: 3 * grid } });
+      await cast("spikes", { activityType: "damage", area: { shape: "rectangle", x: 2940, y: 5180, width: 3 * grid, height: 3 * grid } });
       const since = await ctx.lastMessageId();
       // Le vrai déplacement du moteur (A*, trajet parcouru) : `move-token` déplace sur place, sans cases traversées.
       await ctx.engine("move", { tokenId: zombi.id, point: { x: 3080 + grid / 2, y: 5320 + grid / 2 } });

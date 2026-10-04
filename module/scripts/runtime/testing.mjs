@@ -248,7 +248,8 @@ async function summonAt({ tokenId, itemId, activityId=null, profile=null, x, y }
   const item = token?.actor?.items.get(itemId);
   const activity = activityId ? item?.system.activities.get(activityId) : item?.system.activities.find(a => a.type === "summon");
   if ( !activity || (activity.type !== "summon") ) throw new Error("activité d'invocation introuvable");
-  const used = await activity.use({ create: { summons: false }, [MODULE_ID]: { confirmed: true, autoReact: "none" } },
+  // §84 : sans rien consommer, comme `use` par défaut — un lanceur sans emplacement ouvrait « Plus de charge » chez le MJ (§77).
+  const used = await activity.use({ consume: false, create: { summons: false }, [MODULE_ID]: { confirmed: true, autoReact: "none" } },
     { configure: false });
   activity.getPlacement = async () => [{ x, y, elevation: token.elevation ?? 0, rotation: 0 }];
   try {

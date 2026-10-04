@@ -162,12 +162,23 @@ export default {
     });
 
     await part("Appel de la foudre", async () => {
+      // §70 : l'incantation pose le NUAGE par la pose de dnd5e (`placeRegionAt` joue le clic), qui ne résout rien ; l'éclair se
+      // vise ensuite dessous (`stormStrike`). Le paramètre `area` du connecteur créerait la zone sans cette pose : pas de visée.
       const z = await ctx.position(zombi);
-      const used = await ctx.use({ tokenId: cleric.id, itemId: ids.lightning, activityType: "save", consume: false,
-        area: { shape: "circle", x: z.x + grid / 2, y: z.y + grid / 2, radius: 12 * grid } });
-      if ( used.regionId ) regions.push(used.regionId);
-      const r = await ctx.settle(used.usageMessageId, { timeoutMs: 45000 }).catch(() => null);
-      const names = (r?.targets ?? []).map(x => x.name);
+      const center = { x: z.x + grid / 2, y: z.y + grid / 2 };
+      await ctx.call("call-module-api", { moduleId: "dnd5e-combat", fn: "use", args: { tokenId: cleric.id, itemId: ids.lightning }, waitMs: 500 });
+      await pause(1500);
+      const placed = await ctx.engine("placeRegionAt", center).catch(err => ({ error: err.message }));
+      ctx.expect(placed?.placed, `le nuage est posé (${JSON.stringify(placed)})`);
+      await pause(2500);
+      const storm = await ctx.engine("storm", { tokenId: cleric.id, itemId: ids.lightning }).catch(() => null);
+      if ( storm?.cloud?.id ) regions.push(storm.cloud.id);
+      const since = await ctx.lastMessageId();
+      const struck = await ctx.engine("stormStrike", center).catch(err => ({ error: err.message }));
+      ctx.expect(struck?.struck, `l'éclair est posé sous le nuage (${JSON.stringify(struck)})`);
+      await pause(7000);
+      const saves = (await ctx.messagesSince(since)).filter(m => /Dextérité|Dexterity/i.test(m.flavor ?? ""));
+      const names = [...new Set(saves.map(m => m.alias))];
       ctx.expect(names.includes("Zombi") && !names.includes("Guerrier"), `l'éclair frappe 1,50 m autour du point : ${names.join(", ") || "personne"}`);
     });
 

@@ -37,6 +37,14 @@ export function originItemOf(effect) {
   const origin = effect.system?.origin ?? {};
   const uuid = origin.activity ?? origin.item ?? effect.origin;
   const doc = uuid ? fromUuidSync(uuid, { strict: false }) : null;
+  // §93 : une origine laissée par la donnée vers l'item du COMPENDIUM (Ravenloft : `origin` écrit dans l'effet du pack) — que
+  // `fromUuidSync` ne résout que s'il est déjà en cache, et qui n'est de toute façon pas l'item de l'acteur. L'effet posé depuis
+  // l'item de la fiche en garde la trace (`_stats.duplicateSource`, l'effet de cet item) : c'est lui qu'on suit.
+  if ( !doc || doc.pack ) {
+    const copied = effect._stats?.duplicateSource ? fromUuidSync(effect._stats.duplicateSource, { strict: false }) : null;
+    const owner = copied?.parent;
+    if ( owner?.documentName === "Item" && !owner.pack ) return owner;
+  }
   if ( doc ) return doc.documentName === "Item" ? doc : (doc.item ?? null);
   // §53 : l'item n'existe plus (une potion bue, dernière de sa pile) — dnd5e garde une copie de l'item détruit dans le message
   // d'utilisation (`deltas.deleted`, documents/chat-message.mjs `getAssociatedItem`), que l'effet référence.

@@ -12,6 +12,7 @@ import { boltAim, setBoltAim, strike } from "./storm.mjs";
 import { cloudOf, cloudCircle } from "../adapter/storm.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { afterTeleportOptions } from "./teleport-options.mjs";
+import { naturalOneFor } from "./natural-one.mjs";
 import { planPath, stairsOf, cellOf, stairsDestinations } from "../adapter/movement.mjs";
 import { combatantFor, readBudget, movementOf } from "../adapter/turn.mjs";
 import { useIssues } from "./turn.mjs";
@@ -462,14 +463,20 @@ async function hurt({ tokenId, amount, type="bludgeoning", properties=[] }) {
 /** §23 : un jet de sauvegarde du token, sans fenêtre ; rend sa formule et son total. */
 async function rollSave({ tokenId, ability }) {
   const rolls = await tokenOf({ tokenId }).actor.rollSavingThrow({ ability }, { configure: false });
-  return { formula: rolls?.[0]?.formula ?? null, total: rolls?.[0]?.total ?? null };
+  return { formula: rolls?.[0]?.formula ?? null, total: rolls?.[0]?.total ?? null, d20: rolls?.[0]?.d20?.total ?? null };
+}
+
+/** §93 : ce qu'un 1 naturel déclenche chez la créature (le jet lui-même ne se force pas) — sans l'attendre : le scénario répond. */
+function naturalOne({ tokenId }) {
+  naturalOneFor(tokenOf({ tokenId }).actor, "test").catch(err => console.error(err));
+  return { started: true };
 }
 
 /** §90 : un test de compétence (`skill`) ou de caractéristique (`ability`), sans fenêtre ; ce qui suit le jet (dé ajouté) n'est pas attendu. */
 async function rollCheck({ tokenId, skill=null, ability=null }) {
   const actor = tokenOf({ tokenId }).actor;
   const rolls = skill ? await actor.rollSkill({ skill }, { configure: false }) : await actor.rollAbilityCheck({ ability }, { configure: false });
-  return { formula: rolls?.[0]?.formula ?? null, total: rolls?.[0]?.total ?? null };
+  return { formula: rolls?.[0]?.formula ?? null, total: rolls?.[0]?.total ?? null, d20: rolls?.[0]?.d20?.total ?? null };
 }
 
 /** §23 : qui menacerait d'une attaque d'opportunité un déplacement en ligne droite jusqu'à ce point (noms). */
@@ -706,4 +713,4 @@ function effectOrigins({ tokenId }) {
   });
 }
 
-export const testApi = Object.freeze({ issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use });
+export const testApi = Object.freeze({ issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use });

@@ -56,7 +56,33 @@ export const RAVENLOFT = Object.freeze({
       { on: "isHit", do: sentinel },
       { on: "allyIsHit", if: { "target.bloodied": true, "target.nearSelf": { distance: 60, units: "ft" }, "self.seesTarget": true }, do: sentinel }
     ]
-  }
+  },
 
   // Faucheur divin (niveau 17) : Nécromancie renforcée (seconde cible) et Gardien des âmes restent au MJ (§19.9).
+
+  /* §93 : Dons sombres — « juste après avoir fait un Test d20 et obtenu un 1 sur le d20 », la sauvegarde de l'item (DD 13 + maîtrise,
+     sur soi), l'état sur un échec. */
+
+  // Anatomie aberrante, Chair déformante : Constitution ou Étourdi jusqu'à la fin de votre prochain tour.
+  "aberrant-anatomy": { onNatural1: { activity: "3gsyr1hLvSFRy6e8" } },
+  // Âme en écho, Échos intrusifs : Constitution ou Neutralisé (Vitesse réduite de moitié) jusqu'à la fin de votre prochain tour.
+  "echoing-soul": { onNatural1: { activity: "b0YlEc0swnlB4R93" } },
+  // Ombre vivante, Volonté funeste : Sagesse ou Neutralisé jusqu'au début de votre prochain tour (la table « Volonté de l'ombre » : au MJ).
+  "living-shadow": { onNatural1: { activity: "zitGmITljzBRXTkm" } },
+  // Être symbiotique, Dessein symbiotique : Charisme ou Charmé 1d12 heures ; « chaque fois que vous subissez des dégâts, vous pouvez
+  // rejouer cette sauvegarde ». Ce que le symbiote ordonne : au MJ.
+  "symbiotic-being": {
+    onNatural1: { activity: "R2FWsJAlulJ2Mqpa" },
+    triggers: [{ on: "isDamaged", via: "effect", fromEffect: "m06eYs6ZVerPzasy", do: [{ type: "resave" }] }]
+  },
+  // Guetteurs, Guetteurs incessants : Sagesse ou Désavantage aux Tests d20 pendant 1 minute, sauvegarde rejouée à la fin de chacun de
+  // vos tours. L'effet « Paranoïa » de la donnée met le Désavantage aux tests et aux sauvegardes ; les jets d'attaque (des Tests d20
+  // aussi) : `preAttackRoll`.
+  "watchers": {
+    onNatural1: { activity: "udHg4QeQBIVL4UJ1" },
+    triggers: [
+      { on: "endOfTurn", via: "effect", fromEffect: "Off49UhYxymqhOrO", do: [{ type: "resave" }] },
+      { on: "preAttackRoll", via: "effect", fromEffect: "Off49UhYxymqhOrO", if: { "source.hasEffect": "watchers" }, do: [{ type: "disadvantage" }] }
+    ]
+  }
 });

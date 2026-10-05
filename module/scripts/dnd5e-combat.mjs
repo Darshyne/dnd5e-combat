@@ -50,6 +50,7 @@ import { registerMonk } from "./runtime/monk.mjs";
 import { registerSmite } from "./runtime/smite.mjs";
 import { registerManeuverDice } from "./runtime/maneuver-dice.mjs";
 import { registerRollBonus } from "./runtime/roll-bonus.mjs";
+import { registerNaturalOne } from "./runtime/natural-one.mjs";
 import { registerSwallow } from "./runtime/swallow.mjs";
 import { registerBasics } from "./runtime/basics.mjs";
 import { basicActionData } from "./adapter/basics.mjs";
@@ -174,6 +175,7 @@ Hooks.once("init", () => {
   registerSmite();   // §25 : sorts de châtiment (après registerSneak : les dés du châtiment suivent ceux de l'Attaque sournoise)
   registerManeuverDice();   // §89, §90 : dés de manœuvre (Fente, Feinte, Jeu de jambes évasif, Balayage, Chassé-croisé, Frappe commandée)
   registerRollBonus();      // §90 : un dé ajouté à un test ou à l'initiative (Embuscade, Autorité naturelle, Évaluation tactique)
+  registerNaturalOne();     // §93 : un 1 naturel à un Test d20 (Dons sombres de Ravenloft)
   registerActivityChoice();   // §42.1 : le choix d'activité de dnd5e, répondu quand il n'y a rien à choisir
   registerCantrips();   // §23 : tours de magie (durées, soins bloqués, Glas, Frappe assurée)
   registerEndings();   // §42.2 : ce qui suit la fin d'un effet (léthargie de Hâte)

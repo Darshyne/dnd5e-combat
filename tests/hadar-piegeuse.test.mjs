@@ -231,3 +231,23 @@ describe("Foulée des fées, Échappatoire brumeuse, Ange vengeur (§92)", () =>
     expect(validateEntry({ emanation: { on: "turnStart", whileActive: "oui" } }).length).toBeGreaterThan(0);
   });
 });
+
+describe("Dons sombres : 1 naturel (§93)", async () => {
+  const { rolledNaturalOne } = await import("../module/scripts/core/natural-one.mjs");
+  it("le d20 gardé fait 1", () => {
+    expect(rolledNaturalOne([{ d20: { total: 1 } }])).toBe(true);
+    expect(rolledNaturalOne([{ d20: { total: 2 } }])).toBe(false);
+    expect(rolledNaturalOne([{ d20: { total: 14 } }, { d20: { total: 1 } }])).toBe(true);
+    expect(rolledNaturalOne([])).toBe(false);
+    expect(rolledNaturalOne(null)).toBe(false);
+  });
+  it("contenu", async () => {
+    const { SOURCE_IDENTIFIERS } = await import("../module/scripts/content/sources.mjs");
+    expect(SOURCE_IDENTIFIERS.rhwWatchersGH8OL).toBe("watchers");
+    for ( const id of ["aberrant-anatomy", "echoing-soul", "living-shadow", "symbiotic-being", "watchers"] ) {
+      expect(CONTENT[id].onNatural1?.activity, id).toMatch(/^[A-Za-z0-9]{16}$/);
+      expect(validateEntry(CONTENT[id], { facts: { "source.hasEffect": true } }), id).toEqual([]);
+    }
+    expect(validateEntry({ onNatural1: { activity: "court" } }).length).toBeGreaterThan(0);
+  });
+});

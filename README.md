@@ -1,71 +1,69 @@
 # darsh-dnd · Core (`dnd5e-combat`)
 
-Moteur de règles et de combat D&D 5.5 (règles 2024) pour **Foundry VTT V14** et **dnd5e 6.x**. C'est le cœur
-de la suite *darsh-dnd* : un seul module possède toute la boucle de combat, à la place de Midi-QOL, CPR et
-consorts.
+A D&D 5.5 (2024 rules) rules and combat engine for **Foundry VTT V14** and **dnd5e 6.x**. It is the core of the
+*darsh-dnd* suite: a single module owns the whole combat loop, replacing Midi-QOL, CPR and the like.
 
-- **Économie d'action et légalité** : budget du tour, portée et allonge, contrôle doux de ce qui est permis.
-- **Résolution** : attaques, jets de sauvegarde (ceux des PNJ sont lancés par le moteur, ceux des joueurs
-  s'ouvrent sur leur écran), zones et zones persistantes, concentration, conditions → avantage/désavantage.
-- **Réactions** avant et après le jet adverse (Bouclier, Représailles infernales, attaques d'opportunité
-  résolues *avant* le déplacement…), auras, déclencheurs de début et de fin de tour.
-- **Déplacement à la souris** façon Baldur's Gate 3 : clic au sol = trajet (A* maison), clic sur un ennemi =
-  attaque de base, menus contextuels, mode ciblage.
-- **Vision et lumière des règles** : qui voit qui, lumière vive / faible / ténèbres, Fouille, Perception passive.
-- Classes et espèces du *Player's Handbook 2024* automatisées, ainsi que de nombreuses capacités de monstres.
-  Les règles sont déclarées par identifiant dnd5e : elles valent pour toute créature, PJ ou PNJ.
+- **Action economy and legality**: per-turn budget, range and reach, soft checks on what is allowed.
+- **Resolution**: attacks, saving throws (NPC saves are rolled by the engine, player saves open on the player's
+  own screen), areas and lingering zones, concentration, conditions → advantage/disadvantage.
+- **Reactions** before and after the opposing roll (Shield, Hellish Rebuke, opportunity attacks resolved
+  *before* the move…), auras, start- and end-of-turn triggers.
+- **Mouse-driven movement** in the style of Baldur's Gate 3: click the ground to move along a path (custom A*),
+  click an enemy to make a basic attack, context menus, targeting mode.
+- **Vision and light rules**: who sees whom, bright light / dim light / darkness, Search, passive Perception.
+- Every class and species of the *Player's Handbook 2024* is automated, along with many monster abilities.
+  Rules are declared per dnd5e identifier, so they apply to any creature, PC or NPC.
 
-Le moteur ne modifie ni le cœur ni le système : il passe par les hooks publics. Il publie une API pour les
-modules voisins (`game.modules.get("dnd5e-combat").api`) : état d'interface (`api.ui`), approche d'un token
-(`api.approach`), contenu par identifiant (`api.content`), et des hooks génériques (`dnd5e-combat.claimClick`,
-`dnd5e-combat.tokenMenu`, `dnd5e-combat.dropItems`…). Il ne connaît aucun de ses voisins par leur nom.
+The engine patches neither the Foundry core nor the system: it only uses public hooks. It exposes an API for
+neighbouring modules (`game.modules.get("dnd5e-combat").api`): UI state (`api.ui`), walking a token up to a
+target (`api.approach`), content by identifier (`api.content`), and generic hooks (`dnd5e-combat.claimClick`,
+`dnd5e-combat.tokenMenu`, `dnd5e-combat.dropItems`…). It does not know any of its neighbours by name.
 
-Un module de créatures peut déclarer les règles de ses propres capacités, par identifiant dnd5e, sans toucher
-au moteur :
+A creature module can declare the rules for its own abilities, by dnd5e identifier, without touching the
+engine:
 
 ```js
-Hooks.once("dnd5e-combat.registerContent", register => register("mon-module", {
-  "mon-identifiant": { /* clés décrites en tête de module/scripts/core/content.mjs */ }
+Hooks.once("dnd5e-combat.registerContent", register => register("my-module", {
+  "my-identifier": { /* keys documented at the top of module/scripts/core/content.mjs */ }
 }));
 ```
 
-Ou `api.content.register(source, table)` après coup. Chaque entrée est validée comme le contenu livré.
+Or call `api.content.register(source, table)` later on. Each entry is validated just like the bundled content.
 
-## Suite darsh-dnd
+## The darsh-dnd suite
 
-| Module | Rôle |
+| Module | Role |
 |---|---|
-| [`dnd5e-combat`](https://github.com/Darshyne/dnd5e-combat) | Ce module : règles, combat, déplacement, vision |
-| [`darsh-dnd-ui`](https://github.com/Darshyne/darsh-dnd-ui) | Interface de combat (barre d'actions, portraits, frise d'initiative) |
-| [`darsh-loot`](https://github.com/Darshyne/darsh-loot) | Butin, conteneurs, vol, marchands |
-| [`dnd5e-lumiere`](https://github.com/Darshyne/dnd5e-lumiere) | Ombres et ambiance, purement visuel |
-| [`darsh-animations`](https://github.com/Darshyne/darsh-animations) | Animations Boss Loot (BLFX) pour les capacités qu'il ne reconnaît pas |
+| [`dnd5e-combat`](https://github.com/Darshyne/dnd5e-combat) | This module: rules, combat, movement, vision |
+| [`darsh-dnd-ui`](https://github.com/Darshyne/darsh-dnd-ui) | Combat UI (action bar, party portraits, initiative strip) |
+| [`darsh-loot`](https://github.com/Darshyne/darsh-loot) | Loot, containers, theft, merchants |
+| [`dnd5e-lumiere`](https://github.com/Darshyne/dnd5e-lumiere) | Shadows and ambience, purely visual |
+| [`darsh-animations`](https://github.com/Darshyne/darsh-animations) | Boss Loot (BLFX) animations for abilities it does not recognise |
 
 ## Installation
 
-Dans Foundry (ou sur The Forge), *Installer un module* → coller l'URL de manifeste :
+In Foundry (or on The Forge), *Install Module* → paste the manifest URL:
 
 ```
 https://github.com/Darshyne/dnd5e-combat/releases/latest/download/module.json
 ```
 
-Depuis les sources : le module Foundry est le
-sous-dossier `module/`, à copier ou lier dans `Data/modules/dnd5e-combat`. Les compendiums ne sont pas
-versionnés : `npm install` puis `npm run packs`, Foundry fermé.
+From source: the Foundry module is the `module/` subfolder, to copy or link into `Data/modules/dnd5e-combat`.
+Compendiums are not versioned: run `npm install` then `npm run packs`, with Foundry closed.
 
-- Requiert : Foundry V14, dnd5e ≥ 6.0.0. Incompatible avec Midi-QOL.
-- Tests : `npm test` (Vitest ; le cœur des règles est pur et se teste hors de Foundry).
+- Requires: Foundry V14, dnd5e ≥ 6.0.0. Incompatible with Midi-QOL.
+- Tests: `npm test` (Vitest; the rules core is pure and can be tested outside Foundry).
 
-État : en développement actif, utilisé à la table de l'auteur. Interface et textes en français.
+Status: under active development, used at the author's table. The in-game interface and texts are in French
+only for now.
 
-## Licence
+## License
 
-Code sous licence MIT (voir `LICENSE`).
+Code under the MIT license (see `LICENSE`).
 
-Ce travail inclut des éléments du System Reference Document 5.2 (« SRD 5.2 ») de Wizards of the Coast LLC,
-disponible sur https://www.dndbeyond.com/srd. Le SRD 5.2 est sous licence Creative Commons Attribution 4.0
-International, disponible sur https://creativecommons.org/licenses/by/4.0/legalcode.
+This work includes material from the System Reference Document 5.2 ("SRD 5.2") by Wizards of the Coast LLC,
+available at https://www.dndbeyond.com/srd. The SRD 5.2 is licensed under the Creative Commons Attribution 4.0
+International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.
 
-Ce module n'est ni affilié à Wizards of the Coast ni approuvé par elle. Il ne contient aucun contenu des
-livres ou modules premium : il automatise les objets que ces modules fournissent, à partir de leur
-identifiant dnd5e.
+This module is not affiliated with, nor endorsed by, Wizards of the Coast. It contains no content from the
+premium books or modules: it automates the items those modules provide, based on their dnd5e identifier.

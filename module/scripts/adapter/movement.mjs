@@ -653,8 +653,13 @@ async function chargeClimb(token, climb) {
  * documents/token.mjs:2566), anime ce morceau et enchaîne seul le suivant un peu avant la fin de l'animation (déplacement
  * « pending », canvas/placeables/token.mjs:4331) ; `stopMovement` coupe ce qui reste. Les cases intermédiaires ne sont pas
  * explicites : la règle ne les marque pas comme des étapes.
+ * `stoppable` faux : le chemin d'un seul tenant, sans point de contrôle — pour les pas du suivi (`follow`), qu'aucun clic
+ * n'arrête. Un `Scene#view` qui change de niveau redessine tout le canevas (documents/scene.mjs:273-281) ; un déplacement que
+ * le cœur enchaîne encore à ce moment rafraîchit un token détruit (« Cannot read properties of null (reading 'position') »,
+ * `Token#_refreshPosition`). Le suiveur marche justement quand la vue du MJ suit son meneur à l'étage (scénario `suivre`).
  */
-function checkpointed(move) {
+function checkpointed(move, stoppable=true) {
+  if ( !stoppable ) return move.map(({ climb, stops, through, ...w }) => w);
   const out = [];
   for ( const [index, { climb, stops, through, ...w }] of move.entries() ) {
     for ( const stop of stops ?? [] ) out.push({ ...stop, ...(w.action ? { action: w.action } : {}), explicit: false, checkpoint: true });
@@ -735,7 +740,7 @@ async function walkMoves(token, plan, options, state) {
     // §16.15 : un objet qui n'occupe pas son espace (Main de Bigby) traverse les créatures — option `ignoreTokens` que
     // dnd5e lit dans les options de contrainte (canvas/token.mjs:88), passées par le cœur (documents/token.mjs:1723).
     const constrainOptions = isIntangible(token) ? { ignoreTokens: true } : undefined;
-    const done = await token.move(checkpointed(move), { showRuler: rulerShown(), ...(constrainOptions ? { constrainOptions } : {}), ...options });
+    const done = await token.move(checkpointed(move, !options[MODULE_ID].follow), { showRuler: rulerShown(), ...(constrainOptions ? { constrainOptions } : {}), ...options });
     // Dans un onglet masqué l'animation ne se termine jamais : on n'attend pas indéfiniment. Un pas `displace` qui change de niveau
     // (escalier) n'a rien à attendre : téléporté sur un niveau que la vue n'affiche pas encore, le token ne finit jamais son animation
     // et chaque escalier coûtait les 10 s du filet (vu le 2026-09-29 : 22 à 24 s l'aller-retour du scénario `escaliers`, §38.8).

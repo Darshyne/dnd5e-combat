@@ -21,7 +21,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { selfAreaOf, placeSelfArea, aimedAreaOf, placeAimedArea } from "../adapter/self-area.mjs";
-import { suppliesTemplate } from "../adapter/template.mjs";
+import { suppliesTemplate, withTemplate } from "../adapter/template.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 
@@ -37,6 +37,12 @@ function place(activity, area) {
 function onPreUse(activity, usageConfig, dialogConfig) {
   // §86 : un gabarit fourni par le contenu — dnd5e n'a rien prévu de poser (pas de type de zone dans la donnée).
   const supplied = suppliesTemplate(activity);
+  // §91 : fourni, et pas sur soi (portée de contact ou à distance : Interdiction) — posé à la souris après l'utilisation, comme dnd5e
+  // le ferait ; sauf si l'appelant a lui-même renoncé à la pose (`measuredTemplate: false` : outils de test, qui posent la zone).
+  if ( supplied && !selfAreaOf(activity) ) {
+    if ( usageConfig?.create?.measuredTemplate !== false ) (usageConfig[MODULE_ID] ??= {}).pointZone = true;
+    return;
+  }
   if ( ((usageConfig?.create?.measuredTemplate !== true) && !supplied) || !selfAreaOf(activity) ) return;
   usageConfig.create = { ...(usageConfig.create ?? {}), measuredTemplate: false };
   (usageConfig[MODULE_ID] ??= {}).selfArea = true;
@@ -84,6 +90,10 @@ function onPostUse(activity, usageConfig, results) {
   if ( aimed ) {
     const area = results ? aimedAreaOf(activity) : null;
     if ( area ) placeAimedShape(activity, area, aimed);
+    return;
+  }
+  if ( usageConfig?.[MODULE_ID]?.pointZone && results ) {
+    dnd5e.canvas.TemplatePlacement.fromActivity(withTemplate(activity)).catch(err => console.error(`${MODULE_ID} | zone fournie non posée`, err));
     return;
   }
   if ( !usageConfig?.[MODULE_ID]?.selfArea ) return;

@@ -156,6 +156,27 @@ export function siblingsByMoment(replays) {
   return (new Set(Object.values(by)).size > 1) ? by : null;
 }
 
+/**
+ * §91 : l'entrée d'un `casterPulse` qui vaut pour le rejeu numéro `n` (1 = le premier tour après la pose), ou null.
+ * @param {{by: {from: number, to?: number}[]}} rule
+ * @param {number} n
+ */
+export function pulseFor(rule, n) {
+  return (rule?.by ?? []).find(b => (n >= b.from) && (n <= (b.to ?? b.from))) ?? null;
+}
+
+/**
+ * §91 : les cibles d'un rejeu plafonné (`max`) — les ennemis du lanceur d'abord, puis les autres, dans l'ordre donné.
+ * @param {{disposition: number}[]} tokens
+ * @param {number|null} casterDisposition
+ * @param {number} [max]
+ */
+export function pulseTargets(tokens, casterDisposition, max) {
+  const hostile = t => (casterDisposition !== null) && (casterDisposition !== undefined) && (t.disposition !== casterDisposition);
+  const ordered = [...tokens.filter(hostile), ...tokens.filter(t => !hostile(t))];
+  return max ? ordered.slice(0, max) : ordered;
+}
+
 /** Note qu'un token vient d'être touché. Changer de tour de jeu efface la mémoire du précédent. */
 export function markHit(area, { token, turnKey }) {
   const hit = area.turnKey === turnKey ? area.hit : [];

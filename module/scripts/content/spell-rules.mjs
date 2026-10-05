@@ -40,13 +40,60 @@ export const SPELL_RULES = Object.freeze({
   // Forme gazeuse : « ou si elle prend une action Magie pour mettre fin au sort sur elle-même ».
   "gaseous-form": { actionEnds: { QeYsfnjEj2T9A3C8: { by: "bearer" } } },
   // Tremblement de terre, « Buried in Rubble » : « un test de Force (Athlétisme) DD 20 par une action pour s'en extraire ».
-  "earthquake": { actionEnds: { "6UanNy7OTib1zFSq": { by: "bearer", roll: "check" } } },
+  // §91 : « à l'incantation et à la fin de chacun de vos tours, chaque créature au contact du sol de la zone fait un JS de Dextérité ;
+  // en cas d'échec, À terre et sa Concentration rompue » — la sauvegarde de l'incantation rejouée à la fin des tours du lanceur, sur
+  // les créatures au sol ; terrain difficile. Crevasses et structures : au MJ (activités de la donnée).
+  "earthquake": {
+    actionEnds: { "6UanNy7OTib1zFSq": { by: "bearer", roll: "check" } },
+    casterPulse: { at: "turnEnd", ground: true, by: [{ from: 1, to: 10, activity: "Z1voDdIYLdJfGwMH" }] },
+    difficultTerrain: {},
+    triggers: [{ on: "failedSave", if: { "activity.id": "Z1voDdIYLdJfGwMH" }, do: [{ type: "status", status: "prone" }, { type: "breakConcentration" }] }]
+  },
+  // §91 : Boule de feu à retardement — « les dégâts augmentent de 1d6 chaque fois que votre tour prend fin tandis que le sort persiste » :
+  // à la fin des tours du lanceur, « Augmenter les dégâts de fin de tour » est UTILISÉE (elle ajoute une utilisation au sort, que
+  // l'explosion lit : 12d6 + (@item.uses.value)d6) ; « lorsque le sort prend fin, la bille explose » : la zone tombe, l'explosion
+  // (sphère de 6 m) part de son centre. La bille touchée ou lancée : au MJ (« Bille touchée »).
+  "delayed-blast-fireball": {
+    casterPulse: { at: "turnEnd", by: [{ from: 1, to: 10, activity: "9i14Jmun9em69EnX", use: true }] },
+    zoneEnd: { activity: "M15GlfjeWy7Cdiqn" }
+  },
+  // §91 : Tsunami — « au début de chacun de vos tours suivants, le mur s'éloigne de 15 m de vous ; les créatures dans l'espace où il
+  // se déplace font un JS de Force ou 5d10 contondants » : la zone s'éloigne, « Effet de début du tour » paie une utilisation (le
+  // compteur des rounds, que ses dés lisent : (@item.uses.value)d10) et rejoue sur ce qui est dedans ; plus d'utilisation, le sort
+  // prend fin. Créatures emportées, nage, taille TG au plus : au MJ.
+  "tsunami": {
+    casterPulse: { at: "turnStart", away: { distance: 50, units: "ft" }, untilSpent: true, by: [{ from: 1, to: 6, activity: "o7MOuS6uL1ZV3dhe", pay: true }] }
+  },
+  // §91 : Interdiction — la barrière n'a pas de zone dans la donnée : un carré de 60 m (3 600 m²) fourni, posé à la souris ; « une
+  // créature désignée qui entre dans la zone pour la première fois d'un tour ou y termine son tour subit 5d10 dégâts nécrotiques ou
+  // radiants » — rejeu de « Dégâts créature interdite » ; désignées : les six types que le sort permet (le choix d'un sous-ensemble, le
+  // type de dégâts — demandé au jet —, le mot de passe, le voyage planaire et la téléportation : au MJ).
+  "forbiddance": {
+    selfZone: { T2XK004SAb09LvvP: { type: "cube", size: 200, units: "ft" } },
+    targets: { types: ["aberration", "celestial", "elemental", "fey", "fiend", "undead"] },
+    triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay", activity: "9IBiOeIf2PC1wcLp" }] }]
+  },
+  // §91 : Tempête vengeresse — la pose (Constitution, 2d6 tonnerre, Assourdi) ; puis au début des tours suivants du lanceur, sur ce
+  // qui est sous le nuage : tour 2 pluie acide (4d6), tour 3 six éclairs (Dextérité, 10d6 ; les ennemis d'abord), tour 4 grêle
+  // (2d6), tours 5 à 10 bourrasque (1d6 froid). Terrain difficile, fortement obscurci ; « attaques à distance avec une arme
+  // impossibles » : au MJ.
+  "storm-of-vengeance": {
+    casterPulse: { at: "turnStart", by: [
+      { from: 1, activity: "WOo8u0FLAzNMpMJN" }, { from: 2, activity: "Fd8ZGgmDyNmJJuj3", max: 6 },
+      { from: 3, activity: "H4uCtCkANBkttnov" }, { from: 4, to: 9, activity: "yt2oWWelZl1zV4CB" }] },
+    difficultTerrain: {},
+    obscures: true
+  },
   // Secouer un dormeur : « quelqu'un prend une action pour la secouer » — Sommeil (à 1,50 m), Motif hypnotique, Mauvais œil
   // (« Asleep »), Symbole (« Sleeping »).
   "sleep": { actionEnds: { "04Wa4xUzjA31kPno": { by: "other", verb: "wake" } } },
   "hypnotic-pattern": { actionEnds: { mjAs8ssQlgp0AQOp: { by: "other", verb: "wake" } } },
   "eyebite": { actionEnds: { "5btX5iwwleMMzkvj": { by: "other", verb: "wake" } } },
-  "symbol": { actionEnds: { A1VA7t5gB7ODNsr6: { by: "other", verb: "wake" } } },
+  // §91 : Symbole, Discorde — « ses tests de caractéristique s'effectuent avec le Désavantage » (l'effet de la donnée est vide).
+  "symbol": {
+    actionEnds: { A1VA7t5gB7ODNsr6: { by: "other", verb: "wake" } },
+    effectChanges: { YAwLt85sPQpUCIBI: ["str", "dex", "con", "int", "wis", "cha"].map(a => ({ key: `system.abilities.${a}.check.roll.mode`, type: "add", value: "-1" })) }
+  },
   // Frappe piégeuse : la cible, ou toute créature qui l'atteint, peut dépenser une action en test de Force (Athlétisme) contre le
   // DD du lanceur — la cible passe par l'évasion d'une entrave (§16.54) ; ceci ouvre le test à une autre créature.
   // §81 : la sauvegarde du lancement (dnd5eactivity000) porte 1d6 perforants dans la donnée (PHB premium et SRD de dnd5e), que le

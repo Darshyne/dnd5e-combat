@@ -101,6 +101,7 @@
   "DND5ECOMBAT.SauvegardeDOffice": "sauvegarde ratée d'office ({status})",
   "DND5ECOMBAT.Zone.enter": "{item} — {name} entre dans la zone",
   "DND5ECOMBAT.Zone.turnEnd": "{item} — {name} termine son tour dans la zone",
+  "DND5ECOMBAT.Zone.casterPulse": "{item} : {activity}",
   "DND5ECOMBAT.Zone.turnStart": "{item} — {name} commence son tour dans la zone",
   "DND5ECOMBAT.Resave.startOfTurn": "{item} — {name} rejoue sa sauvegarde au début de son tour",
   "DND5ECOMBAT.Resave.endOfTurn": "{item} — {name} rejoue sa sauvegarde à la fin de son tour",

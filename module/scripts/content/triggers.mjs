@@ -256,6 +256,12 @@ export const TRIGGERS = Object.freeze({
     do: [{ type: "damage", to: "bearer", activity: "ZWId9mbOE9zFnP6f" }] }],
   // Mauvais œil, « Endormi » (5btX5iwwleMMzkvj) : « se réveille s'il subit des dégâts ». (Paniqué, Nauséeux : au MJ.)
   "eyebite": [{ on: "isDamaged", via: "effect", fromEffect: "5btX5iwwleMMzkvj", do: [{ type: "remove" }] }],
+  // §91 : Symbole — Sommeil : « reprend connaissance si elle subit des dégâts » ; Discorde : « ses jets d'attaque … avec le
+  // Désavantage » (les tests : content/spell-rules.mjs, `effectChanges`).
+  "symbol": [
+    { on: "isDamaged", via: "effect", fromEffect: "A1VA7t5gB7ODNsr6", do: [{ type: "remove" }] },
+    { on: "preAttackRoll", via: "effect", fromEffect: "YAwLt85sPQpUCIBI", if: { "source.hasEffect": "symbol" }, do: [{ type: "disadvantage" }] }
+  ],
   // Absorption des éléments (Xanathar's, livré par un module de créatures tiers) : réaction à des dégâts d'acide, de froid,
   // de feu, de foudre ou de tonnerre.
   "absorb-elements": [{ on: "isDamaged", if: { "damage.hasType": ["acid", "cold", "fire", "lightning", "thunder"] }, do: [{ type: "use" }] }],

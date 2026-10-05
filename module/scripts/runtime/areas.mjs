@@ -1,8 +1,13 @@
-import { turnKeyOf, shouldTrigger, markHit, entersArea, stepsInside, siblingFor, hitKey } from "../core/area.mjs";
+import { turnKeyOf, shouldTrigger, markHit, entersArea, stepsInside, siblingFor, hitKey, pulseFor, pulseTargets } from "../core/area.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "../adapter/content.mjs";
-import { readAreaState, writeAreaState, lastingRegions, isInside, replayAgainst, noteExpiry, expiredRegions } from "../adapter/areas.mjs";
-import { positionOf as position } from "../adapter/turn.mjs";
+import { readAreaState, writeAreaState, lastingRegions, isInside, replayAgainst, noteExpiry, expiredRegions, pulseAll, zoneCenter, moveZoneTo } from "../adapter/areas.mjs";
+import { payWithoutUse } from "../adapter/reactions.mjs";
+import { concentrationOn } from "../adapter/summons.mjs";
+import { convertLength } from "../core/units.mjs";
+import { readUnitFactors } from "../adapter/units.mjs";
+import { placeAreaAt } from "../adapter/self-area.mjs";
+import { positionOf as position, committedPosition } from "../adapter/turn.mjs";
 import { noteSummonExpiry, expiredSummons } from "../adapter/summons.mjs";
 import { holdZoneEffects, holdDifficultTerrain } from "../adapter/zone-effects.mjs";
 import { enqueue } from "./queue.mjs";
@@ -54,6 +59,96 @@ function tick(region, token, event, turnKey=currentTurnKey(), { times=1 }={}) {
   });
 }
 
+/**
+ * Au sol (Tremblement de terre : « au contact du sol ») : pas plus haut que le bas de son niveau (V14), 0 sur une scène sans niveaux.
+ * La zone, elle, a reçu une tranche d'élévation (runtime/space.mjs) qui descend sous le sol : son bas ne dit rien.
+ */
+function grounded(token) {
+  const pos = committedPosition(token);
+  const bottom = Number(token.parent?.levels?.get?.(pos.level)?.elevation?.bottom);
+  return (Number(pos.elevation) || 0) <= ((Number.isFinite(bottom) ? bottom : 0) + 1e-6);
+}
+
+/**
+ * §91 : la zone agit au tour de son lanceur (`casterPulse`) — le rejeu numéro n (1 = le premier tour après la pose), l'activité
+ * de l'entrée qui le couvre, sur ce qui est dedans (au plus `max`, les ennemis d'abord), ou utilisée par le lanceur (`use`).
+ */
+function casterPulse(region, caster, at) {
+  return enqueue(`area:${region.id}`, async () => {
+    const state = readAreaState(region);
+    if ( !state?.usage || (state.source !== caster.uuid) ) return;
+    const usageMessage = game.messages.get(state.usage);
+    const item = usageMessage?.getAssociatedActivity?.()?.item;
+    const rule = item ? contentOf(item).entry?.casterPulse : null;
+    if ( !rule || (rule.at !== at) ) return;
+    const n = (Number(state.pulses) || 0) + 1;
+    await writeAreaState(region, { ...state, pulses: n });
+    const entry = pulseFor(rule, n);
+    const sibling = entry ? item.system.activities?.get(entry.activity) : null;
+    if ( !sibling ) { log(`${region.name} : tour ${n} du lanceur, rien à rejouer`); return; }
+    // Tsunami : le mur s'éloigne du lanceur avant de frapper.
+    if ( rule.away ) await driftAway(region, caster, rule.away);
+    if ( entry.pay ) await payWithoutUse(sibling);
+    if ( entry.use ) {
+      await sibling.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: false } }, { configure: false }, { create: false });
+      log(`${region.name} : tour ${n} du lanceur, « ${sibling.name} » utilisée`);
+      return;
+    }
+    const inside = region.parent.tokens.filter(t => isInside(t, region) && isAffectable(t, state) && (!rule.ground || grounded(t)));
+    const tokens = pulseTargets(inside, caster.disposition, entry.max);
+    if ( !tokens.length ) log(`${region.name} : tour ${n} du lanceur, personne dans la zone`);
+    if ( tokens.length ) {
+      log(`${region.name} : tour ${n} du lanceur, « ${sibling.name} » sur ${tokens.map(t => t.name).join(", ")}`);
+      await pulseAll(usageMessage, tokens, sibling, region);
+    }
+    // « Une fois que la hauteur du mur est de 0 m, le sort prend fin » : l'item n'a plus d'utilisation.
+    if ( rule.untilSpent && !((Number(item.system.uses?.value) || 0) > 0) ) {
+      log(`${region.name} : plus d'utilisation, le sort prend fin`);
+      const effect = concentrationOn(item);
+      // La concentration emporte sa zone (runtime/concentration.mjs) ; sans elle, la zone est retirée ici.
+      if ( effect ) await item.actor?.endConcentration?.(effect);
+      else if ( region.parent?.regions.get(region.id) ) await region.delete().catch(() => {});
+    }
+  });
+}
+
+/** §91 : la zone s'éloigne du lanceur de `distance` (Tsunami : 15 m à chacun de ses tours). */
+async function driftAway(region, caster, { distance, units }) {
+  const center = zoneCenter(region);
+  if ( !center ) return;
+  const scene = region.parent;
+  const pos = committedPosition(caster);
+  const from = { x: pos.x + ((pos.width * scene.grid.sizeX) / 2), y: pos.y + ((pos.height * scene.grid.sizeY) / 2) };
+  const dx = center.x - from.x, dy = center.y - from.y;
+  const length = Math.hypot(dx, dy);
+  if ( !(length > 0) ) return;
+  let gridDistance = distance;
+  try { gridDistance = convertLength(distance, units, scene.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  const px = gridDistance * (scene.grid.size / scene.grid.distance);
+  await moveZoneTo(region, { x: center.x + (dx / length) * px, y: center.y + (dy / length) * px });
+  log(`${region.name} : s'éloigne de ${distance} ${units}`);
+}
+
+/**
+ * §91 : la zone qui dure d'un item à `zoneEnd` vient de tomber (concentration rompue, durée écoulée, retirée) — le lanceur utilise
+ * l'activité (sans rien consommer ni fenêtre), puis sa zone est posée au centre de celle qui tombe ; la résolution de zone habituelle
+ * suit. MJ actif.
+ */
+async function onZoneEnd(region) {
+  const state = readAreaState(region);
+  const usageMessage = state?.usage ? game.messages.get(state.usage) : null;
+  const item = usageMessage?.getAssociatedActivity?.()?.item;
+  const rule = item ? contentOf(item).entry?.zoneEnd : null;
+  const activity = rule ? item.system.activities?.get(rule.activity) : null;
+  const caster = state?.source ? fromUuidSync(state.source, { strict: false }) : null;
+  const point = zoneCenter(region);
+  if ( !activity || !caster?.parent || !point ) return;
+  log(`${region.name} : la zone prend fin, « ${activity.name} »`);
+  const used = await activity.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: false }, consume: false }, { configure: false });
+  if ( !used ) return;
+  await placeAreaAt(activity, caster, point);
+}
+
 /** Fin du tour de l'un, début du tour de l'autre. */
 function onTurnChange(combat, prior, current) {
   const scene = combat.scene ?? canvas.scene;
@@ -66,6 +161,8 @@ function onTurnChange(combat, prior, current) {
       tick(region, ended, "turnEnd", turnKeyOf(prior.round, prior.turn));
     }
     if ( started && (started.parent === scene) && isInside(started, region) ) tick(region, started, "turnStart");
+    if ( ended && (readAreaState(region)?.source === ended.uuid) ) casterPulse(region, ended, "turnEnd");
+    if ( started && (readAreaState(region)?.source === started.uuid) ) casterPulse(region, started, "turnStart");
   }
 }
 
@@ -157,6 +254,7 @@ export function registerAreas() {
     if ( behavior ) log(`zone « ${region.name} » : terrain difficile posé`);
   }, { executor: true, label: "zone : terrain difficile non posé" });
   route("updateWorldTime", onWorldTime, { executor: true, label: "zone : durée écoulée, non retirée" });
+  route("deleteRegion", onZoneEnd, { executor: true, label: "zone : fin sans son activité (zoneEnd)" });
   route("createToken", async tokenDoc => {
     const at = await noteSummonExpiry(tokenDoc);
     if ( at !== null ) log(`${tokenDoc.name} : congédié à l'heure du monde ${at} (dans ${at - game.time.worldTime} s)`);

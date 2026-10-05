@@ -101,6 +101,7 @@
   "DND5ECOMBAT.SauvegardeDOffice": "save failed automatically ({status})",
   "DND5ECOMBAT.Zone.enter": "{item} — {name} enters the area",
   "DND5ECOMBAT.Zone.turnEnd": "{item} — {name} ends its turn in the area",
+  "DND5ECOMBAT.Zone.casterPulse": "{item}: {activity}",
   "DND5ECOMBAT.Zone.turnStart": "{item} — {name} starts its turn in the area",
   "DND5ECOMBAT.Resave.startOfTurn": "{item} — {name} repeats the save at the start of their turn",
   "DND5ECOMBAT.Resave.endOfTurn": "{item} — {name} repeats the save at the end of their turn",

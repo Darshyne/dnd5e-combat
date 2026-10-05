@@ -269,6 +269,13 @@ const COMMANDS = {
           const uuid = await applyMarkToToken(carrier, entry.token, step, loc(step.label));
           if ( uuid ) { effects.push(uuid); log(`${step.name ?? "marque"} : ${target?.name} reçoit « ${step.mark} »`); }
         }
+        else if ( step.type === "breakConcentration" ) {
+          // §91 : « sa Concentration est rompue » (Tremblement de terre).
+          if ( target?.actor?.concentration?.effects?.size ) {
+            await target.actor.endConcentration();
+            log(`${step.name ?? "concentration"} : celle de ${target.name} est rompue`);
+          }
+        }
         else if ( step.type === "status" ) {
           const uuid = await applyStatusToToken(carrier, entry.token, step.status);
           if ( uuid ) { effects.push(uuid); log(`${step.name ?? "état"} : ${target?.name} reçoit « ${step.status} »`); }
@@ -692,7 +699,7 @@ async function onRegionCreated(region) {
     const rules = areaRulesOf(activity);
     // Une activité qui ne fait que POSER la zone (utilitaire sans effet) n'a rien à résoudre elle-même ;
     // si une sœur doit rejouer (Nuage nauséabond), la zone est quand même retenue comme zone qui dure.
-    if ( !usage?.area && !rules?.activity ) return null;
+    if ( !usage?.area && !rules?.activity && !rules?.casterPulse ) return null;
     const targets = selectAreaTargets(area.candidates, area).map(({ token, actor, name }) => ({ token, actor, name }));
     log(`zone posée : ${area.candidates.length} token(s) recouvert(s), ${targets.length} affecté(s)`);
     if ( usage?.area ) showTargetsTo(message.author, targets.map(t => t.token));
@@ -707,12 +714,15 @@ async function onRegionCreated(region) {
         activity: rules.activity ?? null,
         ...(rules.activities ? { activities: rules.activities } : {}),
         exclude: area.excludeOrigin ? area.origin : null,
+        // §91 : le lanceur, dont le tour fait agir la zone (`casterPulse`).
+        source: area.origin ?? null,
         // §16.23 : les rejeux de la zone respectent qui elle affecte (Esprits gardiens épargnent les alliés).
         affects: area.affects ?? "", originDisposition: area.originDisposition ?? null
       });
       log(`zone qui dure : agit sur ${rules.on.join(", ")}, une fois par tour${rules.activity ? ` (rejoue l'activité ${rules.activity})` : ""}`);
       // Une zone qui n'agit qu'au déplacement (Croissance d'épines) ne fait rien à sa pose.
-      if ( !usage?.area || !actsOnPose(rules.on) ) return null;
+      // §91 : une zone qui n'agit qu'au tour de son lanceur (`casterPulse`, aucun moment) résout sa pose comme une autre.
+      if ( !usage?.area || (rules.on.length && !actsOnPose(rules.on)) ) return null;
     } else if ( isInstantaneous(activity) || bolt ) {
       await markTransient(region, message.id);
       // Personne dedans : aucune résolution ne viendra la retirer. On la laisse voir un instant.

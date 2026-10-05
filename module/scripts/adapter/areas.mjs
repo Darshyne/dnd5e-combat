@@ -39,8 +39,10 @@ export function areaRulesOf(activity) {
     for ( const step of replays ) if ( step.activity && activity.item.system.activities?.get(step.activity) ) sibling = own = step.activity;
     perDeclaration.push({ on: d.on, activity: own });
   }
+  // §91 : une zone qui agit au tour de son lanceur (`casterPulse`) dure aussi, même sans rejeu au tour des créatures.
+  const casterPulse = !!contentOf(activity.item).entry?.casterPulse || !!contentOf(activity.item).entry?.zoneEnd;
   // §80 : une activité par moment quand elles diffèrent (Faim de Hadar).
-  return on.size ? { on: Array.from(on), activity: sibling, activities: siblingsByMoment(perDeclaration) } : null;
+  return (on.size || casterPulse) ? { on: Array.from(on), activity: sibling, activities: siblingsByMoment(perDeclaration), ...(casterPulse ? { casterPulse } : {}) } : null;
 }
 
 /** La zone d'une activité instantanée n'a plus de raison d'être une fois la résolution close. */
@@ -149,6 +151,30 @@ export async function burstAround(usageMessage, tokens, sibling, center) {
     flags: {
       dnd5e: foundry.utils.deepClone(usageMessage.flags?.dnd5e ?? {}),
       [MODULE_ID]: { areaTick: { event: "burst", origin: usageMessage.id, token: center.uuid } }
+    }
+  });
+}
+
+/**
+ * §91 : rejeu au tour du lanceur (`casterPulse`) — une copie du message d'utilisation de la pose (même niveau de sort, même DD),
+ * activité remplacée par la sœur, toutes ces cibles à la fois, marquée `areaTick` (rien de dépensé, pas de zone à attendre).
+ * MJ actif uniquement.
+ * @param {ChatMessage} usageMessage
+ * @param {TokenDocument[]} tokens
+ * @param {Activity} sibling
+ * @param {RegionDocument} region
+ */
+export async function pulseAll(usageMessage, tokens, sibling, region) {
+  const system = { ...usageMessage.system.toObject(), targets: tokens.map(describeTarget) };
+  system.activity = { ...(system.activity ?? {}), ...sibling.messageSources.activity };
+  return ChatMessage.implementation.create({
+    type: "usage",
+    speaker: usageMessage.speaker,
+    flavor: game.i18n.format("DND5ECOMBAT.Zone.casterPulse", { item: sibling.item.name, activity: sibling.name || sibling.item.name }),
+    system,
+    flags: {
+      dnd5e: foundry.utils.deepClone(usageMessage.flags?.dnd5e ?? {}),
+      [MODULE_ID]: { areaTick: { event: "casterPulse", region: region.uuid, origin: usageMessage.id } }
     }
   });
 }

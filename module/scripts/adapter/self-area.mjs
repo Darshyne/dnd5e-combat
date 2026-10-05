@@ -112,6 +112,20 @@ export function selfAreaRegionData(activity, token, shape) {
 }
 
 /**
+ * §91 : pose la zone de l'activité (sphère, cercle) centrée sur un point, sans clic — la bille de la Boule de feu à retardement qui
+ * explose là où elle est. Mêmes données et mêmes hooks que la pose de dnd5e.
+ * @param {Activity} activity
+ * @param {TokenDocument} token      Le lanceur (origine).
+ * @param {{x: number, y: number}} point
+ * @returns {Promise<RegionDocument[]|null>}
+ */
+export function placeAreaAt(activity, token, point) {
+  const scene = token.parent;
+  const radius = dimensionsOf(activity, scene).size * (scene.grid.size / scene.grid.distance);
+  return createAreaRegions(activity, token, [regionData(activity, token, { type: "circle", radius, x: point.x, y: point.y }, false)]);
+}
+
+/**
  * Pose la zone sur le lanceur, en émettant les hooks de dnd5e autour de la création.
  * @param {Activity} activity
  * @param {{shape: "emanation"|"circle", token: TokenDocument}} area  Ce que `selfAreaOf` a rendu.

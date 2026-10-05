@@ -1,6 +1,6 @@
 /** §80 : Faim de Hadar (une activité sœur par moment de zone) et Frappe piégeuse (dégâts au début du tour de l'entravée). */
 import { describe, it, expect } from "vitest";
-import { siblingFor, hitKey, siblingsByMoment, shouldTrigger, markHit, openArea } from "../module/scripts/core/area.mjs";
+import { siblingFor, hitKey, siblingsByMoment, shouldTrigger, markHit, openArea, pulseFor, pulseTargets } from "../module/scripts/core/area.mjs";
 import { validateEntry } from "../module/scripts/core/content.mjs";
 import { CONTENT } from "../module/scripts/content/index.mjs";
 
@@ -175,5 +175,41 @@ describe("le reste des manœuvres (§90)", () => {
     expect(validateEntry({ commandStrike: true }).length).toBeGreaterThan(0);
     expect(validateEntry({ rolledAc: { activity: "nYe2l7Rml0qyFbf6", effect: "8HUDgkIN8xvG2BAm", to: "other" } }).length).toBeGreaterThan(0);
     expect(validateEntry({ rollBonus: { activity: "WrckriM4bPU6NS38", on: ["attack"], skills: "ste" } }).length).toBeGreaterThan(0);
+  });
+});
+
+describe("sorts au tour du lanceur (§91)", () => {
+  it("pulseFor : l'entrée qui couvre le numéro du rejeu", () => {
+    const rule = CONTENT["storm-of-vengeance"].casterPulse;
+    expect(pulseFor(rule, 1).activity).toBe("WOo8u0FLAzNMpMJN");
+    expect(pulseFor(rule, 2)).toMatchObject({ activity: "Fd8ZGgmDyNmJJuj3", max: 6 });
+    expect(pulseFor(rule, 3).activity).toBe("H4uCtCkANBkttnov");
+    expect(pulseFor(rule, 4).activity).toBe("yt2oWWelZl1zV4CB");
+    expect(pulseFor(rule, 9).activity).toBe("yt2oWWelZl1zV4CB");
+    expect(pulseFor(rule, 10)).toBeNull();
+  });
+  it("pulseTargets : les ennemis du lanceur d'abord, plafonnés", () => {
+    const t = [{ n: "a", disposition: 1 }, { n: "b", disposition: -1 }, { n: "c", disposition: -1 }, { n: "d", disposition: 1 }];
+    expect(pulseTargets(t, 1, 2).map(x => x.n)).toEqual(["b", "c"]);
+    expect(pulseTargets(t, 1, 3).map(x => x.n)).toEqual(["b", "c", "a"]);
+    expect(pulseTargets(t, 1).map(x => x.n)).toEqual(["b", "c", "a", "d"]);
+  });
+  it("le contenu des six sorts est valide", () => {
+    for ( const id of ["storm-of-vengeance", "earthquake", "delayed-blast-fireball", "tsunami", "symbol", "forbiddance"] ) {
+      expect(validateEntry(CONTENT[id], { facts: { "activity.id": true, "source.hasEffect": true } }), id).toEqual([]);
+    }
+    expect(CONTENT.earthquake.triggers[0].do).toEqual([{ type: "status", status: "prone" }, { type: "breakConcentration" }]);
+    expect(CONTENT["delayed-blast-fireball"].zoneEnd).toEqual({ activity: "M15GlfjeWy7Cdiqn" });
+    expect(CONTENT.forbiddance.selfZone.T2XK004SAb09LvvP.type).toBe("cube");
+  });
+  it("refus", () => {
+    const by = [{ from: 1, activity: "WOo8u0FLAzNMpMJN" }];
+    expect(validateEntry({ casterPulse: { at: "turnEnd", by } })).toEqual([]);
+    expect(validateEntry({ casterPulse: { at: "round", by } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ casterPulse: { at: "turnEnd", by: [] } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ casterPulse: { at: "turnEnd", by: [{ from: 0, activity: "WOo8u0FLAzNMpMJN" }] } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ casterPulse: { at: "turnEnd", by: [{ from: 3, to: 2, activity: "WOo8u0FLAzNMpMJN" }] } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ casterPulse: { at: "turnEnd", by, away: { distance: -5, units: "ft" } } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ zoneEnd: { activity: "court" } }).length).toBeGreaterThan(0);
   });
 });

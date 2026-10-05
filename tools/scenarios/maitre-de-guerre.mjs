@@ -132,8 +132,12 @@ export default {
       const since = await ctx.lastMessageId();
       const u = await ctx.use({ tokenId: bandit.id, itemId: scimitar, activityType: "attack", targetTokenIds: [fighter.id],
         usageConfig: { [MODULE_ID]: { autoReact: "first" } } });
+      const ids = await known();
       const r = await ctx.settle(u.usageMessageId, { timeoutMs: 45000 }).catch(() => null);
-      await pause(5000);
+      // Une Riposte qui touche ouvre la question des manœuvres au toucher : « Rien », sans quoi ses dégâts attendent la fin du délai
+      // et tombent pendant la partie suivante.
+      await answer(ids, /^Rien$|^Aucune|^None/i, 4000);
+      await pause(3000);
       return { r, since, before, after: await spent(), hit: r?.targets?.find(t => t.name === "Guerrier")?.hit ?? null };
     };
 
@@ -214,7 +218,7 @@ export default {
       else if ( n === 0 ) ctx.expect(!(await pendingFlag()), "Feinte : l'attaque a raté, le dé promis est perdu");
     }
     if ( ctx.expect(!!feinted, "Feinte suivie d'un coup qui touche (15 essais au plus)") ) {
-      ctx.expect(/1d8/.test(feinted.damage), `Feinte : +1d8 aux dégâts (${feinted.damage})`);
+      ctx.expect(/[12]d8/.test(feinted.damage), `Feinte : +1d8 aux dégâts, 2d8 sur un critique (${feinted.damage})`);
     }
     await ctx.removeEffectsNamed(bandit, /Feint/i);
 
@@ -230,7 +234,7 @@ export default {
       if ( a.hit === true ) lunged = a;
     }
     if ( ctx.expect(!!lunged, "Fente suivie d'un coup qui touche (15 essais au plus)") ) {
-      ctx.expect(/1d8/.test(lunged.damage), `Fente : +1d8 aux dégâts (${lunged.damage})`);
+      ctx.expect(/[12]d8/.test(lunged.damage), `Fente : +1d8 aux dégâts, 2d8 sur un critique (${lunged.damage})`);
       ctx.expect(!(await pendingFlag()), "Fente : la promesse est consommée");
     }
 

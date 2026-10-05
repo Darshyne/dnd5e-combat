@@ -87,5 +87,23 @@ export const FIGHTER = Object.freeze({
   // Jeu de jambes évasif : Se désengager, et le dé de supériorité ajouté à la CA jusqu'au début de votre prochain tour (effet
   // « Evasive AC », vide dans la donnée).
   "evasive-footwork": { basicActions: { d3RqzIKzhqX82OwP: "disengage" }, rolledAc: { activity: "d3RqzIKzhqX82OwP", effect: "rGEvj6OHUjHan8pq" } },
-  "riposte": { triggers: [{ on: "isMissed", if: { "activity.isMelee": true }, do: [{ type: "use", target: "source", activity: "QhxT9ZuZXmHGlrnT", weapon: true }] }] }
+  "riposte": { triggers: [{ on: "isMissed", if: { "activity.isMelee": true }, do: [{ type: "use", target: "source", activity: "QhxT9ZuZXmHGlrnT", weapon: true }] }] },
+  // §90 : le reste des manœuvres. Attaque précise — « quand vous ratez un jet d'attaque, ajoutez le dé, ce qui peut le convertir en
+  // réussite » : proposé à l'attaque ratée, avant le verdict, comme la Chance du ténébreux l'est à une sauvegarde.
+  "precision-attack": { rollBonus: { activity: "WrckriM4bPU6NS38", on: ["attack"] } },
+  // Embuscade, Autorité naturelle, Évaluation tactique : le dé ajouté à un test de ces compétences (ou à l'initiative), proposé
+  // sitôt le jet lancé. « Sans subir l'état Neutralisé » (Embuscade) : au MJ.
+  "ambush": { rollBonus: { activity: "HiargkiZgN4q8kg6", on: ["check", "initiative"], skills: ["ste"] } },
+  "commanding-presence": { rollBonus: { activity: "WYWuaoPWf2Vy5olB", on: ["check"], skills: ["itm", "prf", "per"] } },
+  "tactical-assessment": { rollBonus: { activity: "qx70O22QGfH0MryE", on: ["check"], skills: ["his", "inv", "ins"] } },
+  // Balayage : après un coup au corps à corps, le dé (du type du coup) à une autre créature à 1,50 m de la cible et à l'allonge,
+  // si le jet l'aurait touchée — l'activité « dégâts » paie et donne le dé.
+  "sweeping-attack": { sweep: { activity: "P9XWzKIH1sEvsOtC" } },
+  // Chassé-croisé : échanger sa place avec une créature consentante à 1,50 m (1,50 m de déplacement, sans attaque d'opportunité), puis
+  // le dé ajouté à la CA de l'un ou de l'autre jusqu'au début du prochain tour — la donnée porte un effet par valeur du dé (12) : le
+  // premier sert de modèle, le total écrit dedans.
+  "bait-and-switch": { swapPlaces: { activity: "nYe2l7Rml0qyFbf6" }, rolledAc: { activity: "nYe2l7Rml0qyFbf6", effect: "8HUDgkIN8xvG2BAm", to: "choose" } },
+  // Frappe commandée : une attaque de l'action Attaquer cédée à un allié, qui attaque aussitôt avec une arme par sa Réaction, le dé
+  // ajouté aux dégâts s'il touche. L'activité « dégâts » ne blesse pas l'allié qu'elle vise.
+  "commanders-strike": { replacesAttack: true, noDamage: ["spcp6PQ8947Ds4Qg"], commandStrike: { activity: "spcp6PQ8947Ds4Qg" } }
 });

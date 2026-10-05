@@ -329,8 +329,16 @@
  *     pendingDie?: { activity, against: "melee"|"target" }  §89 : l'activité promet son dé au prochain jet de dégâts d'une
  *                                               attaque de l'auteur ce tour-ci, au corps à corps ou contre la cible désignée (Fente,
  *                                               Feinte du Maître de guerre ; runtime/maneuver-dice.mjs)
- *     rolledAc?: { activity, effect }           §89 : l'activité lance le dé de son `roll` et pose l'effet de l'item sur l'auteur, le
- *                                               bonus de CA écrit dedans (Jeu de jambes évasif)
+ *     rolledAc?: { activity, effect, to? }      §89 : l'activité lance le dé de son `roll` et pose l'effet de l'item sur l'auteur, le
+ *                                               bonus de CA écrit dedans (Jeu de jambes évasif) ; §90 `to: "choose"` : sur l'auteur
+ *                                               ou sur la créature visée, au choix de l'auteur (Chassé-croisé)
+ *     swapPlaces?: { activity }                 §90 : l'activité échange les places de l'auteur et de la créature visée (Chassé-croisé :
+ *                                               1,50 m de déplacement de l'auteur, sans attaque d'opportunité)
+ *     sweep?: { activity }                      §90 : après un coup au corps à corps (arme, mains nues), l'auteur peut infliger le dé
+ *                                               de l'activité, du type du coup, à une autre créature à 1,50 m de la cible et à son
+ *                                               allonge, si le jet l'aurait touchée (Balayage) ; l'activité paie
+ *     commandStrike?: { activity }              §90 : l'activité ordonne à la créature visée une attaque d'arme par sa Réaction, son
+ *                                               dé promis aux dégâts (Frappe commandée ; avec `replacesAttack`)
  *     selfZone?: { <id d'activité>: { type, size, units } }  le gabarit d'une activité qui n'en a pas dans la donnée (§86,
  *                                               Présence royale de Yolande : émanation de 10 ft sur soi) — posé d'office (§47)
  *     zoneAffects?: "enemy"|"ally"              qui la zone de l'item affecte, quand la donnée ne le dit pas (§86 : « une
@@ -351,9 +359,11 @@
  *                                               (Manuel des joueurs premium : Enchevêtrement, Croissance d'épines…) ; magique
  *     zoneEffects?: true                        les effets de l'activité sont portés tant qu'on est dans sa zone (§37.4,
  *                                               Silence) : comportement `applyActiveEffect` du cœur (adapter/zone-effects.mjs)
- *     rollBonus?: { activity, on }              un dé que la créature ajoute à SON jet raté, après l'avoir vu (§38, Chance du
- *                                               ténébreux) : le jet de l'activité (`roll.formula`), qui dépense l'utilisation ;
- *                                               `on` : ["save"] et/ou ["check"] (le moteur ne lit que les sauvegardes)
+ *     rollBonus?: { activity, on, skills? }     un dé que la créature ajoute à SON jet, après l'avoir vu (§38, Chance du
+ *                                               ténébreux) : le jet de l'activité (`roll.formula`), qui dépense ses consommations ;
+ *                                               `on` : "save" (ratée, lue par le moteur), "attack" (ratée, §90 Attaque précise),
+ *                                               "check" (tout test, sitôt lancé), "initiative" (§90) ; `skills` : les seules
+ *                                               compétences dont le test compte (Embuscade : ["ste"])
  *     transpose?: { summon }                    échanger sa place avec l'invocation pilotée de l'item `summon` (identifiant),
  *                                               quand l'action Bonus la crée ou la déplace (§38.2, Troc du filou ; core/pilot.mjs)
  *     portent?: { dice }                        Présage (§36) : `dice` d20 notés à chaque Repos long (Présage : 2 ; Présage
@@ -515,8 +525,10 @@ export const EFFECT_ENDS = Object.freeze(["casterTurnStart", "casterTurnEnd", "b
 /** Ce qui ouvre une attaque en action Bonus (`bonusAttack.after`). */
 export const BONUS_ATTACK_AFTER = Object.freeze(["critical", "felled"]);
 
-export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "changesForm", "actionOrBonus"]);
+export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "swapPlaces", "sweep", "commandStrike", "changesForm", "actionOrBonus"]);
 export const CHOICE_EFFECTS = Object.freeze(["one"]);
+/** §38, §90 : les jets auxquels un `rollBonus` s'ajoute. */
+export const ROLL_BONUS_ON = Object.freeze(["save", "check", "attack", "initiative"]);
 /** §37 : ce qu'une sauvegarde répétée ratée impose en plus (`resave.onFail`) : l'action Esquiver (Malédiction). */
 export const RESAVE_ON_FAIL = Object.freeze(["dodge"]);
 /** §43.2 : qui fait cesser l'effet par une action, par quel jet, sous quel libellé. */
@@ -889,7 +901,11 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   if ( ("pendingDie" in entry) && !(isObject(entry.pendingDie) && isId(entry.pendingDie.activity) && ["melee", "target"].includes(entry.pendingDie.against)
     && (Object.keys(entry.pendingDie).length === 2)) ) errors.push(`${at}pendingDie : { activity, against: melee|target }`);
   if ( ("rolledAc" in entry) && !(isObject(entry.rolledAc) && isId(entry.rolledAc.activity) && isId(entry.rolledAc.effect)
-    && (Object.keys(entry.rolledAc).length === 2)) ) errors.push(`${at}rolledAc : { activity, effect }`);
+    && (!("to" in entry.rolledAc) || (entry.rolledAc.to === "choose"))
+    && Object.keys(entry.rolledAc).every(k => ["activity", "effect", "to"].includes(k))) ) errors.push(`${at}rolledAc : { activity, effect, to?: "choose" }`);
+  for ( const key of ["swapPlaces", "sweep", "commandStrike"] ) {
+    if ( (key in entry) && !(isObject(entry[key]) && isId(entry[key].activity) && (Object.keys(entry[key]).length === 1)) ) errors.push(`${at}${key} : { activity }`);
+  }
   if ( ("zoneAffects" in entry) && !["enemy", "ally"].includes(entry.zoneAffects) ) errors.push(`${at}zoneAffects : enemy, ally`);
   if ( ("noDamage" in entry) && !(Array.isArray(entry.noDamage) && entry.noDamage.length && entry.noDamage.every(id => /^[A-Za-z0-9]{16}$/.test(id))) ) {
     errors.push(`${at}noDamage : liste d'ids d'activité (16 caractères)`);
@@ -1214,8 +1230,9 @@ function validateRogue(entry, at, errors) {
   if ( ("metamagic" in entry) && !(isObject(entry.metamagic) && isId(entry.metamagic.activity) && METAMAGIC_KINDS.includes(entry.metamagic.kind)
     && Object.keys(entry.metamagic).every(k => ["activity", "kind"].includes(k))) ) errors.push(`${at}metamagic : { activity, kind: ${METAMAGIC_KINDS.join(" | ")} }`);
   if ( ("rollBonus" in entry) && !(isObject(entry.rollBonus) && isId(entry.rollBonus.activity) && Array.isArray(entry.rollBonus.on)
-    && entry.rollBonus.on.length && entry.rollBonus.on.every(k => ["save", "check"].includes(k))
-    && Object.keys(entry.rollBonus).every(k => ["activity", "on"].includes(k))) ) errors.push(`${at}rollBonus : { activity, on: ["save" | "check"] }`);
+    && entry.rollBonus.on.length && entry.rollBonus.on.every(k => ROLL_BONUS_ON.includes(k))
+    && (!("skills" in entry.rollBonus) || (Array.isArray(entry.rollBonus.skills) && entry.rollBonus.skills.length && entry.rollBonus.skills.every(k => (typeof k === "string") && k)))
+    && Object.keys(entry.rollBonus).every(k => ["activity", "on", "skills"].includes(k))) ) errors.push(`${at}rollBonus : { activity, on: [${ROLL_BONUS_ON.join(" | ")}], skills? }`);
   if ( ("transpose" in entry) && !(isObject(entry.transpose) && (typeof entry.transpose.summon === "string") && entry.transpose.summon
     && Object.keys(entry.transpose).every(k => k === "summon")) ) errors.push(`${at}transpose : { summon } (identifiant de l'item d'invocation)`);
   if ( ("portent" in entry) && !(isObject(entry.portent) && Number.isInteger(entry.portent.dice) && (entry.portent.dice > 0)
@@ -1343,6 +1360,7 @@ export function mergeEntries(layers) {
     if ( "zoneAffects" in layer ) out.zoneAffects = layer.zoneAffects;   // §86
     if ( "pendingDie" in layer ) out.pendingDie = { ...layer.pendingDie };   // §89
     if ( "rolledAc" in layer ) out.rolledAc = { ...layer.rolledAc };   // §89
+    for ( const key of ["swapPlaces", "sweep", "commandStrike"] ) if ( key in layer ) out[key] = { ...layer[key] };   // §90
     if ( "effectsIf" in layer ) out.effectsIf = layer.effectsIf;   // §71
     if ( "contest" in layer ) out.contest = { ...layer.contest };   // §72
     if ( "forOneAttack" in layer ) out.forOneAttack = layer.forOneAttack;

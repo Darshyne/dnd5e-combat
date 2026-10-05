@@ -33,7 +33,8 @@ export async function handleChoiceQuery({ actor: actorUuid, item, prompt, option
 }
 
 /**
- * Sur le MJ actif : demande à l'auteur, puis au MJ si l'auteur ne répond pas.
+ * Sur le MJ actif : demande à l'auteur, puis au MJ si l'auteur ne répond pas. Sur le client de l'auteur lui-même (§90 : un test
+ * qu'il vient de lancer), la question est posée ici.
  * @param {Actor} actor
  * @param {object} payload  Voir handleChoiceQuery.
  * @returns {Promise<{id: string}|null>}
@@ -41,6 +42,7 @@ export async function handleChoiceQuery({ actor: actorUuid, item, prompt, option
 export async function askChoice(actor, payload) {
   const userId = rollerFor(actor);
   let answer = null;
+  if ( userId === game.user.id ) return handleChoiceQuery(payload);
   if ( userId ) {
     try { answer = await game.users.get(userId).query(CHOICE_QUERY, payload, { timeout: CHOICE_TIMEOUT }); }
     catch(err) { console.warn(`${MODULE_ID} | choix de ${actor.name} : pas de réponse du joueur`, err); }

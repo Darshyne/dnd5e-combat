@@ -358,6 +358,8 @@ function readPlan(message) {
       // Une activité qui prend une action de base (Ruse : Se cacher, §20) : le moteur la fait (runtime/hide.mjs) ; l'effet
       // « Hiding » de l'item n'est pas posé.
       if ( contentOf(activity.item).entry?.basicActions?.[activity.id] ) return null;
+      // §90 : un dé ajouté à la CA (Chassé-croisé : un effet par valeur du dé dans la donnée) — runtime/maneuver-dice.mjs pose le bon.
+      if ( contentOf(activity.item).entry?.rolledAc?.activity === activity.id ) return null;
       // §72 : un test en opposition (`contest`) — l'effet ne se pose que gagné (runtime/contest.mjs).
       const contest = contentOf(activity.item).entry?.contest;
       if ( contest && (!contest.activity || (contest.activity === activity.id)) ) return null;

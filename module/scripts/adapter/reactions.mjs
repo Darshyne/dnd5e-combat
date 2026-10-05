@@ -318,7 +318,7 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
 }
 
 /** §88 : dépense ce que l'activité consomme d'utilisations d'items (Riposte : un dé de supériorité), sans l'utiliser. */
-async function payWithoutUse(activity) {
+export async function payWithoutUse(activity) {
   for ( const t of activity.consumption?.targets ?? [] ) {
     if ( t.type !== "itemUses" ) continue;
     const item = t.target ? activity.actor?.items.get(t.target) : activity.item;

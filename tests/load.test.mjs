@@ -29,7 +29,7 @@ describe("chargement du module", () => {
   });
 
   it("expose ses fonctions de test au connecteur sous api.mcp (call-module-api), et elles seules", () => {
-    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "attackReasons", "budget", "chatCards", "closeWindow", "dash", "effectOrigins", "enchant", "endings", "follow", "followState", "heal", "hurt", "identify", "inventory", "issues", "move", "movement", "overrideContent", "perceived", "placeRegionAt", "plan", "planning", "portent", "reload", "reports", "restoreItem", "rollCard", "rollSave", "runMacro", "saveChance", "sequencer", "setting", "stairs", "stairsAt", "stats", "status", "storm", "stormStrike", "summonAt", "takeStairs", "teleport", "teleportPick", "threats", "transpose", "unfollow", "use", "view", "windows"]);
+    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "attackReasons", "budget", "chatCards", "closeWindow", "dash", "effectOrigins", "enchant", "endings", "follow", "followState", "heal", "hurt", "identify", "inventory", "issues", "move", "movement", "overrideContent", "perceived", "placeRegionAt", "plan", "planning", "portent", "reload", "reports", "restoreItem", "rollCard", "rollCheck", "rollSave", "runMacro", "saveChance", "sequencer", "setting", "stairs", "stairsAt", "stats", "status", "storm", "stormStrike", "summonAt", "takeStairs", "teleport", "teleportPick", "threats", "transpose", "unfollow", "use", "view", "windows"]);
     expect(Object.isFrozen(api.api.mcp)).toBe(true);
   });
 
@@ -44,7 +44,7 @@ describe("chargement du module", () => {
   it("appelle les inscrits de createChatMessage dans l'ordre voulu : résolution d'abord", () => {
     expect(api.api.routes().createChatMessage.map(r => r.label)).toEqual([
       "résolution interrompue", "concentration : traitement interrompu", "réserve : recharge non écrite", "cibles relâchées", "Déluge de coups : visée non ouverte",
-      "budget : dépense non consignée", "Dissipation de la magie : rien dissipé", "trace ou marque non traitée", "botte d'arme : marque non consommée", "Rage : entretien non noté", "avaler / engloutir : action non suivie", "soutien", "lien : non noté", "carte unique : jet non replié", "purge du journal", "retour visuel : effet qui cesse"
+      "budget : dépense non consignée", "Dissipation de la magie : rien dissipé", "trace ou marque non traitée", "botte d'arme : marque non consommée", "manœuvre : Chassé-croisé ou Frappe commandée non joués", "Rage : entretien non noté", "avaler / engloutir : action non suivie", "soutien", "lien : non noté", "carte unique : jet non replié", "purge du journal", "retour visuel : effet qui cesse"
     ]);
   });
 

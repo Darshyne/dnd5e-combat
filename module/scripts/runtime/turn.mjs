@@ -159,6 +159,9 @@ const isUnarmedStrike = activity => (activity?.type === "attack")
  */
 export function monkRequest(activity, request, budget) {
   if ( !request || !budget ) return request;
+  // §90 : Frappe commandée — l'attaque d'arme (ou à mains nues) ordonnée ce tour se paie par la Réaction, hors de l'action Attaquer.
+  const strike = (activity?.type === "attack") && ["weapon", "unarmed"].includes(activity.attack?.type?.classification);
+  if ( strike && budget.commanded && (budget.commanded.turn === currentTurnKey()) ) return { ...request, cost: "reaction", weaponAttack: false, commanded: true };
   // §27 : Prêtre de guerre — l'attaque ouverte vaut aussi pour une arme.
   const weapon = (activity?.type === "attack") && (activity.item?.type === "weapon");
   if ( ((budget.flurry ?? 0) > 0) && (isUnarmedStrike(activity) || (budget.flurryAny && weapon)) ) return { ...request, cost: "free", flurry: true };
@@ -370,6 +373,7 @@ async function onUsageMessage(message) {
   let after = kind ? basicAction(before, kind)
     : spendUse(before, request, { isOwnTurn: isOwnTurn(combatant), attacksPerAction: attacksPerAction(combatant.actor), turnKey: currentTurnKey() });
   for ( const k of [declared].flat() ) if ( k && BASIC_ACTION_FLAGS[k] ) after = { ...after, [BASIC_ACTION_FLAGS[k]]: true };
+  if ( request?.commanded ) after = { ...after, commanded: null };   // §90 : l'ordre est servi
   // §24 : Déluge de coups — les frappes à mains nues qu'il ouvre.
   const flurry = contentOf(activity.item).entry?.flurry;
   if ( flurry && (flurry.activity === activity.id) ) after = { ...after, flurry: flurry.strikes, flurryAny: flurry.weapons === true };

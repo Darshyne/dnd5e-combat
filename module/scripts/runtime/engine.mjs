@@ -527,9 +527,14 @@ async function inspiredAttack(message, roll, targets) {
   if ( !actor ) return roll;
   const needed = Math.min(...missed.map(t => t.ac));
   const bonus = await offerInspiration(actor, { what: loc("Inspiration.Attaque"), total: roll.total, needed });
-  if ( !bonus ) return roll;
-  log(`${actor.name} : Inspiration bardique, attaque ${roll.total} + ${bonus} = ${roll.total + bonus}`);
-  return { ...roll, total: roll.total + bonus, inspired: bonus };
+  if ( bonus ) log(`${actor.name} : Inspiration bardique, attaque ${roll.total} + ${bonus} = ${roll.total + bonus}`);
+  // §90 : Attaque précise — encore ratée, l'attaquant peut ajouter son propre dé (`rollBonus` sur "attack").
+  const total = roll.total + bonus;
+  const rules = actor.items.some(i => contentOf(i).entry?.rollBonus?.on?.includes("attack"));
+  const precise = (rules && (total < needed)) ? await offerRollBonus(actor, { kind: "attack", what: loc("Inspiration.Attaque"), total, needed }) : 0;
+  if ( precise ) log(`${actor.name} : dé ajouté à son attaque, ${total} + ${precise} = ${total + precise}`);
+  if ( !bonus && !precise ) return roll;
+  return { ...roll, total: total + precise, inspired: bonus + precise };
 }
 
 async function onAttackMessage(message) {
@@ -747,12 +752,20 @@ function onResolutionFlag(message, changes) {
   if ( !diff || !("step" in diff) || !message.isAuthor ) return;
   const resolution = resolutionOn(message);
   if ( !resolution || !wantsDamageRoll(resolution) ) return;
+  // §90 : une résolution que traverse une fenêtre de réaction repasse par « jets attendus » avant que le premier jet ne soit
+  // enregistré — et la question des faveurs au jet (adapter/smite.mjs) le retarde : sans ce garde, un second jet partait (Parade : laissé
+  // au plateau ; Riposte : appliqué, sans le dé de la manœuvre). Un jet par résolution ; un échec le libère.
+  if ( damageRolling.has(resolution.id) ) return;
+  damageRolling.add(resolution.id);
   log("jet de dégâts enchaîné");
   rollDamageFor(message, resolution, isCriticalHit(resolution)).catch(err => {
+    damageRolling.delete(resolution.id);
     console.error(`${MODULE_ID} | jet de dégâts automatique impossible`, err);
     ui.notifications.warn("DND5ECOMBAT.DegatsManuels", { localize: true });
   });
 }
+/** Les résolutions dont le jet de dégâts enchaîné est parti, sur ce client. */
+const damageRolling = new Set();
 
 /**
  * Après un F5 du MJ : une fenêtre de réaction ouverte n'a plus personne pour l'écouter. La

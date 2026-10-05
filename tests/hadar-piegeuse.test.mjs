@@ -153,3 +153,27 @@ describe("manœuvres à l'action Bonus (§89)", () => {
     expect(validateEntry({ rolledAc: { activity: "d3RqzIKzhqX82OwP" } }).length).toBeGreaterThan(0);
   });
 });
+
+describe("le reste des manœuvres (§90)", () => {
+  it("Attaque précise, Embuscade, Autorité naturelle, Évaluation tactique : rollBonus", () => {
+    expect(CONTENT["precision-attack"].rollBonus).toEqual({ activity: "WrckriM4bPU6NS38", on: ["attack"] });
+    expect(CONTENT.ambush.rollBonus).toEqual({ activity: "HiargkiZgN4q8kg6", on: ["check", "initiative"], skills: ["ste"] });
+    expect(CONTENT["commanding-presence"].rollBonus.skills).toEqual(["itm", "prf", "per"]);
+    expect(CONTENT["tactical-assessment"].rollBonus.skills).toEqual(["his", "inv", "ins"]);
+  });
+  it("Balayage, Chassé-croisé, Frappe commandée", () => {
+    expect(CONTENT["sweeping-attack"]).toEqual({ sweep: { activity: "P9XWzKIH1sEvsOtC" } });
+    expect(CONTENT["bait-and-switch"]).toEqual({ swapPlaces: { activity: "nYe2l7Rml0qyFbf6" }, rolledAc: { activity: "nYe2l7Rml0qyFbf6", effect: "8HUDgkIN8xvG2BAm", to: "choose" } });
+    expect(CONTENT["commanders-strike"]).toEqual({ replacesAttack: true, noDamage: ["spcp6PQ8947Ds4Qg"], commandStrike: { activity: "spcp6PQ8947Ds4Qg" } });
+    for ( const id of ["precision-attack", "ambush", "commanding-presence", "tactical-assessment", "sweeping-attack", "bait-and-switch", "commanders-strike"] ) {
+      expect(validateEntry(CONTENT[id])).toEqual([]);
+    }
+  });
+  it("refus", () => {
+    expect(validateEntry({ sweep: { activity: "court" } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ swapPlaces: { activity: "nYe2l7Rml0qyFbf6", distance: 5 } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ commandStrike: true }).length).toBeGreaterThan(0);
+    expect(validateEntry({ rolledAc: { activity: "nYe2l7Rml0qyFbf6", effect: "8HUDgkIN8xvG2BAm", to: "other" } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ rollBonus: { activity: "WrckriM4bPU6NS38", on: ["attack"], skills: "ste" } }).length).toBeGreaterThan(0);
+  });
+});

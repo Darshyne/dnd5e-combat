@@ -68,11 +68,12 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
   const spellSlot = (item?.type === "spell") && ((item.system.level ?? 0) > 0)
     && !["atwill", "innate", "ritual"].includes(item.system.method)
     && (activity.consumption?.spellSlot !== false);
+  // §31 : une activité qui « remplace une de vos attaques » (Souffle) se décompte comme une attaque de l'action Attaquer — §90 : même
+  // sans activation dans la donnée (Frappe commandée : « lorsque vous entreprenez l'action Attaque »).
+  const replaces = contentOf(item).entry?.replacesAttack === true;
   return {
-    cost: costOverride ?? costOf(activity.activation?.type),
-    // §31 : une activité qui « remplace une de vos attaques » (Souffle) se décompte comme une attaque de l'action Attaquer.
-    weaponAttack: ((activity.type === "attack") && ["weapon", "unarmed"].includes(activity.attack?.type?.classification))
-      || (contentOf(item).entry?.replacesAttack === true),
+    cost: costOverride ?? costOf(activity.activation?.type) ?? (replaces ? "action" : null),
+    weaponAttack: ((activity.type === "attack") && ["weapon", "unarmed"].includes(activity.attack?.type?.classification)) || replaces,
     usesSpellSlot: spellSlot,
     lightWeapon: weapon && (item.system.properties?.has("lgt") === true),
     offhand,

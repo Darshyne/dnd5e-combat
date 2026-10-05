@@ -1,7 +1,7 @@
-# darsh-dnd · Core (`dnd5e-combat`)
+# DAS · Core (`dnd5e-combat`)
 
-A D&D 5.5 (2024 rules) rules and combat engine for **Foundry VTT V14** and **dnd5e 6.x**. It is the core of the
-*darsh-dnd* suite: a single module owns the whole combat loop, replacing Midi-QOL, CPR and the like.
+A D&D 5.5 (2024 rules) rules and combat engine for **Foundry VTT V14** and **dnd5e 6.x**. It is the core of
+**Darshyne's Automation Suite (DAS)**: a single module owns the whole combat loop, replacing Midi-QOL, CPR and the like.
 
 - **Action economy and legality**: per-turn budget, range and reach, soft checks on what is allowed.
 - **Resolution**: attacks, saving throws (NPC saves are rolled by the engine, player saves open on the player's
@@ -30,7 +30,7 @@ Hooks.once("dnd5e-combat.registerContent", register => register("my-module", {
 
 Or call `api.content.register(source, table)` later on. Each entry is validated just like the bundled content.
 
-## The darsh-dnd suite
+## Darshyne's Automation Suite
 
 | Module | Role |
 |---|---|

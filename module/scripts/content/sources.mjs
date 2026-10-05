@@ -32,6 +32,15 @@ export const SOURCE_IDENTIFIERS = Object.freeze({
   rhwKnowledgefraL: "knowledge-from-a-past-life",
   rhwHowlA3f2I58L3: "lupin-howl",
   rhwFeralPounce7E: "feral-pounce",
+  // §95 : sous-classes — Patron Mort-vivant, Fantôme, Sorcellerie de l'ombre, Gardien creux.
+  rhwUPFormofDreOJ: "form-of-dread",
+  rhwUPNecroticHYI: "necrotic-husk",
+  rhwPRWailsfromLz: "wails-from-the-grave",
+  rhwPRGhostWalkKY: "ghost-walk",
+  rhwSSPowerofShNG: "power-of-shadow",
+  rhwSSShadowWalqT: "shadow-walk",
+  rhwHWWrathofth3C: "wrath-of-the-wild",
+  rhwHWAncientMibA: "ancient-might",
   // §88 : la Parade du Maître de guerre (Manuel des joueurs) porte l'identifiant « parry » de la Parade du Monster Manual (§74), dont la
   // règle diffère (CA + maîtrise contre réduction des dégâts) : reconnue par sa source.
   phbmnvParry00000: "parry-maneuver"

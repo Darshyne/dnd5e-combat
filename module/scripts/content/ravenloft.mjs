@@ -121,5 +121,35 @@ export const RAVENLOFT = Object.freeze({
   },
   // Lupin, Bond féroce : un coup à mains nues qui touche permet AUSSI la Bousculade (une fois par tour) — sa sauvegarde (Force ou
   // Dextérité), À terre sur un échec ; repousser de 1,50 m à la place : au MJ.
-  "feral-pounce": { hitRider: { save: "rW3uaSjC7gS5YQnM", item: "feral-pounce", oncePerTurn: true } }
+  "feral-pounce": { hitRider: { save: "rW3uaSjC7gS5YQnM", item: "feral-pounce", oncePerTurn: true } },
+
+  /* §95 : sous-classes. */
+
+  // Patron Mort-vivant, Forme d'effroi — Avatar terrifiant : « une fois par tour, quand vous touchez une créature d'un jet d'attaque,
+  // vous pouvez la forcer à un JS de Sagesse ; Effrayée jusqu'à la fin de votre prochain tour » — sous la Forme (son effet sur vous).
+  // Les PV temporaires, l'immunité à Effrayé : l'activité et l'effet de la donnée.
+  "form-of-dread": { hitRider: { save: "Oqz9j7aHHPnRKdD9", oncePerTurn: true, whileActive: true } },
+  // Cosse nécrotique, Résurrection impie : à 0 PV sans mourir, « chaque créature de votre choix dans une émanation de 9 m fait un JS de
+  // Constitution (2d10 + Charisme nécrotiques, moitié si réussi) ; vos PV deviennent 2 × votre niveau d'Occultiste ; 1 niveau
+  // d'Épuisement » — l'activité de la donnée, dont les consommations fixent les PV et l'Épuisement.
+  "necrotic-husk": { atZero: { activity: "TC2Yiws12Xp7kSbm" }, zoneAffects: "enemy" },
+  // Fantôme, Lamentations d'outre-tombe : après une Attaque sournoise à votre tour, une seconde créature à 9 m de la première.
+  "wails-from-the-grave": { afterSneak: { activity: "UxZzzGtEv93Yfs6H", radius: 30, units: "ft" } },
+  // Fantôme, Marche fantôme — Forme brumeuse : « les jets d'attaque contre vous ont le Désavantage » (le vol : l'effet de la donnée ;
+  // traverser les créatures et objets : au MJ).
+  "ghost-walk": { triggers: [{ on: "preAttackRoll", via: "effect", fromEffect: "9NkA3EngQDOc2ONY", if: { "target.hasEffect": "ghost-walk" }, do: [{ type: "disadvantage" }] }] },
+  // Sorcellerie de l'ombre, Puissance de l'ombre — Force du tombeau : à 0 PV sans mourir, JS de Charisme (DD 5 + les dégâts subis) ;
+  // réussi, PV = Charisme + niveau d'Ensorceleur (le soin « Heal on Success » de la donnée, sur vous). Une fois par repos long.
+  "power-of-shadow": { atZero: { activity: "EmL9RVBiEFBPk2Cf", save: { ability: "cha", dc: "5 + @damage" } } },
+  // Marche dans l'ombre : téléportation de 36 m (« en pénombre ou dans les ténèbres, vers un tel espace » : au MJ).
+  "shadow-walk": { teleport: { distance: 120, units: "ft", activity: "XZKq03VYLlOcRzj2" } },
+  // Gardien creux, Courroux sauvage — Aura troublante : « au début de chacun de vos tours suivants, chaque créature de votre choix dans
+  // une émanation de 3 m fait un JS de Sagesse ou est Effrayée » — tant que vous êtes transformé (l'effet de la donnée). À la
+  // transformation elle-même : au MJ. Représailles rôdeuses (attaque d'opportunité) : au MJ.
+  "wrath-of-the-wild": { emanation: { on: "ownTurnStart", affects: "enemy", activity: "Lz2jHFS3S8PB3Yyy", radius: 10, units: "ft", whileActive: true } },
+  // Puissance ancestrale — Frappes menaçantes : contre une créature Effrayée, + modificateur de Sagesse aux dégâts (du type de l'arme) ; Courroux persistant : à 0 PV sans mourir sous Courroux sauvage, PV = 2 × niveau de Rôdeur.
+  "ancient-might": {
+    atZero: { activity: "pVReuhjfvDIn7X5B", whileEffect: "wrath-of-the-wild" },
+    triggers: [{ on: "preDamageRoll", if: { "activity.isAttack": true, "target.hasStatus": "frightened" }, do: [{ type: "damage", formula: "@abilities.wis.mod", damageType: "weapon" }] }]
+  }
 });

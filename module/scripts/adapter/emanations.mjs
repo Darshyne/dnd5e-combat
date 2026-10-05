@@ -50,7 +50,8 @@ export function emanationsOf(actor) {
     const rule = contentOf(item).entry?.emanation;
     if ( !rule?.on ) continue;
     // §92 : « pendant 10 minutes » (Ange vengeur) — seulement tant qu'un effet de l'item est sur le porteur.
-    if ( rule.whileActive && !(actor.effects ?? []).some(e => !e.disabled && (originItemOf(e)?.uuid === item.uuid)) ) continue;
+    // `appliedEffects` : ceux de l'acteur ET ceux que ses items lui transfèrent (Courroux sauvage : l'Armure ancestrale de l'enchantement).
+    if ( rule.whileActive && !(actor.appliedEffects ?? actor.effects ?? []).some(e => !e.disabled && !e.isSuppressed && (originItemOf(e)?.uuid === item.uuid)) ) continue;
     const activity = actingActivity(item, rule);
     const reach = activity ? radiusOf(activity, rule) : null;
     if ( !reach ) {

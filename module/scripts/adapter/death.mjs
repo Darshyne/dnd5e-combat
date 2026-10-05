@@ -26,6 +26,7 @@ import { relentlessAtZero } from "./rage.mjs";
 import { endureAtZero } from "./species.mjs";
 import { wardAtZero } from "./ward.mjs";
 import { planFortitude, pendingFortitude } from "./fortitude.mjs";
+import { risingAtZero } from "./rise.mjs";
 
 export const DEATH_QUERY = `${MODULE_ID}.deathSave`;
 const DEATH_TIMEOUT = 40000;
@@ -58,7 +59,7 @@ function damageItemOf(options) {
 export function isDeadActor(actor) {
   const hp = actor?.system?.attributes?.hp;
   if ( !actor || !hp ) return !!actor?.statuses?.has("dead");
-  return isDead({ hp: hp.value, saves: savesOf(actor) || survivesZero(actor) || transformsAtZero(actor) || standsAtZero(actor) || !!pendingFortitude(actor), statuses: Array.from(actor.statuses) });
+  return isDead({ hp: hp.value, saves: savesOf(actor) || survivesZero(actor) || transformsAtZero(actor) || standsAtZero(actor) || !!pendingFortitude(actor) || risingAtZero(actor), statuses: Array.from(actor.statuses) });
 }
 
 /** Le message de dégâts est-il un coup critique ? */
@@ -139,7 +140,7 @@ export async function ensureDowned(actor, { afterUpdate=false }={}) {
   if ( !hp ) return null;
   // §19.5 : une créature à seconde phase ne tombe pas, elle change de forme (runtime/coven.mjs).
   // §22 : Rage implacable — la sauvegarde de Constitution décide d'abord (runtime/barbarian.mjs) ; §61 : Robustesse de la non-vie.
-  if ( (hp.value <= 0) && (transformsAtZero(actor) || standsAtZero(actor) || relentlessAtZero(actor) || pendingFortitude(actor)) ) return null;
+  if ( (hp.value <= 0) && (transformsAtZero(actor) || standsAtZero(actor) || relentlessAtZero(actor) || pendingFortitude(actor) || risingAtZero(actor)) ) return null;
   const regenerates = (hp.value <= 0) && survivesZero(actor);
   if ( regenerates ) await dropAutoDead(actor);
   const status = downedStatus({ hp: hp.value, saves: savesOf(actor), statuses: Array.from(actor.statuses),

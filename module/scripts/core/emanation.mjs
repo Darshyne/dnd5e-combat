@@ -10,7 +10,7 @@ import { areHostile } from "./reaction.mjs";
  * Les moments d'une émanation : la fin du tour de son porteur, le début du tour d'une créature qui s'y trouve, la mort de
  * son porteur (§18.14, Mort explosive des Méphites, Convulsions du Balor).
  */
-export const EMANATION_MOMENTS = Object.freeze(["ownTurnEnd", "turnStart", "death"]);
+export const EMANATION_MOMENTS = Object.freeze(["ownTurnEnd", "ownTurnStart", "turnStart", "death"]);
 
 const plain = html => String(html ?? "").replace(/\[\[[^\]]*\]\]/g, "…").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ")
   .replace(/\s+/g, " ");

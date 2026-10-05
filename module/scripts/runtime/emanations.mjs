@@ -73,6 +73,13 @@ async function onTurnChange(combat, prior, current) {
   }
   if ( started?.actor && !outOfPlay(started) ) {
     const turn = `${combat.id}.${current.round}.${current.turn}`;
+    // §95 : au début du tour du porteur (Aura troublante du Gardien creux) — toutes les créatures atteintes, une carte.
+    for ( const emanation of emanationsOf(started.actor).filter(e => e.on === "ownTurnStart") ) {
+      const targets = reached(started, emanation, started.parent.tokens.contents);
+      if ( !targets.length || !once(`${turn}|${started.uuid}|${emanation.key}|ownStart`) ) continue;
+      log(`émanation ${emanation.item.name} (${started.name}), début de son tour : ${targets.map(t => t.name).join(", ")}`);
+      await emanationAgainst(emanation.activity, started, targets, "ownTurnStart");
+    }
     for ( const source of started.parent.tokens ) {
       if ( (source === started) || !source.actor ) continue;
       for ( const emanation of emanationsOf(source.actor).filter(e => e.on === "turnStart") ) {

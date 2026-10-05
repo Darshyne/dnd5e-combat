@@ -10,7 +10,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
 import { combatantFor, readBudget } from "./turn.mjs";
-import { creatureTypeOf, originItemOf } from "./facts.mjs";
+import { creatureTypeOf, originItemOf, carriesEffectFrom } from "./facts.mjs";
 import { timedWait } from "./dialogs.mjs";
 import { isSpellCast } from "./scrolls.mjs";
 
@@ -104,6 +104,8 @@ export function riderOptions(actor, target, activity=null, attackMode=null) {
       left = Number.isFinite(Number(uses.value)) ? Number(uses.value) : (Number(uses.max) || 0) - (Number(uses.spent) || 0);
     }
     if ( !(left > 0) ) continue;
+    // §95 : seulement tant qu'un effet de l'item est sur le porteur (Avatar terrifiant : sous la Forme d'effroi).
+    if ( rule.whileActive && !carriesEffectFrom(actor, identifierOf(item).id) ) continue;
     if ( rule.weapon && !(meleeWeaponHit(activity, attackMode) && wieldsBound(activity, actor, rule.weapon)) ) continue;
     // §78 : seulement avec l'arme de cet identifiant (Piqué : l'épée courte).
     if ( rule.item && (identifierOf(activity?.item ?? {}).id !== rule.item) ) continue;

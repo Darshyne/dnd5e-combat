@@ -86,6 +86,9 @@ export function comesFromItemEffect(effect, id) {
  * `spec` : l'identifiant, ou `{ item, effect }` pour UN effet de l'item (§37 : Malédiction — « Cursed Resilience », pas les
  * autres malédictions du même sort).
  */
+/** §95 : l'acteur porte-t-il un effet actif d'un item de cet identifiant (Forme d'effroi, Courroux sauvage) ? */
+export const carriesEffectFrom = (actor, identifier) => hasEffectFrom(actor, identifier);
+
 function hasEffectFrom(actor, spec, source=null) {
   const identifier = (typeof spec === "string") ? spec : spec?.item;
   const effectId = (typeof spec === "string") ? null : (spec?.effect ?? null);

@@ -267,3 +267,20 @@ describe("dons et espèces de Ravenloft (§94)", () => {
     expect(validateEntry({ rollBonus: { activity: "9wAIIWcBr8lwp7Rm", on: ["save"], statuses: [] } }).length).toBeGreaterThan(0);
   });
 });
+
+describe("sous-classes de Ravenloft (§95)", () => {
+  it("contenu valide", () => {
+    for ( const id of ["form-of-dread", "necrotic-husk", "wails-from-the-grave", "ghost-walk", "power-of-shadow", "shadow-walk", "wrath-of-the-wild", "ancient-might"] ) {
+      expect(validateEntry(CONTENT[id], { facts: { "target.hasEffect": true, "target.hasStatus": true, "activity.isAttack": true } }), id).toEqual([]);
+    }
+    expect(CONTENT["power-of-shadow"].atZero).toEqual({ activity: "EmL9RVBiEFBPk2Cf", save: { ability: "cha", dc: "5 + @damage" } });
+    expect(CONTENT["wrath-of-the-wild"].emanation.on).toBe("ownTurnStart");
+    expect(CONTENT["form-of-dread"].hitRider.whileActive).toBe(true);
+  });
+  it("refus", () => {
+    expect(validateEntry({ atZero: { activity: "court" } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ atZero: { activity: "EmL9RVBiEFBPk2Cf", save: { ability: "cha" } } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ afterSneak: { activity: "UxZzzGtEv93Yfs6H", radius: 30 } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ hitRider: { save: "Oqz9j7aHHPnRKdD9", whileActive: "oui" } }).length).toBeGreaterThan(0);
+  });
+});

@@ -210,6 +210,8 @@
   "DND5ECOMBAT.Reglage.chatLight.Aide": "Smoother chat: the engine merges the steps of an action that follow each other quickly into a single update of its card (instead of redrawing it at every step for every player), and cards that are off screen in the chat log are no longer drawn. Disabled: every step is written at once, as before.",
   "DND5ECOMBAT.Reglage.chatCompact.Nom": "One card per action",
   "DND5ECOMBAT.Reglage.chatCompact.Aide": "Like Midi-QOL's merged card: an action's attack and damage roll cards are hidden in the chat log, and their summary (total, d20, damage by type, advantage reasons) is shown on the action's card, above the verdict. The rolls are still stored (3D dice, animations, undo); the \"Details\" button shows them again. Saving throws are already summarized by dnd5e (\"Summarize chat cards\" setting).",
+  "DND5ECOMBAT.Reglage.perfWarnMs.Nom": "Timing report: threshold (ms)",
+  "DND5ECOMBAT.Reglage.perfWarnMs.Aide": "On this client, an engine handler that blocks the browser longer than this is reported in the console (F12). Full report: game.modules.get(\"dnd5e-combat\").api.perf.table(). 0: no reports.",
   "DND5ECOMBAT.Reglage.chatPurgeMax.Nom": "Chat purge: above",
   "DND5ECOMBAT.Reglage.chatPurgeMax.Aide": "When the chat log holds more messages than this, the active GM permanently deletes the oldest ones (never an action still in progress). 0: never.",
   "DND5ECOMBAT.Reglage.chatPurgeKeep.Nom": "Chat purge: messages kept",

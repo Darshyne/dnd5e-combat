@@ -82,6 +82,7 @@ import { registerRecast } from "./runtime/recast.mjs";
 import { registerChat } from "./ui/chat.mjs";
 import { registerCompact } from "./ui/compact.mjs";
 import { registerPurge } from "./runtime/purge.mjs";
+import { registerPerf, perfApi } from "./runtime/perf.mjs";
 import { registerFeedback } from "./ui/feedback.mjs";
 import { registerTracker } from "./ui/tracker.mjs";
 import { registerLightIndicator, lightState } from "./ui/illumination.mjs";
@@ -99,6 +100,7 @@ import { registerOil } from "./runtime/oil.mjs";
  * `routes()` : qui écoute quel hook, dans quel ordre (runtime/router.mjs).
  * `content` : contenu livré, surcouche du monde (`set`), ce qu'un acteur déclare (`inspect`).
  * `reports` : les items signalés en partie par le MJ, et le panneau du bilan (ui/automation.mjs, SPEC §9.2).
+ * `perf` : le relevé des temps du moteur sur ce client (§98, runtime/perf.mjs) — `table()`, `report()`, `longTasks()`, `reset()`.
  * `mcp` : fonctions de test appelées par le connecteur (`call-module-api`), arguments et résultats en JSON (runtime/testing.mjs).
  * `ui` : ce qu'une interface externe lit (§40.1, ui/api.mjs) — `budget(combatant)`, `movement(token)`, `issues(activity)`,
  *   `multiattackLeft(actor)`, `light(token)`, `globalLight()`. Le moteur ne connaît aucune interface.
@@ -109,7 +111,7 @@ import { registerOil } from "./runtime/oil.mjs";
  *   parchemins du monde (tools/macros/reprendre-parchemins.js).
  */
 const state = {
-  active: false, reason: null, unitFactors: null, routes: describeRoutes, content: contentApi, reports: reportsApi, mcp: testApi,
+  active: false, reason: null, unitFactors: null, routes: describeRoutes, content: contentApi, reports: reportsApi, mcp: testApi, perf: perfApi,
   ui: uiApi, light: lightState, approach, scrolls: { spellOf: scrollSpellOf }, basics: { data: basicActionData }
 };
 
@@ -130,6 +132,7 @@ Hooks.once("init", () => {
   // L'ordre de ces appels est l'ordre d'appel des inscrits d'un même hook (runtime/router.mjs).
   // Le moteur d'abord ; la souris (ui/pointer) avant la légalité (turn) : une activité sans cible
   // passe en mode visée avant qu'on juge son budget ; le reste de l'interface en dernier.
+  registerPerf();   // §98 : le seuil du relevé des temps, avant que les hooks ne tournent
   registerContent();
   registerIcons();
   registerEngine();

@@ -14,6 +14,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
+import { recordTiming } from "./perf.mjs";
 
 /**
  * @param {object} deps
@@ -21,17 +22,23 @@ import { MODULE_ID } from "../constants.mjs";
  * @param {() => boolean} deps.isExecutor
  * @param {(entry: {hook: string, label: string, notify?: string, level?: string}, err: Error) => void} deps.report
  * @param {(entry: {hook: string, label: string}) => void} [deps.refused]  Un inscrit a annulé l'opération (trace).
+ * @param {{now: () => number, record: (hook: string, label: string, kind: "sync"|"async", ms: number) => void}} [deps.timing]
+ *   §98 : chronomètre chaque appel — le temps synchrone, et pour une promesse, le temps jusqu'à sa fin (core/perf.mjs).
  */
-export function createRouter({ subscribe, isExecutor, report, refused=() => {} }) {
+export function createRouter({ subscribe, isExecutor, report, refused=() => {}, timing=null }) {
   const routes = new Map();
 
   function dispatch(hook, args) {
     for ( const entry of routes.get(hook) ) {
       if ( entry.executor && !isExecutor() ) continue;
       let result;
+      const t0 = timing ? timing.now() : 0;
       try { result = entry.handler(...args); }
       catch(err) { report(entry, err); continue; }
-      if ( typeof result?.then === "function" ) result.then(null, err => report(entry, err));
+      finally { if ( timing ) timing.record(hook, entry.label, "sync", timing.now() - t0); }
+      if ( typeof result?.then === "function" ) {
+        result.then(timing ? () => timing.record(hook, entry.label, "async", timing.now() - t0) : null, err => report(entry, err));
+      }
       else if ( entry.cancellable && (result === false) ) {
         refused(entry);
         return false;
@@ -75,7 +82,9 @@ const router = createRouter({
     if ( entry.notify ) ui.notifications.error(entry.notify, { localize: true });
   },
   // Qui annule quoi : un déplacement arrêté en route se lit ainsi dans la console (get-client-errors, watch).
-  refused: entry => console.log(`${MODULE_ID} | ${entry.hook} annulé par « ${entry.label} »`)
+  refused: entry => console.log(`${MODULE_ID} | ${entry.hook} annulé par « ${entry.label} »`),
+  // §98 : relevé des temps (runtime/perf.mjs).
+  timing: { now: () => performance.now(), record: recordTiming }
 });
 
 export const route = router.on;

@@ -210,6 +210,8 @@
   "DND5ECOMBAT.Reglage.chatLight.Aide": "Pour un chat plus fluide : le moteur regroupe les étapes d’une action qui s’enchaînent vite en une seule mise à jour de sa carte (au lieu de la redessiner à chaque étape chez tous les joueurs), et les cartes qui ne sont pas à l’écran dans le journal ne sont plus dessinées. Désactivé : chaque étape est écrite aussitôt, comme avant.",
   "DND5ECOMBAT.Reglage.chatCompact.Nom": "Carte unique par action",
   "DND5ECOMBAT.Reglage.chatCompact.Aide": "Comme la carte fusionnée de Midi-QOL : les cartes de jet d’attaque et de dégâts d’une action sont masquées dans le journal, et leur résumé (total, d20, dégâts par type, raisons d’avantage) s’affiche sur la carte de l’action, au-dessus du verdict. Les jets restent enregistrés (dés 3D, animations, annulation) ; le bouton « Détails » les rouvre. Les sauvegardes sont déjà résumées par dnd5e (réglage « Résumer les cartes de chat »).",
+  "DND5ECOMBAT.Reglage.perfWarnMs.Nom": "Relevé des temps : seuil (ms)",
+  "DND5ECOMBAT.Reglage.perfWarnMs.Aide": "Sur ce client, un traitement du moteur qui bloque le navigateur plus longtemps que ce seuil est signalé dans la console (F12). Le relevé complet : game.modules.get(\"dnd5e-combat\").api.perf.table(). 0 : aucun signalement.",
   "DND5ECOMBAT.Reglage.chatPurgeMax.Nom": "Purge du journal : au-delà de",
   "DND5ECOMBAT.Reglage.chatPurgeMax.Aide": "Quand le journal dépasse ce nombre de messages, le MJ actif supprime définitivement les plus anciens (jamais une action encore en cours). 0 : jamais.",
   "DND5ECOMBAT.Reglage.chatPurgeKeep.Nom": "Purge du journal : messages gardés",

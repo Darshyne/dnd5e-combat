@@ -37,6 +37,8 @@ const teleports = w => (w.action === "displace") || (CONFIG.Token.movement.actio
 
 async function onMove(token, movement, operation, user) {
   if ( !user?.isSelf || !enabled() || token.lockRotation ) return;
+  // Le cœur enchaînera un autre morceau (points de contrôle d'une marche, §99 ; régions) : la rotation s'écrit au dernier.
+  if ( token.movement?.state === "pending" ) return;
   const passed = movement.passed?.waypoints ?? [];
   if ( !passed.length || teleports(passed.at(-1)) ) return;
   const points = [movement.origin, ...passed].filter(Boolean);

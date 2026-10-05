@@ -16,7 +16,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { footprintGap } from "../core/movement.mjs";
 import { canBeThrown, positionOf, combatantFor, isOwnTurn, readBudget } from "../adapter/turn.mjs";
-import { planPath, previewPath, cellUnder, footprintOf, stairsEntry, stairsDestinations } from "../adapter/movement.mjs";
+import { planPath, previewPath, cellUnder, footprintOf, stairsEntry, stairsDestinations, stopWalking } from "../adapter/movement.mjs";
 import { stormOf, cloudOf, cloudCircle, boltRadiusPx } from "../adapter/storm.mjs";
 import { dressStorm, strike, setBoltAim, freshCloudOf, castStorm } from "../runtime/storm.mjs";
 import { clampToCircle } from "../core/storm.mjs";
@@ -79,12 +79,28 @@ function actingToken() {
 
 /** Une intention à la fois : un second clic pendant qu'une action se joue est ignoré. */
 let busy = false;
-async function exclusive(fn) {
-  if ( busy ) return;
+let running = null;
+function exclusive(fn) {
+  if ( busy ) return Promise.resolve();
   busy = true;
-  try { await fn(); }
-  catch(err) { console.error(`${MODULE_ID} | souris`, err); }
-  finally { busy = false; }
+  running = (async () => {
+    try { await fn(); }
+    catch(err) { console.error(`${MODULE_ID} | souris`, err); }
+    finally { busy = false; running = null; }
+  })();
+  return running;
+}
+
+/**
+ * §99 : un clic pendant que le token marche (déplacement, approche d'une attaque, d'une porte) l'arrête à la prochaine case
+ * libre — l'intention en cours s'arrête là (pas d'attaque au bout) — puis `then`, s'il y en a un, part comme un nouveau clic.
+ * Rend faux si le token ne marchait pas : le clic est alors ignoré, comme tout clic pendant une action.
+ */
+function interruptWalk(token, then=null) {
+  if ( !busy || !stopWalking(token) ) return false;
+  const current = running;
+  current.then(() => (then ? exclusive(then) : null));
+  return true;
 }
 
 const engageWith = (token, target, activity, options={}) => engage(token, target, activity, { fast: setting("fastAttack"), ...options });
@@ -1023,6 +1039,18 @@ function onPointerUp(event) {
 
   const me = actingToken();
   if ( !me || !selecting() ) return;
+  // §99 : le token marche encore — un clic gauche au sol l'envoie ailleurs, sur un ennemi l'y fait attaquer, tout autre clic
+  // l'arrête sur place.
+  if ( busy ) {
+    const point = scenePoint(event);
+    if ( left && hover && (hover !== me) && attackClick(event) && clickAttackApplies(me, hover) ) {
+      if ( interruptWalk(me, () => engageWith(me, hover, basicAttack(me.actor).activity, { event })) ) return;
+    }
+    else if ( left && !hover && plain(event) && clickMoveAllowed() ) {
+      if ( interruptWalk(me, () => moveTo(me, point)) ) { lastHoverKey = null; return; }
+    }
+    else if ( interruptWalk(me) ) return;
+  }
   if ( left ) {
     if ( hover && (hover !== me) && attackClick(event) && clickAttackApplies(me, hover) ) {
       return exclusive(() => engageWith(me, hover, basicAttack(me.actor).activity, { event }));

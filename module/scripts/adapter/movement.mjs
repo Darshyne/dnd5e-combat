@@ -533,7 +533,20 @@ export function planPath(token, to, { maxCost=Infinity, throughDoors=false }={})
   // budget ; la hauteur d'un escalier se paie entre deux tronçons.
   const object = token.object;
   const preview = !game.user.isGM;
-  const toWaypoints = list => corners(list).slice(1).map(world.waypoint);
+  // Les virages seuls, mais chacun porte les cases alignées avant lui où l'on peut s'arrêter (`stops`), et `through` s'il
+  // est lui-même sur une case prise : la marche s'interrompt case par case (`walk`), jamais chez un autre.
+  const toWaypoints = list => {
+    const kept = new Set(corners(list));
+    const out = [];
+    let stops = [];
+    for ( const cell of list.slice(1) ) {
+      const free = world.canEnd(cell);
+      if ( !kept.has(cell) ) { if ( free ) stops.push(world.waypoint(cell)); continue; }
+      out.push({ ...world.waypoint(cell), ...(stops.length ? { stops } : {}), ...(free ? {} : { through: true }) });
+      stops = [];
+    }
+    return out;
+  };
   const waypoints = [];
   const beyond = [];
   let remaining = maxCost;
@@ -595,7 +608,7 @@ export function previewPath(token, plan) {
   }
   const preview = true;
   const origin = { ...committedPosition(token) };
-  const clean = list => list.map(({ climb, ...w }) => w);
+  const clean = list => list.map(({ climb, stops, through, ...w }) => w);
   const complete = list => token.getCompleteMovementPath(object.createTerrainMovementPath(list, { preview }));
   const foundPath = complete([origin, ...clean(plan.waypoints)]);
   const unreachableWaypoints = plan.beyond.length ? complete([foundPath.at(-1), ...clean(plan.beyond)]).slice(1) : [];
@@ -635,6 +648,62 @@ async function chargeClimb(token, climb) {
 }
 
 /**
+ * Les points d'un tronçon pour le cœur : chaque case où l'on peut s'arrêter (`stops`, et les virages qui ne sont pas `through`,
+ * voir `planPath`) devient un point de contrôle (`checkpoint`). Le cœur coupe le déplacement au premier (`#splitMovementPath`,
+ * documents/token.mjs:2566), anime ce morceau et enchaîne seul le suivant un peu avant la fin de l'animation (déplacement
+ * « pending », canvas/placeables/token.mjs:4331) ; `stopMovement` coupe ce qui reste. Les cases intermédiaires ne sont pas
+ * explicites : la règle ne les marque pas comme des étapes.
+ */
+function checkpointed(move) {
+  const out = [];
+  for ( const [index, { climb, stops, through, ...w }] of move.entries() ) {
+    for ( const stop of stops ?? [] ) out.push({ ...stop, ...(w.action ? { action: w.action } : {}), explicit: false, checkpoint: true });
+    out.push((through || (index === move.length - 1)) ? w : { ...w, checkpoint: true });
+  }
+  return out;
+}
+
+/**
+ * Les marches en cours sur ce client, par token (SPEC §99) : un nouveau clic ailleurs ou la pause les arrêtent, et les
+ * morceaux que le cœur enchaîne gardent les options du moteur (`continuedFlags`).
+ * @type {Map<TokenDocument, {stopped: boolean, flags: object}>}
+ */
+const walks = new Map();
+
+export const isWalking = token => walks.has(token);
+
+/**
+ * Arrête la marche de ce token au prochain point de contrôle (la case libre où l'animation en cours le mène). Rend vrai
+ * s'il marchait. Seul le client qui a lancé un déplacement peut l'arrêter (`stopMovement`, documents/token.mjs:762) :
+ * c'est celui de la marche.
+ */
+export function stopWalking(token) {
+  const state = walks.get(token);
+  if ( !state ) return false;
+  state.stopped = true;
+  if ( token.movement?.user?.isSelf && ["pending", "paused"].includes(token.movement.state) ) {
+    try { token.stopMovement(); }
+    catch(err) { console.warn(`${MODULE_ID} | arrêt de la marche de ${token.name}`, err); }
+  }
+  return true;
+}
+
+export function stopAllWalks() {
+  for ( const token of Array.from(walks.keys()) ) stopWalking(token);
+}
+
+/**
+ * Les options du moteur d'un morceau de marche que le cœur enchaîne lui-même : sa mise à jour ne reprend que les options
+ * standard (`updateOptions`, documents/token.mjs:1036), pas `[MODULE_ID]` (`cleared`, `follow`…). On les retrouve par la
+ * marche en cours quand le déplacement en suit un autre (`chain` non vide). `movement` : celui de `preMoveToken`, ou
+ * `options._movement[token.id]` d'un `updateToken`. null hors d'une marche du moteur.
+ */
+export function continuedFlags(token, movement) {
+  if ( !movement?.chain?.length ) return null;
+  return walks.get(token)?.flags ?? null;
+}
+
+/**
  * Parcourt le chemin et n'aboutit qu'une fois le token arrivé (animation comprise) : les jets
  * viennent après le déplacement. Un changement de niveau clôt un `move` et en ouvre un autre.
  * @returns {Promise<boolean>}  false si le déplacement a été refusé ou interrompu.
@@ -642,22 +711,38 @@ async function chargeClimb(token, climb) {
 export async function walk(token, plan, flags={}) {
   previewPath(token, null);
   if ( !plan.waypoints.length ) return true;
+  // Comme le glisser du cœur (canvas/placeables/token.mjs:1106) : un joueur ne bouge pas pendant la pause.
+  if ( game.paused && !game.user.isGM ) {
+    ui.notifications.warn("GAME.PausedWarning", { localize: true });
+    return false;
+  }
+  stopWalking(token);
+  const options = { [MODULE_ID]: { planned: true, ...flags } };
+  const state = { stopped: false, flags: options[MODULE_ID] };
+  walks.set(token, state);
+  try { return await walkMoves(token, plan, options, state); }
+  finally { if ( walks.get(token) === state ) walks.delete(token); }
+}
+
+async function walkMoves(token, plan, options, state) {
   // §17.4 : le chemin a été planifié dans le mode réel du token (une créature qui vole restée en mode marche) : on le lui donne.
   const mode = effectiveMode(token);
   if ( mode !== token.movementAction ) await token.update({ movementAction: mode }, { [MODULE_ID]: { altitude: true } });
   for ( const move of movesOf(plan.waypoints) ) {
+    if ( state.stopped ) return false;
     const change = (move.at(-1).action === "displace") && move.at(-1).level ? move.at(-1) : null;
     const from = token._source.level;
     // §16.15 : un objet qui n'occupe pas son espace (Main de Bigby) traverse les créatures — option `ignoreTokens` que
     // dnd5e lit dans les options de contrainte (canvas/token.mjs:88), passées par le cœur (documents/token.mjs:1723).
     const constrainOptions = isIntangible(token) ? { ignoreTokens: true } : undefined;
-    const done = await token.move(move.map(({ climb, ...w }) => w), { showRuler: rulerShown(), ...(constrainOptions ? { constrainOptions } : {}), [MODULE_ID]: { planned: true, ...flags } });
+    const done = await token.move(checkpointed(move), { showRuler: rulerShown(), ...(constrainOptions ? { constrainOptions } : {}), ...options });
     // Dans un onglet masqué l'animation ne se termine jamais : on n'attend pas indéfiniment. Un pas `displace` qui change de niveau
     // (escalier) n'a rien à attendre : téléporté sur un niveau que la vue n'affiche pas encore, le token ne finit jamais son animation
     // et chaque escalier coûtait les 10 s du filet (vu le 2026-09-29 : 22 à 24 s l'aller-retour du scénario `escaliers`, §38.8).
-    const animation = change ? null : token.object?.movementAnimationPromise;
+    // Une marche arrêtée aussi : on attend que le token ait fini d'aller au point de contrôle où le cœur l'a laissé.
+    const animation = change && !state.stopped ? null : token.object?.movementAnimationPromise;
     if ( animation ) await Promise.race([animation, new Promise(resolve => setTimeout(resolve, 10000))]);
-    if ( done === false ) return false;
+    if ( state.stopped || (done === false) ) return false;
     if ( change ) {
       if ( token._source.level !== change.level ) return false;   // le cœur n'a pas changé de niveau : on n'insiste pas
       await chargeClimb(token, change.climb);

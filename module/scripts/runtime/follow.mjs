@@ -24,7 +24,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { footprintDistance } from "../core/orders.mjs";
-import { footprintOf } from "../adapter/movement.mjs";
+import { footprintOf, continuedFlags } from "../adapter/movement.mjs";
 import { combatantFor } from "../adapter/turn.mjs";
 import { joinToken, followTrail } from "./actions.mjs";
 import { route } from "./router.mjs";
@@ -156,7 +156,9 @@ function onUpdateToken(token, changes, options) {
   if ( !MOVED.some(k => k in changes) ) return;
   // Le suiveur déplacé autrement que par le suivi : il est repris en main, l'ordre tombe (chez celui qui l'a donné).
   const own = orderOf(token);
-  if ( own && (own.by === game.user.id) && !options?.[MODULE_ID]?.follow ) {
+  // §99 : un morceau de marche du suivi que le cœur enchaîne lui-même n'a plus les options du moteur — c'est encore le suivi.
+  const flags = options?.[MODULE_ID] ?? continuedFlags(token, options?._movement?.[token.id]);
+  if ( own && (own.by === game.user.id) && !flags?.follow ) {
     unfollow(token).catch(err => console.warn(`${MODULE_ID} | fin du suivi de ${token.name}`, err));
   }
   // Un meneur déplacé sans trajet (téléporté, posé ailleurs) : pas de piste, le suiveur rejoint par l'A*.

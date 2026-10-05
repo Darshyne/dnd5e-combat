@@ -20,7 +20,7 @@ import { isObjectToken } from "../adapter/bodies.mjs";
 import { pilotOf, pilotOfActor, commandPlan, commandDistance, commandActivities, summonerToken, isIntangible, groupTokens, transposeOf } from "../adapter/pilot.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { contentOf } from "../adapter/content.mjs";
-import { planPath, previewPath, walk, cellUnder, footprintOf, sizeOf, cellOf, stairsEntry, rulerShown } from "../adapter/movement.mjs";
+import { planPath, previewPath, walk, stopAllWalks, continuedFlags, cellUnder, footprintOf, sizeOf, cellOf, stairsEntry, rulerShown } from "../adapter/movement.mjs";
 import { hasLineOfSight, canSeePoint, isVisionAvailable } from "../adapter/vision.mjs";
 import { victimsOf, sizeRankOf } from "../adapter/grapple.mjs";
 import { basicActionOf } from "../adapter/basics.mjs";
@@ -884,7 +884,8 @@ function onPreMoveToken(token, movement, operation) {
  * repart, marqué comme déjà contrôlé. Vaut pour le clic, le glisser et le clavier, MJ compris.
  */
 function opportunityFirst(token, movement, operation) {
-  if ( operation?.[MODULE_ID]?.cleared ) return true;
+  // §99 : un morceau de marche du moteur que le cœur enchaîne lui-même n'a plus les options du moteur — il est déjà contrôlé.
+  if ( (operation?.[MODULE_ID] ?? continuedFlags(token, movement))?.cleared ) return true;
   const waypoints = [...movement.passed.waypoints, ...movement.pending.waypoints];
   const threats = opportunityThreats(token, waypoints);
   if ( !threats.length ) return true;
@@ -993,4 +994,6 @@ export function registerActions() {
   route("dnd5e.postUseActivity", onDashUsed, { label: "ruée en ligne droite : déplacement" });
   route("dnd5e.preCreateMeasuredTemplate", onDashTemplate, { cancellable: true, label: "ruée en ligne droite : pas de zone" });
   route("preMoveToken", onPreMoveToken, { cancellable: true, label: "déplacement : plafond et attaques d'opportunité" });
+  // §99 : la pause arrête les marches du moteur lancées depuis ce client (chacun arrête les siennes, Hooks.callAll partout).
+  route("pauseGame", paused => { if ( paused ) stopAllWalks(); }, { label: "pause : arrêt des marches" });
 }

@@ -14,7 +14,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { afterTeleportOptions } from "./teleport-options.mjs";
 import { naturalOneFor } from "./natural-one.mjs";
 import { perfApi } from "./perf.mjs";
-import { planPath, stairsOf, cellOf, stairsDestinations } from "../adapter/movement.mjs";
+import { planPath, stairsOf, cellOf, stairsDestinations, stopWalking } from "../adapter/movement.mjs";
 import { combatantFor, readBudget, movementOf } from "../adapter/turn.mjs";
 import { useIssues } from "./turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
@@ -111,15 +111,23 @@ function movement({ tokenId }) {
 /**
  * Déplace le token comme un clic de déplacement (`moveTo` : A*, portes, escaliers, attaques d'opportunité, budget), et
  * attend qu'il soit arrivé. Rend les positions avant / après et les fenêtres ouvertes pendant le déplacement (le
- * dialogue « Change Level » du cœur s'il s'est ouvert).
+ * dialogue « Change Level » du cœur s'il s'est ouvert). §99 : `stopAfterMs` arrête la marche en route (comme un clic ailleurs),
+ * `pauseAfterMs` met le jeu en pause en route (et l'en sort à l'arrivée).
  */
-async function move({ tokenId, cell, point, levelId, action }) {
+async function move({ tokenId, cell, point, levelId, action, stopAfterMs, pauseAfterMs }) {
   const token = tokenOf({ tokenId });
   const target = cellArg(token, { cell, point });
   const opened = new Set(foundry.applications.instances.keys());
   const before = positionOf(token);
   const started = Date.now();
-  await moveTo(token, token.parent.grid.getCenterPoint(target), { action: action ?? null, level: levelId ?? null });
+  const timers = [];
+  if ( Number.isFinite(stopAfterMs) ) timers.push(setTimeout(() => stopWalking(token), stopAfterMs));
+  if ( Number.isFinite(pauseAfterMs) ) timers.push(setTimeout(() => game.togglePause(true, { broadcast: true }), pauseAfterMs));
+  try { await moveTo(token, token.parent.grid.getCenterPoint(target), { action: action ?? null, level: levelId ?? null }); }
+  finally {
+    timers.forEach(clearTimeout);
+    if ( Number.isFinite(pauseAfterMs) && game.paused ) game.togglePause(false, { broadcast: true });
+  }
   const after = positionOf(token);
   const newWindows = windows().filter(w => !opened.has(w.id));
   return { before, after, elapsedMs: Date.now() - started, viewedLevel: canvas.level?.id ?? null, newWindows };

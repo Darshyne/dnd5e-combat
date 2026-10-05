@@ -23,7 +23,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { placementOf, alignPath, modeShift, coherentElevation, speedFor } from "../core/altitude.mjs";
-import { rulerShown } from "../adapter/movement.mjs";
+import { rulerShown, continuedFlags } from "../adapter/movement.mjs";
 import { boundsUnder, levelAt, clearanceOf, modeRefusalFor, groundModeOf, effectiveMode, grantSpeedFor, revokeSpeedsBut, grantedSpeedEffects } from "../adapter/altitude.mjs";
 import { pilotOf, isIntangible } from "../adapter/pilot.mjs";
 import { route } from "./router.mjs";
@@ -227,7 +227,7 @@ function verticalMove(token, last) {
 }
 
 function onPreMoveToken(token, movement, operation) {
-  const flags = operation?.[MODULE_ID];
+  const flags = operation?.[MODULE_ID] ?? continuedFlags(token, movement);   // §99 : morceau enchaîné par le cœur
   if ( flags?.cleared || flags?.altitude || operation?.isUndo || !concerned(token) ) return true;
   const waypoints = [...movement.passed.waypoints, ...movement.pending.waypoints];
   if ( !waypoints.length ) return true;

@@ -284,3 +284,17 @@ describe("sous-classes de Ravenloft (§95)", () => {
     expect(validateEntry({ hitRider: { save: "Oqz9j7aHHPnRKdD9", whileActive: "oui" } }).length).toBeGreaterThan(0);
   });
 });
+
+describe("Collège des esprits (§96)", () => {
+  it("contenu valide", () => {
+    for ( const id of ["avenger-spirit", "brute-spirit", "coward-spirit", "fortune-teller-spirit", "priest-spirit", "shade-spirit", "empowered-channeling"] ) {
+      expect(validateEntry(CONTENT[id], { facts: { "activity.isMelee": true, "source.hasEffect": true, "activity.classSpell": true, "activity.cantripOf": true, "activity.type": true } }), id).toEqual([]);
+    }
+    expect(CONTENT["coward-spirit"].effectStatuses).toEqual({ HKUw9TEea19fIOjW: ["frightened"] });
+    expect(CONTENT["avenger-spirit"].noDamage).toEqual(["bUvbdWWaJyHezUM8"]);
+  });
+  it("refus", () => {
+    expect(validateEntry({ effectStatuses: { HKUw9TEea19fIOjW: [] } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ effectStatuses: { court: ["frightened"] } }).length).toBeGreaterThan(0);
+  });
+});

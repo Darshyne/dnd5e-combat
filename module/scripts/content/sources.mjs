@@ -41,6 +41,14 @@ export const SOURCE_IDENTIFIERS = Object.freeze({
   rhwSSShadowWalqT: "shadow-walk",
   rhwHWWrathofth3C: "wrath-of-the-wild",
   rhwHWAncientMibA: "ancient-might",
+  // §96 : Collège des esprits.
+  rhwCSAvengerSpv2: "avenger-spirit",
+  rhwCSBruteSpir1q: "brute-spirit",
+  rhwCSCowardSpi34: "coward-spirit",
+  rhwCSFortuneTeZz: "fortune-teller-spirit",
+  rhwCSPriestSpi36: "priest-spirit",
+  rhwCSShadeSpirvt: "shade-spirit",
+  rhwCSEmpoweredtO: "empowered-channeling",
   // §88 : la Parade du Maître de guerre (Manuel des joueurs) porte l'identifiant « parry » de la Parade du Monster Manual (§74), dont la
   // règle diffère (CA + maîtrise contre réduction des dégâts) : reconnue par sa source.
   phbmnvParry00000: "parry-maneuver"

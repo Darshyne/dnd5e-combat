@@ -172,6 +172,8 @@
  *                                               tour, pas les deux (§77 : Nuage fétide du Dretch, Lenteur)
  *     potionEffect?: <id d'effet>                le sort que la potion fait lancer ne pose que cet effet (§53 : Croissance →
  *                                               « agrandir » d'Agrandissement/rapetissement, Rapetissement → « rapetisser »)
+ *     effectStatuses?: { <id d'effet>: string[] }  §96 : états ajoutés à cet effet de l'item quand il est posé (Esprit couard :
+ *                                               l'effet « Frightened » de la donnée n'a pas l'état)
  *     effectChanges?: { <id d'effet>: [{ key, type, value }] }
  *                                               changements ajoutés à cet effet de l'item quand il est posé (§53 : Vol, Escalade —
  *                                               les données ne donnent pas la vitesse) ; `value: "@walk"` = la vitesse au sol du porteur
@@ -566,7 +568,7 @@ export const EFFECT_ENDS = Object.freeze(["casterTurnStart", "casterTurnEnd", "b
 /** Ce qui ouvre une attaque en action Bonus (`bonusAttack.after`). */
 export const BONUS_ATTACK_AFTER = Object.freeze(["critical", "felled"]);
 
-export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "swapPlaces", "sweep", "commandStrike", "casterPulse", "zoneEnd", "afterTeleport", "saveDamage", "onNatural1", "searchBonus", "atZero", "afterSneak", "changesForm", "actionOrBonus"]);
+export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "swapPlaces", "sweep", "commandStrike", "casterPulse", "zoneEnd", "afterTeleport", "saveDamage", "onNatural1", "searchBonus", "atZero", "afterSneak", "effectStatuses", "changesForm", "actionOrBonus"]);
 export const CHOICE_EFFECTS = Object.freeze(["one"]);
 /** §38, §90 : les jets auxquels un `rollBonus` s'ajoute. */
 export const ROLL_BONUS_ON = Object.freeze(["save", "check", "attack", "initiative"]);
@@ -1063,6 +1065,10 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   }
   if ( ("saveDamage" in entry) && !(isObject(entry.saveDamage) && Object.keys(entry.saveDamage).length
     && Object.entries(entry.saveDamage).every(([id, v]) => isId(id) && ["none", "half"].includes(v))) ) errors.push(`${at}saveDamage : { <id d'activité>: none|half }`);
+  if ( ("effectStatuses" in entry) && !(isObject(entry.effectStatuses) && Object.keys(entry.effectStatuses).length
+    && Object.entries(entry.effectStatuses).every(([id, list]) => isId(id) && Array.isArray(list) && list.length && list.every(s => (typeof s === "string") && s))) ) {
+    errors.push(`${at}effectStatuses : { <id d'effet>: [états] }`);
+  }
   if ( ("atZero" in entry) && !(isObject(entry.atZero) && isId(entry.atZero.activity)
     && (!("save" in entry.atZero) || (isObject(entry.atZero.save) && (typeof entry.atZero.save.ability === "string") && (typeof entry.atZero.save.dc === "string")))
     && (!("whileEffect" in entry.atZero) || ((typeof entry.atZero.whileEffect === "string") && entry.atZero.whileEffect))
@@ -1442,6 +1448,7 @@ export function mergeEntries(layers) {
     for ( const key of ["swapPlaces", "sweep", "commandStrike", "zoneEnd", "onNatural1"] ) if ( key in layer ) out[key] = { ...layer[key] };   // §90, §91, §93
     if ( "casterPulse" in layer ) out.casterPulse = JSON.parse(JSON.stringify(layer.casterPulse));   // §91
     if ( "searchBonus" in layer ) out.searchBonus = { ...layer.searchBonus };   // §94
+    if ( "effectStatuses" in layer ) out.effectStatuses = JSON.parse(JSON.stringify(layer.effectStatuses));   // §96
     if ( "atZero" in layer ) out.atZero = JSON.parse(JSON.stringify(layer.atZero));   // §95
     if ( "afterSneak" in layer ) out.afterSneak = { ...layer.afterSneak };   // §95
     if ( "saveDamage" in layer ) out.saveDamage = { ...(out.saveDamage ?? {}), ...layer.saveDamage };   // §92

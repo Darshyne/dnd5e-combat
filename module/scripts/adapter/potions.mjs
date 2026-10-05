@@ -63,6 +63,21 @@ export const fromPotion = item => isPotion(item) || !!potionOfCast(item);
  * égale à votre Vitesse », que les données du Guide ne donnent pas). `@walk` : la vitesse au sol du porteur, lue à la pose.
  * Rend le nombre de changements ajoutés.
  */
+/**
+ * §96 : un effet d'item auquel le contenu ajoute des états (`effectStatuses` — Esprit couard : « Frightened » sans l'état dans la donnée).
+ * Rend le nombre d'états ajoutés.
+ */
+export function completeEffectStatuses(effect) {
+  if ( effect.parent?.documentName !== "Actor" ) return 0;
+  const rules = contentOf(originItemOf(effect)).entry?.effectStatuses;
+  const key = rules ? Object.keys(rules).find(id => comesFromItemEffect(effect, id)) : null;
+  if ( !key ) return 0;
+  const current = Array.from(effect._source.statuses ?? []);
+  const added = rules[key].filter(s => !current.includes(s));
+  if ( added.length ) effect.updateSource({ statuses: [...current, ...added] });
+  return added.length;
+}
+
 export function completeEffectChanges(effect) {
   const actor = effect.parent;
   if ( actor?.documentName !== "Actor" ) return 0;

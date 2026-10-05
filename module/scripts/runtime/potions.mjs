@@ -5,7 +5,7 @@
  * (pas un sort lancé), ui/pointer.mjs (rien à viser).
  */
 
-import { potionOfCast, notePotionCast, stampCachedSpell, completeEffectChanges } from "../adapter/potions.mjs";
+import { potionOfCast, notePotionCast, stampCachedSpell, completeEffectChanges, completeEffectStatuses } from "../adapter/potions.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 
@@ -25,6 +25,8 @@ export function registerPotions() {
   route("preCreateActiveEffect", effect => {
     const n = completeEffectChanges(effect);
     if ( n ) log(`${effect.parent?.name ?? "?"} : ${effect.name} complété (${n} changement(s))`);
+    const s = completeEffectStatuses(effect);   // §96
+    if ( s ) log(`${effect.parent?.name ?? "?"} : ${effect.name} complété (${s} état(s))`);
   }, { label: "potion : effet non complété" });
   route("preCreateItem", (item, data) => { if ( stampCachedSpell(item, data) ) log(`${item.name} : lancé par une potion`); },
     { label: "potion : sort lancé non marqué" });

@@ -148,6 +148,36 @@ export const RAVENLOFT = Object.freeze({
   // transformation elle-même : au MJ. Représailles rôdeuses (attaque d'opportunité) : au MJ.
   "wrath-of-the-wild": { emanation: { on: "ownTurnStart", affects: "enemy", activity: "Lz2jHFS3S8PB3Yyy", radius: 10, units: "ft", whileActive: true } },
   // Puissance ancestrale — Frappes menaçantes : contre une créature Effrayée, + modificateur de Sagesse aux dégâts (du type de l'arme) ; Courroux persistant : à 0 PV sans mourir sous Courroux sauvage, PV = 2 × niveau de Rôdeur.
+  /* §96 : Collège des esprits — les Esprits d'outre-tombe (« Unleash » : une créature visible à 9 m). Incendiaire, Bien-aimé, Tireur
+     d'élite, Farceur, Voyageur : la donnée suffit. */
+
+  // Esprit vengeur : « jusqu'à la fin de votre prochain tour, toute créature qui touche la cible d'une attaque au corps à corps subit des
+  // dégâts de force égaux à un dé d'Inspiration » — la part de dégâts de l'activité ne blesse pas la cible (l'allié protégé) : c'est
+  // celle de la riposte (`damage` vers la source, l'effet « Avenger Spirit » porté par la cible).
+  "avenger-spirit": {
+    noDamage: ["bUvbdWWaJyHezUM8"],
+    triggers: [{ on: "isHit", via: "effect", fromEffect: "e96hqFRAlTYwkiMD", if: { "activity.isMelee": true }, do: [{ type: "damage", to: "source", activity: "bUvbdWWaJyHezUM8" }] }]
+  },
+  // Esprit brute : « chaque créature de votre choix dans une émanation de 9 m depuis la cible » — Force, 3 dés et À terre sur un échec.
+  "brute-spirit": { zoneAffects: "enemy", triggers: [{ on: "failedSave", do: [{ type: "status", status: "prone" }] }] },
+  // Esprit couard : Sagesse ou Effrayé jusqu'au début de votre prochain tour, Vitesse réduite de moitié, une action OU une action Bonus
+  // — l'effet de la donnée porte la Vitesse, pas l'état.
+  "coward-spirit": { zoneAffects: "enemy", effectStatuses: { HKUw9TEea19fIOjW: ["frightened"] }, actionOrBonus: true },
+  // Esprit diseur de bonne aventure : « l'Avantage aux Tests d20 » — l'effet de la donnée fait les tests et sauvegardes, pas les attaques.
+  "fortune-teller-spirit": { triggers: [{ on: "preAttackRoll", via: "effect", fromEffect: "WLZAxHnr32KEwxxu", if: { "source.hasEffect": "fortune-teller-spirit" }, do: [{ type: "advantage" }] }] },
+  // Esprit prêtre : le soin, et « l'un de ces états de votre choix prend fin ».
+  "priest-spirit": { cures: ["blinded", "charmed", "deafened", "paralyzed", "poisoned", "stunned"] },
+  // Esprit de l'ombre : Invisible « jusqu'à la fin de son prochain tour, ou jusqu'à ce qu'elle attaque, inflige des dégâts ou lance un
+  // sort ». L'émanation de 1,50 m quand l'invisibilité prend fin (« Emanate and End ») : au MJ.
+  "shade-spirit": { breaksOn: ["attack", "damage", "spell"] },
+  // Canalisation renforcée, Puissance d'outre-tombe : « une fois par tour, quand vous lancez un sort de Barde avec un emplacement qui
+  // inflige des dégâts, lancez 1d6 et ajoutez-le » (aux soins : au MJ). Manifestation spirituelle (abri des Esprits gardiens) : au MJ.
+  "empowered-channeling": {
+    triggers: [{ on: "preDamageRoll", oncePerTurn: true,
+      if: { "activity.classSpell": "bard", not: { "activity.cantripOf": "bard" }, "activity.type": ["attack", "save", "damage"] },
+      do: [{ type: "damage", formula: "1d6", damageType: "weapon" }] }]
+  },
+
   "ancient-might": {
     atZero: { activity: "pVReuhjfvDIn7X5B", whileEffect: "wrath-of-the-wild" },
     triggers: [{ on: "preDamageRoll", if: { "activity.isAttack": true, "target.hasStatus": "frightened" }, do: [{ type: "damage", formula: "@abilities.wis.mod", damageType: "weapon" }] }]

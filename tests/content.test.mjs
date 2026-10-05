@@ -51,7 +51,7 @@ describe("validation d'une entrée", () => {
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["save", "check"] } }, { facts })).toEqual([]);
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["attack"] } }, { facts })).toEqual([]);
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["check"], skills: ["ste"] } }, { facts })).toEqual([]);
-    expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["damage"] } }, { facts })).toEqual(["rollBonus : { activity, on: [save | check | attack | initiative], skills? }"]);
+    expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["damage"] } }, { facts })).toEqual(["rollBonus : { activity, on: [save | check | attack | initiative], skills?, statuses? }"]);
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["check"], skills: [] } }, { facts })).toHaveLength(1);
   });
 
@@ -165,19 +165,20 @@ describe("contenu livré", () => {
       "echoing-soul", "eldritch-blast", "eldritch-smite", "elemental-affinity", "elemental-fury", "elemental-weapon",
       "elixir-of-health", "elusive", "empowered-evocation", "energy-drain", "engulf", "enhance-ability", "enlarge-reduce",
       "ensnaring-strike", "entangle", "entangling-trail", "evards-black-tentacles", "evasion", "evasive-footwork", "eyebite",
-      "faerie-fire", "fear", "fear-aura", "feinting-attack", "fell-word", "feral-strike", "fetid-aura", "fetid-cloud",
-      "fey-ancestry", "find-familiar", "fire-aura", "fire-shield", "fires-burn", "flame-aura", "flame-blade",
+      "faerie-fire", "fear", "fear-aura", "feinting-attack", "fell-word", "feral-pounce", "feral-strike", "fetid-aura",
+      "fetid-cloud", "fey-ancestry", "find-familiar", "fire-aura", "fire-shield", "fires-burn", "flame-aura", "flame-blade",
       "flaming-sphere", "flask-of-holy-water", "flesh-to-stone", "flyby", "foe-slayer", "fog-cloud", "forbiddance",
-      "forceful-hand", "frenzied-rush", "frenzy", "friends", "frosts-chill", "gaseous-form", "giant-insect", "gibbering",
-      "goading-attack", "grasping-hand", "grease", "great-weapon-fighting", "great-weapon-master", "greater-portent",
-      "guidance", "guiding-bolt", "gust-of-wind", "haste", "healers-kit", "heat-aura", "heat-metal", "heightened-spell",
-      "hellish-rebuke", "heroic-warrior", "hex", "hideous-laughter", "hills-tumble", "hold-monster", "hold-person",
-      "holy-aura", "holy-water", "hunger-of-hadar", "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife",
-      "illusory-self", "improved-cunning-strike", "innate-sorcery", "instinctive-pounce", "invisibility", "invoke-duplicity",
-      "lamp", "lantern-hooded", "large-form", "leading-evasion", "lesser-restoration", "life-drain", "lifedrinker", "light",
-      "living-shadow", "lunar-form", "lunging-attack", "mage-hand", "magic-missile", "magic-resistance",
-      "maneuvering-attack", "marshal-undead", "martial-arts", "melfs-acid-arrow", "menacing-attack", "mind-sliver",
-      "minor-illusion", "mirror-image", "mislead", "misty-escape", "misty-step", "monks-focus", "moonbeam", "moonlight-step",
+      "forceful-hand", "frenzied-rush", "frenzy", "friends", "frosts-chill", "gaseous-form", "gathered-whispers",
+      "giant-insect", "gibbering", "goading-attack", "grasping-hand", "grease", "great-weapon-fighting",
+      "great-weapon-master", "greater-portent", "guidance", "guiding-bolt", "gust-of-wind", "haste", "healers-kit",
+      "heat-aura", "heat-metal", "heightened-spell", "hellish-rebuke", "heroic-warrior", "hex", "hideous-laughter",
+      "hills-tumble", "hold-monster", "hold-person", "holy-aura", "holy-water", "hunger-of-hadar", "hunters-mark",
+      "hunters-prey", "hypnotic-pattern", "ice-knife", "illusory-self", "improved-cunning-strike", "innate-sorcery",
+      "instinctive-pounce", "invisibility", "invoke-duplicity", "knowledge-from-a-past-life", "lamp", "lantern-hooded",
+      "large-form", "leading-evasion", "lesser-restoration", "life-drain", "lifedrinker", "light", "living-shadow",
+      "lunar-form", "lunging-attack", "lupin-howl", "mage-hand", "magic-missile", "magic-resistance", "maneuvering-attack",
+      "marshal-undead", "martial-arts", "melfs-acid-arrow", "menacing-attack", "mind-sliver", "minor-illusion",
+      "mirror-image", "mislead", "mist-walker", "misty-escape", "misty-step", "monks-focus", "moonbeam", "moonlight-step",
       "nimble-escape", "oil", "open-hand-technique", "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade",
       "parry", "parry-maneuver", "pass-without-trace", "path-to-the-grave", "persistent-rage", "phantasmal-force",
       "phantasmal-killer", "portent", "potent-cantrip", "potion-of-animal-friendship", "potion-of-climbing",
@@ -188,20 +189,21 @@ describe("contenu livré", () => {
       "ray-of-enfeeblement", "ray-of-frost", "reckless-attack", "regeneration", "relentless-endurance", "relentless-rage",
       "resistance", "resurrection", "revivify", "riposte", "rumbling-movement", "sanctuary", "sanguine-drain",
       "scorching-ray", "sculpt-spells", "sear-undead", "searing-smite", "sentinel-at-deaths-door", "shadow-stealth",
-      "shadowy-dodge", "shield", "shillelagh", "shining-smite", "shocking-grasp", "sickening-vapors", "silence", "slam",
-      "sleep", "sleet-storm", "slow", "smelting-charge", "sneak-attack", "spare-the-dying", "spell-resistance",
-      "spike-growth", "spirit-guardians", "spirit-shroud", "spiritual-weapon", "staggering-smite", "starry-wisp",
-      "steady-aim", "stench", "steps-of-the-fey", "stinking-cloud", "stomp", "stones-endurance", "storm-of-vengeance",
-      "stormborn", "storms-thunder", "studied-attacks", "stunning-strike", "subtle-spell", "suggestion", "summon-aberration",
-      "summon-beast", "summon-celestial", "summon-construct", "summon-dragon", "summon-elemental", "summon-fey",
-      "summon-fiend", "summon-undead", "sunburst", "supreme-healing", "swallow", "sweeping-attack", "swoop",
-      "symbiotic-being", "symbol", "tactical-assessment", "tactical-charge", "tactical-shift", "tashas-hideous-laughter",
-      "telekinetic", "thorn-whip", "thrown-weapon-fighting", "thunderous-smite", "thunderwave", "tinderbox", "toll-the-dead",
-      "torch", "trampling-charge", "tricksters-transposition", "trip-attack", "true-resurrection", "true-strike", "tsunami",
-      "umbral-dagger", "unarmed-strike", "uncanny-dodge", "undead-fortitude", "vampiric-bite", "vicious-mockery",
-      "vile-appearance", "vitriolic-sphere", "vow-of-enmity", "wall-of-fire", "wall-of-thorns", "war-caster", "war-priest",
-      "warding-bond", "warding-flare", "watchers", "watery-rush", "web", "weird", "wild-companion", "wild-resurgence",
-      "witch-bolt", "wrath-of-the-sea", "wrathful-smite", "yolandes-regal-presence"
+      "shadowy-dodge", "sharp-eye-ravenloft", "shield", "shillelagh", "shining-smite", "shocking-grasp", "sickening-vapors",
+      "silence", "slam", "sleep", "sleet-storm", "slow", "smelting-charge", "sneak-attack", "spare-the-dying",
+      "spell-resistance", "spike-growth", "spirit-guardians", "spirit-shroud", "spiritual-weapon", "staggering-smite",
+      "starry-wisp", "steady-aim", "stench", "steps-of-the-fey", "stinking-cloud", "stomp", "stones-endurance",
+      "storm-of-vengeance", "stormborn", "storms-thunder", "studied-attacks", "stunning-strike", "subtle-spell",
+      "suggestion", "summon-aberration", "summon-beast", "summon-celestial", "summon-construct", "summon-dragon",
+      "summon-elemental", "summon-fey", "summon-fiend", "summon-undead", "sunburst", "supreme-healing", "survivor-ravenloft",
+      "swallow", "sweeping-attack", "swoop", "symbiotic-being", "symbol", "tactical-assessment", "tactical-charge",
+      "tactical-shift", "tashas-hideous-laughter", "telekinetic", "thorn-whip", "thrown-weapon-fighting", "thunderous-smite",
+      "thunderwave", "tinderbox", "toll-the-dead", "torch", "trampling-charge", "tricksters-transposition", "trip-attack",
+      "true-resurrection", "true-strike", "tsunami", "umbral-dagger", "unarmed-strike", "uncanny-dodge", "undead-fortitude",
+      "vampiric-bite", "vicious-mockery", "vile-appearance", "vitriolic-sphere", "vow-of-enmity", "wall-of-fire",
+      "wall-of-thorns", "war-caster", "war-priest", "warding-bond", "warding-flare", "watchers", "watery-rush", "web",
+      "weird", "wild-companion", "wild-resurgence", "witch-bolt", "wrath-of-the-sea", "wrathful-smite",
+      "yolandes-regal-presence"
     ]);
     expect(CONTENT["aura-of-protection"].aura.radius).toBe(10);
     expect(CONTENT.hex.triggers).toHaveLength(1);

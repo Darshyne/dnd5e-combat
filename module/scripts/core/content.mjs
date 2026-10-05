@@ -129,6 +129,9 @@
  *                                               rejeu (un compteur que ses dés lisent) ; `away: { distance, units }` : la zone
  *                                               s'éloigne d'abord du lanceur ; `untilSpent` : le sort prend fin quand l'item n'a plus
  *                                               d'utilisation (Tsunami)
+ *     searchBonus?: { formula?, advantage? }    §94 : à l'action Chercher (runtime/search.mjs), un dé ajouté au test (`formula` :
+ *                                               Guetteurs, 1d4) ou l'Avantage (`advantage` : Œil vif — une utilisation de l'item,
+ *                                               dépensée seulement si le test trouve quelqu'un)
  *     onNatural1?: { activity }                 §93 : juste après un Test d20 de la créature dont le d20 fait 1, elle utilise
  *                                               l'activité (Dons sombres de Ravenloft : sa sauvegarde, sur elle-même)
  *     zoneEnd?: { activity }                    §91 : quand la zone qui dure de l'item prend fin (concentration, durée, retirée), le
@@ -390,7 +393,8 @@
  *                                               ténébreux) : le jet de l'activité (`roll.formula`), qui dépense ses consommations ;
  *                                               `on` : "save" (ratée, lue par le moteur), "attack" (ratée, §90 Attaque précise),
  *                                               "check" (tout test, sitôt lancé), "initiative" (§90) ; `skills` : les seules
- *                                               compétences dont le test compte (Embuscade : ["ste"])
+ *                                               compétences dont le test compte (Embuscade : ["ste"]) ; §94 `statuses` : une
+ *                                               sauvegarde seulement pour éviter ou finir l'un de ces états (Survivant)
  *     transpose?: { summon }                    échanger sa place avec l'invocation pilotée de l'item `summon` (identifiant),
  *                                               quand l'action Bonus la crée ou la déplace (§38.2, Troc du filou ; core/pilot.mjs)
  *     portent?: { dice }                        Présage (§36) : `dice` d20 notés à chaque Repos long (Présage : 2 ; Présage
@@ -554,7 +558,7 @@ export const EFFECT_ENDS = Object.freeze(["casterTurnStart", "casterTurnEnd", "b
 /** Ce qui ouvre une attaque en action Bonus (`bonusAttack.after`). */
 export const BONUS_ATTACK_AFTER = Object.freeze(["critical", "felled"]);
 
-export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "swapPlaces", "sweep", "commandStrike", "casterPulse", "zoneEnd", "afterTeleport", "saveDamage", "onNatural1", "changesForm", "actionOrBonus"]);
+export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "swapPlaces", "sweep", "commandStrike", "casterPulse", "zoneEnd", "afterTeleport", "saveDamage", "onNatural1", "searchBonus", "changesForm", "actionOrBonus"]);
 export const CHOICE_EFFECTS = Object.freeze(["one"]);
 /** §38, §90 : les jets auxquels un `rollBonus` s'ajoute. */
 export const ROLL_BONUS_ON = Object.freeze(["save", "check", "attack", "initiative"]);
@@ -1051,6 +1055,10 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   }
   if ( ("saveDamage" in entry) && !(isObject(entry.saveDamage) && Object.keys(entry.saveDamage).length
     && Object.entries(entry.saveDamage).every(([id, v]) => isId(id) && ["none", "half"].includes(v))) ) errors.push(`${at}saveDamage : { <id d'activité>: none|half }`);
+  if ( ("searchBonus" in entry) && !(isObject(entry.searchBonus) && Object.keys(entry.searchBonus).length
+    && (!("formula" in entry.searchBonus) || ((typeof entry.searchBonus.formula === "string") && entry.searchBonus.formula))
+    && (!("advantage" in entry.searchBonus) || (entry.searchBonus.advantage === true))
+    && Object.keys(entry.searchBonus).every(k => ["formula", "advantage"].includes(k))) ) errors.push(`${at}searchBonus : { formula?, advantage?: true }`);
   if ( "afterTeleport" in entry ) {
     const t = entry.afterTeleport;
     if ( !isObject(t) || !Array.isArray(t.spells) || !t.spells.length || !t.spells.every(x => (typeof x === "string") && x)
@@ -1287,8 +1295,8 @@ function validateRogue(entry, at, errors) {
     && Object.keys(entry.metamagic).every(k => ["activity", "kind"].includes(k))) ) errors.push(`${at}metamagic : { activity, kind: ${METAMAGIC_KINDS.join(" | ")} }`);
   if ( ("rollBonus" in entry) && !(isObject(entry.rollBonus) && isId(entry.rollBonus.activity) && Array.isArray(entry.rollBonus.on)
     && entry.rollBonus.on.length && entry.rollBonus.on.every(k => ROLL_BONUS_ON.includes(k))
-    && (!("skills" in entry.rollBonus) || (Array.isArray(entry.rollBonus.skills) && entry.rollBonus.skills.length && entry.rollBonus.skills.every(k => (typeof k === "string") && k)))
-    && Object.keys(entry.rollBonus).every(k => ["activity", "on", "skills"].includes(k))) ) errors.push(`${at}rollBonus : { activity, on: [${ROLL_BONUS_ON.join(" | ")}], skills? }`);
+    && ["skills", "statuses"].every(key => !(key in entry.rollBonus) || (Array.isArray(entry.rollBonus[key]) && entry.rollBonus[key].length && entry.rollBonus[key].every(k => (typeof k === "string") && k)))
+    && Object.keys(entry.rollBonus).every(k => ["activity", "on", "skills", "statuses"].includes(k))) ) errors.push(`${at}rollBonus : { activity, on: [${ROLL_BONUS_ON.join(" | ")}], skills?, statuses? }`);
   if ( ("transpose" in entry) && !(isObject(entry.transpose) && (typeof entry.transpose.summon === "string") && entry.transpose.summon
     && Object.keys(entry.transpose).every(k => k === "summon")) ) errors.push(`${at}transpose : { summon } (identifiant de l'item d'invocation)`);
   if ( ("portent" in entry) && !(isObject(entry.portent) && Number.isInteger(entry.portent.dice) && (entry.portent.dice > 0)
@@ -1418,6 +1426,7 @@ export function mergeEntries(layers) {
     if ( "rolledAc" in layer ) out.rolledAc = { ...layer.rolledAc };   // §89
     for ( const key of ["swapPlaces", "sweep", "commandStrike", "zoneEnd", "onNatural1"] ) if ( key in layer ) out[key] = { ...layer[key] };   // §90, §91, §93
     if ( "casterPulse" in layer ) out.casterPulse = JSON.parse(JSON.stringify(layer.casterPulse));   // §91
+    if ( "searchBonus" in layer ) out.searchBonus = { ...layer.searchBonus };   // §94
     if ( "saveDamage" in layer ) out.saveDamage = { ...(out.saveDamage ?? {}), ...layer.saveDamage };   // §92
     if ( "afterTeleport" in layer ) out.afterTeleport = JSON.parse(JSON.stringify(layer.afterTeleport));   // §92
     if ( "effectsIf" in layer ) out.effectsIf = layer.effectsIf;   // §71

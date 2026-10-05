@@ -24,6 +24,14 @@ export const SOURCE_IDENTIFIERS = Object.freeze({
   rhwLivingShadow2: "living-shadow",
   rhwSymbioticBein: "symbiotic-being",
   rhwWatchersGH8OL: "watchers",
+  rhwGatheredWhisp: "gathered-whispers",
+  // §94 : dons et traits d'espèce.
+  rhwSurvivor2zrM3: "survivor-ravenloft",
+  rhwMistWalkerlge: "mist-walker",
+  rhwSharpEyev8PBf: "sharp-eye-ravenloft",
+  rhwKnowledgefraL: "knowledge-from-a-past-life",
+  rhwHowlA3f2I58L3: "lupin-howl",
+  rhwFeralPounce7E: "feral-pounce",
   // §88 : la Parade du Maître de guerre (Manuel des joueurs) porte l'identifiant « parry » de la Parade du Monster Manual (§74), dont la
   // règle diffère (CA + maîtrise contre réduction des dégâts) : reconnue par sa source.
   phbmnvParry00000: "parry-maneuver"

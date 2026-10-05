@@ -11,6 +11,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { originItemOf } from "./facts.mjs";
 import { identifierOf, contentOf } from "./content.mjs";
 import { askChoice } from "./choices.mjs";
+import { combatantFor, readBudget, writeBudget } from "./turn.mjs";
 
 const t = (key, data) => game.i18n.format(`DND5ECOMBAT.Inspiration.${key}`, data ?? {});
 
@@ -53,6 +54,23 @@ export async function offerInspiration(actor, { what, total, needed }) {
 }
 
 /**
+ * §94 : la formule du jet de l'activité, lue avant qu'elle ne paie — « @consumed.hd » (Symbiose : « dépensez un dé de vie, lancez-le »)
+ * devient le dé que la consommation va dépenser (le plus grand ou le plus petit restant). null si rien à lancer.
+ */
+function rollFormulaOf(activity) {
+  let formula = activity?.roll?.formula;
+  if ( !formula ) return null;
+  if ( formula.includes("@consumed.hd") ) {
+    const hd = activity.actor?.system?.attributes?.hd;
+    const which = activity.consumption?.targets?.find(t => t.type === "hitDice")?.target;
+    const die = (which === "smallest") ? hd?.smallestAvailable : hd?.largestAvailable;
+    if ( !die || (die === "d0") ) return null;
+    formula = formula.replaceAll("@consumed.hd", `1${die}`);
+  }
+  return formula;
+}
+
+/**
  * Ce qui reste pour payer l'activité : le plus petit nombre d'utilisations restantes parmi celles qu'elle consomme — de son item, ou
  * d'un autre (§90 : les manœuvres paient sur la Supériorité martiale ; dnd5e a déjà ramené la cible à l'id de l'item de l'acteur,
  * `_remapConsumptionTarget`). Infinity si rien de compté.
@@ -61,6 +79,9 @@ export function usesLeftFor(activity) {
   let left = Infinity;
   const count = item => (item && Number(item.system.uses?.max)) ? Math.max(0, Number(item.system.uses.value) || 0) : Infinity;
   for ( const t of activity?.consumption?.targets ?? [] ) {
+    // §94 : les utilisations de l'activité elle-même (Se ressaisir : une fois par repos long), les dés de vie (Symbiose).
+    if ( t.type === "activityUses" ) { if ( Number(activity.uses?.max) ) left = Math.min(left, Math.max(0, Number(activity.uses.value) || 0)); continue; }
+    if ( t.type === "hitDice" ) { left = Math.min(left, Math.max(0, Number(activity.actor?.system?.attributes?.hd?.value) || 0)); continue; }
     if ( t.type !== "itemUses" ) continue;
     left = Math.min(left, count(t.target ? activity.actor?.items.get(t.target) : activity.item));
   }
@@ -75,17 +96,23 @@ export function usesLeftFor(activity) {
  * l'activité est utilisée par dnd5e (ses consommations dépensées), son jet (`roll.formula`) lancé en clair et rendu. Rend le résultat à
  * ajouter, ou 0. `needed` absent (un test sans DD connu) : la question ne donne que le total.
  * @param {Actor} actor
- * @param {{kind: "save"|"check"|"attack"|"initiative", what: string, total: number, needed?: number, skill?: string}} context
+ * @param {{kind: "save"|"check"|"attack"|"initiative", what: string, total: number, needed?: number, skill?: string,
+ *   statuses?: string[]}} context  `statuses` : les états que la sauvegarde évite ou fait finir (Survivant).
  */
-export async function offerRollBonus(actor, { kind, what, total, needed=null, skill=null }) {
+export async function offerRollBonus(actor, { kind, what, total, needed=null, skill=null, statuses=[] }) {
   for ( const item of actor?.items ?? [] ) {
     const rule = contentOf(item).entry?.rollBonus;
     if ( !rule || !(rule.on ?? []).includes(kind) ) continue;
     if ( (kind === "check") && rule.skills && !rule.skills.includes(skill) ) continue;
+    if ( rule.statuses && !rule.statuses.some(s => statuses.includes(s)) ) continue;
     const activity = item.system.activities?.get(rule.activity);
-    const formula = activity?.roll?.formula;
+    const formula = rollFormulaOf(activity);
     const left = usesLeftFor(activity);
     if ( !activity || !formula || !(left > 0) ) continue;
+    // §94 : une activité de Réaction (Symbiose, Se ressaisir) n'est proposée que si la Réaction est libre ; elle est dépensée.
+    const reaction = activity.activation?.type === "reaction";
+    const combatant = reaction ? combatantFor(actor) : null;
+    if ( combatant && !((readBudget(combatant).reaction ?? 1) >= 1) ) continue;
     const shown = Number.isFinite(left) ? left : "∞";
     const answer = await askChoice(actor, {
       actor: actor.uuid, item: item.name,
@@ -95,8 +122,12 @@ export async function offerRollBonus(actor, { kind, what, total, needed=null, sk
       options: [{ id: "no", label: game.i18n.localize("DND5ECOMBAT.BonusJet.Non") }, { id: "yes", label: game.i18n.format("DND5ECOMBAT.BonusJet.Oui", { formula }) }]
     });
     if ( answer?.id !== "yes" ) continue;
-    const used = await activity.use({ [MODULE_ID]: { confirmed: true } }, { configure: false }, { create: false }).catch(() => null);
+    // Des utilisations d'activité sans maximum dans la donnée (Se ressaisir : « une fois par repos long », non chiffré) : dnd5e refuserait
+    // l'utilisation faute de quoi payer — rien à décompter, elle se fait sans consommer.
+    const untracked = (activity.consumption?.targets ?? []).some(t => t.type === "activityUses") && !Number(activity.uses?.max);
+    const used = await activity.use({ [MODULE_ID]: { confirmed: true }, ...(untracked ? { consume: false } : {}) }, { configure: false }, { create: false }).catch(() => null);
     if ( !used ) return 0;
+    if ( combatant ) { const budget = readBudget(combatant); await writeBudget(combatant, { ...budget, reaction: Math.max(0, (budget.reaction ?? 1) - 1) }); }
     const roll = await new Roll(formula, activity.getRollData?.() ?? actor.getRollData()).evaluate();
     await roll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }),
       flavor: game.i18n.format("DND5ECOMBAT.BonusJet.CarteTotal", { item: item.name, name: actor.name, what, total, sum: total + roll.total }),

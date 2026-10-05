@@ -109,6 +109,9 @@ function affordable(activityUuid) {
   }
   const ownUses = (activity.consumption?.targets ?? []).some(t => (t.type === "itemUses") && !t.target);
   if ( ownUses && Number(item.system.uses?.max) && !((Number(item.system.uses.value) || 0) > 0) ) return false;
+  // §94 : les utilisations de l'activité elle-même (Cri surnaturel : bonus de maîtrise par repos long).
+  const activityUses = (activity.consumption?.targets ?? []).some(t => t.type === "activityUses");
+  if ( activityUses && Number(activity.uses?.max) && !((Number(activity.uses.value) || 0) > 0) ) return false;
   // §88 : les utilisations d'un AUTRE item (les manœuvres : Supériorité martiale ; dnd5e a déjà ramené la cible, uuid de compendium ou
   // identifiant, à l'id de l'item de l'acteur — data/activity/base-activity.mjs, `_remapConsumptionTarget`).
   for ( const t of activity.consumption?.targets ?? [] ) {

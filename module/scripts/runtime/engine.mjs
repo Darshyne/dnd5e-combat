@@ -622,10 +622,23 @@ async function onSaveMessage(message) {
     const bonus = actor ? await offerInspiration(actor, { what: loc("Inspiration.Sauvegarde"), total, needed: dc }) : 0;
     if ( bonus ) { log(`${actor.name} : Inspiration bardique, sauvegarde ${total} + ${bonus} = ${total + bonus}`); total += bonus; }
     // §38 : Chance du ténébreux — encore ratée, la créature peut ajouter son propre dé (`rollBonus`).
-    const luck = (actor && (total < dc)) ? await offerRollBonus(actor, { kind: "save", what: loc("Inspiration.Sauvegarde"), total, needed: dc }) : 0;
+    const luck = (actor && (total < dc)) ? await offerRollBonus(actor, { kind: "save", what: loc("Inspiration.Sauvegarde"), total, needed: dc, statuses: saveStatuses(carrier, resolution) }) : 0;
     if ( luck ) { log(`${actor.name} : dé ajouté à sa sauvegarde, ${total} + ${luck} = ${total + luck}`); total += luck; }
   }
   await dispatcher.send(carrierId, { type: "saveRolled", actor: save.actor, total, messageId: message.id, ...(resisted ? { resisted: true } : {}) });
+}
+
+/**
+ * §94 : les états qu'une sauvegarde évite (ceux des effets de l'activité) ou fait finir (l'effet d'une sauvegarde répétée) — Survivant,
+ * « pour éviter ou mettre fin à l'état Charmé ou Effrayé ».
+ */
+function saveStatuses(carrier, resolution) {
+  const out = new Set();
+  const item = carrier?.getAssociatedActivity?.()?.item;
+  for ( const e of resolution?.plan?.effects ?? [] ) for ( const s of item?.effects?.get(e?.id ?? e)?.statuses ?? [] ) out.add(s);
+  const resave = carrier?.getFlag?.(MODULE_ID, "resave")?.effect;
+  for ( const s of (resave ? fromUuidSync(resave, { strict: false })?.statuses : null) ?? [] ) out.add(s);
+  return Array.from(out);
 }
 
 /**

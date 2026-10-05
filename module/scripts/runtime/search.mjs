@@ -14,6 +14,7 @@ import { hiddenEffectsOf } from "../adapter/hide.mjs";
 import { searchCandidates, perceptionRollParts } from "../adapter/search.mjs";
 import { usageTokenOf } from "../adapter/turn.mjs";
 import { searchRollMode, searchVerdicts } from "../core/search.mjs";
+import { contentOf } from "../adapter/content.mjs";
 import { route } from "./router.mjs";
 import { log, loc, notice } from "./shared.mjs";
 
@@ -38,7 +39,12 @@ async function onPostUse(activity) {
   if ( !actor || !searcher ) return;
   const candidates = searchCandidates(searcher);
   const mode = searchRollMode(candidates);
-  const rolls = await actor.rollSkill({ skill: "prc", disadvantage: mode === "disadvantage" }, { configure: false });
+  // §94 : ce que les traits ajoutent à la fouille — un dé (Guetteurs), l'Avantage (Œil vif, une utilisation de l'item s'il en reste).
+  const bonuses = actor.items.map(i => ({ item: i, rule: contentOf(i).entry?.searchBonus })).filter(b => b.rule);
+  const parts = bonuses.map(b => b.rule.formula).filter(Boolean);
+  const keen = bonuses.find(b => b.rule.advantage && (!Number(b.item.system.uses?.max) || (Number(b.item.system.uses.value) > 0)));
+  const rolls = await actor.rollSkill({ skill: "prc", disadvantage: mode === "disadvantage", ...(keen ? { advantage: true } : {}),
+    ...(parts.length ? { rolls: [{ parts }] } : {}) }, { configure: false });
   const roll = rolls?.[0];
   if ( !Number.isFinite(roll?.total) ) return;
   const verdicts = searchVerdicts(candidates, perceptionRollParts(roll));
@@ -46,6 +52,9 @@ async function onPostUse(activity) {
   log(`chercher : ${actor.name} (${roll.total}, ${mode}) — `
     + (verdicts.map(v => `${byId.get(v.id)?.name} DD ${v.dc} : ${v.found ? "trouvé" : "non"} (${v.reason}${v.total !== undefined ? ` ${v.total}` : ""})`).join(" ; ") || "aucune créature cachée"));
   const found = verdicts.filter(v => v.found).map(v => byId.get(v.id)).filter(Boolean);
+  // Œil vif : « si le test échoue, l'utilisation n'est pas dépensée ».
+  if ( keen && found.length && Number(keen.item.system.uses?.max) ) await keen.item.update({ "system.uses.spent": (Number(keen.item.system.uses.spent) || 0) + 1 });
+  if ( parts.length || keen ) log(`chercher : ${[...parts, ...(keen ? [`Avantage (${keen.item.name})`] : [])].join(", ")}`);
   for ( const token of found ) {
     await reveal(token);
     notice(token, loc("Chercher.Trouve"), "ended");

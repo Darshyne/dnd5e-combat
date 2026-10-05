@@ -69,6 +69,8 @@ export default {
       const since = await ctx.lastMessageId();
       const r = await ctx.engine("rollCheck", { tokenId: fighter.id, skill: "ath" });
       if ( (r?.d20 ?? 1) > 1 ) other = since;
+      // Un autre 1 : sa sauvegarde (et sa chaîne) arrive après — attendue avant le jet suivant, pour ne pas la lui attribuer.
+      else { await pause(5000); await clear(); }
     }
     await pause(2000);
     ctx.expect(!!other && !(await saveOf(other)), "un autre résultat : aucune sauvegarde");

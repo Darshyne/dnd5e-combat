@@ -71,9 +71,18 @@ export const RAVENLOFT = Object.freeze({
   "living-shadow": { onNatural1: { activity: "zitGmITljzBRXTkm" } },
   // Être symbiotique, Dessein symbiotique : Charisme ou Charmé 1d12 heures ; « chaque fois que vous subissez des dégâts, vous pouvez
   // rejouer cette sauvegarde ». Ce que le symbiote ordonne : au MJ.
+  // §94 : Symbiose entretenue — « quand vous ratez une sauvegarde, par une Réaction, dépensez un dé de vie, lancez-le et ajoutez-le »
+  // (l'activité au plus grand dé de vie restant).
   "symbiotic-being": {
     onNatural1: { activity: "R2FWsJAlulJ2Mqpa" },
+    rollBonus: { activity: "hcNtMh74vYh07G7k", on: ["save"] },
     triggers: [{ on: "isDamaged", via: "effect", fromEffect: "m06eYs6ZVerPzasy", do: [{ type: "resave" }] }]
+  },
+  // Murmures rassemblés : Voix d'outre-tombe au 1 naturel (Sagesse) ; §94 Cri surnaturel — « quand vous êtes touché par un jet
+  // d'attaque, par une Réaction, ajoutez votre bonus de maîtrise à votre CA contre cette attaque » (comme la Parade du MM).
+  "gathered-whispers": {
+    onNatural1: { activity: "sGkDp5LeqKujiO7s" },
+    triggers: [{ on: "isHit", do: [{ type: "use", activity: "UXNlglsSGecujPQD" }, { type: "penalty", formula: "@prof" }] }]
   },
   // Guetteurs, Guetteurs incessants : Sagesse ou Désavantage aux Tests d20 pendant 1 minute, sauvegarde rejouée à la fin de chacun de
   // vos tours. L'effet « Paranoïa » de la donnée met le Désavantage aux tests et aux sauvegardes ; les jets d'attaque (des Tests d20
@@ -83,6 +92,34 @@ export const RAVENLOFT = Object.freeze({
     triggers: [
       { on: "endOfTurn", via: "effect", fromEffect: "Off49UhYxymqhOrO", do: [{ type: "resave" }] },
       { on: "preAttackRoll", via: "effect", fromEffect: "Off49UhYxymqhOrO", if: { "source.hasEffect": "watchers" }, do: [{ type: "disadvantage" }] }
-    ]
-  }
+    ],
+    // §94 : Soupçon accru — « à l'action Chercher, lancez 1d4 et ajoutez-le ».
+    searchBonus: { formula: "1d4" }
+  },
+
+  /* §94 : dons (Survivant, Marcheur des brumes, Œil vif) et espèces (Né-de-nouveau, Lupin). */
+
+  // Survivant, Se ressaisir : une sauvegarde ratée pour éviter ou finir Charmé ou Effrayé — par une Réaction, + bonus de maîtrise (une
+  // fois par repos long : les utilisations de l'activité). Hypervigilance (relancer une initiative de 9 ou moins) : au MJ.
+  "survivor-ravenloft": { rollBonus: { activity: "9wAIIWcBr8lwp7Rm", on: ["save"], statuses: ["charmed", "frightened"] } },
+  // Marcheur des brumes, Marche des brumes : « quand vous subissez des dégâts, par une Réaction, téléportez-vous jusqu'à 4,50 m » (la
+  // visée de la téléportation s'ouvre après la réaction). Sur une sauvegarde ratée contre Agrippé ou Entravé : au MJ.
+  "mist-walker": {
+    triggers: [{ on: "isDamaged", do: [{ type: "use", activity: "nJFQptHB2QvgTiCA" }] }],
+    teleport: { distance: 15, units: "ft", activity: "nJFQptHB2QvgTiCA" }
+  },
+  // Œil vif : l'Avantage aux tests de l'action Chercher (l'action Étudier : au MJ).
+  "sharp-eye-ravenloft": { searchBonus: { advantage: true } },
+  // Né-de-nouveau, Savoir d'une vie passée : « quand vous ratez un test de caractéristique, ajoutez 1d6 » — proposé sitôt le test
+  // lancé (le DD n'est pas connu du moteur).
+  "knowledge-from-a-past-life": { rollBonus: { activity: "3JqLx79wBu1mq9WP", on: ["check"] } },
+  // Lupin, Hurlement : « chaque créature de votre choix à 4,50 m » (la zone de la donnée ; les alliés épargnés) — Sagesse ou Désavantage
+  // aux jets d'attaque et sauvegardes jusqu'au début de votre prochain tour (l'effet de la donnée ne fait que les sauvegardes).
+  "lupin-howl": {
+    zoneAffects: "enemy",
+    triggers: [{ on: "preAttackRoll", via: "effect", fromEffect: "TCo6F7H9E70wJeB5", if: { "source.hasEffect": "lupin-howl" }, do: [{ type: "disadvantage" }] }]
+  },
+  // Lupin, Bond féroce : un coup à mains nues qui touche permet AUSSI la Bousculade (une fois par tour) — sa sauvegarde (Force ou
+  // Dextérité), À terre sur un échec ; repousser de 1,50 m à la place : au MJ.
+  "feral-pounce": { hitRider: { save: "rW3uaSjC7gS5YQnM", item: "feral-pounce", oncePerTurn: true } }
 });

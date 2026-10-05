@@ -251,3 +251,19 @@ describe("Dons sombres : 1 naturel (§93)", async () => {
     expect(validateEntry({ onNatural1: { activity: "court" } }).length).toBeGreaterThan(0);
   });
 });
+
+describe("dons et espèces de Ravenloft (§94)", () => {
+  it("contenu valide", () => {
+    for ( const id of ["gathered-whispers", "symbiotic-being", "survivor-ravenloft", "mist-walker", "sharp-eye-ravenloft", "knowledge-from-a-past-life", "lupin-howl", "feral-pounce", "watchers"] ) {
+      expect(validateEntry(CONTENT[id], { facts: { "source.hasEffect": true } }), id).toEqual([]);
+    }
+    expect(CONTENT["survivor-ravenloft"].rollBonus).toEqual({ activity: "9wAIIWcBr8lwp7Rm", on: ["save"], statuses: ["charmed", "frightened"] });
+    expect(CONTENT["feral-pounce"].hitRider).toEqual({ save: "rW3uaSjC7gS5YQnM", item: "feral-pounce", oncePerTurn: true });
+    expect(CONTENT.watchers.searchBonus).toEqual({ formula: "1d4" });
+  });
+  it("refus", () => {
+    expect(validateEntry({ searchBonus: {} }).length).toBeGreaterThan(0);
+    expect(validateEntry({ searchBonus: { advantage: "oui" } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ rollBonus: { activity: "9wAIIWcBr8lwp7Rm", on: ["save"], statuses: [] } }).length).toBeGreaterThan(0);
+  });
+});

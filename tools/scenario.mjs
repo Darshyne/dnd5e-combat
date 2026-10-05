@@ -53,7 +53,17 @@ function makeContext(mcp) {
     async engine(fn, args={}, { timeoutMs=60000 }={}) {
       const before = new Set((await callEngine(mcp, "windows")).map(w => w.id));
       const until = Date.now() + timeoutMs;
-      let r = await mcp.call("call-module-api", { moduleId: MODULE_ID, fn, args, waitMs: 8000 });
+      // Un changement de niveau de la vue du MJ (escalier pris, la vue suit le token) redessine tout le canevas
+      // (documents/scene.mjs:273-281) : le temps du dessin, les fonctions de test répondent « aucune scène affichée » ou
+      // « non dessiné ». On attend que le canevas revienne (15 s au plus) plutôt que d'interrompre le scénario (vu dans `escaliers`).
+      let r;
+      for ( const redrawn = Date.now() + 15000; !r; ) {
+        try { r = await mcp.call("call-module-api", { moduleId: MODULE_ID, fn, args, waitMs: 8000 }); }
+        catch(err) {
+          if ( !/aucune scène affichée|non dessiné/.test(err.message) || (Date.now() > redrawn) ) throw err;
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
       while ( !r.settled ) {
         if ( Date.now() > until ) {
           const stuck = (await callEngine(mcp, "windows")).filter(w => !before.has(w.id));

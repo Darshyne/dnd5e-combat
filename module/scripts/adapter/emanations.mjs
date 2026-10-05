@@ -8,6 +8,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { readEmanationText } from "../core/emanation.mjs";
 import { contentOf } from "./content.mjs";
 import { englishDescription } from "./multiattack.mjs";
+import { originItemOf } from "./facts.mjs";
 
 const ACTING = ["save", "damage", "attack"];
 
@@ -22,8 +23,13 @@ function actingActivity(item, rule) {
   return null;
 }
 
-/** Rayon de l'émanation : le contenu, le gabarit de l'activité, sa portée. */
+/** Rayon de l'émanation : le contenu (valeur, ou §92 formule lue sur le porteur), le gabarit de l'activité, sa portée. */
 function radiusOf(activity, rule) {
+  if ( rule.radiusFormula ) {
+    let r = NaN;
+    try { r = Number(dnd5e.utils.simplifyBonus(rule.radiusFormula, activity.actor?.getRollData?.() ?? {})); } catch { /* formule illisible */ }
+    if ( r > 0 ) return { radius: r, units: rule.units };
+  }
   if ( rule.radius ) return { radius: rule.radius, units: rule.units };
   const template = activity.target?.template;
   const size = Number(template?.size);
@@ -43,6 +49,8 @@ export function emanationsOf(actor) {
   for ( const item of actor?.items ?? [] ) {
     const rule = contentOf(item).entry?.emanation;
     if ( !rule?.on ) continue;
+    // §92 : « pendant 10 minutes » (Ange vengeur) — seulement tant qu'un effet de l'item est sur le porteur.
+    if ( rule.whileActive && !(actor.effects ?? []).some(e => !e.disabled && (originItemOf(e)?.uuid === item.uuid)) ) continue;
     const activity = actingActivity(item, rule);
     const reach = activity ? radiusOf(activity, rule) : null;
     if ( !reach ) {

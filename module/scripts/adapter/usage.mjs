@@ -132,7 +132,9 @@ function saveOf(activity) {
   const dc = activity.save?.dc?.value;
   const abilities = Array.from(activity.save?.ability ?? []).filter(Boolean);
   if ( !Number.isFinite(dc) || !abilities.length ) return null;
-  return { ability: abilities[0], abilities, dc, onSave: activity.damage?.onSave ?? "half", activity: activity.uuid };
+  // §92 : la règle prime sur la donnée (`saveDamage` : Foulée effroyable, rien sur une réussite).
+  const onSave = contentOf(activity.item).entry?.saveDamage?.[activity.id] ?? activity.damage?.onSave ?? "half";
+  return { ability: abilities[0], abilities, dc, onSave, activity: activity.uuid };
 }
 
 /** Descripteurs de cible du message, réduits à ce que le cœur attend. */

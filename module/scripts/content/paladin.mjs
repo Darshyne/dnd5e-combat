@@ -42,5 +42,16 @@ export const PALADIN = Object.freeze({
   // qu'elle porte, venu du paladin.
   "vow-of-enmity": { triggers: [{ on: "preAttackRoll", via: "effect", if: { "target.hasEffectFrom": "vow-of-enmity" }, do: [{ type: "advantage" }] }] },
   // Abjuration des ennemis (niveau 9) : « Effrayé pendant 1 minute ou jusqu'à ce qu'elle subisse des dégâts ».
-  "abjure-foes": { triggers: [{ on: "isDamaged", via: "effect", do: [{ type: "remove" }] }] }
+  "abjure-foes": { triggers: [{ on: "isDamaged", via: "effect", do: [{ type: "remove" }] }] },
+  // §92 : Ange vengeur (Serment de vengeance 20), Aura terrifiante — tant que l'Ange vengeur est actif (son effet sur le paladin), un
+  // ennemi qui commence son tour dans l'Aura de protection fait la sauvegarde de Sagesse d'« Aura terrifiante », Effrayé pendant 1 minute
+  // « ou jusqu'à ce qu'il subisse des dégâts » ; « les jets d'attaque contre la créature Effrayée ont l'Avantage ». Le vol : l'effet de
+  // la donnée.
+  "avenging-angel": {
+    emanation: { on: "turnStart", affects: "enemy", activity: "UV3wzKmXpqDjWDAy", radiusFormula: "@scale.paladin.aura", radius: 10, units: "ft", whileActive: true },
+    triggers: [
+      { on: "isDamaged", via: "effect", fromEffect: "ucmM8P37dhbuz8eK", do: [{ type: "remove" }] },
+      { on: "preAttackRoll", via: "effect", fromEffect: "ucmM8P37dhbuz8eK", if: { "target.hasEffect": "avenging-angel" }, do: [{ type: "advantage" }] }
+    ]
+  }
 });

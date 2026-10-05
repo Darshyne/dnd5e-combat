@@ -213,3 +213,21 @@ describe("sorts au tour du lanceur (§91)", () => {
     expect(validateEntry({ zoneEnd: { activity: "court" } }).length).toBeGreaterThan(0);
   });
 });
+
+describe("Foulée des fées, Échappatoire brumeuse, Ange vengeur (§92)", () => {
+  it("contenu", () => {
+    expect(CONTENT["steps-of-the-fey"].afterTeleport.options).toEqual([{ activity: "QUbshQXhUDQqlu2s" }, { activity: "48TdRWDqCVcC9mh4", around: "left" }]);
+    expect(CONTENT["misty-escape"].saveDamage).toEqual({ kj8zIhPbjs4UIHtc: "none" });
+    expect(CONTENT["avenging-angel"].emanation).toMatchObject({ on: "turnStart", affects: "enemy", radiusFormula: "@scale.paladin.aura", whileActive: true });
+    for ( const id of ["steps-of-the-fey", "misty-escape", "avenging-angel"] ) {
+      expect(validateEntry(CONTENT[id], { facts: { "source.hasEffect": true, "source.hasEffectFromTarget": true, "target.hasEffect": true } }), id).toEqual([]);
+    }
+  });
+  it("refus", () => {
+    expect(validateEntry({ afterTeleport: { spells: [], options: [{ activity: "QUbshQXhUDQqlu2s" }] } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ afterTeleport: { spells: ["misty-step"], options: [{ activity: "QUbshQXhUDQqlu2s", around: "near" }] } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ saveDamage: { kj8zIhPbjs4UIHtc: "full" } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ emanation: { on: "turnStart", radiusFormula: "@scale.paladin.aura" } }).length).toBeGreaterThan(0);   // sans unité
+    expect(validateEntry({ emanation: { on: "turnStart", whileActive: "oui" } }).length).toBeGreaterThan(0);
+  });
+});

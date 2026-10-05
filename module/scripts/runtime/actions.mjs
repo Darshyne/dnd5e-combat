@@ -36,6 +36,7 @@ function centerOf(token) {
 }
 import { opportunityThreats, resolveOpportunity } from "./reactions.mjs";
 import { route } from "./router.mjs";
+import { afterTeleportOptions } from "./teleport-options.mjs";
 import { loc, notice, log } from "./shared.mjs";
 
 /* -------------------------------------------- */
@@ -228,17 +229,20 @@ export async function teleportSelf(activity) {
   const object = token?.object ?? null;
   if ( !rule || !object ) return false;
   teleporting = { token, limit: teleportLimit(activity, token.parent) };
+  // §92 : la case quittée, pour les options de la Foulée des fées (créatures à 1,50 m de l'espace quitté).
+  const from = { x: token._source.x, y: token._source.y, elevation: token._source.elevation ?? 0, level: token._source.level ?? null };
+  const done = async () => { await afterTeleport(activity, rule); await afterTeleportOptions(activity, token, from); return true; };
   try {
     for ( let attempt = 0; attempt < 5; attempt++ ) {
       object.control({ releaseOthers: true });
       refusedTeleports.delete(token.uuid);
       const results = rule.native ? await activity.planTeleport() : await planDeclaredTeleport(activity, object, rule);
-      if ( results?.some(r => r.moved) ) { await afterTeleport(activity, rule); return true; }
+      if ( results?.some(r => r.moved) ) return done();
       // §67 ter : une destination choisie d'un clic (`teleportClick`) — la planification du cœur, elle, s'est fermée sans rien.
       const chosen = teleporting.chosen;
       if ( chosen ) {
         teleporting.chosen = null;
-        if ( await teleportTo(activity, token, chosen) ) { await afterTeleport(activity, rule); return true; }
+        if ( await teleportTo(activity, token, chosen) ) return done();
         continue;   // refusée (case prise, hors de vue, trop loin) : la visée se rouvre
       }
       if ( !refusedTeleports.has(token.uuid) ) return false;   // abandonnée (Échap), pas refusée

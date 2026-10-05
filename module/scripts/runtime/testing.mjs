@@ -11,6 +11,7 @@
 import { boltAim, setBoltAim, strike } from "./storm.mjs";
 import { cloudOf, cloudCircle } from "../adapter/storm.mjs";
 import { MODULE_ID } from "../constants.mjs";
+import { afterTeleportOptions } from "./teleport-options.mjs";
 import { planPath, stairsOf, cellOf, stairsDestinations } from "../adapter/movement.mjs";
 import { combatantFor, readBudget, movementOf } from "../adapter/turn.mjs";
 import { useIssues } from "./turn.mjs";
@@ -370,7 +371,10 @@ async function teleport({ tokenId, itemId, x, y }) {
   const elevation = token._source.elevation ?? 0;
   const plans = [{ token: token.object, plan: { destination: { x, y, elevation } } }];
   const accepted = Hooks.call("dnd5e.teleport", activity, plans) !== false;
+  const from = { x: token._source.x, y: token._source.y, elevation, level: token._source.level ?? null };
   if ( accepted ) await token.move([{ x, y, elevation, action: "blink", snapped: true }], { [MODULE_ID]: { cleared: true } });
+  // §92 : les options de la Foulée des fées, comme après le vrai geste — sans les attendre (le scénario répond à la question).
+  if ( accepted ) afterTeleportOptions(activity, token, from).catch(err => console.error(err));
   return { accepted, position: positionOf(token) };
 }
 

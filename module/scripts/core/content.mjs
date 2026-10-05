@@ -170,13 +170,21 @@
  *                                               partielle, §16.47)
  *     advantageIfFighting?: true                avantage à la sauvegarde de la cible si elle est en combat contre le lanceur
  *                                               ou ses alliés (Charme-personne, §16.47)
- *     emanation?: { on, affects?, sees?, radius?, units?, activity? }
+ *     emanation?: { on, affects?, sees?, radius?, radiusFormula?, units?, activity?, whileActive? }
  *                                               aura de monstre qui agit (§18.11, M7) : à la fin du tour du porteur
  *                                               (`on: "ownTurnEnd"`, Aura de feu) ou au début du tour d'une créature qui s'y
  *                                               trouve (`"turnStart"`, Puanteur), l'activité de l'item (défaut : la première
  *                                               sauvegarde, dégâts ou attaque) joue sur elle. Rayon : le gabarit ou la portée
  *                                               de l'activité ; `affects: "enemy"` : « de son choix » ; `sees` : la créature
- *                                               doit voir le porteur. Le texte anglais dit le reste (core/emanation.mjs)
+ *                                               doit voir le porteur. Le texte anglais dit le reste (core/emanation.mjs) ;
+ *                                               §92 : `radiusFormula` (lue sur le porteur, avec `units` : l'Aura de protection
+ *                                               du Paladin) ; `whileActive` : seulement tant qu'un effet de l'item est sur le
+ *                                               porteur (Ange vengeur)
+ *     afterTeleport?: { spells, options: [{ activity, around? }] }
+ *                                               §92 : après une téléportation de soi par l'un de ces sorts (identifiants), l'effet
+ *                                               supplémentaire au choix de la créature (Foulée des fées) — l'activité utilisée sur
+ *                                               elle, ou (`around: "left"|"arrival"`) sur les créatures à 1,50 m de la case
+ *                                               quittée ou d'arrivée
  *     regeneration?: true                       Régénération d'un monstre (§18.13) : l'activité de soin de l'item joue au début
  *                                               du tour ; ce qui la coupe et « ne meurt qu'à 0 PV sans régénérer » se lisent
  *                                               dans le texte anglais (core/regeneration.mjs)
@@ -195,6 +203,8 @@
  *                                               Agrippé) fait de la cible un avalé — posée dans l'avaleur, qui l'emporte ;
  *                                               dégâts à chaque tour, seuil de régurgitation, lus dans le texte anglais
  *                                               (core/swallow.mjs)
+ *     saveDamage?: { <id d'activité>: "none"|"half" }  §92 : les dégâts sur une sauvegarde réussie, quand la donnée dit autre chose
+ *                                               que la règle (Foulée effroyable : « sous peine de subir 2d10 » — rien sur une réussite)
  *     savedEffects?: string[]                   ids d'effets de l'item posés seulement sur une sauvegarde RÉUSSIE (et jamais sur un
  *                                               échec) : Rayon affaiblissant — « sur une réussite, Désavantage à son prochain jet
  *                                               d'attaque » ; les données de dnd5e mettent les deux effets sur l'activité, sans
@@ -542,7 +552,7 @@ export const EFFECT_ENDS = Object.freeze(["casterTurnStart", "casterTurnEnd", "b
 /** Ce qui ouvre une attaque en action Bonus (`bonusAttack.after`). */
 export const BONUS_ATTACK_AFTER = Object.freeze(["critical", "felled"]);
 
-export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "swapPlaces", "sweep", "commandStrike", "casterPulse", "zoneEnd", "changesForm", "actionOrBonus"]);
+export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "swapPlaces", "sweep", "commandStrike", "casterPulse", "zoneEnd", "afterTeleport", "saveDamage", "changesForm", "actionOrBonus"]);
 export const CHOICE_EFFECTS = Object.freeze(["one"]);
 /** §38, §90 : les jets auxquels un `rollBonus` s'ajoute. */
 export const ROLL_BONUS_ON = Object.freeze(["save", "check", "attack", "initiative"]);
@@ -1037,6 +1047,15 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       for ( const key of Object.keys(f) ) if ( !["activity", "radius", "units"].includes(key) ) errors.push(`${at}onFell.${key} : clé inconnue`);
     }
   }
+  if ( ("saveDamage" in entry) && !(isObject(entry.saveDamage) && Object.keys(entry.saveDamage).length
+    && Object.entries(entry.saveDamage).every(([id, v]) => isId(id) && ["none", "half"].includes(v))) ) errors.push(`${at}saveDamage : { <id d'activité>: none|half }`);
+  if ( "afterTeleport" in entry ) {
+    const t = entry.afterTeleport;
+    if ( !isObject(t) || !Array.isArray(t.spells) || !t.spells.length || !t.spells.every(x => (typeof x === "string") && x)
+      || !Array.isArray(t.options) || !t.options.length || Object.keys(t).some(k => !["spells", "options"].includes(k))
+      || !t.options.every(o => isObject(o) && isId(o.activity) && (!("around" in o) || ["left", "arrival"].includes(o.around))
+        && Object.keys(o).every(k => ["activity", "around"].includes(k))) ) errors.push(`${at}afterTeleport : { spells: [identifiants], options: [{ activity, around?: left|arrival }] }`);
+  }
   if ( "casterPulse" in entry ) {
     const p = entry.casterPulse;
     const int = (n, min) => Number.isInteger(n) && (n >= min);
@@ -1184,9 +1203,11 @@ function validateEmanation(e, at, errors) {
   if ( ("affects" in e) && !["any", "enemy"].includes(e.affects) ) errors.push(`${at}.affects : any, enemy`);
   if ( ("sees" in e) && (e.sees !== true) ) errors.push(`${at}.sees : true ou absent`);
   if ( ("radius" in e) && !(Number.isFinite(e.radius) && (e.radius > 0)) ) errors.push(`${at}.radius : nombre positif`);
-  if ( ("radius" in e) && ((typeof e.units !== "string") || !e.units) ) errors.push(`${at}.units : unité requise avec un rayon`);
+  if ( (("radius" in e) || ("radiusFormula" in e)) && ((typeof e.units !== "string") || !e.units) ) errors.push(`${at}.units : unité requise avec un rayon`);
+  if ( ("radiusFormula" in e) && ((typeof e.radiusFormula !== "string") || !e.radiusFormula) ) errors.push(`${at}.radiusFormula : une formule`);
+  if ( ("whileActive" in e) && (e.whileActive !== true) ) errors.push(`${at}.whileActive : true ou absent`);
   if ( ("activity" in e) && !isId(e.activity) ) errors.push(`${at}.activity : id d'activité (16 caractères)`);
-  for ( const key of Object.keys(e) ) if ( !["on", "affects", "sees", "radius", "units", "activity"].includes(key) ) errors.push(`${at}.${key} : clé inconnue`);
+  for ( const key of Object.keys(e) ) if ( !["on", "affects", "sees", "radius", "radiusFormula", "units", "activity", "whileActive"].includes(key) ) errors.push(`${at}.${key} : clé inconnue`);
 }
 
 /** §20 : les parts de plus de l'Attaque sournoise et les Frappes rusées. */
@@ -1395,6 +1416,8 @@ export function mergeEntries(layers) {
     if ( "rolledAc" in layer ) out.rolledAc = { ...layer.rolledAc };   // §89
     for ( const key of ["swapPlaces", "sweep", "commandStrike", "zoneEnd"] ) if ( key in layer ) out[key] = { ...layer[key] };   // §90, §91
     if ( "casterPulse" in layer ) out.casterPulse = JSON.parse(JSON.stringify(layer.casterPulse));   // §91
+    if ( "saveDamage" in layer ) out.saveDamage = { ...(out.saveDamage ?? {}), ...layer.saveDamage };   // §92
+    if ( "afterTeleport" in layer ) out.afterTeleport = JSON.parse(JSON.stringify(layer.afterTeleport));   // §92
     if ( "effectsIf" in layer ) out.effectsIf = layer.effectsIf;   // §71
     if ( "contest" in layer ) out.contest = { ...layer.contest };   // §72
     if ( "forOneAttack" in layer ) out.forOneAttack = layer.forOneAttack;

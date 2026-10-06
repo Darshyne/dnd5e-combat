@@ -180,6 +180,15 @@ function difficultRegionsFor(token) {
 }
 
 /**
+ * §103 : les régions qu'un module demande à l'A* d'éviter (`flags.dnd5e-combat.avoid`, Darsh Loot : un piège repéré) —
+ * franchissables, mais à un coût tel que le chemin les contourne s'il le peut ; une destination dedans reste possible.
+ */
+const AVOID_COST = 20;
+function avoidRegionsFor(token) {
+  return token.parent.regions.filter(r => r.getFlag(MODULE_ID, "avoid") === true);
+}
+
+/**
  * Le monde tel que l'A* le voit, pour un token donné. Les réponses sont mises en cache : le monde
  * ne vit que le temps d'une recherche.
  */
@@ -345,6 +354,18 @@ function worldFor(token, { throughDoors=false }={}) {
     }
     return difficultCache.get(id);
   };
+  const avoid = avoidRegionsFor(token);
+  const avoidCache = new Map();
+  const avoidAt = cell => {
+    if ( !avoid.length ) return false;
+    const id = `${key(cell)}@${cell.level ?? ownLevel}`;
+    if ( !avoidCache.has(id) ) {
+      const base = elevationOf(cell);
+      const c = center(cell);
+      avoidCache.set(id, avoid.some(r => inRange(r, base) && r.polygonTree.testPoint(c, 0.75)));
+    }
+    return avoidCache.get(id);
+  };
   const transitions = cell => {
     if ( !stairs.length ) return [];
     const from = cell.level ?? ownLevel;
@@ -388,7 +409,8 @@ function worldFor(token, { throughDoors=false }={}) {
     wallFree: (from, to) => !wallBetween(from, to),
     doorBetween: (from, to) => (throughDoors && isOwn(to) && ownViewed ? doorBetween(from, to) : null),
     // Une porte à ouvrir coûte une case de plus à l'A* : on ne la préfère qu'au détour qu'elle évite.
-    stepCost: (from, to) => (throughDoors && isOwn(to) && ownViewed && doorBetween(from, to) ? 1 : 0) + ((difficultAt(to) || cellsOf(to).some(c => layer.isOccupiedGridSpaceDifficult?.({ ...c, k: kOf(to) }, object, { preview }))) ? 2 : 1),
+    stepCost: (from, to) => (throughDoors && isOwn(to) && ownViewed && doorBetween(from, to) ? 1 : 0) + ((difficultAt(to) || cellsOf(to).some(c => layer.isOccupiedGridSpaceDifficult?.({ ...c, k: kOf(to) }, object, { preview }))) ? 2 : 1)
+      + (avoidAt(to) ? AVOID_COST : 0),
     transitions,
     waypoint: cell => ({ ...grid.getTopLeftPoint(cell), snapped: true, ...altitude(cell) }),
     /** Le pas qui change de niveau : `displace` sur la case d'escalier `cell` du niveau `cell.level`, à sa base. */

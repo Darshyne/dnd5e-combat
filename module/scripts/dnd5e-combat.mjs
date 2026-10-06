@@ -56,6 +56,8 @@ import { registerAfterSneak } from "./runtime/after-sneak.mjs";
 import { registerSwallow } from "./runtime/swallow.mjs";
 import { registerBasics } from "./runtime/basics.mjs";
 import { basicActionData } from "./adapter/basics.mjs";
+import { stopAllWalks } from "./adapter/movement.mjs";
+import { budgetIssues, spendBudget } from "./runtime/neighbours.mjs";
 import { registerGrapple } from "./runtime/grapple.mjs";
 import { registerProne } from "./runtime/prone.mjs";
 import { registerBreaks } from "./runtime/breaks.mjs";
@@ -107,12 +109,17 @@ import { registerOil } from "./runtime/oil.mjs";
  * `light(token)` : la lumière où se tient un token (ui/illumination.mjs) — le même que `ui.light`, gardé à ce nom.
  * `approach(token, { cells, level })` : faire marcher un token par le chemin du moteur jusqu'à la plus proche des cases
  *   données (§39.1) — pour les modules (fouille de Darsh Loot) ; le moteur n'en connaît aucun.
+ * `stopWalks()` : arrêter les marches du moteur lancées par ce client (§102) — pour un module qui arrête tout (Darsh Loot : une
+ *   découverte) ; seul le client qui a lancé une marche peut l'arrêter.
+ * `budget.issues(actor, cost)` / `budget.spend(actor, cost)` : ce qui empêche une dépense du budget du tour, et la dépense
+ *   (chez le MJ actif) — pour une action d'un module (§102). Hors combat : rien ne coûte.
  * `scrolls.spellOf(item)` : le sort d'un parchemin `{ identifier, level, school }` ou null (§48) — pour la macro de reprise des
  *   parchemins du monde (tools/macros/reprendre-parchemins.js).
  */
 const state = {
   active: false, reason: null, unitFactors: null, routes: describeRoutes, content: contentApi, reports: reportsApi, mcp: testApi, perf: perfApi,
-  ui: uiApi, light: lightState, approach, scrolls: { spellOf: scrollSpellOf }, basics: { data: basicActionData }
+  ui: uiApi, light: lightState, approach, scrolls: { spellOf: scrollSpellOf }, basics: { data: basicActionData },
+  stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget }
 };
 
 /** Pourquoi le moteur doit rester en veille dans ce monde, ou null s'il peut tourner. */

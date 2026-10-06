@@ -779,8 +779,8 @@ function escapeLabel(token) {
   const endings = ownEndingsOf(actor);
   return (endings.length === 1) ? loc("Menu.MettreFin", { item: endings[0].item.name }) : loc("Menu.Echapper");
 }
-const hasSelfMenu = token => !!leaderOf(token) || canStandUp(token) || grappledSelf(token) || canDismiss(token) || !!revertActivityOf(token.actor) || (pilotOf(token) ? commandActivities(pilotOf(token), { self: true }).length > 0 : false)
-  || !!transposeOf(token);   // §38.2 : Troc du filou
+/** §102 : le menu de son propre token s'ouvre dès qu'il a une entrée — du moteur ou d'un module voisin. */
+const hasSelfMenu = token => selfEntries(token).length > 0;
 function selfEntries(token) {
   const entries = [];
   if ( canStandUp(token) ) entries.push({ icon: "fa-solid fa-person-arrow-up-from-line", label: loc("Menu.SeRelever"), run: () => standUp(token) });
@@ -800,8 +800,11 @@ function selfEntries(token) {
   // §41.3 : ce token suit quelqu'un.
   const leader = leaderOf(token);
   if ( leader ) entries.push({ icon: "fa-solid fa-person-walking-arrow-right", label: loc("Menu.NePlusSuivre", { name: leader.name }), run: () => unfollow(token) });
-  if ( entries.length && game.user.isGM ) entries.push({ icon: "fa-solid fa-gear", label: loc("Menu.Hud"), run: () => canvas.hud.token.bind(token.object) });
-  return entries;
+  // §102 : les modules voisins ajoutent aussi leurs entrées sur son propre token (hook `tokenMenu`, `target === token`).
+  const all = withNeighbourEntries(entries, token, token, false);
+  // Le menu remplace le HUD du cœur au clic droit : son propriétaire (pas seulement le MJ) le retrouve par cette entrée.
+  if ( all.length && token.isOwner ) all.push({ icon: "fa-solid fa-gear", label: loc("Menu.Hud"), run: () => canvas.hud.token.bind(token.object) });
+  return all;
 }
 
 /**

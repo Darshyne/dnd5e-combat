@@ -24,7 +24,15 @@ export default {
     const reset = async () => {
       const a = await actor();
       for ( const e of a.effects ?? [] ) if ( !baseEffects.has(e._id) ) await ctx.call("remove-embedded-effect", { documentType: "Actor", id: actorId, effectId: e._id }).catch(() => {});
-      for ( const i of a.items ?? [] ) if ( !baseItems.has(i._id) ) await ctx.call("remove-embedded-item", { documentType: "Actor", id: actorId, itemId: i._id }).catch(() => {});
+      // Les copies de sort d'abord laissées : retirer la potion les emporte (dnd5e, data/item/templates/activities.mjs:503-508) ; les
+      // retirer aussi faisait « Item … does not exist! » dans la console du MJ. On relit la fiche pour ce qui reste.
+      const removeAll = list => Promise.all(list.filter(i => !baseItems.has(i._id))
+        .map(i => ctx.call("remove-embedded-item", { documentType: "Actor", id: actorId, itemId: i._id }).catch(() => {})));
+      await removeAll((a.items ?? []).filter(i => !i.flags?.dnd5e?.cachedFor));
+      // dnd5e retire la copie sans l'attendre (`deleteEmbeddedDocuments` non attendu, :508) : relue trop tôt, elle était encore là et
+      // partait deux fois (Potion de rapidité, une passe sur deux). On lui laisse le temps.
+      if ( (a.items ?? []).some(i => !baseItems.has(i._id) && i.flags?.dnd5e?.cachedFor) ) await pause(1000);
+      await removeAll((await actor()).items ?? []);
       await ctx.call("update-actor", { actorId, actorData: { "system.attributes.hp.value": Math.max(1, (hp0 ?? 20) - 12), "system.attributes.hp.temp": 0 } });
     };
     ctx.restore(async () => { await reset(); if ( hp0 !== null ) await ctx.setHp(g, hp0); });
@@ -36,6 +44,9 @@ export default {
       for ( const e of (Array.isArray(r) ? r : (r?.entries ?? [])) ) if ( e.type === "consumable" ) potions.push({ pack, ...e });
     }
     const seen = new Set();
+    // Les erreurs de la console relevées potion par potion (le tampon se vide à chaque lecture) : chacune est rattachée à sa ligne.
+    const errors = [];
+    await ctx.clientErrors();
     for ( const p of potions ) {
       const uuid = p.uuid;
       const { data } = await ctx.call("get-compendium-entry", { uuid }).catch(() => ({ data: null }));
@@ -52,6 +63,7 @@ export default {
       if ( !first ) { ctx.log(`${id} : aucune activité`); continue; }
       const before = await actor();
       const since = await ctx.lastMessageId();
+      const windowsBefore = new Set((await ctx.engine("windows")).map(w => w.id));
       let outcome = "";
       try {
         const used = await ctx.use({ tokenId: g.id, itemId: added.itemId, activityType: first.type, targetTokenIds: [], consume: false });
@@ -60,6 +72,11 @@ export default {
         await ctx.settle(used.usageMessageId, { timeoutMs: 15000 }).catch(() => null);
       } catch ( err ) { outcome += ` ÉCHEC ${err.message.slice(0, 80)}`; }
       await pause(2500);
+      // Un sort à plusieurs activités (Détection des pensées de la potion de Lecture des pensées) ouvre le choix d'activité de
+      // dnd5e chez le MJ : à la table le joueur choisit ; ici on le note et on le ferme, sinon il reste sur l'écran.
+      const opened = (await ctx.engine("windows")).filter(w => !windowsBefore.has(w.id));
+      for ( const w of opened ) await ctx.engine("closeWindow", { id: w.id }).catch(() => {});
+      if ( opened.length ) outcome += ` (fenêtre : ${opened.map(w => w.title ?? w.className).join(", ")})`;
       const after = await actor();
       const fx = (after.effects ?? []).filter(e => !baseEffects.has(e._id) && !(e.statuses ?? []).includes("bloodied")).map(e => `${e.name}${(e.statuses ?? []).length ? `[${e.statuses.join(",")}]` : ""}${process.env.DETAIL ? ` ‹origine ${String(e.origin ?? "").split(".").slice(-2).join(".")}, message ${e.system?.origin?.message ? "oui" : "non"}›` : ""}`);
       const items = (after.items ?? []).filter(i => !baseItems.has(i._id) && (i._id !== added.itemId)).map(i => `${i.name}(${i.type})`);
@@ -71,8 +88,12 @@ export default {
       });
       ctx.log(`${id.padEnd(32)} ${first.type.padEnd(8)} effets : ${fx.join(", ") || "—"} | PV ${hp >= 0 ? "+" : ""}${hp}${temp ? `, temp +${temp}` : ""}`
         + `${items.length ? ` | items : ${items.join(", ")}` : ""} | moteur : ${engine.join(" ; ") || "—"}${outcome}`);
+      await reset();
+      await pause(800);
+      const fresh = (await ctx.clientErrors()).map(e => `${id} : ${e.message ?? e.text}`);
+      if ( fresh.length ) { errors.push(...fresh); ctx.log(`  ⚠ ${fresh.join(" | ").slice(0, 300)}`); }
     }
-    const errors = await ctx.clientErrors();
-    ctx.expect(!errors.length, `aucune erreur dans la console du MJ${errors.length ? ` — ${errors.map(e => e.message ?? e.text).join(" | ").slice(0, 400)}` : ""}`);
+    errors.push(...(await ctx.clientErrors()).map(e => e.message ?? e.text));
+    ctx.expect(!errors.length, `aucune erreur dans la console du MJ${errors.length ? ` — ${errors.join(" | ").slice(0, 400)}` : ""}`);
   }
 };

@@ -166,22 +166,48 @@ function onTurnChange(combat, prior, current) {
   }
 }
 
+/**
+ * §100 bis : les cases parcourues dans une zone `moves`, par token, le temps d'un déplacement que le cœur découpe en morceaux
+ * (points de contrôle d'une marche du moteur, §99 ; régions) : un seul rejeu à la fin, pas un par morceau.
+ * @type {Map<TokenDocument, {chain: string, counts: Map<RegionDocument, number>}>}
+ */
+const crossings = new Map();
+
+/** Le rejeu des cases notées pour ce token (fin du déplacement, ou déplacement arrêté). */
+function settleCrossings(token) {
+  const pending = crossings.get(token);
+  if ( !pending ) return;
+  crossings.delete(token);
+  for ( const [region, n] of pending.counts ) {
+    if ( (n > 0) && region.parent ) tick(region, token, "moves", currentTurnKey(), { times: n });
+  }
+}
+
 /** Un token se déplace : entre-t-il dans une zone, la traverse-t-il, et combien de cases y parcourt-il ? */
 function onMoveToken(token, movement) {
+  const chain = movement.chain?.[0] ?? movement.id;
+  if ( crossings.get(token)?.chain !== chain ) settleCrossings(token);   // un autre déplacement : le précédent est clos
   const regions = lastingRegions(token.parent);
-  if ( !regions.length ) return;
-  const waypoints = [...(movement.passed?.waypoints ?? []), movement.destination].filter(Boolean).map(position);
-  let steps = null;
-  for ( const region of regions ) {
-    const before = isInside(token, region, position(movement.origin));
-    if ( entersArea(before, waypoints.map(w => isInside(token, region, w))) ) tick(region, token, "enter");
-    // §16.20 : « pour chaque tranche de 1,50 m parcourue » dans la zone — case par case le long du trajet réellement
-    // parcouru (téléportation exclue), un seul rejeu aux dés multipliés.
-    if ( !readAreaState(region)?.on?.includes("moves") ) continue;
-    steps ??= passedCells(token, movement);
-    const n = stepsInside(steps.map(p => isInside(token, region, p)));
-    if ( n > 0 ) tick(region, token, "moves", currentTurnKey(), { times: n });
+  if ( regions.length ) {
+    const waypoints = [...(movement.passed?.waypoints ?? []), movement.destination].filter(Boolean).map(position);
+    let steps = null;
+    for ( const region of regions ) {
+      const before = isInside(token, region, position(movement.origin));
+      if ( entersArea(before, waypoints.map(w => isInside(token, region, w))) ) tick(region, token, "enter");
+      // §16.20 : « pour chaque tranche de 1,50 m parcourue » dans la zone — case par case le long du trajet réellement
+      // parcouru (téléportation exclue), un seul rejeu aux dés multipliés.
+      if ( !readAreaState(region)?.on?.includes("moves") ) continue;
+      steps ??= passedCells(token, movement);
+      const n = stepsInside(steps.map(p => isInside(token, region, p)));
+      if ( !(n > 0) ) continue;
+      const entry = crossings.get(token) ?? { chain, counts: new Map() };
+      entry.counts.set(region, (entry.counts.get(region) ?? 0) + n);
+      crossings.set(token, entry);
+    }
   }
+  // Le cœur enchaînera un autre morceau (`pending`) : on attend la fin pour rejouer.
+  if ( (token.movement?.id === movement.id) && (token.movement.state === "pending") ) return;
+  settleCrossings(token);
 }
 
 /** Les cases d'arrivée du trajet parcouru par ce segment, départ exclu (vides pour une téléportation). */
@@ -261,6 +287,9 @@ export function registerAreas() {
   }, { executor: true, label: "invocation : durée non notée" });
   route("combatTurnChange", onTurnChange, trigger);
   route("moveToken", onMoveToken, trigger);
+  // Un déplacement arrêté entre deux morceaux (`stopMovement`, appelé sur tous les clients, documents/token.mjs:792) : les cases
+  // déjà parcourues comptent.
+  route("stopToken", settleCrossings, trigger);
   route("updateRegion", onUpdateRegion, trigger);
   route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "dégâts : dés multipliés (zone), type choisi" });
 }

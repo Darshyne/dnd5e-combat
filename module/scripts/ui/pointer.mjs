@@ -945,8 +945,20 @@ function clickMoveAllowed() {
   return (mode === "always") || ((mode === "combat") && inCombat());
 }
 
+/**
+ * Le clic d'attaque vaut-il maintenant ? Réglage « always » / « combat » / « off » (§100) ; une valeur booléenne enregistrée
+ * avant (case à cocher, vraie = en combat seulement) est relue comme telle.
+ */
+function clickAttackAllowed() {
+  let mode = setting("clickToAttack");
+  // Relue en texte par un réglage devenu String (« true » / « false », vu le 2026-10-06), ou en booléen.
+  if ( (mode === true) || (mode === "true") ) mode = "combat";
+  else if ( (mode === false) || (mode === "false") ) mode = "off";
+  return (mode === "always") || ((mode === "combat") && inCombat());
+}
+
 function clickAttackApplies(me, other) {
-  return setting("clickToAttack") && inCombat() && hostileTo(me, other) && !!basicAttack(me.actor);
+  return clickAttackAllowed() && hostileTo(me, other) && !!basicAttack(me.actor);
 }
 
 let down = null;
@@ -1498,7 +1510,8 @@ export function registerPointer() {
     name: `DND5ECOMBAT.Reglage.${key}.Nom`, hint: `DND5ECOMBAT.Reglage.${key}.Aide`, ...data });
   client("clickToMove", { type: String, default: "always",
     choices: { always: "DND5ECOMBAT.Reglage.clickToMove.always", combat: "DND5ECOMBAT.Reglage.clickToMove.combat", off: "DND5ECOMBAT.Reglage.clickToMove.off" } });
-  client("clickToAttack", { type: Boolean, default: true });
+  client("clickToAttack", { type: String, default: "combat",
+    choices: { always: "DND5ECOMBAT.Reglage.clickToAttack.always", combat: "DND5ECOMBAT.Reglage.clickToAttack.combat", off: "DND5ECOMBAT.Reglage.clickToAttack.off" } });
   client("targetingMode", { type: Boolean, default: true });
   client("fastAttack", { type: Boolean, default: true });
   client("quickRolls", { type: Boolean, default: true });

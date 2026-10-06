@@ -291,8 +291,10 @@ function readPlan(message) {
   // §51 : portée « personnelle », sans zone, utilisée sans cible désignée — c'est l'utilisateur (la Potion de guérison du Guide
   // du maître : « personnelle », cible « une créature » sans nombre ; sans cela, personne n'était soigné). Les soins seulement :
   // une capacité utilitaire à portée personnelle (Rage…) a ses effets posés par d'autres chemins.
-  const untargetedSelf = (activity.type === "heal") && (activity.range?.units === "self") && !activity.target?.template?.type
-    && !(message.system?.targets?.length);
+  // §101 : de même une potion « au toucher » (Potion de guérison importante du Guide du maître, seule de sa famille à porter
+  // « contact, une créature ») : boire ou faire boire — désignée, la cible ; sans cible, le buveur.
+  const untargetedSelf = (activity.type === "heal") && !activity.target?.template?.type && !(message.system?.targets?.length)
+    && ((activity.range?.units === "self") || (isPotion(activity.item) && (activity.range?.units === "touch")));
   // §53 : une potion « sur soi » est pour le buveur, quel que soit le type d'activité (Invisibilité, Force de géant, Potion de
   // poison…) et même si une autre créature est encore visée ; de même le sort qu'une potion fait lancer (Rapidité : Hâte,
   // Croissance…), quelle que soit sa portée — « quand vous buvez cette potion, vous gagnez l'effet du sort ».

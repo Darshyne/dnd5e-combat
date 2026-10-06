@@ -65,6 +65,7 @@ import { registerHitChance, showHitChance, showSaveChance, hideHitChance, placeH
 import { floatNotice } from "./feedback.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { potionCastsOnDrinker } from "../adapter/usage.mjs";
+import { isPotion } from "../adapter/potions.mjs";
 import { aimedAreaOf, aimedShapeData, aimedRegionData } from "../adapter/self-area.mjs";
 import { castAimed, placeAimed } from "../runtime/self-area.mjs";
 
@@ -135,6 +136,8 @@ function ruleOf(activity) {
   if ( enchantTargetOf(activity) === "weapon" ) return { self: true, side: null };
   // §53 : le sort qu'une potion fait lancer est pour le buveur (adapter/usage.mjs) — rien à viser.
   if ( potionCastsOnDrinker(activity?.item) ) return null;
+  // §101 : une potion « au toucher » se boit sans cible (le buveur), ou va à la créature déjà désignée — pas de visée.
+  if ( isPotion(activity?.item) && (activity.range?.units === "touch") ) return null;
   return activity ? targetRule({ type: activity.type, affects: activity.target?.affects?.type, rangeUnits: activity.range?.units,
     template: activity.target?.template?.type }) : null;
 }

@@ -514,7 +514,9 @@ function onUsageMessage(message) {
     const usage = readUsage(message);
     if ( !usage ) return null;
     if ( usage.plan.variant ) log(`variante d'attaque : ${usage.plan.variant.name || usage.plan.variant.kind} (${usage.plan.variant.kind})`);
-    if ( usage.area && !message.getFlag(MODULE_ID, "areaTick") ) {
+    // §104 : un module qui fournit lui-même les cibles d'une activité à zone (Darsh Loot : la zone d'effet d'un piège) le dit
+    // par `flags.dnd5e-combat.givenTargets` sur le message d'utilisation : pas de gabarit à attendre, les cibles du message.
+    if ( usage.area && !message.getFlag(MODULE_ID, "areaTick") && !message.getFlag(MODULE_ID, "givenTargets") ) {
       log("zone d'effet : en attente de la pose du gabarit");
       return null;
     }

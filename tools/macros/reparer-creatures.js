@@ -5,7 +5,8 @@
  * Ce qu'elle fait, sur les acteurs du monde (les tokens non liés suivent leur acteur) :
  *  - IDENTIFIANTS : une capacité traduite dont l'identifiant (ou, s'il est vide, le nom) donne un identifiant français que le
  *    moteur ne connaît pas reçoit l'identifiant anglais sous lequel il en tient les règles — Tactique de meute → `pack-tactics`,
- *    Esquive instinctive → `uncanny-dodge`, Ascendance féerique → `fey-ancestry` ;
+ *    Esquive instinctive → `uncanny-dodge`, Ascendance féerique → `fey-ancestry`, Forme brumeuse (brume vampirique au format
+ *    2014) → `misty-form` (§105 : partager la case d'une autre créature) ;
  *  - ACTIONS DE BASE : les copies CPR de Foncer, Se désengager, Esquiver, Aider, Se cacher, Se préparer d'un PNJ (activités
  *    utilitaires sans les règles du moteur : le déplacement n'est pas doublé, Se cacher ne pose pas la Furtivité) sont remplacées,
  *    une pour une, par les actions de base du moteur (`api.basics.data`). Une action qui porte déjà la marque du moteur n'est
@@ -19,7 +20,8 @@
   const basics = engine?.active ? engine.api?.basics : null;
   if ( !basics?.data ) return ui.notifications.error("Réparation des créatures : le moteur dnd5e-combat 0.170.0 ou plus récent doit être actif.");
 
-  const RENAMED = { "tactique-de-meute": "pack-tactics", "esquive-instinctive": "uncanny-dodge", "ascendance-feerique": "fey-ancestry" };
+  const RENAMED = { "tactique-de-meute": "pack-tactics", "esquive-instinctive": "uncanny-dodge", "ascendance-feerique": "fey-ancestry",
+    "forme-brumeuse": "misty-form" };
   // Les actions de base, par identifiant d'une copie CPR (anglais, ou tiré du nom français quand l'identifiant est vide).
   const BASIC = {
     dash: "dash", course: "dash", foncer: "dash",

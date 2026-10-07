@@ -36,6 +36,7 @@ import { registerEmanations } from "./runtime/emanations.mjs";
 import { registerRegeneration } from "./runtime/regeneration.mjs";
 import { registerFortitude } from "./runtime/fortitude.mjs";
 import { registerDrain } from "./runtime/drain.mjs";
+import { registerSpaceSharing } from "./runtime/space-sharing.mjs";
 import { registerEmpower } from "./runtime/empower.mjs";
 import { registerDischarge } from "./runtime/discharge.mjs";
 import { registerSneak } from "./runtime/sneak.mjs";
@@ -178,6 +179,7 @@ Hooks.once("init", () => {
   registerRegeneration();
   registerFortitude();   // §61 : Robustesse de la non-vie (la sauvegarde due part avec les PV, adapter/death.mjs)
   registerDrain();
+  registerSpaceSharing();
   registerEmpower();   // §19.9 : Morsure vampirique (Dhampir)
   registerDischarge();   // §19.9 : Chemin vers la tombe, fin anticipée de la malédiction
   registerMastery();   // §21 : bottes d'arme (après registerTriggers : les marques consommées au même message d'attaque)

@@ -20,6 +20,7 @@ import { isObjectToken } from "../adapter/bodies.mjs";
 import { pilotOf, pilotOfActor, commandPlan, commandDistance, commandActivities, summonerToken, isIntangible, groupTokens, transposeOf } from "../adapter/pilot.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { contentOf } from "../adapter/content.mjs";
+import { sharesSpaceWith } from "../adapter/space-sharing.mjs";
 import { planPath, previewPath, walk, stopAllWalks, continuedFlags, cellUnder, footprintOf, sizeOf, cellOf, stairsEntry, rulerShown } from "../adapter/movement.mjs";
 import { hasLineOfSight, canSeePoint, isVisionAvailable } from "../adapter/vision.mjs";
 import { victimsOf, sizeRankOf } from "../adapter/grapple.mjs";
@@ -82,14 +83,14 @@ export function pilotMove(token, pilot) {
 
 const pilotCap = (token, pilot) => pilotMove(token, pilot).cap;
 
-/** Une autre créature (visible, non vaincue) occupe-t-elle l'emprise du token à cette position ? */
+/** Une autre créature (visible, non vaincue, dont on ne peut pas partager la case — §105) occupe-t-elle l'emprise du token à cette position ? */
 export function occupiedAt(token, position) {
   // §16.15 : la Main de Bigby « n'occupe pas son espace » — ni elle ne gêne, ni elle n'est gênée.
   if ( isIntangible(token) ) return false;
   const mine = { ...cellOf(token, position), ...sizeOf(token) };
   const defeated = CONFIG.specialStatusEffects.DEFEATED;
   return token.parent.tokens.some(other => (other !== token) && !other.hidden
-    && !other.actor?.statuses?.has(defeated) && (other.object?.visible !== false) && !isIntangible(other)
+    && !other.actor?.statuses?.has(defeated) && (other.object?.visible !== false) && !isIntangible(other) && !sharesSpaceWith(token, other)
     && (footprintGap(mine, footprintOf(other)) === 0));
 }
 

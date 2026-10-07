@@ -11,7 +11,7 @@
 
 import { TRIGGERS } from "./triggers.mjs";
 import { AURAS } from "./auras.mjs";
-import { EMANATIONS, REGENERATIONS, FORTITUDES, MONSTER_BASIC_ACTIONS, NO_OPPORTUNITY, DRAINS, SWALLOWS } from "./emanations.mjs";
+import { EMANATIONS, REGENERATIONS, FORTITUDES, MONSTER_BASIC_ACTIONS, NO_OPPORTUNITY, DRAINS, SWALLOWS, SPACE_SHARERS } from "./emanations.mjs";
 import { CHOICES } from "./choices.mjs";
 import { TARGETS, EFFECT_EXPIRIES, USAGE_LIMITS, ENCHANT_TARGETS, PACTS } from "./targets.mjs";
 import { TRACES, TRACE_RULES } from "./traces.mjs";
@@ -54,6 +54,7 @@ function build() {
   for ( const [id, kind] of Object.entries(NO_OPPORTUNITY) ) (table[id] ??= {}).noOpportunity = kind;
   for ( const id of DRAINS ) (table[id] ??= {}).drain = true;
   for ( const id of SWALLOWS ) (table[id] ??= {}).swallow = true;
+  for ( const [id, kind] of Object.entries(SPACE_SHARERS) ) (table[id] ??= {}).sharesSpace = kind;
   for ( const [id, choice] of Object.entries(CHOICES) ) (table[id] ??= {}).choice = choice;
   for ( const [id, targets] of Object.entries(TARGETS) ) (table[id] ??= {}).targets = targets;
   for ( const [id, rest] of Object.entries(EFFECT_EXPIRIES) ) (table[id] ??= {}).effectsExpire = rest;

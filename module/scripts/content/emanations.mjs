@@ -47,7 +47,17 @@ export const FORTITUDES = Object.freeze(["undead-fortitude"]);
  * M8 (§18.16) : drain du maximum de PV. « bite » et « slam » sont des identifiants partagés : seul l'item dont le texte
  * anglais dit la réduction draine (adapter/drain.mjs).
  */
-export const DRAINS = Object.freeze(["life-drain", "proboscis", "slam", "bite", "fell-word", "draining-kiss", "sanguine-drain", "energy-drain"]);
+export const DRAINS = Object.freeze(["life-drain", "proboscis", "slam", "bite", "fell-word", "draining-kiss", "sanguine-drain", "energy-drain", "draining-swipe"]);
+
+/**
+ * §105 : partager la case d'une autre créature. « enter » : entrer dans la case de n'importe quelle créature et s'y arrêter
+ * (Forme d'air, de feu, d'eau ; Forme gazeuse, par son effet) ; « mutual » : aussi l'inverse, toute créature peut entrer dans
+ * la sienne (« and vice versa » : Nuées ; Forme brumeuse, brume vampirique de 2014).
+ */
+export const SPACE_SHARERS = Object.freeze({
+  "air-form": "enter", "fire-form": "enter", "water-form": "enter", "gaseous-form": "enter",
+  "swarm": "mutual", "misty-form": "mutual"
+});
 
 /** M8 (§18.17) : Avaler / Engloutir (adapter/swallow.mjs). */
 export const SWALLOWS = Object.freeze(["swallow", "engulf"]);

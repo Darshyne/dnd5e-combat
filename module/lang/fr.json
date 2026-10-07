@@ -545,6 +545,8 @@
   "DND5ECOMBAT.Morsure.Question": "Votre morsure inflige {n} dégâts perforants à {name}. Vous renforcer ? ({uses} utilisation(s) restante(s))",
   "DND5ECOMBAT.Morsure.Rien": "Ne pas se renforcer",
   "DND5ECOMBAT.Morsure.Drain": "Drain : regagner {n} PV",
+  "DND5ECOMBAT.Drain.EffetPV": "{item} : maximum de PV −{n}",
+  "DND5ECOMBAT.Drain.EffetCarac": "{item} : {ability} −{n}",
   "DND5ECOMBAT.Morsure.Renfort": "Renforcement : +{n} au prochain jet d’attaque ou test",
   "DND5ECOMBAT.Morsure.RetourDrain": "Drain : +{n} PV",
   "DND5ECOMBAT.Morsure.RetourRenfort": "Renforcé : +{n}",

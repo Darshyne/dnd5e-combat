@@ -545,6 +545,8 @@
   "DND5ECOMBAT.Morsure.Question": "Your bite deals {n} piercing damage to {name}. Empower yourself? ({uses} use(s) left)",
   "DND5ECOMBAT.Morsure.Rien": "Don’t empower",
   "DND5ECOMBAT.Morsure.Drain": "Drain: regain {n} HP",
+  "DND5ECOMBAT.Drain.EffetPV": "{item}: Hit Point maximum −{n}",
+  "DND5ECOMBAT.Drain.EffetCarac": "{item}: {ability} −{n}",
   "DND5ECOMBAT.Morsure.Renfort": "Strengthen: +{n} to your next attack roll or check",
   "DND5ECOMBAT.Morsure.RetourDrain": "Drain: +{n} HP",
   "DND5ECOMBAT.Morsure.RetourRenfort": "Strengthened: +{n}",

@@ -39,6 +39,7 @@ import { approach, pushDirection, footprintGap } from "../core/movement.mjs";
 import { convertLength } from "../core/units.mjs";
 import { committedPosition, combatantFor, readBudget, writeBudget } from "./turn.mjs";
 import { isIntangible } from "./pilot.mjs";
+import { sharesSpaceWith } from "./space-sharing.mjs";
 import { hasLineOfSight } from "./vision.mjs";
 import { placementOf, coherentElevation, groundStepAllowed } from "../core/altitude.mjs";
 import { groundAt, ceilingAt, clearanceOf, effectiveMode } from "./altitude.mjs";
@@ -237,13 +238,14 @@ function worldFor(token, { throughDoors=false }={}) {
     return out;
   };
 
-  // Cases où l'on ne peut pas finir : celles de tout autre token visible et debout, sur son niveau. Un objet qui
-  // n'occupe pas son espace (Main de Bigby, §16.15) ne gêne personne et n'est gêné par personne.
+  // Cases où l'on ne peut pas finir : celles de tout autre token visible et debout, sur son niveau, sauf celles qu'on peut
+  // partager (§105 : Forme d'air, Nuée — adapter/space-sharing.mjs). Un objet qui n'occupe pas son espace (Main de
+  // Bigby, §16.15) ne gêne personne et n'est gêné par personne.
   const intangible = isIntangible(token);
   const taken = new Set();
   for ( const other of scene.tokens ) {
     if ( intangible ) break;
-    if ( (other === token) || other.hidden || isDefeated(other) || isIntangible(other) ) continue;
+    if ( (other === token) || other.hidden || isDefeated(other) || isIntangible(other) || sharesSpaceWith(token, other) ) continue;
     if ( preview && other.object && !other.object.visible ) continue;   // ne pas révéler un token invisible
     const o = footprintOf(other);
     for ( let di = 0; di < o.h; di++ ) for ( let dj = 0; dj < o.w; dj++ ) taken.add(`${key({ i: o.i + di, j: o.j + dj })}@${other._source.level}`);

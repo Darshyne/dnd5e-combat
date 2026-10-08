@@ -987,6 +987,8 @@ function clickAttackAllowed() {
 }
 
 function clickAttackApplies(me, other) {
+  // §110 : chez le MJ, le clic gauche sur un token reste celui du cœur (sélection) ; ses actions passent par le clic droit.
+  if ( game.user.isGM ) return false;
   return clickAttackAllowed() && hostileTo(me, other) && !!basicAttack(me.actor);
 }
 

@@ -15,6 +15,7 @@ import { useIssues } from "../runtime/turn.mjs";
 import { lightState, globalLightState } from "./illumination.mjs";
 import { menuEntriesFor } from "./pointer.mjs";
 import { poolsOf } from "../adapter/absorb.mjs";
+import { movableZoneOf } from "../runtime/zones.mjs";
 
 /**
  * Le budget du tour d'un combattant, tel que le moteur le juge : une action reste disponible tant que l'action Attaquer a
@@ -64,7 +65,19 @@ function movement(token) {
  * @returns {string[]}
  */
 function issues(activity, options={}) {
-  return activity?.actor ? useIssues(activity, options).lines : [];
+  if ( !activity?.actor ) return [];
+  // §111 : une zone déplaçable déjà posée (Rayon de lune) — l'utiliser la déplace, sans emplacement.
+  return useIssues(activity, movableZoneOf(activity) ? { ...options, recast: true } : options).lines;
+}
+
+/**
+ * §111 : l'activité a-t-elle une zone déplaçable déjà posée (Rayon de lune) ? L'utiliser la déplace alors (ui/pointer.mjs, §16.14) :
+ * rien n'est lancé, aucun emplacement n'est dépensé — une interface ne doit ni la griser faute d'emplacement, ni demander un niveau.
+ * @param {Activity} activity
+ * @returns {boolean}
+ */
+function movableZone(activity) {
+  return !!movableZoneOf(activity);
 }
 
 /**
@@ -91,6 +104,6 @@ function wards(actor) {
     value: pool, max: Number(item.system.uses?.max) || pool }));
 }
 
-export const uiApi = { budget, wards, movement, issues, multiattackLeft: multiattack, light: lightState, globalLight: globalLightState,
+export const uiApi = { budget, wards, movableZone, movement, issues, multiattackLeft: multiattack, light: lightState, globalLight: globalLightState,
   /** §41.4 : `tokenMenu(token)` — les entrées du menu contextuel de ce token pour le token en main (ui/pointer.mjs). */
   tokenMenu: menuEntriesFor };

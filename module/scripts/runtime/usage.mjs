@@ -21,6 +21,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { pickSpellSlot, misplacedSelfUses, canCastHigher } from "../core/usage.mjs";
 import { contentOf } from "../adapter/content.mjs";
+import { movableZoneOf } from "./zones.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 
@@ -95,6 +96,9 @@ async function askForced(activity, usageConfig, messageConfig) {
 
 function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
   if ( !activity?.item ) return;
+  // §111 : une zone déplaçable déjà posée — l'utilisation la déplace (ui/pointer.mjs, §16.14), rien n'est lancé : ni emplacement
+  // à choisir ou à corriger, ni « plus de charge » chez le MJ. Un appelant qui confirme d'office lance vraiment (même règle).
+  if ( !usageConfig[MODULE_ID]?.confirmed && movableZoneOf(activity) ) return;
   activity = repairSelfUses(activity);
   // §77 : relancée par le MJ sans charge — rien n'est consommé, pas de fenêtre.
   if ( usageConfig[MODULE_ID]?.forced ) {

@@ -702,5 +702,9 @@
   "DND5ECOMBAT.Familier.SansMJ": "No GM connected: the familiar can't go to or return from its pocket dimension.",
   "DND5ECOMBAT.Familier.ActeurPerdu": "{name} can't return: its actor no longer exists in the world.",
   "DND5ECOMBAT.Familier.Renvoye": "{name} dismisses {familiar} to its pocket dimension.",
-  "DND5ECOMBAT.Familier.Rappele": "{name} makes {familiar} reappear."
+  "DND5ECOMBAT.Familier.Rappele": "{name} makes {familiar} reappear.",
+  "DND5ECOMBAT.Reglage.syncAnimations.Nom": "Sync with animations",
+  "DND5ECOMBAT.Reglage.syncAnimations.Aide": "An action's damage, healing and effects apply when its animation (Boss Loot / BLFX, via Sequencer) ends, not when it starts. No animation: right away.",
+  "DND5ECOMBAT.Reglage.animationWait.Nom": "Maximum wait for an animation",
+  "DND5ECOMBAT.Reglage.animationWait.Aide": "In seconds: past that, it applies anyway (overlong animation, GM window minimised)."
 }

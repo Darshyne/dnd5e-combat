@@ -35,6 +35,7 @@ import { attackContext, areAdjacent } from "../adapter/conditions.mjs";
 import { attackModifiers } from "../core/conditions.mjs";
 import { areHostile } from "../core/reaction.mjs";
 import { opportunityThreats } from "./reactions.mjs";
+import { animationState } from "./animations.mjs";
 import { portentDice, portentOf, rollPortent } from "../adapter/portent.mjs";
 
 /** Le token désigné, sur la scène affichée par le MJ. */
@@ -558,7 +559,7 @@ const BOOTED_AT = Date.now();
  */
 function status() {
   return { version: game.modules.get(MODULE_ID)?.version ?? null, bootedAt: BOOTED_AT, ready: game.ready === true, worldTime: game.time?.worldTime ?? null,
-    user: game.user.name, activeGM: game.users.activeGM?.id === game.user.id };
+    user: game.user.name, activeGM: game.users.activeGM?.id === game.user.id, hidden: document.hidden === true };
 }
 
 /**
@@ -760,4 +761,4 @@ function effectOrigins({ tokenId }) {
   });
 }
 
-export const testApi = Object.freeze({ issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall });
+export const testApi = Object.freeze({ issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, animations: animationState });

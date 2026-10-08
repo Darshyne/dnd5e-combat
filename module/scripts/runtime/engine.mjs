@@ -48,6 +48,7 @@ import { stormOf, isBoltRegion } from "../adapter/storm.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
 import { duplicatesAgainst, duplicateEffectsOf } from "../adapter/duplicates.mjs";
 import { log, loc, isExecutor, waitForDice, whenCanvasReady, notice } from "./shared.mjs";
+import { waitForAnimations } from "./animations.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 
 /** Combien de messages récents on remonte quand un jet ne dit pas à quelle action il se rapporte. */
@@ -183,6 +184,8 @@ const COMMANDS = {
     const damageMessage = game.messages.get(resolution.damageRoll?.messageId);
     const activity = carrier.getAssociatedActivity?.({ scaled: true }) ?? null;
     const source = await fromUuid(speakerToken(carrier) ?? "");
+    // §112 : les PV tombent quand l'animation (BLFX, par Sequencer) arrive, pas à son départ.
+    await waitForAnimations([source?.uuid, ...command.entries.map(e => e.token)]);
     const resave = carrier.getFlag(MODULE_ID, "resave");
     const attackMode = game.messages.get(resolution.attack?.messageId ?? "")?.rolls?.[0]?.options?.attackMode ?? null;
     const entries = [];

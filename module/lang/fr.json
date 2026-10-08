@@ -702,5 +702,9 @@
   "DND5ECOMBAT.Familier.SansMJ": "Aucun MJ connecté : le familier ne peut pas partir dans sa poche dimensionnelle ni en revenir.",
   "DND5ECOMBAT.Familier.ActeurPerdu": "{name} ne peut pas revenir : sa fiche n’existe plus dans le monde.",
   "DND5ECOMBAT.Familier.Renvoye": "{name} congédie {familiar} dans sa poche dimensionnelle.",
-  "DND5ECOMBAT.Familier.Rappele": "{name} fait réapparaître {familiar}."
+  "DND5ECOMBAT.Familier.Rappele": "{name} fait réapparaître {familiar}.",
+  "DND5ECOMBAT.Reglage.syncAnimations.Nom": "Synchroniser avec les animations",
+  "DND5ECOMBAT.Reglage.syncAnimations.Aide": "Les dégâts, soins et effets d'une action s'appliquent à la fin de son animation (Boss Loot / BLFX, par Sequencer), et non à son départ. Sans animation : aussitôt.",
+  "DND5ECOMBAT.Reglage.animationWait.Nom": "Attente maximale d'une animation",
+  "DND5ECOMBAT.Reglage.animationWait.Aide": "En secondes : au-delà, on applique quand même (animation trop longue, fenêtre du MJ réduite)."
 }

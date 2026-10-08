@@ -35,6 +35,8 @@
  *                                               « partage votre initiative et joue juste après vous » (Summon X) ;
  *                                               `own` = « lance sa propre initiative » (Appel de familier) ; `none` =
  *                                               n'entre pas au combat (Œil magique, Lumières dansantes : ils n'agissent pas).
+ *                                               `familiar: true` (§107) : un familier — actions de base sauf l'attaque, vision
+ *                                               activée, son maître peut le congédier dans sa poche dimensionnelle et l'en rappeler.
  *                                               `pilot: { cost, distance, units, onCast? }` (§16.15, B19) : un objet que
  *                                               le lanceur commande pendant son tour (Arme spirituelle) — son tour est
  *                                               sauté, une commande coûte `cost` au lanceur et ouvre un déplacement de
@@ -1121,7 +1123,7 @@ export const PILOT_ON_CAST = Object.freeze(["use", "command"]);
 function validateSummon(summon, at, errors) {
   if ( !isObject(summon) || !["after", "own", "none"].includes(summon.initiative) ) return errors.push(`${at}.initiative : « after », « own » ou « none »`);
   if ( ("endsSpell" in summon) && (summon.endsSpell !== true) ) errors.push(`${at}.endsSpell : true ou absent`);
-  for ( const flag of ["endsAtZero", "mimic", "endsIfIncapacitated", "castFrom"] ) {
+  for ( const flag of ["endsAtZero", "mimic", "endsIfIncapacitated", "castFrom", "familiar"] ) {
     if ( (flag in summon) && (summon[flag] !== true) ) errors.push(`${at}.${flag} : true ou absent`);
   }
   if ( "lasts" in summon ) {
@@ -1159,7 +1161,7 @@ function validateSummon(summon, at, errors) {
       for ( const key of Object.keys(p) ) if ( !["cost", "distance", "units", "onCast", "occupies", "shared", "cluster", "leash", "tether"].includes(key) ) errors.push(`${at}.pilot.${key} : clé inconnue`);
     }
   }
-  for ( const key of Object.keys(summon) ) if ( !["initiative", "pilot", "endsSpell", "endsAtZero", "pulse", "mimic", "endsIfIncapacitated", "castFrom", "lasts"].includes(key) ) errors.push(`${at}.${key} : clé inconnue`);
+  for ( const key of Object.keys(summon) ) if ( !["initiative", "pilot", "endsSpell", "endsAtZero", "pulse", "mimic", "endsIfIncapacitated", "castFrom", "lasts", "familiar"].includes(key) ) errors.push(`${at}.${key} : clé inconnue`);
 }
 
 function validateAbsorb(absorb, at, errors) {

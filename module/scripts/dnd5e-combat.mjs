@@ -56,6 +56,7 @@ import { registerRise } from "./runtime/rise.mjs";
 import { registerAfterSneak } from "./runtime/after-sneak.mjs";
 import { registerSwallow } from "./runtime/swallow.mjs";
 import { registerBasics } from "./runtime/basics.mjs";
+import { registerFamiliars } from "./runtime/familiar.mjs";
 import { basicActionData } from "./adapter/basics.mjs";
 import { stopAllWalks } from "./adapter/movement.mjs";
 import { budgetIssues, spendBudget } from "./runtime/neighbours.mjs";
@@ -199,6 +200,7 @@ Hooks.once("init", () => {
   registerBarbarian();   // §22 : Rage entretenue, Rage implacable, Témérité (après la légalité : la question vient une fois l'usage confirmé)
   registerSwallow();
   registerBasics();
+  registerFamiliars();   // §107 : vision et poche dimensionnelle des familiers (leurs actions de base : registerBasics)
   registerGrapple();
   registerProne();
   registerBreaks();

@@ -37,10 +37,13 @@ export const SUMMONS = Object.freeze({
   "summon-aberration": after, "summon-beast": after, "summon-celestial": after, "summon-construct": after,
   "summon-dragon": after, "summon-elemental": after, "summon-fey": after, "summon-fiend": after, "summon-undead": after,
   "animate-objects": after, "giant-insect": after,
-  "find-familiar": { initiative: "own" },
+  // §107 : `familiar` — actions de base sauf l'attaque, vision, poche dimensionnelle. Le Pacte de la chaîne (occultiste, PHB
+  // 2024) porte ses propres activités d'invocation « Find Familiar » : l'invocation a pour origine l'item du pacte.
+  "find-familiar": { initiative: "own", familiar: true },
+  "pact-of-the-chain": { initiative: "own", familiar: true },
   // Compagnon sauvage (druide, PHB 2024, §16.39) : « vous lancez Appel de familier sans composantes matérielles » ; « le
   // familier dure un nombre d'heures égal à la moitié de votre niveau de druide » — pas d'autre fin (dnd5e : `inst`).
-  "wild-companion": { initiative: "own", lasts: { value: "floor(@classes.druid.levels / 2)", units: "hour" } },
+  "wild-companion": { initiative: "own", familiar: true, lasts: { value: "floor(@classes.druid.levels / 2)", units: "hour" } },
   "spiritual-weapon": piloted(20, "use"),
   "flaming-sphere": piloted(30, null, { summon: { pulse: { item: "flames", radius: 5, units: "ft" } } }),
   "bigbys-hand": hand,

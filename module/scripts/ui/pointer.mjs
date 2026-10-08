@@ -33,6 +33,7 @@ import { leaderOf, canFollow, follow, unfollow } from "../runtime/follow.mjs";
 import { distanceBetween } from "../adapter/turn.mjs";
 import { movableZoneOf, moveZone, tooFarForZone } from "../runtime/zones.mjs";
 import { canDismiss, dismissPilot, useCommand } from "../runtime/pilot.mjs";
+import { canPocket, canRecall, pocketedFamiliar, dismissFamiliar, recallFamiliar, recallRefusal } from "../runtime/familiar.mjs";
 import { castWithPicks, leapProblem } from "../runtime/projectiles.mjs";
 import { castLight, putOutLight } from "../runtime/lights.mjs";
 import { lightChoiceOf } from "../adapter/lights.mjs";
@@ -127,6 +128,8 @@ let picking = null;
 let placing = null;
 /** §57 : une ruée en ligne droite (Frappe du vent) attend le clic sur sa case d'arrivée (`{ token, activity, usage }`). */
 let dashing = null;
+/** §107 : le rappel d'un familier attend le clic sur la case où il réapparaît (`{ token }` : le token du maître). */
+let recalling = null;
 /** Teinte de l'aperçu quand la case est hors de portée du déplacement. */
 const TOO_FAR_COLOR = "#d03030";
 
@@ -575,6 +578,7 @@ function pickTarget(hover) {
 function stopTargeting() {
   stopPicking();
   dashing = null;
+  recalling = null;
   hideReticle();
   targeting = null;
   if ( placing ) canvas.regions?._cancelPlacement?.();
@@ -797,6 +801,8 @@ function selfEntries(token) {
   const swap = transposeOf(token);
   if ( swap ) entries.push({ icon: "fa-solid fa-arrows-rotate", label: loc("Menu.Echanger", { name: (swap.illusion === token ? swap.caster : swap.illusion).name }), run: () => transpose(token) });
   if ( canDismiss(token) ) entries.push({ icon: "fa-solid fa-xmark", label: loc("Menu.Renvoyer", { name: token.name }), run: () => dismissPilot(token) });
+  // §107 : le familier part dans sa poche dimensionnelle (depuis son token) ; son maître l'en rappelle (depuis le sien).
+  entries.push(...familiarEntries(token, token));
   // §41.3 : ce token suit quelqu'un.
   const leader = leaderOf(token);
   if ( leader ) entries.push({ icon: "fa-solid fa-person-walking-arrow-right", label: loc("Menu.NePlusSuivre", { name: leader.name }), run: () => unfollow(token) });
@@ -805,6 +811,21 @@ function selfEntries(token) {
   // Le menu remplace le HUD du cœur au clic droit : son propriétaire (pas seulement le MJ) le retrouve par cette entrée.
   if ( all.length && token.isOwner ) all.push({ icon: "fa-solid fa-gear", label: loc("Menu.Hud"), run: () => canvas.hud.token.bind(token.object) });
   return all;
+}
+
+/**
+ * §107 : sur un familier, « Renvoyer dans sa poche dimensionnelle » (pour qui possède son maître) ; sur le token d'un maître
+ * dont la poche garde un familier, « Rappeler X » (son propre token seulement : la case se choisit autour de lui).
+ */
+function familiarEntries(token, target) {
+  const entries = [];
+  if ( canPocket(target) ) {
+    entries.push({ icon: "fa-solid fa-box-archive", label: loc("Familier.Renvoyer", { name: target.name }), run: () => dismissFamiliar(target) });
+  }
+  if ( (token === target) && canRecall(token) ) {
+    entries.push({ icon: "fa-solid fa-dove", label: loc("Familier.Rappeler", { name: pocketedFamiliar(token).name }), run: () => startRecall(token) });
+  }
+  return entries;
 }
 
 /**
@@ -859,6 +880,7 @@ function tokenEntries(token, target, { aggressive=true }={}) {
     if ( holdsOf(token, target).length ) entries.push({ icon: "fa-solid fa-hand-holding", label: loc("Menu.Relacher"), run: () => releaseGrapple(token, target) });
     entries.push(...endingEntries(token, target));
     entries.push(...followEntries(token, target));
+    entries.push(...familiarEntries(token, target));
     entries.push({ icon: "fa-solid fa-eye", label: loc("Menu.Observer"), run: () => observe(target) });
     if ( game.user.isGM ) entries.push({ icon: "fa-solid fa-gear", label: loc("Menu.Hud"), run: () => canvas.hud.token.bind(target.object) });
     return entries;
@@ -911,6 +933,7 @@ function tokenEntries(token, target, { aggressive=true }={}) {
   }
   entries.push(...endingEntries(token, target));
   entries.push(...followEntries(token, target));
+  entries.push(...familiarEntries(token, target));
   entries.push({ icon: "fa-solid fa-eye", label: loc("Menu.Observer"), run: () => observe(target) });
   if ( game.user.isGM ) entries.push({ icon: "fa-solid fa-gear", label: loc("Menu.Hud"), run: () => canvas.hud.token.bind(target.object) });
   return entries;
@@ -1006,7 +1029,7 @@ function onPointerDown(event) {
   down = null;
   if ( !onBoard(event) || ![0, 2].includes(event.button) ) return;
   down = { x: event.clientX, y: event.clientY, button: event.button, at: Date.now() };
-  if ( targeting || picking || dashing || ((event.button === 2) && cancellable()) ) return swallow(event);
+  if ( targeting || picking || dashing || recalling || ((event.button === 2) && cancellable()) ) return swallow(event);
   // §39.3 : un module voisin peut réclamer un clic gauche (fouiller un coffre, un cadavre, un tas au sol — Darsh Loot) en
   // répondant `false` au hook `dnd5e-combat.claimClick` (appelé par Hooks.call) : le moteur l'ignore alors entièrement (ni
   // déplacement, ni attaque). Le moteur ne connaît aucun de ces modules ; sans eux, rien ne change.
@@ -1031,7 +1054,7 @@ function onPointerUp(event) {
   if ( !start || (start.button !== event.button) || !onBoard(event) ) return;
   if ( Math.hypot(event.clientX - start.x, event.clientY - start.y) > 6 ) return;   // c'était un glisser
   // Un appui long est le ping du cœur (500 ms) : ce n'est pas un ordre de déplacement.
-  if ( !targeting && !picking && !dashing && ((Date.now() - start.at) > LONG_PRESS_MS) ) return;
+  if ( !targeting && !picking && !dashing && !recalling && ((Date.now() - start.at) > LONG_PRESS_MS) ) return;
   if ( !targeting && !picking && (event.button === 2) && cancellable() ) return exclusive(cancelInProgress);
   const hover = hoveredToken();
   const left = event.button === 0;
@@ -1039,6 +1062,10 @@ function onPointerUp(event) {
   if ( dashing ) {
     if ( !left ) { stopTargeting(); return ui.notifications.info(loc("Visee.Annulee")); }
     return dashTo(scenePoint(event));
+  }
+  if ( recalling ) {
+    if ( !left ) { stopTargeting(); return ui.notifications.info(loc("Visee.Annulee")); }
+    return recallTo(scenePoint(event));
   }
   if ( picking ) {
     if ( !left ) { for ( const t of Array.from(game.user.targets) ) t.setTarget(false, { releaseOthers: false }); stopTargeting(); return ui.notifications.info(loc("Visee.Annulee")); }
@@ -1189,6 +1216,37 @@ function dashTo(point) {
   return exclusive(() => dashStrike(activity, usage, at)).catch(err => console.error(`${MODULE_ID} | ruée`, err));
 }
 
+/** §107 : au survol, ce qui refuse la case de réapparition du familier, ou son nom. */
+function recallHover(event) {
+  const point = scenePoint(event);
+  const cell = recalling.token.parent.grid.getOffset(point);
+  const key = `recall|${cell.i},${cell.j}`;
+  if ( key === lastHoverKey ) return;
+  lastHoverKey = key;
+  const refusal = recallRefusal(recalling.token, point);
+  setCursor(refusal ? "outOfRange" : null);
+  showBadge(event, refusal ?? pocketedFamiliar(recalling.token)?.name ?? "");
+}
+
+/** §107 : la case du familier qui revient — refusée, la visée reste ouverte ; acceptée, il réapparaît. */
+function recallTo(point) {
+  const { token } = recalling;
+  const refusal = recallRefusal(token, point);
+  if ( refusal ) return floatNotice(token, refusal, "refused");
+  stopTargeting();
+  return exclusive(() => recallFamiliar(token, point));
+}
+
+/** §107 : « Rappeler » — la case se choisit d'un clic (9 m autour du maître), clic droit ou Échap pour renoncer. */
+function startRecall(token) {
+  if ( !canvas.ready || !token?.object ) return;
+  stopTargeting();
+  const familiar = pocketedFamiliar(token);
+  ui.notifications.info(loc("Familier.Choisir", { name: familiar?.name ?? "" }));
+  recalling = { token };
+  document.body.classList.add("dnd5e-combat-targeting");
+}
+
 /** §16.29 : pendant le choix de la destination d'une téléportation (cœur), la portée se lit au curseur. */
 function teleportHover(event) {
   const tp = currentTeleport();
@@ -1206,6 +1264,7 @@ function teleportHover(event) {
 const onPointerMove = foundry.utils.throttle(event => {
   if ( onBoard(event) && teleportHover(event) ) return;
   if ( dashing ) return onBoard(event) ? dashHover(event) : undefined;
+  if ( recalling ) return onBoard(event) ? recallHover(event) : undefined;
   if ( busy || !onBoard(event) || event.buttons || !selecting() ) return clearPreview();
   // §16.14 : la pose du cœur montre la zone sous la souris — ni chemin ni chance de toucher.
   if ( placing ) return clearPreview();
@@ -1302,7 +1361,7 @@ function onKeyDown(event) {
   if ( (event.key === "Enter") && picking?.group && picking.picks.length ) { swallow(event); return finishGroup(); }
   if ( event.key !== "Escape" ) return;
   if ( menu ) { closeMenu(); swallow(event); }
-  else if ( targeting || picking || dashing ) { stopTargeting(); swallow(event); }   // une zone en cours de pose : Échap est au cœur
+  else if ( targeting || picking || dashing || recalling ) { stopTargeting(); swallow(event); }   // une zone en cours de pose : Échap est au cœur
 }
 
 /* -------------------------------------------- */
@@ -1514,7 +1573,7 @@ export function registerPointer() {
   registerHitChance();
   const client = (key, data) => game.settings.register(MODULE_ID, key, { scope: "client", config: true,
     name: `DND5ECOMBAT.Reglage.${key}.Nom`, hint: `DND5ECOMBAT.Reglage.${key}.Aide`, ...data });
-  client("clickToMove", { type: String, default: "always",
+  client("clickToMove", { type: String, default: "off",
     choices: { always: "DND5ECOMBAT.Reglage.clickToMove.always", combat: "DND5ECOMBAT.Reglage.clickToMove.combat", off: "DND5ECOMBAT.Reglage.clickToMove.off" } });
   client("clickToAttack", { type: String, default: "combat",
     choices: { always: "DND5ECOMBAT.Reglage.clickToAttack.always", combat: "DND5ECOMBAT.Reglage.clickToAttack.combat", off: "DND5ECOMBAT.Reglage.clickToAttack.off" } });

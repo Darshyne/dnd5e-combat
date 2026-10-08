@@ -38,9 +38,10 @@ export function heldItemsOf(actor) {
  * §40.3 : un module voisin pose au sol ce qu'une créature lâche (Darsh Loot : un tas dans sa case). Le moteur appelle
  * `Hooks.callAll("dnd5e-combat.dropItems", takers, { token, items })` chez le MJ actif ; un module qui s'en charge pousse
  * dans `takers` une fonction `async () => boolean` — vrai : les objets ont quitté la fiche et sont au sol. La première qui
- * répond vrai l'emporte ; une erreur ou un refus laisse la suite (le simple déséquipement) faire.
+ * répond vrai l'emporte ; une erreur ou un refus laisse la suite (le simple déséquipement) faire. Sert aussi au familier qui
+ * part dans sa poche dimensionnelle (§107).
  */
-async function droppedByNeighbour(token, items) {
+export async function droppedByNeighbour(token, items) {
   const takers = [];
   Hooks.callAll(`${MODULE_ID}.dropItems`, takers, { token, items });
   for ( const take of takers ) {

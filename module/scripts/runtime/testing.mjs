@@ -19,6 +19,9 @@ import { combatantFor, readBudget, movementOf } from "../adapter/turn.mjs";
 import { useIssues } from "./turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { moveTo, movementCap, selfTeleportOf, currentTeleport, teleportClick, dashStrike, dashTargets, dashProblem, lineDashOf, transpose as transposeIntent, takeStairs as takeStairsIntent } from "./actions.mjs";
+import { dismissFamiliar, recallFamiliar, recallRefusal, canPocket, canRecall } from "./familiar.mjs";
+import { pocketOf, isFamiliarToken, emptyPocket } from "../adapter/familiar.mjs";
+import { basicActionOf } from "../adapter/basics.mjs";
 import { leaderOf, followersOf, follow as followIntent, unfollow as unfollowIntent } from "./follow.mjs";
 import { ownEndingsOf, endingsOn, endFor } from "./action-end.mjs";
 import { escapeGrapple } from "./grapple.mjs";
@@ -160,6 +163,31 @@ function followState({ tokenId }) {
 }
 
 /**
+ * §107 : l'état d'un familier ou d'un maître — familier reconnu, vision, actions de base, poche dimensionnelle (le familier
+ * gardé et ses PV ; `clear` la vide) ; et les gestes : congé (`tokenId` du familier), rappel (`tokenId` du maître, `point`).
+ */
+async function familiar({ tokenId, clear=false }) {
+  const token = canvas.scene?.tokens.get(tokenId);
+  if ( !token ) return { present: false };
+  if ( clear && game.user.isGM ) await emptyPocket(token.actor);   // remise en état d'un scénario
+  const pocket = pocketOf(token.actor);
+  return { present: true, familiar: isFamiliarToken(token), sight: token._source.sight?.enabled === true,
+    basics: (token.actor?.items ?? []).map(basicActionOf).filter(Boolean).sort(), canPocket: canPocket(token), canRecall: canRecall(token),
+    pocket: pocket ? { name: pocket.name, hp: pocket.token.delta?.system?.attributes?.hp?.value ?? null,
+      items: (pocket.token.delta?.items ?? []).map(i => i.name) } : null };
+}
+async function familiarPocket({ tokenId }) {
+  return { done: await dismissFamiliar(tokenOf({ tokenId })) };
+}
+async function familiarRecall({ tokenId, point }) {
+  const token = tokenOf({ tokenId });
+  const refusal = recallRefusal(token, point);
+  const done = refusal ? false : await recallFamiliar(token, point);
+  return { done, refusal, tokens: token.parent.tokens.filter(t => isFamiliarToken(t)).map(t => ({ id: t.id, name: t.name, x: t.x, y: t.y,
+    hp: t.actor?.system?.attributes?.hp?.value ?? null })) };
+}
+
+/**
  * §43.2 : les effets auxquels une action met fin — ceux du token (`own`), ceux qu'un autre lui retire (`byOther`) ; et le
  * geste : sans `targetId`, le token prend « S'échapper » pour lui-même ; avec, il met fin au premier effet de la cible.
  */
@@ -253,7 +281,7 @@ async function rollCard({ messageId }) {
  * `placeSummons` :40494) est remplacé par la position donnée, sur CETTE instance d'activité et le temps de l'appel.
  * Outil de test seulement : le moteur, lui, laisse le placement au système.
  */
-async function summonAt({ tokenId, itemId, activityId=null, profile=null, x, y }) {
+async function summonAt({ tokenId, itemId, activityId=null, profile=null, actorUuid=null, x, y }) {
   if ( !game.user.isGM ) throw new Error("réservé au MJ");
   const token = canvas.scene?.tokens.get(tokenId);
   const item = token?.actor?.items.get(itemId);
@@ -263,11 +291,14 @@ async function summonAt({ tokenId, itemId, activityId=null, profile=null, x, y }
   const used = await activity.use({ consume: false, create: { summons: false }, [MODULE_ID]: { confirmed: true, autoReact: "none" } },
     { configure: false });
   activity.getPlacement = async () => [{ x, y, elevation: token.elevation ?? 0, rotation: 0 }];
+  // §107 : une invocation « par FP » (Appel de familier) demande la créature au joueur (summon.mjs, `queryActor`) — fournie ici.
+  if ( actorUuid ) activity.queryActor = async () => actorUuid;
   try {
     const created = await activity.placeSummons({ profile: profile ?? activity.profiles[0]?._id });
     return { messageId: used?.message?.id ?? null, tokens: (created ?? []).map(t => ({ id: t.id, name: t.name, actorId: t.actorId })) };
   } finally {
     delete activity.getPlacement;
+    delete activity.queryActor;
   }
 }
 
@@ -729,4 +760,4 @@ function effectOrigins({ tokenId }) {
   });
 }
 
-export const testApi = Object.freeze({ issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use });
+export const testApi = Object.freeze({ issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall });

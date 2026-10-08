@@ -2,7 +2,10 @@
  * Actions de base (SPEC §15.2) : le MJ actif pose sur TOUS les personnages (acteurs « character », qu'ils
  * aient un joueur ou non — un personnage joué par le MJ en a besoin aussi) les items qui leur manquent, en
  * permanence : au chargement du monde, à la création d'un personnage, au début d'un combat et quand un
- * personnage rejoint un combat en cours. Rien n'est retiré, rien n'est posé sur un PNJ. Réglage de monde.
+ * personnage rejoint un combat en cours. Rien n'est retiré, rien n'est posé sur un PNJ — sauf un familier (§107 : Appel de
+ * familier, Compagnon sauvage, Pacte de la chaîne), qui reçoit à son invocation celles qui n'attaquent pas (« un familier ne peut
+ * pas attaquer, mais il peut entreprendre d'autres actions normalement ») : sur l'acteur de son token (le delta d'un token non
+ * lié, comme dnd5e le crée). Réglage de monde.
  * (Première version, 0.23.0 : seulement les personnages des joueurs, seulement au début d'un combat —
  * introuvables hors combat, absents d'un personnage joué par le MJ ; corrigé le 2026-09-23.)
  *
@@ -12,6 +15,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { basicActionData, missingBasicActions } from "../adapter/basics.mjs";
+import { isFamiliarActor, isFamiliarToken } from "../adapter/familiar.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 
@@ -21,13 +25,23 @@ async function provide(actors) {
   if ( !game.settings.get(MODULE_ID, SETTING) ) return;
   const seen = new Set();
   for ( const actor of actors ) {
-    if ( !actor || (actor.type !== "character") || seen.has(actor.uuid) ) continue;
+    if ( !actor || seen.has(actor.uuid) ) continue;
+    // L'acteur de base d'un familier non lié (celui du dossier des acteurs) n'est pas touché : seul celui de son token.
+    const familiar = (actor.type !== "character") && (actor.isToken || actor.prototypeToken?.actorLink === true) && isFamiliarActor(actor);
+    if ( (actor.type !== "character") && !familiar ) continue;
     seen.add(actor.uuid);
-    const missing = missingBasicActions(actor);
+    const missing = missingBasicActions(actor, { familiar });
     if ( !missing.length ) continue;
     await actor.createEmbeddedDocuments("Item", missing.map(basicActionData));
     log(`actions de base posées sur ${actor.name} : ${missing.join(", ")}`);
   }
+}
+
+/** §107 : les acteurs des familiers posés sur les scènes (invoqués avant cette version). */
+function familiarActorsOnScenes() {
+  const out = [];
+  for ( const scene of game.scenes ) for ( const token of scene.tokens ) if ( isFamiliarToken(token) && token.actor ) out.push(token.actor);
+  return out;
 }
 
 /** Combat à deux armes : le modificateur revient aux dégâts de la main secondaire (sur le client de l'auteur). */
@@ -67,8 +81,10 @@ export function registerBasics() {
     scope: "world", config: true, type: Boolean, default: true
   });
   const placed = { executor: true, label: "actions de base posées" };
-  route("ready", () => provide(game.actors).catch(err => console.error(`${MODULE_ID} | actions de base`, err)), placed);
+  route("ready", () => provide([...game.actors, ...familiarActorsOnScenes()]).catch(err => console.error(`${MODULE_ID} | actions de base`, err)), placed);
   route("createActor", actor => provide([actor]), placed);
+  // §107 : un familier invoqué (ou rappelé de sa poche) — l'acteur de son token.
+  route("createToken", tokenDoc => (isFamiliarToken(tokenDoc) ? provide([tokenDoc.actor]) : null), placed);
   route("combatStart", combat => provide(combat.combatants.map(c => c.actor)), placed);
   route("createCombatant", combatant => provide([combatant.actor]), placed);
   route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "main secondaire : Combat à deux armes" });

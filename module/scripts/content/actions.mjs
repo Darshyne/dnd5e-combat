@@ -28,7 +28,9 @@ export const BASIC_ACTIONS = Object.freeze({
   // unarmed-strike.yml) : une attaque (1 + For, contondant) et « Lutte / Bousculade », une sauvegarde de
   // Force ou de Dextérité (au mieux de la cible) contre 8 + For + maîtrise. Un item d'identifiant
   // `unarmed-strike` déjà présent (Moine, Barbare) tient lieu du nôtre.
+  // `attack` : une attaque — un familier ne la reçoit pas (« un familier ne peut pas attaquer », §107).
   unarmed: {
+    attack: true,
     img: "icons/skills/melee/unarmed-punch-fist-yellow-red.webp",
     identifier: "unarmed-strike",
     activityId: "dnd5eCombatUnarm",

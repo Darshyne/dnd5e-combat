@@ -22,6 +22,8 @@ export async function noteSummonExpiry(tokenDoc, now=game.time.worldTime) {
   const item = summonItemOf(tokenDoc);
   const lasts = item ? contentOf(item).entry?.summon?.lasts : null;
   if ( !lasts ) return null;
+  // §107 : un familier rappelé de sa poche dimensionnelle garde l'heure de fin notée à son invocation.
+  if ( Number.isFinite(tokenDoc.getFlag(MODULE_ID, "expiresAt")) ) return null;
   let value = Number(lasts.value);
   if ( !Number.isFinite(value) ) {
     try { value = Roll.safeEval(Roll.replaceFormulaData(String(lasts.value), item.getRollData?.() ?? {}, { missing: 0 })); }

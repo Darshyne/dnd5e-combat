@@ -8,6 +8,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { BASIC_ACTIONS } from "../content/actions.mjs";
 import { contentOf } from "./content.mjs";
+import { familiarBasicKinds } from "../core/familiar.mjs";
 
 /** La clé d'action de base d'un item (« dash »…), ou null. */
 export function basicActionOf(item) {
@@ -94,12 +95,16 @@ export function basicActionData(kind) {
   };
 }
 
-/** Les actions de base qu'un acteur n'a pas encore. Une attaque à mains nues de classe (Moine, Barbare) tient lieu de la nôtre. */
-export function missingBasicActions(actor) {
+/**
+ * Les actions de base qu'un acteur n'a pas encore. Une attaque à mains nues de classe (Moine, Barbare) tient lieu de la nôtre.
+ * §107 : un familier (`familiar`) n'a que celles qui n'attaquent pas.
+ */
+export function missingBasicActions(actor, { familiar=false }={}) {
   const owned = new Set(actor.items.map(basicActionOf).filter(Boolean));
   const identifiers = new Set(actor.items.map(i => i.system.identifier).filter(Boolean));
+  const allowed = new Set(familiar ? familiarBasicKinds(BASIC_ACTIONS) : Object.keys(BASIC_ACTIONS));
   return Object.entries(BASIC_ACTIONS)
-    .filter(([kind, def]) => !owned.has(kind) && !(def.identifier && identifiers.has(def.identifier)))
+    .filter(([kind, def]) => allowed.has(kind) && !owned.has(kind) && !(def.identifier && identifiers.has(def.identifier)))
     .map(([kind]) => kind);
 }
 

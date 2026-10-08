@@ -157,7 +157,7 @@
   "DND5ECOMBAT.Menu.SeDeplacer": "Se déplacer ici",
   "DND5ECOMBAT.Menu.Sauter": "Sauter ici",
   "DND5ECOMBAT.Menu.SeRelever": "Se relever (moitié du déplacement)",
-  "DND5ECOMBAT.Relever.Fait": "Debout",
+  "DND5ECOMBAT.Relever.Fait": "{name} se relève ({hp} PV)",
   "DND5ECOMBAT.Relever.noSpeed": "Impossible de se relever",
   "DND5ECOMBAT.Relever.noMovement": "Pas assez de déplacement pour se relever",
   "DND5ECOMBAT.Menu.Attaquer": "Attaquer : {name}",
@@ -660,7 +660,6 @@
   "DND5ECOMBAT.Relever.Oui": "Oui ({item})",
   "DND5ECOMBAT.Relever.Non": "Non",
   "DND5ECOMBAT.Relever.Carte": "{item} : sauvegarde de {name} (DD {dc})",
-  "DND5ECOMBAT.Relever.Fait": "{name} se relève ({hp} PV)",
   "DND5ECOMBAT.Lamentations.Question": "{item} : une seconde créature à 9 m de {name} ?",
   "DND5ECOMBAT.Foulee.Question": "Foulée brumeuse ({spell}) : un effet de plus ?",
   "DND5ECOMBAT.Foulee.Aucun": "Aucun",
@@ -694,5 +693,14 @@
   "DND5ECOMBAT.SansCharge.Texte": "<strong>{name}</strong> n’a plus de charge (utilisations ou emplacement épuisés). Lancer quand même, sans rien consommer ?",
   "DND5ECOMBAT.SansCharge.Lancer": "Lancer quand même",
   "DND5ECOMBAT.SansCharge.Renoncer": "Renoncer",
-  "DND5ECOMBAT.Souci.actionOrBonus": "Un effet ne lui laisse qu’une action ou une action Bonus à son tour, pas les deux."
+  "DND5ECOMBAT.Souci.actionOrBonus": "Un effet ne lui laisse qu’une action ou une action Bonus à son tour, pas les deux.",
+  "DND5ECOMBAT.Familier.Renvoyer": "Renvoyer {name} dans sa poche dimensionnelle",
+  "DND5ECOMBAT.Familier.Rappeler": "Rappeler {name}",
+  "DND5ECOMBAT.Familier.Choisir": "{name} : cliquez la case où il réapparaît, inoccupée et à 9 m de vous au plus (clic droit ou Échap pour renoncer).",
+  "DND5ECOMBAT.Familier.CaseOccupee": "Case occupée",
+  "DND5ECOMBAT.Familier.PocheVide": "Aucun familier dans la poche dimensionnelle",
+  "DND5ECOMBAT.Familier.SansMJ": "Aucun MJ connecté : le familier ne peut pas partir dans sa poche dimensionnelle ni en revenir.",
+  "DND5ECOMBAT.Familier.ActeurPerdu": "{name} ne peut pas revenir : sa fiche n’existe plus dans le monde.",
+  "DND5ECOMBAT.Familier.Renvoye": "{name} congédie {familiar} dans sa poche dimensionnelle.",
+  "DND5ECOMBAT.Familier.Rappele": "{name} fait réapparaître {familiar}."
 }

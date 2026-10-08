@@ -157,7 +157,7 @@
   "DND5ECOMBAT.Menu.SeDeplacer": "Move here",
   "DND5ECOMBAT.Menu.Sauter": "Jump here",
   "DND5ECOMBAT.Menu.SeRelever": "Stand up (half movement)",
-  "DND5ECOMBAT.Relever.Fait": "Standing",
+  "DND5ECOMBAT.Relever.Fait": "{name} rises ({hp} HP)",
   "DND5ECOMBAT.Relever.noSpeed": "Cannot stand up",
   "DND5ECOMBAT.Relever.noMovement": "Not enough movement to stand up",
   "DND5ECOMBAT.Menu.Attaquer": "Attack: {name}",
@@ -660,7 +660,6 @@
   "DND5ECOMBAT.Relever.Oui": "Yes ({item})",
   "DND5ECOMBAT.Relever.Non": "No",
   "DND5ECOMBAT.Relever.Carte": "{item}: {name}'s saving throw (DC {dc})",
-  "DND5ECOMBAT.Relever.Fait": "{name} rises ({hp} HP)",
   "DND5ECOMBAT.Lamentations.Question": "{item}: a second creature within 30 feet of {name}?",
   "DND5ECOMBAT.Foulee.Question": "Misty Step ({spell}): an extra effect?",
   "DND5ECOMBAT.Foulee.Aucun": "None",
@@ -694,5 +693,14 @@
   "DND5ECOMBAT.SansCharge.Texte": "<strong>{name}</strong> has no charges left (uses or spell slot spent). Use it anyway, consuming nothing?",
   "DND5ECOMBAT.SansCharge.Lancer": "Use anyway",
   "DND5ECOMBAT.SansCharge.Renoncer": "Cancel",
-  "DND5ECOMBAT.Souci.actionOrBonus": "An effect allows only an action or a Bonus Action on its turn, not both."
+  "DND5ECOMBAT.Souci.actionOrBonus": "An effect allows only an action or a Bonus Action on its turn, not both.",
+  "DND5ECOMBAT.Familier.Renvoyer": "Dismiss {name} to its pocket dimension",
+  "DND5ECOMBAT.Familier.Rappeler": "Recall {name}",
+  "DND5ECOMBAT.Familier.Choisir": "{name}: click the space where it reappears, unoccupied and within 30 feet of you (right-click or Esc to cancel).",
+  "DND5ECOMBAT.Familier.CaseOccupee": "Space occupied",
+  "DND5ECOMBAT.Familier.PocheVide": "No familiar in the pocket dimension",
+  "DND5ECOMBAT.Familier.SansMJ": "No GM connected: the familiar can't go to or return from its pocket dimension.",
+  "DND5ECOMBAT.Familier.ActeurPerdu": "{name} can't return: its actor no longer exists in the world.",
+  "DND5ECOMBAT.Familier.Renvoye": "{name} dismisses {familiar} to its pocket dimension.",
+  "DND5ECOMBAT.Familier.Rappele": "{name} makes {familiar} reappear."
 }

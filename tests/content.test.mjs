@@ -183,7 +183,7 @@ describe("contenu livré", () => {
       "maneuvering-attack", "marshal-undead", "martial-arts", "melfs-acid-arrow", "menacing-attack", "mind-sliver",
       "minor-illusion", "mirror-image", "mislead", "mist-walker", "misty-escape", "misty-form", "misty-step",
       "monks-focus", "moonbeam", "moonlight-step", "necrotic-husk", "nimble-escape", "oil", "open-hand-technique",
-      "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade", "parry", "parry-maneuver", "pass-without-trace",
+      "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade", "pact-of-the-chain", "parry", "parry-maneuver", "pass-without-trace",
       "path-to-the-grave", "persistent-rage", "phantasmal-force", "phantasmal-killer", "portent", "potent-cantrip",
       "potion-of-animal-friendship", "potion-of-climbing", "potion-of-diminution", "potion-of-flying",
       "potion-of-growth", "potion-of-heroism", "potion-of-invisibility", "potion-of-resistance", "potion-of-vitality",

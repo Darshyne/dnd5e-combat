@@ -15,33 +15,51 @@ import { combatantFor, readBudget, writeBudget } from "./turn.mjs";
 
 const t = (key, data) => game.i18n.format(`DND5ECOMBAT.Inspiration.${key}`, data ?? {});
 
+/** Le dé d'Inspiration d'un barde (`@scale.bard.inspiration`, d6 → d12), « 1d6 » à défaut. */
+export function inspirationDieOf(bard) {
+  try {
+    const die = Roll.replaceFormulaData("@scale.bard.inspiration", bard?.getRollData?.() ?? {}, { missing: "" }).trim();
+    if ( /^\d*d\d+$/.test(die) ) return die.startsWith("d") ? `1${die}` : die;
+  } catch { /* le d6 */ }
+  return "1d6";
+}
+
 /** L'inspiration que porte l'acteur : l'effet et la formule du dé ; null s'il n'en a pas. */
 export function inspirationOf(actor) {
   for ( const effect of actor?.appliedEffects ?? actor?.effects ?? [] ) {
     if ( effect.disabled || effect.isSuppressed ) continue;
     const item = originItemOf(effect);
     if ( !item || (identifierOf(item).id !== "bardic-inspiration") ) continue;
-    let formula = "1d6";
-    try {
-      const die = Roll.replaceFormulaData("@scale.bard.inspiration", item.actor?.getRollData?.() ?? {}, { missing: "" }).trim();
-      if ( /^\d*d\d+$/.test(die) ) formula = die.startsWith("d") ? `1${die}` : die;
-    } catch { /* le d6 */ }
-    return { effect, formula, bard: item.actor?.name ?? "" };
+    return { effect, formula: inspirationDieOf(item.actor), bard: item.actor?.name ?? "" };
   }
   return null;
 }
 
 /**
+ * §113 : ce qu'un barde peut donner — l'item Inspiration bardique, l'activité qui pose l'effet « Inspiré » et son dé, s'il lui reste
+ * une utilisation ; null sinon.
+ */
+export function inspirationSourceOf(bard) {
+  const item = bard?.items?.find(i => identifierOf(i).id === "bardic-inspiration");
+  const activities = Array.from(item?.system?.activities ?? []);
+  const activity = activities.find(a => a.effects?.length) ?? activities[0];
+  if ( !activity || !(usesLeftFor(activity) > 0) ) return null;
+  return { item, activity, formula: inspirationDieOf(bard) };
+}
+
+/**
  * La question (joueur de la créature, sinon MJ), puis le dé : rend le résultat à ajouter, ou 0 (refusé, pas d'inspiration).
  * @param {Actor} actor
- * @param {{what: string, total: number, needed: number}} context  Le jet raté : « attaque » ou « sauvegarde », son total, le seuil.
+ * @param {{what: string, total: number, needed: number|null}} context  Le jet raté : « attaque » ou « sauvegarde », son total, le
+ *   seuil ; `needed` null pour un test libre (§113), dont le moteur ne connaît pas le DD.
  */
 export async function offerInspiration(actor, { what, total, needed }) {
   const inspiration = inspirationOf(actor);
   if ( !inspiration ) return 0;
   const answer = await askChoice(actor, {
     actor: actor.uuid, item: t("Nom"),
-    prompt: t("Question", { what, total, needed, formula: inspiration.formula }),
+    prompt: (needed === null) ? t("QuestionTest", { what, total, formula: inspiration.formula })
+      : t("Question", { what, total, needed, formula: inspiration.formula }),
     // « Non » d'abord : sans réponse dans le délai, askChoice retient la première option — l'inspiration n'est pas dépensée sans accord
     // (choix de l'utilisateur le 2026-09-29, comme la Chance du ténébreux).
     options: [{ id: "no", label: t("Non") }, { id: "yes", label: t("Oui", { formula: inspiration.formula }) }]

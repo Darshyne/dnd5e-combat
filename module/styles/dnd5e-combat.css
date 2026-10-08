@@ -161,3 +161,17 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .dnd5e-combat-reports li .note { grid-column: 1 / -1; grid-row: 2; font-style: italic; opacity: 0.85; }
 .dnd5e-combat-reports li .when { font-size: 0.8em; opacity: 0.6; }
 .dnd5e-combat-reports .form-footer { display: flex; gap: 6px; }
+
+/* ---- §113 : choix parmi beaucoup d'options (Assistance : 18 compétences) — une liste, pas 18 boutons ---- */
+.dnd5e-combat-choice-list { width: 100%; margin: 4px 0 2px; }
+
+/* ---- §113 : section « Aides » de la fenêtre d'un test de compétence ou d'outil ---- */
+.dnd5e-combat-aids { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; padding: 4px 8px 8px; }
+.dnd5e-combat-aids legend { font-weight: bold; }
+.dnd5e-combat-aids .dnd5e-combat-aid { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 8px;
+  height: auto; min-height: 34px; padding: 2px 8px; text-align: left; }
+.dnd5e-combat-aids .dnd5e-combat-aid img { width: 28px; height: 28px; border: none; border-radius: 4px; object-fit: cover; }
+.dnd5e-combat-aids .dnd5e-combat-aid small { font-size: 11px; opacity: 0.8; white-space: nowrap; }
+.dnd5e-combat-aids .dnd5e-combat-aid[data-status="pending"] { opacity: 0.7; font-style: italic; }
+.dnd5e-combat-aids .dnd5e-combat-aid[data-status="granted"] { opacity: 1; border-color: #6fbf5f; box-shadow: 0 0 4px #6fbf5f inset; }
+.dnd5e-combat-aids .dnd5e-combat-aid[data-status="refused"] { opacity: 0.5; text-decoration: line-through; }

@@ -29,7 +29,7 @@ describe("chargement du module", () => {
   });
 
   it("expose ses fonctions de test au connecteur sous api.mcp (call-module-api), et elles seules", () => {
-    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "animations", "attackReasons", "budget", "chatCards", "closeWindow", "dash", "effectOrigins", "enchant", "endings", "familiar", "familiarPocket", "familiarRecall", "follow", "followState", "heal", "hurt", "identify", "inventory", "issues", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "placeRegionAt", "plan", "planning", "portent", "reload", "reports", "restoreItem", "rollCard", "rollCheck", "rollSave", "runMacro", "saveChance", "sequencer", "setting", "stairs", "stairsAt", "stats", "status", "storm", "stormStrike", "summonAt", "takeStairs", "teleport", "teleportPick", "threats", "transpose", "unfollow", "use", "view", "windows"]);
+    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "animations", "attackReasons", "budget", "chatCards", "closeWindow", "dash", "effectOrigins", "enchant", "endings", "familiar", "familiarPocket", "familiarRecall", "follow", "followState", "heal", "hurt", "identify", "inventory", "issues", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "placeRegionAt", "plan", "planning", "portent", "reload", "reports", "restoreItem", "rollCard", "rollCheck", "rollSave", "runMacro", "saveChance", "sequencer", "setting", "skillAid", "skillAids", "stairs", "stairsAt", "stats", "status", "storm", "stormStrike", "summonAt", "takeStairs", "teleport", "teleportPick", "threats", "transpose", "unfollow", "use", "view", "windows"]);
     expect(Object.isFrozen(api.api.mcp)).toBe(true);
   });
 
@@ -62,7 +62,7 @@ describe("chargement du module", () => {
 
   it("enregistre les requêtes entre clients", () => {
     expect(Object.keys(CONFIG.queries).sort()).toEqual([
-      "dnd5e-combat.actionEnd", "dnd5e-combat.allocation", "dnd5e-combat.choice", "dnd5e-combat.contest", "dnd5e-combat.cure", "dnd5e-combat.deathSave", "dnd5e-combat.dismissSummon", "dnd5e-combat.enchant", "dnd5e-combat.extinguish", "dnd5e-combat.familiarPocket", "dnd5e-combat.familiarRecall", "dnd5e-combat.moveZone", "dnd5e-combat.opportunity", "dnd5e-combat.portent", "dnd5e-combat.reaction", "dnd5e-combat.revertForm", "dnd5e-combat.rollSave", "dnd5e-combat.search", "dnd5e-combat.setTargets", "dnd5e-combat.stabilize", "dnd5e-combat.transform"
+      "dnd5e-combat.actionEnd", "dnd5e-combat.allocation", "dnd5e-combat.choice", "dnd5e-combat.contest", "dnd5e-combat.cure", "dnd5e-combat.deathSave", "dnd5e-combat.dismissSummon", "dnd5e-combat.enchant", "dnd5e-combat.extinguish", "dnd5e-combat.familiarPocket", "dnd5e-combat.familiarRecall", "dnd5e-combat.moveZone", "dnd5e-combat.opportunity", "dnd5e-combat.portent", "dnd5e-combat.reaction", "dnd5e-combat.revertForm", "dnd5e-combat.rollSave", "dnd5e-combat.search", "dnd5e-combat.setTargets", "dnd5e-combat.skillAid", "dnd5e-combat.stabilize", "dnd5e-combat.transform"
     ]);
   });
 });

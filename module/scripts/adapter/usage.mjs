@@ -210,8 +210,13 @@ function resavePlan(message, activity, common, targets) {
   return { ...common, targets, plan: { save: { ...save, chained: false }, damage: null, effects: [], steps: [] } };
 }
 
-/** Le nom d'un effet de l'activité, pour la question posée à l'auteur. */
-const effectLabel = e => e.effect?.name ?? e.uuid ?? e._id;
+/**
+ * Le nom d'un effet de l'activité, pour la question posée à l'auteur. Lu sur l'item (ou la référence de compendium déjà en
+ * cache), pas par `profile.effect` : dnd5e 6.0 le déprécie au profit de `getEffect()`, asynchrone (un avertissement par effet,
+ * dix-huit pour Assistance).
+ */
+const effectLabel = (e, item) => item?.effects?.get?.(e._id)?.name ?? (e.uuid ? fromUuidSync(e.uuid, { strict: false })?.name : null)
+  ?? e.uuid ?? e._id;
 
 /**
  * Effets EXCLUSIFS (contenu `choice: { effects: "one" }`, Maléfice) : le plan porte la question,
@@ -228,7 +233,7 @@ function withChoice(activity, plan) {
   if ( choice?.effects !== "one" ) return plan;   // `pool` seul : effets reliés, rien à choisir (§53)
   // Une attaque qui enchaîne sa sauvegarde sœur (§19.8 : poussée ou Agrippée) : les effets de la sœur.
   const chained = plan.save?.chained ? activity.item.system.activities?.get(plan.save.activity?.split(".").pop()) : null;
-  const own = applicableEffectsOf(chained ?? activity).map(e => ({ id: effectKey(e), label: effectLabel(e) }));
+  const own = applicableEffectsOf(chained ?? activity).map(e => ({ id: effectKey(e), label: effectLabel(e, (chained ?? activity).item) }));
   if ( own.length < 2 ) return plan;
   return { ...plan, choice: { prompt: choice.prompt ?? null, options: own } };
 }

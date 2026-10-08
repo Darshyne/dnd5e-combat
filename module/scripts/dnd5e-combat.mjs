@@ -67,6 +67,8 @@ import { registerBreaks } from "./runtime/breaks.mjs";
 import { registerCure } from "./runtime/cure.mjs";
 import { registerCureUi } from "./ui/cure.mjs";
 import { registerKindleUi } from "./ui/kindle.mjs";
+import { registerSkillAid } from "./runtime/skill-aid.mjs";
+import { registerSkillAidUi } from "./ui/skill-aid.mjs";
 import { registerHelp } from "./runtime/help.mjs";
 import { registerHide } from "./runtime/hide.mjs";
 import { registerSearch } from "./runtime/search.mjs";
@@ -211,6 +213,7 @@ Hooks.once("init", () => {
   registerPotions();   // §53 : sort d'une potion sans concentration
   registerOil();   // §54 : l'huile s'enflamme
   registerHelp();
+  registerSkillAid();   // §113 : Assistance et Soutien demandés pour un test de compétence (requête à l'aidant)
   registerHide();
   registerSearch();
   registerPassivePerception();
@@ -233,6 +236,7 @@ Hooks.once("init", () => {
   registerVigor();
   registerCureUi();
   registerKindleUi();   // §52 : boîte à amadou
+  registerSkillAidUi();   // §113 : section « Aides » de la fenêtre de jet d'un test
   registerAutomation();
   state.active = true;
 });

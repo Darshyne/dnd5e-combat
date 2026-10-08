@@ -1,7 +1,8 @@
 /**
  * §90 : un dé que la créature ajoute à un test qu'elle vient de lancer, ou à son initiative (clé `rollBonus`, `on: ["check"]` /
  * `["initiative"]`) — Embuscade (Discrétion, initiative), Autorité naturelle (Intimidation, Représentation, Persuasion), Évaluation
- * tactique (Histoire, Investigation, Perspicacité) du Maître de guerre ; la Chance du ténébreux sur un test.
+ * tactique (Histoire, Investigation, Perspicacité) du Maître de guerre ; la Chance du ténébreux sur un test. §113 : puis l'Inspiration
+ * bardique que la créature porte (`offerInspiration`, sans seuil).
  *
  * Le moteur ne connaît pas le DD d'un test libre : la question est posée sitôt le jet lancé (« après l'avoir vu »), sur le client qui
  * l'a lancé, au joueur de la créature (adapter/inspiration.mjs, `offerRollBonus`) ; le dé part en clair, avec le nouveau total sur sa
@@ -10,7 +11,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { offerRollBonus } from "../adapter/inspiration.mjs";
+import { offerInspiration, offerRollBonus } from "../adapter/inspiration.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 
@@ -25,8 +26,12 @@ async function onCheckRolled(rolls, { skill=null, tool=null, ability=null, subje
   const actor = subject;
   const total = rolls?.[0]?.total;
   if ( !actor?.isOwner || !Number.isFinite(total) ) return;
-  const added = await offerRollBonus(actor, { kind: "check", what: checkName({ skill, tool, ability }), total, skill });
+  const what = checkName({ skill, tool, ability });
+  const added = await offerRollBonus(actor, { kind: "check", what, total, skill });
   if ( added ) log(`${actor.name} : dé ajouté à son test, ${total} + ${added} = ${total + added}`);
+  // §113 : l'Inspiration bardique sur un test (« quand la créature rate un Test d20 ») — le DD est inconnu : au joueur de juger.
+  const inspired = await offerInspiration(actor, { what, total: total + added, needed: null });
+  if ( inspired ) log(`${actor.name} : Inspiration bardique sur son test, ${total + added} + ${inspired} = ${total + added + inspired}`);
 }
 
 /** Sur le client qui écrit l'initiative : est-ce la première que reçoit ce combattant ? (lu au `updateCombatant`, partout) */

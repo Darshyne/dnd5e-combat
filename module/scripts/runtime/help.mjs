@@ -4,7 +4,7 @@
  *  - une attaque d'un allié de l'aidant contre lui : l'avantage est donné au jet (adapter/conditions.mjs),
  *    puis la marque est consommée ;
  *  - au début du prochain tour de l'aidant, ou à la fin du combat, les marques restantes tombent.
- * La partie « test de caractéristique » du Soutien n'est pas faite.
+ * La partie « test de caractéristique » du Soutien : runtime/skill-aid.mjs (§113, hors combat).
  */
 
 import { MODULE_ID } from "../constants.mjs";

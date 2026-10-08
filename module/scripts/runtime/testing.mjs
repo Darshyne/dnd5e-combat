@@ -37,6 +37,8 @@ import { areHostile } from "../core/reaction.mjs";
 import { opportunityThreats } from "./reactions.mjs";
 import { animationState } from "./animations.mjs";
 import { portentDice, portentOf, rollPortent } from "../adapter/portent.mjs";
+import { aidsFor, isGuided } from "../adapter/skill-aid.mjs";
+import { requestSkillAid } from "./skill-aid.mjs";
 
 /** Le token désigné, sur la scène affichée par le MJ. */
 function tokenOf({ tokenId }) {
@@ -527,6 +529,24 @@ async function rollCheck({ tokenId, skill=null, ability=null }) {
   return { formula: rolls?.[0]?.formula ?? null, total: rolls?.[0]?.total ?? null, d20: rolls?.[0]?.d20?.total ?? null };
 }
 
+/** §113 : les aides que la fenêtre d'un test de compétence ou d'outil proposerait à ce token. */
+function skillAids({ tokenId, skill=null, tool=null }) {
+  return aidsFor(tokenOf({ tokenId }).actor, { skill, tool }).map(a => ({ kind: a.kind, helper: a.helper.name, token: a.token.id, self: a.self }));
+}
+
+/** §113 : l'aide demandée comme le ferait le bouton de la fenêtre ; rend si elle est donnée, et si l'Assistance est posée (attendue 10 s). */
+async function skillAid({ tokenId, helperTokenId, kind, skill=null, tool=null }) {
+  const tester = tokenOf({ tokenId });
+  const helper = tokenOf({ tokenId: helperTokenId }).actor;
+  const granted = await requestSkillAid({ kind, helper, tester, skill, tool });
+  let guided = skill ? isGuided(tester.actor, skill) : false;
+  for ( let waited = 0; granted && (kind === "guidance") && !guided && (waited < 10000); waited += 250 ) {
+    await new Promise(r => setTimeout(r, 250));
+    guided = isGuided(tester.actor, skill);
+  }
+  return { granted, guided };
+}
+
 /** §23 : qui menacerait d'une attaque d'opportunité un déplacement en ligne droite jusqu'à ce point (noms). */
 function threats({ tokenId, point }) {
   const token = tokenOf({ tokenId });
@@ -761,4 +781,4 @@ function effectOrigins({ tokenId }) {
   });
 }
 
-export const testApi = Object.freeze({ issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, animations: animationState });
+export const testApi = Object.freeze({ issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState });

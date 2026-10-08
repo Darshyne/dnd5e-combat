@@ -65,3 +65,11 @@ export const SUMMONS = Object.freeze({
     cost: "bonus", distance: 60, units: "ft", occupies: false, shared: true, cluster: { distance: 20, units: "ft" }, leash: true
   } }
 });
+
+/**
+ * §109 : sorts du PHB 2.2.0 dont l'activité d'invocation a `summon.prompt: false` (dnd5e documents/activity/summon.mjs:68 : la case
+ * « placer les invocations » part décochée) alors que le sort invoque toujours. Sans la fenêtre de dnd5e (§68), rien n'était placé
+ * (retour de séance, 2026-10-08 : la meute d'Invocation d'animaux n'apparaissait pas). Restent décochés, à dessein, ceux où
+ * l'invocation est facultative : Lumière et Flamme éternelle (sur un objet), Animation des morts (relever un cadavre).
+ */
+export const PLACES_SUMMONS = Object.freeze(["conjure-animals", "summon-undead", "grasping-vine", "phantom-steed", "project-image"]);

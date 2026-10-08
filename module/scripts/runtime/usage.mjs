@@ -20,6 +20,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { pickSpellSlot, misplacedSelfUses, canCastHigher } from "../core/usage.mjs";
+import { contentOf } from "../adapter/content.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 
@@ -125,6 +126,12 @@ function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
     return false;
   }
   if ( auto ) dialogConfig.configure = false;
+  // §109 : un sort qui invoque toujours, dont la case « placer » part décochée (`summon.prompt: false`) — cochée ici, comme on
+  // l'aurait fait dans la fenêtre ; `create.summons` est déjà préparé à ce hook (documents/activity/summon.mjs:65-70).
+  if ( (activity.type === "summon") && (usageConfig.create?.summons === false || !usageConfig.create?.summons)
+    && contentOf(activity.item).entry?.placesSummons && activity.canSummon && canvas.scene && activity.availableProfiles?.length ) {
+    usageConfig.create = { ...(usageConfig.create ?? {}), summons: true };
+  }
 }
 
 export function registerUsage() {

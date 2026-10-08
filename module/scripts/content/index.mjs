@@ -17,7 +17,7 @@ import { TARGETS, EFFECT_EXPIRIES, USAGE_LIMITS, ENCHANT_TARGETS, PACTS } from "
 import { TRACES, TRACE_RULES } from "./traces.mjs";
 import { TELEPORTS } from "./teleports.mjs";
 import { ABSORBS } from "./absorbs.mjs";
-import { SUMMONS } from "./summons.mjs";
+import { SUMMONS, PLACES_SUMMONS } from "./summons.mjs";
 import { MOVABLES } from "./movables.mjs";
 import { LIGHTS, REVEALS_INVISIBLE } from "./lights.mjs";
 import { TETHERS } from "./tethers.mjs";
@@ -55,6 +55,7 @@ function build() {
   for ( const id of DRAINS ) (table[id] ??= {}).drain = true;
   for ( const id of SWALLOWS ) (table[id] ??= {}).swallow = true;
   for ( const [id, kind] of Object.entries(SPACE_SHARERS) ) (table[id] ??= {}).sharesSpace = kind;
+  for ( const id of PLACES_SUMMONS ) (table[id] ??= {}).placesSummons = true;   // §109
   for ( const [id, choice] of Object.entries(CHOICES) ) (table[id] ??= {}).choice = choice;
   for ( const [id, targets] of Object.entries(TARGETS) ) (table[id] ??= {}).targets = targets;
   for ( const [id, rest] of Object.entries(EFFECT_EXPIRIES) ) (table[id] ??= {}).effectsExpire = rest;

@@ -208,6 +208,9 @@
  *     fortitude?: true                          Robustesse de la non-vie (MM 2024, §61) : des dégâts qui font tomber le porteur à
  *                                               0 PV lui font jeter une sauvegarde de Constitution (DD 5 + dégâts subis), sauf
  *                                               dégâts radiants ou coup critique ; réussie, il reste à 1 PV (core/fortitude.mjs)
+ *     placesSummons?: true                       §109 : l'invocation se place toujours, même quand l'activité dit le contraire
+ *                                               (`summon.prompt: false` : case « placer » décochée, que l'utilisation sans
+ *                                               fenêtre ne laisse plus cocher — Invocation d'animaux)
  *     sharesSpace?: "enter"|"mutual"            §105 : entre dans la case d'une autre créature et s'y arrête ; "mutual" :
  *                                               l'inverse aussi (Nuée) — par sa présence sur la fiche, ou par l'effet
  *                                               d'un sort (Forme gazeuse ; adapter/space-sharing.mjs)
@@ -573,7 +576,7 @@ export const EFFECT_ENDS = Object.freeze(["casterTurnStart", "casterTurnEnd", "b
 /** Ce qui ouvre une attaque en action Bonus (`bonusAttack.after`). */
 export const BONUS_ATTACK_AFTER = Object.freeze(["critical", "felled"]);
 
-export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "swapPlaces", "sweep", "commandStrike", "casterPulse", "zoneEnd", "afterTeleport", "saveDamage", "onNatural1", "searchBonus", "atZero", "afterSneak", "effectStatuses", "changesForm", "actionOrBonus", "sharesSpace"]);
+export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "swapPlaces", "sweep", "commandStrike", "casterPulse", "zoneEnd", "afterTeleport", "saveDamage", "onNatural1", "searchBonus", "atZero", "afterSneak", "effectStatuses", "changesForm", "actionOrBonus", "sharesSpace", "placesSummons"]);
 export const CHOICE_EFFECTS = Object.freeze(["one"]);
 /** §38, §90 : les jets auxquels un `rollBonus` s'ajoute. */
 export const ROLL_BONUS_ON = Object.freeze(["save", "check", "attack", "initiative"]);
@@ -811,6 +814,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   if ( "emanation" in entry ) validateEmanation(entry.emanation, `${at}emanation`, errors);
   if ( ("noOpportunity" in entry) && !["always", "flying", "afterUse", "whileEffect"].includes(entry.noOpportunity) ) errors.push(`${at}noOpportunity : always, flying, afterUse, whileEffect`);
   if ( ("sharesSpace" in entry) && !["enter", "mutual"].includes(entry.sharesSpace) ) errors.push(`${at}sharesSpace : enter, mutual`);
+  if ( ("placesSummons" in entry) && (entry.placesSummons !== true) ) errors.push(`${at}placesSummons : true ou absent`);
   if ( ("savedEffects" in entry) && (!Array.isArray(entry.savedEffects) || !entry.savedEffects.length || !entry.savedEffects.every(isId)) ) {
     errors.push(`${at}savedEffects : liste d'ids d'effets (16 caractères)`);
   }
@@ -1431,6 +1435,7 @@ export function mergeEntries(layers) {
     if ( "fortitude" in layer ) out.fortitude = layer.fortitude;
     if ( "noOpportunity" in layer ) out.noOpportunity = layer.noOpportunity;
     if ( "sharesSpace" in layer ) out.sharesSpace = layer.sharesSpace;   // §105
+    if ( "placesSummons" in layer ) out.placesSummons = layer.placesSummons;   // §109
     if ( "drain" in layer ) out.drain = layer.drain;
     if ( "swallow" in layer ) out.swallow = layer.swallow;
     if ( "savedEffects" in layer ) out.savedEffects = [...layer.savedEffects];

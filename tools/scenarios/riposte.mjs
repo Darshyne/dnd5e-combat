@@ -100,5 +100,26 @@ export default {
     const temp = await tempOf();
     const still = (await newEffects()).some(e => e.flags?.["dnd5e-combat"]?.trace);
     ctx.expect(still === (temp > 0), `trace ${still ? "toujours là" : "tombée"}, PV temporaires restants : ${temp}`);
+
+    // 3. Armure d'Agathys au niveau 3 (retour de séance, 2026-10-08) : « les PV temporaires et les dégâts de froid augmentent
+    // de 5 par niveau d'emplacement au-dessus du 1er » — 15 dégâts. Le niveau passe par l'emplacement (`spell.slot`,
+    // dnd5e activity/mixin.mjs:533-535), puis par la trace (`flags.dnd5e.scaling`) jusqu'à la riposte.
+    await clearNew();
+    const armor3 = async () => {
+      await clearNew();
+      await setTemp(0);
+      await ctx.setHp(mage, mageHp);
+      await ctx.use({ tokenId: mage.id, identifier: "armor-of-agathys", activityType: "heal", targetTokenIds: [mage.id],
+        usageConfig: { spell: { slot: "spell3" } } });
+      await pause(1500);
+      await setTemp(15);
+      await pause(500);
+    };
+    await armor3();
+    const trace3 = (await newEffects()).find(e => e.flags?.["dnd5e-combat"]?.trace);
+    ctx.expect(trace3?.flags?.dnd5e?.scaling === 2, `trace au niveau 3 (scaling ${trace3?.flags?.dnd5e?.scaling ?? "?"})`);
+    const hit3 = await strike(armor3);
+    if ( !ctx.expect(!!hit3, "le Zombi touche le Magicien sous l'Armure de niveau 3 (20 essais au plus)") ) return;
+    ctx.expect(zombiHp - hit3.zombi === 15, `le Zombi subit 15 dégâts de froid (${zombiHp - hit3.zombi})`);
   }
 };

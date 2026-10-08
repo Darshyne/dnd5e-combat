@@ -14,6 +14,7 @@ import { movementCap } from "../runtime/actions.mjs";
 import { useIssues } from "../runtime/turn.mjs";
 import { lightState, globalLightState } from "./illumination.mjs";
 import { menuEntriesFor } from "./pointer.mjs";
+import { poolsOf } from "../adapter/absorb.mjs";
 
 /**
  * Le budget du tour d'un combattant, tel que le moteur le juge : une action reste disponible tant que l'action Attaquer a
@@ -79,6 +80,17 @@ function multiattack(actor) {
   return status ? { left: [...status.left], spent: [...status.spent], names: [...status.names] } : null;
 }
 
-export const uiApi = { budget, movement, issues, multiattackLeft: multiattack, light: lightState, globalLight: globalLightState,
+/**
+ * §108 : les réserves qui absorbent les dégâts de cet acteur, actives (Égide arcanique créée depuis le dernier repos long) :
+ * points restants et maximum (les utilisations de l'item, adapter/absorb.mjs). Vide sans réserve active.
+ * @param {Actor5e} actor
+ * @returns {Array<{name: string, img: string, identifier: string, value: number, max: number}>}
+ */
+function wards(actor) {
+  return poolsOf(actor).map(({ item, pool }) => ({ name: item.name, img: item.img, identifier: item.system.identifier ?? "",
+    value: pool, max: Number(item.system.uses?.max) || pool }));
+}
+
+export const uiApi = { budget, wards, movement, issues, multiattackLeft: multiattack, light: lightState, globalLight: globalLightState,
   /** §41.4 : `tokenMenu(token)` — les entrées du menu contextuel de ce token pour le token en main (ui/pointer.mjs). */
   tokenMenu: menuEntriesFor };

@@ -146,7 +146,7 @@
   "DND5ECOMBAT.Ruee.Mur": "Dash: a wall blocks the straight line.",
   "DND5ECOMBAT.Ruee.PasDeZone": "{item}: no area to place — the creatures near the path are already targeted.",
   "DND5ECOMBAT.Reglage.autoUsage.Nom": "Use without dnd5e's usage window",
-  "DND5ECOMBAT.Reglage.autoUsage.Aide": "An activity consumes its resources, starts concentration and places its area without asking (slot used up: the lowest one left). Out of resources: the window opens for the GM only; a player gets dnd5e's warning.",
+  "DND5ECOMBAT.Reglage.autoUsage.Aide": "An activity consumes its resources, starts concentration and places its area without asking (slot used up: the lowest one left). A spell that can be cast at a higher level keeps the window, to pick the level. Out of resources: the window opens for the GM only; a player gets dnd5e's warning.",
   "DND5ECOMBAT.Reglage.teleportPlanning.Nom": "Teleport: pick the destination right away",
   "DND5ECOMBAT.Reglage.teleportPlanning.Aide": "After Misty Step or Dimension Door, destination picking opens at once (otherwise, use the card's Teleport button).",
   "DND5ECOMBAT.Deplacement.CibleHorsDatteinte": "{name} is out of reach this turn.",

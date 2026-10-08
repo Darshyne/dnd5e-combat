@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickSpellSlot, misplacedSelfUses } from "../module/scripts/core/usage.mjs";
+import { pickSpellSlot, misplacedSelfUses, canCastHigher } from "../module/scripts/core/usage.mjs";
 
 describe("§68 : l'emplacement d'une utilisation sans fenêtre", () => {
   const slots = { spell1: { value: 0, level: 1 }, spell2: { value: 2, level: 2 }, spell3: { value: 1, level: 3 }, pact: { value: 1, level: 2 } };
@@ -21,4 +21,12 @@ describe("§77 : utilisations de l'activité posées sur l'item", () => {
     expect(misplacedSelfUses(self, true, true)).toEqual([]);
     expect(misplacedSelfUses(self, false, false)).toEqual([]);
   });
+});
+
+describe("§106 : un sort lançable plus haut garde la fenêtre de dnd5e", () => {
+  const slots = { spell1: { value: 2, level: 1 }, spell2: { value: 0, level: 2 }, spell3: { value: 1, level: 3 }, pact: { value: 0, level: 3 } };
+  it("un emplacement plus haut reste", () => expect(canCastHigher(slots, 1)).toBe(true));
+  it("rien au-dessus du niveau du sort", () => expect(canCastHigher(slots, 3)).toBe(false));
+  it("les emplacements vides ne comptent pas", () => expect(canCastHigher({ ...slots, spell3: { value: 0, level: 3 } }, 1)).toBe(false));
+  it("le pacte compte, à son niveau", () => expect(canCastHigher({ spell1: { value: 0, level: 1 }, pact: { value: 1, level: 3 } }, 2)).toBe(true));
 });

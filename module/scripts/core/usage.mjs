@@ -33,3 +33,15 @@ export function misplacedSelfUses(targets, activityHasUses, itemHasUses) {
   if ( activityHasUses || !itemHasUses ) return [];
   return (targets ?? []).flatMap((t, i) => ((t?.type === "activityUses") && !t.target) ? [i] : []);
 }
+
+/**
+ * §106 : le sort peut-il se lancer plus haut que son niveau — reste-t-il un emplacement (pacte compris) d'un niveau supérieur ?
+ * C'est alors un vrai choix, que l'utilisation sans fenêtre laisse à celle de dnd5e.
+ * @param {Record<string, {value: number, level: number}>} slots  Les emplacements de l'acteur (`system.spells`).
+ * @param {number} spellLevel  Le niveau du sort.
+ * @returns {boolean}
+ */
+export function canCastHigher(slots, spellLevel) {
+  return Object.entries(slots ?? {}).some(([key, slot]) => /^(spell\d+|pact)$/.test(key)
+    && ((Number(slot?.value) || 0) > 0) && ((Number(slot?.level) || 0) > spellLevel));
+}

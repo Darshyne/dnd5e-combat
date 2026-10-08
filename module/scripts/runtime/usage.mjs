@@ -5,8 +5,10 @@
  * limite est atteinte), poser la zone. Sans elle, les trois s'appliquent tels quels (`dialogConfig.configure = false`).
  *
  *  - Emplacement de sort : celui que dnd5e propose s'il en reste, sinon le plus bas disponible au moins du niveau du sort
- *    (core/usage.mjs), et le niveau de lancement suit (`scaling`). Lancer à un niveau supérieur se choisit ailleurs (tiroir de
- *    la barre de darsh-dnd-ui, qui passe l'emplacement).
+ *    (core/usage.mjs), et le niveau de lancement suit (`scaling`).
+ *  - §106 : un sort qui peut se lancer plus haut (il reste un emplacement d'un niveau supérieur) garde la fenêtre de dnd5e, où se
+ *    choisit le niveau — depuis la fiche notamment. Qui a déjà choisi l'emplacement la saute lui-même (`configure: false` : tiroir
+ *    de la barre de darsh-dnd-ui), comme les utilisations du moteur.
  *  - Plus de ressources (aucun emplacement, utilisations de l'activité ou de l'item épuisées) : §77, le MJ peut toujours lancer — une
  *    fenêtre d'avertissement le laisse lancer sans rien consommer, ou renoncer (que la fenêtre de dnd5e soit passée ou non) ; un
  *    joueur non — dnd5e refuse l'utilisation avec son propre avertissement.
@@ -17,7 +19,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { pickSpellSlot, misplacedSelfUses } from "../core/usage.mjs";
+import { pickSpellSlot, misplacedSelfUses, canCastHigher } from "../core/usage.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 
@@ -99,7 +101,7 @@ function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
     dialogConfig.configure = false;
     return;
   }
-  const auto = !!dialogConfig?.configure && game.settings.get(MODULE_ID, AUTO_USAGE_SETTING) && !needsChoice(activity);
+  let auto = !!dialogConfig?.configure && game.settings.get(MODULE_ID, AUTO_USAGE_SETTING) && !needsChoice(activity);
   let lacking = false;
   const slots = activity.actor?.system.spells;
   const proposed = usageConfig.spell?.slot;
@@ -113,6 +115,9 @@ function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
       log(`${activity.item.name} : plus d'emplacement ${proposed}, lancé avec ${slot}`);
     }
   }
+  // §106 : le niveau est un vrai choix — la fenêtre de dnd5e reste (avec l'emplacement corrigé ci-dessus, s'il l'a été).
+  if ( auto && !lacking && activity.requiresSpellSlot && usageConfig.consume?.spellSlot && (usageConfig.scaling !== false)
+    && canCastHigher(slots, Number(activity.item.system.level) || 0) ) auto = false;
   if ( !lacking ) lacking = lacksUses(activity, usageConfig);
   // §77 : plus de ressources — le MJ peut toujours lancer, après avertissement ; un joueur, dnd5e le refuse.
   if ( lacking && game.user.isGM ) {

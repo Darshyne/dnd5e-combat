@@ -32,6 +32,11 @@ Hooks.once("dnd5e-combat.registerContent", register => register("my-module", {
 
 Or call `api.content.register(source, table)` later on. Each entry is validated just like the bundled content.
 
+For tools that build rules without code, `api.content.recipes` describes the common building blocks (bonus damage,
+advantage, condition on a hit or a failed save, push/pull, repeated save, lasting zone, aura, reaction, teleport,
+summon…) as typed form fields, and `api.content.recipes.build(recipes, { identifier })` turns them into an entry
+(`module/scripts/core/recipes.mjs`). [DAS · Homebrew](https://github.com/Darshyne/darsh-homebrew) uses it.
+
 ## Darshyne's Automation Suite
 
 | Module | Role |
@@ -41,6 +46,7 @@ Or call `api.content.register(source, table)` later on. Each entry is validated 
 | [`darsh-loot`](https://github.com/Darshyne/darsh-loot) | Loot, containers, theft, merchants |
 | [`dnd5e-lumiere`](https://github.com/Darshyne/dnd5e-lumiere) | Shadows and ambience, purely visual |
 | [`darsh-animations`](https://github.com/Darshyne/darsh-animations) | Boss Loot (BLFX) animations for abilities it does not recognise |
+| [`darsh-homebrew`](https://github.com/Darshyne/darsh-homebrew) | Step-by-step creator of automated items, no code |
 
 ## Installation
 

@@ -59,12 +59,12 @@ async function mark(kind, source, target, weapon) {
   if ( ids.length ) await bearer.actor.deleteEmbeddedDocuments("ActiveEffect", ids);
   await bearer.actor.createEmbeddedDocuments("ActiveEffect", [markData(kind, { source, target, weapon, turnKey: turnKey() })]);
   notice(bearer, loc(`Botte.Retour.${kind}`), onSource ? "gain" : "ended");
-  log(`botte ${kind} : ${bearer.name} marqué (${weapon?.name})`);
+  log(`mastery ${kind}: ${bearer.name} marked (${weapon?.name})`);
 }
 
 async function graze(attackMessage, source, target, weapon) {
   const n = grazeDamage(attackModOf(attackMessage));
-  if ( !n ) return log(`Écorchure : modificateur nul, rien contre ${target.name}`);
+  if ( !n ) return log(`Graze: zero modifier, nothing against ${target.name}`);
   const type = Array.from(weapon?.system?.damage?.base?.types ?? [])[0] ?? "bludgeoning";
   const logged = await inflict({
     step: { formula: String(n), damageType: type }, item: weapon, targetUuid: target.uuid, properties: physical(weapon),
@@ -72,7 +72,7 @@ async function graze(attackMessage, source, target, weapon) {
     flavor: loc("Botte.Carte.graze", { weapon: weapon?.name ?? "", name: target.name }),
     flags: { mastery: { kind: "graze", target: target.uuid, amount: n } }
   });
-  log(`Écorchure : ${target.name} subit ${n} ${type}${logged ? ` (PV ${logged.before?.value} → ${logged.after?.value})` : ""}`);
+  log(`Graze: ${target.name} takes ${n} ${type}${logged ? ` (HP ${logged.before?.value} -> ${logged.after?.value})` : ""}`);
 }
 
 async function push(source, target, weapon) {
@@ -81,9 +81,9 @@ async function push(source, target, weapon) {
     prompt: loc("Botte.Poussee.Question", { name: target.name }),
     options: [{ id: "push", label: loc("Botte.Poussee.Oui") }, { id: "none", label: loc("Botte.Poussee.Non") }]
   });
-  if ( answer?.id !== "push" ) return log(`Poussée : ${source.name} ne repousse pas ${target.name}`);
+  if ( answer?.id !== "push" ) return log(`Push: ${source.name} does not push ${target.name}`);
   const { cells, wanted } = await pushAway(source, target, { distance: 10, units: "ft" }, readUnitFactors());
-  log(`Poussée : ${target.name} repoussé de ${cells} case(s) sur ${wanted}`);
+  log(`Push: ${target.name} pushed ${cells} square(s) out of ${wanted}`);
 }
 
 async function topple(attackMessage, source, target, weapon) {
@@ -94,7 +94,7 @@ async function topple(attackMessage, source, target, weapon) {
   const total = rolls?.[0]?.total;
   if ( !Number.isFinite(total) ) return;
   const saved = total >= dc;
-  log(`Renversement : ${target.name} ${saved ? "réussit" : "rate"} sa sauvegarde de Constitution (${total} contre DD ${dc})`);
+  log(`Topple: ${target.name} ${saved ? "succeeds on" : "fails"} its Constitution saving throw (${total} vs DC ${dc})`);
   if ( saved || target.actor.statuses.has("prone") || conditionImmunitiesOf(target.actor).includes("prone") ) return;
   await target.actor.toggleStatusEffect("prone", { active: true });
 }
@@ -155,7 +155,7 @@ async function onAttackRolled(message) {
       const actor = effect.parent;
       if ( !actor?.effects?.has(effect.id) ) continue;   // déjà retirée (reposée par la botte d'un coup précédent)
       await actor.deleteEmbeddedDocuments("ActiveEffect", [effect.id]);
-      log(`botte : « ${effect.name} » consommée par le jet de ${source.name}`);
+      log(`mastery: "${effect.name}" used up by ${source.name}'s roll`);
     }
   }
 }
@@ -176,7 +176,7 @@ async function expire(combat, combatantId, moment, key) {
     if ( !gone.length ) continue;
     const ids = gone.map(e => e.id).filter(id => actor.effects.has(id));
     if ( ids.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", ids);
-    log(`botte : ${gone.map(e => e.name).join(", ")} ${moment === "turnStart" ? "au début" : "à la fin"} du tour`);
+    log(`mastery: ${gone.map(e => e.name).join(", ")} removed ${moment === "turnStart" ? "at the start" : "at the end"} of the turn`);
   }
 }
 
@@ -201,7 +201,7 @@ function onPreRollDamage(config, dialog, message) {
     if ( !roll.base || !roll.data || !((roll.data.mod ?? 0) > 0) ) continue;
     roll.data = { ...roll.data, mod: cleaveModifier(roll.data.mod) };
   }
-  log("Enchaînement : dégâts sans le modificateur de caractéristique");
+  log("Cleave: damage without the ability modifier");
   return true;
 }
 
@@ -214,11 +214,11 @@ async function onCleaveUsed(message) {
 
 export function registerMastery() {
   route(`${MODULE_ID}.resolution`, resolution => enqueue(MARKS, () => onResolution(resolution)),
-    { executor: true, label: "botte d'arme non jouée" });
+    { executor: true, label: "weapon mastery not played" });
   route("createChatMessage", message => {
     if ( message.type === "attack" ) return enqueue(MARKS, () => onAttackRolled(message));
     if ( (message.type === "usage") && message.getFlag(MODULE_ID, "cleave") ) return onCleaveUsed(message);
-  }, { executor: true, label: "botte d'arme : marque non consommée" });
-  route("combatTurnChange", onTurnChange, { executor: true, label: "botte d'arme : marque non retirée" });
-  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "Enchaînement : modificateur" });
+  }, { executor: true, label: "weapon mastery: mark not used up" });
+  route("combatTurnChange", onTurnChange, { executor: true, label: "weapon mastery: mark not removed" });
+  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "Cleave: modifier" });
 }

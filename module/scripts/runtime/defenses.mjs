@@ -9,7 +9,7 @@ import { log } from "./shared.mjs";
 /** §16.46 : intention « dépenser `count` dés de vie `die` pour se soigner ». */
 export async function healWithHitDice(activity, die, count) {
   const roll = await spendHitDiceToHeal(activity, die, count);
-  if ( roll ) log(`${activity.actor.name} : ${activity.item.name}, ${count}${die} → ${roll.total} PV`);
+  if ( roll ) log(`${activity.actor.name}: ${activity.item.name}, ${count}${die} → ${roll.total} HP`);
   return roll;
 }
 

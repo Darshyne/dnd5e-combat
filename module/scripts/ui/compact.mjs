@@ -59,11 +59,11 @@ function attackLine(message) {
   if ( !roll ) return null;
   const d20 = roll.dice?.[0]?.total ?? null;
   const notes = [];
-  if ( d20 !== null ) notes.push(`d20 : ${d20}`);
+  if ( d20 !== null ) notes.push(loc("LabelValue", { label: "d20", value: d20 }));
   if ( roll.isCritical ) notes.push(loc("Compact.Critique"));
   else if ( roll.isFumble ) notes.push(loc("Compact.Echec"));
   return { css: roll.isCritical ? "hit" : (roll.isFumble ? "miss" : "note"), title: roll.formula,
-    text: `${loc("Compact.Attaque")} : ${roll.total}${notes.length ? ` (${notes.join(", ")})` : ""}` };
+    text: `${loc("LabelValue", { label: loc("Compact.Attaque"), value: roll.total })}${notes.length ? ` (${notes.join(", ")})` : ""}` };
 }
 
 /** « Dégâts : 9 (6 tranchants + 3 feu) » — par type, comme le plateau de dégâts du système. */
@@ -81,7 +81,7 @@ function damageLine(message) {
   const detail = (types.length > 1) ? ` (${types.map(([type, n]) => `${n} ${damageLabel(type).toLowerCase()}`).join(" + ")}${critical})`
     : ` ${damageLabel(types[0][0]).toLowerCase()}${critical ? ` (${loc("Compact.Critique")})` : ""}`;
   const key = (message.type === "healing") ? "Compact.Soins" : "Compact.Degats";
-  return { css: "note", title: rolls.map(r => r.formula).join(" + "), text: `${loc(key)} : ${total}${detail.trimEnd()}` };
+  return { css: "note", title: rolls.map(r => r.formula).join(" + "), text: `${loc("LabelValue", { label: loc(key), value: total })}${detail.trimEnd()}` };
 }
 
 /** Le résumé des jets sur la carte d'utilisation, et le bouton qui les déplie. */
@@ -167,8 +167,8 @@ export function registerCompact() {
     scope: "world", config: true, type: Boolean, default: true,
     onChange: () => { applyCompact(); ui.chat?.render?.(); }
   });
-  route("ready", applyCompact, { label: "carte unique" });
-  route("createChatMessage", onCreate, { label: "carte unique : jet non replié" });
+  route("ready", applyCompact, { label: "single card" });
+  route("createChatMessage", onCreate, { label: "single card: roll not folded" });
   // Inscrit AVANT ui/chat.mjs : le résumé des dés précède le verdict par cible.
-  route("dnd5e.renderChatMessage", onRender, { label: "carte unique : rendu" });
+  route("dnd5e.renderChatMessage", onRender, { label: "single card: render" });
 }

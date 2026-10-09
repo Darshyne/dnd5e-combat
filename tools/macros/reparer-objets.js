@@ -13,7 +13,9 @@
  * message privé au MJ. Rejouable sans risque.
  */
 (async () => {
-  if ( !game.user.isGM ) return ui.notifications.warn("Réparation des objets : réservé au MJ.");
+  // Textes : clés DND5ECOMBAT.Macro.RepairItems.* des fichiers de langue du module.
+  const t = (key, data) => data ? game.i18n.format(`DND5ECOMBAT.Macro.RepairItems.${key}`, data) : game.i18n.localize(`DND5ECOMBAT.Macro.RepairItems.${key}`);
+  if ( !game.user.isGM ) return ui.notifications.warn(t("GmOnly"));
   const PACKS = ["dnd-dungeon-masters-guide.equipment", "dnd-players-handbook.equipment"];
   const TYPES = new Set(["equipment", "weapon", "consumable", "tool", "loot", "container"]);
 
@@ -25,17 +27,17 @@
     const index = await pack.getIndex({ fields: ["system.identifier"] });
     for ( const e of index ) if ( e.system?.identifier && !refs.has(e.system.identifier) ) refs.set(e.system.identifier, { pack, id: e._id });
   }
-  if ( !refs.size ) return ui.notifications.error("Réparation des objets : compendiums du Guide du maître et du Manuel des joueurs introuvables.");
+  if ( !refs.size ) return ui.notifications.error(t("PacksMissing"));
 
   // Les objets : monde, fiches, tokens non liés (leur delta seulement : le reste est l'acteur de base).
   const found = [];
-  for ( const item of game.items ) found.push({ owner: "(monde)", item });
+  for ( const item of game.items ) found.push({ owner: t("World"), item });
   for ( const actor of game.actors ) for ( const item of actor.items ) found.push({ owner: actor.name, item });
   for ( const scene of game.scenes ) for ( const token of scene.tokens ) {
     if ( token.actorLink || !token.actor ) continue;
     for ( const own of token.delta?.items ?? [] ) {
       const item = token.actor.items.get(own.id);
-      if ( item ) found.push({ owner: `${token.name} (${scene.name}, token)`, item });
+      if ( item ) found.push({ owner: t("TokenOwner", { token: token.name, scene: scene.name }), item });
     }
   }
 
@@ -56,18 +58,17 @@
     if ( !ref?.effects?.size ) continue;
     if ( item.effects.size ) {
       const missing = ref.effects.filter(e => !item.effects.has(e.id));
-      if ( missing.length ) rows.push({ owner, item, ref, kind: "différent" });
+      if ( missing.length ) rows.push({ owner, item, ref, kind: "different" });
       continue;
     }
-    rows.push({ owner, item, ref, kind: "manquant" });
+    rows.push({ owner, item, ref, kind: "missing" });
   }
 
-  const missing = rows.filter(r => r.kind === "manquant");
+  const missing = rows.filter(r => r.kind === "missing");
   const mode = await foundry.applications.api.DialogV2.wait({
-    window: { title: "Réparation des objets" },
-    content: `<p>${missing.length} objet(s) sans effet alors que le compendium en a ; ${rows.length - missing.length} objet(s) aux effets
-      différents (signalés, jamais modifiés).</p><p>« Rapport » ne modifie rien.</p>`,
-    buttons: [{ action: "report", label: "Rapport", default: true }, { action: "repair", label: "Réparer" }],
+    window: { title: t("Title") },
+    content: `<p>${t("DialogSummary", { missing: missing.length, different: rows.length - missing.length })}</p><p>${t("ReportChangesNothing")}</p>`,
+    buttons: [{ action: "report", label: t("Report"), default: true }, { action: "repair", label: t("Repair") }],
     rejectClose: false
   });
   if ( !mode ) return;
@@ -77,8 +78,8 @@
   for ( const row of rows ) {
     const names = row.ref.effects.map(e => e.name).join(", ");
     const where = `<b>${row.owner}</b> — ${row.item.name}`;
-    if ( row.kind === "différent" ) { lines.push(`<li>${where} : effets différents du compendium (${names}) — laissé</li>`); continue; }
-    if ( mode === "report" ) { lines.push(`<li>${where} : sans effet — à recopier : ${names}</li>`); continue; }
+    if ( row.kind === "different" ) { lines.push(`<li>${t("LineDifferent", { where, names })}</li>`); continue; }
+    if ( mode === "report" ) { lines.push(`<li>${t("LineToCopy", { where, names })}</li>`); continue; }
     try {
       // Des effets d'enchantement (Huile d'affûtage) ne s'ajoutent pas à un objet existant : dnd5e les y croit appliqués et les
       // refuse sans erreur (data/active-effect/enchantment.mjs, `_preCreate`). Ils ne naissent qu'avec l'objet : on le remplace par
@@ -94,23 +95,23 @@
         else await Item.implementation.create({ ...data, folder: old.folder?.id ?? null });
         await old.delete();
         repaired++;
-        lines.push(`<li>${where} : remplacé par une copie neuve du compendium (effets d'enchantement : ${names})</li>`);
+        lines.push(`<li>${t("LineReplaced", { where, names })}</li>`);
         continue;
       }
       await row.item.createEmbeddedDocuments("ActiveEffect", row.ref.effects.map(e => e.toObject()), { keepId: true });
       // dnd5e peut refuser un effet sans lever d'erreur : on vérifie qu'ils sont bien là.
       const missingAfter = row.ref.effects.filter(e => !row.item.effects.has(e.id)).map(e => e.name);
-      if ( missingAfter.length ) throw new Error(`effets refusés : ${missingAfter.join(", ")}`);
+      if ( missingAfter.length ) throw new Error(t("EffectsRefused", { names: missingAfter.join(", ") }));
       repaired++;
-      lines.push(`<li>${where} : effets recopiés (${names})</li>`);
+      lines.push(`<li>${t("LineCopied", { where, names })}</li>`);
     } catch(err) {
-      console.error("Réparation des objets |", row.item.name, err);
-      lines.push(`<li>${where} : <b>échec</b> — ${err.message}</li>`);
+      console.error("Repair items |", row.item.name, err);
+      lines.push(`<li>${t("LineFailed", { where, error: err.message })}</li>`);
     }
   }
   const head = (mode === "report")
-    ? `<p><b>Réparation des objets — rapport</b> : rien n'a été modifié.</p>`
-    : `<p><b>Réparation des objets</b> : ${repaired} objet(s) réparé(s).</p>`;
-  await ChatMessage.create({ content: `${head}<ul>${lines.join("") || "<li>Rien à signaler.</li>"}</ul>`, whisper: [game.user.id],
-    speaker: { alias: "Réparation des objets" } });
+    ? `<p>${t("HeadReport")}</p>`
+    : `<p>${t("HeadDone", { count: repaired })}</p>`;
+  await ChatMessage.create({ content: `${head}<ul>${lines.join("") || `<li>${t("NothingToReport")}</li>`}</ul>`, whisper: [game.user.id],
+    speaker: { alias: t("Title") } });
 })();

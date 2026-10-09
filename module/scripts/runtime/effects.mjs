@@ -5,16 +5,16 @@ import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 
 const EXPIRY_LABEL = {
-  targetStart: "au début de son prochain tour", targetEnd: "à la fin de son prochain tour",
-  sourceStart: "au début du prochain tour de la source", sourceEnd: "à la fin du prochain tour de la source"
+  targetStart: "at the start of their next turn", targetEnd: "at the end of their next turn",
+  sourceStart: "at the start of the source's next turn", sourceEnd: "at the end of the source's next turn"
 };
 
 export function registerEffects() {
   route("preCreateActiveEffect", effect => {
     const rest = setRestExpiry(effect);
-    if ( rest ) log(`${effect.parent?.name ?? "?"} : ${effect.name} prend fin au ${rest === "longRest" ? "repos long" : "repos court"}`);
+    if ( rest ) log(`${effect.parent?.name ?? "?"}: ${effect.name} ends on a ${rest === "longRest" ? "Long Rest" : "Short Rest"}`);
     // M4 (§18.7) : la durée écrite dans le texte (« jusqu'à la fin de son prochain tour »), pour un effet posé sans durée.
     const turn = rest ? null : setTextExpiry(effect);
-    if ( turn ) log(`${effect.parent?.name ?? "?"} : ${effect.name} prend fin ${EXPIRY_LABEL[turn]}`);
-  }, { label: "effet : fin au repos ou au prochain tour non posée" });
+    if ( turn ) log(`${effect.parent?.name ?? "?"}: ${effect.name} ends ${EXPIRY_LABEL[turn]}`);
+  }, { label: "effect: end on rest or next turn not applied" });
 }

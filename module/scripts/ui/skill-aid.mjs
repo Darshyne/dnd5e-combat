@@ -102,5 +102,5 @@ function onRender(app, element) {
 
 export function registerSkillAidUi() {
   // ApplicationV2 appelle un hook par classe de la lignée : celui de la fenêtre des tests de compétence et d'outil.
-  route("renderSkillToolRollConfigurationDialog", onRender, { label: "aides au test non proposées", level: "warn" });
+  route("renderSkillToolRollConfigurationDialog", onRender, { label: "check aids not offered", level: "warn" });
 }

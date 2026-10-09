@@ -19,7 +19,7 @@ async function handleTransform({ actor: actorUuid, source: sourceUuid, activity:
   const activity = await fromUuid(activityUuid);
   if ( !actor || !source || !activity || (user && !actor.testUserPermission(user, "OWNER")) ) return false;
   const shaped = await transformActor(actor, source, activity);
-  if ( shaped ) log(`${actor.name} prend la forme de ${source.name}`);
+  if ( shaped ) log(`${actor.name} takes the form of ${source.name}`);
   return !!shaped;
 }
 
@@ -34,7 +34,7 @@ async function handleRevert({ actor: actorUuid, reason=null }, { user }={}) {
   reverting.add(actorUuid);
   try {
     const original = await revertForm(actor);
-    if ( original ) log(`${original.name} reprend sa forme${reason ? ` (${reason})` : ""}`);
+    if ( original ) log(`${original.name} returns to their true form${reason ? ` (${reason})` : ""}`);
     return !!original;
   } finally { reverting.delete(actorUuid); }
 }
@@ -44,7 +44,7 @@ async function asGM(query, handler, payload) {
   const gm = game.users.activeGM;
   if ( !gm ) { ui.notifications.warn(loc("Forme.SansMJ")); return false; }
   if ( gm.isSelf ) return handler(payload);
-  return gm.query(query, payload, { timeout: 20000 }).catch(err => { console.warn(`${MODULE_ID} | forme sauvage`, err); return false; });
+  return gm.query(query, payload, { timeout: 20000 }).catch(err => { console.warn(`${MODULE_ID} | Wild Shape`, err); return false; });
 }
 
 /**
@@ -75,7 +75,7 @@ async function onPostUse(activity, usageConfig) {
   }
   // « Reprendre sa forme » : l'item posé sur la fiche transformée.
   if ( activity.item?.getFlag(MODULE_ID, "revertForm") ) {
-    await asGM(REVERT_QUERY, handleRevert, { actor: activity.actor.uuid, reason: "action Bonus" });
+    await asGM(REVERT_QUERY, handleRevert, { actor: activity.actor.uuid, reason: "Bonus Action" });
   }
 }
 
@@ -86,18 +86,18 @@ async function endIfNeeded(actor, reason) {
 }
 
 export function registerWildShape() {
-  route("dnd5e.postUseActivity", onPostUse, { label: "forme sauvage : transformation non faite" });
+  route("dnd5e.postUseActivity", onPostUse, { label: "Wild Shape: transformation not done" });
   route("updateActor", (actor, changes) => {
     if ( !isWildShaped(actor) || !foundry.utils.hasProperty(changes, "system.attributes.hp") ) return null;
-    return endIfNeeded(actor, "0 PV");
-  }, { executor: true, label: "forme sauvage : fin à 0 PV" });
+    return endIfNeeded(actor, "0 Hit Points");
+  }, { executor: true, label: "Wild Shape: end at 0 Hit Points" });
   route("createActiveEffect", effect => {
     const actor = effect.parent;
-    return (actor?.documentName === "Actor") && isWildShaped(actor) ? endIfNeeded(actor, "Neutralisé") : null;
-  }, { executor: true, label: "forme sauvage : fin si Neutralisé" });
+    return (actor?.documentName === "Actor") && isWildShaped(actor) ? endIfNeeded(actor, "Incapacitated") : null;
+  }, { executor: true, label: "Wild Shape: end if Incapacitated" });
   route("updateWorldTime", async worldTime => {
-    for ( const actor of expiredForms(worldTime) ) await handleRevert({ actor: actor.uuid, reason: "durée écoulée" });
-  }, { executor: true, label: "forme sauvage : fin de durée" });
+    for ( const actor of expiredForms(worldTime) ) await handleRevert({ actor: actor.uuid, reason: "duration elapsed" });
+  }, { executor: true, label: "Wild Shape: end of duration" });
   CONFIG.queries[TRANSFORM_QUERY] = handleTransform;
   CONFIG.queries[REVERT_QUERY] = handleRevert;
 }

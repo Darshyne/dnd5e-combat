@@ -17,7 +17,7 @@ async function onUsage(message) {
   const target = message.system?.targets?.[0]?.token ?? null;
   if ( !target ) return;
   await recordTether(activity.item, target);
-  log(`${activity.item.name} : ${activity.actor.name} lié à ${message.system.targets[0].name ?? "?"}`);
+  log(`${activity.item.name}: ${activity.actor.name} tethered to ${message.system.targets[0].name ?? "?"}`);
 }
 
 /** Un token a bougé : les liens qui le concernent sont-ils rompus ? */
@@ -28,7 +28,7 @@ async function onMove(tokenDoc) {
     for ( const item of tetherItems(actor) ) {
       const why = tetherBroken(item);
       if ( !why ) continue;
-      log(`${item.name} : lien rompu (${why === "range" ? "hors de portée" : "abri total"}), le sort prend fin`);
+      log(`${item.name}: tether broken (${why === "range" ? "out of range" : "Total Cover"}), the spell ends`);
       await clearTether(item);
       const concentration = concentrationOn(item);
       if ( concentration ) await concentration.delete();
@@ -37,12 +37,12 @@ async function onMove(tokenDoc) {
 }
 
 export function registerTether() {
-  route("createChatMessage", onUsage, { executor: true, label: "lien : non noté" });
-  route("moveToken", onMove, { executor: true, label: "lien : rupture non jugée" });
+  route("createChatMessage", onUsage, { executor: true, label: "tether: not recorded" });
+  route("moveToken", onMove, { executor: true, label: "tether: break not judged" });
   // Fin du sort (concentration supprimée, quelle qu'en soit la cause) : le lien s'oublie.
   route("deleteActiveEffect", async effect => {
     const actor = effect.parent;
     if ( (actor?.documentName !== "Actor") || !effect.statuses?.has?.("concentrating") ) return;
     for ( const item of tetherItems(actor) ) if ( !concentrationOn(item) ) await clearTether(item);
-  }, { executor: true, label: "lien : non oublié" });
+  }, { executor: true, label: "tether: not forgotten" });
 }

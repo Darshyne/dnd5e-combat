@@ -24,7 +24,7 @@ function onTurnStart(combat, prior, current) {
   if ( (actor.system.attributes?.hp?.value ?? 0) <= 0 ) return;
   return enqueue(`heroic:${actor.uuid}`, async () => {
     await actor.update({ "system.attributes.inspiration": true });
-    log(`${actor.name} : Inspiration héroïque (Héros du champ d'honneur)`);
+    log(`${actor.name}: Heroic Inspiration (Heroic Warrior)`);
   });
 }
 
@@ -42,17 +42,17 @@ function onPreRollDamage(config) {
   const melee = (activity.attack?.type?.value === "melee") && !mode.startsWith("thrown");
   if ( melee && hasRule(actor, "greatWeaponFighting") && (props?.has("two") || (props?.has("ver") && (mode === "twoHanded"))) ) {
     base.parts = (base.parts ?? []).map((p, i) => (i === 0 ? minThree(p) : p));
-    log(`Armes à deux mains : ${base.parts[0]}`);
+    log(`Great Weapon Fighting: ${base.parts[0]}`);
   }
   const thrown = ruleValue(actor, "thrownDamage");
   if ( thrown && mode.startsWith("thrown") && props?.has("thr") ) {
     base.parts = [...(base.parts ?? []), String(thrown)];
-    log(`Armes de jet : +${thrown}`);
+    log(`Thrown Weapon Fighting: +${thrown}`);
   }
   return true;
 }
 
 export function registerFighter() {
-  route("combatTurnChange", onTurnStart, { executor: true, label: "Héros du champ d'honneur : inspiration non donnée" });
-  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "styles de combat du Guerrier" });
+  route("combatTurnChange", onTurnStart, { executor: true, label: "Heroic Warrior: inspiration not given" });
+  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "Fighter fighting styles" });
 }

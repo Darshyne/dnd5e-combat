@@ -65,7 +65,7 @@ async function onResolution(resolution) {
         prompt: loc("Malediction.Question", { attacker: attacker?.name ?? "", name: victim.name }),
         options: [{ id: "keep", label: loc("Malediction.Garder") }, ...labels]
       });
-      if ( !rule.damageTypes.includes(answer?.id) ) { log(`${item.name} : ${caster.name} garde la malédiction sur ${victim.name}`); continue; }
+      if ( !rule.damageTypes.includes(answer?.id) ) { log(`${item.name}: ${caster.name} keeps the curse on ${victim.name}`); continue; }
       if ( !(await fromUuid(effect.uuid)) ) continue;   // tombée entre-temps
       await effect.delete();
       const logged = await inflict({
@@ -75,12 +75,12 @@ async function onResolution(resolution) {
         flags: { discharge: { item: item.uuid, target: t.token, resolution: resolution.id, type: answer.id } }
       });
       if ( victimToken ) notice(victimToken, loc("Malediction.Retour", { item: item.name }), "ended");
-      log(`${item.name} : ${caster.name} met fin à la malédiction — ${victim.name} subit ${amount} ${answer.id}${logged ? ` (PV ${logged.before?.value} → ${logged.after?.value})` : ""}`);
+      log(`${item.name}: ${caster.name} ends the curse — ${victim.name} takes ${amount} ${answer.id}${logged ? ` (HP ${logged.before?.value} → ${logged.after?.value})` : ""}`);
     }
   }
 }
 
 export function registerDischarge() {
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`discharge:${resolution?.id}`, () => onResolution(resolution)),
-    { executor: true, label: "malédiction : fin anticipée non proposée" });
+    { executor: true, label: "curse: early end not offered" });
 }

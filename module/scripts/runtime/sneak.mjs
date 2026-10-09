@@ -27,8 +27,8 @@ import { log, loc, notice } from "./shared.mjs";
 
 /** Libellés des raisons pour lesquelles l'Attaque sournoise ne s'applique pas (journal seulement). */
 const WHY = Object.freeze({
-  spent: "déjà utilisée ce tour", notWeapon: "pas une attaque d'arme", weaponKind: "arme ni de Finesse ni à distance",
-  disadvantage: "Désavantage au jet", noAdvantage: "ni Avantage ni allié à 1,50 m de la cible"
+  spent: "already used this turn", notWeapon: "not a weapon attack", weaponKind: "weapon neither Finesse nor Ranged",
+  disadvantage: "Disadvantage on the roll", noAdvantage: "neither Advantage nor an ally within 5 feet of the target"
 });
 
 function onPreRollDamage(config, dialog, message) {
@@ -41,7 +41,7 @@ function onPreRollDamage(config, dialog, message) {
   const attack = attackMessage ? (fromUuidSync(attackMessage.system?.activity?.uuid ?? "", { strict: false }) ?? activity) : null;
   const sneak = attack ? sneakAttackFor(attack, attackMessage) : null;
   if ( !sneak ) return true;
-  if ( sneak.issue ) { log(`attaque sournoise : non (${WHY[sneak.issue] ?? sneak.issue})`); return true; }
+  if ( sneak.issue ) { log(`Sneak Attack: no (${WHY[sneak.issue] ?? sneak.issue})`); return true; }
 
   const options = affordableStrikes(strikeOptionsOf(actor, sneak.target), sneak.dice.number);
   const { strikes, dice } = settleStrikes(config[MODULE_ID]?.strikes ?? [], options, { dice: sneak.dice.number, max: strikeMaxOf(actor) });
@@ -52,12 +52,12 @@ function onPreRollDamage(config, dialog, message) {
   if ( dice > 0 ) push(`${dice}d${sneak.dice.faces}`);
   const bonuses = sneakBonusesOf(actor);
   for ( const b of bonuses ) push(b.formula, b.data);
-  markSneakSpent(actor).catch(err => console.warn(`${MODULE_ID} | attaque sournoise : tour non marqué`, err));
+  markSneakSpent(actor).catch(err => console.warn(`${MODULE_ID} | Sneak Attack: turn not marked`, err));
   foundry.utils.setProperty(message, `data.flags.${MODULE_ID}.sneak`, {
     item: sneak.item.uuid, dice, faces: sneak.dice.faces, strikes, target: sneak.target.uuid, source: sneak.source.uuid,
     bonuses: bonuses.map(b => b.name)
   });
-  log(`attaque sournoise : +${dice}d${sneak.dice.faces} ${type ?? ""}${strikes.length ? ` (Frappes rusées : ${strikes.join(", ")})` : ""}${bonuses.length ? ` ; ${bonuses.map(b => `${b.name} +${b.formula}`).join(", ")}` : ""}`);
+  log(`Sneak Attack: +${dice}d${sneak.dice.faces} ${type ?? ""}${strikes.length ? ` (Cunning Strikes: ${strikes.join(", ")})` : ""}${bonuses.length ? `; ${bonuses.map(b => `${b.name} +${b.formula}`).join(", ")}` : ""}`);
   return true;
 }
 
@@ -71,14 +71,14 @@ const seen = new Set();
 async function withdraw(sourceToken) {
   const combatant = sourceToken?.actor ? combatantFor(sourceToken.actor) : null;
   const own = combatant && (game.combat?.combatant?.id === combatant.id);
-  if ( !own ) { log(`Repli : ${sourceToken?.name ?? "?"} n'est pas à son tour, rien à ouvrir (au MJ)`); return; }
+  if ( !own ) { log(`Withdraw: ${sourceToken?.name ?? "?"} is not on their turn, nothing to open (up to the GM)`); return; }
   const movement = movementOf(combatant, readUnitFactors());
   if ( !movement ) return;
   const budget = readBudget(combatant);
   const extra = movement.speed / 2;
   await writeBudget(combatant, { ...budget, bonusMove: (Number(budget.bonusMove) || 0) + extra, disengaged: true });
   notice(sourceToken, loc("Sournoise.Repli", { n: extra, units: movement.units }), "gain");
-  log(`Repli : ${sourceToken.name} peut se déplacer de ${extra} ${movement.units} de plus, sans attaque d'opportunité`);
+  log(`Withdraw: ${sourceToken.name} can move ${extra} more ${movement.units}, without provoking Opportunity Attacks`);
 }
 
 async function onResolution(resolution) {
@@ -97,14 +97,14 @@ async function onResolution(resolution) {
     if ( !option ) continue;
     if ( option.withdraw ) { await withdraw(source); continue; }
     // Une cible tombée à 0 PV sous les dégâts n'a plus de sauvegarde à faire.
-    if ( (target.actor.system.attributes?.hp?.value ?? 0) <= 0 ) { log(`${option.label} : ${target.name} est à 0 PV, sans objet`); continue; }
-    log(`${option.label} : ${target.name} fait sa sauvegarde (Frappe rusée de ${source.name})`);
+    if ( (target.actor.system.attributes?.hp?.value ?? 0) <= 0 ) { log(`${option.label}: ${target.name} is at 0 Hit Points, not applicable`); continue; }
+    log(`${option.label}: ${target.name} makes their saving throw (${source.name}'s Cunning Strike)`);
     await strikeAgainst(option.activity, source, target);
   }
 }
 
 export function registerSneak() {
-  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "attaque sournoise" });
+  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "Sneak Attack" });
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`sneak:${resolution?.id}`, () => onResolution(resolution)),
-    { executor: true, label: "frappes rusées non jouées" });
+    { executor: true, label: "Cunning Strikes not played" });
 }

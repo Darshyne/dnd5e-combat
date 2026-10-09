@@ -28,7 +28,7 @@ function onPreRollAttack(config, dialogConfig, messageConfig) {
   const attackMode = config.attackMode ?? roll.options?.attackMode ?? null;
   const contexts = targets.map(t => attackContext(origin, t, activity, attackMode, factors));
   for ( const [i, c] of contexts.entries() ) {
-    if ( c.vision ) log(`vision : ${origin.name} ${c.vision.attackerSees ? "voit" : "ne voit pas"} ${targets[i].name}, qui ${c.vision.targetSees ? "le voit" : "ne le voit pas"}`);
+    if ( c.vision ) log(`vision: ${origin.name} ${c.vision.attackerSees ? "sees" : "does not see"} ${targets[i].name}, who ${c.vision.targetSees ? "sees them" : "does not see them"}`);
   }
   const perTarget = contexts.map(attackModifiers);
   // §34 : ce que les réactions d'avant le jet ont décidé (Esquive des ombres, Éclat protecteur : Désavantage ; dé retiré).
@@ -37,20 +37,20 @@ function onPreRollAttack(config, dialogConfig, messageConfig) {
   if ( reacted?.penalty ) {
     roll.parts ??= [];
     roll.parts.push(`-${reacted.penalty}`);
-    log(`attaque : -${reacted.penalty} (${reacted.names.join(", ")})`);
+    log(`attack: -${reacted.penalty} (${reacted.names.join(", ")})`);
   }
   // §36 : Présage — le d20 vaut le jet noté (bornes du dé : core/portent.mjs, adapter/portent.mjs).
   if ( Number.isInteger(reacted?.foretold) ) {
     roll.options ??= {};
     Object.assign(roll.options, foretoldRange(reacted.foretold));
-    log(`attaque : Présage, d20 = ${reacted.foretold}`);
+    log(`attack: Portent, d20 = ${reacted.foretold}`);
     foundry.utils.setProperty(messageConfig, `data.flags.${MODULE_ID}.foretold`, reacted.foretold);
   }
   // §36 : dé ajouté par un allié (Présage cosmique, Fortune).
   if ( reacted?.bonus ) {
     roll.parts ??= [];
     roll.parts.push(`${reacted.bonus}`);
-    log(`attaque : +${reacted.bonus} (${reacted.names.join(", ")})`);
+    log(`attack: +${reacted.bonus} (${reacted.names.join(", ")})`);
   }
   const { mode, agreed } = combineTargets(perTarget);
   const reasons = {
@@ -64,7 +64,7 @@ function onPreRollAttack(config, dialogConfig, messageConfig) {
     // On ajoute nos sources à celles du système ; il les combine lui-même (les deux = jet normal).
     if ( reasons.advantage.length ) roll.options.advantage = true;
     if ( reasons.disadvantage.length ) roll.options.disadvantage = true;
-    log(`attaque : ${mode === 1 ? "avantage" : mode === -1 ? "désavantage" : "avantage et désavantage s'annulent"}`,
+    log(`attack: ${mode === 1 ? "advantage" : mode === -1 ? "disadvantage" : "advantage and disadvantage cancel out"}`,
       [...reasons.advantage, ...reasons.disadvantage].map(r => `${r.who}.${r.key}`).join(", "));
   }
   if ( !agreed || reasons.advantage.length || reasons.disadvantage.length ) {
@@ -75,7 +75,7 @@ function onPreRollAttack(config, dialogConfig, messageConfig) {
   if ( bonuses.length ) {
     roll.parts ??= [];
     for ( const b of bonuses ) roll.parts.push(b.formula);
-    log(`attaque : ${bonuses.map(b => `${b.formula} (${b.name})`).join(", ")}`);
+    log(`attack: ${bonuses.map(b => `${b.formula} (${b.name})`).join(", ")}`);
     foundry.utils.setProperty(messageConfig, `data.flags.${MODULE_ID}.bonuses`, bonuses);
   }
   return true;
@@ -93,7 +93,7 @@ function onPreRollAbilityCheck(config) {
   if ( frightenedSourceSeen(tokenOf(actor)) === false ) return true;
   roll.options ??= {};
   roll.options.disadvantage = true;
-  log(`${actor.name} : Effrayé → désavantage au test de caractéristique`);
+  log(`${actor.name}: Frightened → disadvantage on ability check`);
   return true;
 }
 
@@ -120,10 +120,10 @@ async function syncTurnStatuses(combatant, budget) {
 
 export function registerConditions() {
   registerTurnStatuses();
-  route("dnd5e.preRollAttackV2", onPreRollAttack, { cancellable: true, label: "avantage et désavantage des états" });
-  route("dnd5e.preRollAbilityCheckV2", onPreRollAbilityCheck, { label: "Effrayé : désavantage aux tests" });
+  route("dnd5e.preRollAttackV2", onPreRollAttack, { cancellable: true, label: "condition advantage and disadvantage" });
+  route("dnd5e.preRollAbilityCheckV2", onPreRollAbilityCheck, { label: "Frightened: disadvantage on checks" });
 
-  const statuses = { executor: true, label: "états de tour non synchronisés" };
+  const statuses = { executor: true, label: "turn statuses not synchronized" };
   route("updateCombatant", (combatant, changes) => {
     if ( !changes.flags?.[MODULE_ID] ) return;
     return syncTurnStatuses(combatant, combatant.combat?.started ? readBudget(combatant) : null);

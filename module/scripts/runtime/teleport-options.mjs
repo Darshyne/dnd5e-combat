@@ -56,8 +56,8 @@ export async function afterTeleportOptions(activity, token, from) {
   const here = { x: token._source.x, y: token._source.y, elevation: token._source.elevation ?? 0, level: token._source.level ?? null };
   const targets = chosen.around ? around(token, chosen.around === "left" ? from : here) : [token];
   canvas.tokens.setTargets(targets.map(t => t.id));
-  log(`${chosen.item.name} : ${chosen.activity.name}${chosen.around ? ` sur ${targets.map(t => t.name).join(", ") || "personne"}` : ""}`);
+  log(`${chosen.item.name}: ${chosen.activity.name}${chosen.around ? ` on ${targets.map(t => t.name).join(", ") || "nobody"}` : ""}`);
   if ( chosen.around && !targets.length ) return;
   await chosen.activity.use({ [MODULE_ID]: { confirmed: true } }, { configure: false })
-    .catch(err => console.error(`${MODULE_ID} | option de téléportation`, err));
+    .catch(err => console.error(`${MODULE_ID} | teleport option`, err));
 }

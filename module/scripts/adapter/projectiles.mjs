@@ -97,7 +97,7 @@ export async function askAllocation(actor, payload) {
     if ( userId ) return await game.users.get(userId).query(ALLOCATION_QUERY, payload, { timeout: ALLOCATION_TIMEOUT });
     return await handleAllocationQuery(payload);
   } catch(err) {
-    console.warn(`${MODULE_ID} | répartition de ${actor?.name} : pas de réponse`, err);
+    console.warn(`${MODULE_ID} | projectile distribution for ${actor?.name}: no answer`, err);
     return null;
   }
 }

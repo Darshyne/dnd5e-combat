@@ -64,7 +64,7 @@ export default {
       await sleep(3500);
     }
     else ctx.expect((await saves(since)).length > 0, `1re utilisation : la charge de l'item est dépensée, sauvegardes de Constitution (${(await saves(since)).length})`);
-    ctx.log((await ctx.engineLog()).filter(l => /utilisations de l'activité|charge/.test(l)).slice(-2).join(" / "));
+    ctx.log((await ctx.engineLog()).filter(l => /utilisations de l'activité|activity's uses|charge/.test(l)).slice(-2).join(" / "));
 
     // 2. Plus de charge : « Renoncer ».
     known = await dialogs();

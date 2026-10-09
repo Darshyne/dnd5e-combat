@@ -6,8 +6,8 @@ import { CONTENT } from "../module/scripts/content/index.mjs";
 describe("fins de sorts — schéma", () => {
   it("effectThen : un effet de l'item en suit un autre", () => {
     expect(validateEntry({ effectThen: { NEFWcyysYgsE6de3: "S5XcFawnnNHO8bUr" } })).toEqual([]);
-    expect(validateEntry({ effectThen: {} })).toEqual(["effectThen : { id d'effet: id d'effet }"]);
-    expect(validateEntry({ effectThen: { NEFWcyysYgsE6de3: "NEFWcyysYgsE6de3" } })).toEqual(["effectThen.NEFWcyysYgsE6de3 : deux ids d'effets distincts (16 caractères)"]);
+    expect(validateEntry({ effectThen: {} })).toEqual(["effectThen: { effect id: effect id }"]);
+    expect(validateEntry({ effectThen: { NEFWcyysYgsE6de3: "NEFWcyysYgsE6de3" } })).toEqual(["effectThen.NEFWcyysYgsE6de3: two distinct effect ids (16 characters)"]);
     expect(validateEntry({ effectThen: { NEFWcyysYgsE6de3: "court" } })).toHaveLength(1);
   });
 
@@ -23,7 +23,7 @@ describe("fins de sorts — schéma", () => {
   it("resave.unlessSeesOrigin : true ou absent", () => {
     const entry = unless => ({ triggers: [{ on: "endOfTurn", via: "effect", do: [{ type: "resave", unlessSeesOrigin: unless }] }] });
     expect(validateEntry(entry(true))).toEqual([]);
-    expect(validateEntry(entry(false))).toEqual(["triggers[0].do[0].unlessSeesOrigin : true ou absent"]);
+    expect(validateEntry(entry(false))).toEqual(["triggers[0].do[0].unlessSeesOrigin: true or absent"]);
   });
 
   it("effectThen se fusionne clé par clé entre les couches", () => {
@@ -41,7 +41,7 @@ describe("compteur et action de fin — schéma (§43)", () => {
     expect(validateEntry(resave({ tally: { successes: 0, failures: 3 } }))).toHaveLength(1);
     expect(validateEntry(resave({ tally: { successes: 3 } }))).toHaveLength(1);
     expect(validateEntry(resave({ tally: { successes: 3, failures: 3, consecutive: true } }))).toHaveLength(1);
-    expect(validateEntry(resave({ keep: true, tally: { successes: 3, failures: 3 } }))).toEqual(["triggers[0].do[0].tally : sans objet avec keep"]);
+    expect(validateEntry(resave({ keep: true, tally: { successes: 3, failures: 3 } }))).toEqual(["triggers[0].do[0].tally: not applicable with keep"]);
   });
 
   it("actionEnds : par le porteur ou par un autre, avec ou sans jet", () => {
@@ -59,7 +59,7 @@ describe("compteur et action de fin — schéma (§43)", () => {
     expect(validateEntry({ actionEnds: { [id]: { by: "bearer", status: "prone" } } })).toEqual([]);
     expect(validateEntry({ actionEnds: { [id]: { by: "other", verb: "wake", status: "prone" } } })).toHaveLength(1);
     expect(validateEntry({ actionEnds: { [id]: { by: "bearer", status: "dead" } } })).toHaveLength(1);
-    expect(validateEntry({ actionEnds: {} })).toEqual(["actionEnds : { id d'effet: { by, roll?, verb? } }"]);
+    expect(validateEntry({ actionEnds: {} })).toEqual(["actionEnds: { effect id: { by, roll?, verb? } }"]);
   });
 
   it("actionEnds se fusionne clé par clé entre les couches", () => {

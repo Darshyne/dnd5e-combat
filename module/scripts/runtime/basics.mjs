@@ -33,7 +33,7 @@ async function provide(actors) {
     const missing = missingBasicActions(actor, { familiar });
     if ( !missing.length ) continue;
     await actor.createEmbeddedDocuments("Item", missing.map(basicActionData));
-    log(`actions de base posées sur ${actor.name} : ${missing.join(", ")}`);
+    log(`basic actions added to ${actor.name}: ${missing.join(", ")}`);
   }
 }
 
@@ -52,7 +52,7 @@ function onPreRollDamage(config) {
   if ( !actor.items.some(i => i.system.identifier === "two-weapon-fighting") ) return true;
   if ( !((roll.data?.mod ?? 0) > 0) || roll.parts?.includes("@mod") ) return true;
   roll.parts = [...(roll.parts ?? []), "@mod"];
-  log("main secondaire : Combat à deux armes, modificateur rendu aux dégâts");
+  log("off hand: Two-Weapon Fighting, modifier restored to damage");
   return true;
 }
 
@@ -80,12 +80,12 @@ export function registerBasics() {
     name: `DND5ECOMBAT.Reglage.${SETTING}.Nom`, hint: `DND5ECOMBAT.Reglage.${SETTING}.Aide`,
     scope: "world", config: true, type: Boolean, default: true
   });
-  const placed = { executor: true, label: "actions de base posées" };
-  route("ready", () => provide([...game.actors, ...familiarActorsOnScenes()]).catch(err => console.error(`${MODULE_ID} | actions de base`, err)), placed);
+  const placed = { executor: true, label: "basic actions added" };
+  route("ready", () => provide([...game.actors, ...familiarActorsOnScenes()]).catch(err => console.error(`${MODULE_ID} | basic actions`, err)), placed);
   route("createActor", actor => provide([actor]), placed);
   // §107 : un familier invoqué (ou rappelé de sa poche) — l'acteur de son token.
   route("createToken", tokenDoc => (isFamiliarToken(tokenDoc) ? provide([tokenDoc.actor]) : null), placed);
   route("combatStart", combat => provide(combat.combatants.map(c => c.actor)), placed);
   route("createCombatant", combatant => provide([combatant.actor]), placed);
-  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "main secondaire : Combat à deux armes" });
+  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "off hand: Two-Weapon Fighting" });
 }

@@ -712,7 +712,7 @@ export function stopWalking(token) {
   state.stopped = true;
   if ( token.movement?.user?.isSelf && ["pending", "paused"].includes(token.movement.state) ) {
     try { token.stopMovement(); }
-    catch(err) { console.warn(`${MODULE_ID} | arrêt de la marche de ${token.name}`, err); }
+    catch(err) { console.warn(`${MODULE_ID} | stopping the movement of ${token.name}`, err); }
   }
   return true;
 }

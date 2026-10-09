@@ -64,10 +64,10 @@ async function stunningStrike(source, target, activity) {
     prompt: loc("Moine.Etourdissante.Question", { name: target.name, n: focus.left }),
     options: [{ id: "no", label: loc("Moine.Non") }, { id: "yes", label: loc("Moine.Etourdissante.Oui") }]
   });
-  if ( answer?.id !== "yes" ) return log(`${found.item.name} : ${source.name} ne tente pas d'étourdir ${target.name}`);
+  if ( answer?.id !== "yes" ) return log(`${found.item.name}: ${source.name} does not attempt to stun ${target.name}`);
   if ( key ) await source.actor.setFlag(MODULE_ID, "stunTurn", key);
   await focus.item.update({ "system.uses.spent": (Number(focus.item.system.uses.spent) || 0) + 1 });
-  log(`${found.item.name} : ${source.name} dépense un point, ${target.name} fait sa sauvegarde de Constitution`);
+  log(`${found.item.name}: ${source.name} spends a point, ${target.name} makes a Constitution saving throw`);
   await strikeAgainst(save, source, target, { flavor: "DND5ECOMBAT.Moine.Carte" });
 }
 
@@ -82,8 +82,8 @@ async function openHand(source, target) {
     options: [...choices.map(c => ({ id: c.key, label: loc(`Moine.MainOuverte.${c.key}`) })), { id: "none", label: loc("Moine.Non") }]
   });
   const chosen = choices.find(c => c.key === answer?.id);
-  if ( !chosen ) return log(`${found.item.name} : rien contre ${target.name}`);
-  log(`${found.item.name} : ${chosen.key} contre ${target.name}`);
+  if ( !chosen ) return log(`${found.item.name}: nothing against ${target.name}`);
+  log(`${found.item.name}: ${chosen.key} against ${target.name}`);
   await strikeAgainst(chosen.activity, source, target, { flavor: "DND5ECOMBAT.Moine.Carte" });
 }
 
@@ -105,5 +105,5 @@ async function onResolution(resolution) {
 
 export function registerMonk() {
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`monk:${resolution?.id}`, () => onResolution(resolution)),
-    { executor: true, label: "Moine : frappe étourdissante ou main ouverte non proposée" });
+    { executor: true, label: "Monk: Stunning Strike or Open Hand Technique not offered" });
 }

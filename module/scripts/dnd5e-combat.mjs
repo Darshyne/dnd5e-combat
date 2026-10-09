@@ -252,5 +252,5 @@ Hooks.once("ready", () => {
     return;
   }
   state.unitFactors = readUnitFactors();
-  console.log(`${MODULE_ID} | actif — dnd5e ${game.system.version}, Foundry ${game.version}`);
+  console.log(`${MODULE_ID} | active — dnd5e ${game.system.version}, Foundry ${game.version}`);
 });

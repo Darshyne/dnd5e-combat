@@ -18,24 +18,26 @@
  * Le compte rendu part dans le chat, en message privé au MJ. Rejouable : un parchemin déjà noté et à jour n'est plus touché.
  */
 (async () => {
-  if ( !game.user.isGM ) return ui.notifications.warn("Parchemins : réservé au MJ.");
+  // Textes : clés DND5ECOMBAT.Macro.Scrolls.* des fichiers de langue du module.
+  const t = (key, data) => data ? game.i18n.format(`DND5ECOMBAT.Macro.Scrolls.${key}`, data) : game.i18n.localize(`DND5ECOMBAT.Macro.Scrolls.${key}`);
+  if ( !game.user.isGM ) return ui.notifications.warn(t("GmOnly"));
   const engine = game.modules.get("dnd5e-combat");
   const spellOf = engine?.active ? engine.api?.scrolls?.spellOf : null;
-  if ( !spellOf ) return ui.notifications.error("Parchemins : le moteur de combat (0.155.1 ou plus) doit être actif.");
+  if ( !spellOf ) return ui.notifications.error(t("EngineRequired"));
 
   const isScroll = item => (item.type === "consumable") && (item.system?.type?.value === "scroll");
   // Ancien format : ancien compendium dnd5e, import D&D Beyond, réglages Midi-QOL ou CPR.
   const legacyOf = item => {
     const source = item._stats?.compendiumSource ?? "";
-    if ( source.startsWith("Compendium.dnd5e.items.") ) return "ancien compendium dnd5e";
-    if ( item.flags?.ddbimporter ) return "import D&D Beyond";
-    if ( item.flags?.["chris-premades"] || item.flags?.["midi-qol"] || item.flags?.midiProperties ) return "réglages Midi-QOL";
+    if ( source.startsWith("Compendium.dnd5e.items.") ) return t("LegacyOldCompendium");
+    if ( item.flags?.ddbimporter ) return t("LegacyDdb");
+    if ( item.flags?.["chris-premades"] || item.flags?.["midi-qol"] || item.flags?.midiProperties ) return t("LegacyMidi");
     return null;
   };
 
   // Tous les parchemins : items du monde, fiches du monde, tokens non liés de chaque scène (leur copie de l'acteur).
   const found = [];
-  for ( const item of game.items ) if ( isScroll(item) ) found.push({ owner: "(monde)", item });
+  for ( const item of game.items ) if ( isScroll(item) ) found.push({ owner: t("World"), item });
   for ( const actor of game.actors ) for ( const item of actor.items ) if ( isScroll(item) ) found.push({ owner: actor.name, item });
   // Un token non lié a sa propre copie de l'inventaire : seuls les items de son delta (ajoutés ou changés) lui sont propres,
   // les autres sont ceux de l'acteur de base, déjà comptés.
@@ -43,7 +45,7 @@
     if ( token.actorLink || !token.actor ) continue;
     for ( const own of token.delta?.items ?? [] ) {
       const item = token.actor.items.get(own.id);
-      if ( item && isScroll(item) ) found.push({ owner: `${token.name} (${scene.name}, token)`, item });
+      if ( item && isScroll(item) ) found.push({ owner: t("TokenOwner", { token: token.name, scene: scene.name }), item });
     }
   }
 
@@ -56,14 +58,14 @@
   });
 
   const mode = await foundry.applications.api.DialogV2.wait({
-    window: { title: "Reprise des parchemins de sort" },
-    content: `<p>${rows.length} parchemin(s) trouvé(s) : ${rows.filter(r => r.spell).length} reconnu(s), `
-      + `${rows.filter(r => r.modern).length} au format actuel, ${rows.filter(r => !r.spell && !r.modern).length} sans sort retrouvé, ${rows.filter(r => r.legacy && r.spell).length} d'ancien format.</p>`
-      + "<p>« Rapport » ne modifie rien.</p>",
+    window: { title: t("Title") },
+    content: `<p>${t("DialogSummary", { count: rows.length, recognized: rows.filter(r => r.spell).length, modern: rows.filter(r => r.modern).length,
+      unknown: rows.filter(r => !r.spell && !r.modern).length, legacy: rows.filter(r => r.legacy && r.spell).length })}</p>`
+      + `<p>${t("ReportChangesNothing")}</p>`,
     buttons: [
-      { action: "report", label: "Rapport", default: true },
-      { action: "note", label: "Noter le sort" },
-      { action: "rebuild", label: "Noter et reconstruire les anciens" }
+      { action: "report", label: t("Report"), default: true },
+      { action: "note", label: t("Note") },
+      { action: "rebuild", label: t("Rebuild") }
     ],
     rejectClose: false
   });
@@ -88,23 +90,23 @@
   for ( const row of rows ) {
     const { item, spell } = row;
     const where = `<b>${row.owner}</b> — ${item.name}`;
-    if ( row.modern ) { lines.push(`<li>${where} : format actuel (lance le sort), rien à faire</li>`); continue; }
-    if ( !spell ) { lines.push(`<li>${where} : <em>sort introuvable</em> — à reprendre à la main</li>`); continue; }
-    const label = `${spell.identifier} (niv. ${spell.level ?? "?"})`;
+    if ( row.modern ) { lines.push(`<li>${t("LineModern", { where })}</li>`); continue; }
+    if ( !spell ) { lines.push(`<li>${t("LineNotFound", { where })}</li>`); continue; }
+    const label = t("SpellLabel", { identifier: spell.identifier, level: spell.level ?? "?" });
     const rebuild = (mode === "rebuild") && row.legacy;
     if ( mode === "report" ) {
-      const todo = [row.toNote ? "à noter" : "déjà noté", row.legacy ? `ancien format : ${row.legacy}` : null].filter(Boolean).join(", ");
+      const todo = [t(row.toNote ? "ToNote" : "AlreadyNoted"), row.legacy ? t("LegacyFormat", { legacy: row.legacy }) : null].filter(Boolean).join(", ");
       lines.push(`<li>${where} → ${label} — ${todo}</li>`);
       continue;
     }
     try {
       if ( rebuild ) {
         const uuid = sources.get(spell.identifier);
-        if ( !uuid ) throw new Error("sort absent des compendiums");
+        if ( !uuid ) throw new Error(t("SpellNotInCompendiums"));
         const source = await fromUuid(uuid);
         const Item5e = CONFIG.Item.documentClass;
         const scroll = await Item5e.createScrollFromSpell(source, {}, { dialog: false, level: spell.level ?? source.system.level });
-        if ( !scroll ) throw new Error("dnd5e n'a pas fabriqué le parchemin");
+        if ( !scroll ) throw new Error(t("ScrollNotCreated"));
         const data = scroll.toObject();
         await item.update({
           name: data.name,
@@ -126,23 +128,23 @@
         if ( item.effects.size ) await item.deleteEmbeddedDocuments("ActiveEffect", item.effects.map(e => e.id));
         if ( data.effects?.length ) await item.createEmbeddedDocuments("ActiveEffect", data.effects, { keepId: true });
         rebuilt++;
-        lines.push(`<li>${where} → ${label} — <b>reconstruit</b> (${row.legacy}) : « ${data.name} »</li>`);
+        lines.push(`<li>${t("LineRebuilt", { where, label, legacy: row.legacy, name: data.name })}</li>`);
       } else if ( row.toNote ) {
         await item.update({ "flags.dnd5e-combat.scroll": { identifier: spell.identifier, level: spell.level, school: spell.school } });
         noted++;
-        lines.push(`<li>${where} → ${label} — noté${row.legacy ? ` (ancien format : ${row.legacy})` : ""}</li>`);
+        lines.push(`<li>${t("LineNoted", { where, label, legacy: row.legacy ? ` (${t("LegacyFormat", { legacy: row.legacy })})` : "" })}</li>`);
       } else {
-        lines.push(`<li>${where} → ${label} — déjà noté</li>`);
+        lines.push(`<li>${t("LineAlreadyNoted", { where, label })}</li>`);
       }
     } catch(err) {
       failed++;
-      console.error("Parchemins |", item.name, err);
-      lines.push(`<li>${where} → ${label} — <b>échec</b> : ${err.message}</li>`);
+      console.error("Scrolls |", item.name, err);
+      lines.push(`<li>${t("LineFailed", { where, label, error: err.message })}</li>`);
     }
   }
 
   const head = (mode === "report")
-    ? `<p><b>Parchemins — rapport</b> : ${rows.length} trouvé(s), rien n'a été modifié.</p>`
-    : `<p><b>Parchemins</b> : ${noted} noté(s), ${rebuilt} reconstruit(s), ${failed} échec(s).</p>`;
-  await ChatMessage.create({ content: `${head}<ul>${lines.join("")}</ul>`, whisper: [game.user.id], speaker: { alias: "Reprise des parchemins" } });
+    ? `<p>${t("HeadReport", { count: rows.length })}</p>`
+    : `<p>${t("HeadDone", { noted, rebuilt, failed })}</p>`;
+  await ChatMessage.create({ content: `${head}<ul>${lines.join("")}</ul>`, whisper: [game.user.id], speaker: { alias: t("Speaker") } });
 })();

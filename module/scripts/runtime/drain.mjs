@@ -45,16 +45,16 @@ function onCalculateDamage(actor, damages, options) {
 
 async function drain(actor, kind, n, { item, source=null, regains=false }) {
   const left = await applyDrainEffect(actor, { kind, n, item, name: effectName(item, kind) });
-  log(`${actor.name} : ${item.name} — ${kind === "hp" ? "maximum de PV" : kind} -${n} (${left})`);
+  log(`${actor.name}: ${item.name} — ${kind === "hp" ? "Hit Point maximum" : kind} -${n} (${left})`);
   if ( left <= 0 ) {
     await setDeathStatus(actor, "dead");
-    log(`${actor.name} : ${kind === "hp" ? "maximum de PV" : kind} à 0 → Mort`);
+    log(`${actor.name}: ${kind === "hp" ? "Hit Point maximum" : kind} at 0 → Dead`);
   }
   if ( !regains || !source ) return;
   const drinker = fromUuidSync(source, { strict: false });
   if ( !drinker?.isOwner ) return;
   await drinker.applyDamage([{ value: n, type: "healing" }]);
-  log(`${drinker.name} : ${item.name} — regagne ${n} PV`);
+  log(`${drinker.name}: ${item.name} — regains ${n} HP`);
 }
 
 async function onApplyDamage(actor, amount, options) {
@@ -102,7 +102,7 @@ async function onResolution(resolution) {
 }
 
 export function registerDrain() {
-  route("dnd5e.calculateDamage", onCalculateDamage, { label: "drain : part drainée non lue" });
-  route("dnd5e.applyDamage", onApplyDamage, { label: "drain : maximum de PV non réduit" });
-  route(`${MODULE_ID}.resolution`, onResolution, { executor: true, label: "drain sur sauvegarde ou au toucher : effet non posé" });
+  route("dnd5e.calculateDamage", onCalculateDamage, { label: "drain: drained portion not read" });
+  route("dnd5e.applyDamage", onApplyDamage, { label: "drain: Hit Point maximum not reduced" });
+  route(`${MODULE_ID}.resolution`, onResolution, { executor: true, label: "drain on save or on hit: effect not applied" });
 }

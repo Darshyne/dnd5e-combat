@@ -32,6 +32,6 @@ describe("schéma", () => {
     expect(validateEntry({ triggers: [{ on: "preAttackRoll", via: "effect", do: [{ type: "attackBonus", formula: "-1d4" }] }] }, { facts: {} })).toEqual([]);
     expect(validateEntry({ damageShield: { formula: "1d4", effects: { u2mf5JowVgwqCARq: "acid" }, oncePerTurn: true } })).toEqual([]);
     expect(validateEntry({ hitDiceHeal: { activity: "5paXkJ6hEw07yl8g", base: 2 } })).toEqual([]);
-    expect(validateEntry({ triggers: [{ on: "preAttackRoll", do: [{ type: "attackBonus" }] }] }, { facts: {} })).toContain("triggers[0].do[0].formula : formule requise");
+    expect(validateEntry({ triggers: [{ on: "preAttackRoll", do: [{ type: "attackBonus" }] }] }, { facts: {} })).toContain("triggers[0].do[0].formula: formula required");
   });
 });

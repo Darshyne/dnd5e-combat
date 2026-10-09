@@ -37,6 +37,6 @@ describe("fin de la forme", () => {
 describe("durée d'une invocation (summon.lasts)", () => {
   it("valide, ou refusée", () => {
     expect(validateEntry({ summon: { initiative: "own", lasts: { value: "floor(@classes.druid.levels / 2)", units: "hour" } } })).toEqual([]);
-    expect(validateEntry({ summon: { initiative: "own", lasts: { value: "", units: "hour" } } })).toEqual(["summon.lasts : { value, units }"]);
+    expect(validateEntry({ summon: { initiative: "own", lasts: { value: "", units: "hour" } } })).toEqual(["summon.lasts: { value, units }"]);
   });
 });

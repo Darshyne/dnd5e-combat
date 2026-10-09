@@ -40,7 +40,7 @@ async function decide(actor, item, rule, activity) {
       actor: actor.uuid, item: item.name, prompt: loc("Relever.Question", { item: item.name, name: actor.name }),
       options: [{ id: "yes", label: loc("Relever.Oui", { item: activity.name || item.name }) }, { id: "no", label: loc("Relever.Non") }]
     });
-    if ( answer?.id !== "yes" ) { log(`${item.name} : ${actor.name} ne se relève pas`); return true; }
+    if ( answer?.id !== "yes" ) { log(`${item.name}: ${actor.name} doesn't rise`); return true; }
     if ( rule.save ) {
       let dc = 10;
       try { dc = Math.max(1, Math.round(Roll.safeEval(Roll.replaceFormulaData(rule.save.dc, { ...actor.getRollData(), damage: lastDamage.get(actor.uuid) ?? 0 })))); } catch { /* DD 10 */ }
@@ -48,19 +48,19 @@ async function decide(actor, item, rule, activity) {
         { data: { flavor: loc("Relever.Carte", { item: item.name, name: actor.name, dc }) } });
       const total = rolls?.[0]?.total;
       if ( !(Number.isFinite(total) && (total >= dc)) ) {
-        log(`${item.name} : ${actor.name} rate (${total} contre DD ${dc})`);
+        log(`${item.name}: ${actor.name} fails (${total} vs DC ${dc})`);
         return true;
       }
-      log(`${item.name} : ${actor.name} réussit (${total} contre DD ${dc})`);
+      log(`${item.name}: ${actor.name} succeeds (${total} vs DC ${dc})`);
     }
     const token = tokenOf(actor);
     if ( token?.object ) canvas.tokens.setTargets([token.id]);
     await activity.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: true } }, { configure: false })
-      .catch(err => console.error(`${MODULE_ID} | ${item.name} : se relever`, err));
+      .catch(err => console.error(`${MODULE_ID} | ${item.name}: rise`, err));
     await new Promise(resolve => setTimeout(resolve, 2500));
     const hp = actor.system.attributes?.hp?.value ?? 0;
     if ( token ) notice(token, loc("Relever.Fait", { name: actor.name, hp }), "gain");
-    log(`${item.name} : ${actor.name} se relève à ${hp} PV`);
+    log(`${item.name}: ${actor.name} rises with ${hp} Hit Points`);
     return hp <= 0;
   }
 }
@@ -72,13 +72,13 @@ function onHp(actor, value) {
 
 export function registerRise() {
   // Les dégâts subis (Force du tombeau : DD 5 + les dégâts), sur le client qui les applique.
-  route("dnd5e.applyDamage", (actor, amount) => { if ( actor && (amount > 0) ) lastDamage.set(actor.uuid, amount); }, { label: "relever : dégâts non notés" });
+  route("dnd5e.applyDamage", (actor, amount) => { if ( actor && (amount > 0) ) lastDamage.set(actor.uuid, amount); }, { label: "rise: damage not recorded" });
   route("updateActor", (actor, changed) => {
     const v = foundry.utils.getProperty(changed, "system.attributes.hp.value");
     if ( v !== undefined ) return onHp(actor, v);
-  }, { executor: true, label: "relever à 0 PV non joué" });
+  }, { executor: true, label: "rise at 0 Hit Points not played" });
   route("updateToken", (token, changed) => {
     const v = foundry.utils.getProperty(changed, "delta.system.attributes.hp.value");
     if ( v !== undefined ) return onHp(token.actor, v);
-  }, { executor: true, label: "relever à 0 PV non joué (token non lié)" });
+  }, { executor: true, label: "rise at 0 Hit Points not played (unlinked token)" });
 }

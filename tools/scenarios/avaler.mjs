@@ -126,9 +126,9 @@ export default {
     }
     if ( !ctx.expect(dealt >= 30, `le Zombi inflige ${dealt} dégâts à l'Ours de l'intérieur`) ) return;
     await ctx.nextTurn(); await sleep(3000);
-    const log = (await ctx.engineLog()).filter(l => /de l'intérieur ce tour-ci — sauvegarde/.test(l)).at(-1) ?? "";
+    const log = (await ctx.engineLog()).filter(l => /de l'intérieur ce tour-ci — sauvegarde|damage from inside this turn - saving throw/.test(l)).at(-1) ?? "";
     ctx.expect(!!log, `fin du tour du Zombi : sauvegarde de l'Ours contre la régurgitation (${log.replace(/^.*\| /, "")})`);
-    const kept = /: garde/.test(log);
+    const kept = /: (garde|keeps)/.test(log);
     if ( !kept ) {
       ctx.expect(!(await swallowedEffect()) && !(await inside()) && (await statuses(zombi)).has("prone"), "régurgité : libéré, hors de l'Ours, À terre");
       return;

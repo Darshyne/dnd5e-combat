@@ -43,15 +43,15 @@ describe("chargement du module", () => {
 
   it("appelle les inscrits de createChatMessage dans l'ordre voulu : résolution d'abord", () => {
     expect(api.api.routes().createChatMessage.map(r => r.label)).toEqual([
-      "résolution interrompue", "concentration : traitement interrompu", "réserve : recharge non écrite", "cibles relâchées", "Déluge de coups : visée non ouverte",
-      "budget : dépense non consignée", "Dissipation de la magie : rien dissipé", "trace ou marque non traitée", "botte d'arme : marque non consommée", "manœuvre : Chassé-croisé ou Frappe commandée non joués", "Rage : entretien non noté", "avaler / engloutir : action non suivie", "soutien", "lien : non noté", "carte unique : jet non replié", "purge du journal", "retour visuel : effet qui cesse"
+      "resolution interrupted", "concentration: processing interrupted", "pool: recharge not written", "targets released", "Flurry of Blows: targeting not opened",
+      "budget: spending not recorded", "Dispel Magic: nothing dispelled", "trace or mark not handled", "weapon mastery: mark not used up", "maneuver: Bait and Switch or Commander's Strike not played", "Rage: upkeep not recorded", "swallow / engulf: action not tracked", "help", "tether: not recorded", "single card: roll not folded", "chat log purge", "visual feedback: effect ending"
     ]);
   });
 
   it("relance d'abord (§16.21), puis la visée (ui), l'utilisation sans fenêtre (§68), la Métamagie, la légalité (runtime), les portes, sur dnd5e.preUseActivity", () => {
     expect(api.api.routes()["dnd5e.preUseActivity"].map(r => r.label)).toEqual([
-      "relance d'un sort qui dure", "visée : cible attendue", "projectiles : un par cible, le reste enchaîné", "utilisation sans fenêtre", "métamagie : sort non modifié", "légalité de l'utilisation", "portes : Sanctuaire, Contresort, réactions avant l'attaque, Présage", "zone sur soi : sans case « Placer le gabarit »", "Témérité : question",
-      "avaler : Morsure non refusée", "potion : concentration non retirée", "objet lumineux : placé au lancement"
+      "recast of a lasting spell", "targeting: target expected", "projectiles: one per target, the rest chained", "use without dialog", "metamagic: spell not modified", "use legality", "gates: Sanctuary, Counterspell, pre-attack reactions, Portent", "self area: without the \"Place Template\" box", "Reckless Attack: prompt",
+      "swallow: Bite not refused", "potion: concentration not removed", "light object: placed on cast"
     ]);
   });
 

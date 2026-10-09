@@ -38,13 +38,13 @@ async function syncCrawl(actor) {
     if ( on && (token.movementAction !== "crawl") ) {
       // `forced` : pas un choix de mode (§17.4) — une créature À terre en l'air tombe (dnd5e), elle n'atterrit pas.
       await token.update({ movementAction: "crawl", [`flags.${MODULE_ID}.crawl`]: { from: token._source.movementAction ?? null } }, { [MODULE_ID]: { forced: true } });
-      log(`${token.name} : À terre → rampe`);
+      log(`${token.name}: Prone -> crawl`);
     }
     else if ( !on && saved ) {
       // Un volant mis À terre est tombé (dnd5e) : il se relève au sol, en marchant (§17.4).
       const from = ["air", "under"].includes(placementOf(saved.from)) ? "walk" : (saved.from ?? null);
       await token.update({ movementAction: (token.movementAction === "crawl") ? from : token._source.movementAction, [`flags.${MODULE_ID}.crawl`]: null }, { [MODULE_ID]: { forced: true } });
-      log(`${token.name} : debout → ${from ?? "mode par défaut"}`);
+      log(`${token.name}: standing -> ${from ?? "default mode"}`);
     }
   }
 }
@@ -75,12 +75,12 @@ export async function standUp(token) {
   if ( ids.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", ids);
   if ( actor.statuses.has("prone") ) { notice(token, loc("Relever.noSpeed")); return false; }   // À terre imposé (Inconscient)
   notice(token, loc("Relever.Fait"), "gain");
-  log(`${actor.name} se relève`);
+  log(`${actor.name} stands up`);
   return true;
 }
 
 export function registerProne() {
   for ( const hook of ["createActiveEffect", "updateActiveEffect", "deleteActiveEffect"] ) {
-    route(hook, effect => syncCrawl(actorOfEffect(effect)), { executor: true, label: "À terre : mode ramper non mis ou non retiré" });
+    route(hook, effect => syncCrawl(actorOfEffect(effect)), { executor: true, label: "Prone: crawl mode not set or not removed" });
   }
 }

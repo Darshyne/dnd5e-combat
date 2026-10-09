@@ -131,7 +131,7 @@ export default {
       await fight();
       const weapon = await summon("weapon", 3080, 5040);
       if ( !ctx.expect(!!weapon, `l'arme spirituelle est invoquée (${weapon?.name ?? "rien"})`) ) return;
-      const offered = (await ctx.engineLog()).slice(-30).some(l => /commande offerte au lancement \(use\)/.test(l));
+      const offered = (await ctx.engineLog()).slice(-30).some(l => /commande offerte au lancement \(use\)|command offered on cast \(use\)/.test(l));
       ctx.expect(offered, "le lancement offre sa commande d'attaque (onCast « use », sans action Bonus)");
       const init = await initiativeOf(weapon);
       ctx.expect((init !== null) && (init < 20) && (init > 10), `juste après le Clerc au combat (initiative ${init})`);

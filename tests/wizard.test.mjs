@@ -49,7 +49,7 @@ describe("§28 Magicien : ce que le cœur en fait", () => {
   });
   it("schéma et contenu", () => {
     expect(validateEntry({ potentCantrip: true, sculptSpells: true })).toEqual([]);
-    expect(validateEntry({ potentCantrip: 1 })).toEqual(["potentCantrip : true ou absent"]);
+    expect(validateEntry({ potentCantrip: 1 })).toEqual(["potentCantrip: true or absent"]);
     expect(CONTENT["illusory-self"].triggers[0].do.map(s => s.type)).toEqual(["use", "miss"]);
     expect(CONTENT["spell-resistance"].saveAdvantage).toEqual(["magic"]);
   });

@@ -28,7 +28,7 @@ async function onApplied(actor, amount) {
   const marks = actor.effects.filter(e => e.getFlag(MODULE_ID, "mark") === OILED);
   if ( !marks.length || !actor.isOwner ) return;
   await actor.deleteEmbeddedDocuments("ActiveEffect", marks.map(e => e.id));
-  log(`${actor.name} : l'huile s'enflamme (5 dégâts de feu)`);
+  log(`${actor.name}: the oil ignites (5 Fire damage)`);
   await ChatMessage.implementation.create({
     speaker: ChatMessage.implementation.getSpeaker({ actor }),
     content: `<p>${loc("Huile.Enflammee", { name: actor.name })}</p>`,
@@ -38,7 +38,7 @@ async function onApplied(actor, amount) {
 }
 
 export function registerOil() {
-  route("dnd5e.calculateDamage", onCalculate, { label: "huile : dégâts de feu non relevés" });
-  route("dnd5e.applyDamage", (actor, amount) => { onApplied(actor, amount).catch(err => console.error(`${MODULE_ID} | huile`, err)); },
-    { label: "huile : non enflammée" });
+  route("dnd5e.calculateDamage", onCalculate, { label: "oil: fire damage not noted" });
+  route("dnd5e.applyDamage", (actor, amount) => { onApplied(actor, amount).catch(err => console.error(`${MODULE_ID} | oil`, err)); },
+    { label: "oil: not ignited" });
 }

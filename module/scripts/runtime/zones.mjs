@@ -69,7 +69,7 @@ export async function moveZone(activity, point) {
   const gm = game.users.activeGM;
   if ( !gm ) { ui.notifications.warn(loc("Zone.SansMJ")); return true; }
   if ( gm.isSelf ) await handleMoveZone(payload);
-  else await gm.query(MOVE_ZONE_QUERY, payload, { timeout: 10000 }).catch(err => console.warn(`${MODULE_ID} | déplacement de zone`, err));
+  else await gm.query(MOVE_ZONE_QUERY, payload, { timeout: 10000 }).catch(err => console.warn(`${MODULE_ID} | area move`, err));
   return true;
 }
 
@@ -89,7 +89,7 @@ export async function handleMoveZone({ region: regionUuid, point, actor: actorUu
     content: `<p>${loc("Zone.Deplacee", { name: actor?.name ?? "", item: region.name })}</p>`,
     flags: { [MODULE_ID]: { zoneMoved: { region: region.uuid, actor: actorUuid, cost } } }
   });
-  log(`${region.name} : déplacée par ${actor?.name ?? "?"} (${cost ?? "sans coût"})`);
+  log(`${region.name}: moved by ${actor?.name ?? "?"} (${cost ?? "no cost"})`);
   return true;
 }
 

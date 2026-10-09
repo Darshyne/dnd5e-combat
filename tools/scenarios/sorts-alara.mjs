@@ -83,6 +83,6 @@ export default {
     await dropConcentration();
     await pause(1500);
     ctx.expect(!(await ctx.effects(bramo)).some(e => e.flags?.[MODULE_ID]?.aura), "concentration retirée : la copie part");
-    for ( const l of (await ctx.engineLog()).filter(l => /cesse|aura|Assistance|Stabilis/.test(l)).slice(-8) ) ctx.log(l);
+    for ( const l of (await ctx.engineLog()).filter(l => /cesse|ends|aura|Assistance|Aid|Stabilis|Stabiliz/.test(l)).slice(-8) ) ctx.log(l);
   }
 };

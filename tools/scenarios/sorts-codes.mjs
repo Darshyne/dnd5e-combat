@@ -141,7 +141,7 @@ export default {
       if ( !ctx.expect(!!hit, "le Zombi touche le Guerrier (20 essais au plus)") ) return;
       const lostFighter = hp0.get(fighter.id) - await ctx.hp(fighter);
       const lostCleric = clericBefore - await ctx.hp(cleric);
-      const shared = hit.messages.some(m => m.flags?.[MODULE_ID]?.shared) || (await ctx.engineLog()).slice(-15).some(l => /partag|Lien/i.test(l));
+      const shared = hit.messages.some(m => m.flags?.[MODULE_ID]?.shared) || (await ctx.engineLog()).slice(-15).some(l => /partag|Lien|shar|link/i.test(l));
       ctx.expect(shared, "partage annoncé par le moteur");
       ctx.expect((lostFighter > 0) && (lostCleric === Math.min(lostFighter, clericBefore)), `le Guerrier perd ${lostFighter} PV, le Clerc aussi : ${lostCleric}`);
     });

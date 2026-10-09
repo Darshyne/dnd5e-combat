@@ -33,7 +33,7 @@ export function castStorm(activity, [usageConfig, dialogConfig, messageConfig], 
 /** Habille le nuage tout juste posé. */
 export async function dressStorm(activity, cloud, { stormy=false }={}) {
   const { fx } = await dressCloud(cloud, { stormy });
-  log(`${activity.item.name} : orage posé (${fx ? "FXMaster : pluie et éclairs" : "zone sombre"})${stormy ? ", orage déjà là : +" + (stormOf(activity.item)?.bonus ?? "") : ""}`);
+  log(`${activity.item.name}: storm placed (${fx ? "FXMaster: rain and lightning" : "dark area"})${stormy ? ", storm already there: +" + (stormOf(activity.item)?.bonus ?? "") : ""}`);
 }
 
 /** L'éclair au point visé (pixels), ramené sous le nuage. */
@@ -41,7 +41,7 @@ export async function strike(activity, cloud, point) {
   const circle = cloudCircle(cloud);
   const at = circle ? clampToCircle(point, circle.center, circle.radius) : point;
   const region = await placeBolt(activity, cloud, at);
-  if ( region ) log(`${activity.item.name} : éclair en (${Math.round(at.x)}, ${Math.round(at.y)})`);
+  if ( region ) log(`${activity.item.name}: lightning bolt at (${Math.round(at.x)}, ${Math.round(at.y)})`);
   return region;
 }
 
@@ -53,7 +53,7 @@ function onPreRollDamage(config) {
   const roll = config.rolls?.[0];
   if ( !roll ) return true;
   roll.parts = [...(roll.parts ?? []), rule.bonus];
-  log(`${item.name} : orage déjà là, +${rule.bonus}`);
+  log(`${item.name}: storm already there, +${rule.bonus}`);
   return true;
 }
 
@@ -65,10 +65,10 @@ function onPreUpdateRegion(region, changes) {
   const cloud = region.getFlag(MODULE_ID, "cloud") || foundry.utils.getProperty(changes, `flags.${MODULE_ID}.cloud`);
   if ( !cloud || !("visibility" in changes) || (changes.visibility === CONST.REGION_VISIBILITY.LAYER) ) return;
   changes.visibility = CONST.REGION_VISIBILITY.LAYER;
-  log(`orage : visibilité du nuage gardée invisible`);
+  log(`storm: cloud visibility kept hidden`);
 }
 
 export function registerStorm() {
-  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "orage : dé en plus non ajouté" });
-  route("preUpdateRegion", onPreUpdateRegion, { label: "orage : nuage rendu visible" });
+  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "storm: extra die not added" });
+  route("preUpdateRegion", onPreUpdateRegion, { label: "storm: cloud made visible" });
 }

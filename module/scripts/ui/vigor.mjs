@@ -24,5 +24,5 @@ async function onPostUse(activity, usageConfig, results) {
 }
 
 export function registerVigor() {
-  route("dnd5e.postUseActivity", onPostUse, { label: "vigueur arcanique : dés de vie non dépensés" });
+  route("dnd5e.postUseActivity", onPostUse, { label: "Arcane Vigor: Hit Point Dice not spent" });
 }

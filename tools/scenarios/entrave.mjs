@@ -53,8 +53,8 @@ export default {
       await pause(2000);
       // Le moteur écrit « Guerrier se libère de Enchevêtrement (15 contre DD 13) » — le DD n'est pas sur le message. La
       // trace est un tampon tournant : on prend la dernière ligne, celle de cet essai.
-      const line = (await ctx.engineLog()).reverse().find(l => /se libère pas de|se libère de/.test(l)) ?? "";
-      const m = line.match(/\((\d+) contre DD (\d+)\)/);
+      const line = (await ctx.engineLog()).reverse().find(l => /se libère pas de|se libère de|break free of|breaks free of/.test(l)) ?? "";
+      const m = line.match(/\((\d+) (?:contre DD|vs DC) (\d+)\)/);
       const total = m ? Number(m[1]) : null;
       const dc = m ? Number(m[2]) : null;
       const still = (await restraints()).length > 0;
@@ -68,7 +68,7 @@ export default {
       }
     }
     ctx.expect(freed, "le Guerrier finit par se libérer (en 20 essais au plus)");
-    const log = (await ctx.engineLog()).filter(l => /se libère|Enchevêtrement|Entangle/.test(l)).slice(-4);
+    const log = (await ctx.engineLog()).filter(l => /se libère|break free|breaks free|Enchevêtrement|Entangle/.test(l)).slice(-4);
     for ( const l of log ) ctx.log(l);
   }
 };

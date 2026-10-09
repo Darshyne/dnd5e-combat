@@ -37,7 +37,7 @@ function checkItemFlags(item, data) {
   const errors = validateEntry(layer, { facts: KNOWN_FACTS });
   if ( !errors.length ) return true;
   ui.notifications.error(loc("ContenuRefuse", { item: item.name ?? data.name ?? "", errors: errors.join(" ; ") }));
-  console.error(`${MODULE_ID} | flags refusés sur ${item.name ?? data.name}`, errors);
+  console.error(`${MODULE_ID} | flags rejected on ${item.name ?? data.name}`, errors);
   return false;
 }
 
@@ -48,9 +48,9 @@ function checkItemFlags(item, data) {
  * @returns {{source: string, accepted: string[], rejected: Record<string, string[]>}}
  */
 export function registerExternal(source, table) {
-  if ( (typeof source !== "string") || !source ) throw new Error(`${MODULE_ID} | content.register : l'id du module source est requis`);
+  if ( (typeof source !== "string") || !source ) throw new Error(`${MODULE_ID} | content.register: the source module id is required`);
   if ( !table || (typeof table !== "object") || Array.isArray(table) ) {
-    throw new Error(`${MODULE_ID} | content.register(${source}) : la table est un objet { identifiant: entrée }`);
+    throw new Error(`${MODULE_ID} | content.register(${source}): the table is an object { identifier: entry }`);
   }
   const accepted = {};
   const rejected = {};
@@ -60,8 +60,8 @@ export function registerExternal(source, table) {
     else accepted[id] = entry;
   }
   registerTable(source, accepted);
-  if ( Object.keys(rejected).length ) console.error(`${MODULE_ID} | contenu de ${source} : entrées écartées`, rejected);
-  log(`contenu : ${Object.keys(accepted).length} entrée(s) enregistrée(s) par ${source}`);
+  if ( Object.keys(rejected).length ) console.error(`${MODULE_ID} | content from ${source}: entries rejected`, rejected);
+  log(`content: ${Object.keys(accepted).length} entry(ies) registered by ${source}`);
   return { source, accepted: Object.keys(accepted), rejected };
 }
 
@@ -73,16 +73,16 @@ function collectExternal() {
 /** À `ready` : le contenu en vigueur (livré et enregistré) et la surcouche du monde sont relus ; ce qui est faux est dit une fois. */
 function audit() {
   const shipped = validateTable(CONTENT, { facts: KNOWN_FACTS });
-  if ( shipped.length ) console.error(`${MODULE_ID} | contenu livré invalide`, shipped);
+  if ( shipped.length ) console.error(`${MODULE_ID} | invalid shipped content`, shipped);
   const stored = game.settings.get(MODULE_ID, OVERRIDES_SETTING);
   if ( stored && (typeof stored === "object") && Object.keys(stored).length && (stored.v !== CONTENT_VERSION) ) {
-    console.warn(`${MODULE_ID} | surcouche du monde ignorée : schéma ${stored.v} ≠ ${CONTENT_VERSION}`);
+    console.warn(`${MODULE_ID} | world overlay ignored: schema ${stored.v} ≠ ${CONTENT_VERSION}`);
   }
   const world = validateTable(worldOverrides(), { facts: KNOWN_FACTS });
-  if ( world.length ) console.warn(`${MODULE_ID} | surcouche du monde : entrées invalides`, world);
+  if ( world.length ) console.warn(`${MODULE_ID} | world overlay: invalid entries`, world);
   const external = Object.entries(registeredTables()).map(([source, ids]) => `${source} (${ids.length})`);
-  log(`contenu : ${Object.keys(SHIPPED).length} entrée(s) livrée(s)${external.length ? `, enregistrées : ${external.join(", ")}` : ""}, `
-    + `${Object.keys(worldOverrides()).length} du monde`);
+  log(`content: ${Object.keys(SHIPPED).length} shipped entry(ies)${external.length ? `, registered: ${external.join(", ")}` : ""}, `
+    + `${Object.keys(worldOverrides()).length} from the world`);
 }
 
 /** Exposé sur `game.modules.get("dnd5e-combat").api.content`. */
@@ -121,12 +121,12 @@ export const contentApi = Object.freeze({
 
 export function registerContent() {
   game.settings.register(MODULE_ID, OVERRIDES_SETTING, { scope: "world", config: false, type: Object, default: {} });
-  route("preCreateItem", (item, data) => checkItemFlags(item, data), { cancellable: true, label: "contenu : flags à la création" });
-  route("preUpdateItem", (item, changes) => checkItemFlags(item, changes), { cancellable: true, label: "contenu : flags à la modification" });
-  route("setup", collectExternal, { label: "contenu : tables des autres modules" });
-  route("ready", audit, { label: "contenu : audit" });
+  route("preCreateItem", (item, data) => checkItemFlags(item, data), { cancellable: true, label: "content: flags on creation" });
+  route("preUpdateItem", (item, changes) => checkItemFlags(item, changes), { cancellable: true, label: "content: flags on update" });
+  route("setup", collectExternal, { label: "content: other modules' tables" });
+  route("ready", audit, { label: "content: audit" });
   // §48 : un parchemin se reconnaît au sort qu'il contient — noté à sa création (dnd5e ne le garde pas), retrouvé par son nom
   // pour les parchemins déjà faits (index des sorts des compendiums et du monde).
-  route("dnd5e.createScrollFromSpell", stampScroll, { label: "parchemin : sort contenu" });
-  route("ready", () => buildSpellIndex().then(n => log(`index des sorts (parchemins) : ${n} clés`)), { label: "parchemin : index des sorts" });
+  route("dnd5e.createScrollFromSpell", stampScroll, { label: "scroll: contained spell" });
+  route("ready", () => buildSpellIndex().then(n => log(`spell index (scrolls): ${n} keys`)), { label: "scroll: spell index" });
 }

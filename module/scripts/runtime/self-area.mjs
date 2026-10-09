@@ -27,9 +27,9 @@ import { log } from "./shared.mjs";
 
 function place(activity, area) {
   placeSelfArea(activity, area).then(created => {
-    if ( created?.length ) log(`${activity.item?.name ?? activity.name} : zone posée sur ${area.token.name} (${area.shape})`);
+    if ( created?.length ) log(`${activity.item?.name ?? activity.name}: area placed on ${area.token.name} (${area.shape})`);
   }, err => {
-    console.error(`${MODULE_ID} | zone sur soi non posée`, err);
+    console.error(`${MODULE_ID} | self area not placed`, err);
     ui.notifications.warn("DND5ECOMBAT.ZoneSurSoiNonPosee", { localize: true });
   });
 }
@@ -78,9 +78,9 @@ export function placeAimed(activity, shapeData) {
 
 function placeAimedShape(activity, area, shapeData) {
   placeAimedArea(activity, area, shapeData).then(created => {
-    if ( created?.length ) log(`${activity.item?.name ?? activity.name} : ${area.shape} visé depuis ${area.token.name} (${Math.round(shapeData.rotation)}°)`);
+    if ( created?.length ) log(`${activity.item?.name ?? activity.name}: ${area.shape} aimed from ${area.token.name} (${Math.round(shapeData.rotation)}°)`);
   }, err => {
-    console.error(`${MODULE_ID} | zone visée non posée`, err);
+    console.error(`${MODULE_ID} | aimed area not placed`, err);
     ui.notifications.warn("DND5ECOMBAT.ZoneSurSoiNonPosee", { localize: true });
   });
 }
@@ -93,7 +93,7 @@ function onPostUse(activity, usageConfig, results) {
     return;
   }
   if ( usageConfig?.[MODULE_ID]?.pointZone && results ) {
-    dnd5e.canvas.TemplatePlacement.fromActivity(withTemplate(activity)).catch(err => console.error(`${MODULE_ID} | zone fournie non posée`, err));
+    dnd5e.canvas.TemplatePlacement.fromActivity(withTemplate(activity)).catch(err => console.error(`${MODULE_ID} | provided area not placed`, err));
     return;
   }
   if ( !usageConfig?.[MODULE_ID]?.selfArea ) return;
@@ -109,7 +109,7 @@ function onPreTemplate(activity) {
 }
 
 export function registerSelfAreas() {
-  route("dnd5e.preUseActivity", onPreUse, { cancellable: true, label: "zone sur soi : sans case « Placer le gabarit »" });
-  route("dnd5e.postUseActivity", onPostUse, { label: "zone sur soi : pose d'office" });
-  route("dnd5e.preCreateMeasuredTemplate", onPreTemplate, { cancellable: true, label: "zone sur soi : pose d'office (carte)" });
+  route("dnd5e.preUseActivity", onPreUse, { cancellable: true, label: "self area: without the \"Place Template\" box" });
+  route("dnd5e.postUseActivity", onPostUse, { label: "self area: automatic placement" });
+  route("dnd5e.preCreateMeasuredTemplate", onPreTemplate, { cancellable: true, label: "self area: automatic placement (canvas)" });
 }

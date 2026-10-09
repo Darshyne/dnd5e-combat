@@ -46,9 +46,9 @@ async function purge() {
       const batch = ids.slice(i, i + 100).filter(id => game.messages.has(id));
       if ( batch.length ) await ChatMessage.implementation.deleteDocuments(batch);
     }
-    log(`journal purgé : ${ids.length} message(s) ancien(s) supprimé(s), ${game.messages.size} restant(s)`);
+    log(`chat log purged: ${ids.length} old message(s) deleted, ${game.messages.size} remaining`);
   } catch ( err ) {
-    console.error(`${MODULE_ID} | purge du journal`, err);
+    console.error(`${MODULE_ID} | chat log purge`, err);
   } finally { running = false; }
 }
 
@@ -67,6 +67,6 @@ export function registerPurge() {
   });
   world(PURGE_MAX_SETTING, 300);
   world(PURGE_KEEP_SETTING, 150);
-  route("ready", schedule, { executor: true, label: "purge du journal au chargement" });
-  route("createChatMessage", schedule, { executor: true, label: "purge du journal" });
+  route("ready", schedule, { executor: true, label: "chat log purge on load" });
+  route("createChatMessage", schedule, { executor: true, label: "chat log purge" });
 }

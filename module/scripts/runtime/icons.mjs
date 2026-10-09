@@ -46,12 +46,12 @@ async function fixExisting() {
   for ( const scene of game.scenes ) {
     for ( const token of scene.tokens ) if ( !token.actorLink ) await fix(token.actor);
   }
-  if ( fixed ) log(`icônes d'état : ${fixed} effet(s) rendus visibles sur les tokens`);
+  if ( fixed ) log(`status icons: ${fixed} effect(s) made visible on tokens`);
 }
 
 export function registerIcons() {
-  route("preCreateActiveEffect", onPreCreate, { label: "icône d'état toujours visible" });
-  route("preUpdateActiveEffect", onPreUpdate, { label: "icône d'état toujours visible" });
-  route("ready", () => fixExisting().catch(err => console.error(`${MODULE_ID} | icônes d'état`, err)),
-    { executor: true, label: "icônes d'état : effets existants" });
+  route("preCreateActiveEffect", onPreCreate, { label: "status icon always visible" });
+  route("preUpdateActiveEffect", onPreUpdate, { label: "status icon always visible" });
+  route("ready", () => fixExisting().catch(err => console.error(`${MODULE_ID} | status icons`, err)),
+    { executor: true, label: "status icons: existing effects" });
 }

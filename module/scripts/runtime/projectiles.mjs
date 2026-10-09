@@ -47,12 +47,12 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   if ( leap ) {
     const refused = leapRefused(activity, leap);
     if ( refused ) {
-      log(`rebond refusé : ${refused}`);
+      log(`bounce refused: ${refused}`);
       ui.notifications.warn(refused);
       notice([...game.user.targets][0]?.document, refused.replace(/^[^:]*:\s*/, ""));
       return false;
     }
-    log(`${activity.item.name} : rebond vers ${[...game.user.targets][0]?.name ?? "?"}`);
+    log(`${activity.item.name}: bounce toward ${[...game.user.targets][0]?.name ?? "?"}`);
     return true;
   }
   if ( usageConfig?.[MODULE_ID]?.projectileOf ) return true;
@@ -118,7 +118,7 @@ async function chain(usage, resolution) {
   const queue = await remainingShots(scaled, usage, resolution, count);
   const level = base.item.system.level ?? 0;
   const scaling = Number(usage.system?.scaling) || 0;
-  log(`${base.item.name} : ${count} projectile(s), ${queue.length} enchaîné(s)`);
+  log(`${base.item.name}: ${count} projectile(s), ${queue.length} chained`);
   for ( const tokenUuid of queue ) {
     const token = (await fromUuid(tokenUuid))?.object;
     if ( !token ) continue;
@@ -147,7 +147,7 @@ function onResolutionFlag(message, changes) {
   if ( usage.getFlag(MODULE_ID, "projectileOf") || started.has(usage.id) ) return;
   if ( !projectilesOf(usage.getAssociatedActivity?.()?.item) ) return;
   started.add(usage.id);
-  chain(usage, resolution).catch(err => console.error(`${MODULE_ID} | projectiles enchaînés`, err));
+  chain(usage, resolution).catch(err => console.error(`${MODULE_ID} | chained projectiles`, err));
 }
 
 /**
@@ -164,6 +164,6 @@ export function castWithPicks(activity, [config, dialog, message], picks) {
 
 /** À inscrire après la souris (la visée a désigné les cibles) et avant la légalité. */
 export function registerProjectiles() {
-  route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "projectiles : un par cible, le reste enchaîné" });
-  route("updateChatMessage", onResolutionFlag, { label: "projectiles enchaînés" });
+  route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "projectiles: one per target, the rest chained" });
+  route("updateChatMessage", onResolutionFlag, { label: "chained projectiles" });
 }

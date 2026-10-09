@@ -131,7 +131,7 @@ export default {
       const r = await ctx.settle(used.usageMessageId).catch(() => null);
       if ( !r?.targets?.[0]?.hit ) continue;
       await sleep(1500);
-      reduced = (await ctx.engineLog()).some(l => /réduit les dégâts|Chaleur/i.test(l));
+      reduced = (await ctx.engineLog()).some(l => /réduit les dégâts|reduces the damage|Chaleur/i.test(l));
       ctx.expect(reduced, "Rayon de givre de Bramo touche Sylaene : l'Anneau réduit les dégâts de froid");
       break;
     }

@@ -38,11 +38,11 @@ async function onResolution(resolution) {
   if ( !sibling || !center ) return;
   await usage.setFlag(MODULE_ID, "burst", true);
   const caught = caughtAround(center, rule);
-  log(`${activity.item.name} : ${resolution.step === STEPS.MISSED ? "raté" : "touché"}, l'éclat explose sur ${caught.map(t => t.name).join(", ")}`);
+  log(`${activity.item.name}: ${resolution.step === STEPS.MISSED ? "miss" : "hit"}, the burst explodes on ${caught.map(t => t.name).join(", ")}`);
   await burstAround(usage, caught, sibling, center);
 }
 
 export function registerBursts() {
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`burst:${resolution?.origin}`, () => onResolution(resolution)),
-    { executor: true, label: "éclat : explosion non jouée" });
+    { executor: true, label: "burst: explosion not played" });
 }

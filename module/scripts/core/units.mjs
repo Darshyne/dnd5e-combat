@@ -16,7 +16,7 @@ export function convertLength(value, from, to, factors) {
   const a = factors[from];
   const b = factors[to];
   if ( !Number.isFinite(a) || !Number.isFinite(b) ) {
-    throw new Error(`Unité de longueur inconnue : ${Number.isFinite(a) ? to : from}`);
+    throw new Error(`Unknown length unit: ${Number.isFinite(a) ? to : from}`);
   }
   return value * a / b;
 }

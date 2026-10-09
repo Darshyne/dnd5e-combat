@@ -38,7 +38,7 @@ export async function cancelUsage(message) {
   if ( effect ) await effect.parent?.endConcentration?.(effect);
   await message.setFlag(MODULE_ID, "cancelled", true);
   await message.delete();
-  log(`action annulée avant tout jet : ${activity?.item?.name ?? message.id}`);
+  log(`action cancelled before any roll: ${activity?.item?.name ?? message.id}`);
   ui.notifications.info(loc("Annulation.Faite", { name: activity?.item?.name ?? "" }));
 }
 

@@ -66,7 +66,7 @@ function askGM(query, payload, here) {
   const gm = game.users.activeGM;
   if ( !gm ) { ui.notifications.warn(loc("Familier.SansMJ")); return false; }
   if ( gm.isSelf ) return here(payload, { user: game.user });
-  return gm.query(query, payload, { timeout: 15000 }).catch(err => { console.warn(`${MODULE_ID} | familier`, err); return false; });
+  return gm.query(query, payload, { timeout: 15000 }).catch(err => { console.warn(`${MODULE_ID} | familiar`, err); return false; });
 }
 
 /**
@@ -112,7 +112,7 @@ export async function handlePocket({ token: tokenUuid }, { user }={}) {
   const carried = carriedItemIds(token.actor?.items.contents.map(i => i.toObject()), MODULE_ID)
     .map(id => token.actor.items.get(id)).filter(Boolean);
   const dropped = carried.length ? await droppedByNeighbour(token, carried) : false;
-  if ( carried.length ) log(`${token.name} : ${carried.map(i => i.name).join(", ")} ${dropped ? "laissé(s) au sol" : "gardé(s) avec lui (aucun module ne pose au sol)"}`);
+  if ( carried.length ) log(`${token.name}: ${carried.map(i => i.name).join(", ")} ${dropped ? "dropped on the ground" : "kept with it (no module drops items on the ground)"}`);
   for ( const combat of game.combats ) {
     const gone = combat.combatants.filter(c => (c.sceneId === token.parent.id) && (c.tokenId === token.id)).map(c => c.id);
     if ( gone.length ) await combat.deleteEmbeddedDocuments("Combatant", gone);
@@ -121,7 +121,7 @@ export async function handlePocket({ token: tokenUuid }, { user }={}) {
   await token.delete();
   await spendBudget(master, POCKET_COST);
   await say(master, "Familier.Renvoye", { name: master.name, familiar: token.name }, { pocket: token.name });
-  log(`${token.name} : dans la poche dimensionnelle de ${master.name}`);
+  log(`${token.name}: in ${master.name}'s pocket dimension`);
   return true;
 }
 
@@ -142,14 +142,14 @@ export async function handleRecall({ token: tokenUuid, point }, { user }={}) {
   let created = null;
   try { [created] = await masterToken.parent.createEmbeddedDocuments("Token", [data]); }
   catch(err) {
-    console.error(`${MODULE_ID} | familier non rappelé`, err);
+    console.error(`${MODULE_ID} | familiar not recalled`, err);
     await master.setFlag(MODULE_ID, "pocket", pocket);   // rien n'est perdu
     return false;
   }
   if ( !created ) { await master.setFlag(MODULE_ID, "pocket", pocket); return false; }
   await spendBudget(master, POCKET_COST);
   await say(master, "Familier.Rappele", { name: master.name, familiar: created.name }, { recall: created.name });
-  log(`${created.name} : revenu de la poche dimensionnelle de ${master.name}`);
+  log(`${created.name}: back from ${master.name}'s pocket dimension`);
   return true;
 }
 
@@ -162,7 +162,7 @@ function onSummonToken(activity, profile, tokenData) {
   if ( !isFamiliarItem(activity?.item) ) return;
   if ( tokenData.sight?.enabled === true ) return;
   tokenData.sight = { ...(tokenData.sight ?? {}), enabled: true };
-  log(`${tokenData.name} : familier, vision activée`);
+  log(`${tokenData.name}: familiar, vision enabled`);
 }
 
 /** MJ actif : les familiers déjà posés sans vision (invoqués avant cette version) la reçoivent. */
@@ -171,20 +171,20 @@ async function sightForPlaced() {
     const updates = scene.tokens.filter(t => !t._source.sight?.enabled && isFamiliarToken(t)).map(t => ({ _id: t.id, "sight.enabled": true }));
     if ( !updates.length ) continue;
     await scene.updateEmbeddedDocuments("Token", updates);
-    log(`${scene.name} : vision activée pour ${updates.length} familier(s)`);
+    log(`${scene.name}: vision enabled for ${updates.length} familiar(s)`);
   }
 }
 
 export function registerFamiliars() {
   CONFIG.queries[POCKET_QUERY] = handlePocket;
   CONFIG.queries[RECALL_QUERY] = handleRecall;
-  route("dnd5e.summonToken", onSummonToken, { label: "familier : vision non activée" });
-  route("ready", sightForPlaced, { executor: true, label: "familier : vision non activée" });
+  route("dnd5e.summonToken", onSummonToken, { label: "familiar: vision not enabled" });
+  route("ready", sightForPlaced, { executor: true, label: "familiar: vision not enabled" });
   // « Un seul familier » : un nouveau familier invoqué vide la poche (le rappel la vide AVANT de recréer le sien).
   route("createToken", async tokenDoc => {
     const master = isFamiliarToken(tokenDoc) ? masterOf(tokenDoc) : null;
     if ( !pocketOf(master) ) return;
     await emptyPocket(master);
-    log(`${master.name} : nouveau familier (${tokenDoc.name}), l'ancien quitte la poche dimensionnelle`);
-  }, { executor: true, label: "familier : poche non vidée" });
+    log(`${master.name}: new familiar (${tokenDoc.name}), the old one leaves the pocket dimension`);
+  }, { executor: true, label: "familiar: pocket not emptied" });
 }

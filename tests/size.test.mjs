@@ -18,6 +18,6 @@ describe("changer de taille (§16.58)", () => {
   it("schéma : { id d'effet: crans }, entier non nul de -5 à 5", () => {
     expect(validateEntry({ resize: { Wi2E10l7n6Ka8k6u: 1, NXdtOxX4HvPeodml: -1 } }, { facts: {} })).toEqual([]);
     expect(validateEntry({ resize: { court: 1, NXdtOxX4HvPeodml: 0 } }, { facts: {} }))
-      .toEqual(["resize.court : id d'effet (16 caractères)", "resize.NXdtOxX4HvPeodml : entier non nul, de -5 à 5"]);
+      .toEqual(["resize.court: effect id (16 characters)", "resize.NXdtOxX4HvPeodml: non-zero integer, from -5 to 5"]);
   });
 });

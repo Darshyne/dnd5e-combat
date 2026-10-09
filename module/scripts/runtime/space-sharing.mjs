@@ -18,5 +18,5 @@ function onBlocking(gridSpace, token, options, found) {
 }
 
 export function registerSpaceSharing() {
-  route("dnd5e.determineOccupiedGridSpaceBlocking", onBlocking, { label: "partage de case : passage refusé" });
+  route("dnd5e.determineOccupiedGridSpaceBlocking", onBlocking, { label: "space sharing: passage refused" });
 }

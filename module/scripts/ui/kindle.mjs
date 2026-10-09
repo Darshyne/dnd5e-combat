@@ -29,9 +29,9 @@ async function onPostUse(activity) {
   }
   if ( !chosen ) return;
   const on = !carriedLightEffect(chosen);
-  if ( await setCarriedLight(chosen, on) ) log(`${actor.name} : ${chosen.name} ${on ? "allumé(e)" : "éteint(e)"} (${activity.item.name})`);
+  if ( await setCarriedLight(chosen, on) ) log(`${actor.name}: ${chosen.name} ${on ? "lit" : "put out"} (${activity.item.name})`);
 }
 
 export function registerKindleUi() {
-  route("dnd5e.postUseActivity", onPostUse, { label: "boîte à amadou : rien allumé" });
+  route("dnd5e.postUseActivity", onPostUse, { label: "tinderbox: nothing lit" });
 }

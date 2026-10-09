@@ -127,8 +127,8 @@ function onUpdateMessage(message, changes) {
 export function registerFeedback() {
   game.settings.register(MODULE_ID, "feedbackText", { scope: "client", config: true, type: Boolean, default: true,
     name: "DND5ECOMBAT.Reglage.feedbackText.Nom", hint: "DND5ECOMBAT.Reglage.feedbackText.Aide" });
-  route("updateChatMessage", onUpdateMessage, { label: "retour visuel au-dessus des tokens" });
-  route("deleteChatMessage", message => seen.delete(message.id), { label: "retour visuel : oubli" });
-  route(`${MODULE_ID}.notice`, n => floatNotice(n.token, n.text, n.kind), { label: "retour visuel : avis du moteur" });
-  route("createChatMessage", onCreateMessage, { label: "retour visuel : effet qui cesse" });
+  route("updateChatMessage", onUpdateMessage, { label: "visual feedback above tokens" });
+  route("deleteChatMessage", message => seen.delete(message.id), { label: "visual feedback: forget" });
+  route(`${MODULE_ID}.notice`, n => floatNotice(n.token, n.text, n.kind), { label: "visual feedback: engine notice" });
+  route("createChatMessage", onCreateMessage, { label: "visual feedback: effect ending" });
 }

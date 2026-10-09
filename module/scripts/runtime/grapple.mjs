@@ -53,15 +53,15 @@ async function releaseBrokenGrapples(scene) {
       if ( where && (where !== scene.id) ) continue;
       const facts = grappleFacts(effect, token, factors);
       if ( !facts ) {
-        if ( !unknownGrapplers.has(effect.uuid) ) log(`empoignade : agrippeur de ${token.name} introuvable sur sa scène (${scene.name}), rien à juger`);
+        if ( !unknownGrapplers.has(effect.uuid) ) log(`grapple: grappler of ${token.name} not found on its scene (${scene.name}), nothing to judge`);
         unknownGrapplers.add(effect.uuid);
         continue;
       }
       if ( grappleHolds(facts) ) continue;
       await effect.delete();
-      log(`empoignade rompue : ${token.name} n'est plus agrippé par ${facts.grappler.name}`
-        + ` — distance ${facts.distance?.value} ${facts.distance?.units} (portée ${facts.reach?.value} ${facts.reach?.units}),`
-        + ` états de l'agrippeur [${facts.grapplerStatuses.join(", ")}], ${facts.grapplerToken.name} ${facts.grapplerToken._source.x},${facts.grapplerToken._source.y}`
+      log(`grapple broken: ${token.name} is no longer grappled by ${facts.grappler.name}`
+        + ` — distance ${facts.distance?.value} ${facts.distance?.units} (reach ${facts.reach?.value} ${facts.reach?.units}),`
+        + ` grappler's statuses [${facts.grapplerStatuses.join(", ")}], ${facts.grapplerToken.name} ${facts.grapplerToken._source.x},${facts.grapplerToken._source.y}`
         + ` / ${token.name} ${token._source.x},${token._source.y}`);
       ui.notifications.info(loc("Empoignade.Rompue", { name: token.name, by: facts.grappler.name }));
     }
@@ -80,7 +80,7 @@ function scheduleCheck(scenes) {
   timer = setTimeout(async () => {
     const list = Array.from(pendingScenes);
     pendingScenes.clear();
-    for ( const scene of list ) await releaseBrokenGrapples(scene).catch(err => console.error(`${MODULE_ID} | empoignade`, err));
+    for ( const scene of list ) await releaseBrokenGrapples(scene).catch(err => console.error(`${MODULE_ID} | grapple`, err));
   }, 300);
 }
 
@@ -102,7 +102,7 @@ async function markGrappler(effect) {
   if ( !grappler || !victim ) return;
   if ( grapplingMarksOf(grappler).some(m => m.getFlag(MODULE_ID, "grappling").effect === effect.uuid) ) return;
   await grappler.createEmbeddedDocuments("ActiveEffect", [grapplingMarkData(loc("Empoignade.Marque", { name: victim.name }), victim, effect)]);
-  log(`empoignade : ${grappler.name} agrippe ${victim.name} (marque posée)`);
+  log(`grapple: ${grappler.name} grapples ${victim.name} (mark placed)`);
 }
 
 /** Un effet supprimé : l'Agrippé emporte la marque ; la marque (lâcher prise) emporte l'Agrippé. */
@@ -112,7 +112,7 @@ async function unlink(effect) {
     const grappled = fromUuidSync(grappling.effect);
     if ( grappled && !grappled._destroyed ) {
       await grappled.delete();
-      log(`empoignade : ${effect.parent?.name} lâche prise`);
+      log(`grapple: ${effect.parent?.name} lets go`);
     }
     return;
   }
@@ -160,10 +160,10 @@ async function dragVictims(token, movement, operation) {
     if ( swallowerOf(victim)?.token === token ) continue;
     const pos = committedPosition(victim);
     const spot = dragDestination(victim, token, { x: pos.x + dx, y: pos.y + dy });
-    if ( !spot ) { log(`empoignade : ${victim.name} ne peut être posé près de ${token.name}`); continue; }
+    if ( !spot ) { log(`grapple: ${victim.name} cannot be placed near ${token.name}`); continue; }
     await victim.move([{ x: spot.x, y: spot.y, elevation: (pos.elevation ?? 0) + dz, level: to.level, snapped: true, action: "displace" }],
       { [MODULE_ID]: { cleared: true, dragged: true } });
-    log(`empoignade : ${token.name} traîne ${victim.name}`);
+    log(`grapple: ${token.name} drags ${victim.name}`);
   }
 }
 
@@ -182,7 +182,7 @@ async function escapeRestraint(actor, { effect, item, ability, skill, dc }) {
   const total = rolls?.[0]?.total;
   if ( !Number.isFinite(total) ) return false;
   const free = total >= dc;
-  log(`${actor.name} ${free ? "se libère de" : "ne se libère pas de"} ${item.name} (${total} contre DD ${dc})`);
+  log(`${actor.name} ${free ? "breaks free of" : "does not break free of"} ${item.name} (${total} vs DC ${dc})`);
   ui.notifications.info(loc(free ? "Entrave.Libere" : "Entrave.Rate", { name: actor.name, source: item.name }));
   if ( free ) await effect.delete();
   return free;
@@ -228,11 +228,11 @@ async function attemptEscape(actor) {
   if ( !Number.isFinite(total) ) return false;
   if ( total >= dc ) {
     await effect.delete();
-    log(`${actor.name} s'échappe (${total} contre DD ${dc})`);
+    log(`${actor.name} escapes (${total} vs DC ${dc})`);
     ui.notifications.info(loc("Empoignade.Echappe", { name: actor.name, by: grapplerOf(effect)?.name ?? "" }));
     return true;
   }
-  log(`${actor.name} ne s'échappe pas (${total} contre DD ${dc})`);
+  log(`${actor.name} does not escape (${total} vs DC ${dc})`);
   ui.notifications.info(loc("Empoignade.Rate", { name: actor.name }));
   return false;
 }
@@ -266,7 +266,7 @@ async function onPostUse(activity) {
 }
 
 export function registerGrapple() {
-  const check = { executor: true, label: "empoignade : tient-elle encore ?" };
+  const check = { executor: true, label: "grapple: does it still hold?" };
   route("updateToken", (token, changes) => {
     if ( ["x", "y", "elevation", "level"].some(k => k in changes) ) scheduleCheck([token.parent]);
   }, check);
@@ -276,11 +276,11 @@ export function registerGrapple() {
       if ( actor ) scheduleCheck(scenesOf(actor));
     }, check);
   }
-  const marks = { executor: true, label: "empoignade : marque de l'agrippeur" };
+  const marks = { executor: true, label: "grapple: grappler's mark" };
   route("createActiveEffect", effect => markGrappler(effect), marks);
   route("deleteActiveEffect", effect => unlink(effect), marks);
   route("moveToken", (token, movement, operation) => dragVictims(token, movement, operation),
-    { executor: true, label: "empoignade : la victime suit l'agrippeur" });
-  route("dnd5e.postUseActivity", activity => { onPostUse(activity).catch(err => console.error(`${MODULE_ID} | s'échapper`, err)); },
-    { label: "s'échapper" });
+    { executor: true, label: "grapple: the victim follows the grappler" });
+  route("dnd5e.postUseActivity", activity => { onPostUse(activity).catch(err => console.error(`${MODULE_ID} | escape`, err)); },
+    { label: "escape" });
 }

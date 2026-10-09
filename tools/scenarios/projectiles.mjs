@@ -30,7 +30,7 @@ export default {
       await ctx.settle(used.usageMessageId).catch(() => null);
       let announced = null;
       for ( const until = Date.now() + 8000; !announced && (Date.now() < until); await sleep(500) ) {
-        announced = (await ctx.engineLog()).map(l => l.match(/: (\d+) projectile\(s\), (\d+) enchaîné/)).filter(Boolean).at(-1);
+        announced = (await ctx.engineLog()).map(l => l.match(/: (\d+) projectile\(s\), (\d+) (?:enchaîné|chained)/)).filter(Boolean).at(-1);
       }
       const count = announced ? Number(announced[1]) : null;
       ctx.expect(count >= 2, `${identifier} : ${count ?? "?"} projectile(s) annoncé(s)`);

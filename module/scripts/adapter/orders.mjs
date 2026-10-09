@@ -20,7 +20,7 @@ export function orderOn(actor) {
 /** L'effet qui porte l'ordre, à créer sur la cible. Il cesse à la fin de son prochain tour (contenu : `remove` à endOfTurn). */
 export function orderEffectData({ item, activity, order, label, fromToken, message }) {
   return {
-    name: `${item.name} : ${label}`,
+    name: game.i18n.format("DND5ECOMBAT.LabelValue", { label: item.name, value: label }),
     img: item.img,
     origin: item.uuid,
     system: { origin: { item: item.uuid, activity: activity?.uuid ?? null, message: message?.uuid ?? null } },
@@ -47,7 +47,7 @@ export async function droppedByNeighbour(token, items) {
   for ( const take of takers ) {
     if ( typeof take !== "function" ) continue;
     try { if ( (await take()) === true ) return true; }
-    catch(err) { console.warn(`${MODULE_ID} | objets lâchés : un module voisin a échoué`, err); }
+    catch(err) { console.warn(`${MODULE_ID} | dropped items: a neighbouring module failed`, err); }
   }
   return false;
 }

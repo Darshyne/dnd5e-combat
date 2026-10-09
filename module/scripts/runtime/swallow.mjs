@@ -48,7 +48,7 @@ async function onSwallowed(effect) {
     releasing.add(effect.uuid);
     try { await effect.delete(); }
     finally { releasing.delete(effect.uuid); }
-    log(`${swallowerToken.name} n'avale pas ${token.name} : ${refused}`);
+    log(`${swallowerToken.name} doesn't swallow ${token.name}: ${refused}`);
     ui.notifications.info(refused);
     return;
   }
@@ -58,7 +58,7 @@ async function onSwallowed(effect) {
     if ( (grapple.id !== effect.id) && (grapplerOf(grapple)?.uuid === by.swallower?.uuid) ) await grapple.delete();
   }
   await placeInside(token, swallowerToken);
-  log(`${swallowerToken.name} avale ${token.name} (${by.rule.item.name})`);
+  log(`${swallowerToken.name} swallows ${token.name} (${by.rule.item.name})`);
 }
 
 /**
@@ -73,7 +73,7 @@ async function onRemoved(effect) {
   const swallowerToken = token ? swallowerTokenFor(effect, by, token.parent) : null;
   if ( !token || !swallowerToken ) return;
   await moveOut(token, swallowerToken);
-  log(`${token.name} sort de ${swallowerToken.name}`);
+  log(`${token.name} leaves ${swallowerToken.name}`);
 }
 
 /**
@@ -92,7 +92,7 @@ export async function escapeSwallow(actor) {
   const total = rolls?.[0]?.total;
   if ( !Number.isFinite(total) ) return false;
   const free = total >= dc;
-  log(`${actor.name} ${free ? "s'échappe de" : "ne s'échappe pas de"} ${inside.token.name} (${total} contre DD ${dc})`);
+  log(`${actor.name} ${free ? "escapes from" : "doesn't escape from"} ${inside.token.name} (${total} vs DC ${dc})`);
   ui.notifications.info(loc(free ? "Avale.Echappe" : "Avale.Rate", { name: actor.name, source: inside.token.name }));
   if ( free ) await release(token, inside.effect, inside.token, { prone: false });
   return free;
@@ -133,7 +133,7 @@ async function swallowHeld(activity, rule) {
   const fitting = held.filter(t => fitsSize(t.actor.system.traits?.size, rule.targetMaxSize));
   if ( !fitting.length ) {
     const text = held.length ? loc("Avale.TropGrand", { source: token.name, name: held[0].name }) : loc("Avale.Personne", { source: token.name });
-    log(`${token.name} n'avale rien : ${text}`);
+    log(`${token.name} swallows nothing: ${text}`);
     return ui.notifications.info(text);
   }
   await placeItemEffect(rule.item, rule.effectId, fitting[0].actor);
@@ -149,7 +149,7 @@ function onUsage(message) {
   const token = actor?.token ?? actor?.getActiveTokens?.(false, true)?.[0] ?? null;
   if ( !token ) return;
   engulfing.set(token.uuid, { turn: turnKey(game.combat), done: new Set() });
-  log(`${token.name} : ${rule.item.name} — ceux dont il traversera l'espace sauvegarderont`);
+  log(`${token.name}: ${rule.item.name} - those whose space it enters will make a saving throw`);
 }
 
 /** Positions du trajet, un échantillon tous les demi-cases (départ compris). */
@@ -180,7 +180,7 @@ async function engulfAlong(token, movement) {
   if ( !ids.length ) return;
   const targets = candidates.filter(t => ids.includes(t.id));
   for ( const t of targets ) state.done.add(t.id);
-  log(`${token.name} traverse ${targets.map(t => t.name).join(", ")} : ${rule.item.name}`);
+  log(`${token.name} moves through ${targets.map(t => t.name).join(", ")}: ${rule.item.name}`);
   await swallowAgainst(rule.entry, token, targets, "engulf", { event: "engulf", flavor: "DND5ECOMBAT.Avale.Engloutit" });
 }
 
@@ -211,7 +211,7 @@ function onApplyDamage(actor, amount, options) {
   if ( !inside || (inside.token.actor !== actor) ) return;
   const key = `${turnKey(game.combat)}|${actor.uuid}`;
   fromInside.set(key, (fromInside.get(key) ?? 0) + amount);
-  log(`${actor.name} : ${amount} dégâts de ${attacker.name}, de l'intérieur (${fromInside.get(key)} ce tour-ci)`);
+  log(`${actor.name}: ${amount} damage from ${attacker.name}, from inside (${fromInside.get(key)} this turn)`);
 }
 
 /** Fin d'un tour : chaque avaleur qui a subi assez de dégâts de l'intérieur sauvegarde, ou régurgite tout. */
@@ -229,7 +229,7 @@ async function regurgitateChecks(combat, prior) {
     const rolls = await actor.rollSavingThrow({ ability, target: dc }, { configure: false });
     const result = rolls?.[0]?.total ?? rolls?.total ?? null;
     const kept = (result !== null) && (result >= dc);
-    log(`${actor.name} : ${total} dégâts de l'intérieur ce tour-ci — sauvegarde ${result} contre DD ${dc} : ${kept ? "garde" : "régurgite"}`);
+    log(`${actor.name}: ${total} damage from inside this turn - saving throw ${result} vs DC ${dc}: ${kept ? "keeps" : "regurgitates"}`);
     if ( kept || !swallowerToken ) continue;
     for ( const { token, effect } of swallowedIn(swallowerToken) ) await release(token, effect, swallowerToken);
   }
@@ -251,20 +251,20 @@ async function damageAt(combat, prior, current) {
     const inside = swallowedIn(owner).filter(({ effect }) => swallowDamageNow(rule.damageAt,
       { [which]: true, sameTurn: effect.getFlag(MODULE_ID, "swallow")?.since === priorKey }));
     if ( !inside.length ) continue;
-    log(`${owner.name} : ${rule.item.name} — ${inside.map(i => i.token.name).join(", ")}`);
+    log(`${owner.name}: ${rule.item.name} - ${inside.map(i => i.token.name).join(", ")}`);
     await swallowAgainst(rule.damage, owner, inside.map(i => i.token), rule.damageAt);
   }
   // Le tour d'un avalé s'achève : « repeats the save at the end of each of its turns » (Blob) — réussie, l'effet tombe
   // (runtime/engine.mjs, brique resave) et la créature sort (onRemoved).
   const out = ended ? swallowerOf(ended) : null;
   if ( out?.rule.repeatsSave && out.rule.entry ) {
-    log(`${ended.name}, dans ${out.token.name} : sauvegarde répétée`);
+    log(`${ended.name}, inside ${out.token.name}: repeated saving throw`);
     await resaveAgainst(out.effect, out.rule.entry, ended, "endOfTurn");
   }
   // Le tour d'un avalé commence (Kraken, Blob, Tertre : « at the start of each of its turns »).
   const holder = started ? swallowerOf(started) : null;
   if ( holder?.rule.damage && swallowDamageNow(holder.rule.damageAt, { targetStarted: true }) ) {
-    log(`${started.name} commence son tour dans ${holder.token.name} : ${holder.rule.item.name}`);
+    log(`${started.name} starts their turn inside ${holder.token.name}: ${holder.rule.item.name}`);
     await swallowAgainst(holder.rule.damage, holder.token, [started], holder.rule.damageAt);
   }
 }
@@ -290,7 +290,7 @@ async function onResolution(resolution) {
   for ( const { token, effect } of swallowedIn(swallowerToken) ) {
     if ( (token.actor?.system.attributes?.hp?.value ?? 0) <= 0 ) continue;
     await release(token, effect, swallowerToken);
-    log(`${swallowerToken.name} recrache ${token.name}`);
+    log(`${swallowerToken.name} spits out ${token.name}`);
   }
 }
 
@@ -301,21 +301,21 @@ async function onDeath(effect) {
   const swallowerToken = actor?.token ?? actor?.getActiveTokens?.(false, true)?.[0] ?? null;
   for ( const { token, effect: swallowed } of swallowedIn(swallowerToken) ) {
     await release(token, swallowed, swallowerToken);
-    log(`${actor.name} meurt : ${token.name} est libéré`);
+    log(`${actor.name} dies: ${token.name} is freed`);
   }
 }
 
 export function registerSwallow() {
   const executor = { executor: true };
-  route("createActiveEffect", effect => Promise.all([onSwallowed(effect), onDeath(effect)]), { ...executor, label: "avaler : effet non suivi" });
-  route("deleteActiveEffect", onRemoved, { ...executor, label: "avaler : l'avalé ne sort pas" });
-  route("dnd5e.preUseActivity", onPreUse, { cancellable: true, label: "avaler : Morsure non refusée" });
-  route("createChatMessage", onUsage, { ...executor, label: "avaler / engloutir : action non suivie" });
-  route("moveToken", onMove, { ...executor, label: "avaler : les avalés ne suivent pas" });
-  route("dnd5e.applyDamage", onApplyDamage, { ...executor, label: "avaler : dégâts de l'intérieur non comptés" });
+  route("createActiveEffect", effect => Promise.all([onSwallowed(effect), onDeath(effect)]), { ...executor, label: "swallow: effect not tracked" });
+  route("deleteActiveEffect", onRemoved, { ...executor, label: "swallow: the swallowed creature doesn't leave" });
+  route("dnd5e.preUseActivity", onPreUse, { cancellable: true, label: "swallow: Bite not refused" });
+  route("createChatMessage", onUsage, { ...executor, label: "swallow / engulf: action not tracked" });
+  route("moveToken", onMove, { ...executor, label: "swallow: the swallowed creatures don't follow" });
+  route("dnd5e.applyDamage", onApplyDamage, { ...executor, label: "swallow: damage from inside not counted" });
   route("combatTurnChange", async (combat, prior, current) => {
     await regurgitateChecks(combat, prior);
     await damageAt(combat, prior, current);
-  }, { ...executor, label: "avaler : tour non traité" });
-  route(`${MODULE_ID}.resolution`, onResolution, { ...executor, label: "avaler : la grenouille ne recrache pas" });
+  }, { ...executor, label: "swallow: turn not handled" });
+  route(`${MODULE_ID}.resolution`, onResolution, { ...executor, label: "swallow: the frog doesn't spit out" });
 }

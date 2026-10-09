@@ -33,7 +33,7 @@ async function extinguishBefore(item) {
 /** §16.35 : intention « éteindre » (bouton de la fenêtre de choix) — les lumières de l'item s'éteignent, rien n'est lancé. */
 export async function putOutLight(activity) {
   const n = await extinguishBefore(activity.item);
-  log(`${activity.item.name} : ${n} lumière(s) éteinte(s)`);
+  log(`${activity.item.name}: ${n} light(s) extinguished`);
   return n;
 }
 
@@ -51,7 +51,7 @@ export async function castLight(activity, [config, dialog, message], { where, co
   if ( !rule ) return null;
   if ( rule.single ) {
     const n = await extinguishBefore(activity.item);
-    if ( n ) log(`${activity.item.name} : ${n} lumière(s) précédente(s) éteinte(s)`);
+    if ( n ) log(`${activity.item.name}: ${n} previous light(s) extinguished`);
   }
   const summons = { ...(config?.summons ?? {}), creatureSize: summonSizeOf(activity), [MODULE_ID]: { lightColor: color } };
   const use = { ...config, summons, create: { ...(config?.create ?? {}), summons: where === "ground" },
@@ -67,47 +67,47 @@ export function registerLights() {
     const done = await lightUpRegion(region);
     if ( !done ) return;
     const { light, dispelled } = done;
-    log(`zone : ${light.config.negative ? `ténèbres (${light.config.dim} ${region.parent.grid.units})`
-      : `lumière ${light.config.bright}/${light.config.dim} ${region.parent.grid.units}`}${dispelled ? `, ${dispelled} zone(s) de ténèbres dissipée(s)` : ""}`);
-  }, { executor: true, label: "lumière de zone non posée" });
+    log(`zone: ${light.config.negative ? `darkness (${light.config.dim} ${region.parent.grid.units})`
+      : `light ${light.config.bright}/${light.config.dim} ${region.parent.grid.units}`}${dispelled ? `, ${dispelled} darkness zone(s) dispelled` : ""}`);
+  }, { executor: true, label: "zone light not placed" });
 
   route("updateRegion", async (region, changes) => {
     if ( !("shapes" in changes) && !("elevation" in changes) ) return;
-    if ( await followRegion(region) ) log("zone déplacée : sa lumière suit");
-  }, { executor: true, label: "lumière de zone non déplacée" });
+    if ( await followRegion(region) ) log("zone moved: its light follows");
+  }, { executor: true, label: "zone light not moved" });
 
   route("deleteRegion", async region => {
     const n = await extinguishRegion(region);
-    if ( n ) log(`zone retirée : ${n} lumière(s) éteinte(s)`);
-  }, { executor: true, label: "lumière de zone non éteinte" });
+    if ( n ) log(`zone removed: ${n} light(s) extinguished`);
+  }, { executor: true, label: "zone light not extinguished" });
 
   // Toute région peut porter des ténèbres : la vision simulée est à refaire quand l'une naît, bouge ou disparaît.
-  for ( const hook of ["createRegion", "updateRegion", "deleteRegion"] ) route(hook, () => invalidateVision(), { label: "vision : sources à refaire" });
+  for ( const hook of ["createRegion", "updateRegion", "deleteRegion"] ) route(hook, () => invalidateVision(), { label: "vision: sources to rebuild" });
 
   // §16.36 : « ne peut pas bénéficier de l'état Invisible » jusque dans l'affichage — l'invisibilité d'une créature révélée
   // est suspendue, et reprend quand la révélation tombe (adapter/reveal.mjs).
   route("preCreateActiveEffect", effect => {
-    if ( veilOnCreate(effect) ) log(`${effect.parent?.name ?? "?"} : ${effect.name} suspendu (révélé)`);
-  }, { label: "invisibilité : non suspendue" });
+    if ( veilOnCreate(effect) ) log(`${effect.parent?.name ?? "?"}: ${effect.name} suspended (revealed)`);
+  }, { label: "invisibility: not suspended" });
   route("createActiveEffect", async effect => {
     if ( (effect.parent?.documentName !== "Actor") || !isRevealEffect(effect) ) return;
     const n = await veilExisting(effect.parent);
-    if ( n ) log(`${effect.parent.name} : révélé par ${effect.name}, invisibilité suspendue`);
-  }, { executor: true, label: "invisibilité : non suspendue" });
+    if ( n ) log(`${effect.parent.name}: revealed by ${effect.name}, invisibility suspended`);
+  }, { executor: true, label: "invisibility: not suspended" });
   const lifted = async (effect, gone) => {
     const n = await unveil(effect.parent, gone);
-    if ( n ) log(`${effect.parent.name} : plus révélé, invisibilité rétablie`);
+    if ( n ) log(`${effect.parent.name}: no longer revealed, invisibility restored`);
   };
   route("deleteActiveEffect", effect => (effect.parent?.documentName === "Actor") && isRevealEffect(effect) ? lifted(effect, effect) : null,
-    { executor: true, label: "invisibilité : non rétablie" });
+    { executor: true, label: "invisibility: not restored" });
   route("updateActiveEffect", (effect, changes) => {
     if ( (effect.parent?.documentName !== "Actor") || !("disabled" in changes) || !isRevealEffect(effect) ) return null;
     return changes.disabled ? lifted(effect, effect) : veilExisting(effect.parent);
-  }, { executor: true, label: "invisibilité : non rétablie" });
+  }, { executor: true, label: "invisibility: not restored" });
 
   route("preCreateActiveEffect", effect => {
-    if ( addEffectLight(effect) ) log(`${effect.parent?.name ?? "?"} : ${effect.name} le fait briller`);
-  }, { label: "effet lumineux non complété" });
+    if ( addEffectLight(effect) ) log(`${effect.parent?.name ?? "?"}: ${effect.name} makes it shed light`);
+  }, { label: "light effect not completed" });
 
   // Lumière, Flamme éternelle : le PHB leur donne `summon.prompt: false` — dnd5e ne place alors rien au lancement, il faut
   // cliquer « Invoquer » sur la carte (documents/activity/summon.mjs:68). Vu en jeu : « rien ne se passe, juste un message de
@@ -121,18 +121,18 @@ export function registerLights() {
     usageConfig.create.summons = true;
     usageConfig.summons ??= {};
     usageConfig.summons.creatureSize = summonSizeOf(activity) ?? usageConfig.summons.creatureSize;
-  }, { cancellable: true, label: "objet lumineux : placé au lancement" });
+  }, { cancellable: true, label: "light object: placed on cast" });
 
   // §16.35 : la couleur choisie passe sur le token de l'objet, sur le client qui l'invoque.
   route("dnd5e.summonToken", (activity, profile, tokenData, options) => {
-    if ( colorSummonedToken(activity, tokenData, options) ) log(`${activity.item.name} : lumière ${tokenData.light?.color}`);
-  }, { label: "objet lumineux : couleur non appliquée" });
+    if ( colorSummonedToken(activity, tokenData, options) ) log(`${activity.item.name}: light ${tokenData.light?.color}`);
+  }, { label: "light object: color not applied" });
 
   route("dnd5e.postUseActivity", async (activity, usageConfig) => {
     const ours = usageConfig?.[MODULE_ID];
     if ( (ours?.lightChoice !== "self") || !lightChoiceOf(activity) ) return;
-    if ( await lightCaster(activity, ours.lightColor ?? null) ) log(`${activity.actor.name} tient ${activity.item.name} : il brille`);
-  }, { label: "objet lumineux : le lanceur ne brille pas" });
+    if ( await lightCaster(activity, ours.lightColor ?? null) ) log(`${activity.actor.name} holds ${activity.item.name}: it sheds light`);
+  }, { label: "light object: the caster does not shed light" });
 
   CONFIG.queries[EXTINGUISH_QUERY] = handleExtinguish;
 
@@ -141,17 +141,17 @@ export function registerLights() {
     const item = activity?.item;
     if ( (activity?.type !== "utility") || !carriedLightOf(item) || !item.actor?.isOwner ) return;
     const on = !carriedLightEffect(item);
-    if ( await setCarriedLight(item, on) ) log(`${item.actor.name} : ${item.name} ${on ? "allumé(e)" : "éteint(e)"}`);
-  }, { label: "source de lumière : non allumée" });
+    if ( await setCarriedLight(item, on) ) log(`${item.actor.name}: ${item.name} ${on ? "lit" : "extinguished"}`);
+  }, { label: "light source: not lit" });
   // Elle quitte la fiche (lâchée, lancée, donnée) : elle s'éteint sur son ancien porteur.
   route("deleteItem", async item => {
     const n = carriedLightOf(item) ? await dropCarriedLight(item) : 0;
-    if ( n ) log(`${item.parent?.name ?? "?"} : ${item.name} n'est plus porté(e), sa lumière s'éteint`);
-  }, { executor: true, label: "source de lumière : non éteinte" });
+    if ( n ) log(`${item.parent?.name ?? "?"}: ${item.name} no longer carried, its light goes out`);
+  }, { executor: true, label: "light source: not extinguished" });
 
   route("createToken", async tokenDoc => {
     const done = await placeLightObject(tokenDoc);
     if ( !done ) return;
-    if ( done.extinguished ) log(`lumière : ${done.extinguished} lumière(s) du lancement précédent éteinte(s)`);
-  }, { executor: true, label: "objet lumineux non traité" });
+    if ( done.extinguished ) log(`light: ${done.extinguished} light(s) from the previous cast extinguished`);
+  }, { executor: true, label: "light object not handled" });
 }

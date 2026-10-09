@@ -25,15 +25,15 @@ async function onPostUse(activity, usageConfig, results) {
   if ( !contentOf(activity?.item).entry?.stabilizes || !activity.actor?.isOwner ) return;
   const first = results?.message?.system?.targets?.[0]?.token ?? Array.from(game.user.targets)[0]?.document?.uuid ?? null;
   const token = first ? await fromUuid(first) : null;
-  if ( !token?.actor ) { log(`${activity.item.name} : aucune cible à stabiliser`); return; }
+  if ( !token?.actor ) { log(`${activity.item.name}: no target to stabilize`); return; }
   const args = { target: token.uuid, activity: activity.uuid };
   const done = token.actor.isOwner ? await handleStabilize(args)
     : await game.users.activeGM?.query(STABILIZE_QUERY, args, { timeout: 10000 }).catch(() => false);
-  if ( done ) log(`${activity.item.name} : ${token.name} stabilisé par ${activity.actor.name}`);
+  if ( done ) log(`${activity.item.name}: ${token.name} stabilized by ${activity.actor.name}`);
   else notice(token, loc("Retour.PasAStabiliser", { name: token.name }));
 }
 
 export function registerStabilize() {
   CONFIG.queries[STABILIZE_QUERY] = handleStabilize;
-  route("dnd5e.postUseActivity", onPostUse, { label: "trousse de soins : stabilisation" });
+  route("dnd5e.postUseActivity", onPostUse, { label: "healer's kit: stabilization" });
 }

@@ -272,11 +272,11 @@ export async function requestSaves(usageMessage, save, targets, { askPlayers=tru
     const abilities = save.abilities ?? [save.ability];
     ability = bestSaveAbility(actor, abilities);
     const disadvantage = token.uuid === heightened;
-    if ( disadvantage ) console.log(`${MODULE_ID} | Sort intensifié : ${token.name} a le Désavantage à sa sauvegarde`);
+    if ( disadvantage ) console.log(`${MODULE_ID} | Heightened Spell: ${token.name} has Disadvantage on its saving throw`);
     // §36 : Présage — « à décider avant le jet » : un devin qui voit la cible peut remplacer son d20 par un jet noté. La question
     // retient la demande (jusqu'à la réponse ou au délai de la fenêtre) : c'est le prix de « avant le jet ».
     const foretold = (await foretellFor(token, { kind: "save", item: activity.item.name, auto, declined }))?.value ?? null;
-    if ( foretold !== null ) console.log(`${MODULE_ID} | Présage : la sauvegarde de ${token.name} vaudra ${foretold} au d20`);
+    if ( foretold !== null ) console.log(`${MODULE_ID} | Portent: ${token.name}'s saving throw will use ${foretold} on the d20`);
     const userId = rollerFor(actor);
     if ( userId ) {
       // Sans attendre : les joueurs lancent en parallèle, les PNJ n'attendent personne.
@@ -301,7 +301,7 @@ export async function requestSaves(usageMessage, save, targets, { askPlayers=tru
       system: { handler: "save", data: { ability, target: dc }, targets: requested },
       flags: { [MODULE_ID]: { requestFor: usageMessage.id } }
     });
-  }).catch(err => console.error(`${MODULE_ID} | carte de demande de sauvegarde non créée`, err));
+  }).catch(err => console.error(`${MODULE_ID} | saving throw request card not created`, err));
 }
 
 /**
@@ -330,13 +330,13 @@ async function lostEffectOf(activity, effectId) {
   for ( const uuid of sources ) {
     const source = await fromUuid(uuid).catch(() => null);
     const effect = source?.items?.get(item.id)?.effects?.get(effectId);
-    if ( effect ) { console.log(`${MODULE_ID} | « ${effect.name} » pris sur la fiche d'origine (${uuid}) : l'item du monde l'a perdu`); return effect; }
+    if ( effect ) { console.log(`${MODULE_ID} | "${effect.name}" taken from the source sheet (${uuid}): the world item lost it`); return effect; }
   }
   for ( const pack of game.packs.filter(p => p.documentName === "Actor") ) {
     if ( !pack.index.has(base.id) ) continue;
     const source = await pack.getDocument(base.id).catch(() => null);
     const effect = source?.items?.get(item.id)?.effects?.get(effectId);
-    if ( effect ) { console.log(`${MODULE_ID} | « ${effect.name} » pris dans ${pack.collection} : l'item du monde l'a perdu`); return effect; }
+    if ( effect ) { console.log(`${MODULE_ID} | "${effect.name}" taken from ${pack.collection}: the world item lost it`); return effect; }
   }
   return null;
 }
@@ -354,7 +354,7 @@ export async function applyEffectsToToken(usageMessage, tokenUuid, refs) {
     const profile = [...(activity?.effects ?? []), ...poolEffectsOf(activity)].find(e => effectKey(e) === ref.id);
     const effect = (await profile?.getEffect()) ?? (profile ? await lostEffectOf(activity, ref.id) : null);
     if ( !effect ) {
-      console.log(`${MODULE_ID} | effet ${ref.id} introuvable sur ${activity?.item?.name ?? ref.activity}, ni sur sa fiche d'origine`);
+      console.log(`${MODULE_ID} | effect ${ref.id} not found on ${activity?.item?.name ?? ref.activity}, nor on its source sheet`);
       continue;
     }
     // §16.8 : immunisée contre l'un de ses états, la créature ne reçoit pas l'effet (Motif hypnotique sans Charmé).
@@ -448,7 +448,7 @@ export async function repairSaveAbility(message) {
   const abilities = Array.from(twin?.save?.ability ?? []).filter(a => a in CONFIG.DND5E.abilities);
   if ( !abilities.length || !item.isOwner || item.inCompendium ) return false;
   await item.update({ [`system.activities.${activity.id}.save.ability`]: abilities });
-  console.log(`${MODULE_ID} | ${item.name} (${item.actor?.name}) : caractéristique de sauvegarde réparée depuis le compendium → ${abilities.join(", ")}`);
+  console.log(`${MODULE_ID} | ${item.name} (${item.actor?.name}): saving throw ability repaired from the compendium -> ${abilities.join(", ")}`);
   return true;
 }
 
@@ -470,6 +470,6 @@ export async function showTargetsTo(user, tokenUuids) {
     if ( !user || user.isSelf ) handleTargetsQuery({ tokens: tokenUuids });
     else if ( user.active ) await user.query(TARGETS_QUERY, { tokens: tokenUuids }, { timeout: 5000 });
   } catch(err) {
-    console.warn(`${MODULE_ID} | cibles non affichées chez ${user?.name}`, err);
+    console.warn(`${MODULE_ID} | targets not shown for ${user?.name}`, err);
   }
 }

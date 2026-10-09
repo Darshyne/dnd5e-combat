@@ -42,12 +42,12 @@ import { requestSkillAid } from "./skill-aid.mjs";
 
 /** Le token désigné, sur la scène affichée par le MJ. */
 function tokenOf({ tokenId }) {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  if ( !game.user.isGM ) throw new Error("GM only");
   const scene = canvas.scene;
-  if ( !scene || !canvas.ready ) throw new Error("aucune scène affichée");
+  if ( !scene || !canvas.ready ) throw new Error("no scene displayed");
   const token = scene.tokens.get(tokenId);
-  if ( !token ) throw new Error(`token ${tokenId} absent de la scène affichée (${scene.name})`);
-  if ( !token.object ) throw new Error(`token ${token.name} non dessiné`);
+  if ( !token ) throw new Error(`token ${tokenId} missing from the viewed scene (${scene.name})`);
+  if ( !token.object ) throw new Error(`token ${token.name} not drawn`);
   return token;
 }
 
@@ -55,7 +55,7 @@ function tokenOf({ tokenId }) {
 function cellArg(token, { cell, point }) {
   if ( cell ) return { i: cell.i, j: cell.j };
   if ( point ) return token.parent.grid.getOffset(point);
-  throw new Error("cell { i, j } ou point { x, y } requis");
+  throw new Error("cell { i, j } or point { x, y } required");
 }
 
 const finite = n => (Number.isFinite(n) ? n : null);
@@ -209,13 +209,13 @@ async function actionEnd({ tokenId, targetId=null }) {
 
 /** Les fenêtres ouvertes chez le MJ (ApplicationV2) : pour retrouver un dialogue qu'un déplacement bloqué attend. */
 function windows() {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  if ( !game.user.isGM ) throw new Error("GM only");
   return [...foundry.applications.instances.entries()].map(([id, app]) => ({ id, title: app.title ?? null, className: app.constructor?.name ?? null }));
 }
 
 /** Ferme une fenêtre (un dialogue fermé vaut « non » : le déplacement mis en pause par le cœur se termine). */
 async function closeWindow({ id }) {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  if ( !game.user.isGM ) throw new Error("GM only");
   const app = foundry.applications.instances.get(id);
   if ( !app ) return { closed: false };
   await app.close();
@@ -224,8 +224,8 @@ async function closeWindow({ id }) {
 
 /** Affiche un niveau de la scène chez le MJ (un déplacement du moteur fait suivre la vue : le scénario la rend). */
 async function view({ levelId }) {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
-  if ( !canvas.scene?.levels?.get?.(levelId) ) throw new Error(`niveau ${levelId} absent de la scène affichée`);
+  if ( !game.user.isGM ) throw new Error("GM only");
+  if ( !canvas.scene?.levels?.get?.(levelId) ) throw new Error(`level ${levelId} missing from the viewed scene`);
   if ( canvas.level?.id !== levelId ) await canvas.scene.view({ level: levelId });
   return { viewedLevel: canvas.level?.id ?? null };
 }
@@ -236,9 +236,9 @@ async function view({ levelId }) {
  * contrôle d'avant est rendu.
  */
 async function perceived({ observerId, targetIds=[] }) {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  if ( !game.user.isGM ) throw new Error("GM only");
   const observer = canvas.tokens.get(observerId);
-  if ( !observer ) throw new Error(`token ${observerId} absent de la scène affichée`);
+  if ( !observer ) throw new Error(`token ${observerId} missing from the viewed scene`);
   const before = canvas.tokens.controlled.map(t => t.id);
   observer.control({ releaseOthers: true });
   canvas.perception.update({ initializeVision: true });
@@ -268,11 +268,11 @@ function reports() {
  * (adapter/messages.mjs, `rollDamageFor`) : le jet est rattaché à la carte, sur les cibles de la résolution.
  */
 async function rollCard({ messageId }) {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  if ( !game.user.isGM ) throw new Error("GM only");
   const carrier = game.messages.get(messageId);
-  if ( !carrier ) throw new Error(`message ${messageId} introuvable`);
+  if ( !carrier ) throw new Error(`message ${messageId} not found`);
   const resolution = carrier.getFlag(MODULE_ID, "resolution");
-  if ( !resolution ) throw new Error(`message ${messageId} : pas de résolution du moteur`);
+  if ( !resolution ) throw new Error(`message ${messageId}: no engine resolution`);
   const rolls = await rollDamageFor(carrier, resolution, false);
   return { rolled: !!rolls, step: resolution.step ?? null };
 }
@@ -285,11 +285,11 @@ async function rollCard({ messageId }) {
  * Outil de test seulement : le moteur, lui, laisse le placement au système.
  */
 async function summonAt({ tokenId, itemId, activityId=null, profile=null, actorUuid=null, x, y }) {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  if ( !game.user.isGM ) throw new Error("GM only");
   const token = canvas.scene?.tokens.get(tokenId);
   const item = token?.actor?.items.get(itemId);
   const activity = activityId ? item?.system.activities.get(activityId) : item?.system.activities.find(a => a.type === "summon");
-  if ( !activity || (activity.type !== "summon") ) throw new Error("activité d'invocation introuvable");
+  if ( !activity || (activity.type !== "summon") ) throw new Error("summon activity not found");
   // §84 : sans rien consommer, comme `use` par défaut — un lanceur sans emplacement ouvrait « Plus de charge » chez le MJ (§77).
   const used = await activity.use({ consume: false, create: { summons: false }, [MODULE_ID]: { confirmed: true, autoReact: "none" } },
     { configure: false });
@@ -411,7 +411,7 @@ function teleportPick({ x, y }) {
 async function teleport({ tokenId, itemId, x, y }) {
   const token = tokenOf({ tokenId });
   const activity = token.actor?.items.get(itemId)?.system.activities?.find(a => selfTeleportOf(a)) ?? null;
-  if ( !activity ) throw new Error("pas de téléportation de soi sur cet item");
+  if ( !activity ) throw new Error("no self-teleport on this item");
   const elevation = token._source.elevation ?? 0;
   const plans = [{ token: token.object, plan: { destination: { x, y, elevation } } }];
   const accepted = Hooks.call("dnd5e.teleport", activity, plans) !== false;
@@ -428,9 +428,9 @@ async function teleport({ tokenId, itemId, x, y }) {
  * retire les items qu'il ne connaissait pas.
  */
 async function restoreItem({ actorId, itemData }) {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  if ( !game.user.isGM ) throw new Error("GM only");
   const actor = game.actors.get(actorId);
-  if ( !actor ) throw new Error(`acteur ${actorId} introuvable`);
+  if ( !actor ) throw new Error(`actor ${actorId} not found`);
   if ( actor.items.has(itemData?._id) ) return { restored: false, id: itemData._id };
   const [item] = await actor.createEmbeddedDocuments("Item", [itemData], { keepId: true });
   return { restored: !!item, id: item?.id ?? null };
@@ -454,7 +454,7 @@ function attackReasons({ attackerId, targetId, itemId, attackMode=null }) {
   const origin = tokenOf({ tokenId: attackerId });
   const target = tokenOf({ tokenId: targetId });
   const activity = origin.actor?.items.get(itemId)?.system.activities.find(a => a.type === "attack");
-  if ( !activity ) throw new Error("pas d'attaque sur cet item");
+  if ( !activity ) throw new Error("no attack on this item");
   const factors = readUnitFactors();
   const { advantage, disadvantage } = attackModifiers(attackContext(origin, target, activity, attackMode, factors));
   const adjacentHostiles = origin.parent.tokens.filter(t => (t !== origin) && t.actor && !t.hidden
@@ -467,7 +467,7 @@ function attackReasons({ attackerId, targetId, itemId, attackMode=null }) {
  * pour qu'un scénario la remette (Incantation puissante à la place d'Impact divin).
  */
 async function overrideContent({ identifier, entry=null }) {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  if ( !game.user.isGM ) throw new Error("GM only");
   const before = worldOverrides()[identifier] ?? null;
   await setWorldOverride(identifier, entry);
   return { before };
@@ -481,7 +481,7 @@ async function enchant({ tokenId, itemId, activityId, targetItemId, profile=null
   const actor = tokenOf({ tokenId }).actor;
   const activity = actor?.items.get(itemId)?.system.activities?.get(activityId);
   const target = actor?.items.get(targetItemId);
-  if ( !activity || !target ) throw new Error("activité ou item introuvable");
+  if ( !activity || !target ) throw new Error("activity or item not found");
   const effect = await activity.applyEnchantment(profile ?? activity.effects?.[0]?._id, target, { strict: true });
   return { effectId: effect?.id ?? null };
 }
@@ -560,7 +560,7 @@ function threats({ tokenId, point }) {
 function issues({ tokenId, itemId, activityType=null, cost=null }) {
   const item = tokenOf({ tokenId }).actor?.items.get(itemId);
   const activity = item?.system.activities.find(a => !activityType || (a.type === activityType));
-  if ( !activity ) throw new Error("activité introuvable");
+  if ( !activity ) throw new Error("activity not found");
   return useIssues(activity, { cost }).lines;
 }
 
@@ -587,10 +587,10 @@ function status() {
  * répondent ensuite par `list-dialogs` / `answer-dialog` du connecteur. Réservé au MJ.
  */
 async function runMacro({ uuid }={}) {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  if ( !game.user.isGM ) throw new Error("GM only");
   const macro = await fromUuid(uuid);
-  if ( !(macro instanceof Macro) ) throw new Error(`pas de macro : ${uuid}`);
-  Promise.resolve(macro.execute()).catch(err => console.error(`${MODULE_ID} | macro « ${macro.name} »`, err));
+  if ( !(macro instanceof Macro) ) throw new Error(`not a macro: ${uuid}`);
+  Promise.resolve(macro.execute()).catch(err => console.error(`${MODULE_ID} | macro "${macro.name}"`, err));
   return { started: macro.name };
 }
 
@@ -599,7 +599,7 @@ async function runMacro({ uuid }={}) {
  * Réservé au MJ ; `call-module-api` n'existe que dans un monde où le réglage « Outils de test » du connecteur est activé.
  */
 function reload() {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  if ( !game.user.isGM ) throw new Error("GM only");
   setTimeout(() => window.location.reload(), 300);
   return { reloading: true, bootedAt: BOOTED_AT };
 }
@@ -632,7 +632,7 @@ function inventory({ types=null, textLength=700 }={}) {
         rows.set(key, row);
       }
       if ( !row.names.includes(item.name) ) row.names.push(item.name);
-      row.actors.push(`${actor.name}${actor.hasPlayerOwner ? " (PJ)" : ""}`);
+      row.actors.push(`${actor.name}${actor.hasPlayerOwner ? " (PC)" : ""}`);
     }
   }
   return Array.from(rows.values()).sort((a, b) => (b.actors.length - a.actors.length) || String(a.identifier).localeCompare(String(b.identifier)));
@@ -652,7 +652,7 @@ function identify({ tokenId }) {
  */
 async function portent({ tokenId, roll=false, rolls=null, clear=false }) {
   const actor = tokenOf({ tokenId }).actor;
-  if ( !actor ) throw new Error("token sans acteur");
+  if ( !actor ) throw new Error("token without an actor");
   if ( clear ) await actor.unsetFlag(MODULE_ID, "portent");
   else if ( Array.isArray(rolls) ) await actor.setFlag(MODULE_ID, "portent", { rolls, turn: null });
   else if ( roll ) await rollPortent(actor);
@@ -673,8 +673,8 @@ async function transpose({ tokenId }) {
  * Réservé au MJ (§38.4 : le scénario `presage` désactive le Présage le temps d'une partie).
  */
 async function setting({ key, value }) {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
-  if ( !game.settings.settings.has(`${MODULE_ID}.${key}`) ) throw new Error(`réglage inconnu : ${key}`);
+  if ( !game.user.isGM ) throw new Error("GM only");
+  if ( !game.settings.settings.has(`${MODULE_ID}.${key}`) ) throw new Error(`unknown setting: ${key}`);
   const before = game.settings.get(MODULE_ID, key);
   if ( value !== undefined ) await game.settings.set(MODULE_ID, key, value);
   return { key, before, now: game.settings.get(MODULE_ID, key) };
@@ -705,11 +705,11 @@ async function sequencer({ end=null }={}) {
  * d'utilisation et les régions nées de cette activité dans les 3 s (une pose interactive, elle, attendrait un clic : rien).
  */
 async function use({ tokenId, itemId, activityType=null, extra=null, consume=false }) {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  if ( !game.user.isGM ) throw new Error("GM only");
   const token = canvas.scene?.tokens.get(tokenId);
   const item = token?.actor?.items.get(itemId);
   const activity = item?.system.activities.find(a => !activityType || (a.type === activityType));
-  if ( !activity ) throw new Error("activité introuvable");
+  if ( !activity ) throw new Error("activity not found");
   const before = new Set(canvas.scene.regions.map(r => r.id));
   const mine = () => canvas.scene.regions.filter(r => !before.has(r.id) && (r.getFlag("dnd5e", "activity") === activity.uuid));
   // La fenêtre d'utilisation de dnd5e, si elle s'ouvre, est relevée (avec ou sans case « Placer le gabarit ») puis validée.
@@ -737,10 +737,10 @@ async function use({ tokenId, itemId, activityType=null, extra=null, consume=fal
  * (`problem`, clé de traduction ou null), rien de lancé.
  */
 async function dash({ tokenId, itemId, x, y, preview=false }) {
-  if ( !game.user.isGM ) throw new Error("réservé au MJ");
+  if ( !game.user.isGM ) throw new Error("GM only");
   const token = tokenOf({ tokenId });
   const activity = token.actor?.items.get(itemId)?.system.activities?.find(a => lineDashOf(a)) ?? null;
-  if ( !activity ) throw new Error("pas de ruée en ligne droite sur cet item");
+  if ( !activity ) throw new Error("no straight-line charge on this item");
   if ( preview ) {
     const to = { x, y, elevation: token._source.elevation ?? 0 };
     const movement = token.actor.system.attributes?.movement;

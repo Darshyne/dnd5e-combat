@@ -43,11 +43,11 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   };
   // §70 : un sort à orage dont le nuage est là — pas de nouvelle zone à poser : l'éclair se vise dessous (ui/pointer.mjs).
   if ( stormOf(activity.item) && cloudOf(activity.item) ) config.create = { ...(usageConfig.create ?? {}), measuredTemplate: false };
-  log(`${activity.item.name} : relancé sans emplacement (concentration en cours)`);
+  log(`${activity.item.name}: recast without a spell slot (concentration ongoing)`);
   activity.use(config, { ...(dialogConfig ?? {}), configure: false }, messageConfig);
   return false;
 }
 
 export function registerRecast() {
-  route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "relance d'un sort qui dure" });
+  route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "recast of a lasting spell" });
 }

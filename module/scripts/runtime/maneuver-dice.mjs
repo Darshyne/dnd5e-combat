@@ -55,7 +55,7 @@ async function onPostUse(activity, usageConfig, results) {
     const target = (pending.against === "target") ? (results.message?.system?.targets?.[0]?.token ?? Array.from(game.user.targets)[0]?.document?.uuid ?? null) : null;
     if ( formula ) {
       await actor.setFlag(MODULE_ID, FLAG, { item: activity.item.uuid, name: activity.item.name, formula, against: pending.against, target, turn: currentTurnKey() });
-      log(`${activity.item.name} : +${formula} promis au prochain coup ${pending.against === "target" ? "contre la cible" : "au corps à corps"} de ce tour`);
+      log(`${activity.item.name}: +${formula} promised to the next hit ${pending.against === "target" ? "against the target" : "in melee"} this turn`);
     }
   }
   const rolled = ((entry.rolledAc?.activity === activity.id) && (entry.rolledAc.to !== "choose")) ? entry.rolledAc : null;
@@ -67,7 +67,7 @@ async function onPostUse(activity, usageConfig, results) {
     const effect = await placeItemEffect(activity.item, rolled.effect, actor);
     if ( effect ) {
       await effect.update({ "system.changes": [{ key: "system.attributes.ac.bonus", type: "add", value: String(roll.total) }] });
-      log(`${activity.item.name} : +${roll.total} à la CA de ${actor.name}`);
+      log(`${activity.item.name}: +${roll.total} to ${actor.name}'s AC`);
     }
   }
 }
@@ -88,7 +88,7 @@ function onPreRollDamage(config, dialog, message) {
   const type = config.rolls[0]?.options?.type ?? null;
   config.rolls.push({ data: activity.getRollData(), parts: [pending.formula], options: { type, types: type ? [type] : [], properties: [] } });
   actor.unsetFlag(MODULE_ID, FLAG).catch(() => {});
-  log(`${pending.name} : +${pending.formula} ${type ?? ""}`);
+  log(`${pending.name}: +${pending.formula} ${type ?? ""}`);
   return true;
 }
 
@@ -103,7 +103,7 @@ async function onResolution(resolution) {
   const missed = (resolution.targets ?? []).some(t => (t.token === pending.target) && (t.hit === false));
   if ( missed ) {
     await actor.unsetFlag(MODULE_ID, FLAG);
-    log(`${pending.name} : l'attaque contre la cible a raté, le dé est perdu`);
+    log(`${pending.name}: the attack against the target missed, the die is lost`);
   }
 }
 
@@ -148,7 +148,7 @@ async function sweep(resolution, actor, attacker) {
       flavor: loc("Balayage.Carte", { item: item.name, name: victim.name, type: CONFIG.DND5E.damageTypes?.[type]?.label ?? type ?? "" }),
       flags: { [MODULE_ID]: { sweep: { item: item.uuid, target: victim.uuid, amount: roll.total, type } } } });
     await victim.actor.applyDamage([{ value: roll.total, type }]);
-    log(`${item.name} : ${roll.total} dégâts (${type}) à ${victim.name}`);
+    log(`${item.name}: ${roll.total} damage (${type}) to ${victim.name}`);
     return;
   }
 }
@@ -166,7 +166,7 @@ async function swapPlaces(item, self, other) {
   const options = { constrainOptions: { ignoreWalls: true, ignoreTokens: true }, [MODULE_ID]: { cleared: true } };
   await other.move([{ ...from, snapped: true, action: "blink" }], options);
   await self.move([{ ...to, snapped: true }], options);
-  log(`${item.name} : ${self.name} et ${other.name} échangent leurs places`);
+  log(`${item.name}: ${self.name} and ${other.name} swap places`);
   return true;
 }
 
@@ -184,7 +184,7 @@ async function chosenAc(activity, rule, self, other) {
   const effect = await placeItemEffect(activity.item, rule.effect, recipient);
   if ( !effect ) return;
   await effect.update({ name: `${activity.item.name} (+${roll.total})`, "system.changes": [{ key: "system.attributes.ac.bonus", type: "add", value: String(roll.total) }] });
-  log(`${activity.item.name} : +${roll.total} à la CA de ${recipient.name}`);
+  log(`${activity.item.name}: +${roll.total} to ${recipient.name}'s AC`);
 }
 
 /** Frappe commandée : l'ordre noté dans le budget de la créature visée, le dé promis à ses dégâts. */
@@ -199,7 +199,7 @@ async function commandStrike(activity, actor, ally) {
     content: `<p>${loc("FrappeCommandee.Carte", { item: activity.item.name, name: ally.name, formula: formula ?? "" })}</p>`,
     flags: { [MODULE_ID]: { commandStrike: { item: activity.item.uuid, ally: ally.uuid } } } });
   notice(ally, loc("FrappeCommandee.Ordre", { item: activity.item.name }), "gain");
-  log(`${activity.item.name} : ${ally.name} peut attaquer par sa Réaction (+${formula})`);
+  log(`${activity.item.name}: ${ally.name} can attack with its Reaction (+${formula})`);
 }
 
 /** Sur le MJ actif : la carte d'utilisation d'une activité de Chassé-croisé ou de Frappe commandée. */
@@ -217,8 +217,8 @@ async function onUsageCard(message) {
 }
 
 export function registerManeuverDice() {
-  route("createChatMessage", onUsageCard, { executor: true, label: "manœuvre : Chassé-croisé ou Frappe commandée non joués" });
-  route("dnd5e.postUseActivity", onPostUse, { label: "manœuvre : dé promis ou CA non posés" });
-  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "manœuvre : dé promis" });
-  route(`${MODULE_ID}.resolution`, onResolution, { executor: true, label: "manœuvre : dé promis non éteint" });
+  route("createChatMessage", onUsageCard, { executor: true, label: "maneuver: Bait and Switch or Commander's Strike not played" });
+  route("dnd5e.postUseActivity", onPostUse, { label: "maneuver: promised die or AC not applied" });
+  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "maneuver: promised die" });
+  route(`${MODULE_ID}.resolution`, onResolution, { executor: true, label: "maneuver: promised die not cleared" });
 }

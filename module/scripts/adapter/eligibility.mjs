@@ -62,6 +62,6 @@ export async function unaffectedBy(activity, plan, token) {
 export function blockedFor(effect, actor) {
   const immune = conditionImmunitiesOf(actor);
   const blocked = Array.from(effect?.statuses ?? []).filter(s => immune.includes(s));
-  if ( blocked.length ) console.log(`${MODULE_ID} | « ${effect.name} » non posé sur ${actor.name} : immunité (${blocked.join(", ")})`);
+  if ( blocked.length ) console.log(`${MODULE_ID} | "${effect.name}" not applied to ${actor.name}: immunity (${blocked.join(", ")})`);
   return blocked;
 }

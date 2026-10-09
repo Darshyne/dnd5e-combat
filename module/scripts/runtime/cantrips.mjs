@@ -83,7 +83,7 @@ async function expire(combat, prior, current) {
     const ids = gone.map(e => e.id).filter(id => actor.effects.has(id));
     if ( !ids.length ) continue;
     await actor.deleteEmbeddedDocuments("ActiveEffect", ids);
-    log(`${actor.name} : ${gone.map(e => e.name).join(", ")} prend fin (tour)`);
+    log(`${actor.name}: ${gone.map(e => e.name).join(", ")} ends (turn)`);
   }
 }
 
@@ -97,7 +97,7 @@ function onPreApplyDamage(actor, amount, updates) {
   const hp = actor.system.attributes?.hp?.value;
   if ( Number.isFinite(hp) && (updates["system.attributes.hp.value"] > hp) ) {
     updates["system.attributes.hp.value"] = hp;
-    log(`${actor.name} : ne peut pas regagner de points de vie`);
+    log(`${actor.name}: cannot regain Hit Points`);
   }
   return true;
 }
@@ -119,7 +119,7 @@ function onPreRollDamage(config, dialog, message) {
   if ( !from || !to ) return true;
   const base = config.rolls[0];
   base.parts = (base.parts ?? []).map((p, i) => (i === 0 ? String(p).replace(new RegExp(`d${from}(?!\\d)`, "g"), `d${to}`) : p));
-  log(`${activity.item.name} : cible ${wanted === rule.wounded ? "blessée" : "indemne"}, d${from} → d${to}`);
+  log(`${activity.item.name}: target ${wanted === rule.wounded ? "wounded" : "unhurt"}, d${from} → d${to}`);
   return true;
 }
 
@@ -143,16 +143,16 @@ async function onResolution(resolution) {
   const ids = once.map(e => e.id).filter(id => weapon.effects.has(id));
   if ( !ids.length ) return;
   await weapon.deleteEmbeddedDocuments("ActiveEffect", ids);
-  log(`${weapon.name} : ${once.map(e => e.name).join(", ")} tombe après l'attaque`);
+  log(`${weapon.name}: ${once.map(e => e.name).join(", ")} drops after the attack`);
 }
 
 export function registerCantrips() {
-  route("preCreateActiveEffect", onPreCreateEffect, { cancellable: true, label: "fin d'effet de sort non notée" });
-  route("preUpdateActiveEffect", onPreUpdateEffect, { cancellable: true, label: "Frappe assurée : enchantement expiré trop tôt" });
+  route("preCreateActiveEffect", onPreCreateEffect, { cancellable: true, label: "spell effect end not recorded" });
+  route("preUpdateActiveEffect", onPreUpdateEffect, { cancellable: true, label: "True Strike: enchantment expired too early" });
   route("combatTurnChange", (combat, prior, current) => enqueue("cantrips:ends", () => expire(combat, prior, current)),
-    { executor: true, label: "fin d'effet de sort non jouée" });
-  route("dnd5e.preApplyDamage", onPreApplyDamage, { label: "soins bloqués" });
-  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "Glas : dés de la cible" });
+    { executor: true, label: "spell effect end not played" });
+  route("dnd5e.preApplyDamage", onPreApplyDamage, { label: "healing blocked" });
+  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "Toll the Dead: target's dice" });
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`oneAttack:${resolution?.id}`, () => onResolution(resolution)),
-    { executor: true, label: "enchantement d'une attaque non retiré" });
+    { executor: true, label: "attack enchantment not removed" });
 }

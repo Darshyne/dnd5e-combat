@@ -83,6 +83,18 @@ export const FACT_ARG_OPTIONS = Object.freeze({ activityType: ACTIVITY_TYPES, si
 const isObject = v => (typeof v === "object") && (v !== null) && !Array.isArray(v);
 const filled = v => (v !== undefined) && (v !== null) && (v !== "");
 
+/** Les codes de problème (`issue`) : chacun a son libellé `DND5ECOMBAT.Recette.Erreur.<code>` (test). */
+export const ISSUE_CODES = Object.freeze(["required", "unknownRecipe", "unique", "needsIdentifier", "atLeastOneLimit", "unknownFact",
+  "expectNumber", "expectRange", "expectClassLevel", "expectDamageType", "expectValue"]);
+
+/**
+ * Un problème relevé en construisant une entrée : `code` et `data` pour qu'un outil le traduise
+ * (`DND5ECOMBAT.Recette.Erreur.<code>`), `message` en anglais pour la console et les tests.
+ */
+function issue(at, code, data, text) {
+  return { at, code, data, message: `${at}: ${text}` };
+}
+
 /** L'argument d'une clause, mis en forme pour le fait (et ses erreurs). */
 function factArg(fact, arg, at, errors) {
   const shape = FACTS[fact];
@@ -90,27 +102,27 @@ function factArg(fact, arg, at, errors) {
     case "true": return true;
     case "number": {
       const n = Number(arg);
-      if ( !Number.isFinite(n) ) errors.push(`${at} : nombre attendu`);
+      if ( !Number.isFinite(n) ) errors.push(issue(at, "expectNumber", {}, "a number is expected"));
       return n;
     }
     case "range": {
       const distance = Number(arg?.distance);
-      if ( !(Number.isFinite(distance) && (distance > 0)) || !UNITS.includes(arg?.units) ) errors.push(`${at} : { distance, units } attendu`);
+      if ( !(Number.isFinite(distance) && (distance > 0)) || !UNITS.includes(arg?.units) ) errors.push(issue(at, "expectRange", {}, "{ distance, units } expected"));
       return { distance, units: arg?.units };
     }
     case "classLevel": {
       const level = Number(arg?.level);
-      if ( !filled(arg?.class) || !(Number.isInteger(level) && (level > 0)) ) errors.push(`${at} : { class, level } attendu`);
+      if ( !filled(arg?.class) || !(Number.isInteger(level) && (level > 0)) ) errors.push(issue(at, "expectClassLevel", {}, "{ class, level } expected"));
       return { class: arg?.class, level };
     }
     case "damageTypes": {
       const list = [arg].flat().filter(filled);
-      if ( !list.length ) errors.push(`${at} : au moins un type de dégâts`);
+      if ( !list.length ) errors.push(issue(at, "expectDamageType", {}, "at least one damage type"));
       return list;
     }
     default: {
       const options = FACT_ARG_OPTIONS[shape.arg];
-      if ( !filled(arg) || (options && ![arg].flat().every(a => options.includes(a))) ) errors.push(`${at} : valeur attendue${options ? ` (${options.join(", ")})` : ""}`);
+      if ( !filled(arg) || (options && ![arg].flat().every(a => options.includes(a))) ) errors.push(issue(at, "expectValue", {}, `a value is expected${options ? ` (${options.join(", ")})` : ""}`));
       return arg;
     }
   }
@@ -118,12 +130,12 @@ function factArg(fact, arg, at, errors) {
 
 /**
  * Une condition du moteur (core/triggers.mjs, `holds`) à partir de clauses `{ fact, arg?, not? }`, toutes requises.
- * Aucune clause : `null` (pas de condition).
+ * Aucune clause : `null` (pas de condition). Les problèmes vont dans `errors` (voir `issue`).
  */
 export function buildCondition(clauses=[], { at="condition", errors=[] }={}) {
   const parts = [];
   (Array.isArray(clauses) ? clauses : []).forEach((c, i) => {
-    if ( !isObject(c) || !(c.fact in FACTS) ) return errors.push(`${at}[${i}] : fait inconnu « ${c?.fact} »`);
+    if ( !isObject(c) || !(c.fact in FACTS) ) return errors.push(issue(`${at}[${i}]`, "unknownFact", { fact: String(c?.fact) }, `unknown fact "${c?.fact}"`));
     const part = { [c.fact]: factArg(c.fact, c.arg, `${at}[${i}]`, errors) };
     parts.push(c.not ? { not: part } : part);
   });
@@ -141,7 +153,7 @@ function both(a, b) {
 /** « Seulement les activités de cet objet » : le fait qui le dit, d'après l'identifiant de la création. */
 function ownScope(scope, ctx, errors) {
   if ( scope !== "own" ) return null;
-  if ( !filled(ctx?.identifier) ) errors.push("scope : l'identifiant de l'objet est requis pour « cet objet seulement »");
+  if ( !filled(ctx?.identifier) ) errors.push(issue("scope", "needsIdentifier", {}, "\"this item only\" needs the item's identifier"));
   return { "activity.identifier": ctx?.identifier };
 }
 
@@ -393,7 +405,7 @@ export const RECIPES = Object.freeze({
       const rule = {};
       if ( v.oncePerTurn ?? true ) rule.oncePerTurn = true;
       if ( filled(v.cost) ) rule.cost = v.cost;
-      if ( !Object.keys(rule).length ) errors.push("usageLimit : au moins une limite");
+      if ( !Object.keys(rule).length ) errors.push(issue("usageLimit", "atLeastOneLimit", {}, "at least one limit"));
       return { usageLimits: { [v.activity]: rule } };
     },
     example: { activity: "7nAgPNN2dth7SR0D", oncePerTurn: true }
@@ -416,12 +428,12 @@ export const RECIPES = Object.freeze({
 export const PUBLIC_KEYS = Object.freeze(Array.from(new Set(Object.values(RECIPES).flatMap(r => r.keys))));
 
 /** Les champs requis vides d'une recette. */
-function missing(recipe, values, at, errors) {
+function missing(recipe, values, errors) {
   for ( const f of recipe.fields ) {
     if ( !f.required ) continue;
     if ( f.when && !Object.entries(f.when).every(([k, want]) => [want].flat().includes(values[k] ?? recipe.fields.find(x => x.key === k)?.default)) ) continue;
     const v = values[f.key] ?? f.default;
-    if ( !filled(v) || (Array.isArray(v) && !v.length) ) errors.push(`${at}.${f.key} : requis`);
+    if ( !filled(v) || (Array.isArray(v) && !v.length) ) errors.push(issue(f.key, "required", { field: f.key }, "required"));
   }
 }
 
@@ -429,32 +441,36 @@ function missing(recipe, values, at, errors) {
  * L'entrée du schéma tirée d'une liste de recettes. Les déclencheurs s'ajoutent, `usageLimits` se fusionne par activité, une
  * clé `unique` ne vient qu'une fois. `base` : une entrée existante sur laquelle construire (reprise d'un objet), gardée telle
  * quelle — ses déclencheurs passent avant ceux des recettes.
+ *
+ * Les problèmes sont rendus deux fois : `errors`, des phrases en anglais (console, tests) ; `issues`, de quoi les traduire —
+ * `{ recipe, type, at, code, data }`, `recipe` l'indice de la recette, `at` le champ (ou la clause) en cause, `code` une clé
+ * de `DND5ECOMBAT.Recette.Erreur`.
  * @param {{type: string, values?: object}[]} recipes
  * @param {{identifier?: string, base?: object|null}} ctx
- * @returns {{entry: object, errors: string[]}}
+ * @returns {{entry: object, errors: string[], issues: object[]}}
  */
 export function buildEntry(recipes=[], ctx={}) {
-  const errors = [];
+  const issues = [];
   const entry = isObject(ctx.base) ? structuredClone(ctx.base) : {};
   const seen = new Set();
   (Array.isArray(recipes) ? recipes : []).forEach((r, i) => {
-    const at = `recettes[${i}]`;
+    const local = [];
+    const record = () => issues.push(...local.map(e => ({ recipe: i, type: r?.type ?? null, at: e.at, code: e.code, data: e.data,
+      message: `recipes[${i}].${e.message}` })));
     const recipe = RECIPES[r?.type];
-    if ( !recipe ) return errors.push(`${at} : recette « ${r?.type} » inconnue`);
-    if ( recipe.unique && seen.has(r.type) ) return errors.push(`${at} : « ${r.type} » une seule fois par objet`);
+    if ( !recipe ) { local.push(issue("type", "unknownRecipe", { type: String(r?.type) }, `unknown recipe "${r?.type}"`)); return record(); }
+    if ( recipe.unique && seen.has(r.type) ) { local.push(issue("type", "unique", { type: r.type }, `"${r.type}" only once per item`)); return record(); }
     seen.add(r.type);
     const values = isObject(r.values) ? r.values : {};
-    const before = errors.length;
-    missing(recipe, values, at, errors);
-    if ( errors.length > before ) return;
-    const local = [];
+    missing(recipe, values, local);
+    if ( local.length ) return record();
     const fragment = recipe.build(values, ctx, local);
-    errors.push(...local.map(e => `${at}.${e}`));
+    record();
     for ( const [key, value] of Object.entries(fragment) ) {
       if ( key === "triggers" ) entry.triggers = [entry.triggers ?? []].flat().concat(value);
       else if ( key === "usageLimits" ) entry.usageLimits = { ...(entry.usageLimits ?? {}), ...value };
       else entry[key] = value;
     }
   });
-  return { entry, errors };
+  return { entry, errors: issues.map(e => e.message), issues };
 }

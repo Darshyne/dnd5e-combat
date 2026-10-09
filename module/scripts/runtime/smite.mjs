@@ -33,7 +33,7 @@ function onPreRollDamage(config, dialog, message) {
   }
   config.rolls.push({ data: activity.getRollData(), parts: [smite.formula], options: { type, types: type ? [type] : [], properties: [] } });
   foundry.utils.setProperty(message, `data.flags.${MODULE_ID}.smite`, smite);
-  log(`${smite.name}${smite.level ? ` (niveau ${smite.level})` : ""} : +${smite.formula} ${type ?? ""}`);
+  log(`${smite.name}${smite.level ? ` (level ${smite.level})` : ""}: +${smite.formula} ${type ?? ""}`);
   return true;
 }
 
@@ -57,7 +57,7 @@ async function onResolution(resolution) {
   const target = fromUuidSync(smite.target, { strict: false });
   const hit = (resolution.targets ?? []).some(t => (t.token === smite.target) && (t.hit === true));
   if ( !target?.actor || !hit ) return;
-  if ( (target.actor.system.attributes?.hp?.value ?? 0) <= 0 ) return log(`${smite.name} : ${target.name} est à 0 PV, ni effet ni sauvegarde`);
+  if ( (target.actor.system.attributes?.hp?.value ?? 0) <= 0 ) return log(`${smite.name}: ${target.name} is at 0 Hit Points, no effect and no saving throw`);
   // §42.2 : l'effet que le sort pose en touchant, sans sauvegarde (« Seared », « Blinded »), au niveau lancé.
   if ( smite.effect ) await placeItemEffect(item, smite.effect, target.actor, { scaling: smite.scaling ?? 0 });
   if ( !smite.save ) return;
@@ -65,7 +65,7 @@ async function onResolution(resolution) {
   if ( !save ) return;
   const source = actor.getActiveTokens(false, true)[0] ?? null;
   if ( !source ) return;
-  log(`${smite.name} : ${target.name} fait sa sauvegarde`);
+  log(`${smite.name}: ${target.name} makes their saving throw`);
   await strikeAgainst(save, source, target, { flavor: "DND5ECOMBAT.Chatiment.Carte" });
 }
 
@@ -83,24 +83,24 @@ async function applyRider(smite, item, resolution) {
       const data = foundry.utils.mergeObject(source.toObject(), { origin: item.uuid, transfer: false, disabled: false }, { inplace: false });
       delete data._id;
       await target.actor.createEmbeddedDocuments("ActiveEffect", [data]);
-      log(`${smite.name} : « ${source.name} » posé sur ${target.name}`);
+      log(`${smite.name}: "${source.name}" placed on ${target.name}`);
     }
   }
   if ( smite.status ) {
     await target.actor.toggleStatusEffect(smite.status, { active: true });
-    log(`${smite.name} : ${target.name} reçoit « ${smite.status} »`);
+    log(`${smite.name}: ${target.name} receives "${smite.status}"`);
   }
   // §78 : la sauvegarde de la faveur (Piqué : Force ou À terre), jouée sur la cible encore debout.
   const save = smite.save ? item.system.activities?.get(smite.save) : null;
   const source = save ? (item.actor?.getActiveTokens(false, true)[0] ?? null) : null;
   if ( save && source && ((target.actor.system.attributes?.hp?.value ?? 0) > 0) ) {
-    log(`${smite.name} : ${target.name} fait sa sauvegarde`);
+    log(`${smite.name}: ${target.name} makes their saving throw`);
     await strikeAgainst(save, source, target, { flavor: "DND5ECOMBAT.Chatiment.Carte" });
   }
 }
 
 export function registerSmite() {
-  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "châtiment" });
+  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "smite" });
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`smite:${resolution?.id}`, () => onResolution(resolution)),
-    { executor: true, label: "châtiment : sauvegarde non jouée" });
+    { executor: true, label: "smite: saving throw not played" });
 }

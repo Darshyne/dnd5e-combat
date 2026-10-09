@@ -28,10 +28,10 @@ async function onCheckRolled(rolls, { skill=null, tool=null, ability=null, subje
   if ( !actor?.isOwner || !Number.isFinite(total) ) return;
   const what = checkName({ skill, tool, ability });
   const added = await offerRollBonus(actor, { kind: "check", what, total, skill });
-  if ( added ) log(`${actor.name} : dé ajouté à son test, ${total} + ${added} = ${total + added}`);
+  if ( added ) log(`${actor.name}: die added to their check, ${total} + ${added} = ${total + added}`);
   // §113 : l'Inspiration bardique sur un test (« quand la créature rate un Test d20 ») — le DD est inconnu : au joueur de juger.
   const inspired = await offerInspiration(actor, { what, total: total + added, needed: null });
-  if ( inspired ) log(`${actor.name} : Inspiration bardique sur son test, ${total + added} + ${inspired} = ${total + added + inspired}`);
+  if ( inspired ) log(`${actor.name}: Bardic Inspiration on their check, ${total + added} + ${inspired} = ${total + added + inspired}`);
 }
 
 /** Sur le client qui écrit l'initiative : est-ce la première que reçoit ce combattant ? (lu au `updateCombatant`, partout) */
@@ -45,15 +45,15 @@ async function onUpdateCombatant(combatant, changes, options) {
   const added = await offerRollBonus(combatant.actor, { kind: "initiative", what: game.i18n.localize("DND5E.Initiative"), total });
   if ( !added ) return;
   await combatant.update({ initiative: total + added });
-  log(`${combatant.name} : dé ajouté à son initiative, ${total} + ${added} = ${total + added}`);
+  log(`${combatant.name}: die added to their Initiative, ${total} + ${added} = ${total + added}`);
 }
 
 export function registerRollBonus() {
   // dnd5e 6.0 : documents/actor/actor.mjs — `dnd5e.roll${name}` après un test de compétence, d'outil ou de caractéristique, sur le
   // client qui l'a lancé (`subject` = l'acteur).
   for ( const hook of ["dnd5e.rollAbilityCheck", "dnd5e.rollSkill", "dnd5e.rollToolCheck"] ) {
-    route(hook, onCheckRolled, { label: "dé ajouté au test non proposé" });
+    route(hook, onCheckRolled, { label: "check die not offered" });
   }
-  route("preUpdateCombatant", onPreUpdateCombatant, { label: "première initiative non notée" });
-  route("updateCombatant", onUpdateCombatant, { executor: true, label: "dé ajouté à l'initiative non proposé" });
+  route("preUpdateCombatant", onPreUpdateCombatant, { label: "first Initiative not recorded" });
+  route("updateCombatant", onUpdateCombatant, { executor: true, label: "Initiative die not offered" });
 }

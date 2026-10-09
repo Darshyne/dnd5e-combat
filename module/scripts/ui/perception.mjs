@@ -71,7 +71,7 @@ function reportOnce(err) {
   const key = String(err?.message ?? err);
   if ( reported.has(key) ) return;
   reported.add(key);
-  console.error(`${MODULE_ID} | perception (brume, ouïe) : ${key}\n${err?.stack ?? ""}`);
+  console.error(`${MODULE_ID} | perception (mist, hearing): ${key}\n${err?.stack ?? ""}`);
 }
 
 /** La sous-classe d'un mode de détection : la vue s'arrête à la brume ; la perception de la lumière entend en dernier recours. */
@@ -113,8 +113,8 @@ function refreshVisibility() {
 }
 
 export function registerPerception() {
-  route("setup", installModes, { label: "perception : modes de détection non installés" });
-  const refresh = { label: "perception : affichage non rafraîchi" };
+  route("setup", installModes, { label: "perception: detection modes not installed" });
+  const refresh = { label: "perception: display not refreshed" };
   for ( const hook of ["createRegion", "updateRegion", "deleteRegion", "createActiveEffect", "updateActiveEffect", "deleteActiveEffect"] ) {
     route(hook, refreshVisibility, refresh);
   }

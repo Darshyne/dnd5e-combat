@@ -64,7 +64,7 @@ export async function setWorldOverride(identifier, entry) {
   if ( entry === null ) delete entries[identifier];
   else {
     const errors = validateEntry(entry, { facts: KNOWN_FACTS });
-    if ( errors.length ) throw new Error(`${identifier} : ${errors.join(" ; ")}`);
+    if ( errors.length ) throw new Error(`${identifier}: ${errors.join("; ")}`);
     entries[identifier] = entry;
   }
   await game.settings.set(MODULE_ID, OVERRIDES_SETTING, { v: CONTENT_VERSION, entries });
@@ -79,7 +79,7 @@ function itemLayer(item) {
   if ( !Object.keys(layer).length ) return null;
   const errors = validateEntry(layer, { facts: KNOWN_FACTS });
   if ( errors.length ) {
-    console.warn(`${MODULE_ID} | ${item.name} : flags ignorés — ${errors.join(" ; ")}`);
+    console.warn(`${MODULE_ID} | ${item.name}: flags ignored — ${errors.join("; ")}`);
     return null;
   }
   return layer;

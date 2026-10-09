@@ -39,7 +39,7 @@ async function judge(hidden) {
     .filter(o => o.notices && ((mode === "auto") || !told.has(`${effects[0]?.uuid}|${o.token.uuid}`)));
   if ( !spotted.length ) return [];
   const observers = spotted.map(o => (o.score === null) ? `${o.token.name} (${loc("PerceptionPassive.Sens")})` : `${o.token.name} (${o.score})`).join(", ");
-  log(`perception passive : ${hidden.name} (DD ${dc}) repéré par ${observers} — mode ${mode}`);
+  log(`passive perception: ${hidden.name} (DC ${dc}) spotted by ${observers} — mode ${mode}`);
   if ( mode === "auto" ) {
     await actor.deleteEmbeddedDocuments("ActiveEffect", effects.map(e => e.id));
     notice(hidden, loc("PerceptionPassive.Court"), "ended");
@@ -60,7 +60,7 @@ function affectedBy(token) {
 }
 
 function run(tokens) {
-  for ( const t of tokens ) judge(t).catch(err => console.error(`${MODULE_ID} | perception passive`, err));
+  for ( const t of tokens ) judge(t).catch(err => console.error(`${MODULE_ID} | passive perception`, err));
 }
 
 export function registerPassivePerception() {
@@ -73,7 +73,7 @@ export function registerPassivePerception() {
       off: "DND5ECOMBAT.Reglage.passivePerception.off"
     }
   });
-  const opts = { executor: true, label: "perception passive" };
+  const opts = { executor: true, label: "passive perception" };
   route("createActiveEffect", effect => {
     if ( !effect.getFlag?.(MODULE_ID, "hidden") || !(effect.parent instanceof Actor) ) return;
     run(effect.parent.getActiveTokens(false, true).filter(t => t.parent === canvas.scene));

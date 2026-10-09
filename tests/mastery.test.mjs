@@ -72,9 +72,9 @@ import { CONTENT } from "../module/scripts/content/index.mjs";
 describe("§21 Guerrier : schéma et contenu", () => {
   it("les clés nouvelles", () => {
     expect(validateEntry({ grantsAction: true, movesAfter: "second-wind", studiedAttacks: true, heroicWarrior: true, greatWeaponFighting: true, thrownDamage: 2 })).toEqual([]);
-    expect(validateEntry({ movesAfter: "" })).toEqual(["movesAfter : identifiant d'item, ou { item, disengage? }"]);
+    expect(validateEntry({ movesAfter: "" })).toEqual(["movesAfter: item identifier, or { item, disengage? }"]);
     expect(validateEntry({ movesAfter: { item: "rage", disengage: false } })).toEqual([]);
-    expect(validateEntry({ thrownDamage: 0 })).toEqual(["thrownDamage : entier positif"]);
+    expect(validateEntry({ thrownDamage: 0 })).toEqual(["thrownDamage: positive integer"]);
   });
   it("le contenu livré", () => {
     expect(CONTENT["action-surge"].grantsAction).toBe(true);
@@ -91,8 +91,8 @@ describe("§21 Guerrier : schéma et contenu", () => {
 describe("§22 Barbare : schéma, contenu, Témérité", () => {
   it("les clés nouvelles", () => {
     expect(validateEntry({ rage: { effect: "G5XZTi4zYTFiHVll" }, persistentRage: true, reckless: true, relentless: { activity: "dnd5eactivity100" } })).toEqual([]);
-    expect(validateEntry({ rage: { effect: "court" } })).toEqual(["rage : { effect } (id d'effet)"]);
-    expect(validateEntry({ relentless: {} })).toEqual(["relentless : { activity } (id d'activité)"]);
+    expect(validateEntry({ rage: { effect: "court" } })).toEqual(["rage: { effect } (effect id)"]);
+    expect(validateEntry({ relentless: {} })).toEqual(["relentless: { activity } (activity id)"]);
   });
   it("le contenu livré", () => {
     expect(CONTENT.rage.rage.effect).toBe("G5XZTi4zYTFiHVll");
@@ -110,8 +110,8 @@ describe("§23 tours de magie : schéma et contenu", () => {
   it("les clés nouvelles", () => {
     expect(validateEntry({ effectEnds: { zwks0mAqBHGZC1Pk: "casterTurnEnd" }, blocksHealing: true, noOpportunityAttacks: true, oneAttack: true,
       byWounds: { healthy: "LFXYm5sLg6D3ZilN", wounded: "w9KUTNVoj3K8XSlv" }, breaksOn: ["save"] })).toEqual([]);
-    expect(validateEntry({ effectEnds: { zwks0mAqBHGZC1Pk: "nextWeek" } })).toEqual(["effectEnds.zwks0mAqBHGZC1Pk : casterTurnStart, casterTurnEnd, bearerTurnStart, bearerTurnEnd"]);
-    expect(validateEntry({ byWounds: { healthy: "LFXYm5sLg6D3ZilN" } })).toEqual(["byWounds : { healthy, wounded } (ids d'activités)"]);
+    expect(validateEntry({ effectEnds: { zwks0mAqBHGZC1Pk: "nextWeek" } })).toEqual(["effectEnds.zwks0mAqBHGZC1Pk: casterTurnStart, casterTurnEnd, bearerTurnStart, bearerTurnEnd"]);
+    expect(validateEntry({ byWounds: { healthy: "LFXYm5sLg6D3ZilN" } })).toEqual(["byWounds: { healthy, wounded } (activity ids)"]);
   });
   it("le contenu livré", () => {
     expect(CONTENT["chill-touch"]).toMatchObject({ blocksHealing: true, effectEnds: { zwks0mAqBHGZC1Pk: "casterTurnEnd" } });
@@ -147,9 +147,9 @@ describe("§24 Moine : Parade et schéma", () => {
     expect(validateEntry({ martialArts: true, flurry: { activity: "2ghJTBhilLrFn9xT", strikes: 2 },
       stunningStrike: { activity: "Xto99a8Zt46VLwaR", focus: "monks-focus" }, openHand: { addle: "1jdSaWanuRrdkVs3" },
       basicActions: { "7xj7b6e8tDznDSrE": ["disengage", "dodge"] } })).toEqual([]);
-    expect(validateEntry({ flurry: { activity: "2ghJTBhilLrFn9xT" } })).toEqual(["flurry : { activity, strikes, weapons? }"]);
+    expect(validateEntry({ flurry: { activity: "2ghJTBhilLrFn9xT" } })).toEqual(["flurry: { activity, strikes, weapons? }"]);
     expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "reduce" }] }] }))
-      .toEqual(["triggers[0].do : « reduce » demande le moment isHit ou allyIsHit et une réaction « use »"]);
+      .toEqual(["triggers[0].do: \"reduce\" requires the isHit or allyIsHit moment and a \"use\" reaction"]);
   });
   it("le contenu livré", () => {
     expect(CONTENT["monks-focus"].basicActions["0MuRZ0Ur95xQTKFq"]).toEqual(["dash", "disengage"]);

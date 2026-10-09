@@ -32,10 +32,10 @@ async function onDeleteEffect(effect) {
   if ( actor.isToken ? !actor.token?.parent?.tokens?.has(actor.token.id) : !game.actors.has(actor.id) ) return;
   return enqueue(`effectThen:${actor.uuid}`, async () => {
     const placed = await placeItemEffect(item, rules[key], actor, { scaling: effect.getFlag?.("dnd5e", "scaling") ?? 0 });
-    if ( placed ) log(`${item.name} : « ${effect.name} » cesse sur ${actor.name}, « ${placed.name} » posé`);
+    if ( placed ) log(`${item.name}: "${effect.name}" ends on ${actor.name}, "${placed.name}" applied`);
   });
 }
 
 export function registerEndings() {
-  route("deleteActiveEffect", onDeleteEffect, { executor: true, label: "fin d'effet : effet suivant non posé" });
+  route("deleteActiveEffect", onDeleteEffect, { executor: true, label: "effect end: next effect not applied" });
 }

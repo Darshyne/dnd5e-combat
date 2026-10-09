@@ -52,7 +52,7 @@ export default {
       await ctx.call("move-token", { tokenId: wolf.id, x: at.x + grid, y: at.y, elevation: at.elevation });
       await sleep(800);
       // Le journal du moteur n'est pas vidé par sa lecture : on compte les propositions avant et après.
-      const proposed = async () => (await ctx.engineLog()).filter(l => /attaque d'opportunité proposée/.test(l) && /Loup/.test(l)).length;
+      const proposed = async () => (await ctx.engineLog()).filter(l => /attaque d'opportunité proposée|Opportunity Attack offered/.test(l) && /Loup/.test(l)).length;
       const before = await proposed();
       await ctx.call("update-scene-object", { type: "Token", objectId: wolf.id, data: { x: at.x + 4 * grid, y: at.y } });
       await sleep(wait);

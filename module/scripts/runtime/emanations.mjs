@@ -67,7 +67,7 @@ async function onTurnChange(combat, prior, current) {
     for ( const emanation of emanationsOf(ended.actor).filter(e => e.on === "ownTurnEnd") ) {
       const targets = reached(ended, emanation, ended.parent.tokens.contents);
       if ( !targets.length || !once(`${turn}|${ended.uuid}|${emanation.key}|end`) ) continue;
-      log(`émanation ${emanation.item.name} (${ended.name}), fin de son tour : ${targets.map(t => t.name).join(", ")}`);
+      log(`emanation ${emanation.item.name} (${ended.name}), end of its turn: ${targets.map(t => t.name).join(", ")}`);
       await emanationAgainst(emanation.activity, ended, targets, "ownTurnEnd");
     }
   }
@@ -77,14 +77,14 @@ async function onTurnChange(combat, prior, current) {
     for ( const emanation of emanationsOf(started.actor).filter(e => e.on === "ownTurnStart") ) {
       const targets = reached(started, emanation, started.parent.tokens.contents);
       if ( !targets.length || !once(`${turn}|${started.uuid}|${emanation.key}|ownStart`) ) continue;
-      log(`émanation ${emanation.item.name} (${started.name}), début de son tour : ${targets.map(t => t.name).join(", ")}`);
+      log(`emanation ${emanation.item.name} (${started.name}), start of its turn: ${targets.map(t => t.name).join(", ")}`);
       await emanationAgainst(emanation.activity, started, targets, "ownTurnStart");
     }
     for ( const source of started.parent.tokens ) {
       if ( (source === started) || !source.actor ) continue;
       for ( const emanation of emanationsOf(source.actor).filter(e => e.on === "turnStart") ) {
         if ( !reached(source, emanation, [started]).length || !once(`${turn}|${source.uuid}|${emanation.key}|start`) ) continue;
-        log(`émanation ${emanation.item.name} (${source.name}) : ${started.name} commence son tour dedans`);
+        log(`emanation ${emanation.item.name} (${source.name}): ${started.name} starts its turn inside`);
         await emanationAgainst(emanation.activity, source, [started], "turnStart");
       }
     }
@@ -107,7 +107,7 @@ async function onCreateEffect(effect) {
     if ( exploded.has(key) ) continue;
     exploded.add(key);
     const targets = reached(source, emanation, source.parent.tokens.contents, { dying: true });
-    log(`émanation ${emanation.item.name} (${source.name}), à sa mort : ${targets.map(t => t.name).join(", ") || "personne"}`);
+    log(`emanation ${emanation.item.name} (${source.name}), on its death: ${targets.map(t => t.name).join(", ") || "nobody"}`);
     if ( targets.length ) await emanationAgainst(emanation.activity, source, targets, "death");
   }
 }
@@ -122,7 +122,7 @@ export async function burstAtZero(actor) {
   // Une fois par chute : l'appelant (runtime/coven.mjs, `onZero`) ne passe qu'une fois par créature et par chute.
   for ( const emanation of emanationsOf(actor).filter(e => e.on === "death") ) {
     const targets = reached(source, emanation, source.parent.tokens.contents, { dying: true });
-    log(`émanation ${emanation.item.name} (${source.name}), à 0 PV : ${targets.map(t => t.name).join(", ") || "personne"}`);
+    log(`emanation ${emanation.item.name} (${source.name}), at 0 HP: ${targets.map(t => t.name).join(", ") || "nobody"}`);
     if ( targets.length ) await emanationAgainst(emanation.activity, source, targets, "death");
   }
 }
@@ -139,12 +139,12 @@ async function onResolution(resolution) {
     if ( t.save?.success !== true ) continue;
     const token = fromUuidSync(t.token, { strict: false });
     await grantImmunity(token?.actor, emanation, source);
-    log(`émanation ${emanation.item.name} (${source.name}) : ${token?.name} immunisé ${emanation.immunity.hours} h`);
+    log(`emanation ${emanation.item.name} (${source.name}): ${token?.name} immune for ${emanation.immunity.hours} h`);
   }
 }
 
 export function registerEmanations() {
-  route("combatTurnChange", onTurnChange, { executor: true, label: "émanation de monstre" });
-  route("createActiveEffect", onCreateEffect, { executor: true, label: "émanation à la mort" });
-  route(`${MODULE_ID}.resolution`, onResolution, { executor: true, label: "émanation : immunité après sauvegarde" });
+  route("combatTurnChange", onTurnChange, { executor: true, label: "monster emanation" });
+  route("createActiveEffect", onCreateEffect, { executor: true, label: "emanation on death" });
+  route(`${MODULE_ID}.resolution`, onResolution, { executor: true, label: "emanation: immunity after saving throw" });
 }

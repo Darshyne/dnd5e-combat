@@ -597,92 +597,92 @@ const isObject = v => (typeof v === "object") && (v !== null) && !Array.isArray(
 const isId = v => (typeof v === "string") && /^[A-Za-z0-9]{16}$/.test(v);
 
 function validateStep(step, at, errors) {
-  if ( !isObject(step) ) return errors.push(`${at} : une étape est un objet`);
-  if ( !STEP_TYPES.includes(step.type) ) return errors.push(`${at}.type : « ${step.type} » inconnu (${STEP_TYPES.join(", ")})`);
+  if ( !isObject(step) ) return errors.push(`${at}: a step is an object`);
+  if ( !STEP_TYPES.includes(step.type) ) return errors.push(`${at}.type: unknown "${step.type}" (${STEP_TYPES.join(", ")})`);
   if ( step.type === "damage" ) {
-    if ( ("to" in step) && !DAMAGE_TO.includes(step.to) ) errors.push(`${at}.to : ${DAMAGE_TO.join(", ")}`);
-    if ( ("onSave" in step) && !DAMAGE_ON_SAVE.includes(step.onSave) ) errors.push(`${at}.onSave : ${DAMAGE_ON_SAVE.join(", ")}`);
+    if ( ("to" in step) && !DAMAGE_TO.includes(step.to) ) errors.push(`${at}.to: ${DAMAGE_TO.join(", ")}`);
+    if ( ("onSave" in step) && !DAMAGE_ON_SAVE.includes(step.onSave) ) errors.push(`${at}.onSave: ${DAMAGE_ON_SAVE.join(", ")}`);
     // Une riposte (ou les dégâts du porteur) peut rejouer l'activité de dégâts de l'item ; un partage (to: "origin") sans
     // formule reprend le montant subi.
     const fromActivity = ["source", "bearer"].includes(step.to) && ("activity" in step);
     const same = (step.to === "origin") && !("formula" in step);
     if ( !fromActivity && !same ) {
-      if ( (typeof step.formula !== "string") || !step.formula.trim() ) errors.push(`${at}.formula : formule requise`);
-      if ( (typeof step.damageType !== "string") || !step.damageType ) errors.push(`${at}.damageType : type de dégâts requis`);
+      if ( (typeof step.formula !== "string") || !step.formula.trim() ) errors.push(`${at}.formula: formula required`);
+      if ( (typeof step.damageType !== "string") || !step.damageType ) errors.push(`${at}.damageType: damage type required`);
     }
   }
   // §74 : `spends` — des dégâts bonus qui dépensent un effet de l'item porté par l'auteur (Frappe du zéphyr : « une fois »).
-  if ( (step.type === "damage") && ("spends" in step) && !isId(step.spends) ) errors.push(`${at}.spends : id d'effet de l'item (16 caractères) attendu`);
-  if ( (step.type === "use") && ("target" in step) && !["source", "self"].includes(step.target) ) errors.push(`${at}.target : « source » ou « self »`);
-  if ( (step.type === "use") && ("advantage" in step) && (step.advantage !== true) ) errors.push(`${at}.advantage : true ou absent`);
-  if ( (step.type === "use") && ("consume" in step) && (step.consume !== false) ) errors.push(`${at}.consume : false ou absent`);
-  if ( (step.type === "use") && ("approach" in step) && ((step.approach !== true) || (step.target !== "source")) ) errors.push(`${at}.approach : true, avec target: "source"`);
+  if ( (step.type === "damage") && ("spends" in step) && !isId(step.spends) ) errors.push(`${at}.spends: item effect id (16 characters) expected`);
+  if ( (step.type === "use") && ("target" in step) && !["source", "self"].includes(step.target) ) errors.push(`${at}.target: "source" or "self"`);
+  if ( (step.type === "use") && ("advantage" in step) && (step.advantage !== true) ) errors.push(`${at}.advantage: true or absent`);
+  if ( (step.type === "use") && ("consume" in step) && (step.consume !== false) ) errors.push(`${at}.consume: false or absent`);
+  if ( (step.type === "use") && ("approach" in step) && ((step.approach !== true) || (step.target !== "source")) ) errors.push(`${at}.approach: true, with target: "source"`);
   // §88 : attaque avec une arme de corps à corps de l'acteur (Riposte).
-  if ( (step.type === "use") && ("weapon" in step) && ((step.weapon !== true) || (step.target !== "source")) ) errors.push(`${at}.weapon : true, avec target: "source"`);
+  if ( (step.type === "use") && ("weapon" in step) && ((step.weapon !== true) || (step.target !== "source")) ) errors.push(`${at}.weapon: true, with target: "source"`);
   if ( "margin" in step ) {
     const mg = step.margin;
     const ok = (typeof mg === "object") && mg && Object.keys(mg).length && Object.entries(mg).every(([k, v]) => ["min", "max"].includes(k) && Number.isFinite(v) && (v >= 0));
-    if ( !ok ) errors.push(`${at}.margin : { min?, max? } (nombres ≥ 0)`);
+    if ( !ok ) errors.push(`${at}.margin: { min?, max? } (numbers ≥ 0)`);
   }
-  if ( ["use", "replay", "ward", "damage"].includes(step.type) && ("activity" in step) && !isId(step.activity) ) errors.push(`${at}.activity : id d'activité (16 caractères) attendu`);
-  if ( (step.type === "damage") && ("activity" in step) && !["source", "bearer"].includes(step.to) ) errors.push(`${at}.activity : seulement pour une riposte (to: "source") ou le porteur (to: "bearer")`);
+  if ( ["use", "replay", "ward", "damage"].includes(step.type) && ("activity" in step) && !isId(step.activity) ) errors.push(`${at}.activity: activity id (16 characters) expected`);
+  if ( (step.type === "damage") && ("activity" in step) && !["source", "bearer"].includes(step.to) ) errors.push(`${at}.activity: only for a riposte (to: "source") or the bearer (to: "bearer")`);
   if ( step.type === "move" ) {
-    if ( !MOVE_MODES.includes(step.mode) ) errors.push(`${at}.mode : ${MOVE_MODES.join(", ")}`);
+    if ( !MOVE_MODES.includes(step.mode) ) errors.push(`${at}.mode: ${MOVE_MODES.join(", ")}`);
     const formula = (typeof step.distance === "string") && step.distance.trim();
-    if ( !formula && !(Number.isFinite(step.distance) && (step.distance > 0)) ) errors.push(`${at}.distance : nombre positif ou formule`);
-    if ( (typeof step.units !== "string") || !step.units ) errors.push(`${at}.units : unité requise`);
-    if ( ("follow" in step) && (typeof step.follow !== "boolean") ) errors.push(`${at}.follow : booléen`);
+    if ( !formula && !(Number.isFinite(step.distance) && (step.distance > 0)) ) errors.push(`${at}.distance: positive number or formula`);
+    if ( (typeof step.units !== "string") || !step.units ) errors.push(`${at}.units: unit required`);
+    if ( ("follow" in step) && (typeof step.follow !== "boolean") ) errors.push(`${at}.follow: boolean`);
   }
-  if ( (step.type === "status") && ((typeof step.status !== "string") || !step.status) ) errors.push(`${at}.status : état requis`);
+  if ( (step.type === "status") && ((typeof step.status !== "string") || !step.status) ) errors.push(`${at}.status: condition required`);
   // §86 : riposte par une sauvegarde — vers l'attaquant, une activité de l'item.
   if ( step.type === "save" ) {
-    if ( step.to !== "source" ) errors.push(`${at}.to : « source »`);
-    if ( !isId(step.activity) ) errors.push(`${at}.activity : id d'activité (16 caractères) attendu`);
+    if ( step.to !== "source" ) errors.push(`${at}.to: "source"`);
+    if ( !isId(step.activity) ) errors.push(`${at}.activity: activity id (16 characters) expected`);
   }
   if ( step.type === "mark" ) {
-    if ( (typeof step.mark !== "string") || !step.mark ) errors.push(`${at}.mark : nom de la marque requis`);
-    if ( (typeof step.label !== "string") || !step.label ) errors.push(`${at}.label : clé de traduction requise`);
-    if ( ("seconds" in step) && !(Number.isFinite(step.seconds) && (step.seconds > 0)) ) errors.push(`${at}.seconds : nombre positif`);
+    if ( (typeof step.mark !== "string") || !step.mark ) errors.push(`${at}.mark: mark name required`);
+    if ( (typeof step.label !== "string") || !step.label ) errors.push(`${at}.label: translation key required`);
+    if ( ("seconds" in step) && !(Number.isFinite(step.seconds) && (step.seconds > 0)) ) errors.push(`${at}.seconds: positive number`);
   }
-  if ( (step.type === "consume") && !["target", "source"].includes(step.side) ) errors.push(`${at}.side : « target » ou « source »`);
-  if ( (step.type === "resave") && ("keep" in step) && (step.keep !== true) ) errors.push(`${at}.keep : true ou absent`);
-  if ( (step.type === "resave") && ("unlessSeesOrigin" in step) && (step.unlessSeesOrigin !== true) ) errors.push(`${at}.unlessSeesOrigin : true ou absent`);
+  if ( (step.type === "consume") && !["target", "source"].includes(step.side) ) errors.push(`${at}.side: "target" or "source"`);
+  if ( (step.type === "resave") && ("keep" in step) && (step.keep !== true) ) errors.push(`${at}.keep: true or absent`);
+  if ( (step.type === "resave") && ("unlessSeesOrigin" in step) && (step.unlessSeesOrigin !== true) ) errors.push(`${at}.unlessSeesOrigin: true or absent`);
   if ( (step.type === "resave") && ("tally" in step) ) {
     const t = step.tally;
     const count = n => Number.isInteger(n) && (n > 0);
     if ( !isObject(t) || !count(t.successes) || !count(t.failures) || (("status" in t) && ((typeof t.status !== "string") || !t.status))
-      || !Object.keys(t).every(k => ["successes", "failures", "status"].includes(k)) ) errors.push(`${at}.tally : { successes, failures, status? } (entiers positifs, état)`);
-    if ( step.keep === true ) errors.push(`${at}.tally : sans objet avec keep`);
+      || !Object.keys(t).every(k => ["successes", "failures", "status"].includes(k)) ) errors.push(`${at}.tally: { successes, failures, status? } (positive integers, condition)`);
+    if ( step.keep === true ) errors.push(`${at}.tally: not applicable with keep`);
   }
-  if ( (step.type === "resave") && ("onFail" in step) && !RESAVE_ON_FAIL.includes(step.onFail) ) errors.push(`${at}.onFail : ${RESAVE_ON_FAIL.join(", ")}`);
-  if ( (step.type === "attackBonus") && ((typeof step.formula !== "string") || !step.formula.trim()) ) errors.push(`${at}.formula : formule requise`);
+  if ( (step.type === "resave") && ("onFail" in step) && !RESAVE_ON_FAIL.includes(step.onFail) ) errors.push(`${at}.onFail: ${RESAVE_ON_FAIL.join(", ")}`);
+  if ( (step.type === "attackBonus") && ((typeof step.formula !== "string") || !step.formula.trim()) ) errors.push(`${at}.formula: formula required`);
   // §31 : ce qui s'ajoute au jet de l'activité de réduction (Endurance de la pierre : « ajoutez votre modificateur de Constitution »).
   // §33 : un dé retiré au jet d'attaque (Mots cinglants : « soustrayez le résultat du jet ») — l'attaque est rejugée.
-  if ( ["penalty", "bonus"].includes(step.type) && ((typeof step.formula !== "string") || !step.formula.trim()) ) errors.push(`${at}.formula : formule requise`);
-  if ( (step.type === "reduce") && ("bonus" in step) && ((typeof step.bonus !== "string") || !step.bonus.trim()) ) errors.push(`${at}.bonus : formule`);
+  if ( ["penalty", "bonus"].includes(step.type) && ((typeof step.formula !== "string") || !step.formula.trim()) ) errors.push(`${at}.formula: formula required`);
+  if ( (step.type === "reduce") && ("bonus" in step) && ((typeof step.bonus !== "string") || !step.bonus.trim()) ) errors.push(`${at}.bonus: formula`);
 }
 
 function validateTrigger(declaration, at, facts, errors) {
-  if ( !isObject(declaration) ) return errors.push(`${at} : une déclaration est un objet`);
+  if ( !isObject(declaration) ) return errors.push(`${at}: a declaration is an object`);
   const d = normalize(declaration);
-  if ( !d.on.length ) errors.push(`${at}.on : au moins un moment`);
-  for ( const m of d.on ) if ( !(m in MOMENTS) ) errors.push(`${at}.on : moment « ${m} » inconnu (${Object.keys(MOMENTS).join(", ")})`);
-  if ( (d.via !== null) && !VIA.includes(d.via) ) errors.push(`${at}.via : ${VIA.join(", ")}`);
+  if ( !d.on.length ) errors.push(`${at}.on: at least one moment`);
+  for ( const m of d.on ) if ( !(m in MOMENTS) ) errors.push(`${at}.on: unknown moment "${m}" (${Object.keys(MOMENTS).join(", ")})`);
+  if ( (d.via !== null) && !VIA.includes(d.via) ) errors.push(`${at}.via: ${VIA.join(", ")}`);
   // `fromEffect` : la déclaration ne vaut que pour l'effet de l'item de cet id (Bouclier de feu : chaud OU froid).
   if ( "fromEffect" in declaration ) {
-    if ( !isId(declaration.fromEffect) ) errors.push(`${at}.fromEffect : id d'effet (16 caractères)`);
-    if ( d.via !== "effect" ) errors.push(`${at}.fromEffect : demande via: "effect"`);
+    if ( !isId(declaration.fromEffect) ) errors.push(`${at}.fromEffect: effect id (16 characters)`);
+    if ( d.via !== "effect" ) errors.push(`${at}.fromEffect: requires via: "effect"`);
   }
   // §65 : `by: "originSide"` — l'effet ne réagit qu'aux dégâts du lanceur ou de ses alliés (Suggestion).
   if ( "by" in declaration ) {
-    if ( !DAMAGED_BY.includes(declaration.by) ) errors.push(`${at}.by : ${DAMAGED_BY.join(", ")}`);
-    if ( (d.via !== "effect") || (d.on.length !== 1) || (d.on[0] !== "isDamaged") ) errors.push(`${at}.by : demande via: "effect" et le seul moment isDamaged`);
+    if ( !DAMAGED_BY.includes(declaration.by) ) errors.push(`${at}.by: ${DAMAGED_BY.join(", ")}`);
+    if ( (d.via !== "effect") || (d.on.length !== 1) || (d.on[0] !== "isDamaged") ) errors.push(`${at}.by: requires via: "effect" and isDamaged as the only moment`);
   }
   // `oncePerTurn` : une part de dégâts bonus qui ne vaut qu'une fois par tour (Attraction de la mort : « une fois par tour »).
   if ( ("oncePerTurn" in declaration) && ((declaration.oncePerTurn !== true) || (d.on.length !== 1) || (d.on[0] !== "preDamageRoll")) ) {
-    errors.push(`${at}.oncePerTurn : true, avec le seul moment preDamageRoll`);
+    errors.push(`${at}.oncePerTurn: true, with preDamageRoll as the only moment`);
   }
-  if ( !Array.isArray(d.do) || !d.do.length ) errors.push(`${at}.do : au moins une étape`);
+  if ( !Array.isArray(d.do) || !d.do.length ) errors.push(`${at}.do: at least one step`);
   else {
     d.do.forEach((s, i) => validateStep(s, `${at}.do[${i}]`, errors));
     // Chaque étape va avec ses moments : une poussée n'a de sens qu'à une issue, une sauvegarde répétée qu'au tour.
@@ -690,47 +690,47 @@ function validateTrigger(declaration, at, facts, errors) {
     const resave = d.on.length && d.on.every(m => RESAVE_MOMENTS.includes(m));
     const bearer = d.on.length && d.on.every(m => BEARER_MOMENTS.includes(m));
     for ( const s of d.do ) {
-      if ( isObject(s) && OUTCOME_STEPS.includes(s.type) && !outcome ) errors.push(`${at}.do : « ${s.type} » demande un moment d'issue (${OUTCOME_MOMENTS.join(", ")})`);
-      if ( isObject(s) && (s.type === "resave") && (!resave || (d.via !== "effect")) ) errors.push(`${at}.do : « resave » demande des moments parmi ${RESAVE_MOMENTS.join(", ")} et via: "effect"`);
-      if ( isObject(s) && (s.type === "remove") && (!bearer || (d.via !== "effect")) ) errors.push(`${at}.do : « remove » demande des moments du porteur (${BEARER_MOMENTS.join(", ")}) et via: "effect"`);
+      if ( isObject(s) && OUTCOME_STEPS.includes(s.type) && !outcome ) errors.push(`${at}.do: "${s.type}" requires an outcome moment (${OUTCOME_MOMENTS.join(", ")})`);
+      if ( isObject(s) && (s.type === "resave") && (!resave || (d.via !== "effect")) ) errors.push(`${at}.do: "resave" requires moments among ${RESAVE_MOMENTS.join(", ")} and via: "effect"`);
+      if ( isObject(s) && (s.type === "remove") && (!bearer || (d.via !== "effect")) ) errors.push(`${at}.do: "remove" requires bearer moments (${BEARER_MOMENTS.join(", ")}) and via: "effect"`);
       // §34 : le Désavantage peut aussi venir d'une réaction avant le jet (Esquive des ombres, Éclat protecteur).
       const preAttackReaction = d.on.some(m => PRE_ATTACK_WINDOWS.includes(m)) && d.do.some(x => isObject(x) && (x.type === "use"));
-      if ( isObject(s) && ATTACK_STEPS.includes(s.type) && !d.on.includes("preAttackRoll") && !((s.type === "disadvantage") && preAttackReaction) ) errors.push(`${at}.do : « ${s.type} » demande le moment preAttackRoll`);
-      if ( isObject(s) && (s.type === "consume") && (!d.on.includes("preAttackRoll") || (d.via !== "effect")) ) errors.push(`${at}.do : « consume » demande le moment preAttackRoll et via: "effect"`);
-      if ( isObject(s) && (s.type === "ward") && (!d.on.includes("isAttacked") || (d.via !== "effect")) ) errors.push(`${at}.do : « ward » demande le moment isAttacked et via: "effect"`);
-      if ( isObject(s) && (s.type === "damage") && (s.to === "source") && ((d.on.length !== 1) || (d.on[0] !== "isHit")) ) errors.push(`${at}.do : une riposte (to: "source") demande le seul moment isHit`);
-      if ( isObject(s) && (s.type === "damage") && (s.to === "origin") && ((d.on.length !== 1) || (d.on[0] !== "isDamaged") || (d.via !== "effect")) ) errors.push(`${at}.do : un partage (to: "origin") demande le seul moment isDamaged et via: "effect"`);
-      if ( isObject(s) && (s.type === "damage") && (s.to === "bearer") && (!d.on.length || !d.on.every(m => TURN_MOMENTS.includes(m)) || (d.via !== "effect")) ) errors.push(`${at}.do : les dégâts du porteur (to: "bearer") demandent des moments parmi ${TURN_MOMENTS.join(", ")} et via: "effect"`);
-      if ( isObject(s) && (s.type === "damage") && ("onSave" in s) && ((d.on.length !== 1) || (d.on[0] !== "failedSave") || ("to" in s)) ) errors.push(`${at}.do : « onSave » demande le seul moment failedSave, sans « to »`);
-      if ( isObject(s) && ["halve", "uncrit", "reduce", "miss", "penalty"].includes(s.type) && !((s.type === "penalty") && preAttackReaction) && (!d.on.some(m => HIT_WINDOWS.includes(m)) || !d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do : « ${s.type} » demande le moment isHit ou allyIsHit et une réaction « use »`);
-      if ( isObject(s) && (s.type === "absorb") && !(d.on.includes("allyIsDamaged") && d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do : « absorb » demande le moment allyIsDamaged et une réaction « use »`);
-      if ( isObject(s) && (s.type === "interpose") && !(d.on.includes("allyIsDamaged") && d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do : « interpose » demande le moment allyIsDamaged et une réaction « use »`);
-      if ( isObject(s) && (s.type === "bonus") && !(d.on.includes("allyAttacks") && preAttackReaction) ) errors.push(`${at}.do : « bonus » demande le moment allyAttacks et une réaction « use »`);
-      if ( isObject(s) && (s.type === "endCondition") && (!d.on.includes("gainsCondition") || !d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do : « endCondition » demande le moment gainsCondition et une réaction « use »`);
+      if ( isObject(s) && ATTACK_STEPS.includes(s.type) && !d.on.includes("preAttackRoll") && !((s.type === "disadvantage") && preAttackReaction) ) errors.push(`${at}.do: "${s.type}" requires the preAttackRoll moment`);
+      if ( isObject(s) && (s.type === "consume") && (!d.on.includes("preAttackRoll") || (d.via !== "effect")) ) errors.push(`${at}.do: "consume" requires the preAttackRoll moment and via: "effect"`);
+      if ( isObject(s) && (s.type === "ward") && (!d.on.includes("isAttacked") || (d.via !== "effect")) ) errors.push(`${at}.do: "ward" requires the isAttacked moment and via: "effect"`);
+      if ( isObject(s) && (s.type === "damage") && (s.to === "source") && ((d.on.length !== 1) || (d.on[0] !== "isHit")) ) errors.push(`${at}.do: a riposte (to: "source") requires isHit as the only moment`);
+      if ( isObject(s) && (s.type === "damage") && (s.to === "origin") && ((d.on.length !== 1) || (d.on[0] !== "isDamaged") || (d.via !== "effect")) ) errors.push(`${at}.do: a damage share (to: "origin") requires isDamaged as the only moment and via: "effect"`);
+      if ( isObject(s) && (s.type === "damage") && (s.to === "bearer") && (!d.on.length || !d.on.every(m => TURN_MOMENTS.includes(m)) || (d.via !== "effect")) ) errors.push(`${at}.do: the bearer's damage (to: "bearer") requires moments among ${TURN_MOMENTS.join(", ")} and via: "effect"`);
+      if ( isObject(s) && (s.type === "damage") && ("onSave" in s) && ((d.on.length !== 1) || (d.on[0] !== "failedSave") || ("to" in s)) ) errors.push(`${at}.do: "onSave" requires failedSave as the only moment, without "to"`);
+      if ( isObject(s) && ["halve", "uncrit", "reduce", "miss", "penalty"].includes(s.type) && !((s.type === "penalty") && preAttackReaction) && (!d.on.some(m => HIT_WINDOWS.includes(m)) || !d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "${s.type}" requires the isHit or allyIsHit moment and a "use" reaction`);
+      if ( isObject(s) && (s.type === "absorb") && !(d.on.includes("allyIsDamaged") && d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "absorb" requires the allyIsDamaged moment and a "use" reaction`);
+      if ( isObject(s) && (s.type === "interpose") && !(d.on.includes("allyIsDamaged") && d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "interpose" requires the allyIsDamaged moment and a "use" reaction`);
+      if ( isObject(s) && (s.type === "bonus") && !(d.on.includes("allyAttacks") && preAttackReaction) ) errors.push(`${at}.do: "bonus" requires the allyAttacks moment and a "use" reaction`);
+      if ( isObject(s) && (s.type === "endCondition") && (!d.on.includes("gainsCondition") || !d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "endCondition" requires the gainsCondition moment and a "use" reaction`);
     }
   }
-  for ( const key of unknownFacts(d.if, facts) ) errors.push(`${at}.if : fait « ${key} » inconnu`);
+  for ( const key of unknownFacts(d.if, facts) ) errors.push(`${at}.if: unknown fact "${key}"`);
 }
 
 function validateAura(aura, at, errors) {
-  if ( !isObject(aura) ) return errors.push(`${at} : un objet`);
-  if ( ("radius" in aura) && !(Number.isFinite(aura.radius) && (aura.radius > 0)) ) errors.push(`${at}.radius : nombre positif`);
-  if ( ("units" in aura) && (typeof aura.units !== "string") ) errors.push(`${at}.units : chaîne`);
-  if ( ("affects" in aura) && !AURA_AFFECTS.includes(aura.affects) ) errors.push(`${at}.affects : ${AURA_AFFECTS.join(", ")}`);
-  if ( ("includeSelf" in aura) && (typeof aura.includeSelf !== "boolean") ) errors.push(`${at}.includeSelf : booléen`);
-  if ( ("effect" in aura) && !isId(aura.effect) ) errors.push(`${at}.effect : id d'effet (16 caractères)`);
-  if ( ("radiusFormula" in aura) && (typeof aura.radiusFormula !== "string") ) errors.push(`${at}.radiusFormula : chaîne`);
-  if ( ("whileActive" in aura) && (aura.whileActive !== true) ) errors.push(`${at}.whileActive : true ou absent`);
+  if ( !isObject(aura) ) return errors.push(`${at}: an object`);
+  if ( ("radius" in aura) && !(Number.isFinite(aura.radius) && (aura.radius > 0)) ) errors.push(`${at}.radius: positive number`);
+  if ( ("units" in aura) && (typeof aura.units !== "string") ) errors.push(`${at}.units: string`);
+  if ( ("affects" in aura) && !AURA_AFFECTS.includes(aura.affects) ) errors.push(`${at}.affects: ${AURA_AFFECTS.join(", ")}`);
+  if ( ("includeSelf" in aura) && (typeof aura.includeSelf !== "boolean") ) errors.push(`${at}.includeSelf: boolean`);
+  if ( ("effect" in aura) && !isId(aura.effect) ) errors.push(`${at}.effect: effect id (16 characters)`);
+  if ( ("radiusFormula" in aura) && (typeof aura.radiusFormula !== "string") ) errors.push(`${at}.radiusFormula: string`);
+  if ( ("whileActive" in aura) && (aura.whileActive !== true) ) errors.push(`${at}.whileActive: true or absent`);
   if ( "changes" in aura ) {
     const ok = Array.isArray(aura.changes) && aura.changes.length && aura.changes.every(c => isObject(c)
       && (typeof c.key === "string") && c.key && (typeof c.value === "string") && (typeof c.type === "string") && c.type);
-    if ( !ok ) errors.push(`${at}.changes : liste de { key, value (chaîne), type }`);
+    if ( !ok ) errors.push(`${at}.changes: list of { key, value (string), type }`);
   }
   if ( ("types" in aura) && (!Array.isArray(aura.types) || !aura.types.length || !aura.types.every(t => CREATURE_TYPES.includes(t))) ) {
-    errors.push(`${at}.types : types de créature (${CREATURE_TYPES.join(", ")})`);
+    errors.push(`${at}.types: creature types (${CREATURE_TYPES.join(", ")})`);
   }
   for ( const key of Object.keys(aura) ) {
-    if ( !["radius", "units", "affects", "includeSelf", "effect", "radiusFormula", "whileActive", "changes", "types"].includes(key) ) errors.push(`${at}.${key} : clé inconnue`);
+    if ( !["radius", "units", "affects", "includeSelf", "effect", "radiusFormula", "whileActive", "changes", "types"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
   }
 }
 
@@ -742,380 +742,380 @@ function validateAura(aura, at, errors) {
  */
 export function validateEntry(entry, { facts={}, at="" }={}) {
   const errors = [];
-  if ( !isObject(entry) ) return [`${at || "entrée"} : un objet`];
-  for ( const key of Object.keys(entry) ) if ( !ENTRY_KEYS.includes(key) ) errors.push(`${at}${key} : clé inconnue (${ENTRY_KEYS.join(", ")})`);
+  if ( !isObject(entry) ) return [`${at || "entry"}: an object`];
+  for ( const key of Object.keys(entry) ) if ( !ENTRY_KEYS.includes(key) ) errors.push(`${at}${key}: unknown key (${ENTRY_KEYS.join(", ")})`);
   if ( "triggers" in entry ) {
     const list = Array.isArray(entry.triggers) ? entry.triggers : [entry.triggers];
     list.forEach((d, i) => validateTrigger(d, `${at}triggers[${i}]`, facts, errors));
   }
   if ( "aura" in entry ) validateAura(entry.aura, `${at}aura`, errors);
   if ( "onHit" in entry ) {
-    if ( !isObject(entry.onHit) || !isId(entry.onHit.save) ) errors.push(`${at}onHit.save : id d'activité (16 caractères)`);
+    if ( !isObject(entry.onHit) || !isId(entry.onHit.save) ) errors.push(`${at}onHit.save: activity id (16 characters)`);
   }
   if ( "choice" in entry ) validateChoice(entry.choice, `${at}choice`, errors);
   if ( "targets" in entry ) validateTargets(entry.targets, `${at}targets`, facts, errors);
   if ( "trace" in entry ) {
     const t = entry.trace;
     if ( isObject(t) ) {
-      for ( const key of ["activity", "attack"] ) if ( (key in t) && !isId(t[key]) ) errors.push(`${at}trace.${key} : id d'activité (16 caractères) attendu`);
-      if ( ("show" in t) && (t.show !== true) ) errors.push(`${at}trace.show : true ou absent`);
-      for ( const key of Object.keys(t) ) if ( !["activity", "show", "attack"].includes(key) ) errors.push(`${at}trace.${key} : clé inconnue`);
+      for ( const key of ["activity", "attack"] ) if ( (key in t) && !isId(t[key]) ) errors.push(`${at}trace.${key}: activity id (16 characters) expected`);
+      if ( ("show" in t) && (t.show !== true) ) errors.push(`${at}trace.show: true or absent`);
+      for ( const key of Object.keys(t) ) if ( !["activity", "show", "attack"].includes(key) ) errors.push(`${at}trace.${key}: unknown key`);
     }
-    else if ( t !== true ) errors.push(`${at}trace : true ou { activity?, show?, attack? }`);
+    else if ( t !== true ) errors.push(`${at}trace: true or { activity?, show?, attack? }`);
   }
   if ( "damageShield" in entry ) {
     const d = entry.damageShield;
     const worn = isObject(d) && ("worn" in d);
-    if ( worn && ((typeof d.worn !== "string") || !d.worn || ("effects" in d)) ) errors.push(`${at}damageShield.worn : un type de dégâts (sans effects)`);
-    if ( !isObject(d) || (!worn && (!isObject(d.effects) || !Object.keys(d.effects).length)) ) errors.push(`${at}damageShield.effects : { id d'effet: type de dégâts }`);
+    if ( worn && ((typeof d.worn !== "string") || !d.worn || ("effects" in d)) ) errors.push(`${at}damageShield.worn: a damage type (no effects)`);
+    if ( !isObject(d) || (!worn && (!isObject(d.effects) || !Object.keys(d.effects).length)) ) errors.push(`${at}damageShield.effects: { effect id: damage type }`);
     else {
       for ( const [id, type] of Object.entries(d.effects ?? {}) ) {
-        if ( !isId(id) ) errors.push(`${at}damageShield.effects.${id} : id d'effet (16 caractères)`);
-        if ( (typeof type !== "string") || !type ) errors.push(`${at}damageShield.effects.${id} : type de dégâts`);
+        if ( !isId(id) ) errors.push(`${at}damageShield.effects.${id}: effect id (16 characters)`);
+        if ( (typeof type !== "string") || !type ) errors.push(`${at}damageShield.effects.${id}: damage type`);
       }
-      if ( (typeof d.formula !== "string") || !d.formula.trim() ) errors.push(`${at}damageShield.formula : formule requise`);
-      if ( ("oncePerTurn" in d) && (d.oncePerTurn !== true) ) errors.push(`${at}damageShield.oncePerTurn : true ou absent`);
-      for ( const key of Object.keys(d) ) if ( !["effects", "worn", "formula", "oncePerTurn"].includes(key) ) errors.push(`${at}damageShield.${key} : clé inconnue`);
+      if ( (typeof d.formula !== "string") || !d.formula.trim() ) errors.push(`${at}damageShield.formula: formula required`);
+      if ( ("oncePerTurn" in d) && (d.oncePerTurn !== true) ) errors.push(`${at}damageShield.oncePerTurn: true or absent`);
+      for ( const key of Object.keys(d) ) if ( !["effects", "worn", "formula", "oncePerTurn"].includes(key) ) errors.push(`${at}damageShield.${key}: unknown key`);
     }
   }
   if ( "hitDiceHeal" in entry ) {
     const h = entry.hitDiceHeal;
-    if ( !isObject(h) || !isId(h.activity) || !(Number.isInteger(h.base) && (h.base > 0)) ) errors.push(`${at}hitDiceHeal : { activity, base }`);
-    else for ( const key of Object.keys(h) ) if ( !["activity", "base"].includes(key) ) errors.push(`${at}hitDiceHeal.${key} : clé inconnue`);
+    if ( !isObject(h) || !isId(h.activity) || !(Number.isInteger(h.base) && (h.base > 0)) ) errors.push(`${at}hitDiceHeal: { activity, base }`);
+    else for ( const key of Object.keys(h) ) if ( !["activity", "base"].includes(key) ) errors.push(`${at}hitDiceHeal.${key}: unknown key`);
   }
   if ( "empower" in entry ) {
     const e = entry.empower;
-    if ( !isObject(e) ) errors.push(`${at}empower : { damageType, effect, excludeTypes? }`);
+    if ( !isObject(e) ) errors.push(`${at}empower: { damageType, effect, excludeTypes? }`);
     else {
-      if ( (typeof e.damageType !== "string") || !e.damageType ) errors.push(`${at}empower.damageType : type de dégâts requis`);
-      if ( !isId(e.effect) ) errors.push(`${at}empower.effect : id d'effet (16 caractères)`);
+      if ( (typeof e.damageType !== "string") || !e.damageType ) errors.push(`${at}empower.damageType: damage type required`);
+      if ( !isId(e.effect) ) errors.push(`${at}empower.effect: effect id (16 characters)`);
       if ( ("excludeTypes" in e) && (!Array.isArray(e.excludeTypes) || !e.excludeTypes.every(t => CREATURE_TYPES.includes(t))) ) {
-        errors.push(`${at}empower.excludeTypes : types de créature (${CREATURE_TYPES.join(", ")})`);
+        errors.push(`${at}empower.excludeTypes: creature types (${CREATURE_TYPES.join(", ")})`);
       }
-      for ( const key of Object.keys(e) ) if ( !["damageType", "effect", "excludeTypes"].includes(key) ) errors.push(`${at}empower.${key} : clé inconnue`);
+      for ( const key of Object.keys(e) ) if ( !["damageType", "effect", "excludeTypes"].includes(key) ) errors.push(`${at}empower.${key}: unknown key`);
     }
   }
   if ( "discharge" in entry ) {
     const c = entry.discharge;
-    if ( !isObject(c) ) errors.push(`${at}discharge : { effect, formula, damageTypes, sees? }`);
+    if ( !isObject(c) ) errors.push(`${at}discharge: { effect, formula, damageTypes, sees? }`);
     else {
-      if ( !isId(c.effect) ) errors.push(`${at}discharge.effect : id d'effet (16 caractères)`);
-      if ( (typeof c.formula !== "string") || !c.formula.trim() ) errors.push(`${at}discharge.formula : formule requise`);
-      if ( !Array.isArray(c.damageTypes) || !c.damageTypes.length || !c.damageTypes.every(t => (typeof t === "string") && t) ) errors.push(`${at}discharge.damageTypes : liste de types de dégâts`);
-      if ( ("sees" in c) && (c.sees !== true) ) errors.push(`${at}discharge.sees : true ou absent`);
-      for ( const key of Object.keys(c) ) if ( !["effect", "formula", "damageTypes", "sees"].includes(key) ) errors.push(`${at}discharge.${key} : clé inconnue`);
+      if ( !isId(c.effect) ) errors.push(`${at}discharge.effect: effect id (16 characters)`);
+      if ( (typeof c.formula !== "string") || !c.formula.trim() ) errors.push(`${at}discharge.formula: formula required`);
+      if ( !Array.isArray(c.damageTypes) || !c.damageTypes.length || !c.damageTypes.every(t => (typeof t === "string") && t) ) errors.push(`${at}discharge.damageTypes: list of damage types`);
+      if ( ("sees" in c) && (c.sees !== true) ) errors.push(`${at}discharge.sees: true or absent`);
+      for ( const key of Object.keys(c) ) if ( !["effect", "formula", "damageTypes", "sees"].includes(key) ) errors.push(`${at}discharge.${key}: unknown key`);
     }
   }
-  if ( ("healsDownedMax" in entry) && (entry.healsDownedMax !== true) ) errors.push(`${at}healsDownedMax : true ou absent`);
+  if ( ("healsDownedMax" in entry) && (entry.healsDownedMax !== true) ) errors.push(`${at}healsDownedMax: true or absent`);
   if ( "breaksOn" in entry ) {
     const b = entry.breaksOn;
-    if ( !Array.isArray(b) || !b.length || !b.every(m => BREAK_MOMENTS.includes(m)) ) errors.push(`${at}breaksOn : liste parmi ${BREAK_MOMENTS.join(", ")}`);
+    if ( !Array.isArray(b) || !b.length || !b.every(m => BREAK_MOMENTS.includes(m)) ) errors.push(`${at}breaksOn: list among ${BREAK_MOMENTS.join(", ")}`);
   }
   if ( "emanation" in entry ) validateEmanation(entry.emanation, `${at}emanation`, errors);
-  if ( ("noOpportunity" in entry) && !["always", "flying", "afterUse", "whileEffect"].includes(entry.noOpportunity) ) errors.push(`${at}noOpportunity : always, flying, afterUse, whileEffect`);
-  if ( ("sharesSpace" in entry) && !["enter", "mutual"].includes(entry.sharesSpace) ) errors.push(`${at}sharesSpace : enter, mutual`);
-  if ( ("placesSummons" in entry) && (entry.placesSummons !== true) ) errors.push(`${at}placesSummons : true ou absent`);
+  if ( ("noOpportunity" in entry) && !["always", "flying", "afterUse", "whileEffect"].includes(entry.noOpportunity) ) errors.push(`${at}noOpportunity: always, flying, afterUse, whileEffect`);
+  if ( ("sharesSpace" in entry) && !["enter", "mutual"].includes(entry.sharesSpace) ) errors.push(`${at}sharesSpace: enter, mutual`);
+  if ( ("placesSummons" in entry) && (entry.placesSummons !== true) ) errors.push(`${at}placesSummons: true or absent`);
   if ( ("savedEffects" in entry) && (!Array.isArray(entry.savedEffects) || !entry.savedEffects.length || !entry.savedEffects.every(isId)) ) {
-    errors.push(`${at}savedEffects : liste d'ids d'effets (16 caractères)`);
+    errors.push(`${at}savedEffects: list of effect ids (16 characters)`);
   }
   if ( "secondPhase" in entry ) {
     const p = entry.secondPhase;
-    if ( !isObject(p) || !isId(p.activity) ) errors.push(`${at}secondPhase.activity : id d'activité (16 caractères) attendu`);
+    if ( !isObject(p) || !isId(p.activity) ) errors.push(`${at}secondPhase.activity: activity id (16 characters) expected`);
     else {
-      if ( ("keepConditions" in p) && (typeof p.keepConditions !== "boolean") ) errors.push(`${at}secondPhase.keepConditions : booléen`);
-      if ( ("keepHp" in p) && (typeof p.keepHp !== "boolean") ) errors.push(`${at}secondPhase.keepHp : booléen`);
-      for ( const key of Object.keys(p) ) if ( !["activity", "keepConditions", "keepHp"].includes(key) ) errors.push(`${at}secondPhase.${key} : clé inconnue`);
+      if ( ("keepConditions" in p) && (typeof p.keepConditions !== "boolean") ) errors.push(`${at}secondPhase.keepConditions: boolean`);
+      if ( ("keepHp" in p) && (typeof p.keepHp !== "boolean") ) errors.push(`${at}secondPhase.keepHp: boolean`);
+      for ( const key of Object.keys(p) ) if ( !["activity", "keepConditions", "keepHp"].includes(key) ) errors.push(`${at}secondPhase.${key}: unknown key`);
     }
   }
   if ( "changesForm" in entry ) {
     const p = entry.changesForm;
-    if ( !isObject(p) || !isId(p.activity) ) errors.push(`${at}changesForm.activity : id d'activité (16 caractères) attendu`);
+    if ( !isObject(p) || !isId(p.activity) ) errors.push(`${at}changesForm.activity: activity id (16 characters) expected`);
     else {
-      if ( ("keepConditions" in p) && (typeof p.keepConditions !== "boolean") ) errors.push(`${at}changesForm.keepConditions : booléen`);
-      if ( ("keepHp" in p) && (typeof p.keepHp !== "boolean") ) errors.push(`${at}changesForm.keepHp : booléen`);
-      for ( const key of Object.keys(p) ) if ( !["activity", "keepConditions", "keepHp"].includes(key) ) errors.push(`${at}changesForm.${key} : clé inconnue`);
+      if ( ("keepConditions" in p) && (typeof p.keepConditions !== "boolean") ) errors.push(`${at}changesForm.keepConditions: boolean`);
+      if ( ("keepHp" in p) && (typeof p.keepHp !== "boolean") ) errors.push(`${at}changesForm.keepHp: boolean`);
+      for ( const key of Object.keys(p) ) if ( !["activity", "keepConditions", "keepHp"].includes(key) ) errors.push(`${at}changesForm.${key}: unknown key`);
     }
   }
   const isMargin = mg => isObject(mg) && Object.keys(mg).length && Object.entries(mg).every(([k, v]) => ["min", "max"].includes(k) && Number.isFinite(v) && (v >= 0));
   if ( "failMargins" in entry ) {
     const f = entry.failMargins;
-    if ( !isObject(f) || !Object.keys(f).length ) errors.push(`${at}failMargins : { id d'effet: { min?, max? } }`);
+    if ( !isObject(f) || !Object.keys(f).length ) errors.push(`${at}failMargins: { effect id: { min?, max? } }`);
     else for ( const [id, mg] of Object.entries(f) ) {
-      if ( !isId(id) ) errors.push(`${at}failMargins.${id} : id d'effet (16 caractères)`);
-      if ( !isMargin(mg) ) errors.push(`${at}failMargins.${id} : { min?, max? } (nombres ≥ 0)`);
+      if ( !isId(id) ) errors.push(`${at}failMargins.${id}: effect id (16 characters)`);
+      if ( !isMargin(mg) ) errors.push(`${at}failMargins.${id}: { min?, max? } (numbers ≥ 0)`);
     }
   }
   if ( ("orders" in entry) && (!Array.isArray(entry.orders) || !entry.orders.length || !entry.orders.every(o => ORDERS.includes(o))) ) {
-    errors.push(`${at}orders : liste d'ordres parmi ${ORDERS.join(", ")}`);
+    errors.push(`${at}orders: list of orders among ${ORDERS.join(", ")}`);
   }
   if ( "resize" in entry ) {
     const r = entry.resize;
-    if ( !isObject(r) || !Object.keys(r).length ) errors.push(`${at}resize : { id d'effet: crans }`);
+    if ( !isObject(r) || !Object.keys(r).length ) errors.push(`${at}resize: { effect id: steps }`);
     else for ( const [id, steps] of Object.entries(r) ) {
-      if ( !isId(id) ) errors.push(`${at}resize.${id} : id d'effet (16 caractères)`);
-      if ( !Number.isInteger(steps) || !steps || (Math.abs(steps) > 5) ) errors.push(`${at}resize.${id} : entier non nul, de -5 à 5`);
+      if ( !isId(id) ) errors.push(`${at}resize.${id}: effect id (16 characters)`);
+      if ( !Number.isInteger(steps) || !steps || (Math.abs(steps) > 5) ) errors.push(`${at}resize.${id}: non-zero integer, from -5 to 5`);
     }
   }
   if ( ("reactions" in entry) && !(isObject(entry.reactions) && Number.isInteger(entry.reactions.perRound) && (entry.reactions.perRound >= 1) && (Object.keys(entry.reactions).length === 1)) ) {
-    errors.push(`${at}reactions : { perRound } (entier ≥ 1)`);
+    errors.push(`${at}reactions: { perRound } (integer ≥ 1)`);
   }
   if ( ("counter" in entry) && !(isObject(entry.counter) && Object.keys(entry.counter).every(k => k === "level")
     && (!("level" in entry.counter) || (Number.isInteger(entry.counter.level) && (entry.counter.level >= 0) && (entry.counter.level <= 9)))) ) {
-    errors.push(`${at}counter : { level? } (niveau de sort, entier de 0 à 9)`);
+    errors.push(`${at}counter: { level? } (spell level, integer from 0 to 9)`);
   }
   if ( ("lastStand" in entry) && !(isObject(entry.lastStand) && Number.isFinite(entry.lastStand.threshold) && (entry.lastStand.threshold >= 0) && (Object.keys(entry.lastStand).length === 1)) ) {
-    errors.push(`${at}lastStand : { threshold } (nombre ≥ 0)`);
+    errors.push(`${at}lastStand: { threshold } (number ≥ 0)`);
   }
   if ( "basicActions" in entry ) {
     const b = entry.basicActions;
-    if ( !isObject(b) || !Object.keys(b).length ) errors.push(`${at}basicActions : { id d'activité: ${BASIC_ACTION_KINDS.join(" | ")} }`);
+    if ( !isObject(b) || !Object.keys(b).length ) errors.push(`${at}basicActions: { activity id: ${BASIC_ACTION_KINDS.join(" | ")} }`);
     else for ( const [id, kind] of Object.entries(b) ) {
-      if ( !isId(id) ) errors.push(`${at}basicActions.${id} : id d'activité (16 caractères)`);
+      if ( !isId(id) ) errors.push(`${at}basicActions.${id}: activity id (16 characters)`);
       // §24 : plusieurs actions pour une activité (Défense patiente : Se désengager et Esquiver) ; §65 : une au choix.
       if ( isObject(kind) && !Array.isArray(kind) ) {
         const ok = Array.isArray(kind.choose) && (kind.choose.length >= 2) && kind.choose.every(k => BASIC_ACTION_KINDS.includes(k))
           && (Object.keys(kind).length === 1);
-        if ( !ok ) errors.push(`${at}basicActions.${id} : { choose: [au moins deux parmi ${BASIC_ACTION_KINDS.join(", ")}] }`);
+        if ( !ok ) errors.push(`${at}basicActions.${id}: { choose: [at least two among ${BASIC_ACTION_KINDS.join(", ")}] }`);
         continue;
       }
       const kinds = Array.isArray(kind) ? kind : [kind];
-      if ( !kinds.length || !kinds.every(k => BASIC_ACTION_KINDS.includes(k)) ) errors.push(`${at}basicActions.${id} : ${BASIC_ACTION_KINDS.join(", ")} (ou une liste)`);
+      if ( !kinds.length || !kinds.every(k => BASIC_ACTION_KINDS.includes(k)) ) errors.push(`${at}basicActions.${id}: ${BASIC_ACTION_KINDS.join(", ")} (or a list)`);
     }
   }
-  for ( const key of ["actionOrBonus", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "noOpportunityAttacks", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "replacesAttack", "stabilizes", "kindles", "castTargets"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key} : true ou absent`);
+  for ( const key of ["actionOrBonus", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "noOpportunityAttacks", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "replacesAttack", "stabilizes", "kindles", "castTargets"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
   validateRogue(entry, at, errors);
   if ( ("cures" in entry) && (!Array.isArray(entry.cures) || !entry.cures.length || !entry.cures.every(s => (typeof s === "string") && s)) ) {
-    errors.push(`${at}cures : liste d'identifiants d'état`);
+    errors.push(`${at}cures: list of condition identifiers`);
   }
   if ( ("curesAll" in entry) && (!Array.isArray(entry.curesAll) || !entry.curesAll.length || !entry.curesAll.every(s => (typeof s === "string") && s)) ) {
-    errors.push(`${at}curesAll : liste d'identifiants d'état`);
+    errors.push(`${at}curesAll: list of condition identifiers`);
   }
   if ( "effectChanges" in entry ) {
     const e = entry.effectChanges;
     const okChange = c => isObject(c) && (typeof c.key === "string") && c.key && (typeof c.type === "string") && c.type
       && ["string", "number", "boolean"].includes(typeof c.value) && Object.keys(c).every(k => ["key", "type", "value"].includes(k));
     if ( !isObject(e) || !Object.entries(e).every(([id, list]) => isId(id) && Array.isArray(list) && list.length && list.every(okChange)) ) {
-      errors.push(`${at}effectChanges : { <id d'effet> : [{ key, type, value }] }`);
+      errors.push(`${at}effectChanges: { <effect id>: [{ key, type, value }] }`);
     }
   }
-  if ( ("potionEffect" in entry) && !isId(entry.potionEffect) ) errors.push(`${at}potionEffect : id d'effet (16 caractères)`);
-  if ( ("enchantTarget" in entry) && !["weapon", "ownWeapon"].includes(entry.enchantTarget) ) errors.push(`${at}enchantTarget : « weapon » ou « ownWeapon »`);
+  if ( ("potionEffect" in entry) && !isId(entry.potionEffect) ) errors.push(`${at}potionEffect: effect id (16 characters)`);
+  if ( ("enchantTarget" in entry) && !["weapon", "ownWeapon"].includes(entry.enchantTarget) ) errors.push(`${at}enchantTarget: "weapon" or "ownWeapon"`);
   if ( "pact" in entry ) {
     const p = entry.pact;
     if ( !isObject(p) || !Array.isArray(p.damageTypes) || !p.damageTypes.length || !p.damageTypes.every(t => (typeof t === "string") && t) ) {
-      errors.push(`${at}pact.damageTypes : liste de types de dégâts`);
+      errors.push(`${at}pact.damageTypes: list of damage types`);
     }
     else {
-      if ( ("ability" in p) && ((typeof p.ability !== "string") || !p.ability) ) errors.push(`${at}pact.ability : caractéristique`);
-      for ( const key of Object.keys(p) ) if ( !["damageTypes", "ability"].includes(key) ) errors.push(`${at}pact.${key} : clé inconnue`);
+      if ( ("ability" in p) && ((typeof p.ability !== "string") || !p.ability) ) errors.push(`${at}pact.ability: ability`);
+      for ( const key of Object.keys(p) ) if ( !["damageTypes", "ability"].includes(key) ) errors.push(`${at}pact.${key}: unknown key`);
     }
   }
   const isRange = r => isObject(r) && Number.isFinite(r.value) && (r.value > 0) && (typeof r.units === "string") && !!r.units;
   if ( "ranges" in entry ) {
-    if ( !isObject(entry.ranges) ) errors.push(`${at}ranges : { id d'activité: { value, units } }`);
+    if ( !isObject(entry.ranges) ) errors.push(`${at}ranges: { activity id: { value, units } }`);
     else for ( const [id, r] of Object.entries(entry.ranges) ) {
-      if ( !isId(id) ) errors.push(`${at}ranges.${id} : id d'activité (16 caractères) attendu`);
-      if ( !isRange(r) ) errors.push(`${at}ranges.${id} : { value, units }`);
+      if ( !isId(id) ) errors.push(`${at}ranges.${id}: activity id (16 characters) expected`);
+      if ( !isRange(r) ) errors.push(`${at}ranges.${id}: { value, units }`);
     }
   }
   if ( "tether" in entry ) {
     const t = entry.tether;
-    if ( !isObject(t) ) errors.push(`${at}tether : { attack, activity, range }`);
+    if ( !isObject(t) ) errors.push(`${at}tether: { attack, activity, range }`);
     else {
-      for ( const key of ["attack", "activity"] ) if ( !isId(t[key]) ) errors.push(`${at}tether.${key} : id d'activité (16 caractères) attendu`);
-      if ( !isRange(t.range) ) errors.push(`${at}tether.range : { value, units }`);
-      for ( const key of Object.keys(t) ) if ( !["attack", "activity", "range"].includes(key) ) errors.push(`${at}tether.${key} : clé inconnue`);
+      for ( const key of ["attack", "activity"] ) if ( !isId(t[key]) ) errors.push(`${at}tether.${key}: activity id (16 characters) expected`);
+      if ( !isRange(t.range) ) errors.push(`${at}tether.range: { value, units }`);
+      for ( const key of Object.keys(t) ) if ( !["attack", "activity", "range"].includes(key) ) errors.push(`${at}tether.${key}: unknown key`);
     }
   }
   if ( "teleport" in entry ) validateTeleport(entry.teleport, `${at}teleport`, errors);
   if ( "contest" in entry ) {
     const c = entry.contest;
     const skill = x => (typeof x === "string") && /^[a-z]{3}$/.test(x);
-    if ( !isObject(c) ) errors.push(`${at}contest : un objet`);
+    if ( !isObject(c) ) errors.push(`${at}contest: an object`);
     else {
-      if ( ("activity" in c) && !isId(c.activity) ) errors.push(`${at}contest.activity : id d'activité (16 caractères) attendu`);
-      if ( !skill(c.skill) ) errors.push(`${at}contest.skill : clé de compétence (« ins »)`);
-      if ( !Array.isArray(c.against) || !c.against.length || !c.against.every(skill) ) errors.push(`${at}contest.against : liste de clés de compétence`);
-      if ( !isId(c.effect) ) errors.push(`${at}contest.effect : id d'effet (16 caractères) attendu`);
-      if ( ("exclusive" in c) && (c.exclusive !== true) ) errors.push(`${at}contest.exclusive : true ou absent`);
-      for ( const key of Object.keys(c) ) if ( !["activity", "skill", "against", "effect", "exclusive"].includes(key) ) errors.push(`${at}contest.${key} : clé inconnue`);
+      if ( ("activity" in c) && !isId(c.activity) ) errors.push(`${at}contest.activity: activity id (16 characters) expected`);
+      if ( !skill(c.skill) ) errors.push(`${at}contest.skill: skill key ("ins")`);
+      if ( !Array.isArray(c.against) || !c.against.length || !c.against.every(skill) ) errors.push(`${at}contest.against: list of skill keys`);
+      if ( !isId(c.effect) ) errors.push(`${at}contest.effect: effect id (16 characters) expected`);
+      if ( ("exclusive" in c) && (c.exclusive !== true) ) errors.push(`${at}contest.exclusive: true or absent`);
+      for ( const key of Object.keys(c) ) if ( !["activity", "skill", "against", "effect", "exclusive"].includes(key) ) errors.push(`${at}contest.${key}: unknown key`);
     }
   }
-  if ( ("zoneCharges" in entry) && !(Number.isInteger(entry.zoneCharges) && (entry.zoneCharges > 0)) ) errors.push(`${at}zoneCharges : entier positif`);
+  if ( ("zoneCharges" in entry) && !(Number.isInteger(entry.zoneCharges) && (entry.zoneCharges > 0)) ) errors.push(`${at}zoneCharges: positive integer`);
   if ( "selfZone" in entry ) {
-    if ( !isObject(entry.selfZone) || !Object.keys(entry.selfZone).length ) errors.push(`${at}selfZone : { id d'activité: gabarit }`);
+    if ( !isObject(entry.selfZone) || !Object.keys(entry.selfZone).length ) errors.push(`${at}selfZone: { activity id: template }`);
     else for ( const [id, t] of Object.entries(entry.selfZone) ) {
-      if ( !isId(id) ) errors.push(`${at}selfZone : « ${id} » n'est pas un id d'activité (16 caractères)`);
-      if ( !isObject(t) || !["radius", "sphere", "circle", "cube", "square"].includes(t.type) ) errors.push(`${at}selfZone.${id}.type : radius, sphere, circle, cube, square`);
-      if ( !(Number.isFinite(t?.size) && (t.size > 0)) ) errors.push(`${at}selfZone.${id}.size : nombre positif`);
-      if ( (typeof t?.units !== "string") || !t.units ) errors.push(`${at}selfZone.${id}.units : unité requise`);
+      if ( !isId(id) ) errors.push(`${at}selfZone: "${id}" is not an activity id (16 characters)`);
+      if ( !isObject(t) || !["radius", "sphere", "circle", "cube", "square"].includes(t.type) ) errors.push(`${at}selfZone.${id}.type: radius, sphere, circle, cube, square`);
+      if ( !(Number.isFinite(t?.size) && (t.size > 0)) ) errors.push(`${at}selfZone.${id}.size: positive number`);
+      if ( (typeof t?.units !== "string") || !t.units ) errors.push(`${at}selfZone.${id}.units: unit required`);
     }
   }
   if ( ("pendingDie" in entry) && !(isObject(entry.pendingDie) && isId(entry.pendingDie.activity) && ["melee", "target"].includes(entry.pendingDie.against)
-    && (Object.keys(entry.pendingDie).length === 2)) ) errors.push(`${at}pendingDie : { activity, against: melee|target }`);
+    && (Object.keys(entry.pendingDie).length === 2)) ) errors.push(`${at}pendingDie: { activity, against: melee|target }`);
   if ( ("rolledAc" in entry) && !(isObject(entry.rolledAc) && isId(entry.rolledAc.activity) && isId(entry.rolledAc.effect)
     && (!("to" in entry.rolledAc) || (entry.rolledAc.to === "choose"))
-    && Object.keys(entry.rolledAc).every(k => ["activity", "effect", "to"].includes(k))) ) errors.push(`${at}rolledAc : { activity, effect, to?: "choose" }`);
+    && Object.keys(entry.rolledAc).every(k => ["activity", "effect", "to"].includes(k))) ) errors.push(`${at}rolledAc: { activity, effect, to?: "choose" }`);
   for ( const key of ["swapPlaces", "sweep", "commandStrike", "zoneEnd", "onNatural1"] ) {
-    if ( (key in entry) && !(isObject(entry[key]) && isId(entry[key].activity) && (Object.keys(entry[key]).length === 1)) ) errors.push(`${at}${key} : { activity }`);
+    if ( (key in entry) && !(isObject(entry[key]) && isId(entry[key].activity) && (Object.keys(entry[key]).length === 1)) ) errors.push(`${at}${key}: { activity }`);
   }
-  if ( ("zoneAffects" in entry) && !["enemy", "ally"].includes(entry.zoneAffects) ) errors.push(`${at}zoneAffects : enemy, ally`);
+  if ( ("zoneAffects" in entry) && !["enemy", "ally"].includes(entry.zoneAffects) ) errors.push(`${at}zoneAffects: enemy, ally`);
   if ( ("noDamage" in entry) && !(Array.isArray(entry.noDamage) && entry.noDamage.length && entry.noDamage.every(id => /^[A-Za-z0-9]{16}$/.test(id))) ) {
-    errors.push(`${at}noDamage : liste d'ids d'activité (16 caractères)`);
+    errors.push(`${at}noDamage: list of activity ids (16 characters)`);
   }
   if ( "effectsIf" in entry ) {
-    if ( !isObject(entry.effectsIf) ) errors.push(`${at}effectsIf : une condition (objet)`);
-    else for ( const key of unknownFacts(entry.effectsIf, facts) ) errors.push(`${at}effectsIf : fait « ${key} » inconnu`);
+    if ( !isObject(entry.effectsIf) ) errors.push(`${at}effectsIf: a condition (object)`);
+    else for ( const key of unknownFacts(entry.effectsIf, facts) ) errors.push(`${at}effectsIf: unknown fact "${key}"`);
   }
   if ( "storm" in entry ) {
     const t = entry.storm;
-    if ( !isObject(t) ) errors.push(`${at}storm : un objet`);
+    if ( !isObject(t) ) errors.push(`${at}storm: an object`);
     else {
-      if ( ("bonus" in t) && ((typeof t.bonus !== "string") || !/^\d*d\d+$/.test(t.bonus)) ) errors.push(`${at}storm.bonus : des dés (« 1d10 »)`);
-      for ( const key of Object.keys(t) ) if ( key !== "bonus" ) errors.push(`${at}storm.${key} : clé inconnue`);
+      if ( ("bonus" in t) && ((typeof t.bonus !== "string") || !/^\d*d\d+$/.test(t.bonus)) ) errors.push(`${at}storm.bonus: dice ("1d10")`);
+      for ( const key of Object.keys(t) ) if ( key !== "bonus" ) errors.push(`${at}storm.${key}: unknown key`);
     }
   }
   if ( "difficultTerrain" in entry ) {
     const t = entry.difficultTerrain;
-    if ( !isObject(t) ) errors.push(`${at}difficultTerrain : un objet`);
+    if ( !isObject(t) ) errors.push(`${at}difficultTerrain: an object`);
     else {
-      if ( ("types" in t) && (!Array.isArray(t.types) || !t.types.every(x => (typeof x === "string") && x)) ) errors.push(`${at}difficultTerrain.types : liste de chaînes`);
-      for ( const key of Object.keys(t) ) if ( key !== "types" ) errors.push(`${at}difficultTerrain.${key} : clé inconnue`);
+      if ( ("types" in t) && (!Array.isArray(t.types) || !t.types.every(x => (typeof x === "string") && x)) ) errors.push(`${at}difficultTerrain.types: list of strings`);
+      for ( const key of Object.keys(t) ) if ( key !== "types" ) errors.push(`${at}difficultTerrain.${key}: unknown key`);
     }
   }
   if ( "lineDash" in entry ) {
     const d = entry.lineDash;
-    if ( !isObject(d) ) errors.push(`${at}lineDash : un objet`);
+    if ( !isObject(d) ) errors.push(`${at}lineDash: an object`);
     else {
-      if ( !(Number.isFinite(d.reach) && (d.reach > 0)) ) errors.push(`${at}lineDash.reach : nombre positif`);
-      if ( (typeof d.units !== "string") || !d.units ) errors.push(`${at}lineDash.units : unité requise`);
-      if ( ("activity" in d) && !isId(d.activity) ) errors.push(`${at}lineDash.activity : id d'activité (16 caractères) attendu`);
-      for ( const key of Object.keys(d) ) if ( !["reach", "units", "activity"].includes(key) ) errors.push(`${at}lineDash.${key} : clé inconnue`);
+      if ( !(Number.isFinite(d.reach) && (d.reach > 0)) ) errors.push(`${at}lineDash.reach: positive number`);
+      if ( (typeof d.units !== "string") || !d.units ) errors.push(`${at}lineDash.units: unit required`);
+      if ( ("activity" in d) && !isId(d.activity) ) errors.push(`${at}lineDash.activity: activity id (16 characters) expected`);
+      for ( const key of Object.keys(d) ) if ( !["reach", "units", "activity"].includes(key) ) errors.push(`${at}lineDash.${key}: unknown key`);
     }
   }
   if ( "absorb" in entry ) validateAbsorb(entry.absorb, `${at}absorb`, errors);
   if ( "movable" in entry ) {
     const m = entry.movable;
-    if ( !isObject(m) ) errors.push(`${at}movable : un objet`);
+    if ( !isObject(m) ) errors.push(`${at}movable: an object`);
     else {
-      if ( !(Number.isFinite(m.distance) && (m.distance > 0)) ) errors.push(`${at}movable.distance : nombre positif`);
-      if ( (typeof m.units !== "string") || !m.units ) errors.push(`${at}movable.units : unité requise`);
-      for ( const key of Object.keys(m) ) if ( !["distance", "units"].includes(key) ) errors.push(`${at}movable.${key} : clé inconnue`);
+      if ( !(Number.isFinite(m.distance) && (m.distance > 0)) ) errors.push(`${at}movable.distance: positive number`);
+      if ( (typeof m.units !== "string") || !m.units ) errors.push(`${at}movable.units: unit required`);
+      for ( const key of Object.keys(m) ) if ( !["distance", "units"].includes(key) ) errors.push(`${at}movable.${key}: unknown key`);
     }
   }
   if ( "summon" in entry ) validateSummon(entry.summon, `${at}summon`, errors);
   if ( "burst" in entry ) {
     const b = entry.burst;
-    if ( !isObject(b) ) errors.push(`${at}burst : un objet`);
+    if ( !isObject(b) ) errors.push(`${at}burst: an object`);
     else {
-      if ( !isId(b.activity) ) errors.push(`${at}burst.activity : id d'activité (16 caractères) attendu`);
-      if ( !(Number.isFinite(b.radius) && (b.radius >= 0)) ) errors.push(`${at}burst.radius : nombre positif ou nul`);
-      if ( (typeof b.units !== "string") || !b.units ) errors.push(`${at}burst.units : unité requise`);
-      if ( ("from" in b) && (!Array.isArray(b.from) || !b.from.length || !b.from.every(isId)) ) errors.push(`${at}burst.from : liste d'ids d'activité`);
-      for ( const key of Object.keys(b) ) if ( !["activity", "radius", "units", "from"].includes(key) ) errors.push(`${at}burst.${key} : clé inconnue`);
+      if ( !isId(b.activity) ) errors.push(`${at}burst.activity: activity id (16 characters) expected`);
+      if ( !(Number.isFinite(b.radius) && (b.radius >= 0)) ) errors.push(`${at}burst.radius: non-negative number`);
+      if ( (typeof b.units !== "string") || !b.units ) errors.push(`${at}burst.units: unit required`);
+      if ( ("from" in b) && (!Array.isArray(b.from) || !b.from.length || !b.from.every(isId)) ) errors.push(`${at}burst.from: list of activity ids`);
+      for ( const key of Object.keys(b) ) if ( !["activity", "radius", "units", "from"].includes(key) ) errors.push(`${at}burst.${key}: unknown key`);
     }
   }
-  if ( ("recast" in entry) && (entry.recast !== true) ) errors.push(`${at}recast : true ou absent`);
-  for ( const flag of ["obscures", "healMax", "duplicates", "reactiveSpell", "revealsInvisible"] ) if ( (flag in entry) && (entry[flag] !== true) ) errors.push(`${at}${flag} : true ou absent`);
+  if ( ("recast" in entry) && (entry.recast !== true) ) errors.push(`${at}recast: true or absent`);
+  for ( const flag of ["obscures", "healMax", "duplicates", "reactiveSpell", "revealsInvisible"] ) if ( (flag in entry) && (entry[flag] !== true) ) errors.push(`${at}${flag}: true or absent`);
   if ( "light" in entry ) validateLight(entry.light, `${at}light`, errors);
   if ( "carriedLight" in entry ) validateCarriedLight(entry.carriedLight, `${at}carriedLight`, errors);
   if ( "usageLimits" in entry ) {
     const u = entry.usageLimits;
-    if ( !isObject(u) ) errors.push(`${at}usageLimits : { id d'activité: { oncePerTurn?, whenEmpty? } }`);
+    if ( !isObject(u) ) errors.push(`${at}usageLimits: { activity id: { oncePerTurn?, whenEmpty? } }`);
     else for ( const [id, rule] of Object.entries(u) ) {
-      if ( !isId(id) ) errors.push(`${at}usageLimits.${id} : id d'activité (16 caractères) attendu`);
-      if ( !isObject(rule) ) { errors.push(`${at}usageLimits.${id} : un objet`); continue; }
-      for ( const flag of ["oncePerTurn", "lowestSlot", "noDialog", "unmoved"] ) if ( (flag in rule) && (rule[flag] !== true) ) errors.push(`${at}usageLimits.${id}.${flag} : true ou absent`);
-      if ( ("whenEmpty" in rule) && ((typeof rule.whenEmpty !== "string") || !rule.whenEmpty) ) errors.push(`${at}usageLimits.${id}.whenEmpty : identifiant d'item`);
-      if ( ("cost" in rule) && !["action", "bonus", "reaction"].includes(rule.cost) ) errors.push(`${at}usageLimits.${id}.cost : action, bonus, reaction`);
-      for ( const key of Object.keys(rule) ) if ( !["oncePerTurn", "whenEmpty", "lowestSlot", "noDialog", "cost", "unmoved"].includes(key) ) errors.push(`${at}usageLimits.${id}.${key} : clé inconnue`);
+      if ( !isId(id) ) errors.push(`${at}usageLimits.${id}: activity id (16 characters) expected`);
+      if ( !isObject(rule) ) { errors.push(`${at}usageLimits.${id}: an object`); continue; }
+      for ( const flag of ["oncePerTurn", "lowestSlot", "noDialog", "unmoved"] ) if ( (flag in rule) && (rule[flag] !== true) ) errors.push(`${at}usageLimits.${id}.${flag}: true or absent`);
+      if ( ("whenEmpty" in rule) && ((typeof rule.whenEmpty !== "string") || !rule.whenEmpty) ) errors.push(`${at}usageLimits.${id}.whenEmpty: item identifier`);
+      if ( ("cost" in rule) && !["action", "bonus", "reaction"].includes(rule.cost) ) errors.push(`${at}usageLimits.${id}.cost: action, bonus, reaction`);
+      for ( const key of Object.keys(rule) ) if ( !["oncePerTurn", "whenEmpty", "lowestSlot", "noDialog", "cost", "unmoved"].includes(key) ) errors.push(`${at}usageLimits.${id}.${key}: unknown key`);
     }
   }
-  if ( ("effectsExpire" in entry) && !EFFECT_EXPIRIES.includes(entry.effectsExpire) ) errors.push(`${at}effectsExpire : ${EFFECT_EXPIRIES.join(", ")}`);
+  if ( ("effectsExpire" in entry) && !EFFECT_EXPIRIES.includes(entry.effectsExpire) ) errors.push(`${at}effectsExpire: ${EFFECT_EXPIRIES.join(", ")}`);
   if ( "bolt" in entry ) {
     const b = entry.bolt;
-    if ( !isObject(b) || !(Number.isFinite(b.radius) && (b.radius > 0)) || (typeof b.units !== "string") || !b.units ) errors.push(`${at}bolt : { radius, units }`);
-    else for ( const key of Object.keys(b) ) if ( !["radius", "units"].includes(key) ) errors.push(`${at}bolt.${key} : clé inconnue`);
+    if ( !isObject(b) || !(Number.isFinite(b.radius) && (b.radius > 0)) || (typeof b.units !== "string") || !b.units ) errors.push(`${at}bolt: { radius, units }`);
+    else for ( const key of Object.keys(b) ) if ( !["radius", "units"].includes(key) ) errors.push(`${at}bolt.${key}: unknown key`);
   }
   if ( ("saveAdvantage" in entry) && (!Array.isArray(entry.saveAdvantage) || !entry.saveAdvantage.length
-    || !entry.saveAdvantage.every(s => (typeof s === "string") && s)) ) errors.push(`${at}saveAdvantage : liste d'identifiants d'état`);
+    || !entry.saveAdvantage.every(s => (typeof s === "string") && s)) ) errors.push(`${at}saveAdvantage: list of condition identifiers`);
   if ( "leap" in entry ) {
     const l = entry.leap;
     if ( !isObject(l) || !(Number.isFinite(l.radius) && (l.radius > 0)) || (typeof l.units !== "string") || !l.units
-      || (typeof l.max !== "string") || !l.max.trim() ) errors.push(`${at}leap : { radius, units, max }`);
-    else for ( const key of Object.keys(l) ) if ( !["radius", "units", "max"].includes(key) ) errors.push(`${at}leap.${key} : clé inconnue`);
+      || (typeof l.max !== "string") || !l.max.trim() ) errors.push(`${at}leap: { radius, units, max }`);
+    else for ( const key of Object.keys(l) ) if ( !["radius", "units", "max"].includes(key) ) errors.push(`${at}leap.${key}: unknown key`);
   }
   if ( "projectiles" in entry ) {
     const p = entry.projectiles;
-    if ( !isObject(p) || (typeof p.count !== "string") || !p.count.trim() ) errors.push(`${at}projectiles.count : formule attendue`);
+    if ( !isObject(p) || (typeof p.count !== "string") || !p.count.trim() ) errors.push(`${at}projectiles.count: formula expected`);
     else {
-      if ( typeof p.attack !== "boolean" ) errors.push(`${at}projectiles.attack : booléen`);
-      for ( const key of Object.keys(p) ) if ( !["count", "attack"].includes(key) ) errors.push(`${at}projectiles.${key} : clé inconnue`);
+      if ( typeof p.attack !== "boolean" ) errors.push(`${at}projectiles.attack: boolean`);
+      for ( const key of Object.keys(p) ) if ( !["count", "attack"].includes(key) ) errors.push(`${at}projectiles.${key}: unknown key`);
     }
   }
   if ( "bonusAttack" in entry ) {
     const b = entry.bonusAttack;
     if ( !isObject(b) || !Array.isArray(b.after) || !b.after.length || !b.after.every(a => BONUS_ATTACK_AFTER.includes(a)) ) {
-      errors.push(`${at}bonusAttack.after : liste parmi ${BONUS_ATTACK_AFTER.join(", ")}`);
+      errors.push(`${at}bonusAttack.after: list among ${BONUS_ATTACK_AFTER.join(", ")}`);
     }
     else {
-      if ( ("melee" in b) && (typeof b.melee !== "boolean") ) errors.push(`${at}bonusAttack.melee : booléen`);
-      for ( const key of Object.keys(b) ) if ( !["after", "melee"].includes(key) ) errors.push(`${at}bonusAttack.${key} : clé inconnue`);
+      if ( ("melee" in b) && (typeof b.melee !== "boolean") ) errors.push(`${at}bonusAttack.melee: boolean`);
+      for ( const key of Object.keys(b) ) if ( !["after", "melee"].includes(key) ) errors.push(`${at}bonusAttack.${key}: unknown key`);
     }
   }
   if ( "onFell" in entry ) {
     const f = entry.onFell;
-    if ( !isObject(f) ) errors.push(`${at}onFell : un objet`);
+    if ( !isObject(f) ) errors.push(`${at}onFell: an object`);
     else {
-      if ( ("activity" in f) && !isId(f.activity) ) errors.push(`${at}onFell.activity : id d'activité (16 caractères) attendu`);
-      if ( !(Number.isFinite(f.radius) && (f.radius >= 0)) ) errors.push(`${at}onFell.radius : nombre positif ou nul`);
-      if ( (typeof f.units !== "string") || !f.units ) errors.push(`${at}onFell.units : unité requise`);
-      for ( const key of Object.keys(f) ) if ( !["activity", "radius", "units"].includes(key) ) errors.push(`${at}onFell.${key} : clé inconnue`);
+      if ( ("activity" in f) && !isId(f.activity) ) errors.push(`${at}onFell.activity: activity id (16 characters) expected`);
+      if ( !(Number.isFinite(f.radius) && (f.radius >= 0)) ) errors.push(`${at}onFell.radius: non-negative number`);
+      if ( (typeof f.units !== "string") || !f.units ) errors.push(`${at}onFell.units: unit required`);
+      for ( const key of Object.keys(f) ) if ( !["activity", "radius", "units"].includes(key) ) errors.push(`${at}onFell.${key}: unknown key`);
     }
   }
   if ( ("saveDamage" in entry) && !(isObject(entry.saveDamage) && Object.keys(entry.saveDamage).length
-    && Object.entries(entry.saveDamage).every(([id, v]) => isId(id) && ["none", "half"].includes(v))) ) errors.push(`${at}saveDamage : { <id d'activité>: none|half }`);
+    && Object.entries(entry.saveDamage).every(([id, v]) => isId(id) && ["none", "half"].includes(v))) ) errors.push(`${at}saveDamage: { <activity id>: none|half }`);
   if ( ("effectStatuses" in entry) && !(isObject(entry.effectStatuses) && Object.keys(entry.effectStatuses).length
     && Object.entries(entry.effectStatuses).every(([id, list]) => isId(id) && Array.isArray(list) && list.length && list.every(s => (typeof s === "string") && s))) ) {
-    errors.push(`${at}effectStatuses : { <id d'effet>: [états] }`);
+    errors.push(`${at}effectStatuses: { <effect id>: [conditions] }`);
   }
   if ( ("atZero" in entry) && !(isObject(entry.atZero) && isId(entry.atZero.activity)
     && (!("save" in entry.atZero) || (isObject(entry.atZero.save) && (typeof entry.atZero.save.ability === "string") && (typeof entry.atZero.save.dc === "string")))
     && (!("whileEffect" in entry.atZero) || ((typeof entry.atZero.whileEffect === "string") && entry.atZero.whileEffect))
-    && Object.keys(entry.atZero).every(k => ["activity", "save", "whileEffect"].includes(k))) ) errors.push(`${at}atZero : { activity, save?: { ability, dc }, whileEffect? }`);
+    && Object.keys(entry.atZero).every(k => ["activity", "save", "whileEffect"].includes(k))) ) errors.push(`${at}atZero: { activity, save?: { ability, dc }, whileEffect? }`);
   if ( ("afterSneak" in entry) && !(isObject(entry.afterSneak) && isId(entry.afterSneak.activity) && Number.isFinite(entry.afterSneak.radius)
-    && (entry.afterSneak.radius > 0) && (typeof entry.afterSneak.units === "string") && (Object.keys(entry.afterSneak).length === 3)) ) errors.push(`${at}afterSneak : { activity, radius, units }`);
+    && (entry.afterSneak.radius > 0) && (typeof entry.afterSneak.units === "string") && (Object.keys(entry.afterSneak).length === 3)) ) errors.push(`${at}afterSneak: { activity, radius, units }`);
   if ( ("searchBonus" in entry) && !(isObject(entry.searchBonus) && Object.keys(entry.searchBonus).length
     && (!("formula" in entry.searchBonus) || ((typeof entry.searchBonus.formula === "string") && entry.searchBonus.formula))
     && (!("advantage" in entry.searchBonus) || (entry.searchBonus.advantage === true))
-    && Object.keys(entry.searchBonus).every(k => ["formula", "advantage"].includes(k))) ) errors.push(`${at}searchBonus : { formula?, advantage?: true }`);
+    && Object.keys(entry.searchBonus).every(k => ["formula", "advantage"].includes(k))) ) errors.push(`${at}searchBonus: { formula?, advantage?: true }`);
   if ( "afterTeleport" in entry ) {
     const t = entry.afterTeleport;
     if ( !isObject(t) || !Array.isArray(t.spells) || !t.spells.length || !t.spells.every(x => (typeof x === "string") && x)
       || !Array.isArray(t.options) || !t.options.length || Object.keys(t).some(k => !["spells", "options"].includes(k))
       || !t.options.every(o => isObject(o) && isId(o.activity) && (!("around" in o) || ["left", "arrival"].includes(o.around))
-        && Object.keys(o).every(k => ["activity", "around"].includes(k))) ) errors.push(`${at}afterTeleport : { spells: [identifiants], options: [{ activity, around?: left|arrival }] }`);
+        && Object.keys(o).every(k => ["activity", "around"].includes(k))) ) errors.push(`${at}afterTeleport: { spells: [identifiers], options: [{ activity, around?: left|arrival }] }`);
   }
   if ( "casterPulse" in entry ) {
     const p = entry.casterPulse;
     const int = (n, min) => Number.isInteger(n) && (n >= min);
-    if ( !isObject(p) || !["turnStart", "turnEnd"].includes(p.at) || !Array.isArray(p.by) || !p.by.length ) errors.push(`${at}casterPulse : { at: turnStart|turnEnd, by: [ … ], ground? }`);
+    if ( !isObject(p) || !["turnStart", "turnEnd"].includes(p.at) || !Array.isArray(p.by) || !p.by.length ) errors.push(`${at}casterPulse: { at: turnStart|turnEnd, by: [ … ], ground? }`);
     else {
-      for ( const flag of ["ground", "untilSpent"] ) if ( (flag in p) && (p[flag] !== true) ) errors.push(`${at}casterPulse.${flag} : true ou absent`);
+      for ( const flag of ["ground", "untilSpent"] ) if ( (flag in p) && (p[flag] !== true) ) errors.push(`${at}casterPulse.${flag}: true or absent`);
       if ( ("away" in p) && !(isObject(p.away) && Number.isFinite(p.away.distance) && (p.away.distance > 0) && (typeof p.away.units === "string") && p.away.units
-        && (Object.keys(p.away).length === 2)) ) errors.push(`${at}casterPulse.away : { distance > 0, units }`);
-      for ( const key of Object.keys(p) ) if ( !["at", "by", "ground", "away", "untilSpent"].includes(key) ) errors.push(`${at}casterPulse.${key} : clé inconnue`);
+        && (Object.keys(p.away).length === 2)) ) errors.push(`${at}casterPulse.away: { distance > 0, units }`);
+      for ( const key of Object.keys(p) ) if ( !["at", "by", "ground", "away", "untilSpent"].includes(key) ) errors.push(`${at}casterPulse.${key}: unknown key`);
       p.by.forEach((b, i) => {
         if ( !isObject(b) || !isId(b.activity) || !int(b.from, 1) || (("to" in b) && !int(b.to, b.from))
           || (("max" in b) && !int(b.max, 1)) || (("use" in b) && (b.use !== true)) || (("pay" in b) && (b.pay !== true))
-          || Object.keys(b).some(k => !["from", "to", "activity", "max", "use", "pay"].includes(k)) ) errors.push(`${at}casterPulse.by[${i}] : { from ≥ 1, to? ≥ from, activity, max?, use?, pay? }`);
+          || Object.keys(b).some(k => !["from", "to", "activity", "max", "use", "pay"].includes(k)) ) errors.push(`${at}casterPulse.by[${i}]: { from ≥ 1, to? ≥ from, activity, max?, use?, pay? }`);
       });
     }
   }
   if ( "atTurnStart" in entry ) {
     const t = entry.atTurnStart;
-    if ( !isObject(t) || !isId(t.activity) ) errors.push(`${at}atTurnStart.activity : id d'activité (16 caractères) attendu`);
-    else for ( const key of Object.keys(t) ) if ( key !== "activity" ) errors.push(`${at}atTurnStart.${key} : clé inconnue`);
+    if ( !isObject(t) || !isId(t.activity) ) errors.push(`${at}atTurnStart.activity: activity id (16 characters) expected`);
+    else for ( const key of Object.keys(t) ) if ( key !== "activity" ) errors.push(`${at}atTurnStart.${key}: unknown key`);
   }
   return errors;
 }
@@ -1125,212 +1125,212 @@ export const PULSE_MOMENTS = Object.freeze(["turnEnd", "enter", "moves"]);
 export const PILOT_ON_CAST = Object.freeze(["use", "command"]);
 
 function validateSummon(summon, at, errors) {
-  if ( !isObject(summon) || !["after", "own", "none"].includes(summon.initiative) ) return errors.push(`${at}.initiative : « after », « own » ou « none »`);
-  if ( ("endsSpell" in summon) && (summon.endsSpell !== true) ) errors.push(`${at}.endsSpell : true ou absent`);
+  if ( !isObject(summon) || !["after", "own", "none"].includes(summon.initiative) ) return errors.push(`${at}.initiative: "after", "own" or "none"`);
+  if ( ("endsSpell" in summon) && (summon.endsSpell !== true) ) errors.push(`${at}.endsSpell: true or absent`);
   for ( const flag of ["endsAtZero", "mimic", "endsIfIncapacitated", "castFrom", "familiar"] ) {
-    if ( (flag in summon) && (summon[flag] !== true) ) errors.push(`${at}.${flag} : true ou absent`);
+    if ( (flag in summon) && (summon[flag] !== true) ) errors.push(`${at}.${flag}: true or absent`);
   }
   if ( "lasts" in summon ) {
     const l = summon.lasts;
     if ( !isObject(l) || !["string", "number"].includes(typeof l.value) || (String(l.value).trim() === "")
-      || (typeof l.units !== "string") || !l.units ) errors.push(`${at}.lasts : { value, units }`);
+      || (typeof l.units !== "string") || !l.units ) errors.push(`${at}.lasts: { value, units }`);
   }
   if ( "pulse" in summon ) {
     const u = summon.pulse;
-    if ( !isObject(u) ) errors.push(`${at}.pulse : un objet`);
+    if ( !isObject(u) ) errors.push(`${at}.pulse: an object`);
     else {
-      if ( (typeof u.item !== "string") || !u.item ) errors.push(`${at}.pulse.item : identifiant d'item requis`);
-      if ( !(Number.isFinite(u.radius) && (u.radius > 0)) ) errors.push(`${at}.pulse.radius : nombre positif`);
-      if ( (typeof u.units !== "string") || !u.units ) errors.push(`${at}.pulse.units : unité requise`);
-      if ( ("on" in u) && (!Array.isArray(u.on) || !u.on.length || !u.on.every(m => PULSE_MOMENTS.includes(m))) ) errors.push(`${at}.pulse.on : ${PULSE_MOMENTS.join(", ")}`);
-      if ( ("affects" in u) && !["any", "enemy"].includes(u.affects) ) errors.push(`${at}.pulse.affects : any, enemy`);
-      for ( const key of Object.keys(u) ) if ( !["item", "radius", "units", "on", "affects"].includes(key) ) errors.push(`${at}.pulse.${key} : clé inconnue`);
+      if ( (typeof u.item !== "string") || !u.item ) errors.push(`${at}.pulse.item: item identifier required`);
+      if ( !(Number.isFinite(u.radius) && (u.radius > 0)) ) errors.push(`${at}.pulse.radius: positive number`);
+      if ( (typeof u.units !== "string") || !u.units ) errors.push(`${at}.pulse.units: unit required`);
+      if ( ("on" in u) && (!Array.isArray(u.on) || !u.on.length || !u.on.every(m => PULSE_MOMENTS.includes(m))) ) errors.push(`${at}.pulse.on: ${PULSE_MOMENTS.join(", ")}`);
+      if ( ("affects" in u) && !["any", "enemy"].includes(u.affects) ) errors.push(`${at}.pulse.affects: any, enemy`);
+      for ( const key of Object.keys(u) ) if ( !["item", "radius", "units", "on", "affects"].includes(key) ) errors.push(`${at}.pulse.${key}: unknown key`);
     }
   }
   if ( "pilot" in summon ) {
     const p = summon.pilot;
-    if ( !isObject(p) ) errors.push(`${at}.pilot : un objet`);
+    if ( !isObject(p) ) errors.push(`${at}.pilot: an object`);
     else {
-      if ( !PILOT_COSTS.includes(p.cost) ) errors.push(`${at}.pilot.cost : ${PILOT_COSTS.join(", ")}`);
-      if ( !(Number.isFinite(p.distance) && (p.distance >= 0)) ) errors.push(`${at}.pilot.distance : nombre positif ou nul`);
-      if ( (typeof p.units !== "string") || !p.units ) errors.push(`${at}.pilot.units : unité requise`);
-      if ( ("onCast" in p) && !PILOT_ON_CAST.includes(p.onCast) ) errors.push(`${at}.pilot.onCast : ${PILOT_ON_CAST.join(", ")}`);
-      if ( ("occupies" in p) && (p.occupies !== false) ) errors.push(`${at}.pilot.occupies : false ou absent`);
-      for ( const flag of ["shared", "leash"] ) if ( (flag in p) && (p[flag] !== true) ) errors.push(`${at}.pilot.${flag} : true ou absent`);
+      if ( !PILOT_COSTS.includes(p.cost) ) errors.push(`${at}.pilot.cost: ${PILOT_COSTS.join(", ")}`);
+      if ( !(Number.isFinite(p.distance) && (p.distance >= 0)) ) errors.push(`${at}.pilot.distance: non-negative number`);
+      if ( (typeof p.units !== "string") || !p.units ) errors.push(`${at}.pilot.units: unit required`);
+      if ( ("onCast" in p) && !PILOT_ON_CAST.includes(p.onCast) ) errors.push(`${at}.pilot.onCast: ${PILOT_ON_CAST.join(", ")}`);
+      if ( ("occupies" in p) && (p.occupies !== false) ) errors.push(`${at}.pilot.occupies: false or absent`);
+      for ( const flag of ["shared", "leash"] ) if ( (flag in p) && (p[flag] !== true) ) errors.push(`${at}.pilot.${flag}: true or absent`);
       for ( const key of ["cluster", "tether"] ) {
         if ( !(key in p) ) continue;
         const c = p[key];
-        if ( !isObject(c) || !(Number.isFinite(c.distance) && (c.distance > 0)) || (typeof c.units !== "string") || !c.units ) errors.push(`${at}.pilot.${key} : { distance, units }`);
+        if ( !isObject(c) || !(Number.isFinite(c.distance) && (c.distance > 0)) || (typeof c.units !== "string") || !c.units ) errors.push(`${at}.pilot.${key}: { distance, units }`);
       }
-      for ( const key of Object.keys(p) ) if ( !["cost", "distance", "units", "onCast", "occupies", "shared", "cluster", "leash", "tether"].includes(key) ) errors.push(`${at}.pilot.${key} : clé inconnue`);
+      for ( const key of Object.keys(p) ) if ( !["cost", "distance", "units", "onCast", "occupies", "shared", "cluster", "leash", "tether"].includes(key) ) errors.push(`${at}.pilot.${key}: unknown key`);
     }
   }
-  for ( const key of Object.keys(summon) ) if ( !["initiative", "pilot", "endsSpell", "endsAtZero", "pulse", "mimic", "endsIfIncapacitated", "castFrom", "lasts", "familiar"].includes(key) ) errors.push(`${at}.${key} : clé inconnue`);
+  for ( const key of Object.keys(summon) ) if ( !["initiative", "pilot", "endsSpell", "endsAtZero", "pulse", "mimic", "endsIfIncapacitated", "castFrom", "lasts", "familiar"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 function validateAbsorb(absorb, at, errors) {
-  if ( !isObject(absorb) ) return errors.push(`${at} : un objet`);
-  if ( ("activeAfter" in absorb) && !isId(absorb.activeAfter) ) errors.push(`${at}.activeAfter : id d'activité (16 caractères) attendu`);
+  if ( !isObject(absorb) ) return errors.push(`${at}: an object`);
+  if ( ("activeAfter" in absorb) && !isId(absorb.activeAfter) ) errors.push(`${at}.activeAfter: activity id (16 characters) expected`);
   if ( "recharge" in absorb ) {
     const r = absorb.recharge;
-    if ( !isObject(r) || (typeof r.school !== "string") || !r.school ) errors.push(`${at}.recharge.school : école requise`);
-    else if ( !(Number.isFinite(r.perLevel) && (r.perLevel > 0)) ) errors.push(`${at}.recharge.perLevel : nombre positif`);
+    if ( !isObject(r) || (typeof r.school !== "string") || !r.school ) errors.push(`${at}.recharge.school: school required`);
+    else if ( !(Number.isFinite(r.perLevel) && (r.perLevel > 0)) ) errors.push(`${at}.recharge.perLevel: positive number`);
   }
-  for ( const key of Object.keys(absorb) ) if ( !["activeAfter", "recharge"].includes(key) ) errors.push(`${at}.${key} : clé inconnue`);
+  for ( const key of Object.keys(absorb) ) if ( !["activeAfter", "recharge"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 function validateTeleport(teleport, at, errors) {
-  if ( !isObject(teleport) ) return errors.push(`${at} : un objet`);
-  if ( !(Number.isFinite(teleport.distance) && (teleport.distance > 0)) ) errors.push(`${at}.distance : nombre positif`);
-  if ( (typeof teleport.units !== "string") || !teleport.units ) errors.push(`${at}.units : unité requise`);
-  if ( ("activity" in teleport) && !isId(teleport.activity) ) errors.push(`${at}.activity : id d'activité (16 caractères) attendu`);
-  if ( ("then" in teleport) && !isId(teleport.then) ) errors.push(`${at}.then : id d'activité (16 caractères) attendu`);
-  for ( const key of Object.keys(teleport) ) if ( !["distance", "units", "activity", "then"].includes(key) ) errors.push(`${at}.${key} : clé inconnue`);
+  if ( !isObject(teleport) ) return errors.push(`${at}: an object`);
+  if ( !(Number.isFinite(teleport.distance) && (teleport.distance > 0)) ) errors.push(`${at}.distance: positive number`);
+  if ( (typeof teleport.units !== "string") || !teleport.units ) errors.push(`${at}.units: unit required`);
+  if ( ("activity" in teleport) && !isId(teleport.activity) ) errors.push(`${at}.activity: activity id (16 characters) expected`);
+  if ( ("then" in teleport) && !isId(teleport.then) ) errors.push(`${at}.then: activity id (16 characters) expected`);
+  for ( const key of Object.keys(teleport) ) if ( !["distance", "units", "activity", "then"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 function validateTargets(targets, at, facts, errors) {
-  if ( !isObject(targets) ) return errors.push(`${at} : un objet`);
+  if ( !isObject(targets) ) return errors.push(`${at}: an object`);
   if ( "types" in targets ) {
-    if ( !Array.isArray(targets.types) || !targets.types.length ) errors.push(`${at}.types : liste non vide de types de créature`);
-    else for ( const t of targets.types ) if ( !CREATURE_TYPES.includes(t) ) errors.push(`${at}.types : « ${t} » inconnu (${CREATURE_TYPES.join(", ")})`);
+    if ( !Array.isArray(targets.types) || !targets.types.length ) errors.push(`${at}.types: non-empty list of creature types`);
+    else for ( const t of targets.types ) if ( !CREATURE_TYPES.includes(t) ) errors.push(`${at}.types: unknown "${t}" (${CREATURE_TYPES.join(", ")})`);
   }
-  if ( "unaffectedIf" in targets ) for ( const key of unknownFacts(targets.unaffectedIf, facts) ) errors.push(`${at}.unaffectedIf : fait « ${key} » inconnu`);
-  for ( const key of Object.keys(targets) ) if ( !["types", "unaffectedIf"].includes(key) ) errors.push(`${at}.${key} : clé inconnue`);
+  if ( "unaffectedIf" in targets ) for ( const key of unknownFacts(targets.unaffectedIf, facts) ) errors.push(`${at}.unaffectedIf: unknown fact "${key}"`);
+  for ( const key of Object.keys(targets) ) if ( !["types", "unaffectedIf"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 function validateChoice(choice, at, errors) {
-  if ( !isObject(choice) ) return errors.push(`${at} : un objet`);
+  if ( !isObject(choice) ) return errors.push(`${at}: an object`);
   // §53 : `pool` seul relie des effets de l'item à une activité, sans rien à choisir (Héroïsme : la Bénédiction).
-  if ( (!("pool" in choice) || ("effects" in choice)) && !CHOICE_EFFECTS.includes(choice.effects) ) errors.push(`${at}.effects : ${CHOICE_EFFECTS.join(", ")}`);
-  if ( ("prompt" in choice) && (typeof choice.prompt !== "string") ) errors.push(`${at}.prompt : chaîne`);
+  if ( (!("pool" in choice) || ("effects" in choice)) && !CHOICE_EFFECTS.includes(choice.effects) ) errors.push(`${at}.effects: ${CHOICE_EFFECTS.join(", ")}`);
+  if ( ("prompt" in choice) && (typeof choice.prompt !== "string") ) errors.push(`${at}.prompt: string`);
   if ( ("pool" in choice) && !(isObject(choice.pool) && Object.entries(choice.pool).every(([a, ids]) => isId(a) && Array.isArray(ids) && ids.length && ids.every(isId))) ) {
-    errors.push(`${at}.pool : { <id d'activité> : [ids d'effets] } (16 caractères)`);
+    errors.push(`${at}.pool: { <activity id>: [effect ids] } (16 characters)`);
   }
-  for ( const key of Object.keys(choice) ) if ( !["effects", "prompt", "pool"].includes(key) ) errors.push(`${at}.${key} : clé inconnue`);
+  for ( const key of Object.keys(choice) ) if ( !["effects", "prompt", "pool"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 function validateLight(l, at, errors) {
-  if ( !isObject(l) ) return errors.push(`${at} : un objet`);
-  if ( !LIGHT_ON.includes(l.on) ) errors.push(`${at}.on : ${LIGHT_ON.join(", ")}`);
+  if ( !isObject(l) ) return errors.push(`${at}: an object`);
+  if ( !LIGHT_ON.includes(l.on) ) errors.push(`${at}.on: ${LIGHT_ON.join(", ")}`);
   for ( const key of ["bright", "dim"] ) {
-    if ( (key in l) && !(Number.isFinite(l[key]) && (l[key] >= 0)) ) errors.push(`${at}.${key} : nombre positif ou nul`);
+    if ( (key in l) && !(Number.isFinite(l[key]) && (l[key] >= 0)) ) errors.push(`${at}.${key}: non-negative number`);
   }
-  if ( (("bright" in l) || ("dim" in l)) && ((typeof l.units !== "string") || !l.units) ) errors.push(`${at}.units : unité requise`);
-  if ( (l.on === "effect") && !(l.dim > 0) && !(l.bright > 0) ) errors.push(`${at} : un effet lumineux donne un rayon`);
-  if ( (l.on === "area") && !l.darkness && !(l.dim > 0) && !(l.bright > 0) ) errors.push(`${at} : une zone lumineuse donne un rayon`);
-  for ( const flag of ["darkness", "carried", "single"] ) if ( (flag in l) && (l[flag] !== true) ) errors.push(`${at}.${flag} : true ou absent`);
-  if ( l.darkness && (l.on !== "area") ) errors.push(`${at}.darkness : seulement sur une zone`);
-  if ( ("dispels" in l) && !(Number.isInteger(l.dispels) && (l.dispels >= 0)) ) errors.push(`${at}.dispels : niveau de sort (entier)`);
-  if ( (l.carried || l.single) && (l.on !== "summon") ) errors.push(`${at} : carried et single valent pour une invocation`);
+  if ( (("bright" in l) || ("dim" in l)) && ((typeof l.units !== "string") || !l.units) ) errors.push(`${at}.units: unit required`);
+  if ( (l.on === "effect") && !(l.dim > 0) && !(l.bright > 0) ) errors.push(`${at}: a light effect needs a radius`);
+  if ( (l.on === "area") && !l.darkness && !(l.dim > 0) && !(l.bright > 0) ) errors.push(`${at}: a light area needs a radius`);
+  for ( const flag of ["darkness", "carried", "single"] ) if ( (flag in l) && (l[flag] !== true) ) errors.push(`${at}.${flag}: true or absent`);
+  if ( l.darkness && (l.on !== "area") ) errors.push(`${at}.darkness: only on an area`);
+  if ( ("dispels" in l) && !(Number.isInteger(l.dispels) && (l.dispels >= 0)) ) errors.push(`${at}.dispels: spell level (integer)`);
+  if ( (l.carried || l.single) && (l.on !== "summon") ) errors.push(`${at}: carried and single only apply to a summon`);
   for ( const key of Object.keys(l) ) {
-    if ( !["on", "bright", "dim", "units", "darkness", "dispels", "carried", "single"].includes(key) ) errors.push(`${at}.${key} : clé inconnue`);
+    if ( !["on", "bright", "dim", "units", "darkness", "dispels", "carried", "single"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
   }
 }
 
 /** §52 : une source de lumière portée. */
 function validateCarriedLight(l, at, errors) {
-  if ( !isObject(l) ) return errors.push(`${at} : un objet`);
-  for ( const key of ["bright", "dim"] ) if ( !(Number.isFinite(l[key]) && (l[key] >= 0)) ) errors.push(`${at}.${key} : nombre positif ou nul`);
-  if ( (typeof l.units !== "string") || !l.units ) errors.push(`${at}.units : unité requise`);
-  if ( ("angle" in l) && !(Number.isFinite(l.angle) && (l.angle > 0) && (l.angle < 360)) ) errors.push(`${at}.angle : degrés, entre 0 et 360`);
-  if ( ("animation" in l) && (!isObject(l.animation) || (typeof l.animation.type !== "string")) ) errors.push(`${at}.animation : { type, speed?, intensity? }`);
-  for ( const key of Object.keys(l) ) if ( !["bright", "dim", "units", "angle", "animation"].includes(key) ) errors.push(`${at}.${key} : clé inconnue`);
+  if ( !isObject(l) ) return errors.push(`${at}: an object`);
+  for ( const key of ["bright", "dim"] ) if ( !(Number.isFinite(l[key]) && (l[key] >= 0)) ) errors.push(`${at}.${key}: non-negative number`);
+  if ( (typeof l.units !== "string") || !l.units ) errors.push(`${at}.units: unit required`);
+  if ( ("angle" in l) && !(Number.isFinite(l.angle) && (l.angle > 0) && (l.angle < 360)) ) errors.push(`${at}.angle: degrees, between 0 and 360`);
+  if ( ("animation" in l) && (!isObject(l.animation) || (typeof l.animation.type !== "string")) ) errors.push(`${at}.animation: { type, speed?, intensity? }`);
+  for ( const key of Object.keys(l) ) if ( !["bright", "dim", "units", "angle", "animation"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 function validateEmanation(e, at, errors) {
-  if ( !isObject(e) ) return errors.push(`${at} : un objet`);
-  if ( !EMANATION_MOMENTS.includes(e.on) ) errors.push(`${at}.on : ${EMANATION_MOMENTS.join(", ")}`);
-  if ( ("affects" in e) && !["any", "enemy"].includes(e.affects) ) errors.push(`${at}.affects : any, enemy`);
-  if ( ("sees" in e) && (e.sees !== true) ) errors.push(`${at}.sees : true ou absent`);
-  if ( ("radius" in e) && !(Number.isFinite(e.radius) && (e.radius > 0)) ) errors.push(`${at}.radius : nombre positif`);
-  if ( (("radius" in e) || ("radiusFormula" in e)) && ((typeof e.units !== "string") || !e.units) ) errors.push(`${at}.units : unité requise avec un rayon`);
-  if ( ("radiusFormula" in e) && ((typeof e.radiusFormula !== "string") || !e.radiusFormula) ) errors.push(`${at}.radiusFormula : une formule`);
-  if ( ("whileActive" in e) && (e.whileActive !== true) ) errors.push(`${at}.whileActive : true ou absent`);
-  if ( ("activity" in e) && !isId(e.activity) ) errors.push(`${at}.activity : id d'activité (16 caractères)`);
-  for ( const key of Object.keys(e) ) if ( !["on", "affects", "sees", "radius", "radiusFormula", "units", "activity", "whileActive"].includes(key) ) errors.push(`${at}.${key} : clé inconnue`);
+  if ( !isObject(e) ) return errors.push(`${at}: an object`);
+  if ( !EMANATION_MOMENTS.includes(e.on) ) errors.push(`${at}.on: ${EMANATION_MOMENTS.join(", ")}`);
+  if ( ("affects" in e) && !["any", "enemy"].includes(e.affects) ) errors.push(`${at}.affects: any, enemy`);
+  if ( ("sees" in e) && (e.sees !== true) ) errors.push(`${at}.sees: true or absent`);
+  if ( ("radius" in e) && !(Number.isFinite(e.radius) && (e.radius > 0)) ) errors.push(`${at}.radius: positive number`);
+  if ( (("radius" in e) || ("radiusFormula" in e)) && ((typeof e.units !== "string") || !e.units) ) errors.push(`${at}.units: unit required with a radius`);
+  if ( ("radiusFormula" in e) && ((typeof e.radiusFormula !== "string") || !e.radiusFormula) ) errors.push(`${at}.radiusFormula: a formula`);
+  if ( ("whileActive" in e) && (e.whileActive !== true) ) errors.push(`${at}.whileActive: true or absent`);
+  if ( ("activity" in e) && !isId(e.activity) ) errors.push(`${at}.activity: activity id (16 characters)`);
+  for ( const key of Object.keys(e) ) if ( !["on", "affects", "sees", "radius", "radiusFormula", "units", "activity", "whileActive"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 /** §20 : les parts de plus de l'Attaque sournoise et les Frappes rusées. */
 function validateRogue(entry, at, errors) {
   if ( "sneakAttack" in entry ) {
     const s = entry.sneakAttack;
-    if ( (s !== true) && !isObject(s) ) errors.push(`${at}sneakAttack : true, ou { dice?, anyWeapon?, alwaysVs? }`);
+    if ( (s !== true) && !isObject(s) ) errors.push(`${at}sneakAttack: true, or { dice?, anyWeapon?, alwaysVs? }`);
     else if ( isObject(s) ) {
-      if ( ("dice" in s) && !/^\d+d\d+$/.test(String(s.dice)) ) errors.push(`${at}sneakAttack.dice : des dés (« 5d6 »)`);
-      if ( ("anyWeapon" in s) && (s.anyWeapon !== true) ) errors.push(`${at}sneakAttack.anyWeapon : true ou absent`);
-      if ( ("alwaysVs" in s) && (!Array.isArray(s.alwaysVs) || !s.alwaysVs.every(x => (typeof x === "string") && x)) ) errors.push(`${at}sneakAttack.alwaysVs : liste de types de créature`);
-      for ( const key of Object.keys(s) ) if ( !["dice", "anyWeapon", "alwaysVs"].includes(key) ) errors.push(`${at}sneakAttack.${key} : clé inconnue`);
+      if ( ("dice" in s) && !/^\d+d\d+$/.test(String(s.dice)) ) errors.push(`${at}sneakAttack.dice: dice ("5d6")`);
+      if ( ("anyWeapon" in s) && (s.anyWeapon !== true) ) errors.push(`${at}sneakAttack.anyWeapon: true or absent`);
+      if ( ("alwaysVs" in s) && (!Array.isArray(s.alwaysVs) || !s.alwaysVs.every(x => (typeof x === "string") && x)) ) errors.push(`${at}sneakAttack.alwaysVs: list of creature types`);
+      for ( const key of Object.keys(s) ) if ( !["dice", "anyWeapon", "alwaysVs"].includes(key) ) errors.push(`${at}sneakAttack.${key}: unknown key`);
     }
   }
   if ( "sneakBonus" in entry ) {
     const b = entry.sneakBonus;
-    if ( !isObject(b) || (typeof b.formula !== "string") || !b.formula.trim() ) errors.push(`${at}sneakBonus : { formula, firstRound? }`);
+    if ( !isObject(b) || (typeof b.formula !== "string") || !b.formula.trim() ) errors.push(`${at}sneakBonus: { formula, firstRound? }`);
     else {
-      if ( ("firstRound" in b) && (b.firstRound !== true) ) errors.push(`${at}sneakBonus.firstRound : true ou absent`);
-      for ( const key of Object.keys(b) ) if ( !["formula", "firstRound"].includes(key) ) errors.push(`${at}sneakBonus.${key} : clé inconnue`);
+      if ( ("firstRound" in b) && (b.firstRound !== true) ) errors.push(`${at}sneakBonus.firstRound: true or absent`);
+      for ( const key of Object.keys(b) ) if ( !["formula", "firstRound"].includes(key) ) errors.push(`${at}sneakBonus.${key}: unknown key`);
     }
   }
   if ( "cunningStrikes" in entry ) {
     const c = entry.cunningStrikes;
-    if ( !isObject(c) || !Object.keys(c).length ) errors.push(`${at}cunningStrikes : { clé: { cost, activity?, requires?, sizeAtMost?, withdraw? } }`);
+    if ( !isObject(c) || !Object.keys(c).length ) errors.push(`${at}cunningStrikes: { key: { cost, activity?, requires?, sizeAtMost?, withdraw? } }`);
     else for ( const [key, s] of Object.entries(c) ) {
       const here = `${at}cunningStrikes.${key}`;
-      if ( !isObject(s) ) { errors.push(`${here} : un objet`); continue; }
-      if ( !(Number.isInteger(s.cost) && (s.cost > 0)) ) errors.push(`${here}.cost : entier positif (dés)`);
-      if ( ("activity" in s) && !isId(s.activity) ) errors.push(`${here}.activity : id d'activité (16 caractères)`);
-      if ( ("requires" in s) && ((typeof s.requires !== "string") || !s.requires) ) errors.push(`${here}.requires : identifiant d'item`);
-      if ( ("sizeAtMost" in s) && !SIZES.includes(s.sizeAtMost) ) errors.push(`${here}.sizeAtMost : ${SIZES.join(", ")}`);
-      if ( ("withdraw" in s) && (s.withdraw !== true) ) errors.push(`${here}.withdraw : true ou absent`);
-      if ( !("activity" in s) && !s.withdraw ) errors.push(`${here} : une activité ou withdraw`);
-      for ( const k of Object.keys(s) ) if ( !["cost", "activity", "requires", "sizeAtMost", "withdraw"].includes(k) ) errors.push(`${here}.${k} : clé inconnue`);
+      if ( !isObject(s) ) { errors.push(`${here}: an object`); continue; }
+      if ( !(Number.isInteger(s.cost) && (s.cost > 0)) ) errors.push(`${here}.cost: positive integer (dice)`);
+      if ( ("activity" in s) && !isId(s.activity) ) errors.push(`${here}.activity: activity id (16 characters)`);
+      if ( ("requires" in s) && ((typeof s.requires !== "string") || !s.requires) ) errors.push(`${here}.requires: item identifier`);
+      if ( ("sizeAtMost" in s) && !SIZES.includes(s.sizeAtMost) ) errors.push(`${here}.sizeAtMost: ${SIZES.join(", ")}`);
+      if ( ("withdraw" in s) && (s.withdraw !== true) ) errors.push(`${here}.withdraw: true or absent`);
+      if ( !("activity" in s) && !s.withdraw ) errors.push(`${here}: an activity or withdraw`);
+      for ( const k of Object.keys(s) ) if ( !["cost", "activity", "requires", "sizeAtMost", "withdraw"].includes(k) ) errors.push(`${here}.${k}: unknown key`);
     }
   }
   if ( "movesAfter" in entry ) {
     const m = entry.movesAfter;
     const ok = ((typeof m === "string") && m) || (isObject(m) && (typeof m.item === "string") && m.item
       && (!("disengage" in m) || (typeof m.disengage === "boolean")) && Object.keys(m).every(k => ["item", "disengage"].includes(k)));
-    if ( !ok ) errors.push(`${at}movesAfter : identifiant d'item, ou { item, disengage? }`);
+    if ( !ok ) errors.push(`${at}movesAfter: item identifier, or { item, disengage? }`);
   }
   if ( "effectEnds" in entry ) {
     const e = entry.effectEnds;
-    if ( !isObject(e) || !Object.keys(e).length ) errors.push(`${at}effectEnds : { id d'effet: ${EFFECT_ENDS.join(" | ")} }`);
+    if ( !isObject(e) || !Object.keys(e).length ) errors.push(`${at}effectEnds: { effect id: ${EFFECT_ENDS.join(" | ")} }`);
     else for ( const [id, when] of Object.entries(e) ) {
-      if ( !isId(id) ) errors.push(`${at}effectEnds.${id} : id d'effet (16 caractères)`);
-      if ( !EFFECT_ENDS.includes(when) ) errors.push(`${at}effectEnds.${id} : ${EFFECT_ENDS.join(", ")}`);
+      if ( !isId(id) ) errors.push(`${at}effectEnds.${id}: effect id (16 characters)`);
+      if ( !EFFECT_ENDS.includes(when) ) errors.push(`${at}effectEnds.${id}: ${EFFECT_ENDS.join(", ")}`);
     }
   }
   if ( "actionEnds" in entry ) {
     const e = entry.actionEnds;
-    if ( !isObject(e) || !Object.keys(e).length ) errors.push(`${at}actionEnds : { id d'effet: { by, roll?, verb? } }`);
+    if ( !isObject(e) || !Object.keys(e).length ) errors.push(`${at}actionEnds: { effect id: { by, roll?, verb? } }`);
     else for ( const [id, rule] of Object.entries(e) ) {
       const ok = isId(id) && isObject(rule) && ACTION_END_BY.includes(rule.by)
         && (!("roll" in rule) || ACTION_END_ROLLS.includes(rule.roll)) && !((rule.by === "other") && (rule.roll === "save"))
         && (!("verb" in rule) || ACTION_END_VERBS.includes(rule.verb))
         && (!("status" in rule) || ((rule.by === "bearer") && ACTION_END_STATUSES.includes(rule.status)))
         && Object.keys(rule).every(k => ["by", "roll", "verb", "status"].includes(k));
-      if ( !ok ) errors.push(`${at}actionEnds.${id} : { by: ${ACTION_END_BY.join(" | ")}, roll?: ${ACTION_END_ROLLS.join(" | ")} (pas « save » pour « other »), verb?: ${ACTION_END_VERBS.join(" | ")}, status?: ${ACTION_END_STATUSES.join(" | ")} (porteur) }`);
+      if ( !ok ) errors.push(`${at}actionEnds.${id}: { by: ${ACTION_END_BY.join(" | ")}, roll?: ${ACTION_END_ROLLS.join(" | ")} (not "save" for "other"), verb?: ${ACTION_END_VERBS.join(" | ")}, status?: ${ACTION_END_STATUSES.join(" | ")} (bearer) }`);
     }
   }
   if ( "effectThen" in entry ) {
     const e = entry.effectThen;
-    if ( !isObject(e) || !Object.keys(e).length ) errors.push(`${at}effectThen : { id d'effet: id d'effet }`);
+    if ( !isObject(e) || !Object.keys(e).length ) errors.push(`${at}effectThen: { effect id: effect id }`);
     else for ( const [id, next] of Object.entries(e) ) {
-      if ( !isId(id) || !isId(next) || (id === next) ) errors.push(`${at}effectThen.${id} : deux ids d'effets distincts (16 caractères)`);
+      if ( !isId(id) || !isId(next) || (id === next) ) errors.push(`${at}effectThen.${id}: two distinct effect ids (16 characters)`);
     }
   }
   if ( ("smite" in entry) && !(isObject(entry.smite) && isId(entry.smite.damage)
     && ["fiends", "save", "effect"].every(k => !(k in entry.smite) || isId(entry.smite[k]))
-    && Object.keys(entry.smite).every(k => ["damage", "fiends", "save", "effect"].includes(k))) ) errors.push(`${at}smite : { damage, fiends?, save?, effect? } (ids d'activités, id d'effet)`);
+    && Object.keys(entry.smite).every(k => ["damage", "fiends", "save", "effect"].includes(k))) ) errors.push(`${at}smite: { damage, fiends?, save?, effect? } (activity ids, effect id)`);
   if ( ("metamagic" in entry) && !(isObject(entry.metamagic) && isId(entry.metamagic.activity) && METAMAGIC_KINDS.includes(entry.metamagic.kind)
-    && Object.keys(entry.metamagic).every(k => ["activity", "kind"].includes(k))) ) errors.push(`${at}metamagic : { activity, kind: ${METAMAGIC_KINDS.join(" | ")} }`);
+    && Object.keys(entry.metamagic).every(k => ["activity", "kind"].includes(k))) ) errors.push(`${at}metamagic: { activity, kind: ${METAMAGIC_KINDS.join(" | ")} }`);
   if ( ("rollBonus" in entry) && !(isObject(entry.rollBonus) && isId(entry.rollBonus.activity) && Array.isArray(entry.rollBonus.on)
     && entry.rollBonus.on.length && entry.rollBonus.on.every(k => ROLL_BONUS_ON.includes(k))
     && ["skills", "statuses"].every(key => !(key in entry.rollBonus) || (Array.isArray(entry.rollBonus[key]) && entry.rollBonus[key].length && entry.rollBonus[key].every(k => (typeof k === "string") && k)))
-    && Object.keys(entry.rollBonus).every(k => ["activity", "on", "skills", "statuses"].includes(k))) ) errors.push(`${at}rollBonus : { activity, on: [${ROLL_BONUS_ON.join(" | ")}], skills?, statuses? }`);
+    && Object.keys(entry.rollBonus).every(k => ["activity", "on", "skills", "statuses"].includes(k))) ) errors.push(`${at}rollBonus: { activity, on: [${ROLL_BONUS_ON.join(" | ")}], skills?, statuses? }`);
   if ( ("transpose" in entry) && !(isObject(entry.transpose) && (typeof entry.transpose.summon === "string") && entry.transpose.summon
-    && Object.keys(entry.transpose).every(k => k === "summon")) ) errors.push(`${at}transpose : { summon } (identifiant de l'item d'invocation)`);
+    && Object.keys(entry.transpose).every(k => k === "summon")) ) errors.push(`${at}transpose: { summon } (identifier of the summoning item)`);
   if ( ("portent" in entry) && !(isObject(entry.portent) && Number.isInteger(entry.portent.dice) && (entry.portent.dice > 0)
-    && Object.keys(entry.portent).every(k => k === "dice")) ) errors.push(`${at}portent : { dice } (entier positif)`);
+    && Object.keys(entry.portent).every(k => k === "dice")) ) errors.push(`${at}portent: { dice } (positive integer)`);
   if ( ("hitRider" in entry) && !(isObject(entry.hitRider) && Object.keys(entry.hitRider).length
     && Object.keys(entry.hitRider).every(k => ["damage", "effect", "status", "sizeAtMost", "slot", "weapon", "oncePerTurn", "save", "item", "pays", "weaponDamage", "whileActive"].includes(k))
     && (!("whileActive" in entry.hitRider) || (entry.hitRider.whileActive === true))
@@ -1343,34 +1343,34 @@ function validateRogue(entry, at, errors) {
     && (!("item" in entry.hitRider) || (typeof entry.hitRider.item === "string"))
     && (!("status" in entry.hitRider) || (typeof entry.hitRider.status === "string"))
     && (!("sizeAtMost" in entry.hitRider) || SIZES.includes(entry.hitRider.sizeAtMost))) ) {
-    errors.push(`${at}hitRider : { damage?, effect?, status?, sizeAtMost?, slot?: "pact", weapon?, oncePerTurn?: true, save?, item?, pays?, weaponDamage?: true }`);
+    errors.push(`${at}hitRider: { damage?, effect?, status?, sizeAtMost?, slot?: "pact", weapon?, oncePerTurn?: true, save?, item?, pays?, weaponDamage?: true }`);
   }
   if ( ("flurry" in entry) && !(isObject(entry.flurry) && isId(entry.flurry.activity) && Number.isInteger(entry.flurry.strikes) && (entry.flurry.strikes > 0)
     && (!("weapons" in entry.flurry) || (typeof entry.flurry.weapons === "boolean"))
     && Object.keys(entry.flurry).every(k => ["activity", "strikes", "weapons"].includes(k))) ) {
-    errors.push(`${at}flurry : { activity, strikes, weapons? }`);
+    errors.push(`${at}flurry: { activity, strikes, weapons? }`);
   }
   if ( ("stunningStrike" in entry) && !(isObject(entry.stunningStrike) && isId(entry.stunningStrike.activity) && (typeof entry.stunningStrike.focus === "string")) ) {
-    errors.push(`${at}stunningStrike : { activity, focus }`);
+    errors.push(`${at}stunningStrike: { activity, focus }`);
   }
   if ( ("openHand" in entry) && !(isObject(entry.openHand) && Object.keys(entry.openHand).length && Object.values(entry.openHand).every(isId)) ) {
-    errors.push(`${at}openHand : { clé: id d'activité }`);
+    errors.push(`${at}openHand: { key: activity id }`);
   }
   if ( ("byWounds" in entry) && !(isObject(entry.byWounds) && isId(entry.byWounds.healthy) && isId(entry.byWounds.wounded)
-    && (Object.keys(entry.byWounds).length === 2)) ) errors.push(`${at}byWounds : { healthy, wounded } (ids d'activités)`);
-  if ( ("rage" in entry) && !(isObject(entry.rage) && isId(entry.rage.effect) && (Object.keys(entry.rage).length === 1)) ) errors.push(`${at}rage : { effect } (id d'effet)`);
+    && (Object.keys(entry.byWounds).length === 2)) ) errors.push(`${at}byWounds: { healthy, wounded } (activity ids)`);
+  if ( ("rage" in entry) && !(isObject(entry.rage) && isId(entry.rage.effect) && (Object.keys(entry.rage).length === 1)) ) errors.push(`${at}rage: { effect } (effect id)`);
   if ( ("relentless" in entry) && !(isObject(entry.relentless) && isId(entry.relentless.activity) && (Object.keys(entry.relentless).length === 1)) ) {
-    errors.push(`${at}relentless : { activity } (id d'activité)`);
+    errors.push(`${at}relentless: { activity } (activity id)`);
   }
-  if ( ("thrownDamage" in entry) && !(Number.isInteger(entry.thrownDamage) && (entry.thrownDamage > 0)) ) errors.push(`${at}thrownDamage : entier positif`);
+  if ( ("thrownDamage" in entry) && !(Number.isInteger(entry.thrownDamage) && (entry.thrownDamage > 0)) ) errors.push(`${at}thrownDamage: positive integer`);
   if ( ("cunningStrikeMax" in entry) && !(Number.isInteger(entry.cunningStrikeMax) && (entry.cunningStrikeMax >= 1)) ) {
-    errors.push(`${at}cunningStrikeMax : entier ≥ 1`);
+    errors.push(`${at}cunningStrikeMax: integer ≥ 1`);
   }
 }
 
 /** Les erreurs d'une table entière `{ identifiant: entrée }`. */
 export function validateTable(table, { facts={} }={}) {
-  if ( !isObject(table) ) return ["la table est un objet { identifiant: entrée }"];
+  if ( !isObject(table) ) return ["the table is an object { identifier: entry }"];
   return Object.entries(table).flatMap(([id, entry]) => validateEntry(entry, { facts, at: `${id}.` }));
 }
 

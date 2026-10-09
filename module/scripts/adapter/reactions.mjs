@@ -203,7 +203,7 @@ export async function askReaction(actor, payload) {
     if ( userId && (userId !== game.user.id) ) return await game.users.get(userId).query(REACTION_QUERY, payload, { timeout: REACTION_TIMEOUT });
     return await handleReactionQuery(payload);
   } catch(err) {
-    console.warn(`${MODULE_ID} | réaction de ${actor.name} : pas de réponse`, err);
+    console.warn(`${MODULE_ID} | reaction of ${actor.name}: no answer`, err);
     return null;
   }
 }
@@ -273,7 +273,7 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
     activity = weapon;
   }
   if ( option.approach && target && approachSource ) {
-    await approachSource(actor, await fromUuid(target), activity).catch(err => console.error(`${MODULE_ID} | approche de la réaction`, err));
+    await approachSource(actor, await fromUuid(target), activity).catch(err => console.error(`${MODULE_ID} | reaction approach`, err));
   }
   // §19.6 : « … contre cet ennemi, avec l'avantage » (Riposte) — marque lue au jet qui suit, sur ce client.
   if ( option.advantage ) markReactionAdvantage(option.activity, option.name);
@@ -346,7 +346,7 @@ async function rollInClear(actor, formula, flavorKey, item) {
     await roll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }), flavor: game.i18n.format(flavorKey, { item }) });
     return roll.total;
   } catch(err) {
-    console.warn(`${MODULE_ID} | ${item} : dé illisible`, err);
+    console.warn(`${MODULE_ID} | ${item}: unreadable die`, err);
     return 0;
   }
 }

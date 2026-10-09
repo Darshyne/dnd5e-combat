@@ -29,6 +29,6 @@ export function wardAtZero(actor, through, updates) {
   const effect = deathWardOf(actor);
   if ( !effect ) return null;
   updates["system.attributes.hp.value"] = 1;
-  effect.delete().catch(err => console.warn(`${MODULE_ID} | ${effect.name} : effet non retiré`, err));
+  effect.delete().catch(err => console.warn(`${MODULE_ID} | ${effect.name}: effect not removed`, err));
   return effect;
 }

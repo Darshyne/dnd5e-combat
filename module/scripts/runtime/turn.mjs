@@ -359,13 +359,13 @@ async function onUsageMessage(message) {
     const left = Math.max(0, (before.flurry ?? 0) - 1);
     await writeBudget(combatant, { ...before, flurry: left, flurryAny: left ? !!before.flurryAny : false });
     await message.setFlag(MODULE_ID, "flurry", true);
-    log(`${combatant.name} : frappe du Déluge de coups (${Math.max(0, (before.flurry ?? 0) - 1)} restante(s))`);
+    log(`${combatant.name}: Flurry of Blows strike (${Math.max(0, (before.flurry ?? 0) - 1)} left)`);
     return;
   }
   // §21 : Fougue — « une action supplémentaire » ; l'activité (« spéciale ») ne coûte rien.
   if ( contentOf(activity.item).entry?.grantsAction === true ) {
     await writeBudget(combatant, { ...before, action: (before.action ?? 0) + 1 });
-    log(`${combatant.name} : une action de plus (${activity.item.name})`);
+    log(`${combatant.name}: one more action (${activity.item.name})`);
     return;
   }
   if ( request && (!request.cost || (request.cost === "free")) ) return;   // §16.27 : un projectile enchaîné ne coûte rien
@@ -388,14 +388,14 @@ async function onUsageMessage(message) {
   if ( movement ) {
     const disengage = (typeof shift === "string") || (shift.disengage !== false);
     after = { ...after, bonusMove: (Number(after.bonusMove) || 0) + (movement.speed / 2), ...(disengage ? { disengaged: true } : {}) };
-    log(`${combatant.name} : +${movement.speed / 2} ${movement.units} de déplacement${disengage ? " sans attaque d'opportunité" : ""} (${activity.item.name})`);
+    log(`${combatant.name}: +${movement.speed / 2} ${movement.units} of movement${disengage ? " without provoking Opportunity Attacks" : ""} (${activity.item.name})`);
   }
   // §18.15 : « se déplace … sans provoquer d'attaque d'opportunité » — le reste du tour, comme après Se désengager.
   if ( !after.disengaged && freesMovement(activity.item) ) after = { ...after, disengaged: true };
   await writeBudget(combatant, after);
   // Consigné sur la carte : une annulation avant tout jet (runtime/cancel.mjs) rend exactement cette dépense.
   await message.setFlag(MODULE_ID, "spent", { combatant: combatant.id, before, after, offhand: !!request?.offhand });
-  log(`${combatant.name} : ${kind ?? (request.offhand ? "main secondaire" : request.cost)} (${activity.item.name})`);
+  log(`${combatant.name}: ${kind ?? (request.offhand ? "off hand" : request.cost)} (${activity.item.name})`);
 }
 
 /** Délai d'attente de la dépense consignée sur la carte d'utilisation, quand le jet la suit de près. */
@@ -429,7 +429,7 @@ async function onAttackMessage(message) {
   const after = spendUse(before, request, { isOwnTurn: isOwnTurn(combatant), attacksPerAction: attacksPerAction(combatant.actor), turnKey: currentTurnKey() });
   await writeBudget(combatant, after);
   await usage.setFlag(MODULE_ID, "spent", { combatant: combatant.id, before, after, offhand: true });
-  log(`${combatant.name} : main secondaire choisie au jet, dépense corrigée (${activity.item.name})`);
+  log(`${combatant.name}: off hand chosen at the roll, spending corrected (${activity.item.name})`);
 }
 
 /** Carte supprimée par une annulation avant tout jet : la dépense qu'elle avait faite est rendue. */
@@ -440,7 +440,7 @@ async function onUsageCancelled(message) {
   if ( !combatant ) return;
   await writeBudget(combatant, refundUse(readBudget(combatant), spent.before, spent.after));
   if ( spent.command ) await refundCommand(combatant, spent.command);
-  log(`${combatant.name} : dépense rendue (action annulée avant tout jet)`);
+  log(`${combatant.name}: spending refunded (action cancelled before any roll)`);
 }
 
 async function resetBudget(combatant) {
@@ -450,21 +450,21 @@ async function resetBudget(combatant) {
 /* -------------------------------------------- */
 
 export function registerTurn() {
-  route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "légalité de l'utilisation" });
-  route("dnd5e.postUseActivity", activity => markUsedThisTurn(activity), { label: "limite « une fois par tour » non notée" });
-  route("dnd5e.preRollAttackV2", onPreRollAttack, { cancellable: true, label: "mode d'attaque présélectionné" });
-  route("dnd5e.postAttackRollConfiguration", onPostAttackRollConfiguration, { cancellable: true, label: "portée du jet d'attaque" });
+  route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "use legality" });
+  route("dnd5e.postUseActivity", activity => markUsedThisTurn(activity), { label: "\"once per turn\" limit not recorded" });
+  route("dnd5e.preRollAttackV2", onPreRollAttack, { cancellable: true, label: "attack mode preselected" });
+  route("dnd5e.postAttackRollConfiguration", onPostAttackRollConfiguration, { cancellable: true, label: "attack roll range" });
 
   route("createChatMessage", message => (message.type === "usage") ? onUsageMessage(message)
     : (message.type === "attack") ? onAttackMessage(message) : null,
-    { executor: true, label: "budget : dépense non consignée" });
+    { executor: true, label: "budget: spending not recorded" });
 
   route("deleteChatMessage", message => (message.type === "usage") ? onUsageCancelled(message) : null,
-    { executor: true, label: "budget : dépense rendue à l'annulation" });
+    { executor: true, label: "budget: spending refunded on cancel" });
 
   // La réaction et le reste se récupèrent au début du tour du combattant.
   route("combatTurnChange", (combat, prior, current) => resetBudget(combat.combatants.get(current.combatantId)),
-    { executor: true, label: "budget : remise à neuf du tour" });
+    { executor: true, label: "budget: turn reset" });
   route("combatStart", combat => Promise.all(combat.combatants.map(resetBudget)),
-    { executor: true, label: "budget : remise à neuf du combat" });
+    { executor: true, label: "budget: combat reset" });
 }

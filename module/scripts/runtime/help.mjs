@@ -28,7 +28,7 @@ async function onUsage(message) {
   const target = targets[0];
   if ( !target ) return ui.notifications.info(loc("Soutien.SansCible", { name: helper.name }));
   await markHelped(target, helper, { name: loc("Soutien.Marque", { name: helper.name }), img: "icons/svg/aura.svg" });
-  log(`soutien : ${helper.name} distrait ${target.name}`);
+  log(`help: ${helper.name} distracts ${target.name}`);
 }
 
 async function onAttack(message) {
@@ -39,7 +39,7 @@ async function onAttack(message) {
     const used = helpMarksUsedBy(attacker, target);
     if ( !used.length ) continue;
     await target.actor.deleteEmbeddedDocuments("ActiveEffect", used.map(e => e.id));
-    log(`soutien consommé : ${attacker.name} contre ${target.name}`);
+    log(`help used: ${attacker.name} against ${target.name}`);
   }
 }
 
@@ -53,11 +53,11 @@ async function dropMarks(combat, helper=null) {
 }
 
 export function registerHelp() {
-  const executor = { executor: true, label: "soutien" };
+  const executor = { executor: true, label: "help" };
   route("createChatMessage", message => (message.type === "usage") ? onUsage(message)
     : (message.type === "attack") ? onAttack(message) : null, executor);
   // « Avant le début de votre prochain tour » : au tour de l'aidant, ses marques tombent.
   route("combatTurnChange", (combat, prior, current) => dropMarks(combat, combat.combatants.get(current.combatantId)?.token ?? null),
-    { executor: true, label: "soutien : fin au tour de l'aidant" });
-  route("deleteCombat", combat => dropMarks(combat), { executor: true, label: "soutien : fin du combat" });
+    { executor: true, label: "help: ends on the helper's turn" });
+  route("deleteCombat", combat => dropMarks(combat), { executor: true, label: "help: end of combat" });
 }

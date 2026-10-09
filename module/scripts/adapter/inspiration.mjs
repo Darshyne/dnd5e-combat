@@ -67,7 +67,7 @@ export async function offerInspiration(actor, { what, total, needed }) {
   if ( answer?.id !== "yes" ) return 0;
   const roll = await new Roll(inspiration.formula).evaluate();
   await roll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }), flavor: t("Carte", { name: actor.name, bard: inspiration.bard }) });
-  await inspiration.effect.delete().catch(err => console.warn(`${MODULE_ID} | inspiration non retirée`, err));
+  await inspiration.effect.delete().catch(err => console.warn(`${MODULE_ID} | inspiration not removed`, err));
   return roll.total;
 }
 

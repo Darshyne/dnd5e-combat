@@ -22,7 +22,7 @@ const perf = createPerf({
     const now = Date.now();
     if ( (now - (warned.get(key) ?? 0)) < 10000 ) return;
     warned.set(key, now);
-    console.warn(`${MODULE_ID} | lent : ${row.hook} « ${row.label} » ${Math.round(ms)} ms (seuil ${perf.threshold} ms ; ${row.slow} fois sur ${row.calls})`);
+    console.warn(`${MODULE_ID} | slow: ${row.hook} "${row.label}" ${Math.round(ms)} ms (threshold ${perf.threshold} ms; ${row.slow} times out of ${row.calls})`);
   }
 });
 
@@ -51,7 +51,7 @@ export const perfApi = Object.freeze({
   longTasks: () => ({ count: long.count, totalMs: Math.round(long.totalMs), maxMs: Math.round(long.maxMs), sinceMinutes: Math.round((Date.now() - long.since) / 60000) }),
   table(limit=25) {
     console.table(perf.report().slice(0, limit));
-    console.log(`${MODULE_ID} | tâches longues du navigateur :`, perfApi.longTasks());
+    console.log(`${MODULE_ID} | browser long tasks:`, perfApi.longTasks());
   },
   reset() {
     perf.reset();

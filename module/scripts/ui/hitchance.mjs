@@ -84,7 +84,7 @@ export function showHitChance(event, attacker, target, activity, { posA, outOfRe
   let info = null;
   if ( !outOfReach ) {
     try { info = hitChanceOf(attacker, target, activity, { posA, keys }); }
-    catch(err) { console.warn(`${MODULE_ID} | chance de toucher`, err); }
+    catch(err) { console.warn(`${MODULE_ID} | hit chance`, err); }
     if ( !info ) return hideHitChance();
   }
 
@@ -111,8 +111,8 @@ export function showHitChance(event, attacker, target, activity, { posA, outOfRe
     if ( info.system.disadvantage ) disadvantage.push(loc("Toucher.Fiche"));
     if ( info.keys.advantage ) advantage.push(loc("Toucher.Touche"));
     if ( info.keys.disadvantage ) disadvantage.push(loc("Toucher.Touche"));
-    if ( advantage.length ) el.append(line("advantage", `${loc("Avantage")} : ${advantage.join(", ")}`));
-    if ( disadvantage.length ) el.append(line("disadvantage", `${loc("Desavantage")} : ${disadvantage.join(", ")}`));
+    if ( advantage.length ) el.append(line("advantage", loc("LabelValue", { label: loc("Avantage"), value: advantage.join(", ") })));
+    if ( disadvantage.length ) el.append(line("disadvantage", loc("LabelValue", { label: loc("Desavantage"), value: disadvantage.join(", ") })));
     if ( advantage.length && disadvantage.length ) el.append(line("detail", loc("Toucher.SAnnulent")));
   }
   el.hidden = false;
@@ -130,7 +130,7 @@ export function showSaveChance(event, caster, target, activity, { outOfReach=fal
   let info = null;
   if ( !outOfReach ) {
     try { info = saveChanceOf(caster, target, activity); }
-    catch(err) { console.warn(`${MODULE_ID} | chance d'échec de la sauvegarde`, err); }
+    catch(err) { console.warn(`${MODULE_ID} | saving throw failure chance`, err); }
     if ( !info ) return hideHitChance();
   }
   const el = element();
@@ -153,8 +153,8 @@ export function showSaveChance(event, caster, target, activity, { outOfReach=fal
     if ( info.autoFail ) el.append(line("disadvantage", loc("Sauvegarde.AutoEchec",
       { status: game.i18n.localize(CONFIG.DND5E.conditionTypes[info.autoFail]?.name ?? info.autoFail) })));
     const reason = key => loc(`Sauvegarde.Raison.${key}`);
-    if ( info.advantage.length ) el.append(line("advantage", `${loc("Avantage")} : ${info.advantage.map(reason).join(", ")}`));
-    if ( info.disadvantage.length ) el.append(line("disadvantage", `${loc("Desavantage")} : ${info.disadvantage.map(reason).join(", ")}`));
+    if ( info.advantage.length ) el.append(line("advantage", loc("LabelValue", { label: loc("Avantage"), value: info.advantage.map(reason).join(", ") })));
+    if ( info.disadvantage.length ) el.append(line("disadvantage", loc("LabelValue", { label: loc("Desavantage"), value: info.disadvantage.map(reason).join(", ") })));
     if ( info.advantage.length && info.disadvantage.length ) el.append(line("detail", loc("Toucher.SAnnulent")));
     if ( (info.legendary > 0) && (level === "full") ) el.append(line("detail", loc("Sauvegarde.Legendaire", { n: info.legendary })));
   }

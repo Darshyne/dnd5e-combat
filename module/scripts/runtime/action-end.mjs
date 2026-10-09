@@ -34,12 +34,12 @@ async function handleActionEnd({ effect: uuid }) {
   if ( ending.rule.roll === "save" ) {
     const origin = await fromUuid(effect.system?.origin?.activity ?? "");
     const activity = saveActivityOf(origin ?? ending.item.system.activities?.find?.(a => a.type === "save") ?? null);
-    if ( (activity?.type !== "save") || !token ) { log(`${ending.item.name} : sauvegarde par une action impossible (activité de sauvegarde ou token introuvable)`); return false; }
-    log(`${ending.item.name} : ${actor.name} rejoue la sauvegarde (action)`);
+    if ( (activity?.type !== "save") || !token ) { log(`${ending.item.name}: saving throw as an action impossible (save activity or token not found)`); return false; }
+    log(`${ending.item.name}: ${actor.name} repeats the saving throw (action)`);
     await resaveAgainst(effect, activity, token, "action");
     return true;
   }
-  log(`${ending.item.name} : « ${effect.name} » cesse sur ${actor.name} (action)`);
+  log(`${ending.item.name}: "${effect.name}" ends on ${actor.name} (action)`);
   if ( token ) notice(token, loc("Retour.FinEffet", { item: effect.name }), "ended");
   await effect.delete();
   // §49 : « en vous infligeant l'état À terre et en vous roulant par terre » (feu grégeois).
@@ -97,11 +97,11 @@ export async function endFor(token, target, ending) {
       : await token.actor.rollAbilityCheck({ ability, target: dc }, { configure: false });
     const total = rolls?.[0]?.total;
     if ( !Number.isFinite(total) ) return false;
-    log(`${token.name} ${total >= dc ? "libère" : "ne libère pas"} ${target.name} de ${ending.item.name} (${total} contre DD ${dc})`);
+    log(`${token.name} ${total >= dc ? "frees" : "fails to free"} ${target.name} from ${ending.item.name} (${total} vs DC ${dc})`);
     if ( total < dc ) { ui.notifications.info(loc("Fin.Rate", { name: token.name, target: target.name, source: ending.item.name })); return false; }
   }
   const done = (await askExecutor(ending.effect)) === true;
-  if ( done ) log(`${token.name} met fin à ${ending.item.name} sur ${target.name}`);
+  if ( done ) log(`${token.name} ends ${ending.item.name} on ${target.name}`);
   return done;
 }
 

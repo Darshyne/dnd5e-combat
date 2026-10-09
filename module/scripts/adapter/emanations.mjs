@@ -55,7 +55,7 @@ export function emanationsOf(actor) {
     const activity = actingActivity(item, rule);
     const reach = activity ? radiusOf(activity, rule) : null;
     if ( !reach ) {
-      console.warn(`${MODULE_ID} | émanation « ${item.name} » de ${actor.name} ignorée : ${activity ? "rayon inconnu" : "aucune activité qui agit"}`);
+      console.warn(`${MODULE_ID} | emanation "${item.name}" of ${actor.name} ignored: ${activity ? "unknown radius" : "no activity that acts"}`);
       continue;
     }
     out.push({ item, activity, key: item.system.identifier || item.id, on: rule.on, affects: rule.affects ?? "any",

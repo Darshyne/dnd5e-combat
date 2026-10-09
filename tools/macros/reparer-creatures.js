@@ -15,10 +15,12 @@
  * est déjà réparé n'est plus proposé.
  */
 (async () => {
-  if ( !game.user.isGM ) return ui.notifications.warn("Réparation des créatures : réservé au MJ.");
+  // Textes : clés DND5ECOMBAT.Macro.RepairCreatures.* des fichiers de langue du module.
+  const t = (key, data) => data ? game.i18n.format(`DND5ECOMBAT.Macro.RepairCreatures.${key}`, data) : game.i18n.localize(`DND5ECOMBAT.Macro.RepairCreatures.${key}`);
+  if ( !game.user.isGM ) return ui.notifications.warn(t("GmOnly"));
   const engine = game.modules.get("dnd5e-combat");
   const basics = engine?.active ? engine.api?.basics : null;
-  if ( !basics?.data ) return ui.notifications.error("Réparation des créatures : le moteur dnd5e-combat 0.170.0 ou plus récent doit être actif.");
+  if ( !basics?.data ) return ui.notifications.error(t("EngineRequired"));
 
   const RENAMED = { "tactique-de-meute": "pack-tactics", "esquive-instinctive": "uncanny-dodge", "ascendance-feerique": "fey-ancestry",
     "forme-brumeuse": "misty-form" };
@@ -49,10 +51,10 @@
 
   const renames = rows.filter(r => r.kind === "rename").length;
   const mode = await foundry.applications.api.DialogV2.wait({
-    window: { title: "Réparation des créatures" },
-    content: `<p>${renames} capacité(s) à renommer pour le moteur ; ${rows.length - renames} action(s) de base CPR à remplacer par
-      celles du moteur, sur ${new Set(rows.filter(r => r.kind === "basic").map(r => r.actor.id)).size} PNJ.</p><p>« Rapport » ne modifie rien.</p>`,
-    buttons: [{ action: "report", label: "Rapport", default: true }, { action: "repair", label: "Réparer" }],
+    window: { title: t("Title") },
+    content: `<p>${t("DialogSummary", { renames, basics: rows.length - renames, npcs: new Set(rows.filter(r => r.kind === "basic").map(r => r.actor.id)).size })}</p>`
+      + `<p>${t("ReportChangesNothing")}</p>`,
+    buttons: [{ action: "report", label: t("Report"), default: true }, { action: "repair", label: t("Repair") }],
     rejectClose: false
   });
   if ( !mode ) return;
@@ -61,9 +63,9 @@
   let repaired = 0;
   for ( const row of rows ) {
     const where = `<b>${row.actor.name}</b> — ${row.item.name}`;
-    const what = row.kind === "rename" ? `identifiant ${row.item.system.identifier || "(vide)"} → <code>${row.to}</code>`
-      : `copie CPR → action de base du moteur (${row.to})`;
-    if ( mode === "report" ) { lines.push(`<li>${where} : ${what}</li>`); continue; }
+    const what = row.kind === "rename" ? t("WhatRename", { from: row.item.system.identifier || t("Empty"), to: row.to })
+      : t("WhatBasic", { to: row.to });
+    if ( mode === "report" ) { lines.push(`<li>${t("Line", { where, what })}</li>`); continue; }
     try {
       if ( row.kind === "rename" ) await row.item.update({ "system.identifier": row.to });
       else {
@@ -73,15 +75,15 @@
         await row.item.delete();
       }
       repaired++;
-      lines.push(`<li>${where} : ${what}</li>`);
+      lines.push(`<li>${t("Line", { where, what })}</li>`);
     } catch(err) {
-      console.error("Réparation des créatures |", row.actor.name, row.item.name, err);
-      lines.push(`<li>${where} : <b>échec</b> — ${err.message}</li>`);
+      console.error("Repair creatures |", row.actor.name, row.item.name, err);
+      lines.push(`<li>${t("LineFailed", { where, error: err.message })}</li>`);
     }
   }
   const head = (mode === "report")
-    ? `<p><b>Réparation des créatures — rapport</b> : rien n'a été modifié.</p>`
-    : `<p><b>Réparation des créatures</b> : ${repaired} réparation(s).</p>`;
-  await ChatMessage.create({ content: `${head}<ul>${lines.join("") || "<li>Rien à signaler.</li>"}</ul>`, whisper: [game.user.id],
-    speaker: { alias: "Réparation des créatures" } });
+    ? `<p>${t("HeadReport")}</p>`
+    : `<p>${t("HeadDone", { count: repaired })}</p>`;
+  await ChatMessage.create({ content: `${head}<ul>${lines.join("") || `<li>${t("NothingToReport")}</li>`}</ul>`, whisper: [game.user.id],
+    speaker: { alias: t("Title") } });
 })();

@@ -145,7 +145,7 @@ async function swapForm(actor, phase) {
   const token = tokenOf(actor);
   const document = token?.document ?? token ?? null;
   if ( !target || !document ) {
-    console.warn(`${MODULE_ID} | ${actor.name} : changement de forme impossible (${target ? "pas de token" : `forme introuvable : ${phase.uuid}`})`);
+    console.warn(`${MODULE_ID} | ${actor.name}: shape change impossible (${target ? "no token" : `form not found: ${phase.uuid}`})`);
     return null;
   }
   const from = actor.name;

@@ -65,8 +65,8 @@ describe("objet piloté : schéma", () => {
   });
   it("refuse ce qui cloche", () => {
     expect(validateEntry({ summon: { initiative: "after", endsSpell: 1, pilot: { cost: "reaction", distance: -1, units: "", onCast: "x", speed: 3 } } })).toEqual([
-      "summon.endsSpell : true ou absent", "summon.pilot.cost : action, bonus, free", "summon.pilot.distance : nombre positif ou nul",
-      "summon.pilot.units : unité requise", "summon.pilot.onCast : use, command", "summon.pilot.speed : clé inconnue"
+      "summon.endsSpell: true or absent", "summon.pilot.cost: action, bonus, free", "summon.pilot.distance: non-negative number",
+      "summon.pilot.units: unit required", "summon.pilot.onCast: use, command", "summon.pilot.speed: unknown key"
     ]);
   });
 });
@@ -75,14 +75,14 @@ describe("Sphère de feu et Main de Bigby (§16.15) : schéma", () => {
   it("pulse, endsAtZero, occupies", () => {
     expect(validateEntry({ summon: { initiative: "after", endsAtZero: true, pulse: { item: "flames", radius: 5, units: "ft" }, pilot: { cost: "bonus", distance: 60, units: "ft", occupies: false } } })).toEqual([]);
     expect(validateEntry({ summon: { initiative: "after", endsAtZero: 1, pulse: { item: "", radius: 0, units: "", at: 1 }, pilot: { cost: "bonus", distance: 60, units: "ft", occupies: true } } })).toEqual([
-      "summon.endsAtZero : true ou absent", "summon.pulse.item : identifiant d'item requis", "summon.pulse.radius : nombre positif",
-      "summon.pulse.units : unité requise", "summon.pulse.at : clé inconnue", "summon.pilot.occupies : false ou absent"
+      "summon.endsAtZero: true or absent", "summon.pulse.item: item identifier required", "summon.pulse.radius: positive number",
+      "summon.pulse.units: unit required", "summon.pulse.at: unknown key", "summon.pilot.occupies: false or absent"
     ]);
   });
   it("poussée : distance en formule, la source qui suit", () => {
     const push = d => validateEntry({ triggers: [{ on: "failedSave", do: [{ type: "move", mode: "push", units: "ft", ...d }] }] });
     expect(push({ distance: "5 + 5 * @flags.dnd5e.summon.mod", follow: true })).toEqual([]);
-    expect(push({ distance: " ", follow: "oui" })).toEqual(["triggers[0].do[0].distance : nombre positif ou formule", "triggers[0].do[0].follow : booléen"]);
+    expect(push({ distance: " ", follow: "oui" })).toEqual(["triggers[0].do[0].distance: positive number or formula", "triggers[0].do[0].follow: boolean"]);
   });
 });
 
@@ -90,7 +90,7 @@ describe("Œil magique et Lumières dansantes (§16.17) : schéma", () => {
   it("initiative « none », commande partagée, grappe, laisse", () => {
     expect(validateEntry({ summon: { initiative: "none", pilot: { cost: "bonus", distance: 60, units: "ft", shared: true, cluster: { distance: 20, units: "ft" }, leash: true } } })).toEqual([]);
     expect(validateEntry({ summon: { initiative: "none", pilot: { cost: "bonus", distance: 60, units: "ft", shared: 1, cluster: { distance: 0 }, leash: "oui" } } })).toEqual([
-      "summon.pilot.shared : true ou absent", "summon.pilot.leash : true ou absent", "summon.pilot.cluster : { distance, units }"
+      "summon.pilot.shared: true or absent", "summon.pilot.leash: true or absent", "summon.pilot.cluster: { distance, units }"
     ]);
   });
 });
@@ -99,7 +99,7 @@ describe("Invocation d'animaux (§16.22) : schéma", () => {
   it("pilot free, pulse on/affects", () => {
     expect(validateEntry({ summon: { initiative: "none", pilot: { cost: "free", distance: 30, units: "ft" }, pulse: { item: "pack-damage", radius: 10, units: "ft", on: ["turnEnd", "enter", "moves"], affects: "enemy" } } })).toEqual([]);
     expect(validateEntry({ summon: { initiative: "none", pulse: { item: "x", radius: 10, units: "ft", on: ["start"], affects: "ally" } } })).toEqual([
-      "summon.pulse.on : turnEnd, enter, moves", "summon.pulse.affects : any, enemy"
+      "summon.pulse.on: turnEnd, enter, moves", "summon.pulse.affects: any, enemy"
     ]);
   });
 });

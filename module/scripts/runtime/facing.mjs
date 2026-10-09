@@ -59,6 +59,6 @@ export function registerFacing() {
     name: `DND5ECOMBAT.Reglage.${SETTING}.Nom`, hint: `DND5ECOMBAT.Reglage.${SETTING}.Aide`,
     scope: "world", config: true, type: Boolean, default: true
   });
-  route("refreshToken", onRefresh, { label: "orientation : l'image suit la marche" });
-  route("moveToken", onMove, { label: "orientation : rotation enregistrée à l'arrivée" });
+  route("refreshToken", onRefresh, { label: "facing: the image follows the movement" });
+  route("moveToken", onMove, { label: "facing: rotation saved on arrival" });
 }

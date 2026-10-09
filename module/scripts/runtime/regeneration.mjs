@@ -30,7 +30,7 @@ async function onApplyDamage(actor, amount, options) {
   const silvered = options?.[MODULE_ID]?.silveredTypes ?? [];
   if ( !regeneration || !stopsRegeneration(regeneration.stoppedBy, types, regeneration.silveredBy ?? [], silvered) ) return;
   await markStopped(actor, types);
-  log(`${actor.name} : ${regeneration.item.name} coupée pour son prochain tour (${types.join(", ")})`);
+  log(`${actor.name}: ${regeneration.item.name} stopped for their next turn (${types.join(", ")})`);
 }
 
 function onTurnChange(combat, prior, current) {
@@ -47,11 +47,11 @@ function onTurnChange(combat, prior, current) {
     if ( stopped ) await clearStopped(actor);
     if ( what === "dies" ) {
       await setDeathStatus(actor, "dead");
-      log(`${actor.name} : commence son tour à 0 PV sans régénérer → Mort`);
+      log(`${actor.name}: starts their turn at 0 Hit Points without regenerating -> Dead`);
     } else if ( what === "heal" ) {
       const n = await regenerate(actor, regeneration);
-      log(`${actor.name} : ${regeneration.item.name} +${n} PV`);
-    } else if ( stopped ) log(`${actor.name} : ${regeneration.item.name} ne fonctionne pas ce tour-ci`);
+      log(`${actor.name}: ${regeneration.item.name} +${n} Hit Points`);
+    } else if ( stopped ) log(`${actor.name}: ${regeneration.item.name} doesn't function this turn`);
   });
 }
 
@@ -61,13 +61,13 @@ async function onCreateEffect(effect) {
   if ( !actor || !effect.getFlag("dnd5e", "autoDowned") || !effect.statuses.has("dead") ) return;
   if ( await dropAutoDead(actor) ) {
     await ensureDowned(actor);
-    log(`${actor.name} : 0 PV, mais régénère — Inconscient, pas Mort`);
+    log(`${actor.name}: 0 Hit Points, but regenerates - Unconscious, not Dead`);
   }
 }
 
 export function registerRegeneration() {
-  route("createActiveEffect", onCreateEffect, { executor: true, label: "régénération : Mort d'office retirée" });
-  route("dnd5e.calculateDamage", onCalculateDamage, { label: "régénération : types de dégâts non lus" });
-  route("dnd5e.applyDamage", onApplyDamage, { label: "régénération : coupure non notée" });
-  route("combatTurnChange", onTurnChange, { executor: true, label: "régénération au début du tour" });
+  route("createActiveEffect", onCreateEffect, { executor: true, label: "regeneration: automatic Dead removed" });
+  route("dnd5e.calculateDamage", onCalculateDamage, { label: "regeneration: damage types not read" });
+  route("dnd5e.applyDamage", onApplyDamage, { label: "regeneration: stop not recorded" });
+  route("combatTurnChange", onTurnChange, { executor: true, label: "regeneration at start of turn" });
 }

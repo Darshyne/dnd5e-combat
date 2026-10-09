@@ -48,7 +48,7 @@ async function stopRage(actor, why) {
     content: `<p>${loc("Rage.Fin", { name: actor.name, why: loc(`Rage.Pourquoi.${why}`) })}</p>`,
     flags: { [MODULE_ID]: { rageEnded: { actor: actor.uuid, why } } }
   });
-  log(`${actor.name} : fin de la Rage (${why})`);
+  log(`${actor.name}: Rage ends (${why})`);
 }
 
 /* -------------------------------------------- */
@@ -116,10 +116,10 @@ function onZero(actor) {
       await actor.update({ "system.attributes.hp.value": hp });   // PV > 0 : Inconscient, échecs et Stabilisé retirés (runtime/death.mjs)
       const token = tokenOf(actor);
       if ( token ) notice(token, loc("Rage.Implacable", { name: actor.name, hp }), "gain");
-      log(`Rage implacable : ${actor.name} réussit (${total} contre DD ${dc}) et reste debout à ${hp} PV`);
+      log(`Relentless Rage: ${actor.name} succeeds (${total} vs DC ${dc}) and stays up at ${hp} HP`);
       return;
     }
-    log(`Rage implacable : ${actor.name} rate (${total} contre DD ${dc})`);
+    log(`Relentless Rage: ${actor.name} fails (${total} vs DC ${dc})`);
     await stopRage(actor, "etat");
     await ensureDowned(actor);
   });
@@ -135,7 +135,7 @@ async function beReckless(actor, token) {
   const found = barbarianRule(actor, "reckless");
   await actor.createEmbeddedDocuments("ActiveEffect", [markData("reckless", { source: token, target: token, weapon: found?.item ?? null, turnKey: currentTurnKey() })]);
   notice(token, loc("Botte.Retour.reckless"), "gain");
-  log(`${actor.name} : Témérité jusqu'au début de son prochain tour`);
+  log(`${actor.name}: Reckless Attack until the start of their next turn`);
 }
 
 function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
@@ -148,7 +148,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const record = reckless => actor.setFlag(MODULE_ID, "recklessTurn", { key: currentTurnKey(), reckless })
     .then(() => (reckless ? beReckless(actor, token) : null));
   if ( typeof decided === "boolean" ) {
-    if ( recklessChoice(actor) === null ) record(decided).catch(err => console.error(`${MODULE_ID} | Témérité`, err));
+    if ( recklessChoice(actor) === null ) record(decided).catch(err => console.error(`${MODULE_ID} | Reckless Attack`, err));
     return true;
   }
   if ( recklessChoice(actor) !== null ) return true;   // déjà décidé à ce tour
@@ -167,20 +167,20 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     if ( !game.user.targets.size ) for ( const t of targets ) t.setTarget(true, { releaseOthers: false });
     const config = { ...usageConfig, [MODULE_ID]: { ...(usageConfig?.[MODULE_ID] ?? {}), reckless } };
     activity.use(config, dialogConfig, messageConfig);
-  }).catch(err => console.error(`${MODULE_ID} | Témérité`, err));
+  }).catch(err => console.error(`${MODULE_ID} | Reckless Attack`, err));
   return false;
 }
 
 export function registerBarbarian() {
   route("createChatMessage", message => (["usage", "attack"].includes(message.type) ? onMessage(message) : null),
-    { executor: true, label: "Rage : entretien non noté" });
-  route("combatTurnChange", onTurnEnd, { executor: true, label: "Rage : fin non jugée" });
-  route("createActiveEffect", onEffectCreated, { executor: true, label: "Rage : fin sur état non jugée" });
+    { executor: true, label: "Rage: upkeep not recorded" });
+  route("combatTurnChange", onTurnEnd, { executor: true, label: "Rage: end not evaluated" });
+  route("createActiveEffect", onEffectCreated, { executor: true, label: "Rage: end on condition not evaluated" });
   route("updateActor", (actor, changed) => {
     if ( foundry.utils.getProperty(changed, "system.attributes.hp.value") === 0 ) return onZero(actor);
-  }, { executor: true, label: "Rage implacable non jouée" });
+  }, { executor: true, label: "Relentless Rage not played" });
   route("updateToken", (token, changed) => {
     if ( foundry.utils.getProperty(changed, "delta.system.attributes.hp.value") === 0 ) return onZero(token.actor);
-  }, { executor: true, label: "Rage implacable non jouée (token non lié)" });
-  route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "Témérité : question" });
+  }, { executor: true, label: "Relentless Rage not played (unlinked token)" });
+  route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "Reckless Attack: prompt" });
 }

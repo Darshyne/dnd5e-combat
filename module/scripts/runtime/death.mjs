@@ -24,38 +24,38 @@ function onTurnChange(combat, prior, current) {
   return enqueue(`turn:${token.uuid}`, async () => {
     if ( !deathSaveDue(actor) ) return;
     const who = await requestDeathSave(actor);
-    log(`${actor.name} : jet de sauvegarde contre la mort (${who === "player" ? "le joueur" : "le moteur"})`);
+    log(`${actor.name}: Death Saving Throw (${who === "player" ? "the player" : "the engine"})`);
   });
 }
 
 export function registerDeath() {
   CONFIG.queries[DEATH_QUERY] = handleDeathSaveQuery;
   // Sur le client qui applique les dégâts (il a le droit d'écrire l'acteur) : les échecs partent avec les dégâts.
-  route("dnd5e.preApplyDamage", planDamageAtZero, { label: "0 PV : échecs non comptés" });
+  route("dnd5e.preApplyDamage", planDamageAtZero, { label: "0 HP: failures not counted" });
   route("dnd5e.applyDamage", async (actor, amount, options) => {
     // §31 : Acharnement — la créature reste à 1 PV (adapter/species.mjs, via planDamageAtZero).
     const endured = options?.[MODULE_ID]?.endured;
     if ( endured ) {
-      log(`${actor.name} : ${endured}, reste à 1 PV`);
+      log(`${actor.name}: ${endured}, stays at 1 HP`);
       const token = actor.token ?? actor.getActiveTokens?.(false, true)?.[0] ?? null;
       if ( token ) notice(token, loc("Espece.Acharnement", { item: endured }), "gain");
     }
     const outcome = await settleDamageAtZero(actor, amount, options);
-    if ( outcome ) log(`${actor.name} : dégâts à 0 PV → ${outcome.stable ? "stabilisé par l'arme" : outcome.dead ? `mort (${outcome.reason})` : `${outcome.failures} échec(s)`}`);
-  }, { label: "0 PV : mort ou échec non posé" });
+    if ( outcome ) log(`${actor.name}: damage at 0 HP → ${outcome.stable ? "stabilized by the weapon" : outcome.dead ? `dead (${outcome.reason})` : `${outcome.failures} failure(s)`}`);
+  }, { label: "0 HP: death or failure not applied" });
   // Sur le client qui a lancé le jet (le joueur, ou le moteur).
   route("dnd5e.rollDeathSaveV2", (rolls, { outcome, subject }) => settleDeathSave(subject, outcome),
-    { label: "jet contre la mort : Stabilisé ou Mort non posé" });
-  route("combatTurnChange", onTurnChange, { executor: true, label: "jet contre la mort non demandé" });
+    { label: "Death Saving Throw: Stable or Dead not applied" });
+  route("combatTurnChange", onTurnChange, { executor: true, label: "Death Saving Throw not requested" });
   route("updateActor", async (actor, changed) => {
     const hp = foundry.utils.getProperty(changed, "system.attributes.hp.value");
     if ( hp > 0 ) return clearDeathMarks(actor);
     // §17.1 : à 0 PV, l'état est obligatoire (le système ne le pose qu'en combat, et selon un réglage).
     if ( (hp !== undefined) || (foundry.utils.getProperty(changed, "system.attributes.death.failure") !== undefined) ) {
       const status = await ensureDowned(actor, { afterUpdate: true });
-      if ( status ) log(`${actor.name} : 0 PV → ${status === "dead" ? "Mort" : "Inconscient"}`);
+      if ( status ) log(`${actor.name}: 0 HP → ${status === "dead" ? "Dead" : "Unconscious"}`);
     }
-  }, { executor: true, label: "Mort / Inconscient / Stabilisé non posés ou non retirés" });
+  }, { executor: true, label: "Dead / Unconscious / Stable not applied or not removed" });
   // Un token non lié dont on écrit les PV dans le token lui-même (`delta.system…`) : le cœur ne publie pas
   // `updateActor` dans ce cas (client/documents/actor-delta.mjs:219 ne tourne que pour une mise à jour de l'ActorDelta).
   route("updateToken", async (token, changed) => {
@@ -63,6 +63,6 @@ export function registerDeath() {
     if ( (hp === undefined) || !token.actor ) return;
     if ( hp > 0 ) return clearDeathMarks(token.actor);
     const status = await ensureDowned(token.actor, { afterUpdate: true });
-    if ( status ) log(`${token.actor.name} : 0 PV → ${status === "dead" ? "Mort" : "Inconscient"}`);
-  }, { executor: true, label: "Mort / Inconscient non posés (token non lié)" });
+    if ( status ) log(`${token.actor.name}: 0 HP → ${status === "dead" ? "Dead" : "Unconscious"}`);
+  }, { executor: true, label: "Dead / Unconscious not applied (unlinked token)" });
 }

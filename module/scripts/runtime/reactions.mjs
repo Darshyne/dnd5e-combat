@@ -83,7 +83,7 @@ export async function askHitReactions(resolution, tokens, drained, { auto=null }
     const options = (actor && (auto !== "none")) ? reactionsOf(actor, "isHit", { source, target: actor, activity, resolution }, { publish: true }) : [];
     let answer = null;
     if ( options.length ) {
-      log(`${target?.name} est touché : fenêtre de réaction (${options.map(o => o.name).join(", ")})`);
+      log(`${target?.name} is hit: reaction window (${options.map(o => o.name).join(", ")})`);
       answer = await askReaction(actor, {
         actor: actor.uuid,
         prompt: { key: "ReactionTouche", data: { attacker, total: resolution.attack.roll.total } },
@@ -100,7 +100,7 @@ export async function askHitReactions(resolution, tokens, drained, { auto=null }
       const hitToken = await fromUuid(tokenUuid);
       const attackerToken = tokenOf(source);
       for ( const guardian of guardiansOf(hitToken, attackerToken, activity, { publish: true, resolution }) ) {
-        log(`${target?.name} est touché : ${guardian.token.name} peut réagir pour lui (${guardian.options.map(o => o.name).join(", ")})`);
+        log(`${target?.name} is hit: ${guardian.token.name} can react for them (${guardian.options.map(o => o.name).join(", ")})`);
         const help = await askReaction(guardian.token.actor, {
           actor: guardian.token.actor.uuid,
           prompt: { key: "ReactionAllieTouche", data: { name: target?.name ?? "", attacker, total: resolution.attack.roll.total } },
@@ -116,16 +116,16 @@ export async function askHitReactions(resolution, tokens, drained, { auto=null }
     }
     // §33 : Mots cinglants — le dé retiré au jet vaut autant de CA pour ce rejugement.
     const ac = await currentAc(tokenUuid) + (target?.cover?.bonus ?? 0) + (Number(answer?.penalty) || 0);   // l'abri du verdict reste acquis
-    if ( answer?.penalty ) log(`${target?.name} : ${answer.name}, -${answer.penalty} au jet d'attaque`);
+    if ( answer?.penalty ) log(`${target?.name}: ${answer.name}, -${answer.penalty} to the attack roll`);
     // §19.6 : Parade — +5 à la CA contre UNE seule attaque : la CA relue, les effets de l'item tombent (`forOneAttack`).
     if ( answer?.used ) await dropOneAttackEffects(actor, answer.used);
-    if ( answer ) log(`${target?.name} réagit (${answer.name}) : CA ${target?.ac} → ${ac}`);
-    if ( answer?.halve ) log(`${target?.name} : ${answer.name}, dégâts de l'attaque divisés par deux`);
+    if ( answer ) log(`${target?.name} reacts (${answer.name}): AC ${target?.ac} -> ${ac}`);
+    if ( answer?.halve ) log(`${target?.name}: ${answer.name}, the attack's damage is halved`);
     // §19 : les répliques que la réaction a pu créer (Ombres spectrales) comptent pour ce coup.
     const duplicates = answer ? duplicatesAgainst(actor, source) : null;
-    if ( answer?.uncrit && target?.critical ) log(`${target?.name} : ${answer.name}, le coup critique n'est plus qu'un coup`);
-    if ( answer?.reduce ) log(`${target?.name} : ${answer.name}, dégâts de l'attaque réduits de ${answer.reduce}`);
-    if ( answer?.miss ) log(`${target?.name} : ${answer.name}, l'attaque rate d'office`);
+    if ( answer?.uncrit && target?.critical ) log(`${target?.name}: ${answer.name}, the Critical Hit becomes a normal hit`);
+    if ( answer?.reduce ) log(`${target?.name}: ${answer.name}, the attack's damage is reduced by ${answer.reduce}`);
+    if ( answer?.miss ) log(`${target?.name}: ${answer.name}, the attack automatically misses`);
     events.push({ type: "reactionResolved", token: tokenUuid, used: answer?.name ?? null, ac, halve: answer?.halve === true,
       miss: answer?.miss === true,
       reduce: Number(answer?.reduce) || 0,
@@ -156,7 +156,7 @@ export async function askDamageGuardians(targetUuid, sourceUuid, activity, { aut
     const options = reactionsOf(actor, "allyIsDamaged", { source: attacker?.actor ?? null, target, activity, self: actor, selfToken: other,
       sourceToken: attacker, targetToken: hurtToken }, { publish: true }).filter(o => (o.absorb && pool) || o.interpose);
     if ( !options.length ) continue;
-    log(`${hurtToken.name} va subir des dégâts : ${other.name} peut réagir (${options.map(o => o.name).join(", ")}${pool ? `, réserve ${pool.pool}` : ""})`);
+    log(`${hurtToken.name} is about to take damage: ${other.name} can react (${options.map(o => o.name).join(", ")}${pool ? `, pool ${pool.pool}` : ""})`);
     const answer = await askReaction(actor, {
       actor: actor.uuid,
       prompt: { key: "ReactionAllieBlesse", data: { name: hurtToken.name, attacker: attacker?.name ?? "" } },
@@ -191,7 +191,7 @@ export function windowIsDamaged(tokenUuids, sourceToken, sourceName, { activity=
     const options = reactionsOf(actor, "isDamaged",
       { source, target: actor, activity: used, sourceToken: attackerToken, targetToken: tokenDocument, damageTypes }, { publish: true });
     if ( !options.length ) return;
-    log(`${actor.name} est blessé : fenêtre de réaction (${options.map(o => o.name).join(", ")})`);
+    log(`${actor.name} is damaged: reaction window (${options.map(o => o.name).join(", ")})`);
     await askReaction(actor, {
       actor: actor.uuid,
       prompt: { key: "ReactionBlesse", data: { attacker: sourceName } },
@@ -199,7 +199,7 @@ export function windowIsDamaged(tokenUuids, sourceToken, sourceName, { activity=
       target: options.some(o => o.targetSource) ? sourceToken : null,
       auto: auto === "first"
     });
-  })().catch(err => console.error(`${MODULE_ID} | fenêtre « blessé » interrompue`, err));
+  })().catch(err => console.error(`${MODULE_ID} | "damaged" window interrupted`, err));
 }
 
 /**
@@ -215,12 +215,12 @@ async function windowGainsCondition(effect) {
     const options = reactionsOf(actor, "gainsCondition", { target: actor, targetToken: token, condition }, { publish: true });
     if ( !options.length ) continue;
     const label = game.i18n.localize(CONFIG.DND5E.conditionTypes[condition]?.name ?? condition);
-    log(`${actor.name} subit ${label} : fenêtre de réaction (${options.map(o => o.name).join(", ")})`);
+    log(`${actor.name} suffers ${label}: reaction window (${options.map(o => o.name).join(", ")})`);
     const answer = await askReaction(actor, { actor: actor.uuid, prompt: { key: "ReactionEtat", data: { condition: label } }, options });
     if ( !answer?.endCondition ) continue;
     const ids = actor.effects.filter(e => e.statuses?.has(condition)).map(e => e.id);
     if ( ids.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", ids);
-    log(`${actor.name} : ${answer.name}, ${label} cesse (${ids.length} effet(s))`);
+    log(`${actor.name}: ${answer.name}, ${label} ends (${ids.length} effect(s))`);
   }
 }
 
@@ -231,7 +231,7 @@ async function dropOneAttackEffects(actor, activityUuid) {
   const ids = actor.effects.filter(e => originItemOf(e) === item).map(e => e.id);
   if ( ids.length ) {
     await actor.deleteEmbeddedDocuments("ActiveEffect", ids);
-    log(`${item.name} : effet retiré, il ne valait que pour cette attaque`);
+    log(`${item.name}: effect removed, it only applied to this attack`);
   }
 }
 
@@ -313,7 +313,7 @@ export async function askAttackReactions(activity, origin, reactors, { auto=null
     mods.penalty += Number(answer.penalty) || 0;
     mods.bonus += Number(answer.bonus) || 0;
     mods.names.push(answer.name);
-    log(`${token.name} réagit avant l'attaque de ${origin.name} : ${answer.name}${answer.disadvantage ? " (Désavantage)" : ""}${answer.penalty ? ` (-${answer.penalty})` : ""}${answer.bonus ? ` (+${answer.bonus})` : ""}`);
+    log(`${token.name} reacts before ${origin.name}'s attack: ${answer.name}${answer.disadvantage ? " (Disadvantage)" : ""}${answer.penalty ? ` (-${answer.penalty})` : ""}${answer.bonus ? ` (+${answer.bonus})` : ""}`);
   }
   return mods.names.length ? mods : null;
 }
@@ -329,7 +329,7 @@ export function windowIsMissed(tokenUuids, sourceToken, sourceName, { activity=n
     const options = reactionsOf(actor, "isMissed",
       { source: attackerToken?.actor ?? null, target: actor, activity: used, sourceToken: attackerToken, targetToken: tokenDocument }, { publish: true });
     if ( !options.length ) return;
-    log(`${actor.name} est raté : fenêtre de réaction (${options.map(o => o.name).join(", ")})`);
+    log(`${actor.name} is missed: reaction window (${options.map(o => o.name).join(", ")})`);
     await askReaction(actor, {
       actor: actor.uuid,
       prompt: { key: "ReactionRate", data: { attacker: sourceName } },
@@ -337,7 +337,7 @@ export function windowIsMissed(tokenUuids, sourceToken, sourceName, { activity=n
       target: options.some(o => o.targetSource) ? sourceToken : null,
       auto: auto === "first"
     });
-  })().catch(err => console.error(`${MODULE_ID} | fenêtre « raté » interrompue`, err));
+  })().catch(err => console.error(`${MODULE_ID} | "missed" window interrupted`, err));
 }
 
 /**
@@ -354,13 +354,13 @@ function onEnemyTurnEnd(combat, prior) {
     const options = reactionsOf(actor, "enemyTurnEnd",
       { source: ended.actor, target: actor, sourceToken: ended, targetToken: other }, { publish: true });
     if ( !options.length ) continue;
-    log(`${ended.name} termine son tour : ${actor.name} peut réagir (${options.map(o => o.name).join(", ")})`);
+    log(`${ended.name} ends their turn: ${actor.name} can react (${options.map(o => o.name).join(", ")})`);
     askReaction(actor, {
       actor: actor.uuid,
       prompt: { key: "ReactionFinDeTour", data: { attacker: ended.name } },
       options,
       target: options.some(o => o.targetSource) ? ended.uuid : null
-    }).catch(err => console.error(`${MODULE_ID} | fenêtre « fin de tour d'un ennemi » interrompue`, err));
+    }).catch(err => console.error(`${MODULE_ID} | "enemy's end of turn" window interrupted`, err));
   }
 }
 
@@ -442,7 +442,7 @@ async function handleOpportunityQuery({ token: tokenUuid, attackers }) {
   for ( const uuid of attackers ) {
     const attacker = await fromUuid(uuid);
     if ( !attacker?.actor || !token ) continue;
-    log(`${token.name} va quitter l'allonge de ${attacker.name} : attaque d'opportunité proposée avant le déplacement`);
+    log(`${token.name} is about to leave ${attacker.name}'s reach: Opportunity Attack offered before the move`);
     announce("leavesReach", { actor: attacker.actor, source: token.actor, target: attacker.actor, mover: token.uuid });
     const answer = await askReaction(attacker.actor, {
       actor: attacker.actor.uuid,
@@ -467,7 +467,7 @@ export async function resolveOpportunity(token, attackers) {
     if ( gm?.isSelf ) await handleOpportunityQuery({ token: token.uuid, attackers });
     else if ( gm ) await gm.query(OPPORTUNITY_QUERY, { token: token.uuid, attackers }, { timeout: 120000 });
   } catch(err) {
-    console.warn(`${MODULE_ID} | attaques d'opportunité : pas de réponse du MJ`, err);
+    console.warn(`${MODULE_ID} | Opportunity Attacks: no answer from the GM`, err);
   }
   return (token.actor?.system.attributes?.hp?.value ?? 1) > 0;
 }
@@ -484,13 +484,13 @@ function onReactionDamage(config) {
   if ( !mark || !config.rolls?.length ) return true;
   const type = config.rolls[0]?.options?.type ?? null;
   config.rolls.push({ data: activity.getRollData(), parts: [mark.formula], options: { type, types: type ? [type] : [], properties: [] } });
-  log(`${mark.name} : +${mark.formula} ${type ?? ""}`);
+  log(`${mark.name}: +${mark.formula} ${type ?? ""}`);
   return true;
 }
 
 export function registerReactions() {
-  route("dnd5e.preRollDamageV2", onReactionDamage, { cancellable: true, label: "riposte : dé de supériorité" });
-  route("combatTurnChange", (combat, prior) => onEnemyTurnEnd(combat, prior), { executor: true, label: "fenêtre « fin de tour d'un ennemi » non ouverte" });
+  route("dnd5e.preRollDamageV2", onReactionDamage, { cancellable: true, label: "riposte: superiority die" });
+  route("combatTurnChange", (combat, prior) => onEnemyTurnEnd(combat, prior), { executor: true, label: "\"enemy's end of turn\" window not opened" });
   // Sur tous les clients : c'est celui qui réagit qui répond à la requête.
   CONFIG.queries[REACTION_QUERY] = handleReactionQuery;
   setReactionApproach(reactionApproach);   // §67 : la réaction qui rejoint d'abord sa source
@@ -499,5 +499,5 @@ export function registerReactions() {
   CONFIG.queries[OPPORTUNITY_QUERY] = handleOpportunityQuery;
   // §19.8 : « subit un état » — un effet porteur d'état vient d'être posé sur une créature.
   route("createActiveEffect", effect => (effect.statuses?.size ? windowGainsCondition(effect) : null),
-    { executor: true, label: "fenêtre « subit un état » non ouverte" });
+    { executor: true, label: "\"suffers a condition\" window not opened" });
 }

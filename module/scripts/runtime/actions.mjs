@@ -169,9 +169,9 @@ export function selfTeleportOf(activity) {
 async function afterTeleport(activity, rule) {
   const next = rule.then ? activity.item?.system.activities?.get(rule.then) : null;
   if ( !next ) return;
-  log(`${activity.item.name} : à l'arrivée, ${next.name || next.item.name}`);
+  log(`${activity.item.name}: on arrival, ${next.name || next.item.name}`);
   await next.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: true } }, { configure: false })
-    .catch(err => console.error(`${MODULE_ID} | activité d'arrivée de la téléportation`, err));
+    .catch(err => console.error(`${MODULE_ID} | teleport arrival activity`, err));
 }
 
 /** Planifie une téléportation déclarée, comme le fait l'activité native (dnd5e teleport.mjs, `planTeleport`). */
@@ -347,7 +347,7 @@ export async function dashStrike(activity, [config, dialog, message]=[], destina
   if ( refusal ) throw new Error(refusal.text);
   const to = { x: destination.x, y: destination.y, elevation: token._source.elevation ?? 0 };
   const targets = dashTargets(token, to, rule);
-  log(`${token.name} : ${activity.item.name} vers (${to.x}, ${to.y}) — ${targets.map(t => t.name).join(", ") || "personne"} près du trajet`);
+  log(`${token.name}: ${activity.item.name} to (${to.x}, ${to.y}) — ${targets.map(t => t.name).join(", ") || "nobody"} near the path`);
   const use = { ...(config ?? {}), create: { ...(config?.create ?? {}), measuredTemplate: false },
     [MODULE_ID]: { ...(config?.[MODULE_ID] ?? {}), dash: { token: token.uuid, x: to.x, y: to.y, elevation: to.elevation } } };
   const card = foundry.utils.mergeObject(message ?? {}, { data: {
@@ -782,7 +782,7 @@ export async function reactionApproach(actor, target, activity) {
   const plan = planPath(token, { target, reachCells: reach.normal }, { maxCost });
   if ( !plan?.waypoints.length ) return false;
   await walk(token, plan, { cleared: true });
-  log(`${token.name} : rejoint ${target.name} pour sa réaction (${activity.item?.name ?? ""})${plan.arrives ? "" : ", sans l'atteindre"}`);
+  log(`${token.name}: moves to ${target.name} for its reaction (${activity.item?.name ?? ""})${plan.arrives ? "" : ", without reaching it"}`);
   return !!plan.arrives;
 }
 
@@ -790,7 +790,7 @@ export async function engage(token, target, activity, { mode=null, fast=false, u
   // §18.22 : un geste de contact sur une cible qui ne s'y prête pas est refusé avant tout déplacement.
   const refusal = contactRefusal(token, target, activity);
   if ( refusal ) {
-    ui.notifications.warn(`${target.name} : ${refusal}`);
+    ui.notifications.warn(loc("LabelValue", { label: target.name, value: refusal }));
     notice(target, refusal);
     return;
   }
@@ -895,7 +895,7 @@ function opportunityFirst(token, movement, operation) {
     const again = waypoints.map(({ x, y, elevation, width, height, depth, shape, level, action, snapped, explicit, checkpoint }) =>
       ({ x, y, elevation, width, height, depth, shape, level, action, snapped, explicit, checkpoint }));
     await token.move(again, { showRuler: rulerShown(), [MODULE_ID]: { cleared: true } });
-  })().catch(err => console.error(`${MODULE_ID} | attaque d'opportunité avant déplacement`, err));
+  })().catch(err => console.error(`${MODULE_ID} | opportunity attack before movement`, err));
   return false;
 }
 
@@ -991,10 +991,10 @@ function nearAnother(token, pilot, destination) {
 /* -------------------------------------------- */
 
 export function registerActions() {
-  route("dnd5e.teleport", onTeleport, { cancellable: true, label: "téléportation : destination" });
-  route("dnd5e.postUseActivity", onDashUsed, { label: "ruée en ligne droite : déplacement" });
-  route("dnd5e.preCreateMeasuredTemplate", onDashTemplate, { cancellable: true, label: "ruée en ligne droite : pas de zone" });
-  route("preMoveToken", onPreMoveToken, { cancellable: true, label: "déplacement : plafond et attaques d'opportunité" });
+  route("dnd5e.teleport", onTeleport, { cancellable: true, label: "teleport: destination" });
+  route("dnd5e.postUseActivity", onDashUsed, { label: "straight-line dash: movement" });
+  route("dnd5e.preCreateMeasuredTemplate", onDashTemplate, { cancellable: true, label: "straight-line dash: no area" });
+  route("preMoveToken", onPreMoveToken, { cancellable: true, label: "movement: cap and opportunity attacks" });
   // §99 : la pause arrête les marches du moteur lancées depuis ce client (chacun arrête les siennes, Hooks.callAll partout).
-  route("pauseGame", paused => { if ( paused ) stopAllWalks(); }, { label: "pause : arrêt des marches" });
+  route("pauseGame", paused => { if ( paused ) stopAllWalks(); }, { label: "pause: walks stopped" });
 }

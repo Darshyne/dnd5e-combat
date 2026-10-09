@@ -30,16 +30,16 @@ async function onPostUse(activity) {
     const kinds = await addMetamagic(actor, kind);
     const token = actor.getActiveTokens?.(false, true)?.[0];
     if ( token ) notice(token, loc("Metamagie.Retenue", { item: activity.item.name }), "gain");
-    log(`${actor.name} : Métamagie retenue pour le prochain sort (${kinds.join(", ")})`);
+    log(`${actor.name}: Metamagic held for the next spell (${kinds.join(", ")})`);
     return;
   }
   if ( (activity.item?.type === "spell") && pendingMetamagic(actor).length ) {
-    log(`${actor.name} : Métamagie appliquée à ${activity.item.name} (${pendingMetamagic(actor).join(", ")})`);
+    log(`${actor.name}: Metamagic applied to ${activity.item.name} (${pendingMetamagic(actor).join(", ")})`);
     await clearMetamagic(actor);
   }
 }
 
 export function registerMetamagic() {
-  route("dnd5e.preUseActivity", onPreUse, { cancellable: true, label: "métamagie : sort non modifié" });
-  route("dnd5e.postUseActivity", activity => onPostUse(activity), { label: "métamagie non retenue" });
+  route("dnd5e.preUseActivity", onPreUse, { cancellable: true, label: "metamagic: spell not modified" });
+  route("dnd5e.postUseActivity", activity => onPostUse(activity), { label: "metamagic not held" });
 }

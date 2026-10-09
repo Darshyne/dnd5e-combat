@@ -64,7 +64,7 @@ export async function follow(follower, leader) {
   trails.delete(follower.id);
   await follower.setFlag(MODULE_ID, FLAG, { leader: leader.id, by: game.user.id });
   notice(follower, loc("Suivi.Debut", { name: leader.name }), "prompt");
-  log(`${follower.name} suit ${leader.name}`);
+  log(`${follower.name} follows ${leader.name}`);
   schedule(follower);
   return true;
 }
@@ -78,7 +78,7 @@ export async function unfollow(follower, { silent=false }={}) {
   trails.delete(follower.id);
   await follower.unsetFlag(MODULE_ID, FLAG);
   if ( !silent ) notice(follower, loc("Suivi.Fin", { name: leader?.name ?? "" }), "prompt");
-  log(`${follower.name} ne suit plus ${leader?.name ?? "personne"}`);
+  log(`${follower.name} no longer follows ${leader?.name ?? "anyone"}`);
   return true;
 }
 
@@ -94,7 +94,7 @@ function schedule(follower) {
   clearTimeout(timers.get(follower.id));
   timers.set(follower.id, setTimeout(() => {
     timers.delete(follower.id);
-    step(follower).catch(err => console.warn(`${MODULE_ID} | suivi de ${follower.name}`, err));
+    step(follower).catch(err => console.warn(`${MODULE_ID} | following ${follower.name}`, err));
   }, DELAY_MS));
 }
 
@@ -121,7 +121,7 @@ async function step(follower) {
     // « exhausted » : arrivé là où était le meneur, qui a encore bougé — le pas suivant (ci-dessous) reprend.
     if ( !result.arrived && (result.reason !== "exhausted") ) {
       const at = t => { const f = footprintOf(t); return `${f.i},${f.j}@${t._source.level ?? ""}`; };
-      log(`${follower.name} ne rejoint pas ${leader.name} (${result.reason}) : en ${at(follower)}, meneur en ${at(leader)}`);
+      log(`${follower.name} does not reach ${leader.name} (${result.reason}): at ${at(follower)}, leader at ${at(leader)}`);
     }
   }
   finally {
@@ -159,7 +159,7 @@ function onUpdateToken(token, changes, options) {
   // §99 : un morceau de marche du suivi que le cœur enchaîne lui-même n'a plus les options du moteur — c'est encore le suivi.
   const flags = options?.[MODULE_ID] ?? continuedFlags(token, options?._movement?.[token.id]);
   if ( own && (own.by === game.user.id) && !flags?.follow ) {
-    unfollow(token).catch(err => console.warn(`${MODULE_ID} | fin du suivi de ${token.name}`, err));
+    unfollow(token).catch(err => console.warn(`${MODULE_ID} | stopping follow of ${token.name}`, err));
   }
   // Un meneur déplacé sans trajet (téléporté, posé ailleurs) : pas de piste, le suiveur rejoint par l'A*.
   for ( const follower of followersOf(token) ) {
@@ -175,7 +175,7 @@ function onDeleteToken(token) {
 }
 
 export function registerFollow() {
-  route("moveToken", onMoveToken, { label: "suivi : le trajet du meneur" });
-  route("updateToken", onUpdateToken, { label: "suivi : le meneur a bougé" });
-  route("deleteToken", onDeleteToken, { label: "suivi : le meneur a disparu" });
+  route("moveToken", onMoveToken, { label: "follow: the leader's path" });
+  route("updateToken", onUpdateToken, { label: "follow: the leader moved" });
+  route("deleteToken", onDeleteToken, { label: "follow: the leader is gone" });
 }

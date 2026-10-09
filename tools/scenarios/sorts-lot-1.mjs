@@ -122,7 +122,7 @@ export default {
       const expected = Math.min(maxOf(rollFormula(heal)), (await maxHp(fighter)) - 1);
       ctx.expect(!!heal && (gained === expected), `sous Lueur d'espoir : ${gained} PV regagnés, le maximum de « ${rollFormula(heal)} » (${expected})`);
       // Le Guerrier n'a que peu de PV : le plafond peut masquer le maximum ; la trace du moteur le dit.
-      const maxed = (await ctx.engineLog()).slice(-20).some(l => /soin au maximum/.test(l));
+      const maxed = (await ctx.engineLog()).slice(-20).some(l => /soin au maximum|maximum healing/.test(l));
       ctx.expect(maxed, "le moteur a soigné au maximum (trace « soin au maximum »)");
     });
 

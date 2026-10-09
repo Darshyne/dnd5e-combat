@@ -30,6 +30,6 @@ describe("arme de pacte : l'enchantement réécrit", () => {
   });
   it("schéma", () => {
     expect(validateEntry({ enchantTarget: "ownWeapon", pact: { damageTypes: ["radiant"], ability: "spellcasting" } })).toEqual([]);
-    expect(validateEntry({ pact: { damageTypes: [] } })).toEqual(["pact.damageTypes : liste de types de dégâts"]);
+    expect(validateEntry({ pact: { damageTypes: [] } })).toEqual(["pact.damageTypes: list of damage types"]);
   });
 });

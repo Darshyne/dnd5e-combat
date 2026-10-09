@@ -62,8 +62,17 @@ Compendiums are not versioned: run `npm install` then `npm run packs`, with Foun
 - Requires: Foundry V14, dnd5e ≥ 6.0.0. Incompatible with Midi-QOL.
 - Tests: `npm test` (Vitest; the rules core is pure and can be tested outside Foundry).
 
-Status: under active development, used at the author's table. The in-game interface and texts are in French
-only for now.
+Status: under active development, used at the author's table.
+
+## Translations
+
+The module ships English and French. To add a language, copy `module/lang/en.json` to `module/lang/<code>.json`,
+translate the values (keep the `{placeholders}`), and add an entry to `languages` in `module/module.json`; missing keys
+fall back to English. `tests/i18n.test.mjs` checks that every key used in the code exists.
+
+A few automations read the rules text of items (durations such as "until the end of its next turn", ability drains,
+swallowing): they understand English and French descriptions. In a world whose item descriptions are in another language,
+those few fall back to dnd5e's native behaviour.
 
 ## License
 

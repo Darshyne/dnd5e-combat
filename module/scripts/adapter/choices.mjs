@@ -58,7 +58,7 @@ export async function askChoice(actor, payload) {
   if ( userId === game.user.id ) return handleChoiceQuery(payload);
   if ( userId ) {
     try { answer = await game.users.get(userId).query(CHOICE_QUERY, payload, { timeout: CHOICE_TIMEOUT }); }
-    catch(err) { console.warn(`${MODULE_ID} | choix de ${actor.name} : pas de réponse du joueur`, err); }
+    catch(err) { console.warn(`${MODULE_ID} | choice for ${actor.name}: no answer from the player`, err); }
   }
   return answer ?? handleChoiceQuery(payload);
 }

@@ -31,5 +31,5 @@ async function onPostUse(activity) {
 }
 
 export function registerCureUi() {
-  route("dnd5e.postUseActivity", onPostUse, { label: "restauration : état non retiré" });
+  route("dnd5e.postUseActivity", onPostUse, { label: "restoration: condition not removed" });
 }

@@ -50,11 +50,11 @@ function onRenderActivityChoice(app, element) {
   });
   const button = wanted ? buttons.find(b => b.dataset.activityId === wanted) : null;
   if ( !button ) return;
-  log(`${item.name} : choix d'activité répondu (${item.system.activities.get(wanted)?.name ?? wanted})`);
+  log(`${item.name}: activity choice answered (${item.system.activities.get(wanted)?.name ?? wanted})`);
   element.style.visibility = "hidden";   // la fenêtre se ferme au clic : qu'elle ne clignote pas
   button.click();
 }
 
 export function registerActivityChoice() {
-  route("renderActivityChoiceDialog", onRenderActivityChoice, { label: "choix d'activité répondu" });
+  route("renderActivityChoiceDialog", onRenderActivityChoice, { label: "activity choice answered" });
 }

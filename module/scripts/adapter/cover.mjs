@@ -109,7 +109,7 @@ export function coverFor(attacker, target, { posA, quiet=false }={}) {
     blocked: rayBlocker(attacker, target, { posA }), inset: grid.size * INSET_FRACTION
   });
   if ( cover.degree === "none" ) return null;
-  if ( !quiet ) console.log(`${MODULE_ID} | abri : ${target.name} contre ${attacker.name} — ${cover.degree}${cover.byCreature ? " (créature interposée)" : ""}`);
+  if ( !quiet ) console.log(`${MODULE_ID} | cover: ${target.name} against ${attacker.name} — ${cover.degree}${cover.byCreature ? " (creature in between)" : ""}`);
   return { degree: cover.degree, bonus: cover.bonus, byCreature: cover.byCreature };
 }
 

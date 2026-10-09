@@ -111,10 +111,10 @@ describe("§20 schéma et contenu du Roublard", () => {
     expect(validateEntry({ sneakAttack: true, evasion: true, elusive: true, holdsStill: true, cunningStrikeMax: 2 })).toEqual([]);
     expect(validateEntry({ sneakBonus: { formula: "@classes.rogue.levels", firstRound: true } })).toEqual([]);
     expect(validateEntry({ cunningStrikes: { trip: { cost: 1, activity: "dWcCw1vTWRMx4YzD", sizeAtMost: "lg" }, withdraw: { cost: 1, withdraw: true } } })).toEqual([]);
-    expect(validateEntry({ cunningStrikes: { x: { cost: 0 } } })).toEqual(["cunningStrikes.x.cost : entier positif (dés)", "cunningStrikes.x : une activité ou withdraw"]);
-    expect(validateEntry({ cunningStrikes: { x: { cost: 1, withdraw: true, sizeAtMost: "big" } } })).toEqual(["cunningStrikes.x.sizeAtMost : tiny, sm, med, lg, huge, grg"]);
+    expect(validateEntry({ cunningStrikes: { x: { cost: 0 } } })).toEqual(["cunningStrikes.x.cost: positive integer (dice)", "cunningStrikes.x: an activity or withdraw"]);
+    expect(validateEntry({ cunningStrikes: { x: { cost: 1, withdraw: true, sizeAtMost: "big" } } })).toEqual(["cunningStrikes.x.sizeAtMost: tiny, sm, med, lg, huge, grg"]);
     expect(validateEntry({ basicActions: { NiI5qEhg9TepZxMh: "hide" } })).toEqual([]);
-    expect(validateEntry({ basicActions: { NiI5qEhg9TepZxMh: "fly" } })).toEqual(["basicActions.NiI5qEhg9TepZxMh : dash, disengage, dodge, hide, help (ou une liste)"]);
+    expect(validateEntry({ basicActions: { NiI5qEhg9TepZxMh: "fly" } })).toEqual(["basicActions.NiI5qEhg9TepZxMh: dash, disengage, dodge, hide, help (or a list)"]);
     expect(validateEntry({ usageLimits: { VGVYnecMRcu0f5Sq: { unmoved: true } } })).toEqual([]);
   });
   it("le contenu livré", () => {

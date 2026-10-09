@@ -66,17 +66,17 @@ async function refreshScene(scene) {
   for ( const e of existing ) if ( !e.iconShown && !removed.has(e.id) ) await showAuraIcon(byUuid.get(e.target), e.id);
   for ( const e of remove ) {
     await removeAuraCopy(byUuid.get(e.target), e.id);
-    log(`aura ${e.key} : retirée de ${byUuid.get(e.target)?.name}`);
+    log(`aura ${e.key}: removed from ${byUuid.get(e.target)?.name}`);
   }
   for ( const w of update ) {
     const { aura, sourceToken } = auraBySlot.get(`${w.source}|${w.key}`);
     await updateAuraCopy(byUuid.get(w.target), w.id, aura, sourceToken, w.value);
-    log(`aura ${w.key} : mise à jour sur ${byUuid.get(w.target)?.name} (${w.value})`);
+    log(`aura ${w.key}: updated on ${byUuid.get(w.target)?.name} (${w.value})`);
   }
   for ( const w of create ) {
     const { aura, sourceToken } = auraBySlot.get(`${w.source}|${w.key}`);
     await createAuraCopy(byUuid.get(w.target), aura, sourceToken, w.value);
-    log(`aura ${w.key} : ${byUuid.get(w.target)?.name} entre dans l'aura de ${sourceToken.name} (${w.value})`);
+    log(`aura ${w.key}: ${byUuid.get(w.target)?.name} enters ${sourceToken.name}'s aura (${w.value})`);
   }
 }
 
@@ -92,10 +92,10 @@ export function registerAuras() {
   const refresh = foundry.utils.debounce(() => {
     if ( !isExecutor() || !canvas?.scene ) return;
     enqueue("auras", () => refreshScene(canvas.scene))
-      .catch(err => console.error(`${MODULE_ID} | auras : recalcul interrompu`, err));
+      .catch(err => console.error(`${MODULE_ID} | auras: recalculation interrupted`, err));
   }, 200);
 
-  const auras = { label: "auras : recalcul demandé" };
+  const auras = { label: "auras: recalculation requested" };
   const always = () => refresh();
   // Début et fin de combat : avec le réglage « en combat seulement », les auras s'allument et s'éteignent.
   for ( const hook of ["canvasReady", `${MODULE_ID}.refreshAuras`, "combatStart", "deleteCombat", "moveToken",

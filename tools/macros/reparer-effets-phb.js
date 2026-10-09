@@ -11,11 +11,13 @@
  * Deux choix : « Rapport » (ne modifie rien) ou « Réparer ». Le compte rendu part dans le chat, en message privé au MJ. Rejouable sans risque : un effet déjà là n'est pas recréé.
  */
 (async () => {
-  if ( !game.user.isGM ) return ui.notifications.warn("Réparation des effets : réservé au MJ.");
+  // Textes : clés DND5ECOMBAT.Macro.RepairPhbEffects.* des fichiers de langue du module.
+  const t = (key, data) => data ? game.i18n.format(`DND5ECOMBAT.Macro.RepairPhbEffects.${key}`, data) : game.i18n.localize(`DND5ECOMBAT.Macro.RepairPhbEffects.${key}`);
+  if ( !game.user.isGM ) return ui.notifications.warn(t("GmOnly"));
   const mode = await foundry.applications.api.DialogV2.wait({
-    window: { title: "Réparation des effets du Manuel des joueurs" },
-    content: "<p>« Rapport » ne modifie rien.</p>",
-    buttons: [{ action: "report", label: "Rapport", default: true }, { action: "repair", label: "Réparer" }],
+    window: { title: t("Title") },
+    content: `<p>${t("ReportChangesNothing")}</p>`,
+    buttons: [{ action: "report", label: t("Report"), default: true }, { action: "repair", label: t("Repair") }],
     rejectClose: false
   });
   if ( !mode ) return;
@@ -37,7 +39,7 @@
     }
   }
   const content = count
-    ? `<p>Effets ${DRY ? "à recopier (rapport : rien n'a été modifié)" : "recopiés"} depuis le Manuel des joueurs : ${count}</p><ul>${lines.join("")}</ul>`
-    : "<p>Effets du Manuel des joueurs : rien ne manquait.</p>";
-  await ChatMessage.create({ content, whisper: [game.user.id], speaker: { alias: "Réparation des effets" } });
+    ? `<p>${t(DRY ? "ToCopy" : "Copied", { count })}</p><ul>${lines.join("")}</ul>`
+    : `<p>${t("NothingMissing")}</p>`;
+  await ChatMessage.create({ content, whisper: [game.user.id], speaker: { alias: t("Speaker") } });
 })();

@@ -57,9 +57,9 @@ function fxBehaviors(name) {
   const flat = (prefix, options) => Object.fromEntries([[`${prefix}_enabled`, true],
     ...Object.entries(options).filter(([, v]) => (typeof v !== "object")).map(([k, v]) => [`${prefix}_${k}`, v])]);
   return [
-    { type: "fxmaster.particleEffectsRegion", name: `${name} — pluie`, system: { ...flat("rain", rain), ...flat("clouds", clouds) },
+    { type: "fxmaster.particleEffectsRegion", name: game.i18n.format("DND5ECOMBAT.Orage.ZonePluie", { name }), system: { ...flat("rain", rain), ...flat("clouds", clouds) },
       flags: { fxmaster: { particleEffects: { rain: { options: rain }, clouds: { options: clouds } } } } },
-    { type: "fxmaster.filterEffectsRegion", name: `${name} — éclairs`, system: flat("lightning", lightning),
+    { type: "fxmaster.filterEffectsRegion", name: game.i18n.format("DND5ECOMBAT.Orage.ZoneEclairs", { name }), system: flat("lightning", lightning),
       flags: { fxmaster: { filters: { lightning: { type: "lightning", options: lightning } } } } }
   ];
 }
@@ -98,7 +98,7 @@ export async function placeBolt(activity, cloud, center) {
   const ground = Number(origin?._source?.elevation ?? cloud.elevation?.bottom ?? 0) || 0;
   const top = Number.isFinite(cloud.elevation?.top) ? cloud.elevation.top : ground + 100;
   const data = {
-    name: `${activity.item.name} — éclair [${game.user.name}]`,
+    name: game.i18n.format("DND5ECOMBAT.Orage.ZoneEclair", { name: activity.item.name, user: game.user.name }),
     color: "#e8f4ff",
     shapes: [{ type: "circle", x: center.x, y: center.y, radius: boltRadiusPx(activity.item, scene) }],
     ...(cloud.levels?.size ? { levels: [...cloud.levels] } : {}),

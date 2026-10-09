@@ -32,8 +32,8 @@ describe("§36 : Présage", () => {
 
   it("contenu : `portent: { dice }`, entier positif — Présage 2, Présage supérieur 3", () => {
     expect(validateEntry({ portent: { dice: 2 } }, { facts: {} })).toEqual([]);
-    expect(validateEntry({ portent: { dice: 0 } }, { facts: {} })).toEqual(["portent : { dice } (entier positif)"]);
-    expect(validateEntry({ portent: { dice: 2, keep: true } }, { facts: {} })).toEqual(["portent : { dice } (entier positif)"]);
+    expect(validateEntry({ portent: { dice: 0 } }, { facts: {} })).toEqual(["portent: { dice } (positive integer)"]);
+    expect(validateEntry({ portent: { dice: 2, keep: true } }, { facts: {} })).toEqual(["portent: { dice } (positive integer)"]);
     expect(CONTENT["portent"].portent.dice).toBe(2);
     expect(CONTENT["greater-portent"].portent.dice).toBe(3);
   });

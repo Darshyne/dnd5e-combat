@@ -56,21 +56,21 @@ describe("schéma de la clé light", () => {
     }
   });
   it("refuse ce qui ne tient pas", () => {
-    expect(validateEntry({ light: { on: "partout" } })).toContain("light.on : area, effect, summon");
-    expect(validateEntry({ light: { on: "effect" } })).toContain("light : un effet lumineux donne un rayon");
-    expect(validateEntry({ light: { on: "effect", dim: 10 } })).toContain("light.units : unité requise");
-    expect(validateEntry({ light: { on: "effect", dim: 10, units: "ft", darkness: true } })).toContain("light.darkness : seulement sur une zone");
-    expect(validateEntry({ light: { on: "area", darkness: true, carried: true } })).toContain("light : carried et single valent pour une invocation");
-    expect(validateEntry({ light: { on: "area", darkness: true, dispels: 2.5 } })).toContain("light.dispels : niveau de sort (entier)");
-    expect(validateEntry({ light: { on: "area", darkness: true, couleur: "rouge" } })).toContain("light.couleur : clé inconnue");
+    expect(validateEntry({ light: { on: "partout" } })).toContain("light.on: area, effect, summon");
+    expect(validateEntry({ light: { on: "effect" } })).toContain("light: a light effect needs a radius");
+    expect(validateEntry({ light: { on: "effect", dim: 10 } })).toContain("light.units: unit required");
+    expect(validateEntry({ light: { on: "effect", dim: 10, units: "ft", darkness: true } })).toContain("light.darkness: only on an area");
+    expect(validateEntry({ light: { on: "area", darkness: true, carried: true } })).toContain("light: carried and single only apply to a summon");
+    expect(validateEntry({ light: { on: "area", darkness: true, dispels: 2.5 } })).toContain("light.dispels: spell level (integer)");
+    expect(validateEntry({ light: { on: "area", darkness: true, couleur: "rouge" } })).toContain("light.couleur: unknown key");
   });
   it("effectsExpire : un repos de dnd5e", () => {
     expect(validateEntry({ effectsExpire: "longRest" })).toEqual([]);
-    expect(validateEntry({ effectsExpire: "dawn" })).toEqual(["effectsExpire : longRest, shortRest"]);
+    expect(validateEntry({ effectsExpire: "dawn" })).toEqual(["effectsExpire: longRest, shortRest"]);
   });
   it("revealsInvisible : true ou absent", () => {
     expect(validateEntry({ revealsInvisible: true })).toEqual([]);
-    expect(validateEntry({ revealsInvisible: "oui" })).toEqual(["revealsInvisible : true ou absent"]);
+    expect(validateEntry({ revealsInvisible: "oui" })).toEqual(["revealsInvisible: true or absent"]);
   });
   it("une surcouche corrige un rayon sans redire le reste", () => {
     expect(mergeEntries([{ light: { on: "effect", dim: 10, units: "ft" } }, { light: { dim: 20 } }]).light)

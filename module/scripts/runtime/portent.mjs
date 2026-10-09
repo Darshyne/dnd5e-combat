@@ -16,7 +16,7 @@ import { log } from "./shared.mjs";
 async function onRestCompleted(actor, result, config) {
   if ( (config?.type !== "long") || !actor?.isOwner || !portentDice(actor) ) return;
   const rolls = await rollPortent(actor);
-  if ( rolls ) log(`${actor.name} : Présage, jets notés ${rolls.join(", ")}`);
+  if ( rolls ) log(`${actor.name}: Portent, rolls noted ${rolls.join(", ")}`);
 }
 
 export function registerPortent() {
@@ -29,5 +29,5 @@ export function registerPortent() {
   });
   // Sur tous les clients : c'est celui du devin (son joueur, ou le MJ) qui répond.
   CONFIG.queries[PORTENT_QUERY] = handlePortentQuery;
-  route("dnd5e.restCompleted", onRestCompleted, { label: "Présage non lancé au Repos long" });
+  route("dnd5e.restCompleted", onRestCompleted, { label: "Portent not rolled on Long Rest" });
 }

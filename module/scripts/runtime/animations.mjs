@@ -85,7 +85,7 @@ export async function waitForAnimations(uuids) {
   const outcome = await Promise.race([Promise.all(pending).then(() => "done"), sleep(left).then(() => "late")]);
   const waited = Date.now() - t0;
   note({ kind: "waited", ids, ms: waited, late: outcome === "late" });
-  log(`animations : ${ids.length} attendue(s), ${waited} ms${outcome === "late" ? " (attente maximale atteinte)" : ""}`);
+  log(`animations: ${ids.length} awaited, ${waited} ms${outcome === "late" ? " (maximum wait reached)" : ""}`);
   return waited;
 }
 
@@ -98,6 +98,6 @@ export function registerAnimations() {
     name: `DND5ECOMBAT.Reglage.${WAIT_SETTING}.Nom`, hint: `DND5ECOMBAT.Reglage.${WAIT_SETTING}.Aide`,
     scope: "world", config: true, type: Number, default: 3, range: { min: 1, max: 10, step: 0.5 }
   });
-  route("createSequencerEffect", onCreate, { label: "animations : début (Sequencer)" });
-  route("endedSequencerEffect", onEnded, { label: "animations : fin (Sequencer)" });
+  route("createSequencerEffect", onCreate, { label: "animations: start (Sequencer)" });
+  route("endedSequencerEffect", onEnded, { label: "animations: end (Sequencer)" });
 }

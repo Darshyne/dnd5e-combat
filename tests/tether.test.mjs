@@ -25,8 +25,8 @@ describe("schéma : ranges, tether", () => {
     })).toEqual([]);
   });
   it("refusés", () => {
-    expect(validateEntry({ ranges: { dnd5eactivity000: { value: 0, units: "ft" } } })).toEqual(["ranges.dnd5eactivity000 : { value, units }"]);
+    expect(validateEntry({ ranges: { dnd5eactivity000: { value: 0, units: "ft" } } })).toEqual(["ranges.dnd5eactivity000: { value, units }"]);
     expect(validateEntry({ tether: { attack: "court", activity: "ffuqn0xdclG9YAQt", range: { value: 60, units: "ft" } } }))
-      .toEqual(["tether.attack : id d'activité (16 caractères) attendu"]);
+      .toEqual(["tether.attack: activity id (16 characters) expected"]);
   });
 });

@@ -24,18 +24,18 @@ export async function naturalOneFor(actor, what) {
     const rule = contentOf(item).entry?.onNatural1;
     const activity = rule ? item.system.activities?.get(rule.activity) : null;
     if ( !activity ) continue;
-    log(`${actor.name} : 1 naturel (${what}) — ${item.name}`);
+    log(`${actor.name}: natural 1 (${what}) — ${item.name}`);
     await activity.use({ [MODULE_ID]: { confirmed: true }, consume: false }, { configure: false })
-      .catch(err => console.error(`${MODULE_ID} | 1 naturel : ${item.name}`, err));
+      .catch(err => console.error(`${MODULE_ID} | natural 1: ${item.name}`, err));
   }
 }
 
 export function registerNaturalOne() {
   // dnd5e 6.0 : documents/activity/attack.mjs (`subject` = l'activité) ; documents/actor/actor.mjs (`subject` = l'acteur) ; le jet
   // contre la mort : `dnd5e.rollDeathSave` (Hooks.call, la valeur rendue n'est pas lue ici).
-  route("dnd5e.rollAttack", (rolls, { subject }={}) => afterRoll(rolls, subject?.actor, "attaque"), { label: "1 naturel : attaque non lue" });
-  for ( const [hook, what] of [["dnd5e.rollSavingThrow", "sauvegarde"], ["dnd5e.rollAbilityCheck", "test"], ["dnd5e.rollSkill", "test"],
-    ["dnd5e.rollToolCheck", "test"], ["dnd5e.rollDeathSave", "jet contre la mort"]] ) {
-    route(hook, (rolls, { subject }={}) => afterRoll(rolls, subject, what), { label: `1 naturel : ${what} non lu(e)` });
+  route("dnd5e.rollAttack", (rolls, { subject }={}) => afterRoll(rolls, subject?.actor, "attack"), { label: "natural 1: attack not read" });
+  for ( const [hook, what] of [["dnd5e.rollSavingThrow", "saving throw"], ["dnd5e.rollAbilityCheck", "check"], ["dnd5e.rollSkill", "check"],
+    ["dnd5e.rollToolCheck", "check"], ["dnd5e.rollDeathSave", "death saving throw"]] ) {
+    route(hook, (rolls, { subject }={}) => afterRoll(rolls, subject, what), { label: `natural 1: ${what} not read` });
   }
 }

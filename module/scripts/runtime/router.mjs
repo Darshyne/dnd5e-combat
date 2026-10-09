@@ -82,7 +82,7 @@ const router = createRouter({
     if ( entry.notify ) ui.notifications.error(entry.notify, { localize: true });
   },
   // Qui annule quoi : un déplacement arrêté en route se lit ainsi dans la console (get-client-errors, watch).
-  refused: entry => console.log(`${MODULE_ID} | ${entry.hook} annulé par « ${entry.label} »`),
+  refused: entry => console.log(`${MODULE_ID} | ${entry.hook} cancelled by "${entry.label}"`),
   // §98 : relevé des temps (runtime/perf.mjs).
   timing: { now: () => performance.now(), record: recordTiming }
 });

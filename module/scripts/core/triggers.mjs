@@ -21,46 +21,46 @@
 
 /** Les moments connus. Un moment de réaction ouvre une fenêtre ; les autres agissent d'eux-mêmes. */
 export const MOMENTS = Object.freeze({
-  isHit: "une attaque vient de toucher la créature (Bouclier : avant les dégâts ; riposte, B9 : à l'application)",
-  isDamaged: "la créature vient de subir des dégâts (Représailles infernales ; via un effet : Sommeil qui cesse, Domination qui se rejoue)",
-  leavesReach: "une créature hostile quitte l'allonge (attaque d'opportunité)",
-  enter: "une créature entre dans la zone, ou la zone vient sur elle",
-  turnStart: "la créature commence son tour dans la zone",
-  turnEnd: "la créature termine son tour dans la zone",
-  moves: "la créature se déplace dans la zone (par tranche de case parcourue : Croissance d'épines ; pas à la pose)",
-  preDamageRoll: "l'auteur s'apprête à lancer les dégâts d'une activité (dégâts bonus : Maléfice)",
+  isHit: "an attack just hit the creature (Shield: before damage; riposte, B9: on application)",
+  isDamaged: "the creature just took damage (Hellish Rebuke; via an effect: Sleep ending, Dominate replaying its save)",
+  leavesReach: "a hostile creature leaves reach (Opportunity Attack)",
+  enter: "a creature enters the area, or the area moves onto it",
+  turnStart: "the creature starts its turn in the area",
+  turnEnd: "the creature ends its turn in the area",
+  moves: "the creature moves within the area (per square traveled: Spike Growth; not on placement)",
+  preDamageRoll: "the actor is about to roll an activity's damage (bonus damage: Hex)",
   // Issues d'une résolution (SPEC §16, brique « déplacement forcé », « état posé ») : à l'application,
   // sur chaque cible atteinte. `hit` : une attaque de l'item l'a touchée ; `failedSave` : elle a raté
   // la sauvegarde de l'item (ou celle qu'une attaque touchée impose).
-  hit: "une attaque de l'item vient de toucher la cible (à l'application : poussée, état)",
-  failedSave: "la cible vient de rater la sauvegarde de l'item (à l'application : poussée, état)",
+  hit: "an attack from the item just hit the target (on application: push, condition)",
+  failedSave: "the target just failed the item's saving throw (on application: push, condition)",
   // Le tour de la créature elle-même, où qu'elle soit (brique « sauvegarde répétée ») : une déclaration
   // `via: "effect"` s'y accroche pour toute créature portant un effet de l'item (Immobilisation de personne).
-  startOfTurn: "la créature commence son tour (déclaration portée par un effet)",
-  endOfTurn: "la créature termine son tour (déclaration portée par un effet)",
+  startOfTurn: "the creature starts its turn (declaration carried by an effect)",
+  endOfTurn: "the creature ends its turn (declaration carried by an effect)",
   // Brique « avantage conditionnel » (§16, B6) : sur le client de l'attaquant, avant le jet, pour chaque cible.
   // Consultées : les items de l'attaquant, et les effets portés par l'attaquant ET par la cible (`via: "effect"`).
-  preAttackRoll: "l'auteur s'apprête à lancer une attaque contre la cible (avantage, désavantage)",
+  preAttackRoll: "the actor is about to make an attack roll against the target (advantage, disadvantage)",
   // Portes (§16, B5 bis) : une utilisation est suspendue avant d'avoir lieu.
-  castsSpell: "une créature hostile lance un sort à portée et en vue (Contresort : fenêtre de réaction)",
+  castsSpell: "a hostile creature casts a spell within range and in sight (Counterspell: reaction window)",
   // §19.6 : fenêtres sans attente, comme « blessé ».
-  isMissed: "une attaque vient de rater la créature (Riposte, Désarmement : fenêtre de réaction)",
-  enemyTurnEnd: "une créature hostile termine son tour (fenêtre de réaction ; la source est elle)",
-  isAttacked: "une créature s'apprête à attaquer le porteur (Sanctuaire : sauvegarde de l'attaquant, via un effet ; §34 : fenêtre de réaction de la cible, avant le jet — Esquive des ombres)",
+  isMissed: "an attack just missed the creature (Riposte, Disarming Attack: reaction window)",
+  enemyTurnEnd: "a hostile creature ends its turn (reaction window; it is the source)",
+  isAttacked: "a creature is about to attack the bearer (Sanctuary: the attacker's saving throw, via an effect; §34: the target's reaction window, before the roll — Shadowy Dodge)",
   // §34 : une créature hostile au réacteur s'apprête à faire un jet d'attaque, contre lui ou un allié : fenêtre de réaction avant le
   // jet (Éclat protecteur). Les faits voient le réacteur en `self`, l'attaquant en `source`, la créature visée en `target`.
-  enemyAttacks: "une créature hostile s'apprête à faire un jet d'attaque (Éclat protecteur : fenêtre de réaction, avant le jet)",
+  enemyAttacks: "a hostile creature is about to make an attack roll (Warding Flare: reaction window, before the roll)",
   // Le pendant : une créature alliée du réacteur (autre que lui) s'apprête à attaquer une créature qui lui est hostile (Présage
   // cosmique, Fortune : un dé ajouté au jet). Mêmes faits : le réacteur en `self`, l'attaquant en `source`, la cible en `target`.
-  allyAttacks: "une créature alliée s'apprête à faire un jet d'attaque contre un ennemi (Présage cosmique, Fortune : fenêtre de réaction, avant le jet)",
+  allyAttacks: "an allied creature is about to make an attack roll against an enemy (Cosmic Omen, Weal: reaction window, before the roll)",
   // §19.8 : fenêtre sans attente, comme « blessé » ; le fait `condition.gained` dit quel état.
-  gainsCondition: "la créature vient de subir un état (Métamorphose réflexe : fenêtre de réaction)",
+  gainsCondition: "the creature just gained a condition (reflexive shape-change: reaction window)",
   // Domaine de la Tombe : une AUTRE créature que celle qui réagit vient d'être touchée, avant les dégâts. Les faits voient
   // la réactrice en `self`, la créature touchée en `target`, l'attaquant en `source`.
-  allyIsHit: "une autre créature vient d'être touchée (Sentinelle au seuil de la mort : fenêtre de réaction, avant les dégâts)",
+  allyIsHit: "another creature was just hit (Sentinel at Death's Door: reaction window, before damage)",
   // §38 : une AUTRE créature que le réacteur va subir des dégâts, montant connu, avant leur application (Égide projetée : la réserve
   // du magicien les absorbe). Mêmes faits que `allyIsHit` : le réacteur en `self`, la créature en `target`, l'auteur en `source`.
-  allyIsDamaged: "une autre créature va subir des dégâts (Égide projetée : fenêtre de réaction, avant l'application)"
+  allyIsDamaged: "another creature is about to take damage (Projected Ward: reaction window, before application)"
 });
 
 /** Les moments dont les déclarations sont portées par les EFFETS de la créature concernée (`via: "effect"`). */

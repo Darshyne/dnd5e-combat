@@ -43,14 +43,14 @@ describe("attente des dés 3D", () => {
   it("continue sans les dés passé le délai, et le consigne", async () => {
     const { wait, reports } = setup({ animation: never, sleep: () => Promise.resolve(), maxMs: 8000 });
     await wait(message);
-    expect(reports).toEqual(["plus de 8000 ms"]);
+    expect(reports).toEqual(["over 8000 ms"]);
   });
 
   it("n'attend pas du tout quand la fenêtre est en arrière-plan : l'animation n'est même pas demandée", async () => {
     const { wait, reports, calls } = setup({ animation: never, hidden: true });
     await wait(message);
     expect(calls).toEqual([]);
-    expect(reports).toEqual(["fenêtre en arrière-plan"]);
+    expect(reports).toEqual(["window in the background"]);
   });
 
   it("interroge les dés 3D avec l'identifiant du message", async () => {

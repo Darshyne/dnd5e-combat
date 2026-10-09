@@ -76,7 +76,7 @@ export function aurasOf(actor) {
     const effect = merged.changes ? null
       : ((merged.effect ? item.effects.get(merged.effect) : null) ?? item.effects.find(e => e.transfer) ?? item.effects.contents[0]);
     if ( (!effect && !merged.changes) || !Number.isFinite(merged.radius) ) {
-      console.warn(`${MODULE_ID} | aura « ${item.name} » de ${actor.name} ignorée : ${(effect || merged.changes) ? "rayon inconnu" : "aucun effet à copier"}`);
+      console.warn(`${MODULE_ID} | aura "${item.name}" of ${actor.name} ignored: ${(effect || merged.changes) ? "unknown radius" : "no effect to copy"}`);
       continue;
     }
     auras.push({ item, effect, key: item.system.identifier ?? item.id, ...merged });

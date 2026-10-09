@@ -13,9 +13,9 @@ function onPreCreate(effect) {
   const change = sizeChangeFor(effect, actor);
   if ( !change ) return;
   effect.updateSource({ "system.changes": [...(effect._source.system?.changes ?? []), change] });
-  log(`${actor.name} : ${effect.name}, taille ${actor.system.traits.size} → ${change.value}`);
+  log(`${actor.name}: ${effect.name}, size ${actor.system.traits.size} -> ${change.value}`);
 }
 
 export function registerSize() {
-  route("preCreateActiveEffect", onPreCreate, { label: "taille : changement non ajouté" });
+  route("preCreateActiveEffect", onPreCreate, { label: "size: change not added" });
 }

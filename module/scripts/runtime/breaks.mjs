@@ -32,21 +32,21 @@ async function breakEffects(actor, moments, exceptItem=null, { before=null }={})
   await actor.deleteEmbeddedDocuments("ActiveEffect", broken.map(e => e.id));
   const token = tokenOf(actor);
   for ( const e of broken ) {
-    log(`${actor.name} : ${e.name} cesse (${moments.join(", ")})`);
+    log(`${actor.name}: ${e.name} ends (${moments.join(", ")})`);
     if ( token ) notice(token, loc("Retour.FinEffet", { item: e.name }), "ended");
   }
 }
 
 export function registerBreaks() {
   route("dnd5e.rollAttackV2", (rolls, { subject }={}) => {
-    breakEffects(subject?.actor, breakMoments({ attack: true, damage: false, spell: false })).catch(err => console.error(`${MODULE_ID} | fin d'effet`, err));
-  }, { label: "effet qui cesse au jet d'attaque non retiré" });
+    breakEffects(subject?.actor, breakMoments({ attack: true, damage: false, spell: false })).catch(err => console.error(`${MODULE_ID} | effect end`, err));
+  }, { label: "effect ending on attack roll not removed" });
   route("dnd5e.rollSavingThrow", (rolls, { subject }={}) => {
-    breakEffects(subject, ["save"], null, { before: Date.now() }).catch(err => console.error(`${MODULE_ID} | fin d'effet`, err));
-  }, { label: "effet qui cesse à la sauvegarde non retiré" });
+    breakEffects(subject, ["save"], null, { before: Date.now() }).catch(err => console.error(`${MODULE_ID} | effect end`, err));
+  }, { label: "effect ending on saving throw not removed" });
   route("dnd5e.postUseActivity", activity => {
     if ( !activity?.actor || (activity.type === "attack") ) return;
     const moments = breakMoments({ attack: false, damage: (activity.damage?.parts?.length ?? 0) > 0, spell: isSpellCast(activity.item) });
-    breakEffects(activity.actor, moments, activity.item).catch(err => console.error(`${MODULE_ID} | fin d'effet`, err));
-  }, { label: "effet qui cesse au sort ou aux dégâts non retiré" });
+    breakEffects(activity.actor, moments, activity.item).catch(err => console.error(`${MODULE_ID} | effect end`, err));
+  }, { label: "effect ending on spell or damage not removed" });
 }

@@ -41,7 +41,7 @@ function tick(region, token, event, turnKey=currentTurnKey(), { times=1 }={}) {
     const usageMessage = game.messages.get(state.usage);
     if ( !usageMessage ) return;
     await writeAreaState(region, { ...state, ...markHit(state, context) });
-    log(`${region.name} : ${token.name} (${event})`);
+    log(`${region.name}: ${token.name} (${event})`);
     announce(event, { actor: token.actor, target: token.actor, region: region.uuid, usage: state.usage });
     await replayAgainst(usageMessage, token, { region: region.uuid, event, ...(times > 1 ? { times } : {}) }, { activity: siblingFor(state, event) });
     // §75 : une zone à nombre de déclenchements (`zoneCharges` : Cordon de flèches, 4 projectiles) tombe au dernier.
@@ -49,11 +49,11 @@ function tick(region, token, event, turnKey=currentTurnKey(), { times=1 }={}) {
     if ( charges ) {
       const fired = (Number(readAreaState(region)?.fired) || 0) + 1;
       if ( fired >= charges ) {
-        log(`${region.name} : ${fired}/${charges} déclenchements, la zone prend fin`);
+        log(`${region.name}: ${fired}/${charges} triggers, the area ends`);
         await region.delete();
       } else {
         await writeAreaState(region, { ...readAreaState(region), fired });
-        log(`${region.name} : ${fired}/${charges} déclenchements`);
+        log(`${region.name}: ${fired}/${charges} triggers`);
       }
     }
   });
@@ -85,25 +85,25 @@ function casterPulse(region, caster, at) {
     await writeAreaState(region, { ...state, pulses: n });
     const entry = pulseFor(rule, n);
     const sibling = entry ? item.system.activities?.get(entry.activity) : null;
-    if ( !sibling ) { log(`${region.name} : tour ${n} du lanceur, rien à rejouer`); return; }
+    if ( !sibling ) { log(`${region.name}: caster's turn ${n}, nothing to replay`); return; }
     // Tsunami : le mur s'éloigne du lanceur avant de frapper.
     if ( rule.away ) await driftAway(region, caster, rule.away);
     if ( entry.pay ) await payWithoutUse(sibling);
     if ( entry.use ) {
       await sibling.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: false } }, { configure: false }, { create: false });
-      log(`${region.name} : tour ${n} du lanceur, « ${sibling.name} » utilisée`);
+      log(`${region.name}: caster's turn ${n}, "${sibling.name}" used`);
       return;
     }
     const inside = region.parent.tokens.filter(t => isInside(t, region) && isAffectable(t, state) && (!rule.ground || grounded(t)));
     const tokens = pulseTargets(inside, caster.disposition, entry.max);
-    if ( !tokens.length ) log(`${region.name} : tour ${n} du lanceur, personne dans la zone`);
+    if ( !tokens.length ) log(`${region.name}: caster's turn ${n}, nobody in the area`);
     if ( tokens.length ) {
-      log(`${region.name} : tour ${n} du lanceur, « ${sibling.name} » sur ${tokens.map(t => t.name).join(", ")}`);
+      log(`${region.name}: caster's turn ${n}, "${sibling.name}" on ${tokens.map(t => t.name).join(", ")}`);
       await pulseAll(usageMessage, tokens, sibling, region);
     }
     // « Une fois que la hauteur du mur est de 0 m, le sort prend fin » : l'item n'a plus d'utilisation.
     if ( rule.untilSpent && !((Number(item.system.uses?.value) || 0) > 0) ) {
-      log(`${region.name} : plus d'utilisation, le sort prend fin`);
+      log(`${region.name}: no uses left, the spell ends`);
       const effect = concentrationOn(item);
       // La concentration emporte sa zone (runtime/concentration.mjs) ; sans elle, la zone est retirée ici.
       if ( effect ) await item.actor?.endConcentration?.(effect);
@@ -126,7 +126,7 @@ async function driftAway(region, caster, { distance, units }) {
   try { gridDistance = convertLength(distance, units, scene.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
   const px = gridDistance * (scene.grid.size / scene.grid.distance);
   await moveZoneTo(region, { x: center.x + (dx / length) * px, y: center.y + (dy / length) * px });
-  log(`${region.name} : s'éloigne de ${distance} ${units}`);
+  log(`${region.name}: moves away by ${distance} ${units}`);
 }
 
 /**
@@ -143,7 +143,7 @@ async function onZoneEnd(region) {
   const caster = state?.source ? fromUuidSync(state.source, { strict: false }) : null;
   const point = zoneCenter(region);
   if ( !activity || !caster?.parent || !point ) return;
-  log(`${region.name} : la zone prend fin, « ${activity.name} »`);
+  log(`${region.name}: the area ends, "${activity.name}"`);
   const used = await activity.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: false }, consume: false }, { configure: false });
   if ( !used ) return;
   await placeAreaAt(activity, caster, point);
@@ -253,43 +253,43 @@ async function onWorldTime(worldTime) {
       if ( gone.length ) await combat.deleteEmbeddedDocuments("Combatant", gone);
     }
     await token.delete();
-    log(`${name} : durée écoulée, congédié`);
+    log(`${name}: duration elapsed, dismissed`);
   }
   const gone = expiredRegions(worldTime);
   for ( const region of gone ) {
     const name = region.name;
     await region.delete();
-    log(`zone « ${name} » : durée écoulée, retirée`);
+    log(`area "${name}": duration elapsed, removed`);
   }
 }
 
 export function registerAreas() {
-  const trigger = { executor: true, label: "zone : déclencheur interrompu" };
+  const trigger = { executor: true, label: "area: trigger interrupted" };
   route("createRegion", async region => {
     const at = await noteExpiry(region);
-    if ( at !== null ) log(`zone « ${region.name} » : prend fin à l'heure du monde ${at} (dans ${at - game.time.worldTime} s)`);
-  }, { executor: true, label: "zone : durée non notée" });
+    if ( at !== null ) log(`area "${region.name}": ends at world time ${at} (in ${at - game.time.worldTime} s)`);
+  }, { executor: true, label: "area: duration not recorded" });
   // §37.4 : effets portés dans la zone (Silence) — le comportement du cœur, qui pose et retire seul.
   route("createRegion", async region => {
     const held = await holdZoneEffects(region);
-    if ( held ) log(`zone « ${region.name} » : ${held.effects.join(", ")} porté(s) dedans`);
-  }, { executor: true, label: "zone : effets portés non posés" });
+    if ( held ) log(`area "${region.name}": ${held.effects.join(", ")} carried inside`);
+  }, { executor: true, label: "area: carried effects not applied" });
   // §69 : terrain difficile perdu par les données (Enchevêtrement du Manuel des joueurs premium…).
   route("createRegion", async region => {
     const behavior = await holdDifficultTerrain(region);
-    if ( behavior ) log(`zone « ${region.name} » : terrain difficile posé`);
-  }, { executor: true, label: "zone : terrain difficile non posé" });
-  route("updateWorldTime", onWorldTime, { executor: true, label: "zone : durée écoulée, non retirée" });
-  route("deleteRegion", onZoneEnd, { executor: true, label: "zone : fin sans son activité (zoneEnd)" });
+    if ( behavior ) log(`area "${region.name}": difficult terrain applied`);
+  }, { executor: true, label: "area: difficult terrain not applied" });
+  route("updateWorldTime", onWorldTime, { executor: true, label: "area: duration elapsed, not removed" });
+  route("deleteRegion", onZoneEnd, { executor: true, label: "area: ended without its activity (zoneEnd)" });
   route("createToken", async tokenDoc => {
     const at = await noteSummonExpiry(tokenDoc);
-    if ( at !== null ) log(`${tokenDoc.name} : congédié à l'heure du monde ${at} (dans ${at - game.time.worldTime} s)`);
-  }, { executor: true, label: "invocation : durée non notée" });
+    if ( at !== null ) log(`${tokenDoc.name}: dismissed at world time ${at} (in ${at - game.time.worldTime} s)`);
+  }, { executor: true, label: "summon: duration not recorded" });
   route("combatTurnChange", onTurnChange, trigger);
   route("moveToken", onMoveToken, trigger);
   // Un déplacement arrêté entre deux morceaux (`stopMovement`, appelé sur tous les clients, documents/token.mjs:792) : les cases
   // déjà parcourues comptent.
   route("stopToken", settleCrossings, trigger);
   route("updateRegion", onUpdateRegion, trigger);
-  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "dégâts : dés multipliés (zone), type choisi" });
+  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "damage: dice multiplied (area), type chosen" });
 }

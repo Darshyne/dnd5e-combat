@@ -33,7 +33,7 @@ async function handleEnchant({ activity: activityUuid, item: itemUuid, profile, 
   let effect;
   try { effect = await applyEnchantmentTo(activity, item, { profile, message, concentration }); }
   finally { pactRewrites.delete(item.uuid); }
-  if ( effect ) log(`${item.parent?.name ?? "?"} : ${item.name} enchantée (${effect.name})`);
+  if ( effect ) log(`${item.parent?.name ?? "?"}: ${item.name} enchanted (${effect.name})`);
   return effect ? effect.name : null;
 }
 
@@ -74,13 +74,13 @@ async function onPostUse(activity, usageConfig, results) {
 }
 
 export function registerEnchant() {
-  route("dnd5e.postUseActivity", onPostUse, { label: "enchantement : arme non enchantée" });
+  route("dnd5e.postUseActivity", onPostUse, { label: "enchantment: weapon not enchanted" });
   // §16.45 : l'enchantement du pacte, réécrit avant sa création (type de dégâts choisi, Charisme, nom).
   route("dnd5e.preApplyEnchantment", (item, data) => {
     const rewrite = pactRewrites.get(item.uuid);
     if ( !rewrite ) return;
     data.system.changes = rewritePactChanges(data.system.changes, rewrite);
-    log(`${item.name} : arme de pacte (${rewrite.chosen ?? "type normal"})`);
-  }, { label: "arme de pacte : enchantement non réécrit" });
+    log(`${item.name}: pact weapon (${rewrite.chosen ?? "normal type"})`);
+  }, { label: "pact weapon: enchantment not rewritten" });
   CONFIG.queries[ENCHANT_QUERY] = handleEnchant;
 }

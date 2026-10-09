@@ -11,13 +11,13 @@ import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 
 export function registerReduction() {
-  route("dnd5e.preApplyDamage", absorbDamage, { label: "réserve : dégâts non absorbés" });
+  route("dnd5e.preApplyDamage", absorbDamage, { label: "pool: damage not absorbed" });
   route("dnd5e.applyDamage", async (actor, amount, options) => {
     const pools = await spendPools(actor, options);
-    for ( const p of pools ) log(`${p.name} : absorbe ${p.take} dégâts pour ${actor.name}`);
-  }, { label: "réserve : dépense non écrite" });
+    for ( const p of pools ) log(`${p.name}: absorbs ${p.take} damage for ${actor.name}`);
+  }, { label: "pool: spending not written" });
   route("createChatMessage", async message => {
     if ( (message.type !== "usage") || message.getFlag(MODULE_ID, "areaTick") || message.getFlag(MODULE_ID, "resave") ) return;
-    for ( const r of await rechargePools(message) ) log(`${r.name} : +${r.gained}`);
-  }, { executor: true, label: "réserve : recharge non écrite" });
+    for ( const r of await rechargePools(message) ) log(`${r.name}: +${r.gained}`);
+  }, { executor: true, label: "pool: recharge not written" });
 }

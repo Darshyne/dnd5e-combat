@@ -31,7 +31,7 @@ function badgeTooltip(auto) {
   const lines = [`<strong>${esc(loc(`Automatisation.${auto.level}.Nom`))}</strong>`, esc(loc(`Automatisation.${auto.level}.Aide`))];
   if ( auto.rules.length ) {
     const from = Object.entries(auto.layers ?? {}).filter(([, on]) => on).map(([k]) => loc(`Automatisation.Couche.${k}`));
-    lines.push(`${esc(loc("Automatisation.Regles"))} : ${esc(auto.rules.join(", "))}${from.length ? ` (${esc(from.join(", "))})` : ""}`);
+    lines.push(`${esc(loc("LabelValue", { label: loc("Automatisation.Regles"), value: auto.rules.join(", ") }))}${from.length ? ` (${esc(from.join(", "))})` : ""}`);
   }
   if ( auto.identifier ) lines.push(`<code>${esc(auto.identifier)}</code>`);
   return lines.join("<br>");
@@ -75,7 +75,7 @@ async function editReport(item) {
     default: true, callback: (event, button) => ({ note: button.form.elements.note.value }) }];
   if ( current ) buttons.push({ action: "remove", label: loc("Signalement.Retirer"), icon: "fa-solid fa-xmark", callback: () => ({ remove: true }) });
   const answer = await foundry.applications.api.DialogV2.wait({
-    window: { title: `${loc("Signalement.Titre")} : ${item.name}`, icon: "fa-solid fa-flag" },
+    window: { title: loc("LabelValue", { label: loc("Signalement.Titre"), value: item.name }), icon: "fa-solid fa-flag" },
     position: { width: 420 },
     content: `<p class="hint">${esc(loc("Signalement.Aide"))}</p>
       <textarea name="note" rows="3" placeholder="${esc(loc("Signalement.Exemple"))}">${esc(current?.note ?? "")}</textarea>`,
@@ -142,7 +142,7 @@ return class ReportsPanel extends foundry.applications.api.ApplicationV2 {
 
   static async #chat() {
     const content = reportsByActor(reports()).map(({ actor, items }) => `<p><strong>${esc(actor)}</strong></p><ul>${
-      items.map(i => `<li>${esc(i.item)}${i.note ? ` : ${esc(i.note)}` : ""}</li>`).join("")}</ul>`).join("");
+      items.map(i => `<li>${i.note ? esc(loc("LabelValue", { label: i.item, value: i.note })) : esc(i.item)}</li>`).join("")}</ul>`).join("");
     await ChatMessage.create({ content: `<h3>${esc(loc("Bilan.Titre"))}</h3>${content}`,
       whisper: ChatMessage.getWhisperRecipients("GM").map(u => u.id), speaker: { alias: loc("Bilan.Titre") } });
   }
@@ -188,5 +188,5 @@ export function registerAutomation() {
     onChange: () => refresh() });
   if ( game.settings.registerMenu ) game.settings.registerMenu(MODULE_ID, "reportsPanel", { name: "DND5ECOMBAT.Bilan.Titre",
     label: "DND5ECOMBAT.Bilan.Ouvrir", hint: "DND5ECOMBAT.Bilan.Aide", icon: "fa-solid fa-flag", type: Panel(), restricted: true });
-  route("renderBaseActorSheet", (app, element) => decorate(app, element), { label: "pastilles d'automatisation", level: "warn" });
+  route("renderBaseActorSheet", (app, element) => decorate(app, element), { label: "automation badges", level: "warn" });
 }

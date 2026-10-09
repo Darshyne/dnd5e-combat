@@ -56,7 +56,7 @@ export function createDispatcher({ read, write, execute, enqueue, publish=() => 
     const entry = staged.get(carrierId);
     if ( entry ) { entry.resolution = resolution; return; }
     if ( !coalesce() ) return writeInOrder(carrierId, resolution);
-    const timer = setTimeout(() => flush(carrierId)?.catch(err => console.error("dnd5e-combat | écriture regroupée", err)), flushMs);
+    const timer = setTimeout(() => flush(carrierId)?.catch(err => console.error("dnd5e-combat | batched write", err)), flushMs);
     staged.set(carrierId, { resolution, timer });
   }
 

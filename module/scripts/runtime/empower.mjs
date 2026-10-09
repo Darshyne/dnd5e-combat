@@ -33,7 +33,7 @@ async function empower(victim, { n, item: itemUuid }) {
   const rule = empowerOf(item);
   if ( !biter || !rule || ((biter.system.attributes?.hp?.value ?? 0) <= 0) ) return;
   if ( !game.user.isGM && !biter.isOwner ) return;
-  if ( usesLeft(item) <= 0 ) { log(`${item.name} : ${n} dégâts, plus d'utilisation pour se renforcer`); return; }
+  if ( usesLeft(item) <= 0 ) { log(`${item.name}: ${n} damage, no uses left to empower`); return; }
   const answer = await askChoice(biter, {
     actor: biter.uuid,
     item: item.name,
@@ -44,24 +44,24 @@ async function empower(victim, { n, item: itemUuid }) {
       { id: "boost", label: loc("Morsure.Renfort", { n }) }
     ]
   });
-  if ( !["heal", "boost"].includes(answer?.id) ) { log(`${item.name} : ${biter.name} ne se renforce pas`); return; }
+  if ( !["heal", "boost"].includes(answer?.id) ) { log(`${item.name}: ${biter.name} does not empower`); return; }
   const token = tokenOf(biter);
   if ( answer.id === "heal" ) {
     await spendUse(item);
     await biter.applyDamage([{ value: n, type: "healing" }]);
     if ( token ) notice(token, loc("Morsure.RetourDrain", { n }), "gain");
-    log(`${item.name} : ${biter.name} draine ${victim.name} et regagne ${n} PV`);
+    log(`${item.name}: ${biter.name} drains ${victim.name} and regains ${n} HP`);
   }
   else {
     const data = boostData(item, rule, n);
-    if ( !data ) { log(`${item.name} : effet de renforcement ${rule.effect} introuvable`); return; }
+    if ( !data ) { log(`${item.name}: empowerment effect ${rule.effect} not found`); return; }
     await spendUse(item);
     // Un seul renforcement à la fois : le nouveau remplace celui qui n'a pas encore servi.
     const old = boostsOf(biter).filter(e => e.getFlag(MODULE_ID, "boost")?.item === item.uuid).map(e => e.id);
     if ( old.length ) await biter.deleteEmbeddedDocuments("ActiveEffect", old);
     await biter.createEmbeddedDocuments("ActiveEffect", [data]);
     if ( token ) notice(token, loc("Morsure.RetourRenfort", { n }), "gain");
-    log(`${item.name} : ${biter.name} se renforce (+${n} au prochain jet d'attaque ou test de caractéristique)`);
+    log(`${item.name}: ${biter.name} is empowered (+${n} to the next attack roll or ability check)`);
   }
   await ChatMessage.implementation.create({
     speaker: ChatMessage.implementation.getSpeaker({ actor: biter }),
@@ -86,16 +86,16 @@ async function consumeBoosts(actor, kind) {
   ids.forEach(id => consuming.add(`${actor.uuid}.ActiveEffect.${id}`));
   try { await actor.deleteEmbeddedDocuments("ActiveEffect", ids); }
   finally { ids.forEach(id => consuming.delete(`${actor.uuid}.ActiveEffect.${id}`)); }
-  log(`${actor.name} : renforcement consommé (${kind === "attack" ? "jet d'attaque" : "test de caractéristique"})`);
+  log(`${actor.name}: empowerment consumed (${kind === "attack" ? "attack roll" : "ability check"})`);
 }
 
 export function registerEmpower() {
-  route("dnd5e.calculateDamage", onCalculateDamage, { label: "morsure : montant non lu" });
-  route("dnd5e.applyDamage", onApplyDamage, { label: "morsure : renforcement non proposé" });
+  route("dnd5e.calculateDamage", onCalculateDamage, { label: "bite: amount not read" });
+  route("dnd5e.applyDamage", onApplyDamage, { label: "bite: empowerment not offered" });
   // dnd5e 6.0.3 : documents/activity/attack.mjs:212 (`subject` = l'activité) ; documents/actor/actor.mjs:1448 (compétence,
   // outil : `dnd5e.roll${name}`) et 1657 (test de caractéristique) — `subject` = l'acteur.
-  route("dnd5e.rollAttack", (rolls, { subject }={}) => consumeBoosts(subject?.actor, "attack"), { label: "renforcement non consommé" });
+  route("dnd5e.rollAttack", (rolls, { subject }={}) => consumeBoosts(subject?.actor, "attack"), { label: "empowerment not consumed" });
   for ( const hook of ["dnd5e.rollAbilityCheck", "dnd5e.rollSkill", "dnd5e.rollToolCheck"] ) {
-    route(hook, (rolls, { subject }={}) => consumeBoosts(subject, "check"), { label: "renforcement non consommé" });
+    route(hook, (rolls, { subject }={}) => consumeBoosts(subject, "check"), { label: "empowerment not consumed" });
   }
 }

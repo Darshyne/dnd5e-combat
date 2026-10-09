@@ -32,8 +32,8 @@ export function modifierLines(modifiers) {
   const describe = describeReason;
   const lines = [];
   if ( !modifiers.agreed ) lines.push({ css: "pending", text: loc("CiblesDivergentes") });
-  if ( modifiers.advantage?.length ) lines.push({ css: "hit", text: `${loc("Avantage")} : ${modifiers.advantage.map(describe).join(", ")}` });
-  if ( modifiers.disadvantage?.length ) lines.push({ css: "miss", text: `${loc("Desavantage")} : ${modifiers.disadvantage.map(describe).join(", ")}` });
+  if ( modifiers.advantage?.length ) lines.push({ css: "hit", text: loc("LabelValue", { label: loc("Avantage"), value: modifiers.advantage.map(describe).join(", ") }) });
+  if ( modifiers.disadvantage?.length ) lines.push({ css: "miss", text: loc("LabelValue", { label: loc("Desavantage"), value: modifiers.disadvantage.map(describe).join(", ") }) });
   if ( modifiers.advantage?.length && modifiers.disadvantage?.length ) lines.push({ css: "pending", text: loc("SAnnulent") });
   return lines;
 }
@@ -117,7 +117,7 @@ function renderResolution(message, html, resolution) {
   const { plan, step } = resolution;
   if ( step === STEPS.AWAITING_ATTACK ) return;
   const content = html.querySelector(".message-content");
-  if ( !content ) return console.warn(`${MODULE_ID} | carte sans .message-content, résolution non affichée`, html);
+  if ( !content ) return console.warn(`${MODULE_ID} | card without .message-content, resolution not shown`, html);
   if ( step === STEPS.AWAITING_REACTION ) return content.append(block([{ css: "pending", text: loc("ReactionEnAttente") }]));
   if ( pendingChoice(resolution) ) return content.append(block([{ css: "pending", text: loc("ChoixEnAttente") }]));
 
@@ -152,9 +152,9 @@ function applyChatLight() {
 }
 
 export function registerChat() {
-  route("ready", applyChatLight, { label: "journal allégé" });
+  route("ready", applyChatLight, { label: "light chat log" });
   route("updateSetting", setting => { if ( setting.key === `${MODULE_ID}.${CHAT_LIGHT_SETTING}` ) applyChatLight(); },
-    { label: "journal allégé : réglage changé" });
+    { label: "light chat log: setting changed" });
   // Pas `renderChatMessageHTML` : le cœur l'émet AVANT que dnd5e ne remplace le contenu de
   // `.message-content` par sa propre carte (chat-message-data-model.mjs:80-82), ce qui effaçait
   // notre bloc. `dnd5e.renderChatMessage` est émis après (documents/chat-message.mjs:168).
@@ -171,5 +171,5 @@ export function registerChat() {
     if ( judged ) renderVerdict(html, judged);
     const applied = message.getFlag(MODULE_ID, "applied");
     if ( applied ) renderDamage(message, html, applied);
-  }, { label: "verdict sur la carte de chat" });
+  }, { label: "verdict on the chat card" });
 }

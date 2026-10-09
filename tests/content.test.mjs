@@ -19,19 +19,19 @@ describe("validation d'une entrée", () => {
 
   it("refuse ce qui n'est pas un objet, et les clés inconnues", () => {
     expect(validateEntry("hex", { facts })).toHaveLength(1);
-    expect(validateEntry({ reaction: { window: "isHit" } }, { facts })[0]).toMatch(/reaction : clé inconnue/);
+    expect(validateEntry({ reaction: { window: "isHit" } }, { facts })[0]).toMatch(/reaction: unknown key/);
   });
 
   it("déclencheur : moment, étape, fait — chacun contrôlé", () => {
     const errors = validateEntry({ triggers: [{ on: "onHit", if: { "moon.phase": "full" }, do: [{ type: "smite" }] }] }, { facts });
     expect(errors).toEqual([
-      `triggers[0].on : moment « onHit » inconnu (${MOMENTS_LIST})`,
-      "triggers[0].do[0].type : « smite » inconnu (disarm, use, replay, damage, move, status, resave, remove, halve, uncrit, consume, advantage, disadvantage, ward, attackBonus, endCondition, reduce, miss, penalty, bonus, absorb, interpose, mark, save, breakConcentration)",
-      "triggers[0].if : fait « moon.phase » inconnu"
+      `triggers[0].on: unknown moment "onHit" (${MOMENTS_LIST})`,
+      "triggers[0].do[0].type: unknown \"smite\" (disarm, use, replay, damage, move, status, resave, remove, halve, uncrit, consume, advantage, disadvantage, ward, attackBonus, endCondition, reduce, miss, penalty, bonus, absorb, interpose, mark, save, breakConcentration)",
+      "triggers[0].if: unknown fact \"moon.phase\""
     ]);
-    expect(validateEntry({ triggers: [{ on: "isHit" }] }, { facts })).toEqual(["triggers[0].do : au moins une étape"]);
+    expect(validateEntry({ triggers: [{ on: "isHit" }] }, { facts })).toEqual(["triggers[0].do: at least one step"]);
     expect(validateEntry({ triggers: [{ on: "preDamageRoll", do: [{ type: "damage" }] }] }, { facts })).toEqual([
-      "triggers[0].do[0].formula : formule requise", "triggers[0].do[0].damageType : type de dégâts requis"
+      "triggers[0].do[0].formula: formula required", "triggers[0].do[0].damageType: damage type required"
     ]);
     expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "use", target: "ally" }] }] }, { facts })[0]).toMatch(/target/);
     expect(validateEntry({ triggers: { on: "isHit", do: [{ type: "use" }] } }, { facts })).toEqual([]);   // une seule, sans liste
@@ -40,18 +40,18 @@ describe("validation d'une entrée", () => {
   it("§36 : « bonus » — un dé ajouté par une réaction avant le jet d'attaque d'un allié", () => {
     const fortune = { on: "allyAttacks", do: [{ type: "use", activity: "nu3AqVu9lyqeFwr3" }, { type: "bonus", formula: "1d6" }] };
     expect(validateEntry({ triggers: [fortune] }, { facts })).toEqual([]);
-    expect(validateEntry({ triggers: [{ ...fortune, do: [fortune.do[0], { type: "bonus" }] }] }, { facts })).toEqual(["triggers[0].do[1].formula : formule requise"]);
+    expect(validateEntry({ triggers: [{ ...fortune, do: [fortune.do[0], { type: "bonus" }] }] }, { facts })).toEqual(["triggers[0].do[1].formula: formula required"]);
     expect(validateEntry({ triggers: [{ on: "allyAttacks", do: [{ type: "bonus", formula: "1d6" }] }] }, { facts }))
-      .toEqual(["triggers[0].do : « bonus » demande le moment allyAttacks et une réaction « use »"]);
+      .toEqual(["triggers[0].do: \"bonus\" requires the allyAttacks moment and a \"use\" reaction"]);
     expect(validateEntry({ triggers: [{ ...fortune, on: "enemyAttacks" }] }, { facts }))
-      .toEqual(["triggers[0].do : « bonus » demande le moment allyAttacks et une réaction « use »"]);
+      .toEqual(["triggers[0].do: \"bonus\" requires the allyAttacks moment and a \"use\" reaction"]);
   });
 
   it("§38 : `rollBonus` — l'activité et les jets concernés", () => {
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["save", "check"] } }, { facts })).toEqual([]);
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["attack"] } }, { facts })).toEqual([]);
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["check"], skills: ["ste"] } }, { facts })).toEqual([]);
-    expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["damage"] } }, { facts })).toEqual(["rollBonus : { activity, on: [save | check | attack | initiative], skills?, statuses? }"]);
+    expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["damage"] } }, { facts })).toEqual(["rollBonus: { activity, on: [save | check | attack | initiative], skills?, statuses? }"]);
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["check"], skills: [] } }, { facts })).toHaveLength(1);
   });
 
@@ -59,57 +59,57 @@ describe("validation d'une entrée", () => {
     const ward = { on: "allyIsDamaged", do: [{ type: "use", activity: "THaODa86JJaeoWfL", consume: false }, { type: "absorb" }] };
     expect(validateEntry({ triggers: [ward] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ ...ward, on: "isDamaged" }] }, { facts }))
-      .toEqual(["triggers[0].do : « absorb » demande le moment allyIsDamaged et une réaction « use »"]);
+      .toEqual(["triggers[0].do: \"absorb\" requires the allyIsDamaged moment and a \"use\" reaction"]);
     expect(validateEntry({ triggers: [{ ...ward, do: [{ type: "use", consume: true }, { type: "absorb" }] }] }, { facts }))
-      .toEqual(["triggers[0].do[0].consume : false ou absent"]);
+      .toEqual(["triggers[0].do[0].consume: false or absent"]);
   });
 
   it("§37 : `choice.pool` (effets d'item proposés par une activité) et `resave` { keep, onFail: dodge }", () => {
     expect(validateEntry({ choice: { effects: "one", pool: { PYFPZ4aLWjKJ1tLZ: ["m5aRx9iXnJi2WWPU", "pG5HdDpW8VELR1O3"] } } }, { facts })).toEqual([]);
     expect(validateEntry({ choice: { effects: "one", pool: { court: ["m5aRx9iXnJi2WWPU"] } } }, { facts }))
-      .toEqual(["choice.pool : { <id d'activité> : [ids d'effets] } (16 caractères)"]);
+      .toEqual(["choice.pool: { <activity id>: [effect ids] } (16 characters)"]);
     expect(validateEntry({ choice: { effects: "one", pool: { PYFPZ4aLWjKJ1tLZ: [] } } }, { facts })).toHaveLength(1);
     const resave = step => validateEntry({ triggers: [{ on: "startOfTurn", via: "effect", do: [step] }] }, { facts });
     expect(resave({ type: "resave", keep: true, onFail: "dodge" })).toEqual([]);
-    expect(resave({ type: "resave", keep: false })).toEqual(["triggers[0].do[0].keep : true ou absent"]);
-    expect(resave({ type: "resave", onFail: "flee" })).toEqual(["triggers[0].do[0].onFail : dodge"]);
+    expect(resave({ type: "resave", keep: false })).toEqual(["triggers[0].do[0].keep: true or absent"]);
+    expect(resave({ type: "resave", onFail: "flee" })).toEqual(["triggers[0].do[0].onFail: dodge"]);
   });
 
   it("aura : rayon positif, camp connu, id d'effet à 16 caractères, pas de clé inventée", () => {
     expect(validateEntry({ aura: { radius: -5, affects: "friends", effect: "abc", color: "red" } }, { facts })).toEqual([
-      "aura.radius : nombre positif", "aura.affects : ally, enemy, any", "aura.effect : id d'effet (16 caractères)", "aura.color : clé inconnue"
+      "aura.radius: positive number", "aura.affects: ally, enemy, any", "aura.effect: effect id (16 characters)", "aura.color: unknown key"
     ]);
     expect(validateEntry({ aura: { radius: 10 } }, { facts })).toEqual([]);
   });
 
   it("onHit : un id d'activité", () => {
-    expect(validateEntry({ onHit: { save: "abc" } }, { facts })).toEqual(["onHit.save : id d'activité (16 caractères)"]);
+    expect(validateEntry({ onHit: { save: "abc" } }, { facts })).toEqual(["onHit.save: activity id (16 characters)"]);
     expect(validateEntry({ onHit: "udF9lrpAQMvL0b9J" }, { facts })).toHaveLength(1);
   });
 
   it("choice : effets « one », question facultative, rien d'autre", () => {
     expect(validateEntry({ choice: { effects: "one" } }, { facts })).toEqual([]);
     expect(validateEntry({ choice: { effects: "one", prompt: "Laquelle ?" } }, { facts })).toEqual([]);
-    expect(validateEntry({ choice: { effects: "all" } }, { facts })).toEqual(["choice.effects : one"]);
-    expect(validateEntry({ choice: { effects: "one", prompt: 3, mode: "x" } }, { facts })).toEqual(["choice.prompt : chaîne", "choice.mode : clé inconnue"]);
-    expect(validateEntry({ choice: "one" }, { facts })).toEqual(["choice : un objet"]);
+    expect(validateEntry({ choice: { effects: "all" } }, { facts })).toEqual(["choice.effects: one"]);
+    expect(validateEntry({ choice: { effects: "one", prompt: 3, mode: "x" } }, { facts })).toEqual(["choice.prompt: string", "choice.mode: unknown key"]);
+    expect(validateEntry({ choice: "one" }, { facts })).toEqual(["choice: an object"]);
   });
 
   it("targets (§16.8) : types connus, condition aux faits connus, rien d'autre", () => {
     expect(validateEntry({ targets: { types: ["humanoid"] } }, { facts })).toEqual([]);
     expect(validateEntry({ targets: { unaffectedIf: { "target.immuneTo": "exhaustion" } } }, { facts })).toEqual([]);
     expect(validateEntry({ targets: { types: ["elf"], unaffectedIf: { "moon.phase": 1 }, only: true } }, { facts })).toEqual([
-      "targets.types : « elf » inconnu (aberration, beast, celestial, construct, dragon, elemental, fey, fiend, giant, humanoid, monstrosity, ooze, plant, undead)",
-      "targets.unaffectedIf : fait « moon.phase » inconnu",
-      "targets.only : clé inconnue"
+      "targets.types: unknown \"elf\" (aberration, beast, celestial, construct, dragon, elemental, fey, fiend, giant, humanoid, monstrosity, ooze, plant, undead)",
+      "targets.unaffectedIf: unknown fact \"moon.phase\"",
+      "targets.only: unknown key"
     ]);
-    expect(validateEntry({ targets: { types: [] } }, { facts })).toEqual(["targets.types : liste non vide de types de créature"]);
+    expect(validateEntry({ targets: { types: [] } }, { facts })).toEqual(["targets.types: non-empty list of creature types"]);
     expect(mergeEntries([{ targets: { types: ["humanoid"] } }, { targets: { unaffectedIf: true } }])).toEqual({ targets: { types: ["humanoid"], unaffectedIf: true } });
   });
 
   it("une table entière est validée entrée par entrée, préfixée par l'identifiant", () => {
     expect(validateTable({ hex: { triggers: [{ on: "nope", do: [{ type: "use" }] }] }, shield: { triggers: [{ on: "isHit", do: [{ type: "use" }] }] } }, { facts }))
-      .toEqual([`hex.triggers[0].on : moment « nope » inconnu (${MOMENTS_LIST})`]);
+      .toEqual([`hex.triggers[0].on: unknown moment "nope" (${MOMENTS_LIST})`]);
     expect(validateTable([], { facts })).toHaveLength(1);
   });
 });
@@ -269,32 +269,32 @@ describe("briques (SPEC §16) : étapes d'issue, sœur rejouée, sauvegarde rép
     expect(validateEntry({ triggers: [{ on: "failedSave", do: [{ type: "move", mode: "push", distance: 10, units: "ft" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "hit", do: [{ type: "move", mode: "pull", distance: 10, units: "ft" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "failedSave", do: [{ type: "move", mode: "throw", distance: 0, units: 5 }] }] }, { facts })).toEqual([
-      "triggers[0].do[0].mode : push, pull", "triggers[0].do[0].distance : nombre positif ou formule", "triggers[0].do[0].units : unité requise"
+      "triggers[0].do[0].mode: push, pull", "triggers[0].do[0].distance: positive number or formula", "triggers[0].do[0].units: unit required"
     ]);
     expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "move", mode: "push", distance: 5, units: "ft" }] }] }, { facts }))
-      .toEqual(["triggers[0].do : « move » demande un moment d'issue (hit, failedSave)"]);
+      .toEqual(["triggers[0].do: \"move\" requires an outcome moment (hit, failedSave)"]);
   });
 
   it("status : un état, à une issue", () => {
     expect(validateEntry({ triggers: [{ on: "failedSave", do: [{ type: "status", status: "prone" }] }] }, { facts })).toEqual([]);
-    expect(validateEntry({ triggers: [{ on: "failedSave", do: [{ type: "status" }] }] }, { facts })).toEqual(["triggers[0].do[0].status : état requis"]);
+    expect(validateEntry({ triggers: [{ on: "failedSave", do: [{ type: "status" }] }] }, { facts })).toEqual(["triggers[0].do[0].status: condition required"]);
     expect(validateEntry({ triggers: [{ on: "enter", do: [{ type: "status", status: "prone" }] }] }, { facts }))
-      .toEqual(["triggers[0].do : « status » demande un moment d'issue (hit, failedSave)"]);
+      .toEqual(["triggers[0].do: \"status\" requires an outcome moment (hit, failedSave)"]);
   });
 
   it("replay : une sœur par id d'activité", () => {
     expect(validateEntry({ triggers: [{ on: "turnStart", do: [{ type: "replay", activity: "dnd5eactivity000" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "turnStart", do: [{ type: "replay", activity: "abc" }] }] }, { facts }))
-      .toEqual(["triggers[0].do[0].activity : id d'activité (16 caractères) attendu"]);
+      .toEqual(["triggers[0].do[0].activity: activity id (16 characters) expected"]);
   });
 
   it("resave : au tour de la créature, porté par l'effet", () => {
     expect(validateEntry({ triggers: [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "endOfTurn", do: [{ type: "resave" }] }] }, { facts }))
-      .toEqual(["triggers[0].do : « resave » demande des moments parmi startOfTurn, endOfTurn, isDamaged et via: \"effect\""]);
+      .toEqual(["triggers[0].do: \"resave\" requires moments among startOfTurn, endOfTurn, isDamaged and via: \"effect\""]);
     expect(validateEntry({ triggers: [{ on: "turnEnd", via: "effect", do: [{ type: "resave" }] }] }, { facts }))
-      .toEqual(["triggers[0].do : « resave » demande des moments parmi startOfTurn, endOfTurn, isDamaged et via: \"effect\""]);
-    expect(validateEntry({ triggers: [{ on: "endOfTurn", via: "bearer", do: [{ type: "resave" }] }] }, { facts })[0]).toBe("triggers[0].via : effect");
+      .toEqual(["triggers[0].do: \"resave\" requires moments among startOfTurn, endOfTurn, isDamaged and via: \"effect\""]);
+    expect(validateEntry({ triggers: [{ on: "endOfTurn", via: "bearer", do: [{ type: "resave" }] }] }, { facts })[0]).toBe("triggers[0].via: effect");
     // Domination, Fou rire : la sauvegarde se rejoue aussi quand la créature subit des dégâts.
     expect(validateEntry({ triggers: [{ on: ["endOfTurn", "isDamaged"], via: "effect", do: [{ type: "resave" }] }] }, { facts })).toEqual([]);
   });
@@ -304,31 +304,31 @@ describe("briques (SPEC §16) : étapes d'issue, sœur rejouée, sauvegarde rép
       do: [{ type: "damage", to: "source", formula: "2d8", damageType: "fire" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "damage", to: "source", activity: "OzlTY1z1gup4C2Qq" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "damage", to: "source" }] }] }, { facts }))
-      .toEqual(["triggers[0].do[0].formula : formule requise", "triggers[0].do[0].damageType : type de dégâts requis"]);
+      .toEqual(["triggers[0].do[0].formula: formula required", "triggers[0].do[0].damageType: damage type required"]);
     expect(validateEntry({ triggers: [{ on: ["isHit", "isDamaged"], do: [{ type: "damage", to: "source", formula: "1d8", damageType: "acid" }] }] }, { facts }))
-      .toEqual(["triggers[0].do : une riposte (to: \"source\") demande le seul moment isHit"]);
+      .toEqual(["triggers[0].do: a riposte (to: \"source\") requires isHit as the only moment"]);
     expect(validateEntry({ triggers: [{ on: "preDamageRoll", do: [{ type: "damage", to: "self", activity: "OzlTY1z1gup4C2Qq", formula: "1", damageType: "fire" }] }] }, { facts }))
-      .toEqual(["triggers[0].do[0].to : source, origin, bearer", "triggers[0].do[0].activity : seulement pour une riposte (to: \"source\") ou le porteur (to: \"bearer\")"]);
+      .toEqual(["triggers[0].do[0].to: source, origin, bearer", "triggers[0].do[0].activity: only for a riposte (to: \"source\") or the bearer (to: \"bearer\")"]);
   });
 
   it("§19 : dégâts d'issue (moitié sur réussite) et dégâts du porteur à son tour", () => {
     expect(validateEntry({ triggers: [{ on: "failedSave", do: [{ type: "damage", formula: "2d4", damageType: "necrotic", onSave: "half" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "hit", do: [{ type: "damage", formula: "2d8", damageType: "necrotic" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "hit", do: [{ type: "damage", formula: "2d8", damageType: "necrotic", onSave: "half" }] }] }, { facts }))
-      .toEqual(["triggers[0].do : « onSave » demande le seul moment failedSave, sans « to »"]);
+      .toEqual(["triggers[0].do: \"onSave\" requires failedSave as the only moment, without \"to\""]);
     expect(validateEntry({ triggers: [{ on: "failedSave", do: [{ type: "damage", formula: "2d4", damageType: "necrotic", onSave: "all" }] }] }, { facts }))
-      .toEqual(["triggers[0].do[0].onSave : half, none"]);
+      .toEqual(["triggers[0].do[0].onSave: half, none"]);
     expect(validateEntry({ triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "NgglkyjzTbDh5Loa",
       do: [{ type: "damage", to: "bearer", activity: "uAyE5DrJp0YpElcw" }, { type: "remove" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "endOfTurn", via: "effect", do: [{ type: "damage", to: "bearer", formula: "2d8", damageType: "psychic" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "isDamaged", via: "effect", do: [{ type: "damage", to: "bearer", formula: "2d8", damageType: "psychic" }] }] }, { facts }))
-      .toEqual(["triggers[0].do : les dégâts du porteur (to: \"bearer\") demandent des moments parmi startOfTurn, endOfTurn et via: \"effect\""]);
+      .toEqual(["triggers[0].do: the bearer's damage (to: \"bearer\") requires moments among startOfTurn, endOfTurn and via: \"effect\""]);
   });
 
   it("§19 : savedEffects (ids) et ignoresCloseCombat (true)", () => {
     expect(validateEntry({ savedEffects: ["yril8uhQgO1dR507"], ignoresCloseCombat: true }, { facts })).toEqual([]);
     expect(validateEntry({ savedEffects: ["court"], ignoresCloseCombat: "oui" }, { facts }))
-      .toEqual(["savedEffects : liste d'ids d'effets (16 caractères)", "ignoresCloseCombat : true ou absent"]);
+      .toEqual(["savedEffects: list of effect ids (16 characters)", "ignoresCloseCombat: true or absent"]);
     expect(mergeEntries([{ savedEffects: ["yril8uhQgO1dR507"] }, { ignoresCloseCombat: true }]))
       .toEqual({ savedEffects: ["yril8uhQgO1dR507"], ignoresCloseCombat: true });
   });
@@ -336,69 +336,69 @@ describe("briques (SPEC §16) : étapes d'issue, sœur rejouée, sauvegarde rép
   it("zone déplaçable (B18) : distance positive, unité", () => {
     expect(validateEntry({ movable: { distance: 60, units: "ft" } }, { facts })).toEqual([]);
     expect(validateEntry({ movable: { distance: 0, units: "", speed: 1 } }, { facts }))
-      .toEqual(["movable.distance : nombre positif", "movable.units : unité requise", "movable.speed : clé inconnue"]);
+      .toEqual(["movable.distance: positive number", "movable.units: unit required", "movable.speed: unknown key"]);
   });
 
   it("invocation (B12) : initiative « after » ou « own », rien d'autre", () => {
     expect(validateEntry({ summon: { initiative: "after" } }, { facts })).toEqual([]);
-    expect(validateEntry({ summon: { initiative: "first", count: 2 } }, { facts })).toEqual(["summon.initiative : « after », « own » ou « none »"]);
-    expect(validateEntry({ summon: { initiative: "own", count: 2 } }, { facts })).toEqual(["summon.count : clé inconnue"]);
+    expect(validateEntry({ summon: { initiative: "first", count: 2 } }, { facts })).toEqual(["summon.initiative: \"after\", \"own\" or \"none\""]);
+    expect(validateEntry({ summon: { initiative: "own", count: 2 } }, { facts })).toEqual(["summon.count: unknown key"]);
   });
 
   it("marque consommée (B10) : un côté, au moment preAttackRoll, portée par un effet", () => {
     expect(validateEntry({ triggers: [{ on: "preAttackRoll", via: "effect", do: [{ type: "advantage" }, { type: "consume", side: "target" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "preAttackRoll", do: [{ type: "consume", side: "both" }] }] }, { facts })).toEqual([
-      "triggers[0].do[0].side : « target » ou « source »",
-      "triggers[0].do : « consume » demande le moment preAttackRoll et via: \"effect\""
+      "triggers[0].do[0].side: \"target\" or \"source\"",
+      "triggers[0].do: \"consume\" requires the preAttackRoll moment and via: \"effect\""
     ]);
   });
 
   it("réduction (B14) : halve avec une réaction à isHit ; partage vers l'origine ; réserve", () => {
     expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "use" }, { type: "halve" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "halve" }] }] }, { facts }))
-      .toEqual(["triggers[0].do : « halve » demande le moment isHit ou allyIsHit et une réaction « use »"]);
+      .toEqual(["triggers[0].do: \"halve\" requires the isHit or allyIsHit moment and a \"use\" reaction"]);
     expect(validateEntry({ triggers: [{ on: "isDamaged", via: "effect", do: [{ type: "damage", to: "origin" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "isDamaged", do: [{ type: "damage", to: "origin" }] }] }, { facts }))
-      .toEqual(["triggers[0].do : un partage (to: \"origin\") demande le seul moment isDamaged et via: \"effect\""]);
+      .toEqual(["triggers[0].do: a damage share (to: \"origin\") requires isDamaged as the only moment and via: \"effect\""]);
     expect(validateEntry({ absorb: { activeAfter: "Hha69hPMTYWhDE4A", recharge: { school: "abj", perLevel: 2 } } }, { facts })).toEqual([]);
     expect(validateEntry({ absorb: { activeAfter: "x", recharge: { school: "abj", perLevel: 0 }, max: 3 } }, { facts })).toEqual([
-      "absorb.activeAfter : id d'activité (16 caractères) attendu", "absorb.recharge.perLevel : nombre positif", "absorb.max : clé inconnue"
+      "absorb.activeAfter: activity id (16 characters) expected", "absorb.recharge.perLevel: positive number", "absorb.max: unknown key"
     ]);
   });
 
   it("teleport (B11) : distance positive, unité, activité facultative", () => {
     expect(validateEntry({ teleport: { distance: 30, units: "ft" } }, { facts })).toEqual([]);
     expect(validateEntry({ teleport: { distance: 0, units: "", activity: "x", range: 1 } }, { facts })).toEqual([
-      "teleport.distance : nombre positif", "teleport.units : unité requise", "teleport.activity : id d'activité (16 caractères) attendu", "teleport.range : clé inconnue"
+      "teleport.distance: positive number", "teleport.units: unit required", "teleport.activity: activity id (16 characters) expected", "teleport.range: unknown key"
     ]);
   });
 
   it("fromEffect : un id d'effet, avec via: \"effect\" ; trace : true", () => {
     expect(validateEntry({ triggers: [{ on: "isHit", fromEffect: "abc", do: [{ type: "use" }] }] }, { facts }))
-      .toEqual(["triggers[0].fromEffect : id d'effet (16 caractères)", "triggers[0].fromEffect : demande via: \"effect\""]);
+      .toEqual(["triggers[0].fromEffect: effect id (16 characters)", "triggers[0].fromEffect: requires via: \"effect\""]);
     expect(validateEntry({ trace: true }, { facts })).toEqual([]);
-    expect(validateEntry({ trace: "oui" }, { facts })).toEqual(["trace : true ou { activity?, show?, attack? }"]);
+    expect(validateEntry({ trace: "oui" }, { facts })).toEqual(["trace: true or { activity?, show?, attack? }"]);
     expect(mergeEntries([{ trace: true }, { aura: { radius: 5 } }])).toEqual({ trace: true, aura: { radius: 5 } });
   });
 
   it("remove (B8) : l'effet cesse à un moment du porteur, porté par l'effet", () => {
     expect(validateEntry({ triggers: [{ on: "isDamaged", via: "effect", do: [{ type: "remove" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "isDamaged", do: [{ type: "remove" }] }] }, { facts }))
-      .toEqual(["triggers[0].do : « remove » demande des moments du porteur (startOfTurn, endOfTurn, isAttacked, isDamaged, isHit) et via: \"effect\""]);
-    expect(validateEntry({ triggers: [{ on: ["isDamaged", "hit"], via: "effect", do: [{ type: "remove" }] }] }, { facts })[0]).toMatch(/« remove »/);
+      .toEqual(["triggers[0].do: \"remove\" requires bearer moments (startOfTurn, endOfTurn, isAttacked, isDamaged, isHit) and via: \"effect\""]);
+    expect(validateEntry({ triggers: [{ on: ["isDamaged", "hit"], via: "effect", do: [{ type: "remove" }] }] }, { facts })[0]).toMatch(/"remove"/);
   });
 
   it("advantage / disadvantage : seulement avant un jet d'attaque", () => {
     expect(validateEntry({ triggers: [{ on: "preAttackRoll", if: { "source.allyNearTarget": { distance: 5, units: "ft" } }, do: [{ type: "advantage" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "preAttackRoll", via: "effect", do: [{ type: "disadvantage" }] }] }, { facts })).toEqual([]);
-    expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "advantage" }] }] }, { facts })).toEqual(["triggers[0].do : « advantage » demande le moment preAttackRoll"]);
+    expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "advantage" }] }] }, { facts })).toEqual(["triggers[0].do: \"advantage\" requires the preAttackRoll moment"]);
   });
 
   it("ward : au moment isAttacked, porté par l'effet, activité sœur facultative", () => {
     expect(validateEntry({ triggers: [{ on: "isAttacked", via: "effect", do: [{ type: "ward" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "isAttacked", via: "effect", do: [{ type: "ward", activity: "6TdVnZPI3lxQrycI" }] }] }, { facts })).toEqual([]);
-    expect(validateEntry({ triggers: [{ on: "isAttacked", via: "effect", do: [{ type: "ward", activity: "x" }] }] }, { facts })).toEqual(["triggers[0].do[0].activity : id d'activité (16 caractères) attendu"]);
-    expect(validateEntry({ triggers: [{ on: "isAttacked", do: [{ type: "ward" }] }] }, { facts })).toEqual(["triggers[0].do : « ward » demande le moment isAttacked et via: \"effect\""]);
+    expect(validateEntry({ triggers: [{ on: "isAttacked", via: "effect", do: [{ type: "ward", activity: "x" }] }] }, { facts })).toEqual(["triggers[0].do[0].activity: activity id (16 characters) expected"]);
+    expect(validateEntry({ triggers: [{ on: "isAttacked", do: [{ type: "ward" }] }] }, { facts })).toEqual(["triggers[0].do: \"ward\" requires the isAttacked moment and via: \"effect\""]);
     expect(validateEntry({ triggers: [{ on: "castsSpell", if: { "target.seesSource": true }, do: [{ type: "use", target: "source" }] }] }, { facts })).toEqual([]);
   });
 
@@ -433,7 +433,7 @@ describe("éclat (§16.19) : schéma", () => {
   it("activité, rayon, unité", () => {
     expect(validateEntry({ burst: { activity: "dnd5eactivity100", radius: 5, units: "ft" } }, { facts })).toEqual([]);
     expect(validateEntry({ burst: { activity: "x", radius: -1, units: "", around: 1 } }, { facts })).toEqual([
-      "burst.activity : id d'activité (16 caractères) attendu", "burst.radius : nombre positif ou nul", "burst.units : unité requise", "burst.around : clé inconnue"
+      "burst.activity: activity id (16 characters) expected", "burst.radius: non-negative number", "burst.units: unit required", "burst.around: unknown key"
     ]);
   });
 });
@@ -442,7 +442,7 @@ describe("relance, éclat après dégâts, début de tour (§16.21) : schéma", 
   it("recast, burst.from, atTurnStart", () => {
     expect(validateEntry({ recast: true, atTurnStart: { activity: "0vYjMbBcXaMfGWR2" }, burst: { activity: "dnd5eactivity000", radius: 0, units: "ft", from: ["YPEmwJHX7g68307N"] } }, { facts })).toEqual([]);
     expect(validateEntry({ recast: 1, atTurnStart: { activity: "x" }, burst: { activity: "dnd5eactivity000", radius: 0, units: "ft", from: [] } }, { facts })).toEqual([
-      "burst.from : liste d'ids d'activité", "recast : true ou absent", "atTurnStart.activity : id d'activité (16 caractères) attendu"
+      "burst.from: list of activity ids", "recast: true or absent", "atTurnStart.activity: activity id (16 characters) expected"
     ]);
   });
 });
@@ -450,24 +450,24 @@ describe("relance, éclat après dégâts, début de tour (§16.21) : schéma", 
 describe("brume et soins au maximum (§16.24) : schéma", () => {
   it("obscures, healMax", () => {
     expect(validateEntry({ obscures: true, healMax: true }, { facts })).toEqual([]);
-    expect(validateEntry({ obscures: 1, healMax: "oui" }, { facts })).toEqual(["obscures : true ou absent", "healMax : true ou absent"]);
+    expect(validateEntry({ obscures: 1, healMax: "oui" }, { facts })).toEqual(["obscures: true or absent", "healMax: true or absent"]);
   });
 });
 
 describe("capacités des PJ (§16.25) : schéma", () => {
   it("duplicates, saveAdvantage, onFell", () => {
     expect(validateEntry({ duplicates: true, saveAdvantage: ["charmed"], onFell: { activity: "p3YSnjGDlLIbiLpC", radius: 10, units: "ft" } }, { facts })).toEqual([]);
-    expect(validateEntry({ duplicates: 3, saveAdvantage: [], onFell: { radius: -1, units: "", extra: 1 } }, { facts })).toEqual(["duplicates : true ou absent",
-      "saveAdvantage : liste d'identifiants d'état", "onFell.radius : nombre positif ou nul", "onFell.units : unité requise",
-      "onFell.extra : clé inconnue"]);
+    expect(validateEntry({ duplicates: 3, saveAdvantage: [], onFell: { radius: -1, units: "", extra: 1 } }, { facts })).toEqual(["duplicates: true or absent",
+      "saveAdvantage: list of condition identifiers", "onFell.radius: non-negative number", "onFell.units: unit required",
+      "onFell.extra: unknown key"]);
   });
 });
 
 describe("Taille (§16.26) : schéma", () => {
   it("bonusAttack", () => {
     expect(validateEntry({ bonusAttack: { after: ["critical", "felled"], melee: true } }, { facts })).toEqual([]);
-    expect(validateEntry({ bonusAttack: { after: ["hit"] } }, { facts })).toEqual(["bonusAttack.after : liste parmi critical, felled"]);
-    expect(validateEntry({ bonusAttack: { after: ["critical"], melee: 1, extra: 2 } }, { facts })).toEqual(["bonusAttack.melee : booléen", "bonusAttack.extra : clé inconnue"]);
+    expect(validateEntry({ bonusAttack: { after: ["hit"] } }, { facts })).toEqual(["bonusAttack.after: list among critical, felled"]);
+    expect(validateEntry({ bonusAttack: { after: ["critical"], melee: 1, extra: 2 } }, { facts })).toEqual(["bonusAttack.melee: boolean", "bonusAttack.extra: unknown key"]);
     expect(CONTENT["great-weapon-master"].bonusAttack).toEqual({ after: ["critical", "felled"], melee: true });
   });
 });
@@ -475,8 +475,8 @@ describe("Taille (§16.26) : schéma", () => {
 describe("projectiles (§16.27) : schéma", () => {
   it("projectiles", () => {
     expect(validateEntry({ projectiles: { count: "2 + @item.level", attack: false } }, { facts })).toEqual([]);
-    expect(validateEntry({ projectiles: { count: "" } }, { facts })).toEqual(["projectiles.count : formule attendue"]);
-    expect(validateEntry({ projectiles: { count: "3", attack: "oui", extra: 1 } }, { facts })).toEqual(["projectiles.attack : booléen", "projectiles.extra : clé inconnue"]);
+    expect(validateEntry({ projectiles: { count: "" } }, { facts })).toEqual(["projectiles.count: formula expected"]);
+    expect(validateEntry({ projectiles: { count: "3", attack: "oui", extra: 1 } }, { facts })).toEqual(["projectiles.attack: boolean", "projectiles.extra: unknown key"]);
     expect(CONTENT["scorching-ray"].projectiles).toEqual({ count: "@item.level + 1", attack: true });
   });
 });
@@ -484,7 +484,7 @@ describe("projectiles (§16.27) : schéma", () => {
 describe("rebond (§16.27) : schéma", () => {
   it("leap", () => {
     expect(validateEntry({ leap: { radius: 30, units: "ft", max: "@item.level" } }, { facts })).toEqual([]);
-    expect(validateEntry({ leap: { radius: 30, units: "ft" } }, { facts })).toEqual(["leap : { radius, units, max }"]);
+    expect(validateEntry({ leap: { radius: 30, units: "ft" } }, { facts })).toEqual(["leap: { radius, units, max }"]);
     expect(CONTENT["chromatic-orb"].leap).toEqual({ radius: 30, units: "ft", max: "@item.level" });
   });
 });
@@ -502,8 +502,8 @@ describe("§19.5 : cercles", () => {
   it("sharedHp (true) et secondPhase ({ activity })", () => {
     expect(validateEntry({ sharedHp: true, secondPhase: { activity: "phase2Transform0" } }, { facts })).toEqual([]);
     expect(validateEntry({ sharedHp: 1, secondPhase: { activity: "x", form: "y" } }, { facts }))
-      .toEqual(["secondPhase.activity : id d'activité (16 caractères) attendu", "sharedHp : true ou absent"]);
-    expect(validateEntry({ secondPhase: { activity: "phase2Transform0", form: "y" } }, { facts })).toEqual(["secondPhase.form : clé inconnue"]);
+      .toEqual(["secondPhase.activity: activity id (16 characters) expected", "sharedHp: true or absent"]);
+    expect(validateEntry({ secondPhase: { activity: "phase2Transform0", form: "y" } }, { facts })).toEqual(["secondPhase.form: unknown key"]);
   });
 });
 
@@ -511,10 +511,10 @@ describe("§19.9 : Dhampir et Domaine de la Tombe", () => {
   it("empower ({ damageType, effect, excludeTypes? })", () => {
     expect(validateEntry({ empower: { damageType: "piercing", effect: "j3fPDd7Xi1nx6Xk4", excludeTypes: ["construct", "undead"] } }, { facts })).toEqual([]);
     expect(validateEntry({ empower: { damageType: "", effect: "x", excludeTypes: ["robot"], mode: "heal" } }, { facts })).toEqual([
-      "empower.damageType : type de dégâts requis",
-      "empower.effect : id d'effet (16 caractères)",
-      expect.stringMatching(/^empower\.excludeTypes : types de créature/),
-      "empower.mode : clé inconnue"
+      "empower.damageType: damage type required",
+      "empower.effect: effect id (16 characters)",
+      expect.stringMatching(/^empower\.excludeTypes: creature types/),
+      "empower.mode: unknown key"
     ]);
   });
 
@@ -522,7 +522,7 @@ describe("§19.9 : Dhampir et Domaine de la Tombe", () => {
     const ok = { effect: "mQRlujPiGJbczcyZ", formula: "@classes.cleric.levels", damageTypes: ["necrotic", "radiant"], sees: true };
     expect(validateEntry({ discharge: ok, healsDownedMax: true }, { facts })).toEqual([]);
     expect(validateEntry({ discharge: { ...ok, damageTypes: [], sees: 1 }, healsDownedMax: "oui" }, { facts })).toEqual([
-      "discharge.damageTypes : liste de types de dégâts", "discharge.sees : true ou absent", "healsDownedMax : true ou absent"
+      "discharge.damageTypes: list of damage types", "discharge.sees: true or absent", "healsDownedMax: true or absent"
     ]);
   });
 
@@ -530,10 +530,10 @@ describe("§19.9 : Dhampir et Domaine de la Tombe", () => {
     const part = [{ type: "damage", formula: "1d4", damageType: "necrotic" }];
     expect(validateEntry({ triggers: [{ on: "preDamageRoll", oncePerTurn: true, do: part }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "hit", oncePerTurn: true, do: [{ type: "status", status: "prone" }] }] }, { facts }))
-      .toEqual(["triggers[0].oncePerTurn : true, avec le seul moment preDamageRoll"]);
+      .toEqual(["triggers[0].oncePerTurn: true, with preDamageRoll as the only moment"]);
     expect(validateEntry({ triggers: [{ on: "allyIsHit", if: { "target.bloodied": true }, do: [{ type: "use" }, { type: "halve" }, { type: "uncrit" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "isDamaged", do: [{ type: "use" }, { type: "uncrit" }] }] }, { facts }))
-      .toEqual(["triggers[0].do : « uncrit » demande le moment isHit ou allyIsHit et une réaction « use »"]);
+      .toEqual(["triggers[0].do: \"uncrit\" requires the isHit or allyIsHit moment and a \"use\" reaction"]);
   });
 
   it("le contenu livré porte les quatre capacités", () => {
@@ -648,7 +648,7 @@ describe("§76 : changesForm", () => {
   it("id d'activité, clés connues, fusionné", () => {
     expect(validateEntry({ changesForm: { activity: "aaaaaaaaaaaaaaaa" } })).toEqual([]);
     expect(validateEntry({ changesForm: { activity: "court" } })).toEqual([expect.stringContaining("changesForm.activity")]);
-    expect(validateEntry({ changesForm: { activity: "aaaaaaaaaaaaaaaa", quand: 1 } })).toEqual([expect.stringContaining("clé inconnue")]);
+    expect(validateEntry({ changesForm: { activity: "aaaaaaaaaaaaaaaa", quand: 1 } })).toEqual([expect.stringContaining("unknown key")]);
     expect(mergeEntries([null, { changesForm: { activity: "aaaaaaaaaaaaaaaa" } }]).changesForm.activity).toBe("aaaaaaaaaaaaaaaa");
   });
 });

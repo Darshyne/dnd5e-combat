@@ -35,7 +35,7 @@ export async function cureStatus(target, status) {
   const n = target.actor?.isOwner ? await removeStatus(target.uuid, status)
     : await game.users.activeGM?.query(CURE_QUERY, { target: target.uuid, status }, { timeout: 10000 }).catch(() => 0);
   const label = game.i18n.localize(CONFIG.DND5E.conditionTypes[status]?.name ?? status);
-  log(`${target.name} : ${label} cesse (${n} effet(s))`);
+  log(`${target.name}: ${label} ends (${n} effect(s))`);
   notice(target, loc("Retour.FinEffet", { item: label }), "ended");
   return n;
 }
@@ -56,7 +56,7 @@ async function onPostUseAll(activity, usageConfig, results) {
       if ( level > 0 ) {
         await (target.actor.isOwner ? target.actor.update({ "system.attributes.exhaustion": 0 })
           : game.users.activeGM?.query(CURE_QUERY, { target: target.uuid, status }, { timeout: 10000 }).catch(() => 0));
-        log(`${target.name} : Épuisement ${level} → 0`);
+        log(`${target.name}: Exhaustion ${level} → 0`);
       }
       continue;
     }
@@ -66,5 +66,5 @@ async function onPostUseAll(activity, usageConfig, results) {
 
 export function registerCure() {
   CONFIG.queries[CURE_QUERY] = handleCure;
-  route("dnd5e.postUseActivity", onPostUseAll, { label: "potion : états non retirés" });
+  route("dnd5e.postUseActivity", onPostUseAll, { label: "potion: conditions not removed" });
 }

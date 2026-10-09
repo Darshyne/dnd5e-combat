@@ -66,11 +66,11 @@ export const DICE_WAIT_MAX_MS = 8000;
  */
 export function createDiceWait({ animation, isHidden, sleep, report=() => {} }, maxMs=DICE_WAIT_MAX_MS) {
   return async function waitForDice(message) {
-    if ( isHidden() ) return report("fenêtre en arrière-plan");   // sans rendu, l'animation ne se jouera pas
+    if ( isHidden() ) return report("window in the background");   // sans rendu, l'animation ne se jouera pas
     const pending = animation(message.id);
     if ( !pending ) return;
     const outcome = await Promise.race([pending.then(() => "done"), sleep(maxMs).then(() => "late")]);
-    if ( outcome === "late" ) report(`plus de ${maxMs} ms`);
+    if ( outcome === "late" ) report(`over ${maxMs} ms`);
   };
 }
 
@@ -78,5 +78,5 @@ export const waitForDice = createDiceWait({
   animation: id => (game.modules.get("dice-so-nice")?.active && game.dice3d) ? game.dice3d.waitFor3DAnimationByMessageID(id) : null,
   isHidden: () => document.hidden === true,
   sleep: ms => new Promise(resolve => setTimeout(resolve, ms)),
-  report: why => log(`dés 3D : on continue sans attendre (${why})`)
+  report: why => log(`3D dice: continuing without waiting (${why})`)
 });

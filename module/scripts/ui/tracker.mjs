@@ -73,14 +73,14 @@ function onRenderCombatTracker(app, html) {
 }
 
 export function registerTracker() {
-  route("renderCombatTracker", onRenderCombatTracker, { label: "budget dans le tracker" });
+  route("renderCombatTracker", onRenderCombatTracker, { label: "budget in the tracker" });
 
   // Le déplacement vit sur le token, pas sur le combattant : le tracker ne le voit pas bouger tout seul.
   const refresh = foundry.utils.debounce(() => ui.combat?.render(), 150);
   route("updateToken", (token, changes) => {
     if ( game.combat?.started && (("x" in changes) || ("y" in changes) || ("_movementHistory" in changes)) ) refresh();
-  }, { label: "tracker : déplacement" });
+  }, { label: "tracker: movement" });
   route("updateCombatant", (combatant, changes) => {
     if ( changes.flags?.[MODULE_ID] ) refresh();
-  }, { label: "tracker : budget" });
+  }, { label: "tracker: budget" });
 }

@@ -19,7 +19,7 @@ async function onUsage(message) {
   const caster = message.getAssociatedActor?.() ?? item.actor;
   const slot = Number(message.system?.level) || Number(item.system?.level) || 3;
   const targets = message.system?.targets ?? [];
-  if ( !targets.length ) { log(`${item.name} : aucune cible désignée, rien à dissiper`); return; }
+  if ( !targets.length ) { log(`${item.name}: no target designated, nothing to dispel`); return; }
   for ( const t of targets ) {
     const token = await fromUuid(t.token ?? "");
     const actor = token?.actor ?? (await fromUuid(t.actor ?? ""));
@@ -38,7 +38,7 @@ async function onUsage(message) {
       }
       if ( ends ) { await endSpell(spell); ended.push({ name: spell.name, level: spell.level, total }); }
       else resisted.push({ name: spell.name, level: spell.level, total, dc: step.dc });
-      log(`${item.name} sur ${actor.name} : ${spell.name} (niveau ${spell.level}) ${ends ? "cesse" : "résiste"}${step.auto ? "" : ` — test ${total} contre DD ${step.dc}`}`);
+      log(`${item.name} on ${actor.name}: ${spell.name} (level ${spell.level}) ${ends ? "ends" : "resists"}${step.auto ? "" : ` — check ${total} vs DC ${step.dc}`}`);
     }
     const lines = [
       ...ended.map(s => loc("Dissipation.Cesse", { spell: s.name, level: s.level })),
@@ -54,5 +54,5 @@ async function onUsage(message) {
 }
 
 export function registerDispel() {
-  route("createChatMessage", onUsage, { executor: true, label: "Dissipation de la magie : rien dissipé" });
+  route("createChatMessage", onUsage, { executor: true, label: "Dispel Magic: nothing dispelled" });
 }

@@ -39,7 +39,7 @@ async function perform({ kind, helper, tester, skill, tool }) {
       speaker: ChatMessage.implementation.getSpeaker({ actor }),
       content: `<p>${loc("AideTest.CarteSoutien", { helper: actor.name, name: target.name, test: what })}</p>`
     });
-    log(`soutien : ${actor.name} aide ${target.name} à son test de ${what} (Avantage)`);
+    log(`help: ${actor.name} helps ${target.name} with their ${what} check (Advantage)`);
     return true;
   }
   if ( kind === "inspiration" ) {
@@ -49,7 +49,7 @@ async function perform({ kind, helper, tester, skill, tool }) {
       return false;
     }
     await castOnTargets(source.activity, [{ [MODULE_ID]: { confirmed: true } }, { configure: false }, {}], [target.uuid]);
-    log(`inspiration bardique : ${actor.name} inspire ${target.name} (${what})`);
+    log(`Bardic Inspiration: ${actor.name} inspires ${target.name} (${what})`);
     return true;
   }
   const spell = guidanceSpellOf(actor);
@@ -59,7 +59,7 @@ async function perform({ kind, helper, tester, skill, tool }) {
     return false;
   }
   await castOnTargets(found.activity, [{ [MODULE_ID]: { choice: found.effectId, confirmed: true } }, { configure: false }, {}], [target.uuid]);
-  log(`assistance : ${actor.name} lance ${spell.name} sur ${target.name} (${what})`);
+  log(`guidance: ${actor.name} casts ${spell.name} on ${target.name} (${what})`);
   return true;
 }
 
@@ -108,7 +108,7 @@ export async function requestSkillAid({ kind, helper, tester, skill=null, tool=n
   }
   try { return (await user.query(SKILL_AID_QUERY, payload, { timeout: (answerSeconds() + 15) * 1000 })) === true; }
   catch(err) {
-    console.warn(`${MODULE_ID} | aide au test : pas de réponse pour ${helper.name}`, err);
+    console.warn(`${MODULE_ID} | check aid: no answer for ${helper.name}`, err);
     return false;
   }
 }

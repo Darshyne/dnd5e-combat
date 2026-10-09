@@ -15,7 +15,9 @@
  *    sans le module, y sont supprimés.
  * Sur les acteurs : flags Midi/CPR/GPS retirés ; les effets actifs de l'acteur ne sont QUE signalés (état de jeu).
  */
-if ( !game.user.isGM ) return ui.notifications.warn("Nettoyage Midi/DAE/CPR : réservé au MJ.");
+// Textes : clés DND5ECOMBAT.Macro.CleanMidi.* des fichiers de langue du module.
+const t = (key, data) => data ? game.i18n.format(`DND5ECOMBAT.Macro.CleanMidi.${key}`, data) : game.i18n.localize(`DND5ECOMBAT.Macro.CleanMidi.${key}`);
+if ( !game.user.isGM ) return ui.notifications.warn(t("GmOnly"));
 const BAD = ["midi-qol", "midiProperties", "dae", "chris-premades", "gambits-premades", "itemacro", "autoanimations", "ActiveAuras",
   "times-up", "automated-conditions-5e", "darsh-automation", "cat", "link-item-resource-5e", "custom-character-sheet-sections", "boss-loot-assets-premium"];
 // Le Monster Manual compte comme officiel : les attaques d'une forme sauvage (Morsure, Griffes) n'ont pas d'équivalent au
@@ -85,23 +87,23 @@ const touched = actor => hasBad(actor.flags) || actor.effects.some(e => hasBad(e
   || actor.items.some(i => hasBad(i.flags) || i.effects.some(e => hasBad(e.flags)) || THIRD_PARTY.test(i._stats?.compendiumSource ?? ""));
 const candidates = game.actors.filter(touched).sort((a, b) => (b.hasPlayerOwner - a.hasPlayerOwner) || a.name.localeCompare(b.name));
 if ( !candidates.length ) {
-  await ChatMessage.create({ content: "<p><b>Nettoyage Midi/DAE/CPR</b> : aucune fiche ne porte de trace de Midi-QOL, DAE ou CPR — rien à faire.</p>",
+  await ChatMessage.create({ content: t("NothingFound"),
     whisper: ChatMessage.getWhisperRecipients("GM"), speaker: { alias: "dnd5e-combat" } });
   return;
 }
 const escape = foundry.utils.escapeHTML ?? (t => t);
 const picked = await foundry.applications.api.DialogV2.wait({
-  window: { title: "Nettoyage Midi/DAE/CPR" },
+  window: { title: t("Title") },
   position: { width: 460 },
-  content: `<p>Fiches qui portent des traces de Midi-QOL, DAE ou CPR (celles des joueurs cochées). « Rapport » ne modifie rien.</p>
+  content: `<p>${t("DialogIntro")}</p>
     <div style="max-height: 320px; overflow-y: auto">${candidates.map(a => `<label style="display: block"><input type="checkbox" name="${a.id}"
     ${a.hasPlayerOwner ? "checked" : ""}> ${escape(a.name)} <small>(${a.type})</small></label>`).join("")}</div>`,
-  buttons: ["report", "apply"].map(action => ({ action, label: action === "apply" ? "Nettoyer" : "Rapport", default: action === "report",
+  buttons: ["report", "apply"].map(action => ({ action, label: t(action === "apply" ? "Apply" : "Report"), default: action === "report",
     callback: (event, button) => ({ action, ids: candidates.filter(a => button.form.elements[a.id]?.checked).map(a => a.id) }) })),
   rejectClose: false
 });
 if ( !picked ) return;
-if ( !picked.ids.length ) return ui.notifications.info("Nettoyage Midi/DAE/CPR : aucune fiche choisie, rien n'a été fait.");
+if ( !picked.ids.length ) return ui.notifications.info(t("NoneChosen"));
 const DRY = picked.action !== "apply";
 const ACTORS = picked.ids;
 
@@ -143,8 +145,9 @@ for ( const actorId of ACTORS ) {
     if ( !hasBad(item.flags) && !item.effects.some(badEffect) && !(item.effects.invalidDocumentIds?.size > 0) ) continue;
     const invalid = [...(item.effects.invalidDocumentIds ?? [])];
     const effects = item.effects.filter(badEffect);
-    lines.push(`🧹 ${item.name}${doc ? " (objet de campagne)" : ""} : flags ${Object.keys(deletion(item.flags)).map(k => k.slice(6)).join(", ") || "—"}`
-      + `${invalid.length ? ` ; ${invalid.length} effet(s) Aura Effects supprimé(s)` : ""}${effects.length ? ` ; effets nettoyés : ${effects.map(e => e.name).join(", ")}` : ""}`);
+    lines.push(`🧹 ${t("Cleaned", { name: item.name, campaign: doc ? ` ${t("CampaignItem")}` : "",
+      flags: Object.keys(deletion(item.flags)).map(k => k.slice(6)).join(", ") || "—" })}`
+      + `${invalid.length ? ` ; ${t("AuraEffectsDeleted", { count: invalid.length })}` : ""}${effects.length ? ` ; ${t("EffectsCleaned", { names: effects.map(e => e.name).join(", ") })}` : ""}`);
     if ( DRY ) continue;
     if ( invalid.length ) await item.deleteEmbeddedDocuments("ActiveEffect", invalid);
     const update = deletion(item.flags);
@@ -166,8 +169,8 @@ for ( const actorId of ACTORS ) {
       if ( !PACT_TYPES.every(t => types.includes(t)) ) continue;
       const kept = types.filter(t => !PACT_TYPES.includes(t));
       const bonus = /^\s*[+-]?\d+\s*$/.test(String(base.bonus ?? "")) ? "" : base.bonus;
-      lines.push(`🗡 ${weapon.name} : arme de pacte réglée à la main — types ${types.join(", ")} → ${kept.join(", ") || "—"}`
-        + `${bonus !== base.bonus ? `, bonus fixe ${base.bonus} retiré` : ""}`);
+      lines.push(`🗡 ${t("PactWeapon", { name: weapon.name, types: types.join(", "), kept: kept.join(", ") || "—" })}`
+        + `${bonus !== base.bonus ? `, ${t("FixedBonusRemoved", { bonus: base.bonus })}` : ""}`);
       if ( !DRY ) await weapon.update({ "system.damage.base.types": kept, "system.damage.base.bonus": bonus ?? "" });
     }
   }
@@ -175,18 +178,18 @@ for ( const actorId of ACTORS ) {
   // L'acteur : ses flags ; ses effets ne sont que signalés.
   const actorDeletion = deletion(actor.flags);
   if ( Object.keys(actorDeletion).length ) {
-    lines.push(`🧹 fiche : flags ${Object.keys(actorDeletion).map(k => k.slice(6)).join(", ")}`);
+    lines.push(`🧹 ${t("SheetFlags", { flags: Object.keys(actorDeletion).map(k => k.slice(6)).join(", ") })}`);
     if ( !DRY ) await actor.update(actorDeletion);
   }
   for ( const e of actor.effects ) {
     if ( !DRY && hasBad(e.flags) ) await e.update(deletion(e.flags));
-    lines.push(`👁 effet actif sur la fiche : ${e.name}${e.disabled ? " (désactivé)" : ""}`);
+    lines.push(`👁 ${t("ActiveEffect", { name: e.name, disabled: e.disabled ? ` ${t("Disabled")}` : "" })}`);
   }
   report.push(`<h3>${actor.name}</h3><ul>${lines.map(l => `<li>${l}</li>`).join("")}</ul>`);
 }
 
 // Un message par fiche : un seul, trop long, se lit mal (et le connecteur le tronque).
-const title = DRY ? "Nettoyage Midi/DAE/CPR — rapport (rien n'est écrit)" : "Nettoyage Midi/DAE/CPR — fait";
+const title = DRY ? t("TitleReport") : t("TitleDone");
 for ( const part of report ) {
   await ChatMessage.create({ content: `<h2>${title}</h2>${part}`, whisper: ChatMessage.getWhisperRecipients("GM"), speaker: { alias: "dnd5e-combat" } });
 }

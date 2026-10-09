@@ -49,12 +49,12 @@ async function onPostUse(activity) {
   if ( !Number.isFinite(roll?.total) ) return;
   const verdicts = searchVerdicts(candidates, perceptionRollParts(roll));
   const byId = new Map(candidates.map(c => [c.id, c.token]));
-  log(`chercher : ${actor.name} (${roll.total}, ${mode}) — `
-    + (verdicts.map(v => `${byId.get(v.id)?.name} DD ${v.dc} : ${v.found ? "trouvé" : "non"} (${v.reason}${v.total !== undefined ? ` ${v.total}` : ""})`).join(" ; ") || "aucune créature cachée"));
+  log(`search: ${actor.name} (${roll.total}, ${mode}) - `
+    + (verdicts.map(v => `${byId.get(v.id)?.name} DC ${v.dc}: ${v.found ? "found" : "no"} (${v.reason}${v.total !== undefined ? ` ${v.total}` : ""})`).join("; ") || "no hidden creature"));
   const found = verdicts.filter(v => v.found).map(v => byId.get(v.id)).filter(Boolean);
   // Œil vif : « si le test échoue, l'utilisation n'est pas dépensée ».
   if ( keen && found.length && Number(keen.item.system.uses?.max) ) await keen.item.update({ "system.uses.spent": (Number(keen.item.system.uses.spent) || 0) + 1 });
-  if ( parts.length || keen ) log(`chercher : ${[...parts, ...(keen ? [`Avantage (${keen.item.name})`] : [])].join(", ")}`);
+  if ( parts.length || keen ) log(`search: ${[...parts, ...(keen ? [`Advantage (${keen.item.name})`] : [])].join(", ")}`);
   for ( const token of found ) {
     await reveal(token);
     notice(token, loc("Chercher.Trouve"), "ended");
@@ -65,6 +65,6 @@ async function onPostUse(activity) {
 
 export function registerSearch() {
   CONFIG.queries[SEARCH_QUERY] = ({ target }) => removeHiding(target);
-  route("dnd5e.postUseActivity", activity => { onPostUse(activity).catch(err => console.error(`${MODULE_ID} | chercher`, err)); },
-    { label: "chercher" });
+  route("dnd5e.postUseActivity", activity => { onPostUse(activity).catch(err => console.error(`${MODULE_ID} | search`, err)); },
+    { label: "search" });
 }

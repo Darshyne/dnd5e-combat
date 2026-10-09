@@ -85,11 +85,11 @@ async function passWards(activity, origin, wards) {
       ?? item?.system.activities?.find(a => a.type === "save") ?? null;
     const ability = save?.save?.ability?.first?.() ?? Array.from(save?.save?.ability ?? [])[0];
     const dc = save?.save?.dc?.value;
-    if ( !save || !ability || !Number.isFinite(dc) ) { log(`${declaration.name} : protection sans sauvegarde lisible, ignorée`); continue; }
+    if ( !save || !ability || !Number.isFinite(dc) ) { log(`${declaration.name}: ward without a readable saving throw, ignored`); continue; }
     const rolls = await origin.actor.rollSavingThrow({ ability, target: dc }, { configure: false });
     const total = rolls?.[0]?.total ?? null;
     const success = (total !== null) && (total >= dc);
-    log(`${declaration.name} : ${origin.name} attaque ${token.name}, sauvegarde ${ability} ${total} contre DD ${dc} : ${success ? "réussie" : "ratée"}`);
+    log(`${declaration.name}: ${origin.name} attacks ${token.name}, ${ability} saving throw ${total} vs DC ${dc}: ${success ? "succeeded" : "failed"}`);
     if ( !success ) {
       await tell(origin.actor, "PorteAttaquePerdue", { name: origin.name, target: token.name, item: declaration.name },
         { kind: "ward", item: declaration.identifier, attacker: origin.uuid, target: token.uuid, total, dc, passed: false });
@@ -131,7 +131,7 @@ function counterCandidates(activity, origin) {
  */
 async function passCounters(activity, origin, candidates, { auto, castLevel }) {
   for ( const { token, actor, options } of candidates ) {
-    log(`${origin.name} lance ${activity.item.name} : ${token.name} peut réagir (${options.map(o => o.name).join(", ")})`);
+    log(`${origin.name} casts ${activity.item.name}: ${token.name} can react (${options.map(o => o.name).join(", ")})`);
     const answer = await askReaction(actor, {
       actor: actor.uuid, options, target: origin.uuid, auto, castLevel,
       prompt: { key: "ReactionSort", data: { caster: origin.name, spell: activity.item.name } }
@@ -141,8 +141,8 @@ async function passCounters(activity, origin, candidates, { auto, castLevel }) {
     if ( answer.counter ) {
       const c = answer.counter;
       const failed = c.dissipated === true;
-      log(`${token.name} réagit (${answer.name}) : ${activity.item.name} au niveau ${c.castLevel}, contre de niveau ${c.level} — `
-        + `${c.auto ? "sans jet" : `test ${c.total ?? "?"} contre DD ${c.dc}`} → ${failed ? "sort dissipé" : "le sort passe"}`);
+      log(`${token.name} reacts (${answer.name}): ${activity.item.name} at level ${c.castLevel}, countered at level ${c.level} — `
+        + `${c.auto ? "no roll" : `check ${c.total ?? "?"} vs DC ${c.dc}`} -> ${failed ? "spell countered" : "the spell goes through"}`);
       const details = [c.auto
         ? loc("PorteContreAuto", { spell: activity.item.name, castLevel: c.castLevel, item: answer.name, level: c.level })
         : loc("PorteContreTest", { reactor: token.name, total: c.total ?? "—", dc: c.dc, spell: activity.item.name, castLevel: c.castLevel })];
@@ -155,7 +155,7 @@ async function passCounters(activity, origin, candidates, { auto, castLevel }) {
     const resolution = await settled(answer.message);
     const target = resolution?.targets.find(t => t.token === origin.uuid) ?? resolution?.targets[0] ?? null;
     const failed = target?.save?.success === false;
-    log(`${token.name} réagit (${answer.name}) : sauvegarde ${target?.save?.total ?? "?"} → ${failed ? "sort dissipé" : "le sort passe"}`);
+    log(`${token.name} reacts (${answer.name}): saving throw ${target?.save?.total ?? "?"} -> ${failed ? "spell countered" : "the spell goes through"}`);
     await tell(origin.actor, failed ? "PorteSortDissipe" : "PorteSortTenu", { name: origin.name, spell: activity.item.name, reactor: token.name, item: answer.name },
       { kind: "counterspell", spell: activity.item.system?.identifier ?? null, caster: origin.uuid, reactor: token.uuid, message: answer.message, dissipated: failed });
     if ( failed ) return false;
@@ -177,12 +177,12 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const auto = usageConfig[MODULE_ID]?.autoReact ?? false;
   // §32 : Sort subtil — « sans composante verbale, somatique ni matérielle » : personne ne voit le sort se lancer, pas de Contresort.
   const subtle = (usageConfig[MODULE_ID]?.metamagic ?? []).includes("subtle");
-  if ( isSpell && subtle ) log(`${origin.name} lance ${activity.item.name} en Sort subtil : pas de Contresort possible`);
+  if ( isSpell && subtle ) log(`${origin.name} casts ${activity.item.name} with Subtle Spell: no Counterspell possible`);
   let candidates = (isSpell && !subtle) ? counterCandidates(activity, origin) : [];
   // `autoReact: "none"` (scénarios) : personne ne réagit — et l'utilisation n'est pas suspendue du tout, sinon
   // l'appelant (connecteur) perd la main avant la relance (zone jamais posée, message jamais suivi).
   if ( (auto === "none") && candidates.length ) {
-    log(`${origin.name} lance ${activity.item.name} : ${candidates.map(c => c.token.name).join(", ")} — réaction déclinée d'office (scénario)`);
+    log(`${origin.name} casts ${activity.item.name}: ${candidates.map(c => c.token.name).join(", ")} — reaction declined automatically (scenario)`);
     candidates = [];
   }
   // §34 : la fenêtre de réaction avant le jet d'attaque (Esquive des ombres, Éclat protecteur). Pas pour une attaque lancée en
@@ -204,7 +204,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     const foretold = seers.length ? await foretellFor(origin, { kind: "attack", item: activity.item.name, auto }) : null;
     if ( foretold ) {
       mods = { disadvantage: false, penalty: 0, bonus: 0, names: [], ...(mods ?? {}), foretold: foretold.value };
-      log(`${foretold.seer} : Présage, le d20 de l'attaque de ${origin.name} vaudra ${foretold.value}`);
+      log(`${foretold.seer}: Portent, the d20 of ${origin.name}'s attack will be ${foretold.value}`);
     }
     if ( preAttack ) rememberAttackMods(activity.uuid, mods);
     const now = Array.from(game.user.targets).map(t => t.id);
@@ -225,10 +225,10 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     // use-activity) : l'annulation lui a retiré la main, la relance laisse dnd5e enchaîner (sans dialogue, ci-dessus).
     const { subsequentActions, ...rest } = usageConfig;
     await activity.use({ ...rest, [MODULE_ID]: { ...(usageConfig[MODULE_ID] ?? {}), confirmed: true, gated: true } }, dialogConfig, messageConfig);
-  })().catch(err => console.error(`${MODULE_ID} | porte interrompue`, err));
+  })().catch(err => console.error(`${MODULE_ID} | gate interrupted`, err));
   return false;
 }
 
 export function registerGates() {
-  route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "portes : Sanctuaire, Contresort, réactions avant l'attaque, Présage" });
+  route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "gates: Sanctuary, Counterspell, pre-attack reactions, Portent" });
 }

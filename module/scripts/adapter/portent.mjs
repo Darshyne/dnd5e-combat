@@ -128,7 +128,7 @@ export async function askPortent(actor, payload) {
       : await game.users.get(userId).query(PORTENT_QUERY, payload, { timeout: PORTENT_TIMEOUT });
     return Number.isInteger(answer?.value) ? answer.value : null;
   } catch(err) {
-    console.warn(`${MODULE_ID} | Présage de ${actor.name} : pas de réponse`, err);
+    console.warn(`${MODULE_ID} | Portent for ${actor.name}: no answer`, err);
     return null;
   }
 }
@@ -151,7 +151,7 @@ export async function foretellFor(subject, { kind, item, auto=null, declined=nul
       // Écrit ici : ce client doit posséder le devin (les scénarios tournent chez le MJ) ; sinon, pas de Présage plutôt qu'une porte
       // interrompue.
       try { value = (await useForetold(token.actor, wanted, { subject: subject.name, kind })) ? wanted : null; }
-      catch(err) { console.warn(`${MODULE_ID} | Présage de ${token.name} : non écrit`, err); }
+      catch(err) { console.warn(`${MODULE_ID} | Portent for ${token.name}: not written`, err); }
     }
     else value = await askPortent(token.actor, { actor: token.actor.uuid, subject: subject.name, kind, item });
     if ( value !== null ) return { value, seer: token.name };

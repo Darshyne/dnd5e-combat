@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { RECIPES, FACTS, FIELD_KINDS, PUBLIC_KEYS, buildEntry, buildCondition } from "../module/scripts/core/recipes.mjs";
+import { RECIPES, FACTS, FIELD_KINDS, PUBLIC_KEYS, ISSUE_CODES, buildEntry, buildCondition } from "../module/scripts/core/recipes.mjs";
 import { validateEntry, ENTRY_KEYS } from "../module/scripts/core/content.mjs";
 
 // Les faits que l'adaptateur fournit : relus dans sa source (il touche à Foundry, on ne l'importe pas ici).
@@ -46,9 +46,19 @@ describe("recettes : le catalogue", () => {
         }
       }
       for ( const k of Object.keys(FACTS) ) wanted.add(`DND5ECOMBAT.Recette.Fait.${k.replace(".", "_")}`);
+      for ( const c of ISSUE_CODES ) wanted.add(`DND5ECOMBAT.Recette.Erreur.${c}`);
       expect(Array.from(wanted).filter(k => !(k in keys))).toEqual([]);
     });
   }
+});
+
+describe("recettes : problèmes traduisibles", () => {
+  it("chaque code de problème écrit dans recipes.mjs est déclaré dans ISSUE_CODES (donc a son libellé)", () => {
+    const src = readFileSync(new URL("../module/scripts/core/recipes.mjs", import.meta.url), "utf8");
+    const used = Array.from(src.matchAll(/issue\([^,]+,\s*"(\w+)"/g), m => m[1]);
+    expect(used.length).toBeGreaterThan(8);
+    expect(used.filter(c => !ISSUE_CODES.includes(c))).toEqual([]);
+  });
 });
 
 describe("recettes : construire une entrée", () => {
@@ -65,7 +75,8 @@ describe("recettes : construire une entrée", () => {
     const { entry } = buildEntry([{ type: "bonusDamage", values: { formula: "1d4", damageType: "fire" } }], { identifier: "lame-ardente" });
     expect(entry.triggers[0].if).toEqual({ "activity.identifier": "lame-ardente" });
     const sans = buildEntry([{ type: "bonusDamage", values: { formula: "1d4", damageType: "fire" } }]);
-    expect(sans.errors[0]).toMatch(/identifiant/);
+    expect(sans.errors[0]).toMatch(/identifier/);
+    expect(sans.issues[0]).toMatchObject({ recipe: 0, type: "bonusDamage", at: "scope", code: "needsIdentifier" });
   });
 
   it("plusieurs recettes s'ajoutent ; une recette unique ne vient qu'une fois", () => {
@@ -77,13 +88,14 @@ describe("recettes : construire une entrée", () => {
     ]);
     expect(entry.triggers).toHaveLength(2);
     expect(entry.teleport).toEqual({ distance: 30, units: "ft" });
-    expect(errors).toEqual(["recettes[3] : « teleport » une seule fois par objet"]);
+    expect(errors).toEqual(["recipes[3].type: \"teleport\" only once per item"]);
     expect(validateEntry(entry, { facts })).toEqual([]);
   });
 
   it("un champ requis manquant est dit, la recette est écartée", () => {
-    const { entry, errors } = buildEntry([{ type: "outcomeStatus", values: { on: "hit" } }]);
-    expect(errors).toEqual(["recettes[0].status : requis"]);
+    const { entry, errors, issues } = buildEntry([{ type: "outcomeStatus", values: { on: "hit" } }]);
+    expect(errors).toEqual(["recipes[0].status: required"]);
+    expect(issues).toEqual([{ recipe: 0, type: "outcomeStatus", at: "status", code: "required", data: { field: "status" }, message: "recipes[0].status: required" }]);
     expect(entry).toEqual({});
   });
 
@@ -108,7 +120,7 @@ describe("recettes : construire une entrée", () => {
   });
 
   it("une recette inconnue est refusée", () => {
-    expect(buildEntry([{ type: "fireball" }]).errors[0]).toMatch(/inconnue/);
+    expect(buildEntry([{ type: "fireball" }]).issues[0]).toMatchObject({ code: "unknownRecipe", data: { type: "fireball" } });
   });
 });
 

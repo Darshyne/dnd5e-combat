@@ -332,7 +332,7 @@ function readPlan(message) {
       const save = saveOf(activity);
       if ( !save ) {
         // Donnée d'item abîmée et non réparable (adapter/saves.mjs, repairSaveAbility) : on le dit au lieu de se taire.
-        console.warn(`${MODULE_ID} | ${activity.item?.name} : sauvegarde sans caractéristique ou sans DD, non automatisée`, activity);
+        console.warn(`${MODULE_ID} | ${activity.item?.name}: saving throw without ability or DC, not automated`, activity);
         if ( game.user.isGM ) ui.notifications.warn(game.i18n.format("DND5ECOMBAT.SauvegardeIncomplete", { item: activity.item?.name }));
         return null;
       }

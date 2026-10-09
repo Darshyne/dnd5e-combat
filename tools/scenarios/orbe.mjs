@@ -76,7 +76,7 @@ export default {
       }
     }
     // Le journal du moteur autour des rebonds (proposé, refusé), avant que le lanceur ne le vide.
-    for ( const line of (await ctx.engineLog()).filter(l => /rebond|double|type de dégâts/i.test(l)).slice(-10) ) ctx.log(`· ${line.slice(0, 200)}`);
+    for ( const line of (await ctx.engineLog()).filter(l => /rebond|double|type de dégâts|bounce|leap|damage type/i.test(l)).slice(-10) ) ctx.log(`· ${line.slice(0, 200)}`);
     ctx.expect(!!leapUsage, "l'orbe a bondi");
     if ( !leapUsage ) return;
     const flags = leapUsage.flags?.[MODULE_ID] ?? leapUsage.flags ?? {};

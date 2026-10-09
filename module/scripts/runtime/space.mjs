@@ -30,7 +30,7 @@ function onTemplateData(activity, regionData) {
     const slice = elevationSliceFor(activity, { scene: canvas.scene, originToken, dimensions: data.flags?.dnd5e?.dimensions ?? null });
     if ( !slice ) continue;
     data.elevation = slice;
-    log(`zone de ${activity.item?.name ?? activity.name} : tranche d'élévation ${slice.bottom} → ${slice.top} ${canvas.scene.grid.units}`);
+    log(`area of ${activity.item?.name ?? activity.name}: elevation slice ${slice.bottom} -> ${slice.top} ${canvas.scene.grid.units}`);
   }
 }
 
@@ -40,7 +40,7 @@ export function registerSpace() {
     scope: "world", config: true, type: Boolean, default: true, onChange: refresh
   });
 
-  route("dnd5e.createMeasuredTemplate", onTemplateData, { label: "zone : tranche d'élévation non posée" });
+  route("dnd5e.createMeasuredTemplate", onTemplateData, { label: "area: elevation slice not set" });
 
   // Piège du cœur 14.368 (vu en jeu le 2026-09-23) : `RegionDocument#segmentizeMovementPath` lit le champ
   // privé `#polygonTree` (client/documents/region.mjs, #testSamples) sans passer par l'accesseur qui le
@@ -48,15 +48,15 @@ export function registerSpace() {
   // of undefined (reading 'testPoint') » tant que rien n'a lu `region.polygonTree`. On le lit pour chaque
   // région de la scène affichée — c'est un cache, pas un patch.
   const warm = () => { for ( const r of canvas?.scene?.regions ?? [] ) r.polygonTree; };
-  for ( const hook of ["canvasReady", "createRegion", "updateRegion"] ) route(hook, warm, { label: "régions : polygones non préparés" });
+  for ( const hook of ["canvasReady", "createRegion", "updateRegion"] ) route(hook, warm, { label: "regions: polygons not prepared" });
 
   route("ready", () => {
     const missing = checkSpaceApi();
     if ( missing.length ) {
-      console.warn(`${MODULE_ID} | élévation et volumes hors service : API du cœur absente (${missing.join(", ")})`);
+      console.warn(`${MODULE_ID} | elevation and volumes out of service: core API missing (${missing.join(", ")})`);
       if ( game.user.isGM ) ui.notifications.warn(game.i18n.format("DND5ECOMBAT.VolumesHorsService", { missing: missing.join(", ") }));
     }
     refresh();
-    log(`élévation et volumes : ${game.settings.get(MODULE_ID, VOLUMES_SETTING) ? (missing.length ? "hors service" : "en service") : "désactivé (réglage)"}`);
-  }, { label: "espace : contrôle de l'API" });
+    log(`elevation and volumes: ${game.settings.get(MODULE_ID, VOLUMES_SETTING) ? (missing.length ? "out of service" : "in service") : "disabled (setting)"}`);
+  }, { label: "space: API check" });
 }

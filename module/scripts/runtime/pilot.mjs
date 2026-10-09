@@ -52,7 +52,7 @@ async function charge(pilot, gesture) {
   if ( plan.pay ) {
     after = spendUse(before, { cost: plan.pay, weaponAttack: false, usesSpellSlot: false }, { isOwnTurn: plan.ownTurn, attacksPerAction: 1 });
     await writeBudget(combatant, after);
-    log(`${combatant.name} : ${plan.pay} (commande de ${pilot.token.name})`);
+    log(`${combatant.name}: ${plan.pay} (command from ${pilot.token.name})`);
   }
   await writeCommand(combatant, pilot, plan.next);
   return { combatant: combatant.id, before, after, command: { token: commandKey(pilot), before: commandBefore } };
@@ -98,7 +98,7 @@ async function handleDismiss({ token: tokenUuid }, { user }={}) {
   const token = await fromUuid(tokenUuid);
   const pilot = token ? pilotOf(token) : null;
   if ( !pilot || (user && !pilot.summoner.testUserPermission(user, "OWNER")) ) return false;
-  log(`${token.name} congédié`);
+  log(`${token.name} dismissed`);
   await token.delete();
   return true;
 }
@@ -124,7 +124,7 @@ export async function dismissPilot(tokenDoc) {
   }
   const effect = fromUuidSync(tokenDoc.getFlag(MODULE_ID, "summonedBy") ?? "", { strict: false });
   if ( !effect?.isOwner ) return false;
-  log(`${tokenDoc.name} renvoyé : fin de ${effect.name}`);
+  log(`${tokenDoc.name} dismissed: ${effect.name} ended`);
   await effect.delete();
   return true;
 }
@@ -140,7 +140,7 @@ async function leashAround(casterToken) {
     if ( !origin?.startsWith(actor.uuid) ) continue;
     const pilot = pilotOf(token);
     if ( !pilot?.rule.leash || (pilot.summoner !== actor) || !beyondSpellRange(pilot) ) continue;
-    log(`${token.name} : hors de portée de ${pilot.item.name} (le lanceur s'éloigne), disparaît`);
+    log(`${token.name}: out of range of ${pilot.item.name} (the caster moves away), disappears`);
     ui.notifications.info(loc("Pilote.HorsPortee", { name: token.name, item: pilot.item.name }));
     await token.delete();
   }
@@ -154,7 +154,7 @@ function onMoveToken(tokenDoc, movement) {
   if ( !moved.length || moved.every(w => CONFIG.Token.movement.actions[w.action]?.teleport) ) return;
   // « Une lumière disparaît si elle sort de la portée du sort » (`leash`, Lumières dansantes), quel que soit le tour.
   if ( pilot.rule.leash && beyondSpellRange(pilot) ) {
-    log(`${tokenDoc.name} : hors de portée de ${pilot.item.name}, disparaît`);
+    log(`${tokenDoc.name}: out of range of ${pilot.item.name}, disappears`);
     ui.notifications.info(loc("Pilote.HorsPortee", { name: tokenDoc.name, item: pilot.item.name }));
     return tokenDoc.delete();
   }
@@ -192,7 +192,7 @@ async function onCreateToken(tokenDoc) {
   const state = castCommand(pilot.rule.onCast, turnKey(combatant.combat));
   if ( !state ) return;
   await serialized(commandKey(pilot), () => writeCommand(combatant, pilot, state));
-  log(`${tokenDoc.name} : commande offerte au lancement (${pilot.rule.onCast})`);
+  log(`${tokenDoc.name}: command offered on cast (${pilot.rule.onCast})`);
 }
 
 /**
@@ -211,7 +211,7 @@ async function onDeleteToken(tokenDoc) {
   if ( others ) return;
   const effect = fromUuidSync(effectUuid, { strict: false });
   if ( !effect ) return;
-  log(`${tokenDoc.name} retiré : fin de la concentration (${effect.name})`);
+  log(`${tokenDoc.name} removed: concentration ended (${effect.name})`);
   ui.notifications.info(loc("Pilote.FinDuSort", { name: tokenDoc.name, item: effect.name }));
   await effect.delete();
 }
@@ -259,7 +259,7 @@ function pulseOnce(source, pulse, token, moment, turn=pulseTurnKey()) {
     const hit = (memory?.turn === turn) ? memory.hit : [];
     if ( hit.includes(token.id) ) return;
     await source.setFlag(MODULE_ID, "pulse", { turn, hit: [...hit, token.id] });
-    log(`${source.name} : ${token.name} (${moment}, ${pulse.activity.item.name})`);
+    log(`${source.name}: ${token.name} (${moment}, ${pulse.activity.item.name})`);
     await pulseAgainst(pulse.activity, source, token, moment);
   });
 }
@@ -294,7 +294,7 @@ async function onUpdateActor(actor, changes) {
   if ( !token?.getFlag(MODULE_ID, "endsAtZero") ) return;
   const effect = fromUuidSync(token.getFlag(MODULE_ID, "summonedBy") ?? "", { strict: false });
   if ( !effect ) return;
-  log(`${token.name} à 0 PV : fin de ${effect.name}`);
+  log(`${token.name} at 0 HP: ${effect.name} ends`);
   await effect.delete();
 }
 
@@ -302,7 +302,7 @@ async function onUpdateActor(actor, changes) {
 async function onIncapacitated(actor) {
   if ( !actor || !INCAPACITATING.some(s => actor.statuses?.has(s)) ) return;
   for ( const token of summonsOfWith(actor, "endsIfIncapacitated") ) {
-    log(`${token.name} : ${actor.name} est Neutralisé, l'invocation cesse`);
+    log(`${token.name}: ${actor.name} is Incapacitated, the summon ends`);
     await token.delete();
   }
 }
@@ -329,23 +329,23 @@ async function onTurnChange(combat, prior, current) {
   const combatant = combat.combatants.get(current?.combatantId);
   if ( !isPilotedCombatant(combatant) || skipsOf(combat).every(Boolean) ) return;
   const back = (current.round < prior?.round) || ((current.round === prior?.round) && (current.turn < prior?.turn));
-  log(`${combatant.name} : objet piloté, son tour est passé`);
+  log(`${combatant.name}: piloted object, its turn is skipped`);
   if ( back ) await combat.previousTurn();
   else await combat.nextTurn();
 }
 
 export function registerPilot() {
-  route("combatTurn", onCombatAdvance, { label: "objet piloté : tour sauté" });
-  route("combatRound", onCombatAdvance, { label: "objet piloté : tour sauté (round)" });
-  route("combatStart", (combat, updateData) => onCombatAdvance(combat, updateData, { direction: 1 }), { label: "objet piloté : tour sauté (début)" });
-  route("combatTurnChange", onTurnChange, { executor: true, label: "objet piloté : tour non sauté" });
-  route("combatTurnChange", pulseAtTurnEnd, { executor: true, label: "objet invoqué : fin de tour à portée" });
-  route("updateActor", onUpdateActor, { executor: true, label: "objet piloté : fin du sort à 0 PV" });
-  route("createToken", onCreateToken, { executor: true, label: "objet piloté : commande de lancement" });
-  route("moveToken", onMoveToken, { executor: true, label: "objet piloté : commande non payée" });
-  route("moveToken", pulseOnMove, { executor: true, label: "objet invoqué : arrivée à portée" });
-  route("deleteToken", onDeleteToken, { executor: true, label: "objet piloté : sort non terminé" });
-  route("createActiveEffect", effect => onIncapacitated(effect.parent), { executor: true, label: "invocation : fin sur Neutralisé" });
-  route("updateActiveEffect", effect => onIncapacitated(effect.parent), { executor: true, label: "invocation : fin sur Neutralisé" });
+  route("combatTurn", onCombatAdvance, { label: "piloted object: turn skipped" });
+  route("combatRound", onCombatAdvance, { label: "piloted object: turn skipped (round)" });
+  route("combatStart", (combat, updateData) => onCombatAdvance(combat, updateData, { direction: 1 }), { label: "piloted object: turn skipped (start)" });
+  route("combatTurnChange", onTurnChange, { executor: true, label: "piloted object: turn not skipped" });
+  route("combatTurnChange", pulseAtTurnEnd, { executor: true, label: "summoned object: end of turn within range" });
+  route("updateActor", onUpdateActor, { executor: true, label: "piloted object: spell ends at 0 HP" });
+  route("createToken", onCreateToken, { executor: true, label: "piloted object: command on cast" });
+  route("moveToken", onMoveToken, { executor: true, label: "piloted object: command not paid" });
+  route("moveToken", pulseOnMove, { executor: true, label: "summoned object: arriving within range" });
+  route("deleteToken", onDeleteToken, { executor: true, label: "piloted object: spell not ended" });
+  route("createActiveEffect", effect => onIncapacitated(effect.parent), { executor: true, label: "summon: ends on Incapacitated" });
+  route("updateActiveEffect", effect => onIncapacitated(effect.parent), { executor: true, label: "summon: ends on Incapacitated" });
   CONFIG.queries[DISMISS_QUERY] = handleDismiss;
 }

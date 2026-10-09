@@ -87,7 +87,7 @@ function exclusive(fn) {
   busy = true;
   running = (async () => {
     try { await fn(); }
-    catch(err) { console.error(`${MODULE_ID} | souris`, err); }
+    catch(err) { console.error(`${MODULE_ID} | mouse`, err); }
     finally { busy = false; running = null; }
   })();
   return running;
@@ -171,7 +171,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     if ( token?.object && token.isOwner ) {
       closeSheetFor(activity);
       stopTargeting();
-      startPicking(token, activity, usageConfig, dialogConfig, messageConfig).catch(err => console.error(`${MODULE_ID} | visée multiple`, err));
+      startPicking(token, activity, usageConfig, dialogConfig, messageConfig).catch(err => console.error(`${MODULE_ID} | multiple targeting`, err));
       return false;
     }
   }
@@ -182,7 +182,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     stopTargeting();
     askStorm(activity, storm.bonus ?? "").then(stormy => (stormy === null) ? null
       : exclusive(() => castStorm(activity, [usageConfig, dialogConfig, messageConfig], stormy)))
-      .catch(err => console.error(`${MODULE_ID} | orage`, err));
+      .catch(err => console.error(`${MODULE_ID} | storm`, err));
     return false;
   }
   // §16.35 : un sort de lumière qui invoque un objet (Lumière) — au sol ou sur soi, et la couleur, avant de lancer.
@@ -192,7 +192,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     const usage = [usageConfig, dialogConfig, messageConfig];
     askLightChoice(activity).then(choice => !choice ? null
       : exclusive(() => (choice.where === "off") ? putOutLight(activity) : castLight(activity, usage, choice)))
-      .catch(err => console.error(`${MODULE_ID} | choix de la lumière`, err));
+      .catch(err => console.error(`${MODULE_ID} | light choice`, err));
     return false;
   }
   // §16.41 : Arme élémentaire — le niveau et l'élément (fenêtre de dnd5e), puis la créature (visée), puis son arme.
@@ -202,7 +202,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     stopTargeting();
     const usage = [usageConfig, dialogConfig, messageConfig];
     askPact(activity).then(choice => choice ? exclusive(() => pactWith(activity, usage, choice)) : null)
-      .catch(err => console.error(`${MODULE_ID} | arme de pacte`, err));
+      .catch(err => console.error(`${MODULE_ID} | pact weapon`, err));
     return false;
   }
   if ( (enchantTargetOf(activity) === "weapon") && !ours.enchantItem && !ours.confirmed && canvas.ready && activity.actor?.isOwner ) {
@@ -212,7 +212,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     if ( ours.engaged || target ) {
       const usage = [usageConfig, dialogConfig, messageConfig];
       askEnchantWeapon(activity, target?.actor).then(uuid => uuid ? exclusive(() => enchantWith(activity, usage, uuid)) : null)
-        .catch(err => console.error(`${MODULE_ID} | enchantement`, err));
+        .catch(err => console.error(`${MODULE_ID} | enchantment`, err));
       return false;
     }
     const token = activity.getUsageToken?.() ?? activity.actor?.getActiveTokens()[0]?.document;
@@ -222,7 +222,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
       targeting = { token, activity, usage: [chosen.config, { ...(dialogConfig ?? {}), configure: false }, messageConfig] };
       document.body.classList.add("dnd5e-combat-targeting");
       ui.notifications.info(loc("Enchant.ChoisirCreature", { name: activity.item.name }));
-    }).catch(err => console.error(`${MODULE_ID} | enchantement`, err));
+    }).catch(err => console.error(`${MODULE_ID} | enchantment`, err));
     return false;
   }
   // §16.39 : Forme sauvage, Formes du cercle — la forme se choisit parmi les formes connues, avant de lancer.
@@ -231,7 +231,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     stopTargeting();
     const usage = [usageConfig, dialogConfig, messageConfig];
     askWildForm(activity).then(uuid => uuid ? exclusive(() => takeForm(activity, usage, uuid)) : null)
-      .catch(err => console.error(`${MODULE_ID} | forme sauvage`, err));
+      .catch(err => console.error(`${MODULE_ID} | Wild Shape`, err));
     return false;
   }
   // §57 : une ruée en ligne droite (Frappe du vent) — la case d'arrivée se vise au lieu de poser le gabarit de ligne.
@@ -262,7 +262,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
       if ( !chosen ) return;
       return aimArea(activity, aim, shape => exclusive(() => castAimed(activity,
         [chosen.config, { ...(dialogConfig ?? {}), configure: false }, messageConfig], shape)));
-    }).catch(err => console.error(`${MODULE_ID} | visée de zone`, err));
+    }).catch(err => console.error(`${MODULE_ID} | area targeting`, err));
     return false;
   }
   // §16.14 : relancer un sort dont la zone déplaçable est déjà là (Rayon de lune) la déplace : on vise la case, rien n'est
@@ -281,7 +281,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   stopTargeting();
   // §16.33 : un sort à plusieurs cibles (Bénédiction, Prière de guérison…) — le niveau d'abord, puis un clic par créature.
   if ( maySeveral(activity) ) {
-    startGroup(token, activity, usageConfig, dialogConfig, messageConfig).catch(err => console.error(`${MODULE_ID} | visée de groupe`, err));
+    startGroup(token, activity, usageConfig, dialogConfig, messageConfig).catch(err => console.error(`${MODULE_ID} | group targeting`, err));
     return false;
   }
   targeting = { token, activity, usage: [usageConfig, dialogConfig, messageConfig] };
@@ -334,7 +334,7 @@ async function placeZone(activity, zone) {
     const point = placed?.shapes?.length ? shapeCenter(placed.shapes[0].toObject()) : null;
     if ( !point ) return ui.notifications.info(loc("Visee.Annulee"));
     await exclusive(() => moveZone(activity, point));
-  } catch(err) { console.error(`${MODULE_ID} | déplacement de zone`, err); }
+  } catch(err) { console.error(`${MODULE_ID} | area move`, err); }
   finally { placing = null; }
 }
 
@@ -373,7 +373,7 @@ async function aimArea(activity, area, then) {
     if ( !shape ) return ui.notifications.info(loc("Visee.Annulee"));
     placing = null;
     await then(shape);
-  } catch(err) { console.error(`${MODULE_ID} | visée de zone`, err); }
+  } catch(err) { console.error(`${MODULE_ID} | area targeting`, err); }
   finally { placing = null; }
 }
 
@@ -420,7 +420,7 @@ async function aimBolt(activity, cloud) {
     placing = null;
     setBoltAim(null);
     await exclusive(() => strike(activity, cloud, { x: shape.x, y: shape.y }));
-  } catch(err) { console.error(`${MODULE_ID} | visée de l'éclair`, err); }
+  } catch(err) { console.error(`${MODULE_ID} | lightning bolt targeting`, err); }
   finally { placing = null; setBoltAim(null); }
 }
 
@@ -429,7 +429,7 @@ function onPreTemplate(activity) {
   if ( lineDashOf(activity) ) return;
   const aim = aimedAreaOf(activity);
   if ( !aim?.token.object || !aim.token.isOwner ) return;
-  aimArea(activity, aim, shape => placeAimed(activity, shape)).catch(err => console.error(`${MODULE_ID} | visée de zone`, err));
+  aimArea(activity, aim, shape => placeAimed(activity, shape)).catch(err => console.error(`${MODULE_ID} | area targeting`, err));
   return false;
 }
 
@@ -1215,7 +1215,7 @@ function dashTo(point) {
   if ( refusal ) { ui.notifications.warn(refusal.text); return floatNotice(dashing.token, refusal.short, "refused"); }
   const { activity, usage } = dashing;
   stopTargeting();
-  return exclusive(() => dashStrike(activity, usage, at)).catch(err => console.error(`${MODULE_ID} | ruée`, err));
+  return exclusive(() => dashStrike(activity, usage, at)).catch(err => console.error(`${MODULE_ID} | dash strike`, err));
 }
 
 /** §107 : au survol, ce qui refuse la case de réapparition du familier, ou son nom. */
@@ -1503,7 +1503,7 @@ function offerLeap(message, resolution) {
   stopTargeting();
   targeting = { token, activity, usage: [config, { configure: false }, { data: { flags: { [MODULE_ID]: flags } } }] };
   document.body.classList.add("dnd5e-combat-targeting");
-  log(`${activity.item.name} : double aux dés, rebond proposé (${left} possible(s))`);
+  log(`${activity.item.name}: doubles on the dice, leap offered (${left} left)`);
   floatNotice(hit.token, loc("Retour.Rebond"));
   showReticle(loc("Retour.Rebond"));
   ui.notifications.info(loc("Rebond.Visee", { item: activity.item.name, left }));
@@ -1554,10 +1554,10 @@ function onTurnChange(combat, prior) {
  * utilisée — le TODO de dnd5e 6 (`_triggerSubsequentActions`, teleport.mjs).
  */
 function onPostUseActivity(activity, usageConfig, results) {
-  if ( results && stormOf(activity?.item) ) return void stormAfterUse(activity, usageConfig).catch(err => console.error(`${MODULE_ID} | orage`, err));
+  if ( results && stormOf(activity?.item) ) return void stormAfterUse(activity, usageConfig).catch(err => console.error(`${MODULE_ID} | storm`, err));
   if ( !results || !setting("teleportPlanning") || !selfTeleportOf(activity) ) return;
   if ( usageConfig?.subsequentActions === false ) return;   // un appelant qui enchaîne lui-même (connecteur, scénarios)
-  teleportSelf(activity).catch(err => console.error(`${MODULE_ID} | téléportation`, err));
+  teleportSelf(activity).catch(err => console.error(`${MODULE_ID} | teleportation`, err));
 }
 
 /**
@@ -1588,19 +1588,19 @@ export function registerPointer() {
   client("closeSheetOnUse", { type: Boolean, default: true });
   client("teleportPlanning", { type: Boolean, default: true });
 
-  route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "visée : cible attendue" });
-  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "dégâts et soins sans fenêtre" });
-  route("dnd5e.preRollAttackV2", onPreRollDamage, { cancellable: true, label: "jet d'attaque sans fenêtre" });
-  route("dnd5e.postUseActivity", onPostUseActivity, { label: "téléportation : visée non ouverte" });
-  route("dnd5e.preCreateMeasuredTemplate", onPreTemplate, { cancellable: true, label: "cône ou ligne : visée autour du lanceur (carte)" });
-  route("updateChatMessage", onResolutionSettled, { label: "cibles relâchées" });
-  route("createChatMessage", onResolutionSettled, { label: "cibles relâchées" });
-  route("combatTurnChange", onTurnChange, { label: "cibles relâchées en fin de tour" });
-  route("combatTurnChange", offerTurnStart, { label: "activité de début de tour proposée" });
-  route("createActiveEffect", offerEnchantedAttack, { label: "Frappe assurée : attaque non proposée" });
-  route("createChatMessage", onFlurryUsed, { label: "Déluge de coups : visée non ouverte" });
-  route("canvasTearDown", () => { stopTargeting(); closeMenu(); previewed = null; lastHoverKey = null; }, { label: "souris : remise à zéro" });
-  route("controlToken", () => clearPreview(), { label: "aperçu du chemin effacé" });
+  route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "targeting: target expected" });
+  route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "damage and healing without dialog" });
+  route("dnd5e.preRollAttackV2", onPreRollDamage, { cancellable: true, label: "attack roll without dialog" });
+  route("dnd5e.postUseActivity", onPostUseActivity, { label: "teleportation: targeting not opened" });
+  route("dnd5e.preCreateMeasuredTemplate", onPreTemplate, { cancellable: true, label: "cone or line: targeting around the caster (map)" });
+  route("updateChatMessage", onResolutionSettled, { label: "targets released" });
+  route("createChatMessage", onResolutionSettled, { label: "targets released" });
+  route("combatTurnChange", onTurnChange, { label: "targets released at end of turn" });
+  route("combatTurnChange", offerTurnStart, { label: "start-of-turn activity offered" });
+  route("createActiveEffect", offerEnchantedAttack, { label: "True Strike: attack not offered" });
+  route("createChatMessage", onFlurryUsed, { label: "Flurry of Blows: targeting not opened" });
+  route("canvasTearDown", () => { stopTargeting(); closeMenu(); previewed = null; lastHoverKey = null; }, { label: "mouse: reset" });
+  route("controlToken", () => clearPreview(), { label: "path preview cleared" });
   route("ready", () => {
     document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("pointerup", onPointerUp, true);
@@ -1612,5 +1612,5 @@ export function registerPointer() {
     document.addEventListener("keydown", onKeyDown, true);
     document.addEventListener("keydown", onMenuShift, true);
     document.addEventListener("keyup", onMenuShift, true);
-  }, { label: "souris : écouteurs non posés" });
+  }, { label: "mouse: listeners not attached" });
 }

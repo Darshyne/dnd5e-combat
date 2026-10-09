@@ -40,20 +40,20 @@ function onZero(actor) {
       if ( downed.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", downed).catch(() => {});
       const token = tokenOf(actor);
       if ( token ) notice(token, loc("Robustesse.Reussite", { item }), "gain");
-      log(`${item} : ${actor.name} réussit (${total} contre DD ${dc}) et reste à 1 PV`);
+      log(`${item}: ${actor.name} succeeds (${total} vs DC ${dc}) and stays at 1 HP`);
       return;
     }
-    log(`${item} : ${actor.name} rate (${total} contre DD ${dc})`);
+    log(`${item}: ${actor.name} fails (${total} vs DC ${dc})`);
     await ensureDowned(actor);
   });
 }
 
 export function registerFortitude() {
-  route("dnd5e.calculateDamage", onCalculateDamage, { label: "Robustesse de la non-vie : types de dégâts non lus" });
+  route("dnd5e.calculateDamage", onCalculateDamage, { label: "Undead Fortitude: damage types not read" });
   route("updateActor", (actor, changed) => {
     if ( foundry.utils.getProperty(changed, `flags.${MODULE_ID}.fortitude`) ) return onZero(actor);
-  }, { executor: true, label: "Robustesse de la non-vie : sauvegarde non jouée" });
+  }, { executor: true, label: "Undead Fortitude: saving throw not rolled" });
   route("updateToken", (token, changed) => {
     if ( foundry.utils.getProperty(changed, `delta.flags.${MODULE_ID}.fortitude`) ) return onZero(token.actor);
-  }, { executor: true, label: "Robustesse de la non-vie : sauvegarde non jouée (token non lié)" });
+  }, { executor: true, label: "Undead Fortitude: saving throw not rolled (unlinked token)" });
 }

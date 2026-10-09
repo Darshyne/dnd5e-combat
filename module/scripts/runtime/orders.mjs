@@ -50,7 +50,7 @@ async function onResolution(resolution) {
     const token = await fromUuid(t.token);
     if ( !token?.actor ) continue;
     await token.actor.createEmbeddedDocuments("ActiveEffect", [orderEffectData({ item, activity, order, label, fromToken, message: usage })]);
-    log(`${item.name} : ${token.name} doit obéir — ${label}`);
+    log(`${item.name}: ${token.name} must obey — ${label}`);
     notice(token, label, "reaction");
   }
 }
@@ -89,7 +89,7 @@ async function obey(combatant) {
     await writeBudget(combatant, { ...readBudget(combatant), action: 0, bonus: 0, stopped: true });
     lines.push(loc("Ordre.TourAcheve", { name: token.name }));
   }
-  log(`${token.name} obéit (${held.order}) : ${lines.slice(1).join(" ") || "—"}`);
+  log(`${token.name} obeys (${held.order}): ${lines.slice(1).join(" ") || "—"}`);
   notice(token, loc(`Ordre.${held.order}.Nom`), "reaction");
   await ChatMessage.implementation.create({
     speaker: ChatMessage.implementation.getSpeaker({ token }),
@@ -99,9 +99,9 @@ async function obey(combatant) {
 
 export function registerOrders() {
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`order:${resolution?.origin}`, () => onResolution(resolution)),
-    { executor: true, label: "ordre imposé : effet non posé" });
+    { executor: true, label: "imposed command: effect not placed" });
   route("combatTurnChange", (combat, prior, current) => {
     const combatant = combat.combatants.get(current?.combatantId);
     if ( combatant?.token ) return enqueue(`obey:${combatant.token.uuid}`, () => obey(combatant));
-  }, { executor: true, label: "ordre imposé : non exécuté" });
+  }, { executor: true, label: "imposed command: not carried out" });
 }

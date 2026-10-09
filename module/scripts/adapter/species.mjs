@@ -29,6 +29,6 @@ export function endureAtZero(actor, through, updates) {
   if ( !item ) return null;
   updates["system.attributes.hp.value"] = 1;
   item.update({ "system.uses.spent": (Number(item.system.uses.spent) || 0) + 1 })
-    .catch(err => console.warn(`${MODULE_ID} | ${item.name} : utilisation non dépensée`, err));
+    .catch(err => console.warn(`${MODULE_ID} | ${item.name}: use not spent`, err));
   return item;
 }

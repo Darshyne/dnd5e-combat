@@ -23,7 +23,7 @@ function onHpChanged(actor, changes, changed) {
   const members = covenMembers(actor);   // maintenant : à 0 PV, la seconde phase va rendre ce token à une autre forme
   return enqueue(QUEUE, async () => {
     const done = await shareHp(actor, changes.hp, members);
-    for ( const d of done ) log(`cercle : ${d.name} suit ${actor.name} (${changes.hp > 0 ? "+" : ""}${changes.hp} PV : ${d.before} → ${d.after})`);
+    for ( const d of done ) log(`coven: ${d.name} follows ${actor.name} (${changes.hp > 0 ? "+" : ""}${changes.hp} HP: ${d.before} → ${d.after})`);
   });
 }
 
@@ -38,10 +38,10 @@ function onZero(actor) {
       if ( (actor.system?.attributes?.hp?.value ?? 1) > 0 ) return;
       // §19.6 : le dernier carré passe avant tout — il ne tombe pas.
       const stood = await standAtOne(actor);
-      if ( stood ) return log(`${stood} : ${actor.name} reste debout à 1 PV`);
+      if ( stood ) return log(`${stood}: ${actor.name} stays up at 1 HP`);
       await burstAtZero(actor);   // §19.6 : explosion à 0 PV, avant la bascule
       const done = await enterSecondPhase(actor);
-      if ( done ) log(`seconde phase : ${done.from} → ${done.to}`);
+      if ( done ) log(`second phase: ${done.from} → ${done.to}`);
     } finally { shifting.delete(actor.uuid); }
   });
 }
@@ -51,7 +51,7 @@ async function onLastStandUsed(activity) {
   const actor = activity?.actor;
   if ( !actor || !contentOf(activity.item).entry?.lastStand ) return;
   const n = await purgeEffects(actor);
-  log(`${activity.item.name} : ${n} effet(s) retiré(s) de ${actor.name}`);
+  log(`${activity.item.name}: ${n} effect(s) removed from ${actor.name}`);
   await ChatMessage.implementation.create({
     speaker: ChatMessage.implementation.getSpeaker({ actor }),
     content: `<p>${loc("EffetsPurges", { item: activity.item.name, name: actor.name })}</p>`
@@ -66,20 +66,20 @@ function onFormChange(activity) {
   return enqueue(QUEUE, async () => {
     try {
       const done = await changeForm(activity);
-      if ( done ) log(`changement de forme : ${done.from} → ${done.to}`);
+      if ( done ) log(`shape change: ${done.from} → ${done.to}`);
     } finally { shifting.delete(actor.uuid); }
   });
 }
 
 export function registerCoven() {
-  route("dnd5e.postUseActivity", onFormChange, { executor: true, label: "changement de forme non joué" });
-  route("dnd5e.postUseActivity", onLastStandUsed, { executor: true, label: "dernier rempart : effets non retirés" });
-  route("dnd5e.damageActor", onHpChanged, { executor: true, label: "cercle : PV non partagés" });
-  route("dnd5e.healActor", onHpChanged, { executor: true, label: "cercle : soins non partagés" });
+  route("dnd5e.postUseActivity", onFormChange, { executor: true, label: "shape change not played" });
+  route("dnd5e.postUseActivity", onLastStandUsed, { executor: true, label: "last stand: effects not removed" });
+  route("dnd5e.damageActor", onHpChanged, { executor: true, label: "coven: HP not shared" });
+  route("dnd5e.healActor", onHpChanged, { executor: true, label: "coven: healing not shared" });
   route("updateActor", (actor, changed) => {
     if ( foundry.utils.getProperty(changed, "system.attributes.hp.value") === 0 ) return onZero(actor);
-  }, { executor: true, label: "seconde phase non jouée" });
+  }, { executor: true, label: "second phase not played" });
   route("updateToken", (token, changed) => {
     if ( foundry.utils.getProperty(changed, "delta.system.attributes.hp.value") === 0 ) return onZero(token.actor);
-  }, { executor: true, label: "seconde phase non jouée (token non lié)" });
+  }, { executor: true, label: "second phase not played (unlinked token)" });
 }

@@ -81,13 +81,13 @@ export async function switchMode(token, to, shift, value=to) {
       // ne peut plus redescendre en volant (le cœur la tient pour pleine vers le bas). Un pas `displace` n'est pas
       // contraint (constrainMovementPath : « unless teleporting ») ; le sol visé est celui de son propre niveau.
       await token.move([{ ...moved, action: "displace" }], { [MODULE_ID]: { altitude: true }, constrainOptions: { ignoreWalls: true } });
-      if ( reached() ) log(`${token.name} : retour au sol par un pas displace (bloqué par une surface)`);
+      if ( reached() ) log(`${token.name}: back to the ground via a displace step (blocked by a surface)`);
     }
     if ( !reached() ) return false;
     await followLevel(token, from);
   }
   if ( token._source.movementAction !== value ) await token.update({ movementAction: value }, { [MODULE_ID]: { altitude: true } });
-  log(`${token.name} : mode ${to}${shift ? `, élévation ${shift.elevation}` : ""}`);
+  log(`${token.name}: mode ${to}${shift ? `, elevation ${shift.elevation}` : ""}`);
   return true;
 }
 
@@ -122,7 +122,7 @@ function onPreUpdateToken(token, changes, options) {
   const to = value ?? CONFIG.Token.movement.defaultAction;
   if ( options?.[MODULE_ID]?.forced ) {
     // Mis À terre, relevé : pas un choix de mode ; un vol accordé qui ne sert plus tombe quand même.
-    if ( staleGrant(token, to) ) setTimeout(() => revokeSpeedsBut(token, to).catch(err => console.error(`${MODULE_ID} | vitesse accordée`, err)), 0);
+    if ( staleGrant(token, to) ) setTimeout(() => revokeSpeedsBut(token, to).catch(err => console.error(`${MODULE_ID} | granted speed`, err)), 0);
     return true;
   }
   const pos = token._source;
@@ -130,7 +130,7 @@ function onPreUpdateToken(token, changes, options) {
   const shift = modeShift(token.movementAction, to, pos.elevation ?? 0, ground, clearanceOf(token.parent), ceiling);
   if ( !shift && !modeRefusalFor(token.actor, to) && !staleGrant(token, to) ) return true;
   applyMode(token, value).then(ok => { if ( !ok ) refuse(token, "Impossible"); })
-    .catch(err => console.error(`${MODULE_ID} | changement de mode`, err));
+    .catch(err => console.error(`${MODULE_ID} | mode change`, err));
   return false;
 }
 
@@ -192,10 +192,10 @@ function levelOnlyMove(token, last) {
   const ceiling = bounds.ceiling;
   const elevation = coherentElevation(token.movementAction, ground, ground, clearanceOf(token.parent), ceiling);
   const from = token._source.level;
-  log(`${token.name} : niveau ${from} → ${last.level}, élévation ${elevation} (sol ${ground})`);
+  log(`${token.name}: level ${from} → ${last.level}, elevation ${elevation} (ground ${ground})`);
   token.move([{ elevation, level: last.level, action: "displace" }], { [MODULE_ID]: { altitude: true }, constrainOptions: { ignoreWalls: true } })
     .then(() => followLevel(token, from))
-    .catch(err => console.error(`${MODULE_ID} | changement de niveau`, err));
+    .catch(err => console.error(`${MODULE_ID} | level change`, err));
   return false;
 }
 
@@ -211,7 +211,7 @@ function verticalMove(token, last) {
   if ( placementOf(current) === null ) return null;   // escalade, nage, saut : l'élévation est libre
   const to = (wanted > ground + 1e-6) ? "fly" : ((wanted < ground - 1e-6) ? "burrow"
     : ((placementOf(current) === "ground") ? current : groundModeOf(token.actor)));
-  log(`${token.name} : élévation ${token._source.elevation} → ${wanted} sur place (niveau ${token._source.level}, sol ${ground}, plafond ${ceiling}) : ${current} → ${to}`);
+  log(`${token.name}: elevation ${token._source.elevation} → ${wanted} in place (level ${token._source.level}, ground ${ground}, ceiling ${ceiling}): ${current} → ${to}`);
   if ( placementOf(to) === placementOf(current) ) return null;
   if ( modeRefusalFor(token.actor, to) ) {
     // Le MJ pose où il veut : une créature sans vol laissée en l'air est « En chute » (dnd5e).
@@ -222,7 +222,7 @@ function verticalMove(token, last) {
   const elevation = coherentElevation(to, wanted, ground, clearance, ceiling);
   const action = (placementOf(to) === "ground") ? current : to;
   switchMode(token, to, { elevation, action }).then(ok => { if ( !ok ) refuse(token, "Impossible"); })
-    .catch(err => console.error(`${MODULE_ID} | changement de mode par l'élévation`, err));
+    .catch(err => console.error(`${MODULE_ID} | mode change from elevation`, err));
   return false;
 }
 
@@ -254,7 +254,7 @@ function onPreMoveToken(token, movement, operation) {
     (async () => {
       if ( !(await switchMode(token, implied, null)) ) return;
       await token.move(again, { showRuler: rulerShown() });
-    })().catch(err => console.error(`${MODULE_ID} | déplacement dans le mode de l'élévation`, err));
+    })().catch(err => console.error(`${MODULE_ID} | movement in the elevation's mode`, err));
     return false;
   }
   const points = waypoints.map(w => ({ elevation: w.elevation ?? 0, action: w.action, ...boundsUnder(token, w) }));
@@ -262,14 +262,14 @@ function onPreMoveToken(token, movement, operation) {
   const levels = levelsAlong(token, origin, waypoints.slice(0, result.kept), result.elevations);
   const relevelled = levels.some((level, n) => level !== waypoints[n].level);
   if ( !result.changed && !relevelled ) return true;
-  log(`${token.name} : chemin aligné — ${points.map((p, n) => `${p.action} ${p.elevation}→${result.elevations[n] ?? "×"} (sol ${p.ground}, plafond ${p.ceiling}, niveau ${levels[n] ?? "×"})`).join(" ; ")}${result.issue ? ` [${result.issue}]` : ""}`);
+  log(`${token.name}: path aligned — ${points.map((p, n) => `${p.action} ${p.elevation}→${result.elevations[n] ?? "×"} (ground ${p.ground}, ceiling ${p.ceiling}, level ${levels[n] ?? "×"})`).join("; ")}${result.issue ? ` [${result.issue}]` : ""}`);
   if ( result.issue === "tooHigh" ) refuse(token, "TropHaut");
   if ( result.issue === "falls" ) notice(token, loc("Retour.Altitude.Chute"));
   if ( !result.kept ) return false;
   const again = waypoints.slice(0, result.kept).map((w, n) => ({ ...copyOf(w), elevation: result.elevations[n], level: levels[n] }));
   const from = token._source.level;
   token.move(again, { showRuler: rulerShown(), [MODULE_ID]: { altitude: true } }).then(() => relevelled && followLevel(token, from))
-    .catch(err => console.error(`${MODULE_ID} | déplacement aligné sur le sol`, err));
+    .catch(err => console.error(`${MODULE_ID} | movement aligned to the ground`, err));
   return false;
 }
 
@@ -289,8 +289,8 @@ export function registerAltitude() {
     let on = false;
     try { on = game.settings.get(BETTER_LEVELS, "setElevationOnLevelChange") === true; } catch { /* réglage absent */ }
     if ( on ) ui.notifications.warn(loc("Altitude.BetterLevels"), { permanent: true });
-  }, { label: "modes de déplacement : réglage de Better Levels" });
-  route("preUpdateToken", onPreUpdateToken, { cancellable: true, label: "mode de déplacement : élévation" });
+  }, { label: "movement modes: Better Levels setting" });
+  route("preUpdateToken", onPreUpdateToken, { cancellable: true, label: "movement mode: elevation" });
   // Avant le plafond du tour et les attaques d'opportunité (runtime/actions.mjs) : ils jugent le chemin aligné.
-  route("preMoveToken", onPreMoveToken, { cancellable: true, label: "déplacement : élévation du mode" });
+  route("preMoveToken", onPreMoveToken, { cancellable: true, label: "movement: mode elevation" });
 }

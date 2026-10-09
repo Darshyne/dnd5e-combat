@@ -39,8 +39,8 @@ describe("lineDash (contenu)", () => {
     expect(validateEntry({ lineDash: { reach: 5, units: "ft" } })).toEqual([]);
     expect(validateEntry({ lineDash: { reach: 5, units: "ft", activity: "pZRawQ5JyoxXkqPu" } })).toEqual([]);
     expect(validateEntry({ lineDash: { reach: 0, units: "", activity: "x", width: 1 } })).toEqual([
-      "lineDash.reach : nombre positif", "lineDash.units : unité requise", "lineDash.activity : id d'activité (16 caractères) attendu",
-      "lineDash.width : clé inconnue"
+      "lineDash.reach: positive number", "lineDash.units: unit required", "lineDash.activity: activity id (16 characters) expected",
+      "lineDash.width: unknown key"
     ]);
   });
 });

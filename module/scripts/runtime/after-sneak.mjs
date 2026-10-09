@@ -44,7 +44,7 @@ async function onResolution(resolution) {
     const victim = candidates.find(t => t.uuid === answer?.id);
     if ( !victim ) return;
     if ( victim.object ) canvas.tokens.setTargets([victim.id]);
-    log(`${item.name} : ${victim.name}, à ${Math.round(distanceBetween(first, victim).value)} de ${first.name}`);
+    log(`${item.name}: ${victim.name}, ${Math.round(distanceBetween(first, victim).value)} from ${first.name}`);
     await activity.use({ [MODULE_ID]: { confirmed: true } }, { configure: false })
       .catch(err => console.error(`${MODULE_ID} | ${item.name}`, err));
     return;
@@ -52,5 +52,5 @@ async function onResolution(resolution) {
 }
 
 export function registerAfterSneak() {
-  route(`${MODULE_ID}.resolution`, onResolution, { executor: true, label: "Lamentations d'outre-tombe non proposées" });
+  route(`${MODULE_ID}.resolution`, onResolution, { executor: true, label: "Wails from the Grave not offered" });
 }

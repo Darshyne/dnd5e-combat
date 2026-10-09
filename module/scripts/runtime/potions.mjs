@@ -14,20 +14,20 @@ function onPreUse(activity, usageConfig) {
   const potion = potionOfCast(activity?.item);
   if ( !potion || !usageConfig?.concentration?.begin ) return;
   usageConfig.concentration.begin = false;
-  log(`${activity.item.name} (${potion.name}) : sans concentration`);
+  log(`${activity.item.name} (${potion.name}): no concentration`);
 }
 
 export function registerPotions() {
   // L'activité « cast » ne passe pas par `dnd5e.preUseActivity` mais par `dnd5e.preUseLinkedSpell` (activity/cast.mjs:71-90) :
   // la potion existe encore, la copie du sort n'est pas créée.
-  route("dnd5e.preUseLinkedSpell", activity => { notePotionCast(activity); }, { label: "potion : incantation non notée" });
-  route("dnd5e.preUseActivity", onPreUse, { label: "potion : concentration non retirée" });
+  route("dnd5e.preUseLinkedSpell", activity => { notePotionCast(activity); }, { label: "potion: casting not noted" });
+  route("dnd5e.preUseActivity", onPreUse, { label: "potion: concentration not removed" });
   route("preCreateActiveEffect", effect => {
     const n = completeEffectChanges(effect);
-    if ( n ) log(`${effect.parent?.name ?? "?"} : ${effect.name} complété (${n} changement(s))`);
+    if ( n ) log(`${effect.parent?.name ?? "?"}: ${effect.name} completed (${n} change(s))`);
     const s = completeEffectStatuses(effect);   // §96
-    if ( s ) log(`${effect.parent?.name ?? "?"} : ${effect.name} complété (${s} état(s))`);
-  }, { label: "potion : effet non complété" });
-  route("preCreateItem", (item, data) => { if ( stampCachedSpell(item, data) ) log(`${item.name} : lancé par une potion`); },
-    { label: "potion : sort lancé non marqué" });
+    if ( s ) log(`${effect.parent?.name ?? "?"}: ${effect.name} completed (${s} status(es))`);
+  }, { label: "potion: effect not completed" });
+  route("preCreateItem", (item, data) => { if ( stampCachedSpell(item, data) ) log(`${item.name}: cast from a potion`); },
+    { label: "potion: cast spell not marked" });
 }

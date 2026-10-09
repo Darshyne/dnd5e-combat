@@ -48,7 +48,7 @@ async function onResolution(resolution) {
       const activities = found.item.system.activities;
       const activity = activities?.get(found.rule.activity ?? "") ?? activities?.find(a => a.type === "heal");
       if ( !activity ) continue;
-      log(`${found.item.name} : ${victim.name} tombe ${mine ? "sous les coups de" : "près de"} ${token.name}`);
+      log(`${found.item.name}: ${victim.name} falls ${mine ? "to the blows of" : "near"} ${token.name}`);
       // Le soin se lance ici, sans fenêtre : l'action enchaînée de dnd5e (heal.mjs:60) ouvrirait la fenêtre du jet chez le
       // MJ, faute d'évènement. Rattaché à sa carte (`system.origin`), il suit le chemin commun du moteur.
       const used = await activity.use({ subsequentActions: false, [MODULE_ID]: { confirmed: true } }, { configure: false },
@@ -60,5 +60,5 @@ async function onResolution(resolution) {
 
 export function registerFelled() {
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`felled:${resolution?.id}`, () => onResolution(resolution)),
-    { executor: true, label: "ennemi tombé : bénédiction non jouée" });
+    { executor: true, label: "felled enemy: blessing not played" });
 }

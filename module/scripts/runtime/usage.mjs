@@ -73,7 +73,7 @@ function repairSelfUses(activity) {
   item.updateSource({ [`system.activities.${activity.id}.consumption.targets`]: source });
   if ( item.actor ) delete item.actor._embeddedPreparation;
   item.prepareFinalAttributes?.();
-  log(`${activity.item.name} : les utilisations de l'activité sont celles de l'item (${activity.item.system.uses.value}/${activity.item.system.uses.max})`);
+  log(`${activity.item.name}: the activity's uses are the item's (${activity.item.system.uses.value}/${activity.item.system.uses.max})`);
   return activity.item.system.activities.get(activity.id) ?? activity;
 }
 
@@ -87,10 +87,10 @@ async function askForced(activity, usageConfig, messageConfig) {
     no: { label: loc("SansCharge.Renoncer") },
     rejectClose: false
   }).catch(() => false);
-  if ( !ok ) return log(`${name} : plus de charge, le MJ renonce`);
+  if ( !ok ) return log(`${name}: no charges left, the GM gives up`);
   const original = activity.actor?.items.get(activity.item.id)?.system.activities.get(activity.id);
   if ( !original ) return;
-  log(`${name} : plus de charge, lancé quand même par le MJ (rien n'est consommé)`);
+  log(`${name}: no charges left, cast anyway by the GM (nothing consumed)`);
   await original.use({ ...usageConfig, [MODULE_ID]: { ...(usageConfig[MODULE_ID] ?? {}), forced: true } }, { configure: false }, messageConfig);
 }
 
@@ -117,7 +117,7 @@ function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
     else if ( auto && (slot !== proposed) ) {
       usageConfig.spell.slot = slot;
       if ( usageConfig.scaling !== false ) usageConfig.scaling = Math.max(0, (Number(slots[slot]?.level) || level) - level);
-      log(`${activity.item.name} : plus d'emplacement ${proposed}, lancé avec ${slot}`);
+      log(`${activity.item.name}: no ${proposed} slot left, cast with ${slot}`);
     }
   }
   // §106 : le niveau est un vrai choix — la fenêtre de dnd5e reste (avec l'emplacement corrigé ci-dessus, s'il l'a été).
@@ -143,5 +143,5 @@ export function registerUsage() {
     name: `DND5ECOMBAT.Reglage.${AUTO_USAGE_SETTING}.Nom`, hint: `DND5ECOMBAT.Reglage.${AUTO_USAGE_SETTING}.Aide`,
     scope: "world", config: true, type: Boolean, default: true
   });
-  route("dnd5e.preUseActivity", onPreUse, { cancellable: true, label: "utilisation sans fenêtre" });
+  route("dnd5e.preUseActivity", onPreUse, { cancellable: true, label: "use without dialog" });
 }

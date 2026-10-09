@@ -34,8 +34,8 @@ describe("Regain sauvage : limites d'utilisation", () => {
   });
   it("schéma", () => {
     expect(validateEntry({ usageLimits: { "7nAgPNN2dth7SR0D": { ...rule, lowestSlot: true, noDialog: true, cost: "bonus" } } })).toEqual([]);
-    expect(validateEntry({ usageLimits: { "7nAgPNN2dth7SR0D": { cost: "free" } } })).toEqual(["usageLimits.7nAgPNN2dth7SR0D.cost : action, bonus, reaction"]);
+    expect(validateEntry({ usageLimits: { "7nAgPNN2dth7SR0D": { cost: "free" } } })).toEqual(["usageLimits.7nAgPNN2dth7SR0D.cost: action, bonus, reaction"]);
     expect(validateEntry({ usageLimits: { court: { oncePerTurn: 1 } } }))
-      .toEqual(["usageLimits.court : id d'activité (16 caractères) attendu", "usageLimits.court.oncePerTurn : true ou absent"]);
+      .toEqual(["usageLimits.court: activity id (16 characters) expected", "usageLimits.court.oncePerTurn: true or absent"]);
   });
 });

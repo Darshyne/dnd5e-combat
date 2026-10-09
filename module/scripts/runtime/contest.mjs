@@ -36,14 +36,14 @@ async function onPostUse(activity, usageConfig, results) {
   const theirs = await targetRoll(target.actor, rule.against);
   if ( !mine || !theirs ) return;
   const outcome = contestOutcome(mine.total, theirs.total);
-  log(`${activity.item.name} : ${actor.name} ${mine.skill} ${mine.total} contre ${target.name} ${theirs.skill} ${theirs.total} → ${outcome}`);
+  log(`${activity.item.name}: ${actor.name} ${mine.skill} ${mine.total} vs ${target.name} ${theirs.skill} ${theirs.total} → ${outcome}`);
   await announceContest({ actor, target, mine, theirs, outcome, item: activity.item });
   if ( outcome !== "win" ) return;
   const n = await applyContestWin(results.message, activity, target, rule);
-  if ( n ) log(`${activity.item.name} : effet posé sur ${target.name}`);
+  if ( n ) log(`${activity.item.name}: effect applied to ${target.name}`);
 }
 
 export function registerContest() {
   CONFIG.queries[CONTEST_QUERY] = async ({ actor: uuid, skills }) => rollContestSkill(await fromUuid(uuid), skills);
-  route("dnd5e.postUseActivity", onPostUse, { label: "test en opposition non joué" });
+  route("dnd5e.postUseActivity", onPostUse, { label: "contest not played" });
 }

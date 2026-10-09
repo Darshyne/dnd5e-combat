@@ -13,11 +13,13 @@
  * leur delta). Aucun autre acteur, aucun autre item.
  */
 // « Rapport » n'écrit rien (compte rendu chuchoté au MJ) ; « Retirer » applique.
-if ( !game.user.isGM ) return ui.notifications.warn("Actions de base des tas d'Item Piles : réservé au MJ.");
+// Textes : clés DND5ECOMBAT.Macro.ItemPilesBasics.* des fichiers de langue du module.
+const t = (key, data) => data ? game.i18n.format(`DND5ECOMBAT.Macro.ItemPilesBasics.${key}`, data) : game.i18n.localize(`DND5ECOMBAT.Macro.ItemPilesBasics.${key}`);
+if ( !game.user.isGM ) return ui.notifications.warn(t("GmOnly"));
 const choice = await foundry.applications.api.DialogV2.wait({
-  window: { title: "Actions de base des tas d'Item Piles" },
-  content: "<p>« Rapport » ne modifie rien.</p>",
-  buttons: [{ action: "report", label: "Rapport", default: true }, { action: "apply", label: "Retirer" }],
+  window: { title: t("Title") },
+  content: `<p>${t("ReportChangesNothing")}</p>`,
+  buttons: [{ action: "report", label: t("Report"), default: true }, { action: "apply", label: t("Apply") }],
   rejectClose: false
 });
 if ( !choice ) return;
@@ -38,7 +40,7 @@ async function clean(actor, where) {
 }
 
 // 1. Acteurs du monde (dont « Default Item Pile »).
-for ( const actor of game.actors ) await clean(actor, `Acteur « ${actor.name} »`);
+for ( const actor of game.actors ) await clean(actor, t("ActorWhere", { name: actor.name }));
 
 // 2. Tokens non liés : les items que le delta a recopiés (les autres viennent de l'acteur de base, déjà nettoyé).
 for ( const scene of game.scenes ) {
@@ -48,15 +50,15 @@ for ( const scene of game.scenes ) {
     const basics = token.actor.items.filter(i => isBasic(i) && own.has(i.id));
     if ( !basics.length ) continue;
     total += basics.length;
-    lines.push(`<li><strong>${foundry.utils.escapeHTML(`Tas « ${token.name} », scène « ${scene.name} »`)}</strong> : ${basics.map(i => foundry.utils.escapeHTML(i.name)).join(", ")}</li>`);
+    lines.push(`<li><strong>${foundry.utils.escapeHTML(t("PileWhere", { token: token.name, scene: scene.name }))}</strong> : ${basics.map(i => foundry.utils.escapeHTML(i.name)).join(", ")}</li>`);
     if ( !DRY ) await token.actor.deleteEmbeddedDocuments("Item", basics.map(i => i.id));
   }
 }
 
-const head = DRY ? "Rapport : rien n'a été modifié." : "Nettoyage fait.";
-const body = total ? `<p>${total} action(s) de base ${DRY ? "à retirer" : "retirée(s)"} :</p><ul>${lines.join("")}</ul>`
-  : "<p>Aucune action de base sur un tas d'Item Piles : rien à faire.</p>";
+const head = DRY ? t("HeadReport") : t("HeadDone");
+const body = total ? `<p>${t(DRY ? "ToRemove" : "Removed", { count: total })}</p><ul>${lines.join("")}</ul>`
+  : `<p>${t("Nothing")}</p>`;
 await ChatMessage.create({
-  content: `<h3>Tas d'Item Piles — actions de base du moteur</h3><p>${head}</p>${body}`,
+  content: `<h3>${t("Heading")}</h3><p>${head}</p>${body}`,
   whisper: ChatMessage.getWhisperRecipients("GM").map(u => u.id)
 });

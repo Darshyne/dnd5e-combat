@@ -60,7 +60,7 @@ function makeContext(mcp) {
       for ( const redrawn = Date.now() + 15000; !r; ) {
         try { r = await mcp.call("call-module-api", { moduleId: MODULE_ID, fn, args, waitMs: 8000 }); }
         catch(err) {
-          if ( !/aucune scène affichée|non dessiné/.test(err.message) || (Date.now() > redrawn) ) throw err;
+          if ( !/aucune scène affichée|non dessiné|no scene displayed|not drawn/.test(err.message) || (Date.now() > redrawn) ) throw err;
           await new Promise(resolve => setTimeout(resolve, 300));
         }
       }
@@ -367,7 +367,7 @@ function makeContext(mcp) {
     /** Le journal du moteur (lignes `dnd5e-combat |`) depuis le dernier vidage : imprimé quand un scénario échoue. */
     async engineLog() {
       const r = await mcp.call("get-client-errors", { levels: ["log", "warn"], limit: 200 });
-      return (r.entries ?? r.errors ?? []).map(e => String(e.message ?? e.text ?? "")).filter(m => /dnd5e-combat/.test(m) && !/budget|cibles relâchées|visée|dés 3D/.test(m));
+      return (r.entries ?? r.errors ?? []).map(e => String(e.message ?? e.text ?? "")).filter(m => /dnd5e-combat/.test(m) && !/budget|cibles relâchées|visée|dés 3D|targets released|targeting|3D dice/.test(m));
     },
 
     /* ---- combat ---- */

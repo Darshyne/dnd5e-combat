@@ -52,9 +52,9 @@ export default {
       const r = await ctx.settle(bolt.usageMessageId).catch(() => null);
       if ( !r?.targets?.[0]?.hit ) continue;
       await pause(1500);
-      reduced = (await ctx.engineLog()).some(l => /réduit les dégâts/.test(l));
+      reduced = (await ctx.engineLog()).some(l => /réduit les dégâts|reduces the damage/.test(l));
     }
-    for ( const l of (await ctx.engineLog()).filter(l => /Bramo|réduit|Protection|touché|raté/.test(l)).slice(-8) ) ctx.log(l);
+    for ( const l of (await ctx.engineLog()).filter(l => /Bramo|réduit|reduces|Protection|touché|raté|hit|miss/.test(l)).slice(-8) ) ctx.log(l);
     ctx.expect(reduced, "Fire Bolt touche Bramo : les dégâts de feu sont réduits");
   }
 };

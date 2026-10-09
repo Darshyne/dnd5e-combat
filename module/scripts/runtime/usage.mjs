@@ -132,7 +132,10 @@ function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
   if ( auto ) dialogConfig.configure = false;
   // §109 : un sort qui invoque toujours, dont la case « placer » part décochée (`summon.prompt: false`) — cochée ici, comme on
   // l'aurait fait dans la fenêtre ; `create.summons` est déjà préparé à ce hook (documents/activity/summon.mjs:65-70).
-  if ( (activity.type === "summon") && (usageConfig.create?.summons === false || !usageConfig.create?.summons)
+  // §116 : un appelant qui place lui-même les invocations le dit (`{ "dnd5e-combat": { placeSummons: false } }`) — à ce hook, son
+  // `create.summons: false` explicite ne se distingue pas de celui que dnd5e prépare (`??=`, summon.mjs:67).
+  if ( (activity.type === "summon") && (usageConfig[MODULE_ID]?.placeSummons !== false)
+    && (usageConfig.create?.summons === false || !usageConfig.create?.summons)
     && contentOf(activity.item).entry?.placesSummons && activity.canSummon && canvas.scene && activity.availableProfiles?.length ) {
     usageConfig.create = { ...(usageConfig.create ?? {}), summons: true };
   }

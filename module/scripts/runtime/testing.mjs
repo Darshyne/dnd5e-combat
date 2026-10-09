@@ -291,7 +291,7 @@ async function summonAt({ tokenId, itemId, activityId=null, profile=null, actorU
   const activity = activityId ? item?.system.activities.get(activityId) : item?.system.activities.find(a => a.type === "summon");
   if ( !activity || (activity.type !== "summon") ) throw new Error("summon activity not found");
   // §84 : sans rien consommer, comme `use` par défaut — un lanceur sans emplacement ouvrait « Plus de charge » chez le MJ (§77).
-  const used = await activity.use({ consume: false, create: { summons: false }, [MODULE_ID]: { confirmed: true, autoReact: "none" } },
+  const used = await activity.use({ consume: false, create: { summons: false }, [MODULE_ID]: { confirmed: true, autoReact: "none", placeSummons: false } },
     { configure: false });
   activity.getPlacement = async () => [{ x, y, elevation: token.elevation ?? 0, rotation: 0 }];
   // §107 : une invocation « par FP » (Appel de familier) demande la créature au joueur (summon.mjs, `queryActor`) — fournie ici.

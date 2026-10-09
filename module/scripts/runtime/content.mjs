@@ -18,6 +18,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { validateEntry, validateTable, CONTENT_VERSION, ENTRY_KEYS } from "../core/content.mjs";
+import { RECIPES, RECIPES_VERSION, FACTS, FACT_ARG_OPTIONS, FIELD_KINDS, PUBLIC_KEYS, buildEntry, buildCondition } from "../core/recipes.mjs";
 import { CONTENT, SHIPPED, registerTable, unregisterTable, registeredTables } from "../content/index.mjs";
 import { OVERRIDES_SETTING, KNOWN_FACTS, worldOverrides, setWorldOverride, contentOf, inspect, identifierOf } from "../adapter/content.mjs";
 import { buildSpellIndex, stampScroll } from "../adapter/scrolls.mjs";
@@ -101,7 +102,21 @@ export const contentApi = Object.freeze({
   /** `unregister(source)` : retire la table d'un module. */
   unregister: unregisterTable,
   /** `{ source: [identifiants] }` : ce que d'autres modules ont enregistré. */
-  registered: registeredTables
+  registered: registeredTables,
+  /**
+   * §114 : les recettes — les briques du schéma dites pour un outil sans code (core/recipes.mjs). `build(recettes, { identifier,
+   * base })` rend `{ entry, errors }` ; l'entrée se valide ensuite par `validate`, comme tout contenu.
+   */
+  recipes: Object.freeze({
+    version: RECIPES_VERSION,
+    list: RECIPES,
+    facts: FACTS,
+    factOptions: FACT_ARG_OPTIONS,
+    fieldKinds: FIELD_KINDS,
+    publicKeys: PUBLIC_KEYS,
+    build: buildEntry,
+    condition: buildCondition
+  })
 });
 
 export function registerContent() {

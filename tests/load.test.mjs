@@ -50,14 +50,14 @@ describe("chargement du module", () => {
 
   it("relance d'abord (§16.21), puis la visée (ui), l'utilisation sans fenêtre (§68), la Métamagie, la légalité (runtime), les portes, sur dnd5e.preUseActivity", () => {
     expect(api.api.routes()["dnd5e.preUseActivity"].map(r => r.label)).toEqual([
-      "recast of a lasting spell", "targeting: target expected", "projectiles: one per target, the rest chained", "use without dialog", "metamagic: spell not modified", "use legality", "gates: Sanctuary, Counterspell, pre-attack reactions, Portent", "self area: without the \"Place Template\" box", "Reckless Attack: prompt",
+      "recast of a lasting spell", "targeting: target expected", "projectiles: one per target, the rest chained", "use without dialog", "metamagic: spell not modified", "use legality", "gates: Sanctuary, Counterspell, pre-attack reactions, Portent", "summon on targets: neighbours asked", "self area: without the \"Place Template\" box", "Reckless Attack: prompt",
       "swallow: Bite not refused", "potion: concentration not removed", "light object: placed on cast"
     ]);
   });
 
   it("déclare annulables les hooks `pre…` du système et du cœur, et `dnd5e.teleport` (appelé par Hooks.call), et eux seuls", () => {
     const cancellable = Object.entries(api.api.routes()).filter(([, rs]) => rs.some(r => r.cancellable)).map(([h]) => h).sort();
-    expect(cancellable).toEqual(["dnd5e.postAttackRollConfiguration", "dnd5e.preCreateMeasuredTemplate", "dnd5e.preRollAttackV2", "dnd5e.preRollDamageV2", "dnd5e.preUseActivity", "dnd5e.teleport", "preCreateActiveEffect", "preCreateItem", "preMoveToken", "preUpdateActiveEffect", "preUpdateItem", "preUpdateToken"]);
+    expect(cancellable).toEqual(["dnd5e.postAttackRollConfiguration", "dnd5e.preCreateMeasuredTemplate", "dnd5e.preRollAttackV2", "dnd5e.preRollDamageV2", "dnd5e.preSummon", "dnd5e.preUseActivity", "dnd5e.teleport", "preCreateActiveEffect", "preCreateItem", "preMoveToken", "preUpdateActiveEffect", "preUpdateItem", "preUpdateToken"]);
   });
 
   it("enregistre les requêtes entre clients", () => {

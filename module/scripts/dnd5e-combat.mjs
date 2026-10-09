@@ -83,6 +83,7 @@ import { registerTether } from "./runtime/tether.mjs";
 import { registerDefenses } from "./runtime/defenses.mjs";
 import { registerSize } from "./runtime/size.mjs";
 import { registerOrders } from "./runtime/orders.mjs";
+import { registerSummonHandover } from "./runtime/summon-handover.mjs";
 import { describeRoutes, skippedRoutes } from "./runtime/router.mjs";
 import { testApi } from "./runtime/testing.mjs";
 import { registerPointer } from "./ui/pointer.mjs";
@@ -170,6 +171,7 @@ Hooks.once("init", () => {
   gated(registerMetamagic);   // §32 : avant registerTurn — le Sort accéléré change le coût que la légalité lit
   gated(registerTurn);
   gated(registerGates);   // après la légalité : une porte ne s'ouvre que pour une utilisation confirmée
+  gated(registerSummonHandover);   // §118 : après la légalité — une utilisation refusée ne réclame rien aux voisins
   gated(registerReactions);
   gated(registerPortent);   // §36 : Présage (Repos long, requête du devin)
   gated(registerDispel);   // §37.2 : Dissipation de la magie

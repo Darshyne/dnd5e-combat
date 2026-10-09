@@ -37,7 +37,7 @@ export const FEATURE_LEVELS = Object.freeze({
   registerPerf: E, registerContent: E, registerIcons: E, registerAltitude: E, registerActions: E, registerFollow: E,
   registerFacing: E, registerPointer: E, registerTurn: E, registerVision: E, registerSpace: E, registerBasics: E,
   registerIllumination: E, registerPerception: E, registerTracker: E, registerLightIndicator: E, registerFeedback: E,
-  registerPurge: E, registerAutomation: E,
+  registerPurge: E, registerAutomation: E, registerSummonHandover: E,
 
   // Assisté : la résolution, et les règles générales qui valent pour toute créature.
   registerEngine: A, registerConcentration: A, registerDeath: A, registerUsage: A, registerReactions: A, registerTriggers: A,

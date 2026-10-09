@@ -133,6 +133,38 @@ let recalling = null;
 /** Teinte de l'aperçu quand la case est hors de portée du déplacement. */
 const TOO_FAR_COLOR = "#d03030";
 
+/**
+ * §118 : la visée que ce client attend, pour les modules voisins (`api.ui.targeting()`) — tant qu'elle est ouverte, le clic
+ * gauche est au moteur, quel que soit ce qu'il y a sous la souris (cadavre, coffre, marchand). `{ token, activity, identifier }`
+ * (uuids du token qui agit et de l'activité, identifiant dnd5e de son item), ou null.
+ */
+export function pendingTargeting() {
+  const open = picking ?? targeting ?? dashing ?? recalling ?? placing;
+  if ( !open ) return null;
+  return { token: open.token?.uuid ?? null, activity: open.activity?.uuid ?? null,
+    identifier: open.activity?.item?.system?.identifier ?? null };
+}
+
+/**
+ * §118 : publie un changement de visée — hook `dnd5e-combat.targeting`, `(state)` (celui de `pendingTargeting`, null à la
+ * fermeture), sur ce client seulement. Différé d'une microtâche : certains chemins posent la classe avant l'état.
+ */
+let announcedTargeting = null;
+function announceTargeting() {
+  queueMicrotask(() => {
+    const state = pendingTargeting();
+    const key = state ? `${state.token}|${state.activity}` : null;
+    if ( key === announcedTargeting ) return;
+    announcedTargeting = key;
+    Hooks.callAll(`${MODULE_ID}.targeting`, state);
+  });
+}
+
+function markTargeting() {
+  document.body.classList.add("dnd5e-combat-targeting");
+  announceTargeting();
+}
+
 /** Qui l'activité vise d'un clic (core/targeting.mjs), ou null si elle ne se vise pas ainsi. */
 function ruleOf(activity) {
   // §16.41 : l'arme d'une créature, soi compris (Arme élémentaire : dnd5e vise un « objet »).
@@ -220,7 +252,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     configureFirst(activity, usageConfig, dialogConfig).then(chosen => {
       if ( !chosen ) return;
       targeting = { token, activity, usage: [chosen.config, { ...(dialogConfig ?? {}), configure: false }, messageConfig] };
-      document.body.classList.add("dnd5e-combat-targeting");
+      markTargeting();
       ui.notifications.info(loc("Enchant.ChoisirCreature", { name: activity.item.name }));
     }).catch(err => console.error(`${MODULE_ID} | enchantment`, err));
     return false;
@@ -242,7 +274,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
       stopTargeting();
       ui.notifications.info(loc("Ruee.Choisir", { item: activity.item.name }));
       dashing = { token, activity, usage: [usageConfig, dialogConfig, messageConfig] };
-      document.body.classList.add("dnd5e-combat-targeting");
+      markTargeting();
       return false;
     }
   }
@@ -285,7 +317,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     return false;
   }
   targeting = { token, activity, usage: [usageConfig, dialogConfig, messageConfig] };
-  document.body.classList.add("dnd5e-combat-targeting");
+  markTargeting();
   ui.notifications.info(loc("Visee.Choisir", { name: activity.item.name }));
   return false;
 }
@@ -312,6 +344,7 @@ async function placeZone(activity, zone) {
   const shape = source.shapes?.[0];
   if ( !shape || !canvas.ready ) return;
   placing = { activity };
+  announceTargeting();
   ui.notifications.info(loc("Zone.Choisir", { item: activity.item.name }));
   const far = s => tooFarForZone(zone, shapeCenter(s.toObject()));
   try {
@@ -335,7 +368,7 @@ async function placeZone(activity, zone) {
     if ( !point ) return ui.notifications.info(loc("Visee.Annulee"));
     await exclusive(() => moveZone(activity, point));
   } catch(err) { console.error(`${MODULE_ID} | area move`, err); }
-  finally { placing = null; }
+  finally { placing = null; announceTargeting(); }
 }
 
 /**
@@ -351,6 +384,7 @@ async function aimArea(activity, area, then) {
   if ( !canvas.ready ) return;
   stopTargeting();
   placing = { activity };
+  announceTargeting();
   ui.notifications.info(loc("Zone.Viser", { item: activity.item.name, name: area.token.name }));
   let last = null;
   const center = area.token.object.center;
@@ -372,9 +406,10 @@ async function aimArea(activity, area, then) {
     const shape = placed?.shapes?.length ? placed.shapes[0].toObject() : null;
     if ( !shape ) return ui.notifications.info(loc("Visee.Annulee"));
     placing = null;
+    announceTargeting();
     await then(shape);
   } catch(err) { console.error(`${MODULE_ID} | area targeting`, err); }
-  finally { placing = null; }
+  finally { placing = null; announceTargeting(); }
 }
 
 /**
@@ -399,6 +434,7 @@ async function aimBolt(activity, cloud) {
   if ( !circle ) return;
   stopTargeting();
   placing = { activity };
+  announceTargeting();
   setBoltAim({ activity, cloud });
   ui.notifications.info(loc("Orage.Viser", { item: activity.item.name }));
   const radius = boltRadiusPx(activity.item, cloud.parent);
@@ -418,10 +454,11 @@ async function aimBolt(activity, cloud) {
     const shape = placed?.shapes?.length ? placed.shapes[0].toObject() : null;
     if ( !shape ) return;
     placing = null;
+    announceTargeting();
     setBoltAim(null);
     await exclusive(() => strike(activity, cloud, { x: shape.x, y: shape.y }));
   } catch(err) { console.error(`${MODULE_ID} | lightning bolt targeting`, err); }
-  finally { placing = null; setBoltAim(null); }
+  finally { placing = null; announceTargeting(); setBoltAim(null); }
 }
 
 /** §59 : le bouton « Placer la zone » de la carte d'un cône ou d'une ligne de portée personnelle — la même visée. */
@@ -466,7 +503,7 @@ async function startGroup(token, activity, usageConfig, dialogConfig, messageCon
   const usage = [chosen.config, { ...(dialogConfig ?? {}), configure: false }, messageConfig];
   const count = targetCount(activity, { level: chosen.level });
   for ( const t of Array.from(game.user.targets) ) t.setTarget(false, { releaseOthers: false });
-  document.body.classList.add("dnd5e-combat-targeting");
+  markTargeting();
   if ( count <= 1 ) {
     targeting = { token, activity, usage };
     return ui.notifications.info(loc("Visee.Choisir", { name: activity.item.name }));
@@ -492,7 +529,7 @@ async function startPicking(token, activity, usageConfig, dialogConfig, messageC
   const count = projectileCount(activity, { level });
   for ( const t of Array.from(game.user.targets) ) t.setTarget(false, { releaseOthers: false });
   picking = { token, activity, count, picks: [], usage: [config, { ...(dialogConfig ?? {}), configure: false }, messageConfig] };
-  document.body.classList.add("dnd5e-combat-targeting");
+  markTargeting();
   showReticle(counterText());
   ui.notifications.info(loc("Projectiles.Choisir", { item: activity.item.name, count }));
 }
@@ -586,6 +623,7 @@ function stopTargeting() {
   hideHitChance();
   setCursor(null);
   document.body.classList.remove("dnd5e-combat-targeting");
+  announceTargeting();
 }
 
 /**
@@ -613,7 +651,7 @@ function offerTurnStart(combat, prior, current) {
     if ( bound ) floatNotice(bound, item.name, "prompt");
     stopTargeting();
     targeting = { token, activity, usage: [{}, { configure: false }, {}] };
-    document.body.classList.add("dnd5e-combat-targeting");
+    markTargeting();
     ui.notifications.info(loc("Visee.DebutTour", { item: item.name }));
     showReticle(item.name);
     return;
@@ -1246,7 +1284,7 @@ function startRecall(token) {
   const familiar = pocketedFamiliar(token);
   ui.notifications.info(loc("Familier.Choisir", { name: familiar?.name ?? "" }));
   recalling = { token };
-  document.body.classList.add("dnd5e-combat-targeting");
+  markTargeting();
 }
 
 /** §16.29 : pendant le choix de la destination d'une téléportation (cœur), la portée se lit au curseur. */
@@ -1410,7 +1448,7 @@ function offerCleave(message, resolution) {
   if ( !first || !token?.object || !cleaveCandidates(token, first, activity).length ) return;
   stopTargeting();
   targeting = { token, activity, usage: [{ [MODULE_ID]: { cost: "free", cleave: first.uuid } }, { configure: false }, {}] };
-  document.body.classList.add("dnd5e-combat-targeting");
+  markTargeting();
   ui.notifications.info(loc("Botte.Enchainement.Visee", { item: activity.item.name, name: first.name }));
   floatNotice(token, loc("Botte.Retour.cleave"));
   showReticle(loc("Botte.Retour.cleave"));
@@ -1432,7 +1470,7 @@ function offerFlurry(actor) {
   if ( !activity || !token?.object ) return;
   stopTargeting();
   targeting = { token, activity, usage: [{}, { configure: false }, {}] };
-  document.body.classList.add("dnd5e-combat-targeting");
+  markTargeting();
   const label = weapon ? "Clerc.PretreGuerre" : "Moine.Deluge";
   ui.notifications.info(loc(`${label}.Visee`, { n: readBudget(combatant).flurry }));
   floatNotice(token, loc(`${label}.Retour`));
@@ -1465,7 +1503,7 @@ function offerEnchantedAttack(effect) {
   if ( !activity || !token?.object ) return;
   stopTargeting();
   targeting = { token, activity, usage: [{ [MODULE_ID]: { cost: "free" } }, { configure: false }, {}] };
-  document.body.classList.add("dnd5e-combat-targeting");
+  markTargeting();
   ui.notifications.info(loc("Visee.AttaqueEnchantee", { item: weapon.name }));
   floatNotice(token, weapon.name);
   showReticle(weapon.name);
@@ -1502,7 +1540,7 @@ function offerLeap(message, resolution) {
   const flags = { leap, ...(damageType ? { damageType } : {}) };
   stopTargeting();
   targeting = { token, activity, usage: [config, { configure: false }, { data: { flags: { [MODULE_ID]: flags } } }] };
-  document.body.classList.add("dnd5e-combat-targeting");
+  markTargeting();
   log(`${activity.item.name}: doubles on the dice, leap offered (${left} left)`);
   floatNotice(hit.token, loc("Retour.Rebond"));
   showReticle(loc("Retour.Rebond"));
@@ -1533,7 +1571,7 @@ function offerBonusAttack(message, resolution) {
   if ( !token?.object ) return;
   stopTargeting();
   targeting = { token, activity, usage: [{ [MODULE_ID]: { cost: "bonus" } }, { configure: false }, {}] };
-  document.body.classList.add("dnd5e-combat-targeting");
+  markTargeting();
   ui.notifications.info(loc("Visee.AttaqueBonus", { item: activity.item.name, why: loc(critical ? "Visee.Critique" : "Visee.Abattu") }));
   floatNotice(token, loc("Retour.Taille"));
   showReticle(loc("Retour.Taille"));

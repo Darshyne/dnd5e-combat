@@ -15,10 +15,12 @@ A D&D 5.5 (2024 rules) rules and combat engine for **Foundry VTT V14** and **dnd
   Rules are declared per dnd5e identifier, so they apply to any creature, PC or NPC.
 
 The engine patches neither the Foundry core nor the system: it only uses public hooks. It exposes an API for
-neighbouring modules (`game.modules.get("dnd5e-combat").api`): UI state (`api.ui`), walking a token up to a
+neighbouring modules (`game.modules.get("dnd5e-combat").api`): UI state (`api.ui`, including the pending target
+pick, `api.ui.targeting()`), walking a token up to a
 target (`api.approach`), stopping this client's walks (`api.stopWalks`), the turn budget (`api.budget.issues` /
 `api.budget.spend`), content by identifier (`api.content`), and generic hooks (`dnd5e-combat.claimClick`,
-`dnd5e-combat.tokenMenu` — on other tokens and on one's own —, `dnd5e-combat.dropItems`…). It does not know any of its
+`dnd5e-combat.tokenMenu` — on other tokens and on one's own —, `dnd5e-combat.dropItems`, `dnd5e-combat.targeting`,
+`dnd5e-combat.summonOnTargets` — take over a summon cast on targets…). It does not know any of its
 neighbours by name.
 
 A creature module can declare the rules for its own abilities, by dnd5e identifier, without touching the

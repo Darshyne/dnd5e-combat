@@ -13,7 +13,7 @@ import { multiattackLeft } from "../adapter/multiattack.mjs";
 import { movementCap } from "../runtime/actions.mjs";
 import { useIssues } from "../runtime/turn.mjs";
 import { lightState, globalLightState } from "./illumination.mjs";
-import { menuEntriesFor } from "./pointer.mjs";
+import { menuEntriesFor, pendingTargeting } from "./pointer.mjs";
 import { poolsOf } from "../adapter/absorb.mjs";
 import { movableZoneOf } from "../runtime/zones.mjs";
 
@@ -106,4 +106,9 @@ function wards(actor) {
 
 export const uiApi = { budget, wards, movableZone, movement, issues, multiattackLeft: multiattack, light: lightState, globalLight: globalLightState,
   /** §41.4 : `tokenMenu(token)` — les entrées du menu contextuel de ce token pour le token en main (ui/pointer.mjs). */
-  tokenMenu: menuEntriesFor };
+  tokenMenu: menuEntriesFor,
+  /**
+   * §118 : `targeting()` — la visée que ce client attend (`{ token, activity, identifier }`, uuids), ou null. Tant qu'elle est
+   * ouverte, le clic gauche est au moteur ; ses changements se publient par le hook `dnd5e-combat.targeting` (ui/pointer.mjs).
+   */
+  targeting: pendingTargeting };

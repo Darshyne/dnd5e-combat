@@ -36,6 +36,7 @@ function centerOf(token) {
   return { x: pos.x + ((pos.width ?? 1) * grid.sizeX) / 2, y: pos.y + ((pos.height ?? 1) * grid.sizeY) / 2, elevation: pos.elevation };
 }
 import { opportunityThreats, resolveOpportunity } from "./reactions.mjs";
+import { levelAtLeast } from "./levels.mjs";
 import { route } from "./router.mjs";
 import { afterTeleportOptions } from "./teleport-options.mjs";
 import { loc, notice, log } from "./shared.mjs";
@@ -876,7 +877,8 @@ export async function castOnTargets(activity, [config, dialog, message], picks) 
 function onPreMoveToken(token, movement, operation) {
   if ( !token.actor ) return true;
   if ( !game.user.isGM && !playerMayMove(token, movement) ) return false;
-  return opportunityFirst(token, movement, operation);
+  // §117 : les attaques d'opportunité sont une règle générale — niveau Assisté et au-dessus ; au niveau Essentiel, on marche.
+  return levelAtLeast("assisted") ? opportunityFirst(token, movement, operation) : true;
 }
 
 /**

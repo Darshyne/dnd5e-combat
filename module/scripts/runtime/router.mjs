@@ -27,6 +27,9 @@ import { recordTiming } from "./perf.mjs";
  */
 export function createRouter({ subscribe, isExecutor, report, refused=() => {}, timing=null }) {
   const routes = new Map();
+  // §117 : pendant `withoutRoutes`, une inscription est notée mais rien n'est branché (fonction au-dessus du niveau choisi).
+  let suspended = null;
+  const skipped = [];
 
   function dispatch(hook, args) {
     for ( const entry of routes.get(hook) ) {
@@ -59,11 +62,28 @@ export function createRouter({ subscribe, isExecutor, report, refused=() => {}, 
      * @param {"error"|"warn"} [options.level]
      */
     on(hook, handler, { label=hook, executor=false, cancellable=false, notify=null, level="error" }={}) {
+      if ( suspended ) { skipped.push({ hook, label, feature: suspended }); return; }
       if ( !routes.has(hook) ) {
         routes.set(hook, []);
         subscribe(hook, (...args) => dispatch(hook, args));
       }
       routes.get(hook).push({ hook, handler, label, executor, cancellable, notify, level });
+    },
+
+    /**
+     * §117 : lance `register` sans brancher ses écoutes — ses réglages et ses requêtes sont déclarés, ses hooks non.
+     * @param {string} feature   Son nom, pour l'inspection.
+     * @param {Function} register
+     */
+    withoutRoutes(feature, register) {
+      suspended = feature;
+      try { return register(); }
+      finally { suspended = null; }
+    },
+
+    /** Les inscriptions écartées par `withoutRoutes` : `[{ hook, label, feature }]`. */
+    skipped() {
+      return skipped.slice();
     },
 
     /** Qui écoute quoi, dans quel ordre : pour l'inspection (`api.routes()`). */
@@ -89,3 +109,5 @@ const router = createRouter({
 
 export const route = router.on;
 export const describeRoutes = router.describe;
+export const withoutRoutes = router.withoutRoutes;
+export const skippedRoutes = router.skipped;

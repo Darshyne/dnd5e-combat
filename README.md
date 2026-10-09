@@ -37,6 +37,18 @@ advantage, condition on a hit or a failed save, push/pull, repeated save, lastin
 summon…) as typed form fields, and `api.content.recipes.build(recipes, { identifier })` turns them into an entry
 (`module/scripts/core/recipes.mjs`). [DAS · Homebrew](https://github.com/Darshyne/darsh-homebrew) uses it.
 
+## Automation levels
+
+The first setting of the module picks one of three levels (changing it reloads the world):
+
+- **Essentials** — mouse-driven movement, context menus, turn budget, vision and interface; rolls stay dnd5e's own.
+- **Assisted** — rolls are also chained and resolved (attack, damage applied, saving throws), with the general rules
+  (conditions, cover, Concentration, 0 Hit Points, Opportunity Attacks).
+- **Full** (default) — plus the automation specific to each spell, feature and monster, and content registered by other
+  modules.
+
+`api.level()` / `api.levelAtLeast(level)` tell neighbour modules which level is active.
+
 ## Darshyne's Automation Suite
 
 | Module | Role |

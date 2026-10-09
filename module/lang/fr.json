@@ -972,5 +972,10 @@
   "DND5ECOMBAT.Macro.RepairCreatures.HeadReport": "<b>Réparation des créatures — rapport</b> : rien n'a été modifié.",
   "DND5ECOMBAT.Macro.RepairCreatures.HeadDone": "<b>Réparation des créatures</b> : {count} réparation(s).",
   "DND5ECOMBAT.Macro.RepairCreatures.NothingToReport": "Rien à signaler.",
-  "DND5ECOMBAT.Macro.RepairCreatures.Line": "{where} : {what}"
+  "DND5ECOMBAT.Macro.RepairCreatures.Line": "{where} : {what}",
+  "DND5ECOMBAT.Niveau.Nom": "Niveau d'automatisation",
+  "DND5ECOMBAT.Niveau.Aide": "Essentiel : déplacement à la souris, menus contextuels, budget du tour, vision et interface ; les jets restent ceux de dnd5e. Assisté : en plus, les jets s'enchaînent et se résolvent (attaque, dégâts appliqués, sauvegardes) avec les règles générales (états, abri, concentration, 0 PV, attaques d'opportunité). Intégral : en plus, l'automatisation propre à chaque sort, aptitude et monstre. Les réglages ci-dessous affinent chaque niveau. Changer de niveau recharge le monde.",
+  "DND5ECOMBAT.Niveau.essentials": "Essentiel — déplacement et interface, jets de dnd5e",
+  "DND5ECOMBAT.Niveau.assisted": "Assisté — jets résolus et règles générales",
+  "DND5ECOMBAT.Niveau.full": "Intégral — toute l'automatisation, sort par sort"
 }

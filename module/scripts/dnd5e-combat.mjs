@@ -1,3 +1,4 @@
+import { registerLevel, gated, automationLevel, levelAtLeast } from "./runtime/levels.mjs";
 import { MODULE_ID, MIN_SYSTEM_VERSION } from "./constants.mjs";
 import { readUnitFactors } from "./adapter/units.mjs";
 import { registerEngine } from "./runtime/engine.mjs";
@@ -82,7 +83,7 @@ import { registerTether } from "./runtime/tether.mjs";
 import { registerDefenses } from "./runtime/defenses.mjs";
 import { registerSize } from "./runtime/size.mjs";
 import { registerOrders } from "./runtime/orders.mjs";
-import { describeRoutes } from "./runtime/router.mjs";
+import { describeRoutes, skippedRoutes } from "./runtime/router.mjs";
 import { testApi } from "./runtime/testing.mjs";
 import { registerPointer } from "./ui/pointer.mjs";
 import { registerRecast } from "./runtime/recast.mjs";
@@ -120,11 +121,14 @@ import { registerOil } from "./runtime/oil.mjs";
  *   (chez le MJ actif) — pour une action d'un module (§102). Hors combat : rien ne coûte.
  * `scrolls.spellOf(item)` : le sort d'un parchemin `{ identifier, level, school }` ou null (§48) — pour la macro de reprise des
  *   parchemins du monde (tools/macros/reprendre-parchemins.js).
+ * `level()` : le niveau d'automatisation du monde, « essentials » | « assisted » | « full » (§117) ; `levelAtLeast(niveau)` ;
+ *   `skippedRoutes()` : les écoutes non branchées à ce niveau.
  */
 const state = {
   active: false, reason: null, unitFactors: null, routes: describeRoutes, content: contentApi, reports: reportsApi, mcp: testApi, perf: perfApi,
   ui: uiApi, light: lightState, approach, scrolls: { spellOf: scrollSpellOf }, basics: { data: basicActionData },
-  stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget }
+  stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
+  level: automationLevel, levelAtLeast, skippedRoutes
 };
 
 /** Pourquoi le moteur doit rester en veille dans ce monde, ou null s'il peut tourner. */
@@ -144,100 +148,102 @@ Hooks.once("init", () => {
   // L'ordre de ces appels est l'ordre d'appel des inscrits d'un même hook (runtime/router.mjs).
   // Le moteur d'abord ; la souris (ui/pointer) avant la légalité (turn) : une activité sans cible
   // passe en mode visée avant qu'on juge son budget ; le reste de l'interface en dernier.
-  registerPerf();   // §98 : le seuil du relevé des temps, avant que les hooks ne tournent
-  registerContent();
-  registerIcons();
-  registerEngine();
-  registerConcentration();
-  registerPilot();   // après la concentration : l'objet créé y est d'abord rattaché
-  registerReduction();   // avant les 0 PV : ce que la réserve absorbe n'atteint pas la créature
-  registerDeath();
-  registerCoven();   // après les 0 PV : la seconde phase remplace la chute que registerDeath ne pose plus (§19.5)
-  registerAltitude();   // avant le plafond du tour et les attaques d'opportunité : ils jugent le chemin aligné sur le sol
-  registerActions();
-  registerFollow();   // §41.3 : après les actions — le suivi marche par `approach`
-  registerFacing();
-  registerRecast();   // avant la souris : une relance repasse par la visée et la légalité
-  registerPointer();
-  registerProjectiles();   // après la visée (les cibles sont désignées), avant la légalité
-  registerUsage();   // §68 : avant la métamagie et la légalité — l'emplacement choisi est celui qu'elles liront
-  registerMetamagic();   // §32 : avant registerTurn — le Sort accéléré change le coût que la légalité lit
-  registerTurn();
-  registerGates();   // après la légalité : une porte ne s'ouvre que pour une utilisation confirmée
-  registerReactions();
-  registerPortent();   // §36 : Présage (Repos long, requête du devin)
-  registerDispel();   // §37.2 : Dissipation de la magie
-  registerTriggers();
-  registerVision();
-  registerSpace();
-  registerConditions();
-  registerAreas();
-  registerContest();   // §72 : test en opposition (Combat perspicace)
-  registerStorm();   // §70 : Appel de la foudre, le dé de l'orage déjà là
-  registerSelfAreas();   // §47 : une zone « sur soi » se pose d'office sur le lanceur
-  registerBursts();
-  registerFelled();
-  registerZones();
-  registerAuras();
-  registerEmanations();
-  registerRegeneration();
-  registerFortitude();   // §61 : Robustesse de la non-vie (la sauvegarde due part avec les PV, adapter/death.mjs)
-  registerDrain();
-  registerSpaceSharing();
-  registerEmpower();   // §19.9 : Morsure vampirique (Dhampir)
-  registerDischarge();   // §19.9 : Chemin vers la tombe, fin anticipée de la malédiction
-  registerMastery();   // §21 : bottes d'arme (après registerTriggers : les marques consommées au même message d'attaque)
-  registerSneak();   // §20 : Attaque sournoise (après registerAreas : le type de dégâts choisi est déjà posé), Frappes rusées
-  registerFighter();   // §21 : Héros du champ d'honneur, styles Armes à deux mains et Armes de jet
-  registerMonk();   // §24 : Frappe étourdissante, Technique de la main ouverte
-  registerSmite();   // §25 : sorts de châtiment (après registerSneak : les dés du châtiment suivent ceux de l'Attaque sournoise)
-  registerManeuverDice();   // §89, §90 : dés de manœuvre (Fente, Feinte, Jeu de jambes évasif, Balayage, Chassé-croisé, Frappe commandée)
-  registerRollBonus();      // §90 : un dé ajouté à un test ou à l'initiative (Embuscade, Autorité naturelle, Évaluation tactique)
-  registerNaturalOne();     // §93 : un 1 naturel à un Test d20 (Dons sombres de Ravenloft)
-  registerRise();           // §95 : se relever à 0 PV (Cosse nécrotique, Force du tombeau, Courroux persistant)
-  registerAfterSneak();     // §95 : après une Attaque sournoise (Lamentations d'outre-tombe)
-  registerActivityChoice();   // §42.1 : le choix d'activité de dnd5e, répondu quand il n'y a rien à choisir
-  registerCantrips();   // §23 : tours de magie (durées, soins bloqués, Glas, Frappe assurée)
-  registerEndings();   // §42.2 : ce qui suit la fin d'un effet (léthargie de Hâte)
-  registerActionEnd();   // §43.2 : une action met fin à un effet (requête au MJ actif)
-  registerBarbarian();   // §22 : Rage entretenue, Rage implacable, Témérité (après la légalité : la question vient une fois l'usage confirmé)
-  registerSwallow();
-  registerBasics();
-  registerAnimations();   // §112 : l'application attend la fin de l'animation (Sequencer / BLFX)
-  registerFamiliars();   // §107 : vision et poche dimensionnelle des familiers (leurs actions de base : registerBasics)
-  registerGrapple();
-  registerProne();
-  registerBreaks();
-  registerCure();
-  registerStabilize();   // §50 : trousse de soins
-  registerPotions();   // §53 : sort d'une potion sans concentration
-  registerOil();   // §54 : l'huile s'enflamme
-  registerHelp();
-  registerSkillAid();   // §113 : Assistance et Soutien demandés pour un test de compétence (requête à l'aidant)
-  registerHide();
-  registerSearch();
-  registerPassivePerception();
-  registerIllumination();
-  registerLights();
-  registerEffects();
-  registerWildShape();
-  registerEnchant();
-  registerTether();
-  registerDefenses();
-  registerSize();
-  registerOrders();   // après le budget (registerTurn) : un ordre achève le tour que la remise à neuf vient d'ouvrir
-  registerCompact();   // §58 : avant registerChat — le résumé des dés précède le verdict
-  registerChat();
-  registerPurge();
-  registerFeedback();
-  registerTracker();
-  registerLightIndicator();
-  registerPerception();   // §62 : la brume cache à l'écran, l'ouïe montre ce qu'on entend
-  registerVigor();
-  registerCureUi();
-  registerKindleUi();   // §52 : boîte à amadou
-  registerSkillAidUi();   // §113 : section « Aides » de la fenêtre de jet d'un test
-  registerAutomation();
+  // §117 : le niveau d'automatisation d'abord (son réglage en tête de la fenêtre) ; chaque fonction s'inscrit selon lui.
+  registerLevel();
+  gated(registerPerf);   // §98 : le seuil du relevé des temps, avant que les hooks ne tournent
+  gated(registerContent);
+  gated(registerIcons);
+  gated(registerEngine);
+  gated(registerConcentration);
+  gated(registerPilot);   // après la concentration : l'objet créé y est d'abord rattaché
+  gated(registerReduction);   // avant les 0 PV : ce que la réserve absorbe n'atteint pas la créature
+  gated(registerDeath);
+  gated(registerCoven);   // après les 0 PV : la seconde phase remplace la chute que registerDeath ne pose plus (§19.5)
+  gated(registerAltitude);   // avant le plafond du tour et les attaques d'opportunité : ils jugent le chemin aligné sur le sol
+  gated(registerActions);
+  gated(registerFollow);   // §41.3 : après les actions — le suivi marche par `approach`
+  gated(registerFacing);
+  gated(registerRecast);   // avant la souris : une relance repasse par la visée et la légalité
+  gated(registerPointer);
+  gated(registerProjectiles);   // après la visée (les cibles sont désignées), avant la légalité
+  gated(registerUsage);   // §68 : avant la métamagie et la légalité — l'emplacement choisi est celui qu'elles liront
+  gated(registerMetamagic);   // §32 : avant registerTurn — le Sort accéléré change le coût que la légalité lit
+  gated(registerTurn);
+  gated(registerGates);   // après la légalité : une porte ne s'ouvre que pour une utilisation confirmée
+  gated(registerReactions);
+  gated(registerPortent);   // §36 : Présage (Repos long, requête du devin)
+  gated(registerDispel);   // §37.2 : Dissipation de la magie
+  gated(registerTriggers);
+  gated(registerVision);
+  gated(registerSpace);
+  gated(registerConditions);
+  gated(registerAreas);
+  gated(registerContest);   // §72 : test en opposition (Combat perspicace)
+  gated(registerStorm);   // §70 : Appel de la foudre, le dé de l'orage déjà là
+  gated(registerSelfAreas);   // §47 : une zone « sur soi » se pose d'office sur le lanceur
+  gated(registerBursts);
+  gated(registerFelled);
+  gated(registerZones);
+  gated(registerAuras);
+  gated(registerEmanations);
+  gated(registerRegeneration);
+  gated(registerFortitude);   // §61 : Robustesse de la non-vie (la sauvegarde due part avec les PV, adapter/death.mjs)
+  gated(registerDrain);
+  gated(registerSpaceSharing);
+  gated(registerEmpower);   // §19.9 : Morsure vampirique (Dhampir)
+  gated(registerDischarge);   // §19.9 : Chemin vers la tombe, fin anticipée de la malédiction
+  gated(registerMastery);   // §21 : bottes d'arme (après registerTriggers : les marques consommées au même message d'attaque)
+  gated(registerSneak);   // §20 : Attaque sournoise (après registerAreas : le type de dégâts choisi est déjà posé), Frappes rusées
+  gated(registerFighter);   // §21 : Héros du champ d'honneur, styles Armes à deux mains et Armes de jet
+  gated(registerMonk);   // §24 : Frappe étourdissante, Technique de la main ouverte
+  gated(registerSmite);   // §25 : sorts de châtiment (après registerSneak : les dés du châtiment suivent ceux de l'Attaque sournoise)
+  gated(registerManeuverDice);   // §89, §90 : dés de manœuvre (Fente, Feinte, Jeu de jambes évasif, Balayage, Chassé-croisé, Frappe commandée)
+  gated(registerRollBonus);      // §90 : un dé ajouté à un test ou à l'initiative (Embuscade, Autorité naturelle, Évaluation tactique)
+  gated(registerNaturalOne);     // §93 : un 1 naturel à un Test d20 (Dons sombres de Ravenloft)
+  gated(registerRise);           // §95 : se relever à 0 PV (Cosse nécrotique, Force du tombeau, Courroux persistant)
+  gated(registerAfterSneak);     // §95 : après une Attaque sournoise (Lamentations d'outre-tombe)
+  gated(registerActivityChoice);   // §42.1 : le choix d'activité de dnd5e, répondu quand il n'y a rien à choisir
+  gated(registerCantrips);   // §23 : tours de magie (durées, soins bloqués, Glas, Frappe assurée)
+  gated(registerEndings);   // §42.2 : ce qui suit la fin d'un effet (léthargie de Hâte)
+  gated(registerActionEnd);   // §43.2 : une action met fin à un effet (requête au MJ actif)
+  gated(registerBarbarian);   // §22 : Rage entretenue, Rage implacable, Témérité (après la légalité : la question vient une fois l'usage confirmé)
+  gated(registerSwallow);
+  gated(registerBasics);
+  gated(registerAnimations);   // §112 : l'application attend la fin de l'animation (Sequencer / BLFX)
+  gated(registerFamiliars);   // §107 : vision et poche dimensionnelle des familiers (leurs actions de base : registerBasics)
+  gated(registerGrapple);
+  gated(registerProne);
+  gated(registerBreaks);
+  gated(registerCure);
+  gated(registerStabilize);   // §50 : trousse de soins
+  gated(registerPotions);   // §53 : sort d'une potion sans concentration
+  gated(registerOil);   // §54 : l'huile s'enflamme
+  gated(registerHelp);
+  gated(registerSkillAid);   // §113 : Assistance et Soutien demandés pour un test de compétence (requête à l'aidant)
+  gated(registerHide);
+  gated(registerSearch);
+  gated(registerPassivePerception);
+  gated(registerIllumination);
+  gated(registerLights);
+  gated(registerEffects);
+  gated(registerWildShape);
+  gated(registerEnchant);
+  gated(registerTether);
+  gated(registerDefenses);
+  gated(registerSize);
+  gated(registerOrders);   // après le budget (registerTurn) : un ordre achève le tour que la remise à neuf vient d'ouvrir
+  gated(registerCompact);   // §58 : avant registerChat — le résumé des dés précède le verdict
+  gated(registerChat);
+  gated(registerPurge);
+  gated(registerFeedback);
+  gated(registerTracker);
+  gated(registerLightIndicator);
+  gated(registerPerception);   // §62 : la brume cache à l'écran, l'ouïe montre ce qu'on entend
+  gated(registerVigor);
+  gated(registerCureUi);
+  gated(registerKindleUi);   // §52 : boîte à amadou
+  gated(registerSkillAidUi);   // §113 : section « Aides » de la fenêtre de jet d'un test
+  gated(registerAutomation);
   state.active = true;
 });
 

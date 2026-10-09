@@ -972,5 +972,10 @@
   "DND5ECOMBAT.Macro.RepairCreatures.HeadReport": "<b>Creature repair — report</b>: nothing was changed.",
   "DND5ECOMBAT.Macro.RepairCreatures.HeadDone": "<b>Creature repair</b>: {count} repair(s).",
   "DND5ECOMBAT.Macro.RepairCreatures.NothingToReport": "Nothing to report.",
-  "DND5ECOMBAT.Macro.RepairCreatures.Line": "{where}: {what}"
+  "DND5ECOMBAT.Macro.RepairCreatures.Line": "{where}: {what}",
+  "DND5ECOMBAT.Niveau.Nom": "Automation level",
+  "DND5ECOMBAT.Niveau.Aide": "Essentials: mouse-driven movement, context menus, turn budget, vision and interface; rolls stay dnd5e's own. Assisted: rolls are also chained and resolved (attack, damage applied, saving throws) with the general rules (conditions, cover, Concentration, 0 Hit Points, Opportunity Attacks). Full: plus the automation specific to each spell, feature and monster. The settings below fine-tune each level. Changing the level reloads the world.",
+  "DND5ECOMBAT.Niveau.essentials": "Essentials — movement and interface, dnd5e rolls",
+  "DND5ECOMBAT.Niveau.assisted": "Assisted — resolved rolls and general rules",
+  "DND5ECOMBAT.Niveau.full": "Full — all automation, spell by spell"
 }

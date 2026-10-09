@@ -18,6 +18,18 @@ import { scrollSpellOf } from "./scrolls.mjs";
 
 export const OVERRIDES_SETTING = "contentOverrides";
 
+/**
+ * §117 : le contenu par objet ne s'applique qu'au niveau Intégral (runtime/levels.mjs). Fermé, `contentOf` ne rend rien : chaque
+ * objet garde le comportement de dnd5e et les règles générales du moteur.
+ */
+let contentEnabled = true;
+export function setContentEnabled(enabled) {
+  contentEnabled = !!enabled;
+}
+export function isContentEnabled() {
+  return contentEnabled;
+}
+
 /** Les clés de faits que le cœur des conditions connaît (pour valider une entrée). */
 export const KNOWN_FACTS = factsFor();
 
@@ -91,6 +103,7 @@ function itemLayer(item) {
  */
 export function contentOf(item) {
   const { id } = identifierOf(item);
+  if ( !contentEnabled ) return { identifier: id, entry: null, layers: { module: false, world: false, item: false } };
   const layers = { module: id ? CONTENT[id] ?? null : null, world: id ? worldOverrides()[id] ?? null : null, item: itemLayer(item) };
   return {
     identifier: id,
@@ -101,6 +114,7 @@ export function contentOf(item) {
 
 /** §53 : l'entrée d'un identifiant sans item (une potion détruite en étant bue) : contenu du module < surcouche du monde. */
 export function entryOfIdentifier(id) {
+  if ( !contentEnabled ) return null;
   return id ? mergeEntries([CONTENT[id] ?? null, worldOverrides()[id] ?? null]) : null;
 }
 

@@ -15,7 +15,7 @@ beforeAll(async () => {
   globalThis.foundry = { utils: { throttle: same, debounce: same, isNewerVersion: () => false } };
   globalThis.game = {
     modules: { get: id => (id === "dnd5e-combat" ? api : null) },
-    system: { version: "6.0.3" }, settings: { register() {} }, users: {}
+    system: { version: "6.0.3" }, settings: { register() {}, get() { return undefined; } }, users: {}
   };
   globalThis.CONFIG = { queries: {}, DND5E: { statusEffects: {} } };
   await import("../module/scripts/dnd5e-combat.mjs");

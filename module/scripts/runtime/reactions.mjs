@@ -23,6 +23,11 @@ import { isObjectToken } from "../adapter/bodies.mjs";
 import { poolsOf } from "../adapter/absorb.mjs";
 import { takeReactionDamage } from "../adapter/marks.mjs";
 
+/** §134 : Rapide — le nom de l'item qui donne le Désavantage aux attaques d'opportunité contre cet acteur, ou null. */
+function hamperedBy(actor) {
+  return Array.from(actor?.items ?? []).find(i => contentOf(i).entry?.opportunityDisadvantage === true)?.name ?? null;
+}
+
 /** Les réactions qu'un acteur peut proposer dans une fenêtre, d'après le registre. `publish` : le moment a vraiment lieu. */
 function reactionsOf(actor, window, context={}, { publish=false }={}) {
   const full = { actor, ...context };
@@ -473,7 +478,8 @@ async function handleOpportunityQuery({ token: tokenUuid, attackers }) {
       actor: attacker.actor.uuid,
       prompt: { key: "ReactionOpportunite", data: { mover: token.name } },
       // §16.26 : Mage de guerre — un sort visant la seule créature qui s'en va, au lieu de l'attaque.
-      options: [...meleeAttacksOf(attacker.actor).options, ...reactiveSpellsOf(attacker.actor)],
+      // §134 : Rapide — « les attaques d'opportunité contre vous ont le Désavantage » : marqué sur l'attaque choisie.
+      options: [...meleeAttacksOf(attacker.actor).options, ...reactiveSpellsOf(attacker.actor)].map(o => (hamperedBy(token.actor) ? { ...o, hampered: hamperedBy(token.actor) } : o)),
       target: token.uuid
     });
     if ( answer?.message ) await attackSettled(answer.message);

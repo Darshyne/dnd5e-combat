@@ -40,7 +40,7 @@ import { dodge as takeDodge } from "../core/turn.mjs";
 import { tallyAfter } from "../core/tally.mjs";
 import { createDispatcher } from "./dispatcher.mjs";
 import { askHitReactions, canReactToHit, windowIsDamaged, windowIsMissed, askDamageGuardians } from "./reactions.mjs";
-import { offerInterpose, markConcentrationBreaker } from "./feats.mjs";
+import { offerInterpose, markConcentrationBreaker, resistanceIgnoredBy } from "./feats.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
@@ -218,7 +218,8 @@ const COMMANDS = {
       // §78 : Interposition — les dégâts passent sur le réacteur ; les effets restent à la cible.
       if ( ward?.interpose ) log(`${ward.reactor} interposes: takes ${entry.token}'s damage`);
       const hp = (entry.multiplier > 0)
-        ? await applyDamageToToken(ward?.interpose ?? entry.token, rolled, damageMessage, { multiplier: entry.multiplier, reduction: entry.reduction ?? 0, absorbInto: ward?.item ?? null })
+        ? await applyDamageToToken(ward?.interpose ?? entry.token, rolled, damageMessage, { multiplier: entry.multiplier, reduction: entry.reduction ?? 0, absorbInto: ward?.item ?? null,
+          ignoreResistance: resistanceIgnoredBy(source?.actor ?? activity?.actor, activity) })   // §134
         : null;
       // §133 : Tueur de mages — la créature concentrée que l'auteur vient de blesser aura le Désavantage à son jet de concentration.
       if ( hp && hurting ) await markConcentrationBreaker(source?.actor ?? activity?.actor, hp.actor);

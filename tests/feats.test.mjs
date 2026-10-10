@@ -156,3 +156,18 @@ describe("§133 : réactions de don", () => {
     expect(validateEntry({ haltOnReaction: { effect: "court" } }).length).toBe(1);
   });
 });
+
+import { standUpCost } from "../module/scripts/core/turn.mjs";
+
+describe("§134 : le reste", () => {
+  it("Athlète : se relever pour 1,50 m (au plus la moitié de la Vitesse)", () => {
+    expect(standUpCost({ speed: 30, remaining: 30, fixed: 5 }).cost).toBe(5);
+    expect(standUpCost({ speed: 30, remaining: 30 }).cost).toBe(15);
+    expect(standUpCost({ speed: 6, remaining: 30, fixed: 5 }).cost).toBe(3);
+  });
+  it("schéma", () => {
+    for ( const id of ["elemental-adept", "poisoner", "speedy", "athlete", "observant"] ) expect(validateEntry(SHIPPED[id])).toEqual([]);
+    expect(SHIPPED["poisoner"].ignoresResistance.types).toEqual(["poison"]);
+    expect(validateEntry({ quickStand: { value: 0, units: "ft" } }).length).toBe(1);
+  });
+});

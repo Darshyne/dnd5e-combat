@@ -72,8 +72,13 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
   // §31 : une activité qui « remplace une de vos attaques » (Souffle) se décompte comme une attaque de l'action Attaquer — §90 : même
   // sans activation dans la donnée (Frappe commandée : « lorsque vous entreprenez l'action Attaque »).
   const replaces = contentOf(item).entry?.replacesAttack === true;
+  // §134 : Observateur, Fouille rapide — « vous pouvez prendre l'action Chercher par une action Bonus » : l'action Bonus si elle est
+  // libre, sinon l'action.
+  const quickSearch = (item?.system?.identifier === "dnd5e-combat-search")
+    && Array.from(activity.actor?.items ?? []).some(i => contentOf(i).entry?.quickSearch === true);
+  const searchCost = quickSearch ? (((() => { const c = combatantFor(activity.actor); return c ? (readBudget(c).bonus ?? 1) : 1; })() >= 1) ? "bonus" : "action") : null;
   return {
-    cost: costOverride ?? costOf(activity.activation?.type) ?? (replaces ? "action" : null),
+    cost: costOverride ?? searchCost ?? costOf(activity.activation?.type) ?? (replaces ? "action" : null),
     weaponAttack: ((activity.type === "attack") && ["weapon", "unarmed"].includes(activity.attack?.type?.classification)) || replaces,
     usesSpellSlot: spellSlot,
     lightWeapon: weapon && (item.system.properties?.has("lgt") === true),

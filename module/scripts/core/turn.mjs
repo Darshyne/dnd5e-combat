@@ -230,9 +230,10 @@ export function toggleResource(budget, key) {
  * @param {{speed: number, remaining: number}} state  Vitesse et déplacement restant ce tour (Infinity hors combat).
  * @returns {{cost: number, issue: "noSpeed"|"noMovement"|null}}
  */
-export function standUpCost({ speed, remaining }) {
+export function standUpCost({ speed, remaining, fixed=null }) {
   if ( !(speed > 0) ) return { cost: 0, issue: "noSpeed" };
-  const cost = speed / 2;
+  // §134 : Athlète, Bond — « vous pouvez vous relever avec seulement 1,50 m de déplacement » (`fixed`, dans l'unité de la vitesse).
+  const cost = Number.isFinite(fixed) ? Math.min(speed / 2, fixed) : speed / 2;
   return { cost, issue: remaining + 1e-6 < cost ? "noMovement" : null };
 }
 

@@ -586,6 +586,7 @@
   "DND5ECOMBAT.Interposer.Question": "{item} : sauvegarde de Dextérité réussie. Interposer votre bouclier (Réaction) pour ne subir aucun dégât ?",
   "DND5ECOMBAT.Interposer.Oui": "Interposer le bouclier",
   "DND5ECOMBAT.Interposer.Non": "Garder ma Réaction",
+  "DND5ECOMBAT.ExpertElementaire.Question": "{item} : quel type de dégâts maîtrisez-vous ? Vos sorts de ce type ignorent la résistance, et leurs 1 comptent 2.",
   "DND5ECOMBAT.Morsure.RetourRenfort": "Renforcé : +{n}",
   "DND5ECOMBAT.Morsure.CarteDrain": "{item} : {name} draine {victim} et regagne {n} PV.",
   "DND5ECOMBAT.Morsure.CarteRenfort": "{item} : {name} se renforce — +{n} à son prochain jet d’attaque ou test de caractéristique (1 minute).",

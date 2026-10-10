@@ -26,6 +26,19 @@ export function takeReactionAdvantage(uuid) {
 /** Sans la consommer : l'activité a-t-elle une marque d'avantage ? */
 export const hasReactionAdvantage = uuid => advantaged.has(uuid);
 
+/** §134 : le pendant — une réaction jouée avec le Désavantage (attaque d'opportunité contre un porteur de Rapide). */
+const hampered = new Map();
+export function markReactionDisadvantage(uuid, name) {
+  hampered.set(uuid, name);
+  setTimeout(() => hampered.delete(uuid), LIFETIME_MS);
+}
+export const hasReactionDisadvantage = uuid => hampered.has(uuid);
+export function takeReactionDisadvantage(uuid) {
+  const name = hampered.get(uuid) ?? null;
+  hampered.delete(uuid);
+  return name;
+}
+
 /* -------------------------------------------- */
 
 /**

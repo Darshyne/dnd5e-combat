@@ -16,6 +16,8 @@ import { standUpCost, movementAllowance } from "../core/turn.mjs";
 import { placementOf } from "../core/altitude.mjs";
 import { combatantFor, readBudget, writeBudget, movementOf } from "../adapter/turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
+import { contentOf } from "../adapter/content.mjs";
+import { convertLength } from "../core/units.mjs";
 import { actorOfEffect } from "../adapter/grapple.mjs";
 import { route } from "./router.mjs";
 import { loc, log, notice } from "./shared.mjs";
@@ -65,7 +67,11 @@ export async function standUp(token) {
     const movement = movementOf(combatant, readUnitFactors());
     const budget0 = readBudget(combatant);
     const remaining = movement ? movementAllowance(budget0, movement.speed) - movement.spent : 0;
-    const { cost, issue } = standUpCost({ speed: movement?.speed ?? 0, remaining });
+    // §134 : Athlète — se relever pour un déplacement fixe (`quickStand`), converti dans l'unité de la vitesse.
+    const rule = Array.from(actor.items ?? []).map(i => contentOf(i).entry?.quickStand).find(Boolean);
+    let fixed = null;
+    if ( rule && movement?.units ) { try { fixed = convertLength(rule.value, rule.units, movement.units, readUnitFactors()); } catch { fixed = null; } }
+    const { cost, issue } = standUpCost({ speed: movement?.speed ?? 0, remaining, fixed });
     if ( issue ) { notice(token, loc(`Relever.${issue}`)); return false; }
     const budget = readBudget(combatant);
     await writeBudget(combatant, { ...budget, stood: (Number(budget.stood) || 0) + cost });

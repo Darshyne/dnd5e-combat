@@ -586,6 +586,7 @@
   "DND5ECOMBAT.Interposer.Question": "{item}: Dexterity saving throw succeeded. Interpose your Shield (Reaction) to take no damage?",
   "DND5ECOMBAT.Interposer.Oui": "Interpose Shield",
   "DND5ECOMBAT.Interposer.Non": "Keep my Reaction",
+  "DND5ECOMBAT.ExpertElementaire.Question": "{item}: which damage type do you master? Your spells of that type ignore Resistance, and their 1s count as 2s.",
   "DND5ECOMBAT.Morsure.RetourRenfort": "Empowered: +{n}",
   "DND5ECOMBAT.Morsure.CarteDrain": "{item}: {name} drains {victim} and regains {n} HP.",
   "DND5ECOMBAT.Morsure.CarteRenfort": "{item}: {name} is empowered — +{n} to their next attack roll or ability check (1 minute).",

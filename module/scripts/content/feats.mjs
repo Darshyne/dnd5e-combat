@@ -112,5 +112,20 @@ export const FEATS = Object.freeze({
       { on: "enemyDisengages", if: { "source.nearSelf": { distance: 5, units: "ft" } }, do: [{ type: "use", target: "source", weapon: true }] }
     ],
     haltOnReaction: { effect: "B0d2x2p98X9D3vRh" }
-  }
+  },
+
+  // §134 — le reste. Expert élémentaire : « choisissez un type (acide, froid, feu, foudre, tonnerre) : vos sorts ignorent la résistance à
+  // ce type, et un 1 sur un dé de dégâts d'un sort de ce type compte comme un 2 » — le type, demandé au joueur à l'arrivée du don, est
+  // noté sur l'item (`flags.dnd5e-combat.elementalType` — pas le nom de la règle : les drapeaux de l'item qui portent un nom de règle sont lus comme surcouche de contenu).
+  "elemental-adept": { elementalAdept: true },
+  // Empoisonneur, Poison puissant : « un jet de dégâts qui inflige des dégâts de poison ignore la résistance au poison ». Les doses
+  // (fabriquer, enduire) : les activités de dnd5e.
+  "poisoner": { ignoresResistance: { types: ["poison"] } },
+  // Rapide : « les attaques d'opportunité contre vous ont le Désavantage » (la Vitesse : l'effet du Manuel ; Foncer sans terrain
+  // difficile : non joué).
+  "speedy": { opportunityDisadvantage: true },
+  // Athlète, Bond : « à terre, vous vous relevez avec seulement 1,50 m de déplacement ». La vitesse d'escalade et les sauts : non joués.
+  "athlete": { quickStand: { value: 5, units: "ft" } },
+  // Observateur, Fouille rapide : « l'action Chercher par une action Bonus ».
+  "observant": { quickSearch: true }
 });

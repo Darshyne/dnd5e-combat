@@ -51,6 +51,16 @@ function onPreRollDamage(config, dialog, message) {
     if ( turn ) actor.setFlag(MODULE_ID, "savageAttacker", turn).catch(() => null);
     log(`Savage Attacker: ${base.parts[0]}`);
   }
+  // §134 : Expert élémentaire — « quand vous lancez les dégâts d'un sort de ce type, un 1 sur un dé compte comme un 2 ».
+  if ( activity.item?.type === "spell" ) {
+    const types = elementalTypes(actor);
+    for ( const roll of types.length ? config.rolls : [] ) {
+      const rt = [roll.options?.type, ...(roll.options?.types ?? [])].filter(Boolean);
+      if ( !rt.some(t => types.includes(t)) ) continue;
+      roll.parts = (roll.parts ?? []).map(p => String(p).replace(/(\d*d\d+)((?:[a-z]+\d*)*)/g, (term, dice, mods) => (/min/.test(mods) ? term : `${dice}min2${mods}`)));
+      log(`Elemental Adept: ${roll.parts.join(" + ")}`);
+    }
+  }
   // §132 : Perforeur — une attaque qui inflige des dégâts perforants.
   if ( (activity.type === "attack") && attackDamageTypes(activity).includes("piercing") && hasRule(actor, "piercer") ) {
     for ( const roll of config.rolls ) {
@@ -101,6 +111,43 @@ async function onResolution(resolution) {
       log(`${item.name}: critical hit, "${name}" placed on ${target.name}`);
     }
   }
+}
+
+/* -------------------------------------------- */
+/*  §134 : résistances ignorées, Expert élémentaire */
+/* -------------------------------------------- */
+
+/** Les types que l'Expert élémentaire peut choisir. */
+export const ELEMENTAL_TYPES = Object.freeze(["acid", "cold", "fire", "lightning", "thunder"]);
+
+/** Les types choisis par les Experts élémentaires de l'acteur (le don se reprend, un type à chaque fois). */
+function elementalTypes(actor) {
+  return Array.from(actor?.items ?? []).filter(i => contentOf(i).entry?.elementalAdept === true)
+    .map(i => i.getFlag(MODULE_ID, "elementalType")).filter(t => ELEMENTAL_TYPES.includes(t));
+}
+
+/**
+ * À l'application des dégâts (MJ actif) : les types dont la résistance est ignorée pour cette activité — Empoisonneur (`ignoresResistance`,
+ * « un jet de dégâts qui inflige des dégâts de poison ignore la résistance au poison »), Expert élémentaire (le type choisi, pour un sort).
+ */
+export function resistanceIgnoredBy(actor, activity) {
+  if ( !actor ) return [];
+  const out = new Set();
+  for ( const i of actor.items ) for ( const t of contentOf(i).entry?.ignoresResistance?.types ?? [] ) out.add(t);
+  if ( activity?.item?.type === "spell" ) for ( const t of elementalTypes(actor) ) out.add(t);
+  return Array.from(out);
+}
+
+/** Expert élémentaire : la question du type, au joueur (sinon au MJ), notée sur l'item. MJ actif, à l'arrivée du don et au chargement. */
+async function askElementalType(item) {
+  if ( !item?.actor || (contentOf(item).entry?.elementalAdept !== true) || ELEMENTAL_TYPES.includes(item.getFlag(MODULE_ID, "elementalType")) ) return;
+  const taken = new Set(elementalTypes(item.actor));
+  const options = ELEMENTAL_TYPES.filter(t => !taken.has(t)).map(t => ({ id: t, label: game.i18n.localize(CONFIG.DND5E.damageTypes[t]?.label ?? t) }));
+  if ( !options.length ) return;
+  const answer = await askChoice(item.actor, { actor: item.actor.uuid, item: item.name, prompt: loc("ExpertElementaire.Question", { item: item.name }), options });
+  const type = answer?.id ?? options[0].id;
+  await item.setFlag(MODULE_ID, "elementalType", type);
+  log(`${item.actor.name}: ${item.name}, damage type ${type}`);
 }
 
 /* -------------------------------------------- */
@@ -209,5 +256,10 @@ export function registerFeats() {
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`critMark:${resolution?.id}`, () => onResolution(resolution)), { executor: true, label: "critical mark not placed" });
   route("combatTurnChange", onTurnChange, { executor: true, label: "feat turn start" });
   route("dnd5e.preRollConcentrationV2", onPreRollConcentration, { cancellable: true, label: "Mage Slayer: concentration" });
+  // §134 : Expert élémentaire — le type, demandé à l'arrivée du don, et au chargement pour un don déjà là.
+  route("createItem", item => (item.parent?.documentName === "Actor" ? enqueue(`elemental:${item.uuid}`, () => askElementalType(item)) : null),
+    { executor: true, label: "Elemental Adept: type not asked" });
+  route("ready", () => { for ( const actor of game.actors ) for ( const item of actor.items ) enqueue(`elemental:${item.uuid}`, () => askElementalType(item)); },
+    { executor: true, label: "Elemental Adept: type not asked" });
   route("deleteCombat", combat => Promise.all(combat.combatants.map(c => (c.actor ? dropMarks(c.actor.uuid) : null))), { executor: true, label: "critical marks not removed" });
 }

@@ -20,7 +20,7 @@ import { stepsOf } from "../core/triggers.mjs";
 import { rollerFor } from "./concentration.mjs";
 import { timedWait } from "./dialogs.mjs";
 import { contentOf } from "./content.mjs";
-import { markReactionAdvantage, markReactionDamage } from "./marks.mjs";
+import { markReactionAdvantage, markReactionDamage, markReactionDisadvantage } from "./marks.mjs";
 import { combatantFor, readBudget, currentTurnKey } from "./turn.mjs";
 import { originItemOf } from "./facts.mjs";
 import { resolveCounter } from "./counter.mjs";
@@ -283,6 +283,8 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
   }
   // §19.6 : « … contre cet ennemi, avec l'avantage » (Riposte) — marque lue au jet qui suit, sur ce client.
   if ( option.advantage ) markReactionAdvantage(option.activity, option.name);
+  // §134 : Rapide — l'attaque d'opportunité contre ce porteur a le Désavantage (marque lue au jet, comme l'avantage ci-dessus).
+  if ( option.hampered && activity?.uuid ) markReactionDisadvantage(activity.uuid, option.hampered);
   // Marquée confirmée (la question vient d'être posée) et payée par la réaction, quel que soit
   // son type d'activation : une attaque d'opportunité est une action d'arme utilisée en réaction.
   // §34 : une réaction ne pose pas de gabarit au milieu d'une fenêtre (Éclat protecteur : « une Émanation de 9 m pour repérer »,

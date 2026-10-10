@@ -179,7 +179,7 @@ function readHp(actor) {
  * immunités, vulnérabilités et PV temporaires. À n'appeler que sur le client du MJ actif.
  * @returns {Promise<object|null>}  Entrée de journal pour recordDamage(), ou null si la cible a disparu.
  */
-export async function applyDamageToToken(tokenUuid, raw, originMessage, { multiplier=1, reduction=0, absorbInto=null }={}) {
+export async function applyDamageToToken(tokenUuid, raw, originMessage, { multiplier=1, reduction=0, absorbInto=null, ignoreResistance=[] }={}) {
   const actor = (await fromUuid(tokenUuid))?.actor;
   if ( !actor ) return null;
   const before = readHp(actor);
@@ -195,7 +195,10 @@ export async function applyDamageToToken(tokenUuid, raw, originMessage, { multip
   });
   // `multiplier` : part des dégâts subie après une sauvegarde réussie (actor.mjs:872).
   // §38 : `absorbInto` — la réserve d'un autre (Égide projetée) absorbe d'abord (adapter/absorb.mjs, `absorbDamage`).
-  await actor.applyDamage(damages, { isDelta: true, origin: originMessage, multiplier, ...(absorbInto ? { [MODULE_ID]: { absorbInto } } : {}) });
+  // §134 : `ignoreResistance` — les types dont la résistance est ignorée (Expert élémentaire, Empoisonneur) : l'option `ignore` de dnd5e
+  // (documents/actor/actor.mjs, `#changeIsIgnored`).
+  const ignore = ignoreResistance.length ? { ignore: { resistance: new Set(ignoreResistance) } } : {};
+  await actor.applyDamage(damages, { isDelta: true, origin: originMessage, multiplier, ...ignore, ...(absorbInto ? { [MODULE_ID]: { absorbInto } } : {}) });
   return {
     token: tokenUuid,
     actor: actor.uuid,

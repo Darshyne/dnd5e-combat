@@ -159,7 +159,7 @@
  *                                               de l'activité qui la crée (sans utilisation dépensée, pas de réserve) ;
  *                                               `recharge: { school, perLevel }` = un sort de cette école lancé avec un
  *                                               emplacement lui rend `perLevel` × le niveau de l'emplacement
- *     ranges?: { <id d'activité>: { value, units } }
+ *     ranges?: { <id d'activité>: { value, units } | { units: "self" } }
  *                                               la portée de la règle quand les données de dnd5e disent autre chose (Trait
  *                                               ensorcelé : « personnelle » dans les données, 18 m au PHB 2024)
  *     tether?: { attack, activity, range }      lien avec la créature visée par l'activité `attack`, touchée ou ratée (§16.43,
@@ -915,7 +915,9 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       for ( const key of Object.keys(p) ) if ( !["damageTypes", "ability"].includes(key) ) errors.push(`${at}pact.${key}: unknown key`);
     }
   }
-  const isRange = r => isObject(r) && Number.isFinite(r.value) && (r.value > 0) && (typeof r.units === "string") && !!r.units;
+  // §124 : « self » (sans valeur) — une capacité que les données disent viser une créature, mais qui ne vise que le lanceur.
+  const isRange = r => isObject(r) && (((r.units === "self") && !("value" in r))
+    || (Number.isFinite(r.value) && (r.value > 0) && (typeof r.units === "string") && !!r.units));
   if ( "ranges" in entry ) {
     if ( !isObject(entry.ranges) ) errors.push(`${at}ranges: { activity id: { value, units } }`);
     else for ( const [id, r] of Object.entries(entry.ranges) ) {

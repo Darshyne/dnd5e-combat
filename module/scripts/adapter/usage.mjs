@@ -305,7 +305,10 @@ function readPlan(message) {
   // Croissance…), quelle que soit sa portée — « quand vous buvez cette potion, vous gagnez l'effet du sort ».
   const potionSelf = !activity.target?.template?.type
     && ((isPotion(activity.item) && (activity.range?.units === "self")) || potionCastsOnDrinker(activity.item));
-  const self = (activity.target?.affects?.type === "self") || untargetedSelf || potionSelf
+  // §124 : une capacité que le contenu déclare « sur soi » (`ranges` : { units: "self" } — Champion ancestral, Nimbe sacré) vise le
+  // lanceur, même si les données disent « une créature ».
+  const declaredSelf = contentOf(activity.item).entry?.ranges?.[activity.id]?.units === "self";
+  const self = (activity.target?.affects?.type === "self") || untargetedSelf || potionSelf || declaredSelf
     || (!!activity.item && (contentOf(activity.item).entry?.duplicates === true));
   const targets = self ? selfTarget(message) : messageTargets(message);
   if ( message.getFlag?.(MODULE_ID, "resave") ) return resavePlan(message, activity, common, targets);

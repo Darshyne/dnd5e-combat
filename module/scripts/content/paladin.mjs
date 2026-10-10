@@ -23,6 +23,10 @@ export const PALADIN = Object.freeze({
   // §123 : Imposition des mains — « touchez une créature (vous y compris) » ; les données du Manuel des joueurs disent « personnelle »,
   // et le moteur soignait toujours le paladin. Au contact : la visée s'ouvre, on clique la créature (soi compris).
   "lay-on-hands": { ranges: Object.fromEntries(LAY_ON_HANDS.map(id => [id, { value: 5, units: "ft" }])) },
+  // §124 : Champion ancestral et Nimbe sacré — « imprégnez votre Aura de protection » : la transformation (son effet) est pour le
+  // paladin, même si les données disent « une créature ». Pas de visée.
+  "elder-champion": { ranges: { qRy5KFVY3qomQlp5: { units: "self" } } },
+  "holy-nimbus": { ranges: { k6gGbWQBoLTgqbSG: { units: "self" } } },
   // Sorts de châtiment (PHB 2024) — Châtiment divin : 2d8 radiants (+1d8 par niveau), 3d8 contre un Fiélon ou un Mort-vivant.
   "divine-smite": { smite: { damage: "dnd5eactivity200", fiends: "dnd5eactivity000" } },
   // Châtiment de fournaise (1d6 feu ; §42.2 : la brûlure qui dure, effet « Seared », posée au coup — sa suite dans content/triggers.mjs),

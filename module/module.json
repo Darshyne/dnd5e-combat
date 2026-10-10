@@ -2,7 +2,7 @@
   "id": "dnd5e-combat",
   "title": "DAS · Core",
   "description": "Core of Darshyne's Automation Suite (DAS) for dnd5e 6.x: a D&D 2024 rules and combat engine — combat loop, resolution, reactions, BG3-style movement and context menu, vision and light rules. Public API for neighbour modules. Not compatible with Midi-QOL.",
-  "version": "0.208.0",
+  "version": "0.209.0",
   "authors": [
     {
       "name": "Darshyne"

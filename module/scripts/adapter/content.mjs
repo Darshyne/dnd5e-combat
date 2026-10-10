@@ -153,10 +153,22 @@ export function rangeUnitsOf(activity) {
   // Ralliement, Champ protecteur, Éclat protecteur amélioré, Interception — toutes soignaient le lanceur, quelle que soit la cible.
   // Sans portée connue (null) : la visée s'ouvre (soi compris), sans contrôle de distance — `ranges` la précise quand le texte la donne.
   const affects = activity?.target?.affects;
-  if ( (units === "self") && (activity?.type === "heal") && !activity?.target?.template?.type
-    && HEAL_TARGETS.includes(affects?.type) && ["", "1"].includes(String(affects?.count ?? "").trim()) ) return null;
+  const one = !activity?.target?.template?.type && ["", "1"].includes(String(affects?.count ?? "").trim());
+  if ( (units !== "self") || !one ) return units;
+  if ( (activity?.type === "heal") && HEAL_TARGETS.includes(affects?.type) ) return null;
+  // §124 : de même une capacité qu'un joueur lance lui-même (action, action Bonus), hors soin et hors attaque (une attaque se vise
+  // déjà), dont le moteur n'a pas de règle — Paume vibratoire (fin des vibrations), Toucher restaurateur, Bastion de la loi, Nimbe
+  // sacré, Champion ancestral, ordre au compagnon du Rôdeur, Murmures psychiques : sans cible désignée, rien ne se passait. Celles que
+  // le moteur prend en charge (Déluge de coups, Transposition du filou, Prêtre de guerre…) gardent leur propre circuit.
+  if ( (activity?.type !== "attack") && PLAYER_ACTIVATIONS.includes(activity?.activation?.type)
+    && TARGETS.includes(affects?.type) && !contentOf(activity.item).entry ) return null;
   return units;
 }
+
+/** §124 : les activations qu'un joueur déclenche lui-même (pas une réaction, pas un supplément au coup). */
+const PLAYER_ACTIVATIONS = ["action", "bonus"];
+/** §124 : les cibles qui désignent une créature (ou un objet) autre que le lanceur. */
+const TARGETS = ["creature", "creatureOrObject", "ally", "willing", "any", "enemy", "object"];
 
 /** Les cibles d'un soin qui désignent une autre créature que le lanceur. */
 const HEAL_TARGETS = ["creature", "creatureOrObject", "ally", "willing", "any"];

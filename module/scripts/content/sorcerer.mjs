@@ -14,6 +14,9 @@ const affinity = type => ({ on: "preDamageRoll", if: { "activity.isSpell": true,
   do: [{ type: "damage", formula: "@abilities.cha.mod", damageType: type }] });
 
 export const SORCERER = Object.freeze({
+  // §124 : Bastion de la loi (Magie de l'horloge) — « vous ou une autre créature que vous voyez à 9 m ou moins » ; « personnelle »
+  // dans les données du Manuel des joueurs.
+  "bastion-of-law": { ranges: { DucJ5vspZD8Yv0gi: { value: 30, units: "ft" } } },
   // Sorcellerie innée : « l'Avantage aux jets d'attaque des sorts d'Ensorceleur que vous lancez » (le DD : l'effet de l'item).
   "innate-sorcery": { triggers: [{ on: "preAttackRoll", if: { "source.hasEffect": "innate-sorcery", "activity.classSpell": "sorcerer" },
     do: [{ type: "advantage" }] }] },

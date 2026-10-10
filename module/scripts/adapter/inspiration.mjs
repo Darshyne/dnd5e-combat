@@ -117,14 +117,23 @@ export function usesLeftFor(activity) {
  * @param {{kind: "save"|"check"|"attack"|"initiative", what: string, total: number, needed?: number, skill?: string,
  *   statuses?: string[]}} context  `statuses` : les états que la sauvegarde évite ou fait finir (Survivant).
  */
-export async function offerRollBonus(actor, { kind, what, total, needed=null, skill=null, statuses=[] }) {
+/** §129 : le d20 gardé d'un jet (celui qui compte, après Avantage / Désavantage), ou null. */
+export function keptD20(roll) {
+  const die = roll?.dice?.find?.(d => d.faces === 20);
+  const kept = die?.results?.filter(r => r.active && !r.discarded) ?? [];
+  return (kept.length === 1) ? kept[0].result : null;
+}
+
+export async function offerRollBonus(actor, { kind, what, total, needed=null, skill=null, statuses=[], d20=null }) {
   for ( const item of actor?.items ?? [] ) {
     const rule = contentOf(item).entry?.rollBonus;
     if ( !rule || !(rule.on ?? []).includes(kind) ) continue;
     if ( (kind === "check") && rule.skills && !rule.skills.includes(skill) ) continue;
     if ( rule.statuses && !rule.statuses.some(s => statuses.includes(s)) ) continue;
     const activity = item.system.activities?.get(rule.activity);
-    const formula = rollFormulaOf(activity);
+    // §129 : Chanceux — le d20 relancé, le meilleur gardé : il faut connaître le d20 du jet.
+    if ( rule.luck && !Number.isInteger(d20) ) continue;
+    const formula = rule.luck ? "1d20" : rollFormulaOf(activity);
     const left = usesLeftFor(activity);
     if ( !activity || !formula || !(left > 0) ) continue;
     // §94 : une activité de Réaction (Symbiose, Se ressaisir) n'est proposée que si la Réaction est libre ; elle est dépensée.
@@ -134,10 +143,12 @@ export async function offerRollBonus(actor, { kind, what, total, needed=null, sk
     const shown = Number.isFinite(left) ? left : "∞";
     const answer = await askChoice(actor, {
       actor: actor.uuid, item: item.name,
-      prompt: (needed === null) ? game.i18n.format("DND5ECOMBAT.BonusJet.QuestionTest", { what, total, formula, item: item.name, left: shown })
+      prompt: rule.luck ? game.i18n.format((needed === null) ? "DND5ECOMBAT.Chance.QuestionTest" : "DND5ECOMBAT.Chance.Question", { what, total, needed, d20, item: item.name, left: shown })
+        : (needed === null) ? game.i18n.format("DND5ECOMBAT.BonusJet.QuestionTest", { what, total, formula, item: item.name, left: shown })
         : game.i18n.format("DND5ECOMBAT.BonusJet.Question", { what, total, needed, formula, item: item.name, left: shown }),
       // « Garder le jet » d'abord : sans réponse dans le délai, askChoice retient la première option — une utilisation ne part pas sans accord.
-      options: [{ id: "no", label: game.i18n.localize("DND5ECOMBAT.BonusJet.Non") }, { id: "yes", label: game.i18n.format("DND5ECOMBAT.BonusJet.Oui", { formula }) }]
+      options: [{ id: "no", label: game.i18n.localize("DND5ECOMBAT.BonusJet.Non") },
+        { id: "yes", label: rule.luck ? game.i18n.localize("DND5ECOMBAT.Chance.Oui") : game.i18n.format("DND5ECOMBAT.BonusJet.Oui", { formula }) }]
     });
     if ( answer?.id !== "yes" ) continue;
     // Des utilisations d'activité sans maximum dans la donnée (Se ressaisir : « une fois par repos long », non chiffré) : dnd5e refuserait
@@ -147,10 +158,13 @@ export async function offerRollBonus(actor, { kind, what, total, needed=null, sk
     if ( !used ) return 0;
     if ( combatant ) { const budget = readBudget(combatant); await writeBudget(combatant, { ...budget, reaction: Math.max(0, (budget.reaction ?? 1) - 1) }); }
     const roll = await new Roll(formula, activity.getRollData?.() ?? actor.getRollData()).evaluate();
+    // §129 : Chanceux — ce qui s'ajoute est l'écart entre le nouveau d20 et l'ancien, s'il est meilleur.
+    const added = rule.luck ? Math.max(0, roll.total - d20) : roll.total;
     await roll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }),
-      flavor: game.i18n.format("DND5ECOMBAT.BonusJet.CarteTotal", { item: item.name, name: actor.name, what, total, sum: total + roll.total }),
-      flags: { [MODULE_ID]: { rollBonus: { item: identifierOf(item).id, kind, added: roll.total } } } });
-    return roll.total;
+      flavor: rule.luck ? game.i18n.format("DND5ECOMBAT.Chance.Carte", { item: item.name, name: actor.name, what, old: d20, d20: roll.total, sum: total + added })
+        : game.i18n.format("DND5ECOMBAT.BonusJet.CarteTotal", { item: item.name, name: actor.name, what, total, sum: total + roll.total }),
+      flags: { [MODULE_ID]: { rollBonus: { item: identifierOf(item).id, kind, added, ...(rule.luck ? { luck: { old: d20, new: roll.total } } : {}) } } } });
+    return added;
   }
   return 0;
 }

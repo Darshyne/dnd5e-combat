@@ -36,6 +36,7 @@ import { WIZARD } from "./wizard.mjs";
 import { WARLOCK } from "./warlock.mjs";
 import { DRUID } from "./druid.mjs";
 import { SPECIES } from "./species.mjs";
+import { FEATS } from "./feats.mjs";
 import { SORCERER } from "./sorcerer.mjs";
 import { BARD } from "./bard.mjs";
 import { SPELL_RULES } from "./spell-rules.mjs";
@@ -112,6 +113,8 @@ function build() {
   for ( const [id, entry] of Object.entries(WARLOCK) ) table[id] = mergeEntries([table[id] ?? null, entry]);
   for ( const [id, entry] of Object.entries(DRUID) ) table[id] = mergeEntries([table[id] ?? null, entry]);
   for ( const [id, entry] of Object.entries(SPECIES) ) table[id] = mergeEntries([table[id] ?? null, entry]);
+  // Dons du Manuel des joueurs (§129) : même principe.
+  for ( const [id, entry] of Object.entries(FEATS) ) table[id] = mergeEntries([table[id] ?? null, entry]);
   for ( const [id, entry] of Object.entries(SORCERER) ) table[id] = mergeEntries([table[id] ?? null, entry]);
   for ( const [id, entry] of Object.entries(BARD) ) table[id] = mergeEntries([table[id] ?? null, entry]);
   // Sorts à règles multiples (§37) : même principe.

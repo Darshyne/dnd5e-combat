@@ -16,10 +16,11 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { offerInspiration, offerRollBonus } from "../adapter/inspiration.mjs";
+import { offerInspiration, offerRollBonus, keptD20 } from "../adapter/inspiration.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { initiativeReroll, rerolledInitiative } from "../core/initiative.mjs";
+import { swapPartners } from "../core/feats.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
@@ -36,7 +37,7 @@ async function onCheckRolled(rolls, { skill=null, tool=null, ability=null, subje
   const total = rolls?.[0]?.total;
   if ( !actor?.isOwner || !Number.isFinite(total) ) return;
   const what = checkName({ skill, tool, ability });
-  const added = await offerRollBonus(actor, { kind: "check", what, total, skill });
+  const added = await offerRollBonus(actor, { kind: "check", what, total, skill, d20: keptD20(rolls?.[0]) });
   if ( added ) log(`${actor.name}: die added to their check, ${total} + ${added} = ${total + added}`);
   // §113 : l'Inspiration bardique sur un test (« quand la créature rate un Test d20 ») — le DD est inconnu : au joueur de juger.
   const inspired = await offerInspiration(actor, { what, total: total + added, needed: null });
@@ -69,9 +70,7 @@ function combatantOfMessage(message) {
   return matches.find(c => Number.isFinite(total) && (Math.abs(c.initiative - total) < 1e-6)) ?? null;
 }
 
-async function hypervigilance(message) {
-  if ( !message.getFlag?.("core", "initiativeRoll") ) return;
-  const combatant = combatantOfMessage(message);
+async function hypervigilance(message, combatant) {
   const actor = combatant?.actor;
   const item = actor?.items.find(i => contentOf(i).entry?.rerollInitiative);
   if ( !item ) return;
@@ -97,9 +96,52 @@ async function hypervigilance(message) {
   log(`${combatant.name}: ${item.name} — Initiative d20 ${kept} rerolled → ${roll.total} (Initiative ${total})`);
 }
 
+/** Neutralisé, ou plus de PV : ne peut pas échanger (Vigilant). */
+const unable = actor => !!(actor?.statuses?.has("incapacitated") || actor?.statuses?.has("unconscious") || actor?.statuses?.has("dead")
+  || ((actor?.system?.attributes?.hp?.value ?? 1) <= 0));
+
+/**
+ * §129 : Vigilant — « juste après votre jet d'initiative, vous pouvez échanger votre initiative avec celle d'un allié consentant du même
+ * combat ; ni l'un ni l'autre ne doit être Neutralisé ». Au joueur de la créature (sinon au MJ) : garder, ou l'un des alliés qui ont déjà
+ * leur initiative. L'allié n'est pas consulté : son accord est réputé donné à la table.
+ */
+async function alertSwap(combatant) {
+  const actor = combatant?.actor;
+  const item = actor?.items.find(i => contentOf(i).entry?.initiativeSwap === true);
+  const combat = combatant?.parent;
+  if ( !item || !combat ) return;
+  const view = c => ({ id: c.id, disposition: c.token?.disposition ?? null, initiative: c.initiative, incapacitated: unable(c.actor), down: false });
+  const ids = swapPartners(view(combatant), combat.combatants.contents.filter(c => c.actor).map(view));
+  if ( !ids.length ) return;
+  const partners = ids.map(id => combat.combatants.get(id));
+  const answer = await askChoice(actor, {
+    actor: actor.uuid, item: item.name,
+    prompt: game.i18n.format("DND5ECOMBAT.Vigilant.Question", { item: item.name, total: Math.floor(combatant.initiative) }),
+    // « Garder » d'abord : sans réponse dans le délai, askChoice retient la première option.
+    options: [{ id: "keep", label: game.i18n.localize("DND5ECOMBAT.Vigilant.Garder") },
+      ...partners.map(c => ({ id: c.id, label: game.i18n.format("DND5ECOMBAT.Vigilant.Avec", { name: c.name, total: Math.floor(c.initiative) }) }))]
+  });
+  const other = (answer?.id && (answer.id !== "keep")) ? combat.combatants.get(answer.id) : null;
+  if ( !other || !Number.isFinite(other.initiative) || !Number.isFinite(combatant.initiative) ) { log(`${combatant.name}: ${item.name} — Initiative kept`); return; }
+  const mine = combatant.initiative;
+  const theirs = other.initiative;
+  await combat.updateEmbeddedDocuments("Combatant", [{ _id: combatant.id, initiative: theirs }, { _id: other.id, initiative: mine }]);
+  await ChatMessage.create({ speaker: ChatMessage.implementation.getSpeaker({ actor }),
+    content: `<p>${game.i18n.format("DND5ECOMBAT.Vigilant.Carte", { item: item.name, name: combatant.name, other: other.name, mine: Math.floor(theirs), theirs: Math.floor(mine) })}</p>`,
+    flags: { [MODULE_ID]: { initiativeSwap: { item: item.uuid, with: other.id } } } });
+  log(`${combatant.name}: ${item.name} — Initiative swapped with ${other.name} (${mine} <-> ${theirs})`);
+}
+
 /** Sans attente : les autres lecteurs de la carte suivent leur cours pendant que le joueur choisit. */
 function onInitiativeMessage(message) {
-  if ( message.getFlag?.("core", "initiativeRoll") ) enqueue(`hypervigilance:${message.id}`, () => hypervigilance(message));
+  if ( !message.getFlag?.("core", "initiativeRoll") ) return;
+  // Le combattant se reconnaît à l'initiative égale au total du jet : à lire avant qu'une relance ne la change.
+  const combatant = combatantOfMessage(message);
+  if ( !combatant ) return;
+  enqueue(`hypervigilance:${message.id}`, async () => {
+    await hypervigilance(message, combatant);
+    await alertSwap(combatant);
+  });
 }
 
 export function registerRollBonus() {

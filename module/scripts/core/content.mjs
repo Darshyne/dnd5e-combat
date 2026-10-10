@@ -145,6 +145,11 @@
  *     lifesteal?: { damageType?, fraction? }    §120 : l'auteur regagne des PV égaux à une part (`fraction`, 1 par défaut ; arrondi
  *                                               inférieur) des dégâts de ce type que l'item inflige (Caresse du vampire : la moitié
  *                                               des dégâts nécrotiques) — runtime/lifesteal.mjs
+ *     savageAttacker?: true                     §129 : une fois par tour, au jet de dégâts d'une arme, ses dés lancés deux fois, le
+ *                                               meilleur gardé (Sauvagerie martiale) — runtime/feats.mjs
+ *     initiativeSwap?: true                     §129 : juste après son jet d'initiative, la créature peut échanger son initiative avec celle
+ *                                               d'un allié du combat (Vigilant) — runtime/roll-bonus.mjs
+ *     healingRerolls?: true                     §129 : aux dés de soins d'un sort de la créature, un 1 est relancé une fois (Guérisseur)
  *     rerollInitiative?: { atMost }             §120 : à chaque jet d'initiative, un d20 de `atMost` ou moins peut être relancé (question), le nouveau
  *                                               gardé (Survivant, Hypervigilance : 9) — runtime/roll-bonus.mjs
  *     onNatural1?: { activity }                 §93 : juste après un Test d20 de la créature dont le d20 fait 1, elle utilise
@@ -417,7 +422,9 @@
  *                                               `on` : "save" (ratée, lue par le moteur), "attack" (ratée, §90 Attaque précise),
  *                                               "check" (tout test, sitôt lancé), "initiative" (§90) ; `skills` : les seules
  *                                               compétences dont le test compte (Embuscade : ["ste"]) ; §94 `statuses` : une
- *                                               sauvegarde seulement pour éviter ou finir l'un de ces états (Survivant)
+ *                                               sauvegarde seulement pour éviter ou finir l'un de ces états (Survivant) ;
+ *                                               §129 `luck: true` — pas de dé de l'activité : le d20 est relancé et le meilleur
+ *                                               gardé (Chanceux : l'Avantage, décidé après avoir vu le jet) ; s'ajoute l'écart positif
  *     transpose?: { summon }                    échanger sa place avec l'invocation pilotée de l'item `summon` (identifiant),
  *                                               quand l'action Bonus la crée ou la déplace (§38.2, Troc du filou ; core/pilot.mjs)
  *     portent?: { dice }                        Présage (§36) : `dice` d20 notés à chaque Repos long (Présage : 2 ; Présage
@@ -437,7 +444,9 @@
  *                                               par l'item de cet identifiant (« pact-of-the-blade ») ; `oncePerTurn` (Frappe
  *                                               occulte, §47 bis) ; §78 : `save` — l'activité de sauvegarde de l'item,
  *                                               jouée ensuite contre la cible encore debout ; `item` — seulement avec
- *                                               l'arme de cet identifiant ; un item sans maximum d'utilisations se
+ *                                               l'arme de cet identifiant ; §129 `unarmed` — seulement une attaque à mains nues ;
+ *                                               `push` — la cible touchée est repoussée de `{ distance, units }` (Bagarreur de
+ *                                               tavernes) ; un item sans maximum d'utilisations se
  *                                               propose sans compter (Piqué : au MJ de juger la trajectoire) ; §87 : `pays` —
  *                                               l'identifiant de l'item dont une utilisation paie la faveur (les manœuvres : les dés
  *                                               de `combat-superiority`) ; `weaponDamage` — les dés ont le type de dégâts de l'arme ;
@@ -581,7 +590,7 @@ export const EFFECT_ENDS = Object.freeze(["casterTurnStart", "casterTurnEnd", "b
 /** Ce qui ouvre une attaque en action Bonus (`bonusAttack.after`). */
 export const BONUS_ATTACK_AFTER = Object.freeze(["critical", "felled"]);
 
-export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "swapPlaces", "sweep", "commandStrike", "casterPulse", "zoneEnd", "afterTeleport", "saveDamage", "onNatural1", "searchBonus", "atZero", "afterSneak", "effectStatuses", "changesForm", "actionOrBonus", "sharesSpace", "placesSummons", "lifesteal", "rerollInitiative"]);
+export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "swapPlaces", "sweep", "commandStrike", "casterPulse", "zoneEnd", "afterTeleport", "saveDamage", "onNatural1", "searchBonus", "atZero", "afterSneak", "effectStatuses", "changesForm", "actionOrBonus", "sharesSpace", "placesSummons", "lifesteal", "rerollInitiative", "savageAttacker", "initiativeSwap", "healingRerolls"]);
 export const CHOICE_EFFECTS = Object.freeze(["one"]);
 /** §38, §90 : les jets auxquels un `rollBonus` s'ajoute. */
 export const ROLL_BONUS_ON = Object.freeze(["save", "check", "attack", "initiative"]);
@@ -687,6 +696,8 @@ function validateTrigger(declaration, at, facts, errors) {
   if ( ("oncePerTurn" in declaration) && ((declaration.oncePerTurn !== true) || (d.on.length !== 1) || (d.on[0] !== "preDamageRoll")) ) {
     errors.push(`${at}.oncePerTurn: true, with preDamageRoll as the only moment`);
   }
+  // §129 : `free` — une fenêtre de réaction qui ne coûte pas la Réaction (Chanceux : un point de chance), proposée même si elle est prise.
+  if ( ("free" in declaration) && (declaration.free !== true) ) errors.push(`${at}.free: true or absent`);
   if ( !Array.isArray(d.do) || !d.do.length ) errors.push(`${at}.do: at least one step`);
   else {
     d.do.forEach((s, i) => validateStep(s, `${at}.do[${i}]`, errors));
@@ -1097,6 +1108,10 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     && (!("damageType" in entry.lifesteal) || ((typeof entry.lifesteal.damageType === "string") && entry.lifesteal.damageType))
     && (!("fraction" in entry.lifesteal) || ((typeof entry.lifesteal.fraction === "number") && (entry.lifesteal.fraction > 0) && (entry.lifesteal.fraction <= 1)))
     && Object.keys(entry.lifesteal).every(k => ["damageType", "fraction"].includes(k))) ) errors.push(`${at}lifesteal: { damageType?, fraction? (0 < f <= 1) }`);
+  // §129 : dons d'origine du Manuel des joueurs.
+  for ( const key of ["savageAttacker", "initiativeSwap", "healingRerolls"] ) {
+    if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
+  }
   if ( ("rerollInitiative" in entry) && !(isObject(entry.rerollInitiative) && Number.isInteger(entry.rerollInitiative.atMost)
     && (entry.rerollInitiative.atMost >= 1) && (entry.rerollInitiative.atMost < 20)
     && Object.keys(entry.rerollInitiative).every(k => k === "atMost")) ) errors.push(`${at}rerollInitiative: { atMost } (integer 1–19)`);
@@ -1346,13 +1361,17 @@ function validateRogue(entry, at, errors) {
   if ( ("rollBonus" in entry) && !(isObject(entry.rollBonus) && isId(entry.rollBonus.activity) && Array.isArray(entry.rollBonus.on)
     && entry.rollBonus.on.length && entry.rollBonus.on.every(k => ROLL_BONUS_ON.includes(k))
     && ["skills", "statuses"].every(key => !(key in entry.rollBonus) || (Array.isArray(entry.rollBonus[key]) && entry.rollBonus[key].length && entry.rollBonus[key].every(k => (typeof k === "string") && k)))
-    && Object.keys(entry.rollBonus).every(k => ["activity", "on", "skills", "statuses"].includes(k))) ) errors.push(`${at}rollBonus: { activity, on: [${ROLL_BONUS_ON.join(" | ")}], skills?, statuses? }`);
+    && (!("luck" in entry.rollBonus) || (entry.rollBonus.luck === true))
+    && Object.keys(entry.rollBonus).every(k => ["activity", "on", "skills", "statuses", "luck"].includes(k))) ) errors.push(`${at}rollBonus: { activity, on: [${ROLL_BONUS_ON.join(" | ")}], skills?, statuses?, luck?: true }`);
   if ( ("transpose" in entry) && !(isObject(entry.transpose) && (typeof entry.transpose.summon === "string") && entry.transpose.summon
     && Object.keys(entry.transpose).every(k => k === "summon")) ) errors.push(`${at}transpose: { summon } (identifier of the summoning item)`);
   if ( ("portent" in entry) && !(isObject(entry.portent) && Number.isInteger(entry.portent.dice) && (entry.portent.dice > 0)
     && Object.keys(entry.portent).every(k => k === "dice")) ) errors.push(`${at}portent: { dice } (positive integer)`);
   if ( ("hitRider" in entry) && !(isObject(entry.hitRider) && Object.keys(entry.hitRider).length
-    && Object.keys(entry.hitRider).every(k => ["damage", "effect", "status", "sizeAtMost", "slot", "weapon", "oncePerTurn", "save", "item", "pays", "weaponDamage", "whileActive"].includes(k))
+    && Object.keys(entry.hitRider).every(k => ["damage", "effect", "status", "sizeAtMost", "slot", "weapon", "oncePerTurn", "save", "item", "pays", "weaponDamage", "whileActive", "push", "unarmed"].includes(k))
+    && (!("unarmed" in entry.hitRider) || (entry.hitRider.unarmed === true))
+    && (!("push" in entry.hitRider) || (isObject(entry.hitRider.push) && Number.isFinite(entry.hitRider.push.distance) && (entry.hitRider.push.distance > 0)
+      && (typeof entry.hitRider.push.units === "string") && !!entry.hitRider.push.units && Object.keys(entry.hitRider.push).every(k => ["distance", "units"].includes(k))))
     && (!("whileActive" in entry.hitRider) || (entry.hitRider.whileActive === true))
     && (!("pays" in entry.hitRider) || ((typeof entry.hitRider.pays === "string") && !!entry.hitRider.pays && !("slot" in entry.hitRider)))
     && (!("weaponDamage" in entry.hitRider) || (entry.hitRider.weaponDamage === true))
@@ -1363,7 +1382,7 @@ function validateRogue(entry, at, errors) {
     && (!("item" in entry.hitRider) || (typeof entry.hitRider.item === "string"))
     && (!("status" in entry.hitRider) || (typeof entry.hitRider.status === "string"))
     && (!("sizeAtMost" in entry.hitRider) || SIZES.includes(entry.hitRider.sizeAtMost))) ) {
-    errors.push(`${at}hitRider: { damage?, effect?, status?, sizeAtMost?, slot?: "pact", weapon?, oncePerTurn?: true, save?, item?, pays?, weaponDamage?: true }`);
+    errors.push(`${at}hitRider: { damage?, effect?, status?, sizeAtMost?, slot?: "pact", weapon?, oncePerTurn?: true, save?, item?, pays?, weaponDamage?: true, push?: { distance, units }, unarmed?: true }`);
   }
   if ( ("flurry" in entry) && !(isObject(entry.flurry) && isId(entry.flurry.activity) && Number.isInteger(entry.flurry.strikes) && (entry.flurry.strikes > 0)
     && (!("weapons" in entry.flurry) || (typeof entry.flurry.weapons === "boolean"))
@@ -1499,7 +1518,7 @@ export function mergeEntries(layers) {
     // §20
     for ( const key of ["sneakAttack", "evasion", "elusive", "holdsStill", "cunningStrikeMax", "grantsAction", "movesAfter", "studiedAttacks",
       "heroicWarrior", "greatWeaponFighting", "thrownDamage", "rage", "persistentRage", "reckless", "relentless", "blocksHealing",
-      "noOpportunityAttacks", "byWounds", "oneAttack", "martialArts", "flurry", "stunningStrike", "openHand", "smite", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "replacesAttack", "hitRider", "metamagic", "portent", "dispel", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles"] ) if ( key in layer ) out[key] = layer[key];
+      "noOpportunityAttacks", "byWounds", "oneAttack", "martialArts", "flurry", "stunningStrike", "openHand", "smite", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "replacesAttack", "hitRider", "metamagic", "portent", "dispel", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "savageAttacker", "initiativeSwap", "healingRerolls"] ) if ( key in layer ) out[key] = layer[key];   // §129
     if ( "effectEnds" in layer ) out.effectEnds = { ...(out.effectEnds ?? {}), ...layer.effectEnds };
     if ( "effectThen" in layer ) out.effectThen = { ...(out.effectThen ?? {}), ...layer.effectThen };
     if ( "actionEnds" in layer ) out.actionEnds = { ...(out.actionEnds ?? {}), ...layer.actionEnds };

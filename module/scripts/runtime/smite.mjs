@@ -18,6 +18,8 @@ import { STEPS } from "../core/action.mjs";
 import { strikeAgainst } from "../adapter/areas.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
 import { combatantFor, readBudget, writeBudget } from "../adapter/turn.mjs";
+import { pushAway } from "../adapter/movement.mjs";
+import { readUnitFactors } from "../adapter/units.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log } from "./shared.mjs";
@@ -89,6 +91,14 @@ async function applyRider(smite, item, resolution) {
   if ( smite.status ) {
     await target.actor.toggleStatusEffect(smite.status, { active: true });
     log(`${smite.name}: ${target.name} receives "${smite.status}"`);
+  }
+  // §129 : la poussée de la faveur (Bagarreur de tavernes : 1,50 m), depuis l'auteur.
+  if ( smite.push ) {
+    const source = item.actor?.getActiveTokens(false, true)[0] ?? null;
+    if ( source ) {
+      const { cells, wanted } = await pushAway(source, target, smite.push, readUnitFactors());
+      log(`${smite.name}: ${target.name} pushed ${cells} square(s) out of ${wanted}`);
+    }
   }
   // §78 : la sauvegarde de la faveur (Piqué : Force ou À terre), jouée sur la cible encore debout.
   const save = smite.save ? item.system.activities?.get(smite.save) : null;

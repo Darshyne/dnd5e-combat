@@ -21,7 +21,7 @@ import {
 } from "../adapter/saves.mjs";
 import { holds } from "../core/triggers.mjs";
 import { resolveAttack } from "../core/attack.mjs";
-import { offerInspiration, offerRollBonus } from "../adapter/inspiration.mjs";
+import { offerInspiration, offerRollBonus, keptD20 } from "../adapter/inspiration.mjs";
 import { factsFor } from "../adapter/facts.mjs";
 import { readUsage } from "../adapter/usage.mjs";
 import { canResistSave, askLegendary, resistSave, legendaryLeft } from "../adapter/legendary.mjs";
@@ -543,7 +543,7 @@ async function inspiredAttack(message, roll, targets) {
   // §90 : Attaque précise — encore ratée, l'attaquant peut ajouter son propre dé (`rollBonus` sur "attack").
   const total = roll.total + bonus;
   const rules = actor.items.some(i => contentOf(i).entry?.rollBonus?.on?.includes("attack"));
-  const precise = (rules && (total < needed)) ? await offerRollBonus(actor, { kind: "attack", what: loc("Inspiration.Attaque"), total, needed }) : 0;
+  const precise = (rules && (total < needed)) ? await offerRollBonus(actor, { kind: "attack", what: loc("Inspiration.Attaque"), total, needed, d20: keptD20(message.rolls?.[0]) }) : 0;
   if ( precise ) log(`${actor.name}: die added to their attack, ${total} + ${precise} = ${total + precise}`);
   if ( !bonus && !precise ) return roll;
   return { ...roll, total: total + precise, inspired: bonus + precise };
@@ -627,7 +627,7 @@ async function onSaveMessage(message) {
     const bonus = actor ? await offerInspiration(actor, { what: loc("Inspiration.Sauvegarde"), total, needed: dc }) : 0;
     if ( bonus ) { log(`${actor.name}: Bardic Inspiration, saving throw ${total} + ${bonus} = ${total + bonus}`); total += bonus; }
     // §38 : Chance du ténébreux — encore ratée, la créature peut ajouter son propre dé (`rollBonus`).
-    const luck = (actor && (total < dc)) ? await offerRollBonus(actor, { kind: "save", what: loc("Inspiration.Sauvegarde"), total, needed: dc, statuses: saveStatuses(carrier, resolution) }) : 0;
+    const luck = (actor && (total < dc)) ? await offerRollBonus(actor, { kind: "save", what: loc("Inspiration.Sauvegarde"), total, needed: dc, statuses: saveStatuses(carrier, resolution), d20: keptD20(message.rolls?.[0]) }) : 0;
     if ( luck ) { log(`${actor.name}: die added to their saving throw, ${total} + ${luck} = ${total + luck}`); total += luck; }
   }
   await dispatcher.send(carrierId, { type: "saveRolled", actor: save.actor, total, messageId: message.id, ...(resisted ? { resisted: true } : {}) });

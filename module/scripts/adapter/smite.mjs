@@ -125,6 +125,8 @@ export function riderOptions(actor, target, activity=null, attackMode=null) {
     if ( rule.weapon && !(meleeWeaponHit(activity, attackMode) && wieldsBound(activity, actor, rule.weapon)) ) continue;
     // §78 : seulement avec l'arme de cet identifiant (Piqué : l'épée courte).
     if ( rule.item && (identifierOf(activity?.item ?? {}).id !== rule.item) ) continue;
+    // §129 : seulement une attaque à mains nues (Bagarreur de tavernes : l'Attaque à mains nues, ou l'attaque améliorée du don).
+    if ( rule.unarmed && !unarmedAttack(activity) ) continue;
     const key = identifierOf(item).id ?? item.id;
     if ( rule.oncePerTurn && turn && (actor.getFlag(MODULE_ID, `oncePerTurn.${key}`) === turn) ) continue;
     const size = target?.actor?.system?.traits?.size;
@@ -136,6 +138,12 @@ export function riderOptions(actor, target, activity=null, attackMode=null) {
     out.push({ item, rule, rider: true, free: false, unlimited, level, fits, payer, once: rule.oncePerTurn ? key : null, label });
   }
   return out;
+}
+
+/** §129 : une attaque à mains nues — classée « unarmed » par dnd5e, ou l'Attaque à mains nues elle-même. */
+function unarmedAttack(activity) {
+  return (activity?.type === "attack") && ((activity.attack?.type?.classification === "unarmed")
+    || (identifierOf(activity.item ?? {}).id === "unarmed-strike"));
 }
 
 /** Les dés que le châtiment ajoute, au niveau lancé, contre cette cible : `{ formula, type }`, ou null. */
@@ -239,7 +247,7 @@ export async function chooseSmite(activity, attackMessage) {
     const weaponType = option.rule.weaponDamage ? weaponDamageType(activity, attackMessage) : null;
     return { kind: "rider", item: option.item.uuid, name: option.item.name, ...dice, ...(weaponType ? { type: weaponType } : {}),
       effect: option.rule.effect ?? null, status: option.fits ? (option.rule.status ?? null) : null,
-      save: option.fits ? (option.rule.save ?? null) : null, target: target.uuid };
+      save: option.fits ? (option.rule.save ?? null) : null, push: option.fits ? (option.rule.push ?? null) : null, target: target.uuid };
   }
   return { item: option.item.uuid, name: option.item.name, level: option.level, free: option.free, ...dice,
     save: option.rule.save ?? null, effect: option.rule.effect ?? null,

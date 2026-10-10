@@ -15,8 +15,9 @@
  * @param {{reactionAvailable: boolean, incapacitated?: boolean}} state
  */
 export function eligibleReactions(declared, window, { reactionAvailable, incapacitated=false }) {
-  if ( !reactionAvailable || incapacitated ) return [];
-  return declared.filter(r => r.on.includes(window));
+  if ( incapacitated ) return [];
+  // §129 : une déclaration `free` ne coûte pas la Réaction (Chanceux) : proposée même quand celle-ci est prise.
+  return declared.filter(r => r.on.includes(window) && (reactionAvailable || (r.free === true)));
 }
 
 /** Deux camps sont-ils opposés ? Un neutre (0) ou un secret (-2) ne provoque ni ne subit rien. */

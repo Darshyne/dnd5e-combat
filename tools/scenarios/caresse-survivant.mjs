@@ -71,20 +71,33 @@ export default {
     const combat = await ctx.startCombat([alara, zombi]);
     const cid = (combat.combatants ?? []).find(c => c.tokenId === alara.id)?.id
       ?? (await ctx.combat()).combatants?.find(c => c.tokenId === alara.id)?.id;
-    let low = 0;
-    for ( let n = 1; (n <= 25) && (low < 1); n++ ) {
+    // La question va au joueur d'Alara, sinon au MJ : sans propriétaire joueur dans ce monde, c'est une fenêtre chez le MJ.
+    const known = async () => ((await ctx.call("list-dialogs", {})).windows ?? []).map(w => w.id);
+    let kept = 0, rerolled = 0;
+    for ( let n = 1; (n <= 30) && !(kept && rerolled); n++ ) {
       const since = await ctx.lastMessageId();
+      const before = await known();
       await ctx.call("roll-initiative", { combatId: ctx.ownCombat, combatantIds: [cid] });
+      const d = (await ctx.call("list-dialogs", { dialogsOnly: true, excludeIds: before, waitMs: 3000 }).catch(() => null))?.windows?.[0] ?? null;
+      const init0 = (await ctx.combat()).combatants?.find(c => c.id === cid)?.initiative;
+      if ( !d ) { ctx.log(`initiative ${n} : ${init0}, pas de question (d20 au-dessus de 9)`); continue; }
+      const choose = kept ? /Relancer|Reroll/i : /Garder|Keep/i;
+      const b = (d.buttons ?? []).find(x => choose.test(x.label ?? ""));
+      await ctx.call("answer-dialog", { id: d.id, button: b?.action ?? b?.label });
       await pause(2500);
       const { messages } = await ctx.call("list-chat-messages", { limit: 10, ...(since ? { sinceId: since } : {}) });
       const reroll = (messages ?? []).find(m => m.flags?.[MODULE_ID]?.rerollInitiative);
       const init = (await ctx.combat()).combatants?.find(c => c.id === cid)?.initiative;
-      if ( !reroll ) { ctx.log(`initiative ${n} : ${init}, pas de relance`); continue; }
-      low++;
-      const { old, new: d20 } = reroll.flags[MODULE_ID].rerollInitiative;
-      ctx.expect(old <= 9, `initiative ${n} : d20 de ${old} (≤ 9) relancé → ${d20}`);
-      ctx.log(`initiative ${n} : finale ${init}`);
+      if ( !kept ) {
+        kept++;
+        ctx.expect(!reroll && (init === init0), `initiative ${n} : question posée, « Garder » → pas de relance (${init})`);
+        continue;
+      }
+      rerolled++;
+      const r = reroll?.flags?.[MODULE_ID]?.rerollInitiative;
+      ctx.expect(!!r && (r.old <= 9), `initiative ${n} : « Relancer » → d20 ${r?.old} relancé → ${r?.new}`);
+      ctx.expect(!!r && (Math.round(init - init0) === r.new - r.old), `initiative ${n} : ${init0} → ${init}`);
     }
-    ctx.expect(low > 0, "un d20 d'initiative de 9 ou moins a été relancé");
+    ctx.expect(kept && rerolled, "les deux réponses vues (garder, relancer)");
   }
 };

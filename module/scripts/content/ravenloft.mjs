@@ -101,7 +101,7 @@ export const RAVENLOFT = Object.freeze({
 
   // Survivant, Se ressaisir : une sauvegarde ratée pour éviter ou finir Charmé ou Effrayé — par une Réaction, + bonus de maîtrise (une
   // fois par repos long : les utilisations de l'activité). §120 : Hypervigilance — « quand vous lancez l'initiative, vous pouvez relancer le
-  // d20 s'il fait 9 ou moins ; vous gardez le nouveau jet » : relancé d'office (le nouveau d20 vaut 10,5 en moyenne).
+  // d20 s'il fait 9 ou moins ; vous gardez le nouveau jet » : la question est posée au joueur.
   "survivor-ravenloft": {
     rollBonus: { activity: "9wAIIWcBr8lwp7Rm", on: ["save"], statuses: ["charmed", "frightened"] },
     rerollInitiative: { atMost: 9 }

@@ -11,14 +11,16 @@
  *
  * §120 : Hypervigilance (Survivant, clé `rerollInitiative`) — le d20 d'un jet d'initiative de 9 ou moins est relancé, le nouveau gardé.
  * Le cœur écrit l'initiative PUIS crée la carte du jet (client/documents/combat.mjs:432-435, `flags.core.initiativeRoll`) : le MJ
- * actif lit le d20 sur la carte, relance, et corrige l'initiative de la différence. Le dé d'Embuscade s'ajoute lui aussi à la valeur
+ * actif lit le d20 sur la carte, demande au joueur (sinon au MJ) s'il relance — sans réponse, le jet est gardé —, relance, et corrige l'initiative de la différence. Le dé d'Embuscade s'ajoute lui aussi à la valeur
  * en vigueur au moment de l'écrire : les deux corrections se cumulent dans n'importe quel ordre.
  */
 
 import { MODULE_ID } from "../constants.mjs";
 import { offerInspiration, offerRollBonus } from "../adapter/inspiration.mjs";
 import { contentOf } from "../adapter/content.mjs";
+import { askChoice } from "../adapter/choices.mjs";
 import { initiativeReroll, rerolledInitiative } from "../core/initiative.mjs";
+import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 
@@ -56,17 +58,18 @@ async function onUpdateCombatant(combatant, changes, options) {
   log(`${combatant.name}: die added to their Initiative, ${total} + ${added}`);
 }
 
-/** Le combattant dont une carte d'initiative porte le jet : par le token qui parle, sinon par l'acteur. */
+/**
+ * Le combattant dont une carte d'initiative porte le jet : par le token qui parle (sinon par l'acteur), et dont l'initiative vaut le total
+ * du jet — un même token peut être dans plusieurs combats (vu le 2026-10-10 : un autre combat du monde corrigé à la place).
+ */
 function combatantOfMessage(message) {
   const { token, actor } = message.speaker ?? {};
-  for ( const combat of game.combats ) {
-    const c = combat.combatants.find(c => (token ? c.tokenId === token : c.actorId === actor) && Number.isFinite(c.initiative));
-    if ( c ) return c;
-  }
-  return null;
+  const total = message.rolls?.[0]?.total;
+  const matches = game.combats.contents.flatMap(combat => combat.combatants.filter(c => (token ? c.tokenId === token : c.actorId === actor)));
+  return matches.find(c => Number.isFinite(total) && (Math.abs(c.initiative - total) < 1e-6)) ?? null;
 }
 
-async function onInitiativeMessage(message) {
+async function hypervigilance(message) {
   if ( !message.getFlag?.("core", "initiativeRoll") ) return;
   const combatant = combatantOfMessage(message);
   const actor = combatant?.actor;
@@ -77,13 +80,26 @@ async function onInitiativeMessage(message) {
   const keep = die?.modifiers?.find(m => /^k[hl]/.test(m))?.slice(0, 2) ?? null;
   const formula = initiativeReroll(contentOf(item).entry.rerollInitiative, { number: die?.number, kept, keep });
   if ( !formula ) return;
+  const answer = await askChoice(actor, {
+    actor: actor.uuid, item: item.name,
+    prompt: game.i18n.format("DND5ECOMBAT.Hypervigilance.Question", { item: item.name, d20: kept, total: Math.floor(combatant.initiative) }),
+    // « Garder » d'abord : sans réponse dans le délai, askChoice retient la première option.
+    options: [{ id: "keep", label: game.i18n.localize("DND5ECOMBAT.Hypervigilance.Garder") }, { id: "reroll", label: game.i18n.localize("DND5ECOMBAT.Hypervigilance.Relancer") }]
+  });
+  if ( answer?.id !== "reroll" ) { log(`${combatant.name}: ${item.name} — Initiative d20 ${kept} kept`); return; }
   const roll = await new Roll(formula).evaluate();
+  // La valeur en vigueur après la question : le dé d'Embuscade a pu s'y ajouter entre-temps.
   const total = rerolledInitiative(combatant.initiative, kept, roll.total);
   await combatant.update({ initiative: total });
   await roll.toMessage({ speaker: message.speaker,
     flavor: game.i18n.format("DND5ECOMBAT.Hypervigilance.Carte", { item: item.name, name: combatant.name, old: kept, new: roll.total, total: Math.floor(total) }),
     flags: { [MODULE_ID]: { rerollInitiative: { item: item.uuid, old: kept, new: roll.total } } } }, { messageMode: message.whisper?.length ? "gm" : undefined });
   log(`${combatant.name}: ${item.name} — Initiative d20 ${kept} rerolled → ${roll.total} (Initiative ${total})`);
+}
+
+/** Sans attente : les autres lecteurs de la carte suivent leur cours pendant que le joueur choisit. */
+function onInitiativeMessage(message) {
+  if ( message.getFlag?.("core", "initiativeRoll") ) enqueue(`hypervigilance:${message.id}`, () => hypervigilance(message));
 }
 
 export function registerRollBonus() {

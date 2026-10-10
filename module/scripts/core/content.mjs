@@ -145,7 +145,7 @@
  *     lifesteal?: { damageType?, fraction? }    §120 : l'auteur regagne des PV égaux à une part (`fraction`, 1 par défaut ; arrondi
  *                                               inférieur) des dégâts de ce type que l'item inflige (Caresse du vampire : la moitié
  *                                               des dégâts nécrotiques) — runtime/lifesteal.mjs
- *     rerollInitiative?: { atMost }             §120 : à chaque jet d'initiative, un d20 de `atMost` ou moins est relancé, le nouveau
+ *     rerollInitiative?: { atMost }             §120 : à chaque jet d'initiative, un d20 de `atMost` ou moins peut être relancé (question), le nouveau
  *                                               gardé (Survivant, Hypervigilance : 9) — runtime/roll-bonus.mjs
  *     onNatural1?: { activity }                 §93 : juste après un Test d20 de la créature dont le d20 fait 1, elle utilise
  *                                               l'activité (Dons sombres de Ravenloft : sa sauvegarde, sur elle-même)

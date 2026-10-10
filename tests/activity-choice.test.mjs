@@ -63,3 +63,17 @@ describe("choix d'activité — une attaque et ses suites (§46)", () => {
     expect(activityToUse({ activities: list, known: false })).toBeNull();
   });
 });
+
+describe("choix d'activité — incantation gratuite (§127)", () => {
+  const sleep = [{ id: "free", timed: true, slot: false, free: true }, { id: "slot", timed: true, slot: true }];
+  it("Sommeil d'Initié à la magie sans emplacement : l'incantation gratuite", () => {
+    expect(activityToUse({ activities: sleep, known: true, level: 1, slotLeft: false })).toBe("free");
+  });
+  it("avec un emplacement : le joueur choisit", () => {
+    expect(activityToUse({ activities: sleep, known: true, level: 1, slotLeft: true })).toBeNull();
+  });
+  it("incantation gratuite dépensée : l'emplacement, comme avant", () => {
+    const spent = [{ id: "free", timed: true, slot: false, free: false }, { id: "slot", timed: true, slot: true }];
+    expect(activityToUse({ activities: spent, known: true, level: 1, slotLeft: true })).toBe("slot");
+  });
+});

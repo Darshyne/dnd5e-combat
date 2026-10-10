@@ -118,6 +118,9 @@ export const SPELL_RULES = Object.freeze({
   // §70 : Appel de la foudre — le nuage (cylindre de 18 m) reste ; chaque lancement vise un éclair de 1,50 m dessous ; « dehors, par
   // temps d'orage » : +1d10 (question à l'incantation). La relance sans emplacement (`recast`) et l'éclair (`bolt`) : content/bursts.mjs.
   "call-lightning": { storm: { bonus: "1d10" } },
+  // §120 : Caresse du vampire (niveau 3) — « vous regagnez des PV égaux à la moitié des dégâts nécrotiques infligés » (runtime/lifesteal.mjs) ;
+  // « tant que le sort dure, vous pouvez refaire l’attaque à chacun de vos tours par une action Magie » : la relance sans emplacement (content/bursts.mjs).
+  "vampiric-touch": { lifesteal: { damageType: "necrotic", fraction: 0.5 } },
   // §73 : Protection contre la mort (niveau 4) — « la première fois que la cible devrait tomber à 0 PV, elle tombe à 1 PV, et le sort
   // prend fin » (adapter/ward.mjs). L'effet qui tuerait sur le coup sans dégâts : au MJ.
   "death-ward": { wardsAtZero: true },

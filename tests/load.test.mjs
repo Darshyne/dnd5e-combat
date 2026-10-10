@@ -44,7 +44,7 @@ describe("chargement du module", () => {
   it("appelle les inscrits de createChatMessage dans l'ordre voulu : résolution d'abord", () => {
     expect(api.api.routes().createChatMessage.map(r => r.label)).toEqual([
       "resolution interrupted", "concentration: processing interrupted", "pool: recharge not written", "targets released", "Flurry of Blows: targeting not opened",
-      "budget: spending not recorded", "Dispel Magic: nothing dispelled", "trace or mark not handled", "weapon mastery: mark not used up", "maneuver: Bait and Switch or Commander's Strike not played", "Rage: upkeep not recorded", "swallow / engulf: action not tracked", "help", "tether: not recorded", "single card: roll not folded", "chat log purge", "visual feedback: effect ending"
+      "budget: spending not recorded", "Dispel Magic: nothing dispelled", "trace or mark not handled", "weapon mastery: mark not used up", "maneuver: Bait and Switch or Commander's Strike not played", "Initiative d20 not rerolled", "Rage: upkeep not recorded", "swallow / engulf: action not tracked", "help", "tether: not recorded", "single card: roll not folded", "chat log purge", "visual feedback: effect ending"
     ]);
   });
 

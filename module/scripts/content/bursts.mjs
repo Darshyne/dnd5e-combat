@@ -16,10 +16,11 @@ export const BURSTS = Object.freeze({
 
 /**
  * Sorts qui se relancent tant qu'ils durent (§16.21, clé `recast`) : Appel de la foudre — « tant que le sort dure, vous
- * pouvez faire une action Magie pour appeler de nouveau la foudre ». Carreau ensorcelé et Métal brûlant n'en ont pas
+ * pouvez faire une action Magie pour appeler de nouveau la foudre » ; §120 : Caresse du vampire — « refaire l’attaque à chacun
+ * de vos tours par une action Magie ». Carreau ensorcelé et Métal brûlant n'en ont pas
  * besoin : dnd5e 6 leur donne une activité à l'action Bonus, sans emplacement.
  */
-export const RECASTS = Object.freeze(["call-lightning"]);
+export const RECASTS = Object.freeze(["call-lightning", "vampiric-touch"]);
 
 /** « Chaque créature à 1,50 m du point » (§16.21, `bolt`) : Appel de la foudre, dont dnd5e fait poser le nuage (60 ft). */
 export const BOLTS = Object.freeze({ "call-lightning": { radius: 5, units: "ft" } });

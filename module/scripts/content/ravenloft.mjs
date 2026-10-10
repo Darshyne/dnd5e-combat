@@ -100,8 +100,12 @@ export const RAVENLOFT = Object.freeze({
   /* §94 : dons (Survivant, Marcheur des brumes, Œil vif) et espèces (Né-de-nouveau, Lupin). */
 
   // Survivant, Se ressaisir : une sauvegarde ratée pour éviter ou finir Charmé ou Effrayé — par une Réaction, + bonus de maîtrise (une
-  // fois par repos long : les utilisations de l'activité). Hypervigilance (relancer une initiative de 9 ou moins) : au MJ.
-  "survivor-ravenloft": { rollBonus: { activity: "9wAIIWcBr8lwp7Rm", on: ["save"], statuses: ["charmed", "frightened"] } },
+  // fois par repos long : les utilisations de l'activité). §120 : Hypervigilance — « quand vous lancez l'initiative, vous pouvez relancer le
+  // d20 s'il fait 9 ou moins ; vous gardez le nouveau jet » : relancé d'office (le nouveau d20 vaut 10,5 en moyenne).
+  "survivor-ravenloft": {
+    rollBonus: { activity: "9wAIIWcBr8lwp7Rm", on: ["save"], statuses: ["charmed", "frightened"] },
+    rerollInitiative: { atMost: 9 }
+  },
   // Marcheur des brumes, Marche des brumes : « quand vous subissez des dégâts, par une Réaction, téléportez-vous jusqu'à 4,50 m » (la
   // visée de la téléportation s'ouvre après la réaction). Sur une sauvegarde ratée contre Agrippé ou Entravé : au MJ.
   "mist-walker": {

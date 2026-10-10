@@ -142,6 +142,11 @@
  *     searchBonus?: { formula?, advantage? }    §94 : à l'action Chercher (runtime/search.mjs), un dé ajouté au test (`formula` :
  *                                               Guetteurs, 1d4) ou l'Avantage (`advantage` : Œil vif — une utilisation de l'item,
  *                                               dépensée seulement si le test trouve quelqu'un)
+ *     lifesteal?: { damageType?, fraction? }    §120 : l'auteur regagne des PV égaux à une part (`fraction`, 1 par défaut ; arrondi
+ *                                               inférieur) des dégâts de ce type que l'item inflige (Caresse du vampire : la moitié
+ *                                               des dégâts nécrotiques) — runtime/lifesteal.mjs
+ *     rerollInitiative?: { atMost }             §120 : à chaque jet d'initiative, un d20 de `atMost` ou moins est relancé, le nouveau
+ *                                               gardé (Survivant, Hypervigilance : 9) — runtime/roll-bonus.mjs
  *     onNatural1?: { activity }                 §93 : juste après un Test d20 de la créature dont le d20 fait 1, elle utilise
  *                                               l'activité (Dons sombres de Ravenloft : sa sauvegarde, sur elle-même)
  *     zoneEnd?: { activity }                    §91 : quand la zone qui dure de l'item prend fin (concentration, durée, retirée), le
@@ -576,7 +581,7 @@ export const EFFECT_ENDS = Object.freeze(["casterTurnStart", "casterTurnEnd", "b
 /** Ce qui ouvre une attaque en action Bonus (`bonusAttack.after`). */
 export const BONUS_ATTACK_AFTER = Object.freeze(["critical", "felled"]);
 
-export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "swapPlaces", "sweep", "commandStrike", "casterPulse", "zoneEnd", "afterTeleport", "saveDamage", "onNatural1", "searchBonus", "atZero", "afterSneak", "effectStatuses", "changesForm", "actionOrBonus", "sharesSpace", "placesSummons"]);
+export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "swapPlaces", "sweep", "commandStrike", "casterPulse", "zoneEnd", "afterTeleport", "saveDamage", "onNatural1", "searchBonus", "atZero", "afterSneak", "effectStatuses", "changesForm", "actionOrBonus", "sharesSpace", "placesSummons", "lifesteal", "rerollInitiative"]);
 export const CHOICE_EFFECTS = Object.freeze(["one"]);
 /** §38, §90 : les jets auxquels un `rollBonus` s'ajoute. */
 export const ROLL_BONUS_ON = Object.freeze(["save", "check", "attack", "initiative"]);
@@ -1085,6 +1090,14 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     && Object.keys(entry.atZero).every(k => ["activity", "save", "whileEffect"].includes(k))) ) errors.push(`${at}atZero: { activity, save?: { ability, dc }, whileEffect? }`);
   if ( ("afterSneak" in entry) && !(isObject(entry.afterSneak) && isId(entry.afterSneak.activity) && Number.isFinite(entry.afterSneak.radius)
     && (entry.afterSneak.radius > 0) && (typeof entry.afterSneak.units === "string") && (Object.keys(entry.afterSneak).length === 3)) ) errors.push(`${at}afterSneak: { activity, radius, units }`);
+  // §120
+  if ( ("lifesteal" in entry) && !(isObject(entry.lifesteal)
+    && (!("damageType" in entry.lifesteal) || ((typeof entry.lifesteal.damageType === "string") && entry.lifesteal.damageType))
+    && (!("fraction" in entry.lifesteal) || ((typeof entry.lifesteal.fraction === "number") && (entry.lifesteal.fraction > 0) && (entry.lifesteal.fraction <= 1)))
+    && Object.keys(entry.lifesteal).every(k => ["damageType", "fraction"].includes(k))) ) errors.push(`${at}lifesteal: { damageType?, fraction? (0 < f <= 1) }`);
+  if ( ("rerollInitiative" in entry) && !(isObject(entry.rerollInitiative) && Number.isInteger(entry.rerollInitiative.atMost)
+    && (entry.rerollInitiative.atMost >= 1) && (entry.rerollInitiative.atMost < 20)
+    && Object.keys(entry.rerollInitiative).every(k => k === "atMost")) ) errors.push(`${at}rerollInitiative: { atMost } (integer 1–19)`);
   if ( ("searchBonus" in entry) && !(isObject(entry.searchBonus) && Object.keys(entry.searchBonus).length
     && (!("formula" in entry.searchBonus) || ((typeof entry.searchBonus.formula === "string") && entry.searchBonus.formula))
     && (!("advantage" in entry.searchBonus) || (entry.searchBonus.advantage === true))
@@ -1460,6 +1473,7 @@ export function mergeEntries(layers) {
     for ( const key of ["swapPlaces", "sweep", "commandStrike", "zoneEnd", "onNatural1"] ) if ( key in layer ) out[key] = { ...layer[key] };   // §90, §91, §93
     if ( "casterPulse" in layer ) out.casterPulse = JSON.parse(JSON.stringify(layer.casterPulse));   // §91
     if ( "searchBonus" in layer ) out.searchBonus = { ...layer.searchBonus };   // §94
+    for ( const key of ["lifesteal", "rerollInitiative"] ) if ( key in layer ) out[key] = { ...layer[key] };   // §120
     if ( "effectStatuses" in layer ) out.effectStatuses = JSON.parse(JSON.stringify(layer.effectStatuses));   // §96
     if ( "atZero" in layer ) out.atZero = JSON.parse(JSON.stringify(layer.atZero));   // §95
     if ( "afterSneak" in layer ) out.afterSneak = { ...layer.afterSneak };   // §95

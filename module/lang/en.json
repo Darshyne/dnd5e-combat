@@ -554,6 +554,8 @@
   "DND5ECOMBAT.Drain.EffetCarac": "{item}: {ability} −{n}",
   "DND5ECOMBAT.Morsure.Renfort": "Empower: +{n} to your next attack roll or ability check",
   "DND5ECOMBAT.Morsure.RetourDrain": "Drain: +{n} HP",
+  "DND5ECOMBAT.Vol.Retour": "+{n} HP",
+  "DND5ECOMBAT.Hypervigilance.Carte": "{item}: {name} rerolls their Initiative d20 ({old} → {new}) — Initiative {total}",
   "DND5ECOMBAT.Morsure.RetourRenfort": "Empowered: +{n}",
   "DND5ECOMBAT.Morsure.CarteDrain": "{item}: {name} drains {victim} and regains {n} HP.",
   "DND5ECOMBAT.Morsure.CarteRenfort": "{item}: {name} is empowered — +{n} to their next attack roll or ability check (1 minute).",

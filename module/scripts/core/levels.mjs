@@ -49,7 +49,7 @@ export const FEATURE_LEVELS = Object.freeze({
   registerPilot: F, registerReduction: F, registerCoven: F, registerRecast: F, registerProjectiles: F, registerMetamagic: F,
   registerGates: F, registerPortent: F, registerDispel: F, registerContest: F, registerStorm: F, registerBursts: F,
   registerFelled: F, registerAuras: F, registerEmanations: F, registerRegeneration: F, registerFortitude: F, registerDrain: F,
-  registerSpaceSharing: F, registerEmpower: F, registerDischarge: F, registerMastery: F, registerSneak: F, registerFighter: F,
+  registerSpaceSharing: F, registerEmpower: F, registerLifesteal: F, registerDischarge: F, registerMastery: F, registerSneak: F, registerFighter: F,
   registerMonk: F, registerSmite: F, registerManeuverDice: F, registerRollBonus: F, registerNaturalOne: F, registerRise: F,
   registerAfterSneak: F, registerCantrips: F, registerEndings: F, registerActionEnd: F, registerBarbarian: F,
   registerSwallow: F, registerFamiliars: F, registerBreaks: F, registerCure: F, registerPotions: F, registerOil: F,

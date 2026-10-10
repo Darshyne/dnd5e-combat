@@ -554,6 +554,8 @@
   "DND5ECOMBAT.Drain.EffetCarac": "{item} : {ability} −{n}",
   "DND5ECOMBAT.Morsure.Renfort": "Renforcement : +{n} au prochain jet d’attaque ou test",
   "DND5ECOMBAT.Morsure.RetourDrain": "Drain : +{n} PV",
+  "DND5ECOMBAT.Vol.Retour": "+{n} PV",
+  "DND5ECOMBAT.Hypervigilance.Carte": "{item} : {name} relance son d20 d'initiative ({old} → {new}) — initiative {total}",
   "DND5ECOMBAT.Morsure.RetourRenfort": "Renforcé : +{n}",
   "DND5ECOMBAT.Morsure.CarteDrain": "{item} : {name} draine {victim} et regagne {n} PV.",
   "DND5ECOMBAT.Morsure.CarteRenfort": "{item} : {name} se renforce — +{n} à son prochain jet d’attaque ou test de caractéristique (1 minute).",

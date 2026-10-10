@@ -81,3 +81,14 @@ export function drainEffectShape({ kind, total }) {
   if ( kind === "hp" ) return { key: "system.attributes.hp.tempmax", change: -total, expiry: "longRest" };
   return { key: `system.abilities.${kind}.value`, change: -total, expiry: "longRest" };
 }
+
+/**
+ * §120 : ce que l'auteur regagne (clé `lifesteal`, Caresse du vampire) — une part des dégâts de ce type infligés, arrondie à
+ * l'entier inférieur (« la moitié des dégâts nécrotiques infligés »).
+ * @param {Array<{value: number, type: string}>} damages
+ * @param {{damageType?: string, fraction?: number}} rule
+ * @returns {number}
+ */
+export function lifestealAmount(damages, { damageType=null, fraction=1 }={}) {
+  return Math.max(0, Math.floor(drainedAmount(damages, damageType) * fraction));
+}

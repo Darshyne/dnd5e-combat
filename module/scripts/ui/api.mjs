@@ -16,6 +16,8 @@ import { lightState, globalLightState } from "./illumination.mjs";
 import { menuEntriesFor, pendingTargeting } from "./pointer.mjs";
 import { poolsOf } from "../adapter/absorb.mjs";
 import { movableZoneOf } from "../runtime/zones.mjs";
+import { carriedLightsOf, carriedLightState } from "../adapter/lights.mjs";
+import { toggleCarriedLight } from "../runtime/lights.mjs";
 
 /**
  * Le budget du tour d'un combattant, tel que le moteur le juge : une action reste disponible tant que l'action Attaquer a
@@ -113,4 +115,12 @@ export const uiApi = { budget, wards, movableZone, movement, issues, multiattack
    * §119 : plus `kind`, `item`, `prompt` (consigne traduite) et `picked` / `total` (visée multiple) ; le hook part aussi à chaque
    * créature choisie ou retirée.
    */
-  targeting: pendingTargeting };
+  targeting: pendingTargeting,
+  /**
+   * §121 : `carriedLights(actor)` — les sources de lumière portées de l'acteur : `{ uuid, name, img, lit, left, full, fuel }` (`left`,
+   * `full` en secondes ou null ; `fuel` : `{ identifier, name, quantity }` ou null). `toggleLight(item, on?)` — allumer ou éteindre
+   * (item ou uuid ; `on` absent : l'inverse), sur le client du porteur ; rend `{ changed, lit?, left?, refilled?, reason? }`.
+   */
+  carriedLights: actor => carriedLightsOf(actor).map(carriedLightState),
+  carriedLight: item => carriedLightState(typeof item === "string" ? fromUuidSync(item, { strict: false }) : item),
+  toggleLight: (item, on=null) => toggleCarriedLight(typeof item === "string" ? fromUuidSync(item, { strict: false }) : item, on) };

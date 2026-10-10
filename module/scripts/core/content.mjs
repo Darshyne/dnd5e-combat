@@ -448,7 +448,7 @@
  *                                               1 + son niveau alliés réussissent d'office et ne subissent rien
  *     supremeHealing?: true                     le porteur soigne au maximum des dés avec un sort ou une Conduit divin (§27)
  *     stabilizes?: true                         utiliser l'item stabilise la cible à 0 PV, sans test (trousse de soins, §50)
- *     carriedLight?: { bright, dim, units, angle?, animation? }
+ *     carriedLight?: { bright, dim, units, angle?, animation?, burn?, fuel? }
  *                                               une source de lumière que l'on porte (§52 : lampe, lanternes, torche, bougie) —
  *                                               son activité utilitaire l'allume ou l'éteint ; `angle` : un cône (lanterne sourde)
  *     kindles?: true                            l'item allume ou éteint une source portée, au choix (boîte à amadou, §52)
@@ -1247,7 +1247,12 @@ function validateCarriedLight(l, at, errors) {
   if ( (typeof l.units !== "string") || !l.units ) errors.push(`${at}.units: unit required`);
   if ( ("angle" in l) && !(Number.isFinite(l.angle) && (l.angle > 0) && (l.angle < 360)) ) errors.push(`${at}.angle: degrees, between 0 and 360`);
   if ( ("animation" in l) && (!isObject(l.animation) || (typeof l.animation.type !== "string")) ) errors.push(`${at}.animation: { type, speed?, intensity? }`);
-  for ( const key of Object.keys(l) ) if ( !["bright", "dim", "units", "angle", "animation"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
+  // §121 : durée d'une unité (torche, bougie) ou d'une flasque (lampe, lanterne), et le combustible (identifiant de l'item).
+  if ( ("burn" in l) && !(isObject(l.burn) && Number.isFinite(l.burn.value) && (l.burn.value > 0) && ["second", "minute", "hour"].includes(l.burn.units)
+    && Object.keys(l.burn).every(k => ["value", "units"].includes(k))) ) errors.push(`${at}.burn: { value > 0, units: second | minute | hour }`);
+  if ( ("fuel" in l) && !((typeof l.fuel === "string") && l.fuel) ) errors.push(`${at}.fuel: identifier of the fuel item`);
+  if ( ("fuel" in l) && !("burn" in l) ) errors.push(`${at}.fuel: needs burn`);
+  for ( const key of Object.keys(l) ) if ( !["bright", "dim", "units", "angle", "animation", "burn", "fuel"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 function validateEmanation(e, at, errors) {

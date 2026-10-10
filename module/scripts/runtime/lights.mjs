@@ -7,11 +7,13 @@
 import { MODULE_ID } from "../constants.mjs";
 import { lightUpRegion, followRegion, extinguishRegion, addEffectLight, placeLightObject, lightRuleOf, lightChoiceOf,
   summonSizeOf, lightCaster, colorSummonedToken, extinguishLights, carriedLightOf, carriedLightEffect, setCarriedLight,
-  dropCarriedLight } from "../adapter/lights.mjs";
+  dropCarriedLight, carriedSourceOf, remainingOf, burnOut, rememberBurn } from "../adapter/lights.mjs";
+import { burnParts } from "../core/light.mjs";
+import { tokenOf } from "../adapter/facts.mjs";
 import { invalidateVision } from "../adapter/vision.mjs";
 import { veilOnCreate, veilExisting, unveil, isRevealEffect } from "../adapter/reveal.mjs";
 import { route } from "./router.mjs";
-import { log } from "./shared.mjs";
+import { log, loc, notice } from "./shared.mjs";
 
 export const EXTINGUISH_QUERY = `${MODULE_ID}.extinguish`;
 
@@ -60,6 +62,60 @@ export async function castLight(activity, [config, dialog, message], { where, co
   // « Sur moi » : le lanceur brille une fois l'utilisation faite (`dnd5e.postUseActivity`, ci-dessous) — même si la
   // légalité l'a suspendue puis relancée.
   return activity.use(use, cantrip ? { ...(dialog ?? {}), configure: false } : dialog, message);
+}
+
+/** §121 : un temps restant lisible (« 5 h 20 », « 45 min »). */
+export function burnLabel(seconds) {
+  if ( !Number.isFinite(seconds) ) return "";
+  const { h, m } = burnParts(seconds);
+  return h ? loc("Lumiere.DureeH", { h, m: String(m).padStart(2, "0") }) : loc("Lumiere.DureeM", { m });
+}
+
+/**
+ * §121 : allumer ou éteindre une source portée (`on` absent : l'inverse de son état), sur le client du porteur — activité de
+ * la source, boîte à amadou, menu de l'inventaire, HUD. Le porteur voit ce qui s'est passé au-dessus de son token.
+ * @returns {Promise<{changed: boolean, lit?: boolean, left?: number|null, refilled?: string|null, reason?: string}>}
+ */
+export async function toggleCarriedLight(item, on=null) {
+  if ( !item?.actor?.isOwner || !carriedLightOf(item) ) return { changed: false, reason: "notLight" };
+  const want = (on === null) ? !carriedLightEffect(item) : on;
+  const result = await setCarriedLight(item, want);
+  const token = tokenOf(item.actor);
+  if ( result.reason === "noFuel" ) {
+    notice(token, loc("Lumiere.PasDeCombustible", { item: item.name }));
+    ui.notifications?.warn(loc("Lumiere.PasDeCombustible", { item: item.name }));
+  }
+  if ( result.reason === "noHand" ) {
+    const text = loc("Lumiere.PasDeMain", { item: item.name, held: result.held.join(", ") });
+    notice(token, loc("Lumiere.PasDeMainCourt"));
+    ui.notifications?.warn(text);
+  }
+  if ( !result.changed ) return result;
+  const left = burnLabel(result.left);
+  if ( result.refilled ) notice(token, loc("Lumiere.Recharge", { item: item.name, fuel: result.refilled }), "gain");
+  notice(token, loc(result.lit ? "Lumiere.Allumee" : "Lumiere.Eteinte", { item: item.name, left }), result.lit ? "gain" : "ended");
+  log(`${item.actor.name}: ${item.name} ${result.lit ? "lit" : "put out"}${Number.isFinite(result.left) ? ` (${Math.round(result.left / 60)} min left)` : ""}${result.refilled ? `, refilled with ${result.refilled}` : ""}`);
+  return result;
+}
+
+/**
+ * §121 : la source s'est consumée — l'effet part, la torche aussi ; le porteur et le MJ l'apprennent. MJ actif. Une seule fois par
+ * effet : le cœur le marque expiré (`updateActiveEffect`) et le moteur retire les effets expirés (`deleteActiveEffect` qui suit).
+ */
+const burning = new Set();
+async function onBurnOut(effect) {
+  const actor = effect.parent;
+  if ( burning.has(effect.uuid) ) return;
+  burning.add(effect.uuid);
+  setTimeout(() => burning.delete(effect.uuid), 10000);
+  const done = await burnOut(effect);
+  if ( !done ) return;
+  const text = loc(done.empty ? "Lumiere.Vide" : "Lumiere.Consumee", { item: done.item, name: actor?.name ?? "" });
+  notice(tokenOf(actor), text, "ended");
+  const owners = game.users.filter(u => u.isGM || (actor && actor.testUserPermission(u, "OWNER"))).map(u => u.id);
+  await ChatMessage.implementation.create({ content: `<p>${text}</p>`, whisper: owners,
+    speaker: ChatMessage.implementation.getSpeaker({ actor }), flags: { [MODULE_ID]: { burnOut: { item: done.item, consumed: done.consumed } } } });
+  log(`${actor?.name}: ${done.item} burnt out${done.consumed ? (done.gone ? " (last one, removed)" : " (one fewer)") : " (empty)"}`);
 }
 
 export function registerLights() {
@@ -136,13 +192,33 @@ export function registerLights() {
 
   CONFIG.queries[EXTINGUISH_QUERY] = handleExtinguish;
 
+  // §121 : le moteur tient la durée et le combustible — dnd5e ne dépense rien à l'activité de la source (sans quoi la Bougie,
+  // « autoDestroy », disparaissait à l'allumage et s'éteignait aussitôt, et la Lampe, sa seule utilisation dépensée, ne s'éteignait plus).
+  route("dnd5e.preUseActivity", (activity, usageConfig) => {
+    if ( (activity?.type !== "utility") || !carriedLightOf(activity.item) ) return;
+    usageConfig.consume = false;
+  }, { label: "light source: dnd5e consumption not skipped" });
   // §52 : une source de lumière portée — son activité utilitaire l'allume, ou l'éteint si elle brûle déjà.
   route("dnd5e.postUseActivity", async activity => {
     const item = activity?.item;
     if ( (activity?.type !== "utility") || !carriedLightOf(item) || !item.actor?.isOwner ) return;
-    const on = !carriedLightEffect(item);
-    if ( await setCarriedLight(item, on) ) log(`${item.actor.name}: ${item.name} ${on ? "lit" : "extinguished"}`);
+    await toggleCarriedLight(item);
   }, { label: "light source: not lit" });
+  // §121 : arrivée au bout de sa durée, le cœur V14 marque l'effet expiré (`CONFIG.ActiveEffect.expiryAction` « update »,
+  // client/helpers/active-effect-registry.mjs:146) — ou le supprime (« delete »). Retiré à la main avant : le temps restant se note.
+  // Hors combat, dnd5e supprime aussitôt l'effet expiré (documents/active-effect.mjs:803-806) : c'est le `deleteActiveEffect` qui suit
+  // qui le consume. En combat il reste, suspendu : on le consume ici, s'il est encore là une seconde plus tard.
+  route("updateActiveEffect", (effect, changes) => {
+    if ( !carriedSourceOf(effect) || (changes?.duration?.expired !== true) ) return;
+    setTimeout(() => { if ( effect.parent?.effects?.has(effect.id) ) onBurnOut(effect); }, 1000);
+  }, { executor: true, label: "light source: not burnt out" });
+  route("deleteActiveEffect", async (effect, options) => {
+    if ( !carriedSourceOf(effect) || options?.[MODULE_ID]?.putOut ) return;
+    const left = remainingOf(effect);
+    if ( Number.isFinite(left) && (left <= 0) ) return onBurnOut(effect);
+    const kept = await rememberBurn(effect);
+    if ( kept !== null ) log(`${effect.parent?.name}: ${effect.name} put out by hand, ${Math.round(kept / 60)} min left`);
+  }, { executor: true, label: "light source: remaining time not kept" });
   // Elle quitte la fiche (lâchée, lancée, donnée) : elle s'éteint sur son ancien porteur.
   route("deleteItem", async item => {
     const n = carriedLightOf(item) ? await dropCarriedLight(item) : 0;

@@ -4,6 +4,8 @@
  *  2. Lanterne sourde : un cône (angle).
  *  3. Torche (pas d'activité de lumière) : la boîte à amadou l'allume — seule source éteinte restante, d'office.
  *  4. La torche quitte la fiche : sa lumière s'éteint.
+ * §121 : une source allumée se tient en main — les mains pleines (armes, bouclier équipés), la lampe est refusée ; le scénario
+ * range alors armes et bouclier, et les rééquipe à la fin.
  * Remet la lumière ; retire les items prêtés.
  */
 import { RESTORED_KEEP } from "../lib/stages.mjs";
@@ -35,8 +37,18 @@ export default {
       await pause(2000);
     };
 
-    // 1. Lampe.
+    // 1. Lampe. Les mains pleines d'abord, si le Guerrier l'est : refusée ; puis armes et bouclier rangés.
     const lamp = await ctx.ensureItem(g, `${EQ}.Ekz3r0UKJ261oBJj`);
+    const setItem = (id, data) => ctx.call("upsert-actor-item", { actorId, itemData: data, match: { path: "_id", value: id } });
+    const hands = i => (i.type === "weapon") ? ((i.system?.type?.value === "natural") ? 0 : (i.system?.properties ?? []).includes("two") ? 2 : 1)
+      : ((i.type === "equipment") && (i.system?.type?.value === "shield")) ? 1 : 0;
+    const held = ((await ctx.call("get-actor", { actorId })).items ?? []).filter(i => i.system?.equipped && hands(i));
+    if ( held.reduce((n, i) => n + hands(i), 0) >= 2 ) {
+      await use(lamp);
+      ctx.expect(!(await lit()).length, `mains pleines (${held.map(i => i.name).join(", ")}) : la lampe n'est pas allumée`);
+    }
+    for ( const i of held ) await setItem(i._id, { "system.equipped": false });
+    ctx.restore(async () => { for ( const i of held ) await setItem(i._id, { "system.equipped": true }); });
     await use(lamp);
     let l = await light();
     ctx.expect((l.bright === 15) && (l.dim === 45) && (l.animation === "torch"), `lampe allumée : ${l.bright}/${l.dim} ft, animation ${l.animation}`);
@@ -49,6 +61,10 @@ export default {
     await use(bullseye);
     l = await light();
     ctx.expect((l.bright === 60) && (l.dim === 120) && (l.angle === 53), `lanterne sourde : ${l.bright}/${l.dim} ft en cône de ${l.angle}°`);
+    // §121 : la macro intégrée de BLFX pour cette lanterne écrivait la lumière du token (drapeau `torchData` sur le token, equipmentMacros.js:6) ;
+    // darsh-animations la remplace, s'il est là. Le drapeau ne doit pas apparaître.
+    const blfx = (await ctx.call("get-scene-object", { type: "Token", objectId: g.id })).data.flags?.["boss-loot-assets-premium"] ?? {};
+    ctx.expect(!Object.keys(blfx).some(k => /torchData|lantern/i.test(k)), `BLFX n'a pas écrit la lumière du token (${Object.keys(blfx).join(", ") || "aucun drapeau"})`);
     await use(bullseye);
 
     // 3. Torche, par la boîte à amadou (la lampe et la lanterne sont éteintes : trois sources, donc un choix — on retire les deux

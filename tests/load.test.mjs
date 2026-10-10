@@ -29,7 +29,7 @@ describe("chargement du module", () => {
   });
 
   it("expose ses fonctions de test au connecteur sous api.mcp (call-module-api), et elles seules", () => {
-    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "animations", "attackReasons", "budget", "chatCards", "closeWindow", "dash", "effectOrigins", "enchant", "endings", "familiar", "familiarPocket", "familiarRecall", "follow", "followState", "heal", "hurt", "identify", "inventory", "issues", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "placeRegionAt", "plan", "planning", "portent", "reload", "reports", "restoreItem", "rollCard", "rollCheck", "rollSave", "runMacro", "saveChance", "sequencer", "setting", "skillAid", "skillAids", "stairs", "stairsAt", "stats", "status", "storm", "stormStrike", "summonAt", "takeStairs", "teleport", "teleportPick", "threats", "transpose", "unfollow", "use", "view", "windows"]);
+    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "advanceTime", "animations", "attackReasons", "budget", "chatCards", "closeWindow", "dash", "effectOrigins", "enchant", "endings", "familiar", "familiarPocket", "familiarRecall", "follow", "followState", "heal", "hurt", "identify", "inventory", "issues", "lightState", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "placeRegionAt", "plan", "planning", "portent", "reload", "reports", "restoreItem", "rollCard", "rollCheck", "rollSave", "runMacro", "saveChance", "sequencer", "setting", "skillAid", "skillAids", "stairs", "stairsAt", "stats", "status", "storm", "stormStrike", "summonAt", "takeStairs", "teleport", "teleportPick", "threats", "toggleLight", "transpose", "unfollow", "use", "view", "windows"]);
     expect(Object.isFrozen(api.api.mcp)).toBe(true);
   });
 
@@ -51,7 +51,7 @@ describe("chargement du module", () => {
   it("relance d'abord (§16.21), puis la visée (ui), l'utilisation sans fenêtre (§68), la Métamagie, la légalité (runtime), les portes, sur dnd5e.preUseActivity", () => {
     expect(api.api.routes()["dnd5e.preUseActivity"].map(r => r.label)).toEqual([
       "recast of a lasting spell", "targeting: target expected", "projectiles: one per target, the rest chained", "use without dialog", "metamagic: spell not modified", "use legality", "gates: Sanctuary, Counterspell, pre-attack reactions, Portent", "summon on targets: neighbours asked", "self area: without the \"Place Template\" box", "Reckless Attack: prompt",
-      "swallow: Bite not refused", "potion: concentration not removed", "light object: placed on cast"
+      "swallow: Bite not refused", "potion: concentration not removed", "light object: placed on cast", "light source: dnd5e consumption not skipped"
     ]);
   });
 

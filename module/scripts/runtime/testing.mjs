@@ -39,6 +39,8 @@ import { animationState } from "./animations.mjs";
 import { portentDice, portentOf, rollPortent } from "../adapter/portent.mjs";
 import { aidsFor, isGuided } from "../adapter/skill-aid.mjs";
 import { requestSkillAid } from "./skill-aid.mjs";
+import { carriedLightState } from "../adapter/lights.mjs";
+import { toggleCarriedLight } from "./lights.mjs";
 
 /** Le token désigné, sur la scène affichée par le MJ. */
 function tokenOf({ tokenId }) {
@@ -427,6 +429,31 @@ async function teleport({ tokenId, itemId, x, y }) {
  * d'Injonction posée en tas par un module voisin) : le connecteur crée toujours un nouvel identifiant, et le filet de sécurité du lanceur
  * retire les items qu'il ne connaissait pas.
  */
+/**
+ * §121 : allumer ou éteindre une source portée sans passer par son activité (la Torche n'en a pas), comme le menu de l'inventaire ;
+ * rend le résultat et l'état de la source. `on` absent : l'inverse.
+ */
+async function toggleLight({ actorId, itemId, on=null }) {
+  if ( !game.user.isGM ) throw new Error("GM only");
+  const item = game.actors.get(actorId)?.items.get(itemId);
+  if ( !item ) throw new Error("item not found");
+  const result = await toggleCarriedLight(item, on);
+  return { ...result, state: item.actor?.items.get(itemId) ? carriedLightState(item) : null };
+}
+
+/** §121 : l'état d'une source portée (allumée, temps restant, combustible), ou null si elle n'est plus là. */
+function lightState({ actorId, itemId }) {
+  const item = game.actors.get(actorId)?.items.get(itemId);
+  return item ? carriedLightState(item) : null;
+}
+
+/** §121 : faire passer le temps du monde (secondes, négatif pour revenir en arrière) ; rend le temps du monde. */
+async function advanceTime({ seconds }) {
+  if ( !game.user.isGM ) throw new Error("GM only");
+  await game.time.advance(Number(seconds) || 0);
+  return { worldTime: game.time.worldTime };
+}
+
 async function restoreItem({ actorId, itemData }) {
   if ( !game.user.isGM ) throw new Error("GM only");
   const actor = game.actors.get(actorId);
@@ -781,4 +808,4 @@ function effectOrigins({ tokenId }) {
   });
 }
 
-export const testApi = Object.freeze({ issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState });
+export const testApi = Object.freeze({ issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime });

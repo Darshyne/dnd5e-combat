@@ -76,3 +76,59 @@ export function sensesThrough({ fog, darkness }) {
 
 /** Portée de la Vision du diable (« dans un rayon de 36 m »), en pieds. */
 export const DEVILS_SIGHT = Object.freeze({ identifier: "devils-sight", range: 120, units: "ft" });
+
+/* -------------------------------------------- */
+/*  Durée et combustible des sources portées    */
+/* -------------------------------------------- */
+
+const BURN_SECONDS = { second: 1, minute: 60, hour: 3600 };
+
+/**
+ * §121 : la durée d'une source portée (`carriedLight.burn`), en secondes : « une torche brûle 1 heure », « une flasque d'huile
+ * brûle 6 heures dans une lampe ou une lanterne ». null : pas de durée.
+ * @param {{value: number, units: "second"|"minute"|"hour"}|undefined} burn
+ */
+export function burnSeconds(burn) {
+  const n = Number(burn?.value);
+  return (Number.isFinite(n) && (n > 0) && BURN_SECONDS[burn.units]) ? n * BURN_SECONDS[burn.units] : null;
+}
+
+/**
+ * §121 : ce que demande l'allumage. `stored` : le temps qui restait quand on l'a éteinte (indéfini : jamais allumée — une torche
+ * neuve, une lampe remplie) ; `full` : une torche entière, une flasque entière ; `fuel` : la source brûle un combustible (lampe,
+ * lanterne) ; `hasFuel` : le porteur en a une flasque.
+ * @returns {{ok: true, left: number|null, refill: boolean}|{ok: false, reason: "noFuel"}}
+ */
+export function lightPlan({ stored, full, fuel=false, hasFuel=false }) {
+  if ( !Number.isFinite(full) ) return { ok: true, left: null, refill: false };
+  if ( (stored === undefined) || (stored === null) ) return { ok: true, left: full, refill: false };
+  if ( stored > 0 ) return { ok: true, left: Math.min(stored, full), refill: false };
+  if ( !fuel ) return { ok: true, left: full, refill: false };   // une torche consumée a laissé place à la suivante
+  return hasFuel ? { ok: true, left: full, refill: true } : { ok: false, reason: "noFuel" };
+}
+
+/**
+ * §121 : la source s'est consumée. Une torche, une bougie : l'unité brûlée disparaît (quantité − 1, l'item retiré à la dernière),
+ * la suivante sera neuve ; une lampe, une lanterne : elle reste, vide (il faudra une flasque pour la rallumer).
+ * @returns {{consume: boolean, stored: number|undefined}}
+ */
+export function burnoutPlan({ fuel=false }) {
+  return fuel ? { consume: false, stored: 0 } : { consume: true, stored: undefined };
+}
+
+/** Le temps restant en heures et minutes (arrondi à la minute supérieure). */
+export function burnParts(seconds) {
+  const minutes = Math.max(0, Math.ceil((Number(seconds) || 0) / 60));
+  return { h: Math.floor(minutes / 60), m: minutes % 60 };
+}
+
+/**
+ * §121 : les mains qu'occupe ce que la créature tient — une arme équipée (deux si elle est « à deux mains »), un bouclier, une
+ * source de lumière allumée. Une créature a deux mains.
+ * @param {Array<{name: string, hands: number}>} held
+ * @returns {{used: number, free: number}}
+ */
+export function handsOf(held) {
+  const used = held.reduce((n, h) => n + Math.max(0, Number(h.hands) || 0), 0);
+  return { used, free: Math.max(0, 2 - used) };
+}

@@ -11,16 +11,26 @@ const HEALERS_KIT_ACTIVITIES = ["bsWqOT06BB3Vb2hg", "1jlZEx9V2TITY9OT"];
 /** Flamme nue : lumière orangée qui vacille (animation « torch » du cœur). */
 const FLAME = { type: "torch", speed: 2, intensity: 2 };
 
+/** §121 : une heure (torche, bougie) ; une flasque d'huile, 6 heures. */
+const HOUR = { value: 1, units: "hour" };
+const OIL = { value: 6, units: "hour" };
+const BULLSEYE = { bright: 60, dim: 120, units: "ft", angle: 53, burn: OIL, fuel: "oil" };
+
 export const GEAR = Object.freeze({
   // §52 : sources de lumière portées (Manuel des joueurs 2024) — rayon de la lumière vive, puis rayon EXTÉRIEUR de la faible.
   // Bougie : « Lumière vive sur 1,50 m et faible sur 1,50 m de plus » ; Lampe : « vive sur 4,50 m et faible sur 9 m de plus » ;
   // Lanterne à capuchon : « vive sur 9 m et faible sur 9 m de plus » (le capuchon baissé, Lumière faible sur 1,50 m : au MJ) ;
   // Lanterne sourde : « vive dans un cône de 18 m et faible sur 18 m de plus » ; Torche : « vive sur 6 m et faible sur 6 m de plus ».
-  "candle": { carriedLight: { bright: 5, dim: 10, units: "ft", animation: FLAME } },
-  "lamp": { carriedLight: { bright: 15, dim: 45, units: "ft", animation: FLAME } },
-  "lantern-hooded": { carriedLight: { bright: 30, dim: 60, units: "ft" } },
-  "bullseye-lantern": { carriedLight: { bright: 60, dim: 120, units: "ft", angle: 53 } },
-  "torch": { carriedLight: { bright: 20, dim: 40, units: "ft", animation: FLAME } },
+  // §121 : « une torche brûle 1 heure », « une bougie allumée […] pendant 1 heure » (l'unité brûlée disparaît) ; « une lampe [une
+  // lanterne] brûle de l'Huile » — « une flasque d'Huile brûle 6 heures […] ; pas forcément d'affilée : on peut l'éteindre et la
+  // rallumer jusqu'à 6 heures en tout ». La torche et la bougie aussi s'éteignent et se rallument (choix de l'utilisateur, 2026-10-10).
+  "candle": { carriedLight: { bright: 5, dim: 10, units: "ft", animation: FLAME, burn: HOUR } },
+  "lamp": { carriedLight: { bright: 15, dim: 45, units: "ft", animation: FLAME, burn: OIL, fuel: "oil" } },
+  "lantern-hooded": { carriedLight: { bright: 30, dim: 60, units: "ft", burn: OIL, fuel: "oil" } },
+  // La lanterne sourde : « lantern-bullseye » dans le Manuel des joueurs, « bullseye-lantern » dans le SRD de dnd5e.
+  "lantern-bullseye": { carriedLight: BULLSEYE },
+  "bullseye-lantern": { carriedLight: BULLSEYE },
+  "torch": { carriedLight: { bright: 20, dim: 40, units: "ft", animation: FLAME, burn: HOUR } },
   // Boîte à amadou : « l'utiliser pour allumer une Bougie, une Lampe, une Lanterne ou une Torche […] prend une action Bonus ».
   "tinderbox": { kindles: true },
   // §54 : Huile — une sauvegarde de Dextérité ratée laisse la cible huilée pendant 1 minute ; tant qu'elle l'est, des dégâts de

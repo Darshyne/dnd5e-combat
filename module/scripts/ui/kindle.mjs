@@ -1,11 +1,16 @@
 /**
  * §52 : la boîte à amadou (`kindles`) — « l'utiliser pour allumer une Bougie, une Lampe, une Lanterne ou une Torche […] prend une
  * action Bonus ». Après l'utilisation, la source à allumer (ou à éteindre) : d'office s'il n'y en a qu'une, sinon au choix.
- * L'interface demande ; adapter/lights.mjs allume.
+ * L'interface demande ; runtime/lights.mjs allume.
+ *
+ * §121 : le menu du clic droit d'une source dans l'inventaire de dnd5e (`dnd5e.getItemContextOptions`,
+ * applications/components/inventory.mjs:636) — « Allumer » / « Éteindre », avec le temps restant. La Torche du Manuel des joueurs
+ * n'a qu'une activité d'attaque : c'est par là (ou la boîte à amadou, ou le HUD) qu'on l'allume. Sans coût d'action.
  */
 
 import { contentOf } from "../adapter/content.mjs";
-import { carriedLightsOf, carriedLightEffect, setCarriedLight } from "../adapter/lights.mjs";
+import { carriedLightsOf, carriedLightEffect, carriedLightOf, burnLeftOf } from "../adapter/lights.mjs";
+import { toggleCarriedLight, burnLabel } from "../runtime/lights.mjs";
 import { tokenOf } from "../adapter/facts.mjs";
 import { route } from "../runtime/router.mjs";
 import { log, loc, notice } from "../runtime/shared.mjs";
@@ -28,10 +33,24 @@ async function onPostUse(activity) {
     chosen = sources.find(i => i.id === id) ?? null;
   }
   if ( !chosen ) return;
-  const on = !carriedLightEffect(chosen);
-  if ( await setCarriedLight(chosen, on) ) log(`${actor.name}: ${chosen.name} ${on ? "lit" : "put out"} (${activity.item.name})`);
+  const result = await toggleCarriedLight(chosen);
+  if ( result.changed ) log(`${actor.name}: ${chosen.name} ${result.lit ? "lit" : "put out"} (${activity.item.name})`);
+}
+
+/** §121 : « Allumer » / « Éteindre » dans le menu d'une source portée de l'inventaire. */
+function onItemContext(item, options) {
+  if ( !carriedLightOf(item) || !item.actor?.isOwner || !Array.isArray(options) ) return;
+  const lit = !!carriedLightEffect(item);
+  const left = burnLabel(burnLeftOf(item));
+  options.push({
+    label: loc(lit ? "Lumiere.MenuEteindre" : "Lumiere.MenuAllumer", { left }),
+    icon: lit ? "fa-solid fa-fire-flame-simple" : "fa-solid fa-fire",
+    group: "action",
+    onClick: () => toggleCarriedLight(item)
+  });
 }
 
 export function registerKindleUi() {
   route("dnd5e.postUseActivity", onPostUse, { label: "tinderbox: nothing lit" });
+  route("dnd5e.getItemContextOptions", onItemContext, { label: "light source: no menu entry" });
 }

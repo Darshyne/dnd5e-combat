@@ -177,7 +177,7 @@ describe("contenu livré", () => {
       "heat-aura", "heat-metal", "heightened-spell", "hellish-rebuke", "heroic-warrior", "hex", "hideous-laughter",
       "hills-tumble", "hold-monster", "hold-person", "holy-aura", "holy-water", "hunger-of-hadar", "hunters-mark",
       "hunters-prey", "hypnotic-pattern", "ice-knife", "illusory-self", "improved-cunning-strike", "innate-sorcery",
-      "instinctive-pounce", "invisibility", "invoke-duplicity", "knowledge-from-a-past-life", "lamp", "lantern-hooded",
+      "instinctive-pounce", "invisibility", "invoke-duplicity", "knowledge-from-a-past-life", "lamp", "lantern-bullseye", "lantern-hooded",
       "large-form", "leading-evasion", "lesser-restoration", "life-drain", "lifedrinker", "light", "living-shadow",
       "lunar-form", "lunging-attack", "lupin-howl", "mage-hand", "magic-missile", "magic-resistance",
       "maneuvering-attack", "marshal-undead", "martial-arts", "melfs-acid-arrow", "menacing-attack", "mind-sliver",

@@ -157,6 +157,7 @@ export function applicationPlan(resolution) {
     // §20 : Esquive totale — une sauvegarde de Dextérité « pour ne subir que la moitié des dégâts » : rien sur une réussite, la
     // moitié sur un échec.
     if ( t.evasion && evasionApplies(plan) ) multiplier = saved ? 0 : 0.5;
+    if ( saved && (t.save?.interposed === true) && plan.damage ) multiplier = 0;   // §133 : Interposer le bouclier
     if ( t.halved ) multiplier *= 0.5;   // Esquive instinctive (§16.11) : la moitié des dégâts de l'attaque, arrondie par dnd5e
     multiplier *= (t.times ?? 1);         // Projectile magique (§16.27) : autant de fois les dégâts que de projectiles reçus
     return {
@@ -377,12 +378,14 @@ function settle(resolution, commands=[]) {
 }
 
 /** Le premier jet fait foi : un second jet du même acteur est ignoré, au MJ d'annuler et de corriger. */
-function saveRolled(resolution, { actor, total, messageId, resisted=false }) {
+function saveRolled(resolution, { actor, total, messageId, resisted=false, interposed=false }) {
   if ( (resolution.step !== STEPS.AWAITING_ROLLS) || !resolution.plan.save ) return same(resolution);
   const waiting = pendingSaves(resolution).find(t => t.actor === actor);
   if ( !waiting ) return same(resolution);
   // §18.9 : une Résistance légendaire change l'échec en réussite (le total reste celui du jet).
-  const save = { total, success: resisted || (total >= resolution.plan.save.dc), messageId, ...(resisted ? { resisted: true } : {}) };
+  // §133 : `interposed` — Interposer le bouclier, réaction prise sur une réussite : aucun dégât.
+  const save = { total, success: resisted || (total >= resolution.plan.save.dc), messageId, ...(resisted ? { resisted: true } : {}),
+    ...(interposed ? { interposed: true } : {}) };
   return settle({ ...resolution, targets: resolution.targets.map(t => t === waiting ? { ...t, save } : t) });
 }
 

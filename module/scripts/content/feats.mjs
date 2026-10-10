@@ -72,8 +72,45 @@ export const FEATS = Object.freeze({
   // Maître des boucliers, Coup de bouclier : « si vous touchez une créature à 1,50 m d'une arme de corps à corps dans le cadre de l'action
   // Attaquer, vous pouvez la frapper de votre bouclier équipé : sauvegarde de Force ou À terre » (l'autre choix, la pousser, n'est pas
   // proposé) ; une fois par tour. Interposer le bouclier : lot suivant.
-  "shield-master": { hitRider: { save: "VjSe0vA0dmGhNDAA", melee: true, shield: true, oncePerTurn: true } },
+  // §133 : Interposer le bouclier — sauvegarde de Dextérité réussie contre des dégâts réduits de moitié : la Réaction pour n'en subir aucun.
+  "shield-master": { hitRider: { save: "VjSe0vA0dmGhNDAA", melee: true, shield: true, oncePerTurn: true }, interposeShield: true },
   // Combat à mains nues : ses deux attaques (1d6 / 1d8 sans arme ni bouclier) sont celles de dnd5e ; « au début de chacun de vos tours,
   // 1d4 dégâts contondants à une créature que vous agrippez » (runtime/feats.mjs).
-  "unarmed-fighting": { grappleDamage: { formula: "1d4", damageType: "bludgeoning" } }
+  "unarmed-fighting": { grappleDamage: { formula: "1d4", damageType: "bludgeoning" } },
+
+  // §133 — réactions. Duelliste défensif, Parade : « si vous tenez une arme de Finesse et qu'une autre créature vous touche d'une attaque
+  // au corps à corps, vous pouvez prendre une Réaction pour ajouter votre bonus de maîtrise à votre CA » — jusqu'au début de votre
+  // prochain tour (l'effet du Manuel) ; le coup est rejugé.
+  "defensive-duelist": {
+    triggers: [{ on: "isHit", if: { "activity.isMelee": true, "target.wieldsProperty": "fin" }, do: [{ type: "use", activity: "PTNsSgiAfLVoBcXV", target: "self" }] }],
+    effectEnds: { v0DJP66nvRVtxUos: "casterTurnStart" }
+  },
+  // Protection : « quand une créature que vous voyez attaque une cible autre que vous à 1,50 m de vous, vous pouvez interposer votre
+  // bouclier (Réaction) : Désavantage au jet, et à tous les jets contre cette cible jusqu'au début de votre prochain tour » — l'effet
+  // « Protégé » du Manuel sur la cible ; la condition « si vous restez à 1,50 m » n'est pas suivie.
+  "protection": {
+    triggers: [
+      { on: "enemyAttacks", if: { "target.nearSelf": { distance: 5, units: "ft" }, "target.isSelf": false, "self.hasShield": true, "self.seesSource": true },
+        do: [{ type: "use", activity: "8RRNln3LeSbeDlnn", target: "target" }, { type: "disadvantage" }] },
+      { on: "preAttackRoll", via: "effect", fromEffect: "oSby0tJpvySxGrjY", if: { "target.hasEffect": "protection" }, do: [{ type: "disadvantage" }] }
+    ],
+    effectEnds: { oSby0tJpvySxGrjY: "casterTurnStart" }
+  },
+  // Tueur de mages : Esprit gardé — « si vous ratez une sauvegarde d'Intelligence, de Sagesse ou de Charisme, vous pouvez la réussir à la
+  // place » (une fois par repos court ou long : l'utilisation de l'item) ; Briseur de concentration — « quand vous blessez une créature
+  // concentrée, elle a le Désavantage à la sauvegarde pour maintenir sa concentration ».
+  "mage-slayer": {
+    rollBonus: { activity: "hPeMN85cO9DEPDCI", on: ["save"], abilities: ["int", "wis", "cha"], succeed: true },
+    concentrationBreaker: true
+  },
+  // Sentinelle : Gardien — « juste après qu'une créature à 1,50 m de vous prend l'action Se désengager ou touche une cible autre que vous,
+  // vous pouvez lui porter une attaque d'opportunité » ; Halte — « quand vous touchez une créature d'une attaque d'opportunité, sa
+  // Vitesse tombe à 0 pour le reste du tour » (l'effet « Halted » du Manuel, posé par runtime/feats.mjs sur toute attaque en Réaction).
+  "sentinel": {
+    triggers: [
+      { on: "allyIsHit", if: { "source.nearSelf": { distance: 5, units: "ft" } }, do: [{ type: "use", target: "source", weapon: true }] },
+      { on: "enemyDisengages", if: { "source.nearSelf": { distance: 5, units: "ft" } }, do: [{ type: "use", target: "source", weapon: true }] }
+    ],
+    haltOnReaction: { effect: "B0d2x2p98X9D3vRh" }
+  }
 });

@@ -153,8 +153,11 @@ const messageTargets = message => (message.system.targets ?? []).map(t => ({
 
 /** Celui qui parle dans le message, comme cible (activité qui ne vise que soi). */
 function selfTarget(message) {
-  const { scene, token: id } = message.speaker ?? {};
-  const token = game.scenes.get(scene)?.tokens.get(id);
+  const { scene, token: id, actor: actorId } = message.speaker ?? {};
+  // §133 : une réaction utilisée sur le client d'un joueur qui n'a pas son token sélectionné (Parade du Duelliste défensif) parle sans
+  // token (`speaker.token` null) : le token actif de l'acteur.
+  const token = game.scenes.get(scene)?.tokens.get(id)
+    ?? (actorId ? (game.actors.get(actorId)?.getActiveTokens?.(false, true)?.[0] ?? null) : null);
   return token?.actor ? [{ token: token.uuid, actor: token.actor.uuid, name: token.name, ac: null }] : [];
 }
 

@@ -236,6 +236,11 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     "target.hasStatus": id => target?.statuses?.has(id) === true,
     "target.hasEffect": id => hasEffectFrom(target, id),
     "target.hasEffectFrom": id => hasEffectFrom(target, id, source),
+    // §133 : la créature visée manie une arme équipée de cette propriété (Duelliste défensif : « Finesse ») ; c'est le réacteur lui-même
+    // (Protection : « une cible autre que vous ») ; le réacteur porte un bouclier.
+    "target.wieldsProperty": prop => (target?.items ?? []).some(i => (i.type === "weapon") && i.system.equipped && i.system.properties?.has?.(prop)),
+    "target.isSelf": want => (!!self && !!target && (self === target)) === want,
+    "self.hasShield": want => (self?.items ?? []).some(i => (i.type === "equipment") && (i.system.type?.value === "shield") && i.system.equipped) === want,
     // §132 : la cible est Agrippée par l'attaquant (Lutteur : « l'Avantage aux jets d'attaque contre une créature que vous agrippez »).
     "target.grappledBySource": want => ((target?.effects ?? []).some(e => e.statuses?.has?.("grappled") && (grapplerOf(e) === source)) === want),
     // §37 : l'attaquant porte un effet que la CIBLE a posé (Malédiction : « Désavantage aux jets d'attaque contre vous »).

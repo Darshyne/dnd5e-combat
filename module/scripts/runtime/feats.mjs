@@ -18,7 +18,8 @@ import { inflict } from "../adapter/retaliation.mjs";
 import { victimsOf } from "../adapter/grapple.mjs";
 import { enqueue } from "./queue.mjs";
 import { contentOf } from "../adapter/content.mjs";
-import { combatantFor } from "../adapter/turn.mjs";
+import { combatantFor, readBudget, writeBudget } from "../adapter/turn.mjs";
+import { askChoice } from "../adapter/choices.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 
@@ -83,6 +84,7 @@ async function onResolution(resolution) {
   const source = (from?.documentName === "Actor") ? from : (from?.actor ?? null);
   const activity = fromUuidSync(resolution.activity ?? "", { strict: false });
   if ( !source || !activity ) return;
+  await halt(resolution, source);   // §133
   const rules = source.items.map(i => ({ item: i, rule: contentOf(i).entry?.critMark })).filter(r => r.rule);
   if ( !rules.length ) return;
   const types = attackDamageTypes(activity);
@@ -97,6 +99,75 @@ async function onResolution(resolution) {
         changes: [], showIcon: CONST.ACTIVE_EFFECT_SHOW_ICON.ALWAYS,
         flags: { [MODULE_ID]: { critMark: { side: rule.side, source: source.uuid, item: item.uuid } } } }]);
       log(`${item.name}: critical hit, "${name}" placed on ${target.name}`);
+    }
+  }
+}
+
+/* -------------------------------------------- */
+/*  §133 : réactions de don                       */
+/* -------------------------------------------- */
+
+const shieldOf = actor => (actor?.items ?? []).find(i => (i.type === "equipment") && (i.system.type?.value === "shield") && i.system.equipped) ?? null;
+
+/**
+ * Maître des boucliers, Interposer le bouclier — « soumis à un effet qui permet une sauvegarde de Dextérité pour ne subir que la moitié
+ * des dégâts, vous pouvez prendre une Réaction pour n'en subir aucun si vous réussissez, en tenant un bouclier ». Proposé après la
+ * réussite (MJ actif, au joueur de la créature) ; la Réaction est dépensée. true : aucun dégât.
+ */
+export async function offerInterpose(actor) {
+  const item = (actor?.items ?? []).find(i => contentOf(i).entry?.interposeShield === true);
+  if ( !item || !shieldOf(actor) ) return false;
+  if ( (actor.system.attributes?.hp?.value ?? 0) <= 0 ) return false;
+  const combatant = combatantFor(actor);
+  const budget = combatant ? readBudget(combatant) : null;
+  if ( budget && !((budget.reaction ?? 1) >= 1) ) return false;
+  const answer = await askChoice(actor, { actor: actor.uuid, item: item.name, prompt: loc("Interposer.Question", { item: item.name }),
+    options: [{ id: "no", label: loc("Interposer.Non") }, { id: "yes", label: loc("Interposer.Oui") }] });
+  if ( answer?.id !== "yes" ) return false;
+  if ( budget ) await writeBudget(combatant, { ...budget, reaction: Math.max(0, (budget.reaction ?? 1) - 1) });
+  log(`${actor.name}: ${item.name}, no damage on a successful Dexterity saving throw (Reaction)`);
+  return true;
+}
+
+/** Tueur de mages, Briseur de concentration — l'auteur blesse une créature concentrée : son prochain jet de concentration a le Désavantage. */
+export async function markConcentrationBreaker(source, target) {
+  if ( !source || !target || (source === target) ) return;
+  if ( !(source.items ?? []).some(i => contentOf(i).entry?.concentrationBreaker === true) ) return;
+  if ( !(target.concentration?.effects?.size > 0) ) return;
+  await target.setFlag(MODULE_ID, "concentrationBreaker", { source: source.name, at: Date.now() });
+  log(`Mage Slayer: ${target.name}'s next Concentration saving throw has Disadvantage (${source.name})`);
+}
+
+/** Le jet de concentration, sur le client qui le lance : le Désavantage s'il y a une marque récente (moins d'une minute), qui tombe. */
+function onPreRollConcentration(config) {
+  const actor = config?.subject;
+  const mark = actor?.getFlag?.(MODULE_ID, "concentrationBreaker");
+  if ( !mark ) return true;
+  if ( (Date.now() - (mark.at ?? 0)) <= 60000 ) {
+    config.disadvantage = true;
+    log(`Mage Slayer: Disadvantage on ${actor.name}'s Concentration saving throw (${mark.source})`);
+  }
+  if ( actor.isOwner ) actor.unsetFlag(MODULE_ID, "concentrationBreaker").catch(() => null);
+  return true;
+}
+
+/** Sentinelle, Halte — « quand vous touchez une créature d'une attaque d'opportunité, sa Vitesse tombe à 0 pour le reste du tour ». */
+async function halt(resolution, source) {
+  const items = source.items.filter(i => contentOf(i).entry?.haltOnReaction);
+  if ( !items.length ) return;
+  const usage = game.messages.get(resolution.origin ?? "");
+  if ( !usage?.getFlag(MODULE_ID, "reaction") ) return;
+  for ( const t of resolution.targets ?? [] ) {
+    if ( !t.hit ) continue;
+    const target = fromUuidSync(t.token, { strict: false })?.actor;
+    if ( !target || ((target.system.attributes?.hp?.value ?? 0) <= 0) ) continue;
+    for ( const item of items ) {
+      const effect = item.effects.get(contentOf(item).entry.haltOnReaction.effect);
+      if ( !effect ) continue;
+      const data = foundry.utils.mergeObject(effect.toObject(), { origin: item.uuid, transfer: false, disabled: false }, { inplace: false });
+      delete data._id;
+      await target.createEmbeddedDocuments("ActiveEffect", [data]);
+      log(`${item.name}: ${target.name} hit by an opportunity attack, Speed 0 for the rest of the turn`);
     }
   }
 }
@@ -137,5 +208,6 @@ export function registerFeats() {
   route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "origin feats (damage)" });
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`critMark:${resolution?.id}`, () => onResolution(resolution)), { executor: true, label: "critical mark not placed" });
   route("combatTurnChange", onTurnChange, { executor: true, label: "feat turn start" });
+  route("dnd5e.preRollConcentrationV2", onPreRollConcentration, { cancellable: true, label: "Mage Slayer: concentration" });
   route("deleteCombat", combat => Promise.all(combat.combatants.map(c => (c.actor ? dropMarks(c.actor.uuid) : null))), { executor: true, label: "critical marks not removed" });
 }

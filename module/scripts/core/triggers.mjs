@@ -24,6 +24,9 @@ export const MOMENTS = Object.freeze({
   isHit: "an attack just hit the creature (Shield: before damage; riposte, B9: on application)",
   isDamaged: "the creature just took damage (Hellish Rebuke; via an effect: Sleep ending, Dominate replaying its save)",
   leavesReach: "a hostile creature leaves reach (Opportunity Attack)",
+  // §133 : une créature hostile vient de prendre l'action Se désengager (Sentinelle : attaque d'opportunité). Faits : le réacteur en
+  // `self`, celle qui se désengage en `source`. Fenêtre sans attente, comme « blessé ».
+  enemyDisengages: "a hostile creature just took the Disengage action (Sentinel: reaction window; it is the source)",
   enter: "a creature enters the area, or the area moves onto it",
   turnStart: "the creature starts its turn in the area",
   turnEnd: "the creature ends its turn in the area",

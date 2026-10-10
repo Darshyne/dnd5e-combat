@@ -57,7 +57,7 @@ describe("chargement du module", () => {
 
   it("déclare annulables les hooks `pre…` du système et du cœur, et `dnd5e.teleport` (appelé par Hooks.call), et eux seuls", () => {
     const cancellable = Object.entries(api.api.routes()).filter(([, rs]) => rs.some(r => r.cancellable)).map(([h]) => h).sort();
-    expect(cancellable).toEqual(["dnd5e.postAttackRollConfiguration", "dnd5e.preCreateMeasuredTemplate", "dnd5e.preRollAttackV2", "dnd5e.preRollDamageV2", "dnd5e.preSummon", "dnd5e.preUseActivity", "dnd5e.teleport", "preCreateActiveEffect", "preCreateItem", "preMoveToken", "preUpdateActiveEffect", "preUpdateItem", "preUpdateToken"]);
+    expect(cancellable).toEqual(["dnd5e.postAttackRollConfiguration", "dnd5e.preCreateMeasuredTemplate", "dnd5e.preRollAttackV2", "dnd5e.preRollConcentrationV2", "dnd5e.preRollDamageV2", "dnd5e.preSummon", "dnd5e.preUseActivity", "dnd5e.teleport", "preCreateActiveEffect", "preCreateItem", "preMoveToken", "preUpdateActiveEffect", "preUpdateItem", "preUpdateToken"]);
   });
 
   it("enregistre les requêtes entre clients", () => {

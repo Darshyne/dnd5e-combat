@@ -40,6 +40,7 @@ import { dodge as takeDodge } from "../core/turn.mjs";
 import { tallyAfter } from "../core/tally.mjs";
 import { createDispatcher } from "./dispatcher.mjs";
 import { askHitReactions, canReactToHit, windowIsDamaged, windowIsMissed, askDamageGuardians } from "./reactions.mjs";
+import { offerInterpose, markConcentrationBreaker } from "./feats.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
@@ -219,6 +220,8 @@ const COMMANDS = {
       const hp = (entry.multiplier > 0)
         ? await applyDamageToToken(ward?.interpose ?? entry.token, rolled, damageMessage, { multiplier: entry.multiplier, reduction: entry.reduction ?? 0, absorbInto: ward?.item ?? null })
         : null;
+      // §133 : Tueur de mages — la créature concentrée que l'auteur vient de blesser aura le Désavantage à son jet de concentration.
+      if ( hp && hurting ) await markConcentrationBreaker(source?.actor ?? activity?.actor, hp.actor);
       const target = await fromUuid(entry.token);
       // §16.46 : ce qu'une défense (Résistance) a retiré aux dégâts.
       for ( const s of hp?.shields ?? [] ) {
@@ -628,10 +631,16 @@ async function onSaveMessage(message) {
     const bonus = actor ? await offerInspiration(actor, { what: loc("Inspiration.Sauvegarde"), total, needed: dc }) : 0;
     if ( bonus ) { log(`${actor.name}: Bardic Inspiration, saving throw ${total} + ${bonus} = ${total + bonus}`); total += bonus; }
     // §38 : Chance du ténébreux — encore ratée, la créature peut ajouter son propre dé (`rollBonus`).
-    const luck = (actor && (total < dc)) ? await offerRollBonus(actor, { kind: "save", what: loc("Inspiration.Sauvegarde"), total, needed: dc, statuses: saveStatuses(carrier, resolution), d20: keptD20(message.rolls?.[0]) }) : 0;
+    const luck = (actor && (total < dc)) ? await offerRollBonus(actor, { kind: "save", what: loc("Inspiration.Sauvegarde"), total, needed: dc, statuses: saveStatuses(carrier, resolution), d20: keptD20(message.rolls?.[0]), ability: resolution.plan?.save?.ability ?? null }) : 0;
     if ( luck ) { log(`${actor.name}: die added to their saving throw, ${total} + ${luck} = ${total + luck}`); total += luck; }
   }
-  await dispatcher.send(carrierId, { type: "saveRolled", actor: save.actor, total, messageId: message.id, ...(resisted ? { resisted: true } : {}) });
+  // §133 : Maître des boucliers, Interposer le bouclier — une sauvegarde de Dextérité réussie contre des dégâts réduits de moitié : la
+  // Réaction pour n'en subir aucun.
+  const plan = resolution.plan ?? {};
+  const halfDex = !!plan.damage && !!plan.save && !plan.save.chained && (plan.save.ability === "dex") && ((plan.save.onSave ?? "half") === "half");
+  const interposed = (halfDex && Number.isFinite(dc) && (total >= dc)) ? await offerInterpose(await fromUuid(save.actor)) : false;
+  await dispatcher.send(carrierId, { type: "saveRolled", actor: save.actor, total, messageId: message.id, ...(resisted ? { resisted: true } : {}),
+    ...(interposed ? { interposed: true } : {}) });
 }
 
 /**

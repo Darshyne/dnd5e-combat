@@ -25,6 +25,7 @@ import { pilotUsage, refundCommand, spellCommandUsage } from "./pilot.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
+import { windowDisengaged } from "./reactions.mjs";
 
 /* -------------------------------------------- */
 /*  Légalité, sur le client de celui qui agit   */
@@ -393,6 +394,8 @@ async function onUsageMessage(message) {
   // §18.15 : « se déplace … sans provoquer d'attaque d'opportunité » — le reste du tour, comme après Se désengager.
   if ( !after.disengaged && freesMovement(activity.item) ) after = { ...after, disengaged: true };
   await writeBudget(combatant, after);
+  // §133 : l'action Se désengager prise (pas celle qu'une aptitude donne en marchant) — Sentinelle peut réagir.
+  if ( ((kind === "disengage") || [declared].flat().includes("disengage")) && combatant.token ) windowDisengaged(combatant.token);
   // Consigné sur la carte : une annulation avant tout jet (runtime/cancel.mjs) rend exactement cette dépense.
   await message.setFlag(MODULE_ID, "spent", { combatant: combatant.id, before, after, offhand: !!request?.offhand });
   log(`${combatant.name}: ${kind ?? (request.offhand ? "off hand" : request.cost)} (${activity.item.name})`);

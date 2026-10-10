@@ -144,3 +144,15 @@ describe("§132 : coups", () => {
     expect(validateEntry({ hitRider: { sizeAbove: -1 } }).length).toBe(1);
   });
 });
+
+describe("§133 : réactions de don", () => {
+  it("schéma", () => {
+    const facts = { "activity.isMelee": true, "target.wieldsProperty": true, "target.nearSelf": true, "target.isSelf": true, "self.hasShield": true,
+      "self.seesSource": true, "target.hasEffect": true, "source.nearSelf": true };
+    for ( const id of ["defensive-duelist", "protection", "mage-slayer", "sentinel", "shield-master"] ) expect(validateEntry(SHIPPED[id], { facts })).toEqual([]);
+    expect(SHIPPED["mage-slayer"].rollBonus).toMatchObject({ succeed: true, abilities: ["int", "wis", "cha"] });
+    expect(SHIPPED["sentinel"].haltOnReaction.effect).toBe("B0d2x2p98X9D3vRh");
+    expect(SHIPPED["shield-master"].interposeShield).toBe(true);
+    expect(validateEntry({ haltOnReaction: { effect: "court" } }).length).toBe(1);
+  });
+});

@@ -37,7 +37,9 @@ export async function canReactToHit(tokenUuid, { activity=null, source=null }={}
   // §74 : avec l'attaque quand on la connaît — sans elle, une condition sur l'attaque (« au corps à corps ») ne tenait jamais, et la
   // fenêtre ne s'ouvrait pas (Parade du Monster Manual, vu le 2026-10-04).
   const context = activity ? { activity, source, target: actor, targetToken: token } : {};
-  return !!actor && ((reactionsOf(actor, "isHit", context).length > 0) || (guardiansOf(token, null, activity).length > 0));
+  // §133 : les gardiens avec l'attaquant — sans lui, une condition sur sa position (Sentinelle : « une créature à 1,50 m de vous ») ne
+  // tenait jamais, et la fenêtre ne s'ouvrait pas quand la cible n'avait elle-même aucune réaction.
+  return !!actor && ((reactionsOf(actor, "isHit", context).length > 0) || (guardiansOf(token, tokenOf(source), activity).length > 0));
 }
 
 /**
@@ -105,7 +107,8 @@ export async function askHitReactions(resolution, tokens, drained, { auto=null }
           actor: guardian.token.actor.uuid,
           prompt: { key: "ReactionAllieTouche", data: { name: target?.name ?? "", attacker, total: resolution.attack.roll.total } },
           options: guardian.options,
-          target: tokenUuid,
+          // §133 : une riposte contre l'attaquant (Sentinelle) vise la source ; sinon la créature touchée (Sentinelle au seuil de la mort).
+          target: guardian.options.some(o => o.targetSource) ? (attackerToken?.uuid ?? tokenUuid) : tokenUuid,
           auto: auto === "first"
         });
         if ( help?.message ) await drained(help.message);
@@ -305,7 +308,8 @@ export async function askAttackReactions(activity, origin, reactors, { auto=null
       actor: token.actor.uuid,
       prompt: { key: (token === target) ? "ReactionAvantAttaque" : "ReactionAvantAttaqueAllie", data: { attacker: origin.name, name: target.name } },
       options,
-      target: options.some(o => o.targetSource) ? origin.uuid : null,
+      // §133 : une réaction qui vise la créature attaquée (Protection : l'effet « Protégé » sur l'allié).
+      target: options.some(o => o.targetSource) ? origin.uuid : (options.some(o => o.targetTarget) ? target.uuid : null),
       auto: auto === "first"
     });
     if ( !answer ) continue;
@@ -316,6 +320,27 @@ export async function askAttackReactions(activity, origin, reactors, { auto=null
     log(`${token.name} reacts before ${origin.name}'s attack: ${answer.name}${answer.disadvantage ? " (Disadvantage)" : ""}${answer.penalty ? ` (-${answer.penalty})` : ""}${answer.bonus ? ` (+${answer.bonus})` : ""}`);
   }
   return mods.names.length ? mods : null;
+}
+
+/**
+ * §133 : fenêtre « se désengage » — une créature vient de prendre l'action Se désengager : chaque créature de la scène qui lui est
+ * hostile, vivante, peut réagir (Sentinelle : « juste après qu'une créature à 1,50 m de vous prend l'action Se désengager, vous pouvez
+ * lui porter une attaque d'opportunité » — la distance est la condition de la déclaration). Sans attente, comme « blessé ». MJ actif.
+ */
+export function windowDisengaged(tokenDocument) {
+  const mover = tokenDocument?.actor;
+  if ( !mover || !tokenDocument.parent ) return;
+  for ( const other of tokenDocument.parent.tokens ) (async () => {
+    const actor = other.actor;
+    if ( !actor || (other === tokenDocument) || other.hidden || isObjectToken(other) ) return;
+    if ( !areHostile(other.disposition, tokenDocument.disposition) || ((actor.system.attributes?.hp?.value ?? 0) <= 0) ) return;
+    const options = reactionsOf(actor, "enemyDisengages", { source: mover, self: actor, selfToken: other, sourceToken: tokenDocument,
+      target: mover, targetToken: tokenDocument }, { publish: true });
+    if ( !options.length ) return;
+    log(`${tokenDocument.name} disengages: ${other.name} can react (${options.map(o => o.name).join(", ")})`);
+    await askReaction(actor, { actor: actor.uuid, prompt: { key: "ReactionDesengage", data: { mover: tokenDocument.name } }, options,
+      target: tokenDocument.uuid });
+  })().catch(err => console.error(`${MODULE_ID} | "disengages" window interrupted`, err));
 }
 
 export function windowIsMissed(tokenUuids, sourceToken, sourceName, { activity=null, auto=null }={}) {

@@ -65,6 +65,7 @@ export function reactionOptions(actor, window, declarations) {
     activity: step.activity ? `${d.item}.Activity.${step.activity}` : d.activity,
     // §72 : une activité nommée de l'item (Bracelet de charme : un sort par activité) — le bouton porte son nom.
     name: activityLabel(d, step), img: d.img, targetSource: step.target === "source", targetSelf: step.target === "self",
+    targetTarget: step.target === "target",   // §133 : Protection
     halve: stepsOf(d, "halve").length > 0,
     endCondition: stepsOf(d, "endCondition").length > 0,
     uncrit: stepsOf(d, "uncrit").length > 0,
@@ -81,7 +82,8 @@ export function reactionOptions(actor, window, declarations) {
     advantage: step.advantage === true,
     // §88 : l'attaque se fait avec une arme de corps à corps de l'acteur ; l'activité de l'item paie et donne le dé (Riposte).
     weapon: step.weapon === true
-  })).filter(o => o.activity && affordable(o.activity) && (!o.weapon || meleeAttacksOf(actor).options.length)));
+  // §133 : une attaque d'arme en réaction n'a pas besoin d'une activité de l'item qui paie (Sentinelle n'en a aucune).
+  })).filter(o => (o.activity || o.weapon) && (!o.activity || affordable(o.activity)) && (!o.weapon || meleeAttacksOf(actor).options.length)));
 }
 
 /**
@@ -261,17 +263,21 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
     const token = (await fromUuid(target))?.object;
     token?.setTarget(true, { releaseOthers: true });
   }
-  let activity = await fromUuid(option.activity);
+  let activity = option.activity ? await fromUuid(option.activity) : null;
   // §88 : Riposte — l'activité de l'item paie (ses consommations : un dé de supériorité) et donne le dé ; l'attaque est celle d'une arme
   // de corps à corps de l'acteur (la première équipée, `meleeAttacksOf`), contre la source, et le dé s'ajoute à ses dégâts si elle touche.
-  if ( option.weapon && activity ) {
+  // §133 : sans activité de l'item (Sentinelle), l'attaque d'arme seule, payée par la Réaction.
+  if ( option.weapon ) {
     const weapon = await fromUuid(meleeAttacksOf(actor).options[0]?.activity ?? "");
     if ( !weapon ) return null;
-    await payWithoutUse(activity);
-    const formula = riderFormula(activity);
-    if ( formula ) markReactionDamage(weapon.uuid, formula, option.name);
+    if ( activity ) {
+      await payWithoutUse(activity);
+      const formula = riderFormula(activity);
+      if ( formula ) markReactionDamage(weapon.uuid, formula, option.name);
+    }
     activity = weapon;
   }
+  if ( !activity ) return null;
   if ( option.approach && target && approachSource ) {
     await approachSource(actor, await fromUuid(target), activity).catch(err => console.error(`${MODULE_ID} | reaction approach`, err));
   }

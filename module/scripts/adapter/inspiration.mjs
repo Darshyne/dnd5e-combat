@@ -124,13 +124,32 @@ export function keptD20(roll) {
   return (kept.length === 1) ? kept[0].result : null;
 }
 
-export async function offerRollBonus(actor, { kind, what, total, needed=null, skill=null, statuses=[], d20=null }) {
+export async function offerRollBonus(actor, { kind, what, total, needed=null, skill=null, statuses=[], d20=null, ability=null }) {
   for ( const item of actor?.items ?? [] ) {
     const rule = contentOf(item).entry?.rollBonus;
     if ( !rule || !(rule.on ?? []).includes(kind) ) continue;
     if ( (kind === "check") && rule.skills && !rule.skills.includes(skill) ) continue;
     if ( rule.statuses && !rule.statuses.some(s => statuses.includes(s)) ) continue;
+    // §133 : seulement une sauvegarde de ces caractéristiques (Tueur de mages, Esprit gardé : Intelligence, Sagesse, Charisme).
+    if ( rule.abilities && !rule.abilities.includes(ability) ) continue;
     const activity = item.system.activities?.get(rule.activity);
+    // §133 : `succeed` — la sauvegarde ratée devient une réussite (Tueur de mages, Esprit gardé) : ce qui s'ajoute est l'écart au DD.
+    if ( rule.succeed ) {
+      const left = usesLeftFor(activity);
+      if ( !activity || !Number.isFinite(needed) || (total >= needed) || !(left > 0) ) continue;
+      const answer = await askChoice(actor, {
+        actor: actor.uuid, item: item.name,
+        prompt: game.i18n.format("DND5ECOMBAT.EspritGarde.Question", { what, total, needed, item: item.name, left: Number.isFinite(left) ? left : "∞" }),
+        options: [{ id: "no", label: game.i18n.localize("DND5ECOMBAT.BonusJet.Non") }, { id: "yes", label: game.i18n.localize("DND5ECOMBAT.EspritGarde.Oui") }]
+      });
+      if ( answer?.id !== "yes" ) continue;
+      const used = await activity.use({ [MODULE_ID]: { confirmed: true } }, { configure: false }, { create: false }).catch(() => null);
+      if ( !used ) return 0;
+      await ChatMessage.create({ speaker: ChatMessage.implementation.getSpeaker({ actor }),
+        content: `<p>${game.i18n.format("DND5ECOMBAT.EspritGarde.Carte", { item: item.name, name: actor.name, what })}</p>`,
+        flags: { [MODULE_ID]: { rollBonus: { item: identifierOf(item).id, kind, added: needed - total, succeed: true } } } });
+      return needed - total;
+    }
     // §129 : Chanceux — le d20 relancé, le meilleur gardé : il faut connaître le d20 du jet.
     if ( rule.luck && !Number.isInteger(d20) ) continue;
     const formula = rule.luck ? "1d20" : rollFormulaOf(activity);

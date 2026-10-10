@@ -171,3 +171,20 @@ describe("§134 : le reste", () => {
     expect(validateEntry({ quickStand: { value: 0, units: "ft" } }).length).toBe(1);
   });
 });
+
+describe("§135 : faveurs épiques", () => {
+  it("Esprit nocturne : les résistances en lumière faible ou dans les ténèbres", () => {
+    const rule = SHIPPED["boon-of-the-night-spirit"].effectWhile.f6JofmGpxquX9bqb.if;
+    const f = light => ({ armor: null, weapons: [], inCombat: false, abilities: {}, light });
+    expect(effectHolds(rule, f("dim"))).toBe(true);
+    expect(effectHolds(rule, f("dark"))).toBe(true);
+    expect(effectHolds(rule, f("bright"))).toBe(false);
+  });
+  it("schéma", () => {
+    const facts = { "damage.resisted": true };
+    for ( const id of ["boon-of-combat-prowess", "boon-of-energy-resistance", "boon-of-fate", "boon-of-fortitude", "boon-of-irresistible-offense",
+      "boon-of-recovery", "boon-of-speed", "boon-of-spell-recall", "boon-of-the-night-spirit"] ) expect(validateEntry(SHIPPED[id], { facts })).toEqual([]);
+    expect(validateEntry({ lastStandHeal: { activity: "x" } }).length).toBe(1);
+    expect(validateEntry({ effectWhile: { f6JofmGpxquX9bqb: { if: { light: ["night"] } } } }).length).toBe(1);
+  });
+});

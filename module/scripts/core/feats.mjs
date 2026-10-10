@@ -74,6 +74,8 @@ export function effectHolds(rule, facts) {
     if ( (w.length !== 1) || !w[0].melee || w[0].twoHanded ) return false;
   }
   if ( rule.inCombat && !facts.inCombat ) return false;
+  // §135 : `light` — la lumière là où se tient le porteur (Faveur de l'esprit nocturne : « dans une lumière faible ou les ténèbres »).
+  if ( rule.light && !rule.light.includes(facts.light) ) return false;
   for ( const [ability, min] of Object.entries(rule.abilityAtLeast ?? {}) ) {
     if ( !((facts.abilities?.[ability] ?? 0) >= min) ) return false;
   }

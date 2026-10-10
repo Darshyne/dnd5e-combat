@@ -61,6 +61,20 @@ function onPreRollDamage(config, dialog, message) {
       log(`Elemental Adept: ${roll.parts.join(" + ")}`);
     }
   }
+  // §135 : Faveur d'attaque irrésistible, Frappe écrasante — « quand vous obtenez un 20 au d20 d'un jet d'attaque, des dégâts en plus
+  // égaux à la valeur de la caractéristique augmentée par la faveur, du type de l'attaque ». Le moteur lit le critique (un seuil abaissé
+  // compte aussi).
+  const strike = (activity.type === "attack") ? ruleItem(actor, "overwhelmingStrike") : null;
+  if ( strike && (config.isCritical || config.rolls.some(r => r.options?.isCritical)) ) {
+    const ability = boostedAbility(strike);
+    const score = ability ? Number(actor.system.abilities?.[ability]?.value) : 0;
+    const base = config.rolls.find(r => r.base) ?? config.rolls[0];
+    const type = base.options?.type ?? base.options?.types?.[0] ?? null;
+    if ( score > 0 ) {
+      config.rolls.push({ parts: [String(score)], options: { type, types: type ? [type] : [], properties: [] } });
+      log(`${strike.name}: +${score} ${type ?? ""} (critical hit)`);
+    }
+  }
   // §132 : Perforeur — une attaque qui inflige des dégâts perforants.
   if ( (activity.type === "attack") && attackDamageTypes(activity).includes("piercing") && hasRule(actor, "piercer") ) {
     for ( const roll of config.rolls ) {
@@ -111,6 +125,71 @@ async function onResolution(resolution) {
       log(`${item.name}: critical hit, "${name}" placed on ${target.name}`);
     }
   }
+}
+
+/* -------------------------------------------- */
+/*  §135 : faveurs épiques                         */
+/* -------------------------------------------- */
+
+const ruleItem = (actor, key) => Array.from(actor?.items ?? []).find(i => contentOf(i).entry?.[key] === true) ?? null;
+
+/**
+ * Faveur de prouesse martiale, Visée sans pareille — « quand vous ratez un jet d'attaque, vous pouvez toucher à la place ; vous ne
+ * pouvez plus le faire avant le début de votre prochain tour ». Au joueur ; en combat, une fois jusqu'à son prochain tour (drapeau
+ * retiré au début de son tour). true : l'attaque touche.
+ */
+export async function offerPeerlessAim(actor, { total, needed }) {
+  const item = ruleItem(actor, "peerlessAim");
+  if ( !item ) return false;
+  const combat = combatantFor(actor)?.parent;
+  if ( combat?.started && actor.getFlag(MODULE_ID, "peerlessAim") ) return false;
+  const answer = await askChoice(actor, { actor: actor.uuid, item: item.name, prompt: loc("Prouesse.Question", { item: item.name, total, needed }),
+    options: [{ id: "no", label: loc("BonusJet.Non") }, { id: "yes", label: loc("Prouesse.Oui") }] });
+  if ( answer?.id !== "yes" ) return false;
+  if ( combat?.started ) await actor.setFlag(MODULE_ID, "peerlessAim", true);
+  await ChatMessage.create({ speaker: ChatMessage.implementation.getSpeaker({ actor }), content: `<p>${loc("Prouesse.Carte", { item: item.name, name: actor.name })}</p>` });
+  log(`${item.name}: ${actor.name}'s missed attack hits instead`);
+  return true;
+}
+
+/** Faveur de vigueur — le modificateur de Constitution en plus d'un soin, une fois par tour (en combat). 0 sinon. MJ actif. */
+export async function fortifiedExtra(actor) {
+  const item = ruleItem(actor, "fortifiedHealing");
+  const con = Number(actor?.system?.abilities?.con?.mod) || 0;
+  if ( !item || !(con > 0) ) return 0;
+  const turn = turnOf(actor);
+  if ( turn && (actor.getFlag(MODULE_ID, "fortifiedHealing") === turn) ) return 0;
+  if ( turn ) await actor.setFlag(MODULE_ID, "fortifiedHealing", turn);
+  log(`${item.name}: +${con} HP for ${actor.name}`);
+  return con;
+}
+
+/** Faveur d'attaque irrésistible, Frappe écrasante : la caractéristique que la faveur a augmentée (son étape « Augmentation »). */
+function boostedAbility(item) {
+  for ( const adv of item.system.advancement ?? [] ) {
+    const assigned = Object.entries(adv.value?.assignments ?? {}).find(([, n]) => n > 0);
+    if ( (adv.type === "AbilityScoreImprovement") && assigned ) return assigned[0];
+  }
+  return null;
+}
+
+/**
+ * Faveur du rappel des sorts, Incantation gratuite — « quand vous lancez un sort avec un emplacement de niveau 1 à 4, lancez 1d4 ; si
+ * le résultat égale le niveau de l'emplacement, il n'est pas dépensé ». Sur le client du lanceur, après l'utilisation.
+ */
+async function spellRecall(activity, usageConfig) {
+  const actor = activity?.actor;
+  const item = ruleItem(actor, "spellRecall");
+  const slot = usageConfig?.spell?.slot;
+  if ( !item || !slot || !activity.requiresSpellSlot || !activity.consumption?.spellSlot ) return;
+  const level = Number(actor.system.spells?.[slot]?.level) || Number(String(slot).replace("spell", "")) || 0;
+  if ( !(level >= 1) || (level > 4) ) return;
+  const roll = await new Roll("1d4").evaluate();
+  const kept = roll.total === level;
+  await roll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }),
+    flavor: loc(kept ? "RappelSorts.Garde" : "RappelSorts.Depense", { item: item.name, level }) });
+  if ( kept ) await actor.update({ [`system.spells.${slot}.value`]: (Number(actor.system.spells[slot].value) || 0) + 1 });
+  log(`${item.name}: 1d4 = ${roll.total} for a level ${level} slot — ${kept ? "slot kept" : "slot spent"}`);
 }
 
 /* -------------------------------------------- */
@@ -247,6 +326,7 @@ function onTurnChange(combat, prior, current) {
   if ( !actor ) return;
   return enqueue(`feats-turn:${actor.uuid}`, async () => {
     await dropMarks(actor.uuid);
+    if ( actor.getFlag(MODULE_ID, "peerlessAim") ) await actor.unsetFlag(MODULE_ID, "peerlessAim");   // §135 : Visée sans pareille
     if ( (actor.system.attributes?.hp?.value ?? 0) > 0 ) await grappleDamage(actor, combatant.token);
   });
 }
@@ -256,6 +336,7 @@ export function registerFeats() {
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`critMark:${resolution?.id}`, () => onResolution(resolution)), { executor: true, label: "critical mark not placed" });
   route("combatTurnChange", onTurnChange, { executor: true, label: "feat turn start" });
   route("dnd5e.preRollConcentrationV2", onPreRollConcentration, { cancellable: true, label: "Mage Slayer: concentration" });
+  route("dnd5e.postUseActivity", (activity, usageConfig) => (activity?.actor?.isOwner ? spellRecall(activity, usageConfig) : null), { label: "Boon of Spell Recall" });
   // §134 : Expert élémentaire — le type, demandé à l'arrivée du don, et au chargement pour un don déjà là.
   route("createItem", item => (item.parent?.documentName === "Actor" ? enqueue(`elemental:${item.uuid}`, () => askElementalType(item)) : null),
     { executor: true, label: "Elemental Adept: type not asked" });

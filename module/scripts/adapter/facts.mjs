@@ -238,6 +238,8 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     "target.hasEffectFrom": id => hasEffectFrom(target, id, source),
     // §133 : la créature visée manie une arme équipée de cette propriété (Duelliste défensif : « Finesse ») ; c'est le réacteur lui-même
     // (Protection : « une cible autre que vous ») ; le réacteur porte un bouclier.
+    // §135 : la créature blessée résiste à l'un des types de ces dégâts (Faveur de résistance aux énergies : Redirection d'énergie).
+    "damage.resisted": want => ((damageTypes ?? []).some(t => target?.system?.traits?.dr?.value?.has?.(t) === true) === want),
     "target.wieldsProperty": prop => (target?.items ?? []).some(i => (i.type === "weapon") && i.system.equipped && i.system.properties?.has?.(prop)),
     "target.isSelf": want => (!!self && !!target && (self === target)) === want,
     "self.hasShield": want => (self?.items ?? []).some(i => (i.type === "equipment") && (i.system.type?.value === "shield") && i.system.equipped) === want,

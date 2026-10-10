@@ -127,5 +127,29 @@ export const FEATS = Object.freeze({
   // Athlète, Bond : « à terre, vous vous relevez avec seulement 1,50 m de déplacement ». La vitesse d'escalade et les sauts : non joués.
   "athlete": { quickStand: { value: 5, units: "ft" } },
   // Observateur, Fouille rapide : « l'action Chercher par une action Bonus ».
-  "observant": { quickSearch: true }
+  "observant": { quickSearch: true },
+
+  // §135 — faveurs épiques (niveau 19+). Prouesse martiale : un raté devient un coup, une fois jusqu'au début de votre prochain tour.
+  "boon-of-combat-prowess": { peerlessAim: true },
+  // Résistance aux énergies : les résistances choisies (activité « Choose Resistances » de dnd5e) ; Redirection d'énergie — « quand vous
+  // subissez des dégâts d'un des types choisis, une Réaction pour en diriger vers une créature à 18 m : sauvegarde de Dextérité ou 2d12
+  // + Con » : la fenêtre « blessé » quand ces dégâts sont d'un type auquel on résiste, contre l'auteur des dégâts.
+  "boon-of-energy-resistance": { triggers: [{ on: "isDamaged", if: { "damage.resisted": true }, do: [{ type: "use", activity: "gAfgFNKzMbpNdfae", target: "source" }] }] },
+  // Destin, Améliorer le destin : 2d4 ajoutés à son propre test d20 raté (attaque, sauvegarde demandée par le moteur, test) — une fois
+  // par initiative ou repos ; le malus à un autre et le bonus à un allié restent au MJ.
+  "boon-of-fate": { rollBonus: { activity: "BSFYZ98EvNknWsaE", on: ["attack", "save", "check"] } },
+  // Vigueur : + Con aux PV regagnés, une fois par tour (le +40 au maximum : l'effet du Manuel).
+  "boon-of-fortitude": { fortifiedHealing: true },
+  // Attaque irrésistible : les dégâts contondants, perforants et tranchants ignorent la résistance ; Frappe écrasante sur un critique.
+  "boon-of-irresistible-offense": { ignoresResistance: { types: ["bludgeoning", "piercing", "slashing"] }, overwhelmingStrike: true },
+  // Récupération : Dernier carré (à 0 PV : 1 PV + la moitié du maximum, une fois par Repos long) ; Récupérer la vitalité : l'activité.
+  "boon-of-recovery": { lastStandHeal: { activity: "Ir62HahPS9t1dkkL" } },
+  // Vitesse, Artiste de l'évasion : « l'action Se désengager par une action Bonus, qui met aussi fin à l'état Agrippé ».
+  "boon-of-speed": { basicActions: { MD9GSkARB6OaFYhq: "disengage" }, cures: ["grappled"] },
+  // Rappel des sorts : 1d4 égal au niveau de l'emplacement (1 à 4) — l'emplacement n'est pas dépensé.
+  "boon-of-spell-recall": { spellRecall: true },
+  // Esprit nocturne : Forme ombreuse — les résistances, seulement en lumière faible ou dans les ténèbres (l'effet du Manuel, désactivé
+  // dans les données) ; Fondu dans les ombres — l'invisibilité cesse quand on attaque, inflige des dégâts ou lance un sort (« juste après
+  // une action, une action Bonus ou une Réaction » : au plus près).
+  "boon-of-the-night-spirit": { effectWhile: { f6JofmGpxquX9bqb: { if: { light: ["dim", "dark"] } } }, breaksOn: ["attack", "damage", "spell"] }
 });

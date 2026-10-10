@@ -40,7 +40,7 @@ import { dodge as takeDodge } from "../core/turn.mjs";
 import { tallyAfter } from "../core/tally.mjs";
 import { createDispatcher } from "./dispatcher.mjs";
 import { askHitReactions, canReactToHit, windowIsDamaged, windowIsMissed, askDamageGuardians } from "./reactions.mjs";
-import { offerInterpose, markConcentrationBreaker, resistanceIgnoredBy } from "./feats.mjs";
+import { offerInterpose, markConcentrationBreaker, resistanceIgnoredBy, offerPeerlessAim, fortifiedExtra } from "./feats.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
@@ -209,6 +209,12 @@ const COMMANDS = {
       if ( slotHeal?.disciple && (entry.multiplier > 0) && rolled.some(d => d.type === "healing") ) {
         rolled = [...rolled, { type: "healing", value: slotHeal.disciple, properties: new Set() }];
         log(`Disciple of Life: +${slotHeal.disciple} HP for ${entry.token}`);
+      }
+      // §135 : Faveur de vigueur — « quand vous regagnez des PV, vous pouvez en regagner autant que votre modificateur de Constitution en
+      // plus », une fois par tour.
+      if ( (entry.multiplier > 0) && rolled.some(d => d.type === "healing") ) {
+        const extra = await fortifiedExtra(patient);
+        if ( extra ) rolled = [...rolled, { type: "healing", value: extra, properties: new Set() }];
       }
       if ( resolution.plan.heal && (entry.multiplier > 0) && patient && (patient !== (source?.actor ?? activity?.actor)) ) healedOther = true;
       // §38 : Égide projetée — avant l'application, un allié peut faire absorber ces dégâts par sa réserve.
@@ -550,8 +556,10 @@ async function inspiredAttack(message, roll, targets) {
   const rules = actor.items.some(i => contentOf(i).entry?.rollBonus?.on?.includes("attack"));
   const precise = (rules && (total < needed)) ? await offerRollBonus(actor, { kind: "attack", what: loc("Inspiration.Attaque"), total, needed, d20: keptD20(message.rolls?.[0]) }) : 0;
   if ( precise ) log(`${actor.name}: die added to their attack, ${total} + ${precise} = ${total + precise}`);
-  if ( !bonus && !precise ) return roll;
-  return { ...roll, total: total + precise, inspired: bonus + precise };
+  // §135 : Faveur de prouesse martiale, Visée sans pareille — encore ratée : « vous pouvez toucher à la place ».
+  const peerless = ((total + precise) < needed) && await offerPeerlessAim(actor, { total: total + precise, needed }) ? needed - (total + precise) : 0;
+  if ( !bonus && !precise && !peerless ) return roll;
+  return { ...roll, total: total + precise + peerless, inspired: bonus + precise + peerless };
 }
 
 async function onAttackMessage(message) {

@@ -66,4 +66,7 @@ export function registerEffectWhile() {
   route("updateCombat", (combat, changes) => (("round" in (changes ?? {})) ? Promise.all(combat.combatants.map(c => later(c.actor))) : null), opts);
   route("deleteCombat", combat => Promise.all(combat.combatants.map(c => later(c.actor))), opts);
   route("createCombatant", combatant => later(combatant.actor), opts);
+  // §135 : un effet qui dépend de la lumière (Faveur de l'esprit nocturne) — recalculé quand le token bouge.
+  route("updateToken", (token, changes) => ((["x", "y", "elevation"].some(k => k in (changes ?? {})) && watched(token.actor).some(w => w.rule.if?.light))
+    ? later(token.actor) : null), opts);
 }

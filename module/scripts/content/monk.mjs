@@ -8,6 +8,11 @@
  */
 
 export const MONK = Object.freeze({
+  // §123 : « touchez une créature » — Main guérisseuse (Guerrier de la miséricorde), Toucher du médecin (sa Main guérisseuse),
+  // Ultime miséricorde (« touchez le cadavre ») : « personnelles » dans les données du Manuel des joueurs, au contact en vrai.
+  "hand-of-healing": { ranges: { iDDZmeoYTIdWukLQ: { value: 5, units: "ft" } } },
+  "physicians-touch": { ranges: { stWL2fvcxsh0HFw2: { value: 5, units: "ft" } } },
+  "hand-of-ultimate-mercy": { ranges: { XtgmW9115BzcLiFr: { value: 5, units: "ft" } } },
   // Arts martiaux : « vous pouvez faire une frappe à mains nues par une action Bonus ».
   "martial-arts": { martialArts: true },
   // Concentration du moine : Déluge de coups (2ghJTBhilLrFn9xT) — « 1 point : deux frappes à mains nues par une action Bonus » ;

@@ -2,7 +2,7 @@
  * Le Paladin du Manuel des joueurs 2024 (SPEC §25), et les sorts de châtiment. Items du module premium `dnd-players-handbook` 2.2.0
  * (packs `classes` : `phbpdn…`, `spells`). Aura de protection : déjà là (§16, content/auras.mjs).
  *
- * Ce que dnd5e fait déjà seul : Imposition des mains (soin, retrait du poison), Frappes radiantes (effet : +1d8 radiants aux
+ * Ce que dnd5e fait déjà seul : Imposition des mains (soin, retrait du poison — sauf la portée, ci-dessous), Frappes radiantes (effet : +1d8 radiants aux
  * attaques d'arme de corps à corps), Arme sacrée (enchantement : Charisme à l'attaque, dégâts radiants au choix), Châtiment divin
  * gratuit une fois par repos long (l'utilisation de l'item de sort).
  *
@@ -16,7 +16,13 @@
 const auraImmunity = status => ({ includeSelf: true, affects: "ally", radiusFormula: "@scale.paladin.aura", radius: 10, units: "ft",
   changes: [{ key: "system.traits.ci.value", value: status, type: "add" }] });
 
+/** Les activités d'Imposition des mains du Manuel des joueurs : Soin, Retrait du poison. */
+const LAY_ON_HANDS = ["gXZh9aGHcywV9huC", "K6UeXQwTyDHWvis8"];
+
 export const PALADIN = Object.freeze({
+  // §123 : Imposition des mains — « touchez une créature (vous y compris) » ; les données du Manuel des joueurs disent « personnelle »,
+  // et le moteur soignait toujours le paladin. Au contact : la visée s'ouvre, on clique la créature (soi compris).
+  "lay-on-hands": { ranges: Object.fromEntries(LAY_ON_HANDS.map(id => [id, { value: 5, units: "ft" }])) },
   // Sorts de châtiment (PHB 2024) — Châtiment divin : 2d8 radiants (+1d8 par niveau), 3d8 contre un Fiélon ou un Mort-vivant.
   "divine-smite": { smite: { damage: "dnd5eactivity200", fiends: "dnd5eactivity000" } },
   // Châtiment de fournaise (1d6 feu ; §42.2 : la brûlure qui dure, effet « Seared », posée au coup — sa suite dans content/triggers.mjs),

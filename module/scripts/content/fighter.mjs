@@ -9,6 +9,10 @@
  */
 
 export const FIGHTER = Object.freeze({
+  // §123 : Ralliement (Chevalier du dragon pourpre) — « un allié à 9 m ou moins » ; Interception (style de combat) — « une autre
+  // créature à 1,50 m de vous ». « Personnelles » dans les données du Manuel des joueurs.
+  "rally": { ranges: { uyAnJsUHU2Aek9Lk: { value: 30, units: "ft" } } },
+  "interception": { ranges: { Hjm3PZRt6NdVXiFa: { value: 5, units: "ft" } } },
   // Fougue : « à votre tour, vous pouvez effectuer une action supplémentaire, hors action Magie » ; au niveau 17, deux utilisations
   // mais une seule par tour. L'activité (activation « spéciale ») ne coûte rien au budget ; le moteur y ajoute l'action.
   "action-surge": { grantsAction: true, usageLimits: { jtpVG47zPBUI0CZ5: { oncePerTurn: true } } },

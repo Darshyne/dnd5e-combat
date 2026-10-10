@@ -26,7 +26,7 @@ import { OUTCOME_STEPS } from "../core/content.mjs";
 import { siblingSaveOf, sizeGateOf } from "../core/riders.mjs";
 import { chargeOnlyEffects } from "../core/variants.mjs";
 import { variantPlanOf, useTimeVariant, advantageVariantOf } from "./variants.mjs";
-import { contentOf, castItemOf, entryOfIdentifier } from "./content.mjs";
+import { contentOf, castItemOf, entryOfIdentifier, rangeUnitsOf } from "./content.mjs";
 import { projectilesOf } from "./projectiles.mjs";
 import { declarationsOfItem } from "./triggers.mjs";
 import { isSpellCast, spellLevelOf, spellSchoolOf } from "./scrolls.mjs";
@@ -299,7 +299,7 @@ function readPlan(message) {
   // §101 : de même une potion « au toucher » (Potion de guérison importante du Guide du maître, seule de sa famille à porter
   // « contact, une créature ») : boire ou faire boire — désignée, la cible ; sans cible, le buveur.
   const untargetedSelf = (activity.type === "heal") && !activity.target?.template?.type && !(message.system?.targets?.length)
-    && ((activity.range?.units === "self") || (isPotion(activity.item) && (activity.range?.units === "touch")));
+    && ((rangeUnitsOf(activity) === "self") || (isPotion(activity.item) && (activity.range?.units === "touch")));
   // §53 : une potion « sur soi » est pour le buveur, quel que soit le type d'activité (Invisibilité, Force de géant, Potion de
   // poison…) et même si une autre créature est encore visée ; de même le sort qu'une potion fait lancer (Rapidité : Hâte,
   // Croissance…), quelle que soit sa portée — « quand vous buvez cette potion, vous gagnez l'effet du sort ».

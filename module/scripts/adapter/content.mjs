@@ -138,3 +138,25 @@ export function inspect(actor) {
     return { item: item.name, identifier: id, identifierFrom: from, layers, entry };
   }).filter(r => r.entry);
 }
+
+/**
+ * §123 : l'unité de portée d'une activité, corrigée par le contenu quand les données se trompent (`ranges`, §16.43) — Imposition des
+ * mains et la trousse de soins sont « personnelles » dans le Manuel des joueurs alors qu'elles touchent une créature. Ce qui décide
+ * « sur soi » (visée au clic, plan de la carte) lit ceci, pas `activity.range.units`.
+ */
+export function rangeUnitsOf(activity) {
+  const fixed = activity?.item ? contentOf(activity.item).entry?.ranges?.[activity.id] : null;
+  if ( fixed?.units ) return fixed.units;
+  const units = activity?.range?.units ?? null;
+  // Règle générale : un SOIN « personnel » qui vise une créature — une seule, sans zone — vise en fait une autre créature (ou soi).
+  // Relevé du Manuel des joueurs (2026-10-10) : Imposition des mains, Main guérisseuse, Ultime miséricorde, Toucher du médecin,
+  // Ralliement, Champ protecteur, Éclat protecteur amélioré, Interception — toutes soignaient le lanceur, quelle que soit la cible.
+  // Sans portée connue (null) : la visée s'ouvre (soi compris), sans contrôle de distance — `ranges` la précise quand le texte la donne.
+  const affects = activity?.target?.affects;
+  if ( (units === "self") && (activity?.type === "heal") && !activity?.target?.template?.type
+    && HEAL_TARGETS.includes(affects?.type) && ["", "1"].includes(String(affects?.count ?? "").trim()) ) return null;
+  return units;
+}
+
+/** Les cibles d'un soin qui désignent une autre créature que le lanceur. */
+const HEAL_TARGETS = ["creature", "creatureOrObject", "ally", "willing", "any"];

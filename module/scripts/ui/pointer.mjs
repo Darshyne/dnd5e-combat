@@ -24,7 +24,7 @@ import { askStorm } from "./storm.mjs";
 import { grappleShoveOf, unarmedAttackOf, helpActivityOf } from "../adapter/basics.mjs";
 import { pilotOf, commandActivities, commandLabel, transposeOf } from "../adapter/pilot.mjs";
 import { grappleEffectsOf, grapplerOf } from "../adapter/grapple.mjs";
-import { contentOf } from "../adapter/content.mjs";
+import { contentOf, rangeUnitsOf } from "../adapter/content.mjs";
 import { leapOf, rolledDouble, evalRuleFormula, projectilesOf, projectileCount, targetCount } from "../adapter/projectiles.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
 import { movementCap, reachCells, weaponAttacks, basicAttack, hostileTo, moveTo, jumpTo, engage, teleportSelf, selfTeleportOf,
@@ -230,7 +230,8 @@ function ruleOf(activity) {
   if ( potionCastsOnDrinker(activity?.item) ) return null;
   // §101 : une potion « au toucher » se boit sans cible (le buveur), ou va à la créature déjà désignée — pas de visée.
   if ( isPotion(activity?.item) && (activity.range?.units === "touch") ) return null;
-  return activity ? targetRule({ type: activity.type, affects: activity.target?.affects?.type, rangeUnits: activity.range?.units,
+  // §123 : la portée corrigée par le contenu (Imposition des mains : « personnelle » dans les données, au contact en vrai).
+  return activity ? targetRule({ type: activity.type, affects: activity.target?.affects?.type, rangeUnits: rangeUnitsOf(activity),
     template: activity.target?.template?.type }) : null;
 }
 

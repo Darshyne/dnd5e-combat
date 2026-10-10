@@ -547,6 +547,7 @@
   "DND5ECOMBAT.Ordre.halt.Execute": "{name} obéit : halte, ni déplacement, ni action, ni action Bonus.",
   "DND5ECOMBAT.Ordre.LacheTas": "À terre, en tas : {items}.",
   "DND5ECOMBAT.Ordre.LacheInventaire": "Lâché (déséquipé, à ramasser) : {items}.",
+  "DND5ECOMBAT.Ordre.LacheGarde": "Ne tombe pas (attaque de la créature), déséquipé : {items}.",
   "DND5ECOMBAT.Ordre.RienEnMain": "Rien en main.",
   "DND5ECOMBAT.Ordre.TourAcheve": "Le tour de {name} s'achève.",
   "DND5ECOMBAT.Sauvegarde.Echec": "{percent} % d'échec",

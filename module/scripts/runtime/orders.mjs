@@ -70,8 +70,10 @@ async function obey(combatant) {
   if ( plan.prone ) await token.actor.toggleStatusEffect("prone", { active: true });
   if ( plan.drop ) {
     const dropped = await dropHeld(token);
-    lines.push(dropped.items.length ? loc(dropped.pile ? "Ordre.LacheTas" : "Ordre.LacheInventaire", { items: dropped.items.join(", ") })
-      : loc("Ordre.RienEnMain", { name: token.name }));
+    if ( dropped.items.length ) lines.push(loc(dropped.pile ? "Ordre.LacheTas" : "Ordre.LacheInventaire", { items: dropped.items.join(", ") }));
+    // §122 : ce qui n'est pas tombé (une attaque de créature) — lâché quand même, déséquipé.
+    if ( dropped.kept?.length ) lines.push(loc("Ordre.LacheGarde", { items: dropped.kept.join(", ") }));
+    if ( !dropped.items.length && !dropped.kept?.length ) lines.push(loc("Ordre.RienEnMain", { name: token.name }));
   }
   let arrived = false;
   if ( plan.move && caster ) {

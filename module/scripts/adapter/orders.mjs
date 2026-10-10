@@ -53,15 +53,25 @@ export async function droppedByNeighbour(token, items) {
 }
 
 /**
- * Lâche ce que la créature tient. Rend `{ items: [noms], pile: boolean }`.
+ * Lâche ce que la créature tient. Rend `{ items: [noms], pile: boolean, kept: [noms] }` — `items` : ce qui est au sol (avec un
+ * voisin) ou lâché dans l'inventaire (sans) ; `kept` (§122) : avec un voisin, ce qui est resté sur la fiche (l'attaque d'une
+ * créature, que Butin et commerce ne pose pas au sol), déséquipé.
  * @param {TokenDocument} token
  */
 export async function dropHeld(token) {
   const actor = token?.actor;
   const held = heldItemsOf(actor);
-  if ( !held.length ) return { items: [], pile: false };
+  if ( !held.length ) return { items: [], pile: false, kept: [] };
   const names = held.map(i => i.name);
-  if ( await droppedByNeighbour(token, held) ) return { items: names, pile: true };
+  // Au sol, l'objet porte le nom de sa version « équipement » (dnd5e `gearPresentationData`, physical-item.mjs:413 : « Dague »
+  // plutôt que la « Dague ombrale » du Familier vampire), comme la fiche PNJ de dnd5e l'affiche.
+  const gearName = i => i.system?.gearPresentationData?.()?.name ?? i.name;
+  if ( await droppedByNeighbour(token, held) ) {
+    const stayed = held.filter(i => actor.items.has(i.id));
+    const stillHeld = stayed.filter(i => actor.items.get(i.id)?.system?.equipped);
+    if ( stillHeld.length ) await actor.updateEmbeddedDocuments("Item", stillHeld.map(i => ({ _id: i.id, "system.equipped": false })));
+    return { items: held.filter(i => !actor.items.has(i.id)).map(gearName), pile: true, kept: stayed.map(i => i.name) };
+  }
   await actor.updateEmbeddedDocuments("Item", held.map(i => ({ _id: i.id, "system.equipped": false })));
-  return { items: names, pile: false };
+  return { items: names, pile: false, kept: [] };
 }

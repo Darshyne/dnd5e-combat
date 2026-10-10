@@ -30,6 +30,10 @@ export const AUTO_USAGE_SETTING = "autoUsage";
 /** Un choix que seule la fenêtre de dnd5e propose. */
 function needsChoice(activity) {
   if ( activity.type === "order" ) return true;
+  // §122 : une dépense ajustable hors sort — combien de points prendre dans la réserve (Imposition des mains : « restaurer un
+  // nombre de PV égal à… », jusqu'à ce qui reste), le curseur de la fenêtre de dnd5e (`consumption.scaling`). Sans elle, dnd5e
+  // prenait 1 point. Le niveau d'un sort est jugé plus bas (§106).
+  if ( activity.consumption?.scaling?.allowed && !activity.requiresSpellSlot ) return true;
   if ( ["summon", "transform", "enchant"].includes(activity.type) ) {
     const profiles = (activity.type === "enchant") ? activity.availableEnchantments : activity.availableProfiles;
     return (profiles?.length ?? 0) > 1;

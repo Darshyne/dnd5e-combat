@@ -547,6 +547,7 @@
   "DND5ECOMBAT.Ordre.halt.Execute": "{name} obeys: halt, no movement, no action, no Bonus Action.",
   "DND5ECOMBAT.Ordre.LacheTas": "On the ground, in a pile: {items}.",
   "DND5ECOMBAT.Ordre.LacheInventaire": "Dropped (unequipped, to pick up): {items}.",
+  "DND5ECOMBAT.Ordre.LacheGarde": "Does not fall (the creature's attack), unequipped: {items}.",
   "DND5ECOMBAT.Ordre.RienEnMain": "Nothing in hand.",
   "DND5ECOMBAT.Ordre.TourAcheve": "{name}'s turn ends.",
   "DND5ECOMBAT.Sauvegarde.Echec": "{percent}% to fail",

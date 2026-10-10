@@ -45,6 +45,7 @@ import { registerSneak } from "./runtime/sneak.mjs";
 import { registerMastery } from "./runtime/mastery.mjs";
 import { registerFighter } from "./runtime/fighter.mjs";
 import { registerFeats } from "./runtime/feats.mjs";
+import { registerEffectWhile } from "./runtime/effect-while.mjs";
 import { registerBarbarian } from "./runtime/barbarian.mjs";
 import { registerCantrips } from "./runtime/cantrips.mjs";
 import { registerEndings } from "./runtime/endings.mjs";
@@ -201,6 +202,7 @@ Hooks.once("init", () => {
   gated(registerSneak);   // §20 : Attaque sournoise (après registerAreas : le type de dégâts choisi est déjà posé), Frappes rusées
   gated(registerFighter);   // §21 : Héros du champ d'honneur, styles Armes à deux mains et Armes de jet
   gated(registerFeats);   // §129 : Sauvagerie martiale, Guérisseur
+  gated(registerEffectWhile);   // §130 : effets de don conditionnels (Défense, Duel…)
   gated(registerMonk);   // §24 : Frappe étourdissante, Technique de la main ouverte
   gated(registerSmite);   // §25 : sorts de châtiment (après registerSneak : les dés du châtiment suivent ceux de l'Attaque sournoise)
   gated(registerManeuverDice);   // §89, §90 : dés de manœuvre (Fente, Feinte, Jeu de jambes évasif, Balayage, Chassé-croisé, Frappe commandée)

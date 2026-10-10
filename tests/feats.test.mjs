@@ -63,3 +63,35 @@ describe("§129 : fusion", () => {
     expect(SHIPPED["tavern-brawler"].hitRider.push).toEqual({ distance: 5, units: "ft" });
   });
 });
+
+import { effectHolds, sameChanges } from "../module/scripts/core/feats.mjs";
+
+describe("§130 : effets de don conditionnels", () => {
+  const facts = (o={}) => ({ armor: null, weapons: [], inCombat: false, abilities: { dex: 14 }, ...o });
+  it("Défense : seulement en armure", () => {
+    const rule = SHIPPED["defense"].effectWhile.W0ObItz7sS8ZJ09Y.if;
+    expect(effectHolds(rule, facts())).toBe(false);
+    expect(effectHolds(rule, facts({ armor: "medium" }))).toBe(true);
+  });
+  it("Duel : une arme de corps à corps à une main, aucune autre", () => {
+    const rule = SHIPPED["dueling"].effectWhile.VEodDUQvYPHhl0Ya.if;
+    expect(effectHolds(rule, facts({ weapons: [{ melee: true, twoHanded: false }] }))).toBe(true);
+    expect(effectHolds(rule, facts({ weapons: [{ melee: true, twoHanded: true }] }))).toBe(false);
+    expect(effectHolds(rule, facts({ weapons: [{ melee: true, twoHanded: false }, { melee: true, twoHanded: false }] }))).toBe(false);
+    expect(effectHolds(rule, facts({ weapons: [{ melee: false, twoHanded: false }] }))).toBe(false);
+  });
+  it("Maître des armures intermédiaires : armure intermédiaire et Dextérité 16", () => {
+    const r = SHIPPED["medium-armor-master"].effectWhile.r6D3Ach1DcRanNcj;
+    expect(effectHolds(r.if, facts({ armor: "medium", abilities: { dex: 16 } }))).toBe(true);
+    expect(effectHolds(r.if, facts({ armor: "medium", abilities: { dex: 15 } }))).toBe(false);
+    expect(sameChanges([{ key: "system.attributes.bonus", type: "add", value: 1 }], r.changes)).toBe(false);
+    expect(sameChanges([{ key: "system.attributes.ac.bonus", type: "add", value: 1 }], r.changes)).toBe(true);
+  });
+  it("Rôdeur furtif : en combat", () => {
+    expect(effectHolds(SHIPPED["skulker"].effectWhile["6moNnOl0izLMgVNl"].if, facts({ inCombat: true }))).toBe(true);
+  });
+  it("schéma", () => {
+    for ( const id of ["defense", "dueling", "heavy-armor-master", "medium-armor-master", "skulker"] ) expect(validateEntry(SHIPPED[id])).toEqual([]);
+    expect(validateEntry({ effectWhile: { W0ObItz7sS8ZJ09Y: { if: { armor: ["plate"] } } } }).length).toBe(1);
+  });
+});

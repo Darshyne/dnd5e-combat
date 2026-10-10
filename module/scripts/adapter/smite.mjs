@@ -127,10 +127,18 @@ export function riderOptions(actor, target, activity=null, attackMode=null) {
     if ( rule.item && (identifierOf(activity?.item ?? {}).id !== rule.item) ) continue;
     // §129 : seulement une attaque à mains nues (Bagarreur de tavernes : l'Attaque à mains nues, ou l'attaque améliorée du don).
     if ( rule.unarmed && !unarmedAttack(activity) ) continue;
+    // §132 : un coup au corps à corps (arme ou mains nues), un bouclier au bras, des dégâts de ce type (Cogneur, Trancheur, Chargeur,
+    // Maître des boucliers).
+    if ( rule.melee && !meleeWeaponHit(activity, attackMode) ) continue;
+    if ( rule.shield && !wearsShield(actor) ) continue;
+    if ( rule.damageType && !attackDamageTypes(activity).includes(rule.damageType) ) continue;
     const key = identifierOf(item).id ?? item.id;
     if ( rule.oncePerTurn && turn && (actor.getFlag(MODULE_ID, `oncePerTurn.${key}`) === turn) ) continue;
     const size = target?.actor?.system?.traits?.size;
-    const fits = !rule.sizeAtMost || !size || (sizes.indexOf(size) <= sizes.indexOf(rule.sizeAtMost));
+    // §132 : `sizeAbove` — la cible n'a pas plus de N tailles de plus que l'auteur (Cogneur : « pas plus d'une taille au-dessus »).
+    const own = actor.system?.traits?.size;
+    const fits = (!rule.sizeAtMost || !size || (sizes.indexOf(size) <= sizes.indexOf(rule.sizeAtMost)))
+      && (!rule.sizeAbove || !size || !own || (sizes.indexOf(size) <= sizes.indexOf(own) + rule.sizeAbove));
     if ( !fits && !rule.damage && !rule.effect ) continue;
     const unlimited = left === Infinity;
     const label = (rule.slot === "pact") ? t("FaveurPacte", { item: item.name, level, n: left })
@@ -138,6 +146,21 @@ export function riderOptions(actor, target, activity=null, attackMode=null) {
     out.push({ item, rule, rider: true, free: false, unlimited, level, fits, payer, once: rule.oncePerTurn ? key : null, label });
   }
   return out;
+}
+
+/** §132 : un bouclier équipé. */
+function wearsShield(actor) {
+  return (actor?.items ?? []).some(i => (i.type === "equipment") && (i.system.type?.value === "shield") && i.system.equipped);
+}
+
+/** §132 : les types de dégâts d'une attaque — ceux de ses parts, et ceux de l'arme si l'activité les reprend. */
+export function attackDamageTypes(activity) {
+  const out = new Set();
+  for ( const p of activity?.damage?.parts ?? [] ) for ( const t of p.types ?? [] ) out.add(t);
+  if ( (activity?.damage?.includeBase !== false) && activity?.item?.system?.damage?.base ) {
+    for ( const t of activity.item.system.damage.base.types ?? [] ) out.add(t);
+  }
+  return Array.from(out);
 }
 
 /** §129 : une attaque à mains nues — classée « unarmed » par dnd5e, ou l'Attaque à mains nues elle-même. */

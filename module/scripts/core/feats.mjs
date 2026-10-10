@@ -4,6 +4,23 @@
  * Fonctions pures, aucune dépendance à Foundry.
  */
 
+/** Le premier terme de dés d'une part : nombre, faces, modificateurs. */
+const FIRST_DIE = /(\d*)d(\d+)((?:[a-z]+\d*)*)/;
+
+/**
+ * §132 : Perforeur — « relancez l'un des dés de dégâts de l'attaque, vous devez garder le nouveau résultat ». Le moteur ne relance pas
+ * après coup : le premier terme de dés de la part lance un dé de plus et garde les meilleurs (« 1d8 » → « 2d8kh1 », « 2d6 » →
+ * « 3d6kh2 ») — c'est relancer le plus bas en gardant le meilleur des deux, un peu plus favorable que la lettre. Une part déjà en
+ * réserve (Sauvagerie martiale) ou qui garde déjà n'est pas touchée.
+ * @param {string} part
+ * @returns {string}
+ */
+export function oneMoreKeepBest(part) {
+  const s = String(part);
+  if ( s.includes("{") ) return s;
+  return s.replace(FIRST_DIE, (term, n, faces, mods) => (/k/.test(mods) ? term : `${(Number(n) || 1) + 1}d${faces}${mods}kh${Number(n) || 1}`));
+}
+
 /** Un terme de dés d'une formule, avec ses modificateurs (« 1d12 », « 2d6min3 », « 1d4r1 »). */
 const DICE = /(\d*d\d+(?:[a-z]+\d*)*)/g;
 

@@ -4,6 +4,7 @@
  * provenance. Les faits sont dans adapter/facts.mjs.
  */
 
+import { MODULE_ID } from "../constants.mjs";
 import { normalize, select, stepsOf } from "../core/triggers.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
 import { originItemOf, factsFor, comesFromItemEffect } from "./facts.mjs";
@@ -125,6 +126,9 @@ export function declaredAttackModifiers(sourceToken, targetToken, activity) {
   // §19.6 : une réaction jouée « avec l'avantage » (Riposte), marquée sur ce client juste avant son jet.
   const promised = activity?.uuid && hasReactionAdvantage(activity.uuid) ? takeReactionAdvantage(activity.uuid) : null;
   if ( promised && !out.advantage.includes(promised) ) out.advantage.push(promised);
+  // §132 : les marques de coup critique (Cogneur : Avantage contre la créature marquée ; Trancheur : Désavantage à ses attaques).
+  for ( const e of target.effects ?? [] ) if ( (e.getFlag?.(MODULE_ID, "critMark")?.side === "against") && !out.advantage.includes(e.name) ) out.advantage.push(e.name);
+  for ( const e of source.effects ?? [] ) if ( (e.getFlag?.(MODULE_ID, "critMark")?.side === "by") && !out.disadvantage.includes(e.name) ) out.disadvantage.push(e.name);
   // §21 : les marques des bottes d'arme — Sape (Désavantage de l'attaquant), Coup vexant (Avantage contre cette cible).
   const marks = markModifiers(sourceToken, targetToken, activity);
   for ( const type of ["advantage", "disadvantage"] ) for ( const name of marks[type] ) if ( !out[type].includes(name) ) out[type].push(name);

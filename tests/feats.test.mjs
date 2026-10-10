@@ -128,3 +128,19 @@ describe("§131 : dons de tir", () => {
     expect(validateEntry({ rangedFeat: { kind: "bow" } }).length).toBe(1);
   });
 });
+
+import { oneMoreKeepBest } from "../module/scripts/core/feats.mjs";
+
+describe("§132 : coups", () => {
+  it("Perforeur : un dé de plus, les meilleurs gardés ; une réserve ou un « kh » laissés", () => {
+    expect(oneMoreKeepBest("1d8 + @mod")).toBe("2d8kh1 + @mod");
+    expect(oneMoreKeepBest("2d6min3")).toBe("3d6min3kh2");
+    expect(oneMoreKeepBest("{1d8,1d8}kh + 3")).toBe("{1d8,1d8}kh + 3");
+  });
+  it("schéma", () => {
+    for ( const id of ["crusher", "piercer", "slasher", "charger", "shield-master", "unarmed-fighting"] ) expect(validateEntry(SHIPPED[id])).toEqual([]);
+    expect(validateEntry(SHIPPED["grappler"], { facts: { "target.grappledBySource": true } })).toEqual([]);
+    expect(validateEntry({ critMark: { damageType: "slashing", side: "up" } }).length).toBe(1);
+    expect(validateEntry({ hitRider: { sizeAbove: -1 } }).length).toBe(1);
+  });
+});

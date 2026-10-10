@@ -50,5 +50,30 @@ export const FEATS = Object.freeze({
   "crossbow-expert": { rangedFeat: { kind: "crossbow", closeCombat: true, offhandModifier: true } },
   // Sniper de sorts : les jets d'attaque des sorts ignorent l'abri partiel et aux trois quarts, pas de Désavantage au contact, et +18 m à
   // la portée d'un sort d'au moins 3 m qui demande un jet d'attaque.
-  "spell-sniper": { rangedFeat: { kind: "spell", cover: true, closeCombat: true, spellRange: { value: 60, units: "ft" } } }
+  "spell-sniper": { rangedFeat: { kind: "spell", cover: true, closeCombat: true, spellRange: { value: 60, units: "ft" } } },
+
+  // §132 — coups. Cogneur : « une fois par tour, quand vous touchez une créature d'une attaque qui inflige des dégâts contondants, vous
+  // pouvez la déplacer de 1,50 m si elle n'a pas plus d'une taille de plus que vous » (proposé au coup) ; « un coup critique contondant :
+  // les jets d'attaque contre elle ont l'Avantage jusqu'au début de votre prochain tour ».
+  "crusher": { hitRider: { push: { distance: 5, units: "ft" }, damageType: "bludgeoning", sizeAbove: 1, oncePerTurn: true },
+    critMark: { damageType: "bludgeoning", side: "against" } },
+  // Perforeur : un dé relancé une fois par tour (le meilleur gardé), un dé de plus au critique perforant (runtime/feats.mjs).
+  "piercer": { piercer: true },
+  // Trancheur : « une fois par tour… réduire sa Vitesse de 3 m jusqu'au début de votre prochain tour » (effet « Slashed » du Manuel,
+  // proposé au coup) ; « un coup critique tranchant : Désavantage à ses jets d'attaque jusqu'au début de votre prochain tour ».
+  "slasher": { hitRider: { effect: "JX3Krr0wbWihJ1RP", damageType: "slashing", oncePerTurn: true },
+    effectEnds: { JX3Krr0wbWihJ1RP: "casterTurnStart" }, critMark: { damageType: "slashing", side: "by" } },
+  // Chargeur : « si vous vous déplacez d'au moins 3 m en ligne droite vers une cible juste avant de la toucher au corps à corps… +1d8
+  // aux dégâts » — proposé au coup de corps à corps, une fois par tour (au joueur de juger la charge) ; la poussée de 3 m, l'autre choix
+  // de la règle, et le Foncer amélioré ne sont pas joués.
+  "charger": { hitRider: { damage: "54afnEMKfBkQaByQ", melee: true, oncePerTurn: true, weaponDamage: true } },
+  // Lutteur : « l'Avantage aux jets d'attaque contre une créature que vous agrippez ». Frapper et saisir, Lutteur rapide : non joués.
+  "grappler": { triggers: [{ on: "preAttackRoll", if: { "target.grappledBySource": true }, do: [{ type: "advantage" }] }] },
+  // Maître des boucliers, Coup de bouclier : « si vous touchez une créature à 1,50 m d'une arme de corps à corps dans le cadre de l'action
+  // Attaquer, vous pouvez la frapper de votre bouclier équipé : sauvegarde de Force ou À terre » (l'autre choix, la pousser, n'est pas
+  // proposé) ; une fois par tour. Interposer le bouclier : lot suivant.
+  "shield-master": { hitRider: { save: "VjSe0vA0dmGhNDAA", melee: true, shield: true, oncePerTurn: true } },
+  // Combat à mains nues : ses deux attaques (1d6 / 1d8 sans arme ni bouclier) sont celles de dnd5e ; « au début de chacun de vos tours,
+  // 1d4 dégâts contondants à une créature que vous agrippez » (runtime/feats.mjs).
+  "unarmed-fighting": { grappleDamage: { formula: "1d4", damageType: "bludgeoning" } }
 });

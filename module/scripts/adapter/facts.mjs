@@ -20,6 +20,7 @@ import { isDeadActor } from "./death.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { hasNotActedYet } from "../core/sneak.mjs";
 import { isSpellCast, spellSchoolOf } from "./scrolls.mjs";
+import { grapplerOf } from "./grapple.mjs";
 
 /** Rangs de taille de dnd5e (config.mjs, `actorSizes`), pour « de taille G ou inférieure ». */
 const SIZE_RANK = Object.freeze({ tiny: 0, sm: 1, med: 2, lg: 3, huge: 4, grg: 5 });
@@ -235,6 +236,8 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     "target.hasStatus": id => target?.statuses?.has(id) === true,
     "target.hasEffect": id => hasEffectFrom(target, id),
     "target.hasEffectFrom": id => hasEffectFrom(target, id, source),
+    // §132 : la cible est Agrippée par l'attaquant (Lutteur : « l'Avantage aux jets d'attaque contre une créature que vous agrippez »).
+    "target.grappledBySource": want => ((target?.effects ?? []).some(e => e.statuses?.has?.("grappled") && (grapplerOf(e) === source)) === want),
     // §37 : l'attaquant porte un effet que la CIBLE a posé (Malédiction : « Désavantage aux jets d'attaque contre vous »).
     "source.hasEffectFromTarget": id => hasEffectFrom(source, id, target),
     // Type de créature de l'attaquant (Protection contre le mal et le bien : aberration, céleste, élémentaire, fée, fiélon, mort-vivant).

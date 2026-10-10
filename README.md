@@ -9,7 +9,8 @@ A D&D 5.5 (2024 rules) rules and combat engine for **Foundry VTT V14** and **dnd
 - **Reactions** before and after the opposing roll (Shield, Hellish Rebuke, opportunity attacks resolved
   *before* the move…), auras, start- and end-of-turn triggers.
 - **Mouse-driven movement** in the style of Baldur's Gate 3: click the ground to move along a path (custom A*),
-  click an enemy to make a basic attack, context menus, targeting mode.
+  click an enemy to make a basic attack, context menus, targeting mode (a banner at the top of the screen keeps the
+  instruction and the number of targets picked while the engine waits for clicks).
 - **Vision and light rules**: who sees whom, bright light / dim light / darkness, Search, passive Perception.
 - Every class and species of the *Player's Handbook 2024* is automated, along with many monster abilities.
   Rules are declared per dnd5e identifier, so they apply to any creature, PC or NPC.

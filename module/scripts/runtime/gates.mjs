@@ -173,7 +173,11 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const wards = wardsAgainst(activity, origin, targets);
   // Un sort lancé en réaction (Contresort lui-même, Bouclier) n'ouvre pas de fenêtre : pas de contre-contre (limite assumée).
   // Commander les objets d'un sort déjà lancé (« Move Lights », §16.17) n'est pas lancer un sort : rien à contrer.
-  const isSpell = isSpellCast(activity.item) && (activity.activation?.type !== "reaction") && !spellCommandOf(activity);
+  // §119 : un projectile enchaîné (Projectile magique, Rayon ardent) ou un rebond (Orbe chromatique) n'est pas un nouveau sort :
+  // le Contresort se joue au lancement, une fois (il se proposait de nouveau à chaque projectile enchaîné).
+  const ours = usageConfig[MODULE_ID] ?? {};
+  const isSpell = isSpellCast(activity.item) && (activity.activation?.type !== "reaction") && !spellCommandOf(activity)
+    && !ours.projectileOf && !ours.leap;
   const auto = usageConfig[MODULE_ID]?.autoReact ?? false;
   // §32 : Sort subtil — « sans composante verbale, somatique ni matérielle » : personne ne voit le sort se lancer, pas de Contresort.
   const subtle = (usageConfig[MODULE_ID]?.metamagic ?? []).includes("subtle");

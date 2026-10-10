@@ -152,6 +152,8 @@
   "DND5ECOMBAT.Reglage.autoUsage.Aide": "An activity consumes its resources, starts Concentration and places its area without asking (slot used up: the lowest one left). A spell that can be cast at a higher level keeps the window, to pick the level. Out of resources: the window opens for the GM only; a player gets dnd5e's warning.",
   "DND5ECOMBAT.Reglage.teleportPlanning.Nom": "Teleport: pick the destination right away",
   "DND5ECOMBAT.Reglage.teleportPlanning.Aide": "After Misty Step or Dimension Door, destination picking opens at once (otherwise, use the card's Teleport button).",
+  "DND5ECOMBAT.Reglage.targetingBanner.Nom": "Targeting: instruction banner",
+  "DND5ECOMBAT.Reglage.targetingBanner.Aide": "While targeting (a target, projectiles, an area, a destination), the instruction and the number of targets picked stay at the top of the screen. Off: the instruction is only a notification.",
   "DND5ECOMBAT.Deplacement.CibleHorsDatteinte": "{name} is out of reach this turn.",
   "DND5ECOMBAT.Deplacement.CibleHorsDeVue": "No reachable space with a line of sight to {name}.",
   "DND5ECOMBAT.Deplacement.SautTropLong": "Jump too long: {max} {units} at most.",

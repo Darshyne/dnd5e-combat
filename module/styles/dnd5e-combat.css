@@ -59,6 +59,19 @@ body.dnd5e-combat-prompt #board { cursor: none !important; }
   0%, 100% { transform: scale(0.85); opacity: 1; }
   50% { transform: scale(1.25); opacity: 0.55; }
 }
+/* §119 : bandeau de visée — la consigne reste à l'écran tant que le moteur attend des clics. */
+.dnd5e-combat-banner {
+  position: fixed; z-index: 1000; pointer-events: none; top: var(--dnd5e-combat-banner-top, 72px); left: 50%;
+  transform: translateX(-50%); max-width: min(720px, calc(100vw - 32px)); padding: 6px 14px;
+  display: flex; align-items: center; gap: 10px;
+  font: 600 14px/1.35 var(--font-primary, sans-serif); color: #f4ead8;
+  background: rgba(20, 18, 16, 0.92); border: 1px solid #ffb347; border-radius: 6px;
+  box-shadow: 0 0 10px rgba(255, 179, 71, 0.35), 0 4px 14px rgba(0, 0, 0, 0.6);
+}
+.dnd5e-combat-banner[hidden], .dnd5e-combat-banner .count[hidden] { display: none; }
+.dnd5e-combat-banner .count {
+  flex: none; padding: 1px 8px; border-radius: 10px; background: #ffb347; color: #1a1612; font-weight: 700;
+}
 .dnd5e-combat-menu {
   position: fixed; z-index: 1000; min-width: 180px; padding: 4px;
   display: flex; flex-direction: column; gap: 2px;

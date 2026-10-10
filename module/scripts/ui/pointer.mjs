@@ -133,31 +133,88 @@ let recalling = null;
 /** Teinte de l'aperçu quand la case est hors de portée du déplacement. */
 const TOO_FAR_COLOR = "#d03030";
 
+/** §119 : la consigne de la visée ouverte (le texte de sa notification), que le bandeau garde à l'écran. */
+let promptText = null;
+
+/** §118 : quelle visée est ouverte, pour les voisins. */
+function targetingKind() {
+  if ( picking ) return picking.group ? "group" : "projectiles";
+  if ( targeting ) return "target";
+  if ( dashing ) return "dash";
+  if ( recalling ) return "recall";
+  if ( placing ) return "area";
+  return null;
+}
+
 /**
  * §118 : la visée que ce client attend, pour les modules voisins (`api.ui.targeting()`) — tant qu'elle est ouverte, le clic
  * gauche est au moteur, quel que soit ce qu'il y a sous la souris (cadavre, coffre, marchand). `{ token, activity, identifier }`
  * (uuids du token qui agit et de l'activité, identifiant dnd5e de son item), ou null.
+ * §119 : plus `kind` (`target`, `projectiles`, `group`, `dash`, `recall`, `area`), `item` (nom de l'item), `prompt` (la consigne
+ * traduite, ou null), et pour une visée multiple ou de groupe `picked` / `total` (sinon null).
  */
 export function pendingTargeting() {
   const open = picking ?? targeting ?? dashing ?? recalling ?? placing;
   if ( !open ) return null;
   return { token: open.token?.uuid ?? null, activity: open.activity?.uuid ?? null,
-    identifier: open.activity?.item?.system?.identifier ?? null };
+    identifier: open.activity?.item?.system?.identifier ?? null,
+    kind: targetingKind(), item: open.activity?.item?.name ?? null, prompt: promptText,
+    picked: picking ? picking.picks.length : null, total: picking ? picking.count : null };
 }
 
 /**
  * §118 : publie un changement de visée — hook `dnd5e-combat.targeting`, `(state)` (celui de `pendingTargeting`, null à la
  * fermeture), sur ce client seulement. Différé d'une microtâche : certains chemins posent la classe avant l'état.
+ * §119 : aussi à chaque créature choisie ou retirée d'une visée multiple (`picked` change) ; et le bandeau suit.
  */
 let announcedTargeting = null;
 function announceTargeting() {
   queueMicrotask(() => {
     const state = pendingTargeting();
-    const key = state ? `${state.token}|${state.activity}` : null;
+    if ( !state ) promptText = null;
+    renderBanner(state);
+    const key = state ? `${state.token}|${state.activity}|${state.kind}|${state.picked}|${state.prompt}` : null;
     if ( key === announcedTargeting ) return;
     announcedTargeting = key;
     Hooks.callAll(`${MODULE_ID}.targeting`, state);
   });
+}
+
+/**
+ * §119 : la consigne d'une visée qui s'ouvre — gardée par le bandeau tant que la visée dure ; la notification seulement sans
+ * bandeau (réglage coupé), pour ne pas l'afficher deux fois.
+ */
+function promptTargeting(text) {
+  promptText = text;
+  if ( !setting("targetingBanner") ) ui.notifications.info(text);
+  announceTargeting();
+}
+
+/**
+ * §119 : bandeau de visée (issue #4 : la notification passe, et rien ne disait plus que le moteur attendait des clics) — en haut
+ * de l'écran tant qu'une visée est ouverte : la consigne, et pour une visée multiple le compteur. Réglage par client
+ * (`targetingBanner`) ; un voisin qui a son propre affichage peut le masquer (`.dnd5e-combat-banner`) ou le déplacer
+ * (variable CSS `--dnd5e-combat-banner-top`). Ne prend aucun clic.
+ */
+let banner = null;
+function renderBanner(state) {
+  const text = state?.prompt ?? null;
+  if ( !text || !setting("targetingBanner") ) {
+    if ( banner ) banner.hidden = true;
+    return;
+  }
+  if ( !banner ) {
+    banner = document.createElement("div");
+    banner.className = "dnd5e-combat-banner";
+    banner.setAttribute("role", "status");
+    banner.innerHTML = `<span class="text"></span><span class="count"></span>`;
+  }
+  banner.querySelector(".text").textContent = text;
+  const count = banner.querySelector(".count");
+  count.textContent = Number.isFinite(state.total) ? `${state.picked}/${state.total}` : "";
+  count.hidden = !count.textContent;
+  banner.hidden = false;
+  if ( !banner.isConnected ) document.body.append(banner);
 }
 
 function markTargeting() {
@@ -253,7 +310,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
       if ( !chosen ) return;
       targeting = { token, activity, usage: [chosen.config, { ...(dialogConfig ?? {}), configure: false }, messageConfig] };
       markTargeting();
-      ui.notifications.info(loc("Enchant.ChoisirCreature", { name: activity.item.name }));
+      promptTargeting(loc("Enchant.ChoisirCreature", { name: activity.item.name }));
     }).catch(err => console.error(`${MODULE_ID} | enchantment`, err));
     return false;
   }
@@ -272,7 +329,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     if ( token?.object && token.isOwner ) {
       closeSheetFor(activity);
       stopTargeting();
-      ui.notifications.info(loc("Ruee.Choisir", { item: activity.item.name }));
+      promptTargeting(loc("Ruee.Choisir", { item: activity.item.name }));
       dashing = { token, activity, usage: [usageConfig, dialogConfig, messageConfig] };
       markTargeting();
       return false;
@@ -318,7 +375,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   }
   targeting = { token, activity, usage: [usageConfig, dialogConfig, messageConfig] };
   markTargeting();
-  ui.notifications.info(loc("Visee.Choisir", { name: activity.item.name }));
+  promptTargeting(loc("Visee.Choisir", { name: activity.item.name }));
   return false;
 }
 
@@ -345,7 +402,7 @@ async function placeZone(activity, zone) {
   if ( !shape || !canvas.ready ) return;
   placing = { activity };
   announceTargeting();
-  ui.notifications.info(loc("Zone.Choisir", { item: activity.item.name }));
+  promptTargeting(loc("Zone.Choisir", { item: activity.item.name }));
   const far = s => tooFarForZone(zone, shapeCenter(s.toObject()));
   try {
     const placed = await canvas.regions.placeRegion({
@@ -385,7 +442,7 @@ async function aimArea(activity, area, then) {
   stopTargeting();
   placing = { activity };
   announceTargeting();
-  ui.notifications.info(loc("Zone.Viser", { item: activity.item.name, name: area.token.name }));
+  promptTargeting(loc("Zone.Viser", { item: activity.item.name, name: area.token.name }));
   let last = null;
   const center = area.token.object.center;
   const initial = aimedShapeData(activity, area, { x: center.x + 1, y: center.y });
@@ -436,7 +493,7 @@ async function aimBolt(activity, cloud) {
   placing = { activity };
   announceTargeting();
   setBoltAim({ activity, cloud });
-  ui.notifications.info(loc("Orage.Viser", { item: activity.item.name }));
+  promptTargeting(loc("Orage.Viser", { item: activity.item.name }));
   const radius = boltRadiusPx(activity.item, cloud.parent);
   try {
     const placed = await canvas.regions.placeRegion({
@@ -506,11 +563,11 @@ async function startGroup(token, activity, usageConfig, dialogConfig, messageCon
   markTargeting();
   if ( count <= 1 ) {
     targeting = { token, activity, usage };
-    return ui.notifications.info(loc("Visee.Choisir", { name: activity.item.name }));
+    return promptTargeting(loc("Visee.Choisir", { name: activity.item.name }));
   }
   picking = { token, activity, count, picks: [], group: true, usage };
   showReticle(counterText());
-  ui.notifications.info(loc("Cibles.Choisir", { item: activity.item.name, count }));
+  promptTargeting(loc("Cibles.Choisir", { item: activity.item.name, count }));
 }
 
 /** §16.33 : la visée de groupe est close (complète, ou Entrée) — le sort part sur les créatures choisies. */
@@ -531,7 +588,7 @@ async function startPicking(token, activity, usageConfig, dialogConfig, messageC
   picking = { token, activity, count, picks: [], usage: [config, { ...(dialogConfig ?? {}), configure: false }, messageConfig] };
   markTargeting();
   showReticle(counterText());
-  ui.notifications.info(loc("Projectiles.Choisir", { item: activity.item.name, count }));
+  promptTargeting(loc("Projectiles.Choisir", { item: activity.item.name, count }));
 }
 
 function counterText() {
@@ -584,6 +641,14 @@ function stopPicking() {
   picking = null;
 }
 
+/**
+ * Une visée multiple abandonnée (clic droit, Échap) relâche les créatures déjà choisies : sinon l'attaque suivante partait
+ * aussitôt sur elles, sans visée (vu en jeu le 2026-10-10, §119 — Échap les laissait ciblées, le clic droit non).
+ */
+function releasePicks() {
+  for ( const t of Array.from(game.user.targets) ) t.setTarget(false, { releaseOthers: false });
+}
+
 /** Un clic sur une créature pendant la visée multiple : un projectile de plus pour elle ; au dernier, le sort part. */
 function pickTarget(hover) {
   if ( !picking || !hover?.object ) return;
@@ -591,6 +656,7 @@ function pickTarget(hover) {
   if ( picking.group && picking.picks.includes(hover.uuid) ) {
     picking.picks.splice(picking.picks.indexOf(hover.uuid), 1);
     hover.object.setTarget(false, { releaseOthers: false, groupSelection: true });
+    announceTargeting();
     return setReticleLabel(counterText());
   }
   const refusal = refusalFor(picking.token, hover, picking.activity);
@@ -599,6 +665,7 @@ function pickTarget(hover) {
   hover.object.setTarget(true, { releaseOthers: false, groupSelection: true });
   setReticleLabel(counterText());
   floatNotice(hover, `${picking.picks.length}/${picking.count}`);
+  announceTargeting();
   if ( picking.picks.length < picking.count ) return;
   if ( picking.group ) return finishGroup();
   const { token, activity, usage: [config, dialog, message], picks } = picking;
@@ -620,6 +687,7 @@ function stopTargeting() {
   targeting = null;
   if ( placing ) canvas.regions?._cancelPlacement?.();
   placing = null;
+  promptText = null;
   hideHitChance();
   setCursor(null);
   document.body.classList.remove("dnd5e-combat-targeting");
@@ -652,7 +720,7 @@ function offerTurnStart(combat, prior, current) {
     stopTargeting();
     targeting = { token, activity, usage: [{}, { configure: false }, {}] };
     markTargeting();
-    ui.notifications.info(loc("Visee.DebutTour", { item: item.name }));
+    promptTargeting(loc("Visee.DebutTour", { item: item.name }));
     showReticle(item.name);
     return;
   }
@@ -1108,7 +1176,7 @@ function onPointerUp(event) {
     return recallTo(scenePoint(event));
   }
   if ( picking ) {
-    if ( !left ) { for ( const t of Array.from(game.user.targets) ) t.setTarget(false, { releaseOthers: false }); stopTargeting(); return ui.notifications.info(loc("Visee.Annulee")); }
+    if ( !left ) { releasePicks(); stopTargeting(); return ui.notifications.info(loc("Visee.Annulee")); }
     return pickTarget(hover);
   }
   if ( targeting ) {
@@ -1282,7 +1350,7 @@ function startRecall(token) {
   if ( !canvas.ready || !token?.object ) return;
   stopTargeting();
   const familiar = pocketedFamiliar(token);
-  ui.notifications.info(loc("Familier.Choisir", { name: familiar?.name ?? "" }));
+  promptTargeting(loc("Familier.Choisir", { name: familiar?.name ?? "" }));
   recalling = { token };
   markTargeting();
 }
@@ -1401,7 +1469,11 @@ function onKeyDown(event) {
   if ( (event.key === "Enter") && picking?.group && picking.picks.length ) { swallow(event); return finishGroup(); }
   if ( event.key !== "Escape" ) return;
   if ( menu ) { closeMenu(); swallow(event); }
-  else if ( targeting || picking || dashing || recalling ) { stopTargeting(); swallow(event); }   // une zone en cours de pose : Échap est au cœur
+  else if ( targeting || picking || dashing || recalling ) {   // une zone en cours de pose : Échap est au cœur
+    if ( picking ) releasePicks();
+    stopTargeting();
+    swallow(event);
+  }
 }
 
 /* -------------------------------------------- */
@@ -1449,7 +1521,7 @@ function offerCleave(message, resolution) {
   stopTargeting();
   targeting = { token, activity, usage: [{ [MODULE_ID]: { cost: "free", cleave: first.uuid } }, { configure: false }, {}] };
   markTargeting();
-  ui.notifications.info(loc("Botte.Enchainement.Visee", { item: activity.item.name, name: first.name }));
+  promptTargeting(loc("Botte.Enchainement.Visee", { item: activity.item.name, name: first.name }));
   floatNotice(token, loc("Botte.Retour.cleave"));
   showReticle(loc("Botte.Retour.cleave"));
 }
@@ -1472,7 +1544,7 @@ function offerFlurry(actor) {
   targeting = { token, activity, usage: [{}, { configure: false }, {}] };
   markTargeting();
   const label = weapon ? "Clerc.PretreGuerre" : "Moine.Deluge";
-  ui.notifications.info(loc(`${label}.Visee`, { n: readBudget(combatant).flurry }));
+  promptTargeting(loc(`${label}.Visee`, { n: readBudget(combatant).flurry }));
   floatNotice(token, loc(`${label}.Retour`));
   showReticle(loc(`${label}.Retour`));
 }
@@ -1504,7 +1576,7 @@ function offerEnchantedAttack(effect) {
   stopTargeting();
   targeting = { token, activity, usage: [{ [MODULE_ID]: { cost: "free" } }, { configure: false }, {}] };
   markTargeting();
-  ui.notifications.info(loc("Visee.AttaqueEnchantee", { item: weapon.name }));
+  promptTargeting(loc("Visee.AttaqueEnchantee", { item: weapon.name }));
   floatNotice(token, weapon.name);
   showReticle(weapon.name);
 }
@@ -1544,7 +1616,7 @@ function offerLeap(message, resolution) {
   log(`${activity.item.name}: doubles on the dice, leap offered (${left} left)`);
   floatNotice(hit.token, loc("Retour.Rebond"));
   showReticle(loc("Retour.Rebond"));
-  ui.notifications.info(loc("Rebond.Visee", { item: activity.item.name, left }));
+  promptTargeting(loc("Rebond.Visee", { item: activity.item.name, left }));
 }
 
 /**
@@ -1572,7 +1644,7 @@ function offerBonusAttack(message, resolution) {
   stopTargeting();
   targeting = { token, activity, usage: [{ [MODULE_ID]: { cost: "bonus" } }, { configure: false }, {}] };
   markTargeting();
-  ui.notifications.info(loc("Visee.AttaqueBonus", { item: activity.item.name, why: loc(critical ? "Visee.Critique" : "Visee.Abattu") }));
+  promptTargeting(loc("Visee.AttaqueBonus", { item: activity.item.name, why: loc(critical ? "Visee.Critique" : "Visee.Abattu") }));
   floatNotice(token, loc("Retour.Taille"));
   showReticle(loc("Retour.Taille"));
 }
@@ -1625,6 +1697,7 @@ export function registerPointer() {
   client("situationalCursor", { type: Boolean, default: true });
   client("closeSheetOnUse", { type: Boolean, default: true });
   client("teleportPlanning", { type: Boolean, default: true });
+  client("targetingBanner", { type: Boolean, default: true, onChange: () => announceTargeting() });
 
   route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "targeting: target expected" });
   route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "damage and healing without dialog" });

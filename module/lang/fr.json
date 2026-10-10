@@ -152,6 +152,8 @@
   "DND5ECOMBAT.Reglage.autoUsage.Aide": "Une activité consomme ses ressources, commence la concentration et pose sa zone sans demander (emplacement épuisé : le plus bas disponible). Un sort qui peut se lancer à un niveau supérieur garde la fenêtre, pour choisir le niveau. Plus de ressources : la fenêtre s'ouvre pour le MJ seulement ; un joueur reçoit l'avertissement de dnd5e.",
   "DND5ECOMBAT.Reglage.teleportPlanning.Nom": "Téléportation : choisir la destination aussitôt",
   "DND5ECOMBAT.Reglage.teleportPlanning.Aide": "Après Pas brumeux ou Porte dimensionnelle, la visée de la destination s'ouvre tout de suite (sinon, bouton « Téléporter » de la carte).",
+  "DND5ECOMBAT.Reglage.targetingBanner.Nom": "Visée : bandeau de consigne",
+  "DND5ECOMBAT.Reglage.targetingBanner.Aide": "Pendant une visée (cible, projectiles, zone, case d'arrivée), la consigne et le nombre de cibles choisies restent affichés en haut de l'écran. Désactivé : la consigne n'est qu'une notification.",
   "DND5ECOMBAT.Deplacement.CibleHorsDatteinte": "{name} est hors d'atteinte ce tour-ci.",
   "DND5ECOMBAT.Deplacement.CibleHorsDeVue": "Aucune case atteignable d'où voir {name}.",
   "DND5ECOMBAT.Deplacement.SautTropLong": "Saut trop long : {max} {units} au plus.",

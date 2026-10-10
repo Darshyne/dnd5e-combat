@@ -110,5 +110,7 @@ export const uiApi = { budget, wards, movableZone, movement, issues, multiattack
   /**
    * §118 : `targeting()` — la visée que ce client attend (`{ token, activity, identifier }`, uuids), ou null. Tant qu'elle est
    * ouverte, le clic gauche est au moteur ; ses changements se publient par le hook `dnd5e-combat.targeting` (ui/pointer.mjs).
+   * §119 : plus `kind`, `item`, `prompt` (consigne traduite) et `picked` / `total` (visée multiple) ; le hook part aussi à chaque
+   * créature choisie ou retirée.
    */
   targeting: pendingTargeting };

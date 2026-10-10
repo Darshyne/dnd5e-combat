@@ -22,7 +22,7 @@ import { hitChance, saveFailChance } from "../core/hitchance.mjs";
 import { attackModifiers, netMode, isAutoCritical, autoFailSave } from "../core/conditions.mjs";
 import { saveAdvantageAgainst, fightingAdvantageFor, bestSaveAbility } from "./saves.mjs";
 import { conditionImmunitiesOf } from "./facts.mjs";
-import { attackContext } from "./conditions.mjs";
+import { attackContext, coverAgainst } from "./conditions.mjs";
 import { coverFor } from "./cover.mjs";
 import { readUnitFactors } from "./units.mjs";
 import { effectOfProfile } from "./usage.mjs";
@@ -110,7 +110,7 @@ export function hitChanceOf(attacker, target, activity, { attackMode=null, posA,
   const disadvantage = !!system.disadvantage || !!keys.disadvantage || (ours.disadvantage.length > 0);
   const mode = netMode({ advantage: advantage ? [1] : [], disadvantage: disadvantage ? [1] : [] });
 
-  const cover = coverFor(attacker, target, { posA, quiet: true });
+  const cover = coverAgainst(attacker, target, activity, choices.attackMode, { posA, quiet: true });   // §131
   const ac = cover ? ((cover.bonus === null) ? null : baseAc + cover.bonus) : baseAc;
   const chance = hitChance({
     ac, bonus: bonus.flat, dice: bonus.dice, mode,

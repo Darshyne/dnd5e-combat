@@ -23,6 +23,8 @@ import { isDeadActor } from "./death.mjs";
 import { contentOf } from "./content.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { isSpellCast } from "./scrolls.mjs";
+import { rangedFeatsFor, coverLeft, CROSSBOWS } from "../core/feats.mjs";
+import { coverFor } from "./cover.mjs";
 
 /**
  * Effrayé « tant que la source de la peur est en vue » (P1) : les sources sont les acteurs d'où
@@ -142,6 +144,29 @@ export const evades = actor => activeRule(actor, "evasion");
 /** §20 : Insaisissable — « aucun jet d'attaque ne peut avoir l'Avantage contre vous si vous ne subissez pas l'état Neutralisé ». */
 export const isElusive = token => activeRule(token?.actor, "elusive");
 
+/**
+ * §131 : ce que les dons de tir de l'attaquant accordent à cette attaque (Tireur d'élite, Expert des arbalètes, Sniper de sorts).
+ * @returns {{cover: boolean, closeCombat: boolean, longRange: boolean, offhandModifier: boolean, spellRange: object|null}}
+ */
+export function rangedFeatsOf(actor, activity, attackMode=null) {
+  const rules = Array.from(actor?.items ?? []).map(i => contentOf(i).entry?.rangedFeat).filter(Boolean);
+  const none = { cover: false, closeCombat: false, longRange: false, offhandModifier: false, spellRange: null };
+  if ( !rules.length || (activity?.type !== "attack") ) return none;
+  const item = activity.item;
+  return rangedFeatsFor(rules, {
+    weapon: item?.type === "weapon",
+    ranged: isRangedAttack(activity, attackMode),
+    crossbow: (item?.type === "weapon") && CROSSBOWS.includes(item.system?.type?.baseItem),
+    spell: isSpellCast(item)
+  });
+}
+
+/** §131 : l'abri de la cible contre cette attaque — un don de tir peut ignorer l'abri partiel ou aux trois quarts. */
+export function coverAgainst(origin, target, activity, attackMode, options={}) {
+  const cover = coverFor(origin, target, options);
+  return coverLeft(cover, activity ? rangedFeatsOf(origin?.actor, activity, attackMode).cover : false);
+}
+
 /** Un item de l'attaquant lui retire-t-il le Désavantage du tir au contact d'un ennemi ? */
 const ignoresCloseCombat = token => Array.from(token?.actor?.items ?? []).some(i => contentOf(i).entry?.ignoresCloseCombat === true);
 
@@ -152,15 +177,16 @@ const ignoresCloseCombat = token => Array.from(token?.actor?.items ?? []).some(i
  */
 export function attackContext(origin, target, activity, attackMode, factors, { posA }={}) {
   const ranged = isRangedAttack(activity, attackMode);
+  const feats = rangedFeatsOf(origin?.actor, activity, attackMode);   // §131
   return {
     attacker: statusesOf(origin),
     target: statusesOf(target),
     adjacent: areAdjacent(origin, target, factors, { posA }),
     ranged,
-    longRange: ranged && (rangeIssue(distanceBetween(origin, target, { posA }), rangeOf(activity, attackMode), factors) === "longRange"),
+    longRange: ranged && !feats.longRange && (rangeIssue(distanceBetween(origin, target, { posA }), rangeOf(activity, attackMode), factors) === "longRange"),
     // §19 : pas de Désavantage aux attaques à distance malgré un ennemi au contact
     // (contenu `ignoresCloseCombat` : déclaré par un module de créatures tiers).
-    closeCombat: ranged && hasHostileAdjacent(origin, factors, posA) && !ignoresCloseCombat(origin),
+    closeCombat: ranged && !feats.closeCombat && hasHostileAdjacent(origin, factors, posA) && !ignoresCloseCombat(origin),
     // P1 : qui voit qui. null si la vision n'est pas en service — les états gardent alors leur effet forfaitaire.
     vision: isVisionAvailable() ? visionFacts(origin, target) : null,
     frightenedSourceSeen: frightenedSourceSeen(origin),

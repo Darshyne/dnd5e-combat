@@ -40,5 +40,15 @@ export const FEATS = Object.freeze({
     changes: [{ key: "system.attributes.ac.bonus", type: "add", value: "1" }] } } },
   // Rôdeur furtif, Brouillard de guerre : « l'Avantage aux tests de Dextérité (Discrétion) de l'action Se cacher pendant un combat » —
   // en combat (le moteur ne sait pas quel test est celui de Se cacher).
-  "skulker": { effectWhile: { "6moNnOl0izLMgVNl": { if: { inCombat: true } } } }
+  "skulker": { effectWhile: { "6moNnOl0izLMgVNl": { if: { inCombat: true } } } },
+
+  // §131 — dons de tir. Tireur d'élite : « vos attaques à distance avec une arme ignorent l'abri partiel et l'abri aux trois quarts ;
+  // être à 1,50 m d'un ennemi ne vous impose pas le Désavantage ; attaquer à longue portée non plus ».
+  "sharpshooter": { rangedFeat: { kind: "weapon", cover: true, closeCombat: true, longRange: true } },
+  // Expert des arbalètes : pas de Désavantage au contact avec une arbalète ; le modificateur aux dégâts de l'attaque supplémentaire de la
+  // propriété Légère avec une arbalète Légère. Le Rechargement n'est imposé ni par dnd5e ni par le moteur.
+  "crossbow-expert": { rangedFeat: { kind: "crossbow", closeCombat: true, offhandModifier: true } },
+  // Sniper de sorts : les jets d'attaque des sorts ignorent l'abri partiel et aux trois quarts, pas de Désavantage au contact, et +18 m à
+  // la portée d'un sort d'au moins 3 m qui demande un jet d'attaque.
+  "spell-sniper": { rangedFeat: { kind: "spell", cover: true, closeCombat: true, spellRange: { value: 60, units: "ft" } } }
 });

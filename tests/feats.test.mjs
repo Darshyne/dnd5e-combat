@@ -95,3 +95,36 @@ describe("§130 : effets de don conditionnels", () => {
     expect(validateEntry({ effectWhile: { W0ObItz7sS8ZJ09Y: { if: { armor: ["plate"] } } } }).length).toBe(1);
   });
 });
+
+import { rangedFeatsFor, coverLeft } from "../module/scripts/core/feats.mjs";
+
+describe("§131 : dons de tir", () => {
+  const ss = SHIPPED["sharpshooter"].rangedFeat, ce = SHIPPED["crossbow-expert"].rangedFeat, sp = SHIPPED["spell-sniper"].rangedFeat;
+  const bow = { weapon: true, ranged: true, crossbow: false, spell: false };
+  const handXbow = { weapon: true, ranged: true, crossbow: true, spell: false };
+  const sword = { weapon: true, ranged: false, crossbow: false, spell: false };
+  const bolt = { weapon: false, ranged: true, crossbow: false, spell: true };
+  it("Tireur d'élite : arme à distance seulement", () => {
+    expect(rangedFeatsFor([ss], bow)).toMatchObject({ cover: true, closeCombat: true, longRange: true });
+    expect(rangedFeatsFor([ss], sword)).toMatchObject({ cover: false, closeCombat: false, longRange: false });
+    expect(rangedFeatsFor([ss], bolt).cover).toBe(false);
+  });
+  it("Expert des arbalètes : arbalète seulement", () => {
+    expect(rangedFeatsFor([ce], handXbow)).toMatchObject({ closeCombat: true, offhandModifier: true, longRange: false });
+    expect(rangedFeatsFor([ce], bow).closeCombat).toBe(false);
+  });
+  it("Sniper de sorts : jets d'attaque de sort", () => {
+    expect(rangedFeatsFor([sp], bolt)).toMatchObject({ cover: true, closeCombat: true, spellRange: { value: 60, units: "ft" } });
+    expect(rangedFeatsFor([sp], bow).cover).toBe(false);
+  });
+  it("l'abri total reste", () => {
+    expect(coverLeft({ degree: "half", bonus: 2 }, true)).toBeNull();
+    expect(coverLeft({ degree: "threeQuarters", bonus: 5 }, true)).toBeNull();
+    expect(coverLeft({ degree: "total", bonus: null }, true)).toEqual({ degree: "total", bonus: null });
+    expect(coverLeft({ degree: "half", bonus: 2 }, false)).toEqual({ degree: "half", bonus: 2 });
+  });
+  it("schéma", () => {
+    for ( const id of ["sharpshooter", "crossbow-expert", "spell-sniper"] ) expect(validateEntry(SHIPPED[id])).toEqual([]);
+    expect(validateEntry({ rangedFeat: { kind: "bow" } }).length).toBe(1);
+  });
+});

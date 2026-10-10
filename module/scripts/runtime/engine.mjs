@@ -27,7 +27,7 @@ import { readUsage } from "../adapter/usage.mjs";
 import { canResistSave, askLegendary, resistSave, legendaryLeft } from "../adapter/legendary.mjs";
 import { concentrationEffectOf, tieRegionToConcentration } from "../adapter/concentration.mjs";
 import { areaRulesOf, isInstantaneous, writeAreaState, markTransient, shrinkToBolt, removeTransientRegions } from "../adapter/areas.mjs";
-import { statusesOf, areAdjacent, evades } from "../adapter/conditions.mjs";
+import { statusesOf, areAdjacent, evades, coverAgainst } from "../adapter/conditions.mjs";
 import { currentAc } from "../adapter/reactions.mjs";
 import { askChoice, CHOICE_QUERY, handleChoiceQuery } from "../adapter/choices.mjs";
 import { askAllocation, ALLOCATION_QUERY, handleAllocationQuery } from "../adapter/projectiles.mjs";
@@ -444,7 +444,7 @@ const dispatcher = createDispatcher({
  * Complète des cibles avec ce qui dépend des états et de la situation (core/conditions.mjs) :
  * échec d'office à la sauvegarde du plan, coup critique d'office, réaction possible si touchée.
  */
-async function enrich(targets, plan, originUuid, activityUuid=null) {
+async function enrich(targets, plan, originUuid, activityUuid=null, attackMode=null) {
   const activity = activityUuid ? await fromUuid(activityUuid) : null;
   const origin = plan.attack && originUuid ? await fromUuid(originUuid) : null;
   const factors = origin ? readUnitFactors() : null;
@@ -466,7 +466,8 @@ async function enrich(targets, plan, originUuid, activityUuid=null) {
     const token = await fromUuid(target.token);
     const statuses = statusesOf(token);
     // P1 (b) : l'abri corrige la CA avant le verdict — rien n'est posé sur la cible (SPEC §14.1, tranché).
-    const cover = (origin && token && (target.ac !== null) && (target.ac !== undefined)) ? coverFor(origin, token) : null;
+    // §131 : un don de tir (Tireur d'élite, Sniper de sorts) ignore l'abri partiel ou aux trois quarts.
+    const cover = (origin && token && (target.ac !== null) && (target.ac !== undefined)) ? coverAgainst(origin, token, activity, attackMode) : null;
     const ac = cover ? ((cover.bonus === null) ? null : target.ac + cover.bonus) : target.ac;
     // §16.8 : type de créature, règle du contenu, immunité à tous les effets — la cible reste lisible, hors d'atteinte.
     const unaffected = await unaffectedBy(activity, plan, token);
@@ -557,7 +558,7 @@ async function onAttackMessage(message) {
   }
   await waitForDice(message);
   const rolled = async plan => {
-    const targets = await enrich(attack.targets, plan, speakerToken(message), attack.activity);
+    const targets = await enrich(attack.targets, plan, speakerToken(message), attack.activity, message.rolls?.[0]?.options?.attackMode ?? message.system?.mode ?? null);
     return { type: "attackRolled", roll: await inspiredAttack(message, attack.roll, targets), messageId: message.id, targets };
   };
   // Le message d'utilisation attend ce jet : c'est lui le porteur.

@@ -68,3 +68,33 @@ export function sameChanges(current=[], wanted=[]) {
   const norm = list => list.map(c => `${c.key}|${c.type ?? ""}|${String(c.value)}`);
   return JSON.stringify(norm(current)) === JSON.stringify(norm(wanted));
 }
+
+/** §131 : les arbalètes du Manuel des joueurs (identifiants d'arme de base de dnd5e). */
+export const CROSSBOWS = Object.freeze(["handcrossbow", "heavycrossbow", "lightcrossbow"]);
+
+/**
+ * §131 : ce que les dons de tir accordent à CETTE attaque (Tireur d'élite, Expert des arbalètes, Sniper de sorts). Chaque règle
+ * `rangedFeat` vaut pour un genre d'attaque (`kind`) : « weapon » (attaque à distance avec une arme, lancée comprise), « crossbow »
+ * (une arbalète), « spell » (jet d'attaque d'un sort).
+ * @param {object[]} rules  Les règles `rangedFeat` des items du porteur.
+ * @param {{weapon: boolean, ranged: boolean, crossbow: boolean, spell: boolean}} attack
+ * @returns {{cover: boolean, closeCombat: boolean, longRange: boolean, offhandModifier: boolean, spellRange: object|null}}
+ */
+export function rangedFeatsFor(rules, attack) {
+  const out = { cover: false, closeCombat: false, longRange: false, offhandModifier: false, spellRange: null };
+  for ( const r of rules ?? [] ) {
+    const fits = (r.kind === "weapon") ? (attack.weapon && attack.ranged)
+      : (r.kind === "crossbow") ? (attack.weapon && attack.crossbow)
+      : (r.kind === "spell") ? attack.spell : false;
+    if ( !fits ) continue;
+    for ( const k of ["cover", "closeCombat", "longRange", "offhandModifier"] ) if ( r[k] === true ) out[k] = true;
+    if ( r.spellRange ) out.spellRange = r.spellRange;
+  }
+  return out;
+}
+
+/** §131 : l'abri que la règle laisse : un abri partiel ou aux trois quarts ignoré ; l'abri total reste. */
+export function coverLeft(cover, ignores) {
+  if ( !cover || !ignores ) return cover;
+  return (cover.degree === "total") ? cover : null;
+}

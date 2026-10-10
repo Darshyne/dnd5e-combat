@@ -15,6 +15,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
 import { freshBudget, costOf } from "../core/turn.mjs";
 import { convertLength } from "../core/units.mjs";
+import { readUnitFactors } from "./units.mjs";
 import { depthOf, verticalExtent, verticalGap } from "../core/space.mjs";
 import { multiattackOf, useKeysOf, isMultiattackItem } from "./multiattack.mjs";
 import { pendingMetamagic, distantRange } from "./metamagic.mjs";
@@ -125,7 +126,7 @@ export function rangeOf(activity, attackMode=null) {
     const range = { value: prepared.value ?? prepared.reach ?? null, long: prepared.long ?? null, units: prepared.units };
     // §32 : Sort ample, retenu pour ce sort.
     const distant = (activity.item?.type === "spell") && (range.units !== "self") && pendingMetamagic(activity.actor).includes("distant");
-    return distant ? distantRange(range) : range;
+    return spellSniperRange(activity, distant ? distantRange(range) : range);
   }
   const units = weapon.units ?? prepared.units;
   const reach = weapon.reach ?? prepared.reach ?? null;
@@ -134,6 +135,24 @@ export function rangeOf(activity, attackMode=null) {
   if ( attackMode?.startsWith("thrown") ) return { value: weapon.value ?? null, long: weapon.long ?? null, units };
   if ( attackMode ) return { value: reach, long: null, units };
   return { value: Math.max(reach ?? 0, weapon.value ?? 0) || null, long: weapon.long ?? null, units };
+}
+
+/**
+ * §131 : Sniper de sorts — « quand vous lancez un sort d'une portée d'au moins 3 m qui demande un jet d'attaque, sa portée augmente de
+ * 18 m ». La règle `rangedFeat.spellRange` d'un item du lanceur (lue ici : adapter/conditions.mjs importe ce fichier).
+ */
+function spellSniperRange(activity, range) {
+  if ( (activity.type !== "attack") || (activity.item?.type !== "spell") || !Number.isFinite(range.value) || !range.units ) return range;
+  const rule = Array.from(activity.actor?.items ?? []).map(i => contentOf(i).entry?.rangedFeat).find(r => (r?.kind === "spell") && r.spellRange);
+  if ( !rule ) return range;
+  const factors = readUnitFactors();
+  let add, least;
+  try {
+    add = convertLength(rule.spellRange.value, rule.spellRange.units, range.units, factors);
+    least = convertLength(10, "ft", range.units, factors);
+  } catch { return range; }
+  if ( range.value < least - 1e-6 ) return range;
+  return { ...range, value: range.value + add, long: Number.isFinite(range.long) ? range.long + add : range.long };
 }
 
 /** Cette attaque est-elle celle d'une arme de mêlée qui peut aussi se lancer ? */

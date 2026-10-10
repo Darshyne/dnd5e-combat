@@ -364,7 +364,12 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     return false;
   }
   if ( !usageConfig[MODULE_ID]?.engaged && !usageConfig[MODULE_ID]?.confirmed ) closeSheetFor(activity);
+  // §125 : une action que le moteur lance sur les cibles qu'il a choisies (visée, projectiles, groupe) — retenues jusqu'à leur relâchement.
+  if ( ours.engaged || ours.picks || ours.projectileOf ) noteInFlight(activity);
   if ( !setting("targetingMode") || usageConfig[MODULE_ID]?.engaged || usageConfig[MODULE_ID]?.confirmed ) return true;
+  // §125 : les cibles d'une action précédente pas encore réglée (son animation, ses jets) ne servent pas à une autre — vu : un Mot
+  // de guérison lancé juste après une Moquerie cruelle a soigné le Zombi encore ciblé. Relâchées, et la visée s'ouvre.
+  if ( leftoverTargets(activity) ) { clearTargets(); log(`${activity.item?.name}: previous action's targets released, targeting opened`); }
   if ( !canvas.ready || game.user.targets.size || !needsTarget(activity) ) return true;
   const token = activity.getUsageToken?.() ?? activity.actor?.getActiveTokens()[0]?.document;
   if ( !token?.object || !token.isOwner ) return true;
@@ -1482,8 +1487,29 @@ function onKeyDown(event) {
 /* -------------------------------------------- */
 
 function releaseTargets() {
+  inFlight = null;
   if ( !setting("releaseTargets") ) return;
+  clearTargets();
+}
+
+function clearTargets() {
   for ( const token of Array.from(game.user.targets) ) token.setTarget(false, { releaseOthers: false });
+}
+
+/**
+ * §125 : les cibles qu'une action lancée par le moteur emporte (`{ activity, ids }`), jusqu'à leur relâchement à la fin de sa résolution.
+ * Une autre activité lancée entre-temps sur exactement ces cibles les a héritées : ce sont des restes.
+ */
+let inFlight = null;
+const targetIds = () => Array.from(game.user.targets).map(t => t.document.uuid).sort();
+function noteInFlight(activity) {
+  const ids = targetIds();
+  inFlight = ids.length ? { activity: activity?.uuid ?? null, ids } : null;
+}
+function leftoverTargets(activity) {
+  if ( !inFlight || !game.user.targets.size || (inFlight.activity === (activity?.uuid ?? null)) ) return false;
+  const ids = targetIds();
+  return (ids.length === inFlight.ids.length) && ids.every((id, i) => id === inFlight.ids[i]);
 }
 
 /** Une action jugée (attaque touchée et dégâts appliqués, ratée, sauvegardes réglées) : son auteur relâche ses cibles. */

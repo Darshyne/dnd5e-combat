@@ -37,6 +37,15 @@ import { isPotion, potionOfCast } from "./potions.mjs";
 export const effectKey = e => e._id ?? e.uuid;
 
 /**
+ * L'effet d'un profil d'activité (`activity.effects[i]`), lu sans attendre : sur l'item, ou par `fromUuidSync` pour une
+ * référence par UUID (null si elle n'est pas en mémoire, un index de compendium si elle n'y est qu'indexée). Remplace le
+ * getter `profile.effect`, que dnd5e 6.0 déprécie (retiré en 6.2, `applied-effect-field.mjs:36`) au profit de `getEffect()`,
+ * asynchrone quand le profil porte un `uuid` (§126). Là où l'on peut attendre, `await profile.getEffect()`.
+ */
+export const effectOfProfile = (profile, item) => (profile?._id ? item?.effects?.get?.(profile._id) : null)
+  ?? (profile?.uuid ? fromUuidSync(profile.uuid, { strict: false }) : null) ?? null;
+
+/**
  * Les effets que l'activité applique au niveau où elle est lancée : `applicableEffects` de dnd5e, qui filtre les profils
  * par `level.min`/`level.max` d'après `relevantLevel` (le niveau du sort de la copie mise à l'échelle,
  * `getAssociatedActivity({ scaled: true })`) — dnd5e 6.0.3, dnd5e.mjs:20091-20096 et :20165-20169. Sans ce filtre, Aide
@@ -215,8 +224,7 @@ function resavePlan(message, activity, common, targets) {
  * cache), pas par `profile.effect` : dnd5e 6.0 le déprécie au profit de `getEffect()`, asynchrone (un avertissement par effet,
  * dix-huit pour Assistance).
  */
-const effectLabel = (e, item) => item?.effects?.get?.(e._id)?.name ?? (e.uuid ? fromUuidSync(e.uuid, { strict: false })?.name : null)
-  ?? e.uuid ?? e._id;
+const effectLabel = (e, item) => effectOfProfile(e, item)?.name ?? e.uuid ?? e._id;
 
 /**
  * Effets EXCLUSIFS (contenu `choice: { effects: "one" }`, Maléfice) : le plan porte la question,

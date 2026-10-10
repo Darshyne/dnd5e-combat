@@ -13,6 +13,7 @@ import { actorOfEffect } from "./grapple.mjs";
 import { dragDestination } from "./movement.mjs";
 import { englishDescription } from "./multiattack.mjs";
 import { committedPosition } from "./turn.mjs";
+import { effectOfProfile } from "./usage.mjs";
 
 /** L'effet « avalé » d'un item : celui qui porte l'abri total, ou l'état Agrippé (Tertre errant). */
 const isSwallowedEffectData = e => e.statuses?.has?.("coverTotal") || e.statuses?.has?.("grappled");
@@ -31,7 +32,7 @@ export function swallowOf(item) {
   const effectIds = new Set(item.effects.filter(isSwallowedEffectData).map(e => e.id));
   if ( !effectIds.size ) return null;
   const activities = item.system.activities?.contents ?? [];
-  const posesSwallow = a => (a.effects ?? []).some(ref => effectIds.has(ref._id ?? ref.effect?.id));
+  const posesSwallow = a => (a.effects ?? []).some(ref => effectIds.has(ref._id ?? effectOfProfile(ref, item)?.id));
   const poses = activities.find(posesSwallow) ?? null;
   // Crapaud géant (MM 2.x) : ses trois activités sont « Damage: Swallowed », « Escape Corpse » et « Expend Use » — aucune
   // ne relie l'effet « avalé ». L'action sans effet de l'item tient lieu d'entrée.

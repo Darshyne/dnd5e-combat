@@ -65,7 +65,7 @@ import { loc, log } from "../runtime/shared.mjs";
 import { registerHitChance, showHitChance, showSaveChance, hideHitChance, placeHitChance, showBadge } from "./hitchance.mjs";
 import { floatNotice } from "./feedback.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
-import { potionCastsOnDrinker } from "../adapter/usage.mjs";
+import { effectOfProfile, potionCastsOnDrinker } from "../adapter/usage.mjs";
 import { isPotion } from "../adapter/potions.mjs";
 import { aimedAreaOf, aimedShapeData, aimedRegionData } from "../adapter/self-area.mjs";
 import { castAimed, placeAimed } from "../runtime/self-area.mjs";
@@ -1031,9 +1031,10 @@ function tokenEntries(token, target, { aggressive=true }={}) {
   const holding = holdsOf(token, target).length > 0;
   if ( holding ) bare.push({ icon: "fa-solid fa-hand-holding", label: loc("Menu.Relacher"), run: () => releaseGrapple(token, target) });
   for ( const profile of grapple?.effects ?? [] ) {
-    const name = profile.effect?.name;
+    const effect = effectOfProfile(profile, grapple.item);
+    const name = effect?.name;
     if ( !name ) continue;
-    if ( holding && profile.effect.statuses?.has("grappled") ) continue;
+    if ( holding && effect.statuses?.has("grappled") ) continue;
     bare.push({ icon: "fa-solid fa-hands", label: name, run: event => engageWith(token, target, grapple, { event, choice: profile._id }) });
   }
   if ( bare.length === 1 ) entries.push(bare[0]);

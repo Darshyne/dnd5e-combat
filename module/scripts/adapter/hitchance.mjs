@@ -25,6 +25,7 @@ import { conditionImmunitiesOf } from "./facts.mjs";
 import { attackContext } from "./conditions.mjs";
 import { coverFor } from "./cover.mjs";
 import { readUnitFactors } from "./units.mjs";
+import { effectOfProfile } from "./usage.mjs";
 
 /**
  * Le bonus d'une formule, séparé en partie fixe et dés. null si la formule a autre chose qu'une
@@ -168,7 +169,7 @@ export function saveChanceOf(caster, target, activity) {
 
   const statuses = Array.from(actor.statuses ?? []);
   const autoFail = autoFailSave(statuses, ability);
-  const posed = (activity.effects ?? []).flatMap(ref => Array.from(ref.effect?.statuses ?? []));
+  const posed = (activity.effects ?? []).flatMap(ref => Array.from(effectOfProfile(ref, activity.item)?.statuses ?? []));
   const immunities = conditionImmunitiesOf(actor);
   const immune = !(activity.damage?.parts?.length) && (posed.length > 0) && posed.every(s => immunities.includes(s));
   const bonus = own.flat + extra.flat;

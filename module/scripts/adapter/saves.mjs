@@ -16,7 +16,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { rollerFor } from "./concentration.mjs";
 import { committedPosition } from "./turn.mjs";
 import { areaOriginOf, reachesFromPoint, sphereOf, insideSphere } from "./space.mjs";
-import { effectKey, poolEffectsOf } from "./usage.mjs";
+import { effectKey, effectOfProfile, poolEffectsOf } from "./usage.mjs";
 import { timedWait, closeRollDialogAfter } from "./dialogs.mjs";
 import { pushOf } from "./basics.mjs";
 import { blockedFor } from "./eligibility.mjs";
@@ -150,9 +150,9 @@ export function fightingAdvantageFor(activity, token) {
   return fightingAdvantage({ targetInCombat, hostile: !!caster && areHostile(caster.disposition, token.disposition) });
 }
 
-/** Les états que posent les effets d'une activité (`activity.effects[].effect`, dnd5e 6). */
+/** Les états que posent les effets d'une activité (profils `activity.effects[]`, lus par `effectOfProfile`, §126). */
 function statusesPosedBy(activity) {
-  return new Set((activity?.effects ?? []).flatMap(ref => [...(ref.effect?.statuses ?? [])]));
+  return new Set((activity?.effects ?? []).flatMap(ref => [...(effectOfProfile(ref, activity.item)?.statuses ?? [])]));
 }
 
 /**

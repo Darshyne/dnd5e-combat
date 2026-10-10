@@ -39,7 +39,8 @@ export async function holdZoneEffects(region) {
   const item = activity?.item;
   if ( contentOf(item).entry?.zoneEffects !== true ) return null;
   if ( region.behaviors.some(b => b.type === "applyActiveEffect") ) return null;
-  const effects = (activity.effects ?? []).map(e => e.effect ?? item.effects.get(e._id)).filter(Boolean);
+  // §126 : `getEffect()` de dnd5e 6 (le getter `effect` est déprécié) ; asynchrone pour un profil qui porte un `uuid`.
+  const effects = (await Promise.all((activity.effects ?? []).map(e => e.getEffect?.() ?? item.effects.get(e._id)))).filter(Boolean);
   if ( !effects.length ) return null;
   const [behavior] = await region.createEmbeddedDocuments("RegionBehavior", [{
     type: "applyActiveEffect", name: item.name, system: { effects: effects.map(e => e.uuid) }

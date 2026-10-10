@@ -28,15 +28,31 @@ export function meleeWeaponHit(activity, attackMode) {
  * l'utilisation gratuite de l'item s'il en a une. Rien sans action Bonus disponible en combat.
  * @returns {Array<{item: Item5e, rule: object, level: number, slot: string|null, free: boolean, label: string}>}
  */
+/**
+ * §128 : la règle d'un châtiment pour CET exemplaire du sort. Une copie plus ancienne (le Châtiment de fournaise des personnages
+ * pré-tirés du Manuel des joueurs : une seule activité, de sauvegarde, qui porte les dés) n'a pas l'activité de dégâts déclarée —
+ * on prend alors celle de l'objet qui porte des dés, et on oublie ce que la copie n'a pas (sauvegarde, effet, activité « fiends »).
+ * null : rien à lancer.
+ */
+export function smiteRuleOf(item, rule) {
+  const activities = item?.system?.activities;
+  if ( !rule || !activities ) return null;
+  if ( activities.get(rule.damage) ) return rule;
+  const dice = a => (a.damage?.parts ?? []).some(p => p.number && p.denomination);
+  const damaged = activities.find(a => (a.id !== rule.save) && dice(a));
+  if ( !damaged ) return null;
+  return { ...rule, damage: damaged.id, fiends: activities.get(rule.fiends) ? rule.fiends : undefined,
+    save: activities.get(rule.save) ? rule.save : undefined, effect: item.effects?.get(rule.effect) ? rule.effect : undefined };
+}
+
 export function smiteOptions(actor) {
   const combatant = combatantFor(actor);
   if ( combatant && !((readBudget(combatant)?.bonus ?? 1) >= 1) ) return [];
   const spells = actor?.system?.spells ?? {};
   const out = [];
   for ( const item of actor?.items ?? [] ) {
-    const rule = isSpellCast(item) ? contentOf(item).entry?.smite : null;
-    // Une copie plus ancienne du sort, sans l'activité de dégâts déclarée, n'est pas proposée.
-    if ( !rule || !item.system.activities?.get(rule.damage) ) continue;
+    const rule = isSpellCast(item) ? smiteRuleOf(item, contentOf(item).entry?.smite) : null;
+    if ( !rule ) continue;
     const base = Number(item.system.level) || 1;
     const uses = item.system.uses;
     if ( Number(uses?.max) && ((uses.value ?? (Number(uses.max) - (uses.spent ?? 0))) > 0) ) {

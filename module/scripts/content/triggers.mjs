@@ -170,6 +170,8 @@ export const TRIGGERS = Object.freeze({
   "weird": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }, { type: "damage", to: "bearer", activity: "nuStSySOEkwOUnXf" }] }],
   // Terreur : « si la créature termine son tour dans un espace d'où elle n'a pas de ligne de vue sur vous, elle fait un JS de
   // Sagesse ; réussi, le sort prend fin sur elle ». (La fuite — action Foncer, s'éloigner — reste au joueur ou au MJ.)
+  // §147 : Murmures dissonants — « sur un échec, elle doit immédiatement utiliser sa Réaction, si elle le peut, pour s'éloigner de
+  // vous aussi loin que sa Vitesse le permet » : runtime/flee.mjs (`fleeOnFailedSave`, content/spells.mjs).
   "fear": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave", unlessSeesOrigin: true }] }],
   // Châtiment de fournaise : la cible brûle (1d6 feu) au début de chacun de ses tours, puis tente un JS de Constitution qui, réussi,
   // éteint le sort — l'effet « Seared » (A0tTvLeRetrC708K) est posé par le châtiment (`smite.effect`) ; les

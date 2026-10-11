@@ -22,7 +22,7 @@ import { MOVABLES } from "./movables.mjs";
 import { LIGHTS, REVEALS_INVISIBLE } from "./lights.mjs";
 import { TETHERS } from "./tethers.mjs";
 import { DAMAGE_SHIELDS, HIT_DICE_HEALS } from "./defenses.mjs";
-import { BREAKS_ON, NO_REACTIONS, ACTION_OR_BONUS, CURES, FIGHTING_ADVANTAGE, SAVED_EFFECTS, SIZE_CHANGES, ORDER_LISTS } from "./spells.mjs";
+import { BREAKS_ON, NO_REACTIONS, ACTION_OR_BONUS, CURES, FIGHTING_ADVANTAGE, SAVED_EFFECTS, SIZE_CHANGES, ORDER_LISTS, FLEE_ON_FAILED_SAVE } from "./spells.mjs";
 import { RAVENLOFT } from "./ravenloft.mjs";
 import { ROGUE } from "./rogue.mjs";
 import { FIGHTER } from "./fighter.mjs";
@@ -98,6 +98,8 @@ function build() {
   for ( const [id, effects] of Object.entries(SAVED_EFFECTS) ) (table[id] ??= {}).savedEffects = effects;
   for ( const [id, rule] of Object.entries(SIZE_CHANGES) ) (table[id] ??= {}).resize = rule;
   for ( const [id, list] of Object.entries(ORDER_LISTS) ) (table[id] ??= {}).orders = list;
+  // §147 : la fuite par la Réaction (Murmures dissonants).
+  for ( const [id, entry] of Object.entries(FLEE_ON_FAILED_SAVE) ) table[id] = mergeEntries([table[id] ?? null, entry]);
   // Options de joueur de Ravenloft (§19.9) : une entrée complète par identifiant, fusionnée par-dessus.
   for ( const [id, entry] of Object.entries(RAVENLOFT) ) table[id] = mergeEntries([table[id] ?? null, entry]);
   // Classes du Manuel des joueurs (§20) : même principe, par-dessus les tables par brique.

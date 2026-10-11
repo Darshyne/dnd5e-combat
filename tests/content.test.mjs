@@ -162,7 +162,7 @@ describe("contenu livré", () => {
       "crown-of-madness", "crusher", "cunning-action", "cunning-strike", "cutting-words", "dancing-lights", "dark-ones-blessing",
       "dark-ones-own-luck", "darkness", "daylight", "death-burst", "death-throes", "death-ward", "deathless-agility", "defense",
       "defensive-duelist", "deflect-attacks", "delayed-blast-fireball", "devious-strikes", "dimension-door", "disarming-attack",
-      "disciple-of-life", "dispel-magic", "distant-spell", "distracting-strike", "divine-fury", "divine-smite", "dominate-beast",
+      "disciple-of-life", "dispel-magic", "dissonant-whispers", "distant-spell", "distracting-strike", "divine-fury", "divine-smite", "dominate-beast",
       "dominate-monster", "dominate-person", "draining-kiss", "draining-swipe", "dread-ambusher", "dreadful-strikes", "dueling",
       "dwarven-resilience", "earthquake", "echoing-soul", "elder-champion", "eldritch-blast", "eldritch-smite", "elemental-adept",
       "elemental-affinity", "elemental-fury", "elemental-weapon", "elixir-of-health", "elusive", "empowered-channeling",

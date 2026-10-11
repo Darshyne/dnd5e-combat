@@ -21,6 +21,7 @@ import { registerReactions } from "./runtime/reactions.mjs";
 import { registerGates } from "./runtime/gates.mjs";
 import { registerPortent } from "./runtime/portent.mjs";
 import { registerGrimoire } from "./runtime/grimoire.mjs";
+import { registerFlee } from "./runtime/flee.mjs";
 import { registerDispel } from "./runtime/dispel.mjs";
 import { registerTriggers } from "./runtime/triggers.mjs";
 import { registerContent, contentApi } from "./runtime/content.mjs";
@@ -180,6 +181,7 @@ Hooks.once("init", () => {
   gated(registerReactions);
   gated(registerPortent);   // §36 : Présage (Repos long, requête du devin)
   gated(registerGrimoire);   // §139 : rituels sans emplacement, Restauration magique
+  gated(registerFlee);   // §147 : Murmures dissonants, la fuite par la Réaction
   gated(registerDispel);   // §37.2 : Dissipation de la magie
   gated(registerTriggers);
   gated(registerVision);

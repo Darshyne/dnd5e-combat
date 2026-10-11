@@ -64,4 +64,7 @@ export const SIZE_CHANGES = Object.freeze({
  * Ordre imposé (§16.59, `orders`) : Injonction — « Approche, Lâche, Fuis, Rampe, Halte » (PHB 2024), au choix de l'auteur ;
  * sur une sauvegarde de Sagesse ratée, joué au prochain tour de la cible (runtime/orders.mjs).
  */
+/** §147 : la cible qui rate sa sauvegarde fuit le lanceur par sa Réaction (runtime/flee.mjs). */
+export const FLEE_ON_FAILED_SAVE = Object.freeze({ "dissonant-whispers": { fleeOnFailedSave: true } });
+
 export const ORDER_LISTS = Object.freeze({ "command": ["approach", "drop", "flee", "grovel", "halt"] });

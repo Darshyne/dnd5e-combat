@@ -57,6 +57,7 @@
   "DND5ECOMBAT.ReactionTouche": "{attacker} vous touche avec un {total}. Réagir ?",
   "DND5ECOMBAT.ReactionBlesse": "{attacker} vient de vous blesser. Réagir ?",
   "DND5ECOMBAT.ReactionOpportunite": "{mover} quitte votre allonge. Attaque d'opportunité ?",
+  "DND5ECOMBAT.Fuite.Retour": "Fuit (Réaction)",
   "DND5ECOMBAT.Rituel.Question": "{item} : le lancer en rituel (10 minutes de plus, sans emplacement) ou avec un emplacement ?",
   "DND5ECOMBAT.Rituel.EnRituel": "En rituel",
   "DND5ECOMBAT.Rituel.AvecEmplacement": "Avec un emplacement",

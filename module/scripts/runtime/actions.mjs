@@ -646,7 +646,8 @@ export async function approachDoor(token, wall) {
   const here = cellOf(token);
   if ( cells.some(c => (c.i === here.i) && (c.j === here.j)) ) return true;
   if ( isGrappled(token) ) { ui.notifications.warn(loc("Empoignade.Immobile", { name: token.name })); return false; }
-  const plan = planPath(token, { cells, level: token._source.level ?? undefined }, { maxCost: movementCap(token) });
+  // §147 : `maxCost` — un déplacement hors du budget du tour (la Réaction de Murmures dissonants : la Vitesse entière).
+  const plan = planPath(token, { cells, level: token._source.level ?? undefined }, { maxCost: maxCost ?? movementCap(token) });
   if ( !plan ) { ui.notifications.warn(loc("Deplacement.AucunChemin")); return false; }
   if ( !plan.arrives ) { ui.notifications.warn(loc("Porte.HorsDatteinte")); return false; }
   if ( !plan.waypoints.length ) return true;
@@ -661,7 +662,7 @@ export async function approachDoor(token, wall) {
  * dans le budget du tour, pas à pas (attaques d'opportunité comprises). Hors d'atteinte : aussi près que possible.
  * Rend true si le token est arrivé à cet écart.
  */
-export async function walkToGap(token, anchor, gap) {
+export async function walkToGap(token, anchor, gap, { maxCost=null }={}) {
   const grid = token.parent.grid;
   const { sceneX, sceneY, sceneWidth, sceneHeight } = token.parent.dimensions;
   const top = grid.getOffset({ x: sceneX + 1, y: sceneY + 1 });

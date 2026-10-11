@@ -57,6 +57,7 @@
   "DND5ECOMBAT.ReactionTouche": "{attacker} hits you with a {total}. React?",
   "DND5ECOMBAT.ReactionBlesse": "{attacker} just wounded you. React?",
   "DND5ECOMBAT.ReactionOpportunite": "{mover} leaves your reach. Opportunity Attack?",
+  "DND5ECOMBAT.Fuite.Retour": "Flees (Reaction)",
   "DND5ECOMBAT.Rituel.Question": "{item}: cast it as a Ritual (10 more minutes, no spell slot) or with a spell slot?",
   "DND5ECOMBAT.Rituel.EnRituel": "As a Ritual",
   "DND5ECOMBAT.Rituel.AvecEmplacement": "With a spell slot",

@@ -142,12 +142,26 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
   const raging = isSpellCast(activity.item) && isRaging(activity.actor);   // §48 : lire un parchemin aussi
   const lines = [
     ...issues.map(i => loc(`Souci.${i}`)),
+    ...(outOfAmmunition(activity, attackMode) ? [loc("Souci.noAmmunition", { item: activity.item.name })] : []),
     ...(silenced ? [loc("Souci.silenced")] : []),
     ...(raging ? [loc("Souci.rage")] : []),
     ...limits.issues.map(i => loc(`Souci.${i}`, { item: limits.item ?? "" })),
     ...incapacitated.map(i => loc(`Souci.${i}`))
   ];
   return { combatant, budget, own, request, cost, lines };
+}
+
+/**
+ * §142 : une arme à munitions d'un personnage sans munition restante — dnd5e liste ses munitions (`ammunitionOptions`,
+ * data/item/weapon.mjs : consommables « ammo » du bon sous-type, désactivés à 0) mais tire quand même sans elles. Pas pour un PNJ : un
+ * arc de bestiaire n'a souvent aucune flèche sur la fiche. Une attaque au corps à corps (arme improvisée) n'en a pas besoin.
+ */
+function outOfAmmunition(activity, attackMode) {
+  const item = activity?.item;
+  if ( (activity?.type !== "attack") || (item?.type !== "weapon") || (activity.actor?.type !== "character") ) return false;
+  if ( !item.system.properties?.has?.("amm") ) return false;
+  if ( attackMode && !attackMode.startsWith("ranged") ) return false;
+  return !(item.system.ammunitionOptions ?? []).some(o => !o.disabled);
 }
 
 /** Une frappe à mains nues (l'item de l'Attaque à mains nues, ou une attaque classée « unarmed »). */

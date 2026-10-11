@@ -463,6 +463,7 @@
   "DND5ECOMBAT.Souci.notOwnTurn": "Seulement pendant votre tour.",
   "DND5ECOMBAT.Souci.oncePerTurn": "Déjà utilisé ce tour (une fois à chacun de vos tours).",
   "DND5ECOMBAT.Souci.notEmpty": "Il vous reste des utilisations de {item} : ce n'est possible que quand il n'en reste plus.",
+  "DND5ECOMBAT.Souci.noAmmunition": "{item} : plus de munitions.",
   "DND5ECOMBAT.Souci.noSlot": "{item} : aucun emplacement de sort disponible.",
   "DND5ECOMBAT.Retour.Utilisation": "{sign}{n} {item}",
   "DND5ECOMBAT.Retour.Emplacement": "{sign}{n} emplacement niv. {level}",

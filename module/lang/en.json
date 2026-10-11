@@ -463,6 +463,7 @@
   "DND5ECOMBAT.Souci.notOwnTurn": "Only during your turn.",
   "DND5ECOMBAT.Souci.oncePerTurn": "Already used this turn (once on each of your turns).",
   "DND5ECOMBAT.Souci.notEmpty": "You still have uses of {item}: this is only possible when none are left.",
+  "DND5ECOMBAT.Souci.noAmmunition": "{item}: no ammunition left.",
   "DND5ECOMBAT.Souci.noSlot": "{item}: no spell slot available.",
   "DND5ECOMBAT.Retour.Utilisation": "{sign}{n} {item}",
   "DND5ECOMBAT.Retour.Emplacement": "{sign}{n} level {level} slot",

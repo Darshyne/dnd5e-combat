@@ -82,7 +82,9 @@ function issues(activity, options={}) {
  */
 function cost(activity) {
   if ( !activity?.actor ) return null;
-  try { return costFor(activity) ?? null; } catch { return null; }
+  // §145 : le coût après les règles du tour (Arts martiaux : la frappe à mains nues en action Bonus une fois l'action prise), sinon
+  // celui de la donnée et des règles fixes (Observateur).
+  try { return useIssues(activity).request?.cost ?? costFor(activity) ?? null; } catch { return null; }
 }
 
 /**

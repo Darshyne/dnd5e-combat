@@ -8,6 +8,8 @@
  *  - Technique de la main ouverte : après un coup d'une frappe du Déluge de coups (carte marquée `flurry`), la question :
  *    Déstabiliser, Repousser ou Renverser — l'activité de l'item jouée sur la cible.
  * Arts martiaux et Déluge de coups (coût des frappes) : runtime/turn.mjs ; la visée des frappes du Déluge : ui/pointer.mjs.
+ * §145 : Arts martiaux, la Dextérité aux jets d'attaque et de dégâts des armes de moine (`dnd5e.preRollAttackV2` / `preRollDamageV2`, sur le
+ * client qui lance).
  */
 
 import { MODULE_ID } from "../constants.mjs";
@@ -36,6 +38,47 @@ function monkWeapon(activity) {
   if ( (identifierOf(item).id === "unarmed-strike") || (activity.attack?.type?.classification === "unarmed") ) return true;
   const type = item.system?.type?.value;
   return (item.type === "weapon") && ((type === "simpleM") || ((type === "martialM") && item.system.properties?.has?.("lgt")));
+}
+
+/**
+ * §145 : Arts martiaux — « vous pouvez utiliser votre modificateur de Dextérité au lieu de votre modificateur de Force pour les jets
+ * d'attaque et de dégâts de vos frappes à mains nues et armes de moine », sans armure ni bouclier. dnd5e le fait déjà pour la frappe à
+ * mains nues (arme naturelle : Force ou Dextérité) et les armes Finesse ; pas pour une arme courante de corps à corps (lance, bâton).
+ * Attaque : `config.ability` = « dex » (dnd5e construit le jet depuis elle) ; dégâts : `@mod` (déjà dans les données du jet) remplacé par
+ * la Dextérité quand il vaut la Force et que la Dextérité est meilleure.
+ */
+function dexterityFor(config) {
+  const activity = config?.subject;
+  const actor = activity?.actor;
+  if ( !actor || !ruleOf(actor, "martialArts") || !monkWeapon(activity) ) return null;
+  const worn = actor.items.some(i => (i.type === "equipment") && i.system.equipped
+    && ["light", "medium", "heavy", "shield"].includes(i.system.type?.value));
+  if ( worn ) return null;
+  const str = actor.system.abilities?.str?.mod ?? 0;
+  const dex = actor.system.abilities?.dex?.mod ?? 0;
+  return (dex > str) ? { actor, activity, str, dex } : null;
+}
+
+/** Jet d'attaque : dnd5e construit ses parties plus tard, depuis `config.ability` (activity/attack.mjs, `_buildAttackConfig` :
+ * `formData.ability ?? process.ability`) — la caractéristique choisie dans sa fenêtre, s'il y en a une, reste prioritaire. */
+function dexterousAttack(config) {
+  const found = dexterityFor(config);
+  if ( !found || (config.ability && (config.ability !== "str")) ) return true;
+  config.ability = "dex";
+  log(`${found.actor.name}: Martial Arts, Dexterity instead of Strength for the attack with ${found.activity.item.name}`);
+  return true;
+}
+
+/** Jet de dégâts : ses parties portent déjà `@mod` (la formule de l'arme) — la Force remplacée par la Dextérité. */
+function dexterousDamage(config) {
+  const found = dexterityFor(config);
+  if ( !found ) return true;
+  let changed = false;
+  for ( const roll of config.rolls ?? [] ) {
+    if ( roll?.data && (roll.data.mod === found.str) ) { roll.data.mod = found.dex; changed = true; }
+  }
+  if ( changed ) log(`${found.actor.name}: Martial Arts, Dexterity instead of Strength for the damage of ${found.activity.item.name}`);
+  return true;
 }
 
 /** Les utilisations restantes de l'item de cet identifiant, et l'item. */
@@ -104,6 +147,8 @@ async function onResolution(resolution) {
 }
 
 export function registerMonk() {
+  route("dnd5e.preRollAttackV2", dexterousAttack, { cancellable: true, label: "Martial Arts: Dexterity with a Monk weapon (attack)" });
+  route("dnd5e.preRollDamageV2", dexterousDamage, { cancellable: true, label: "Martial Arts: Dexterity with a Monk weapon (damage)" });
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`monk:${resolution?.id}`, () => onResolution(resolution)),
     { executor: true, label: "Monk: Stunning Strike or Open Hand Technique not offered" });
 }

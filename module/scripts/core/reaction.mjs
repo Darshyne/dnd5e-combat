@@ -20,6 +20,34 @@ export function eligibleReactions(declared, window, { reactionAvailable, incapac
   return declared.filter(r => r.on.includes(window) && (reactionAvailable || (r.free === true)));
 }
 
+/**
+ * §136 : le premier pas d'un chemin qui fait ENTRER dans une allonge (de plus loin à à portée) — l'indice de la position atteinte,
+ * ou -1. Une créature qui part déjà à portée n'y entre pas.
+ * @param {number[]} distances  La distance à chaque position du chemin, départ compris.
+ * @param {number} reach
+ */
+export function entersAt(distances, reach) {
+  for ( let n = 0; n < distances.length - 1; n++ ) {
+    if ( (distances[n] > reach + 1e-6) && (distances[n + 1] <= reach + 1e-6) ) return n + 1;
+  }
+  return -1;
+}
+
+/**
+ * §136 : Maître d'hast, Attaque réactive — « vous pouvez prendre une Réaction pour porter une attaque de corps à corps contre une
+ * créature qui entre dans l'allonge que vous avez avec cette arme ». Ce n'est pas une attaque d'opportunité : Se désengager ne
+ * l'évite pas. Une téléportation n'entre pas « dans » l'allonge en s'y déplaçant (limite assumée, comme l'attaque d'opportunité).
+ * @param {{disposition: number, teleported: boolean}} mover
+ * @param {Array<{token: string, disposition: number, enters: number, reactionAvailable: boolean, incapacitated?: boolean,
+ *   hasLineOfEffect?: boolean|null}>} others  `enters` : l'indice d'entrée (entersAt), -1 si elle n'entre pas.
+ * @returns {string[]}
+ */
+export function reachStrikers(mover, others) {
+  if ( mover.teleported ) return [];
+  return others.filter(o => (o.enters >= 0) && o.reactionAvailable && !o.incapacitated && (o.hasLineOfEffect !== false)
+    && areHostile(mover.disposition, o.disposition)).map(o => o.token);
+}
+
 /** Deux camps sont-ils opposés ? Un neutre (0) ou un secret (-2) ne provoque ni ne subit rien. */
 export function areHostile(a, b) {
   return ((a === 1) && (b === -1)) || ((a === -1) && (b === 1));

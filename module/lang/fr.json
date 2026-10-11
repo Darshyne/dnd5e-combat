@@ -57,6 +57,7 @@
   "DND5ECOMBAT.ReactionTouche": "{attacker} vous touche avec un {total}. Réagir ?",
   "DND5ECOMBAT.ReactionBlesse": "{attacker} vient de vous blesser. Réagir ?",
   "DND5ECOMBAT.ReactionOpportunite": "{mover} quitte votre allonge. Attaque d'opportunité ?",
+  "DND5ECOMBAT.ReactionAllonge": "{mover} entre dans votre allonge. Attaque réactive ?",
   "DND5ECOMBAT.ChoixTitre": "{item} — {name}",
   "DND5ECOMBAT.ChoixEffet": "Quel effet appliquez-vous ?",
   "DND5ECOMBAT.ChoixEnAttente": "Choix du lanceur en attente…",

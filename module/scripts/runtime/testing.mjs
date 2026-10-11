@@ -579,7 +579,8 @@ function threats({ tokenId, point }) {
   const token = tokenOf({ tokenId });
   const at = token.parent.grid.getTopLeftPoint(token.parent.grid.getOffset(point));
   const waypoints = [{ x: at.x, y: at.y, elevation: token._source.elevation, action: "walk" }];
-  return opportunityThreats(token, waypoints).map(uuid => fromUuidSync(uuid, { strict: false })?.name ?? uuid);
+  return opportunityThreats(token, waypoints).map(e => (typeof e === "string")
+    ? (fromUuidSync(e, { strict: false })?.name ?? e) : `${fromUuidSync(e.token, { strict: false })?.name ?? e.token} (reactive strike)`);
 }
 
 /** §20 : le budget du tour d'un combattant (action, action Bonus, Foncer, Se désengager, Vitesse à 0, déplacement en plus). */

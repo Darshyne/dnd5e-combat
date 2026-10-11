@@ -88,6 +88,15 @@ export function sameChanges(current=[], wanted=[]) {
   return JSON.stringify(norm(current)) === JSON.stringify(norm(wanted));
 }
 
+/**
+ * §136 : Maître d'hast — « un bâton, une lance, ou une arme qui a les propriétés Lourde et Allonge ».
+ * @param {{baseItem?: string, properties?: Iterable<string>}} weapon
+ */
+export function polearmFits(weapon) {
+  const props = new Set(weapon?.properties ?? []);
+  return ["quarterstaff", "spear"].includes(weapon?.baseItem) || (props.has("hvy") && props.has("rch"));
+}
+
 /** §131 : les arbalètes du Manuel des joueurs (identifiants d'arme de base de dnd5e). */
 export const CROSSBOWS = Object.freeze(["handcrossbow", "heavycrossbow", "lightcrossbow"]);
 

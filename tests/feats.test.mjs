@@ -188,3 +188,34 @@ describe("§135 : faveurs épiques", () => {
     expect(validateEntry({ effectWhile: { f6JofmGpxquX9bqb: { if: { light: ["night"] } } } }).length).toBe(1);
   });
 });
+
+import { polearmFits } from "../module/scripts/core/feats.mjs";
+import { entersAt, reachStrikers } from "../module/scripts/core/reaction.mjs";
+
+describe("§136 : Maître d'hast, Attaque réactive", () => {
+  it("bâton, lance, ou arme Lourde à Allonge", () => {
+    expect(polearmFits({ baseItem: "quarterstaff", properties: ["ver"] })).toBe(true);
+    expect(polearmFits({ baseItem: "spear", properties: [] })).toBe(true);
+    expect(polearmFits({ baseItem: "glaive", properties: new Set(["hvy", "rch", "two"]) })).toBe(true);
+    expect(polearmFits({ baseItem: "whip", properties: ["fin", "rch"] })).toBe(false);
+    expect(polearmFits({ baseItem: "greatsword", properties: ["hvy", "two"] })).toBe(false);
+  });
+  it("entrer dans l'allonge : de plus loin à à portée ; déjà à portée, ce n'est pas entrer", () => {
+    expect(entersAt([20, 15, 10, 5], 10)).toBe(2);
+    expect(entersAt([10, 5], 10)).toBe(-1);
+    expect(entersAt([20, 15], 10)).toBe(-1);
+  });
+  it("hostile, Réaction libre, pas Neutralisée ; Se désengager ne l'évite pas, la téléportation si", () => {
+    const o = { token: "A", disposition: -1, enters: 2, reactionAvailable: true };
+    expect(reachStrikers({ disposition: 1, teleported: false }, [o])).toEqual(["A"]);
+    expect(reachStrikers({ disposition: 1, teleported: true }, [o])).toEqual([]);
+    expect(reachStrikers({ disposition: -1, teleported: false }, [o])).toEqual([]);
+    expect(reachStrikers({ disposition: 1, teleported: false }, [{ ...o, reactionAvailable: false }])).toEqual([]);
+    expect(reachStrikers({ disposition: 1, teleported: false }, [{ ...o, enters: -1 }])).toEqual([]);
+    expect(reachStrikers({ disposition: 1, teleported: false }, [{ ...o, hasLineOfEffect: false }])).toEqual([]);
+  });
+  it("la déclaration est valide", () => {
+    expect(validateEntry(SHIPPED["polearm-master"])).toEqual([]);
+    expect(SHIPPED["polearm-master"].reactiveStrike).toBe(true);
+  });
+});

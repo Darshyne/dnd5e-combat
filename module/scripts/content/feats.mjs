@@ -106,6 +106,10 @@ export const FEATS = Object.freeze({
   // Sentinelle : Gardien — « juste après qu'une créature à 1,50 m de vous prend l'action Se désengager ou touche une cible autre que vous,
   // vous pouvez lui porter une attaque d'opportunité » ; Halte — « quand vous touchez une créature d'une attaque d'opportunité, sa
   // Vitesse tombe à 0 pour le reste du tour » (l'effet « Halted » du Manuel, posé par runtime/feats.mjs sur toute attaque en Réaction).
+  // §136 : Maître d'hast, Attaque réactive — « tant que vous tenez un bâton, une lance ou une arme Lourde à Allonge, vous pouvez prendre
+  // une Réaction pour porter une attaque de corps à corps contre une créature qui entre dans l'allonge que vous avez avec cette arme »
+  // (runtime/reactions.mjs, avec les attaques d'opportunité). Frappe d'hast (l'attaque Bonus au talon) : l'activité de dnd5e.
+  "polearm-master": { reactiveStrike: true },
   "sentinel": {
     triggers: [
       { on: "allyIsHit", if: { "source.nearSelf": { distance: 5, units: "ft" } }, do: [{ type: "use", target: "source", weapon: true }] },

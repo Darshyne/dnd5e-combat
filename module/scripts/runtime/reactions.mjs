@@ -1,8 +1,8 @@
 import { MODULE_ID } from "../constants.mjs";
-import { opportunityAttackers, areHostile } from "../core/reaction.mjs";
+import { opportunityAttackers, areHostile, entersAt, reachStrikers } from "../core/reaction.mjs";
 import { convertLength } from "../core/units.mjs";
 import {
-  REACTION_QUERY, handleReactionQuery, setReactionApproach, reactionOptions, reactionState, meleeAttacksOf, reactiveSpellsOf, askReaction, currentAc, opportunityBlocked
+  REACTION_QUERY, handleReactionQuery, setReactionApproach, reactionOptions, reactionState, meleeAttacksOf, reactiveStrikesOf, reactiveSpellsOf, askReaction, currentAc, opportunityBlocked
 } from "../adapter/reactions.mjs";
 import { combatantFor, readBudget, distanceBetween, positionOf as position } from "../adapter/turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
@@ -404,7 +404,9 @@ function onEnemyTurnEnd(combat, prior) {
  * allonge en cours de route compte, pas seulement entre le départ et l'arrivée.
  * @param {TokenDocument} token
  * @param {object[]} waypoints  Le chemin prévu, départ exclu.
- * @returns {string[]}  UUID des tokens qui peuvent réagir.
+ * §136 : aussi les Attaques réactives (Maître d'hast) contre une créature qui ENTRE dans l'allonge, rendues comme
+ * `{ token, enters: true }` ; l'ensemble est rangé dans l'ordre du chemin (entrer puis sortir : l'Attaque réactive d'abord).
+ * @returns {Array<string|{token: string, enters: true}>}  UUID des tokens qui peuvent réagir.
  */
 export function opportunityThreats(token, waypoints) {
   if ( !game.combat?.started || !token.actor || !waypoints.length ) return [];
@@ -419,6 +421,7 @@ export function opportunityThreats(token, waypoints) {
   const path = token.getCompleteMovementPath([origin, ...waypoints]).map(position);
 
   const others = [];
+  const strikers = [];
   const dragged = victimsOf(token);
   for ( const combatant of game.combat.combatants ) {
     const other = combatant.token;
@@ -427,6 +430,15 @@ export function opportunityThreats(token, waypoints) {
     if ( dragged.includes(other) ) continue;
     if ( pilotOf(other) ) continue;   // ni ne menace d'attaque d'opportunité
     if ( opportunityBlocked(other.actor) ) continue;   // §23 : Poigne électrique
+    // §136 : Attaque réactive — l'allonge de l'arme d'hast tenue, pas celle de l'attaque d'opportunité.
+    const strike = reactiveStrikesOf(other.actor);
+    if ( strike.options.length ) {
+      let strikeReach = strike.reach;
+      try { strikeReach = convertLength(strike.reach, strike.units, gridUnits, factors); } catch { /* valeur brute */ }
+      const enters = entersAt(path.map(pos => distanceBetween(other, token, { posB: pos }).value), strikeReach);
+      strikers.push({ token: other.uuid, disposition: other.disposition, enters,
+        hasLineOfEffect: (enters >= 0) ? hasLineOfEffect(other, token, { posB: path[enters] }) : null, ...reactionState(other.actor) });
+    }
     const melee = meleeAttacksOf(other.actor);
     let reach = melee.reach;
     try { reach = convertLength(melee.reach, melee.units, gridUnits, factors); } catch { /* unité inconnue : valeur brute */ }
@@ -439,18 +451,22 @@ export function opportunityThreats(token, waypoints) {
       token: other.uuid, disposition: other.disposition, reach,
       before: leaves >= 0 ? distances[leaves] : distances[0],
       after: leaves >= 0 ? distances[leaves + 1] : distances.at(-1),
-      hasMeleeAttack: melee.options.length > 0,
+      leaves, hasMeleeAttack: melee.options.length > 0,
       // P2 : peut-elle frapper celui qui bouge, là où il quitte son allonge (plancher, trappe, mur plein) ?
       hasLineOfEffect: ((leaves >= 0) || (distances[0] <= reach + 1e-6)) ? hasLineOfEffect(other, token, { posB: path[Math.max(leaves, 0)] }) : null,
       seesMover: canSee(other, token) ?? true,   // P1 : « une créature que vous pouvez voir » (position d'avant le déplacement)
       ...reactionState(other.actor)
     });
   }
-  return opportunityAttackers({
+  const attacks = opportunityAttackers({
     // §18.15 : Agile, Vol rasant — comme un Désengagement, pour ce déplacement.
     disposition: token.disposition, teleported,
     disengaged: (readBudget(mover).disengaged === true) || avoidsOpportunity(token.actor, token, waypoints)
-  }, others);
+  }, others).map(uuid => ({ uuid, at: others.find(o => o.token === uuid)?.leaves ?? 0 }));
+  const strikes = reachStrikers({ disposition: token.disposition, teleported }, strikers)
+    .map(uuid => ({ uuid, enters: true, at: strikers.find(o => o.token === uuid).enters - 1 }));
+  if ( !strikes.length ) return attacks.map(a => a.uuid);
+  return [...strikes, ...attacks].sort((a, b) => a.at - b.at).map(a => (a.enters ? { token: a.uuid, enters: true } : a.uuid));
 }
 
 export const OPPORTUNITY_QUERY = `${MODULE_ID}.opportunity`;
@@ -469,9 +485,26 @@ async function attackSettled(usageId) {
 /** Côté MJ actif : propose chaque attaque d'opportunité, l'une après l'autre, et attend son issue. */
 async function handleOpportunityQuery({ token: tokenUuid, attackers }) {
   const token = await fromUuid(tokenUuid);
-  for ( const uuid of attackers ) {
+  let asked = false;
+  for ( const entry of attackers ) {
+    const { token: uuid, enters=false } = (typeof entry === "string") ? { token: entry } : entry;
     const attacker = await fromUuid(uuid);
     if ( !attacker?.actor || !token ) continue;
+    // Une seule Réaction : celle prise par une fenêtre précédente de ce déplacement n'est plus là.
+    if ( asked && !reactionState(attacker.actor).reactionAvailable ) continue;
+    asked = true;
+    if ( enters ) {
+      // §136 : Maître d'hast — réglée avant le déplacement, comme l'attaque d'opportunité (le coup tombe quand la créature arrive).
+      log(`${token.name} is about to enter ${attacker.name}'s reach: Reactive Strike offered before the move`);
+      const answer = await askReaction(attacker.actor, {
+        actor: attacker.actor.uuid,
+        prompt: { key: "ReactionAllonge", data: { mover: token.name } },
+        options: reactiveStrikesOf(attacker.actor).options,
+        target: token.uuid
+      });
+      if ( answer?.message ) await attackSettled(answer.message);
+      continue;
+    }
     log(`${token.name} is about to leave ${attacker.name}'s reach: Opportunity Attack offered before the move`);
     announce("leavesReach", { actor: attacker.actor, source: token.actor, target: attacker.actor, mover: token.uuid });
     const answer = await askReaction(attacker.actor, {

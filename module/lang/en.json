@@ -57,6 +57,7 @@
   "DND5ECOMBAT.ReactionTouche": "{attacker} hits you with a {total}. React?",
   "DND5ECOMBAT.ReactionBlesse": "{attacker} just wounded you. React?",
   "DND5ECOMBAT.ReactionOpportunite": "{mover} leaves your reach. Opportunity Attack?",
+  "DND5ECOMBAT.ReactionAllonge": "{mover} enters your reach. Reactive Strike?",
   "DND5ECOMBAT.ChoixTitre": "{item} — {name}",
   "DND5ECOMBAT.ChoixEffet": "Which effect do you apply?",
   "DND5ECOMBAT.ChoixEnAttente": "Waiting for the caster's choice…",

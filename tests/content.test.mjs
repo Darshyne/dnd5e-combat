@@ -185,7 +185,7 @@ describe("contenu livré", () => {
       "mislead", "mist-walker", "misty-escape", "misty-form", "misty-step", "monks-focus", "moonbeam", "moonlight-step",
       "necrotic-husk", "nimble-escape", "observant", "oil", "open-hand-technique", "ottos-irresistible-dance", "pack-tactics",
       "pact-of-the-blade", "pact-of-the-chain", "parry", "parry-maneuver", "pass-without-trace", "path-to-the-grave",
-      "persistent-rage", "phantasmal-force", "phantasmal-killer", "phantom-steed", "physicians-touch", "piercer", "poisoner",
+      "persistent-rage", "phantasmal-force", "phantasmal-killer", "phantom-steed", "physicians-touch", "piercer", "poisoner", "polearm-master",
       "portent", "potent-cantrip", "potion-of-animal-friendship", "potion-of-climbing", "potion-of-diminution", "potion-of-flying",
       "potion-of-growth", "potion-of-heroism", "potion-of-invisibility", "potion-of-resistance", "potion-of-vitality",
       "power-of-shadow", "prayer-of-healing", "precise-hunter", "precision-attack", "priest-spirit", "proboscis", "produce-flame",

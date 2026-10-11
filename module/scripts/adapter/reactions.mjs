@@ -24,6 +24,7 @@ import { markReactionAdvantage, markReactionDamage, markReactionDisadvantage } f
 import { combatantFor, readBudget, currentTurnKey } from "./turn.mjs";
 import { originItemOf } from "./facts.mjs";
 import { resolveCounter } from "./counter.mjs";
+import { polearmFits } from "../core/feats.mjs";
 
 export const REACTION_QUERY = `${MODULE_ID}.reaction`;
 
@@ -157,6 +158,26 @@ export function meleeAttacksOf(actor) {
     }
   }
   return { options, reach, units };
+}
+
+/**
+ * §136 : Maître d'hast, Attaque réactive — les attaques de corps à corps des armes tenues qui la permettent (bâton, lance, arme
+ * Lourde à Allonge), et la plus grande allonge qu'elles donnent ; rien sans un item `reactiveStrike`.
+ */
+export function reactiveStrikesOf(actor) {
+  const out = { options: [], reach: 0, units: "ft" };
+  if ( !actor?.items.some(i => contentOf(i).entry?.reactiveStrike === true) ) return out;
+  for ( const item of actor.items ) {
+    if ( (item.type !== "weapon") || !item.system.equipped ) continue;
+    if ( !polearmFits({ baseItem: item.system.type?.baseItem, properties: item.system.properties }) ) continue;
+    for ( const activity of item.system.activities ?? [] ) {
+      if ( (activity.type !== "attack") || (activity.attack?.type?.value !== "melee") ) continue;
+      out.options.push({ activity: activity.uuid, name: item.name, img: item.img });
+      const r = activity.range?.reach ?? item.system.range?.reach ?? 5;
+      if ( r > out.reach ) { out.reach = r; out.units = activity.range?.units ?? item.system.range?.units ?? "ft"; }
+    }
+  }
+  return out;
 }
 
 /**

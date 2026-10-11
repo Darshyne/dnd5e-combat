@@ -141,7 +141,7 @@ export default {
       const done = await hitUntil(guerrier, bite, bandit, async (r, t, u, state) => {
         const d = await dialogue(state.known);
         if ( !d ) return false;
-        await answer(d, /^(Renforcement|Strengthen)/i);
+        await answer(d, /^(Renforcement|Strengthen|Empower)/i);
         await pause(2500);
         amount = 11 - (await ctx.hp(bandit));
         const boost = (await ctx.effects(guerrier)).find(e => BOOSTED.test(e.name ?? ""));

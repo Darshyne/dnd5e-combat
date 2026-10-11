@@ -121,7 +121,12 @@ export async function inflict({ step, item=null, scaling=0, speaker, targetUuid,
   let rolls;
   if ( step.activity ) {
     const scaled = (scaling && item?.scaledClone) ? item.scaledClone(scaling) : item;
-    const activity = scaled?.system?.activities?.get(step.activity);
+    // §153 : une copie plus ancienne de l'item, sans l'activité déclarée (le Châtiment de fournaise des personnages pré-tirés du
+    // Manuel), prend l'activité qui porte les dés de dégâts — comme le châtiment lui-même (adapter/smite.mjs, §128).
+    const dice = a => (a.damage?.parts ?? []).some(p => (p.number && p.denomination) || p.custom?.formula);
+    const activity = scaled?.system?.activities?.get(step.activity)
+      ?? scaled?.system?.activities?.find?.(a => a.getDamageConfig && dice(a)) ?? null;
+    if ( activity && (activity.id !== step.activity) ) console.log(`${MODULE_ID} | ${item?.name}: activity ${step.activity} missing, damage from "${activity.name}"`);
     if ( !activity?.getDamageConfig ) return null;
     const config = activity.getDamageConfig({});
     rolls = (config.rolls ?? []).filter(r => r.parts?.length)

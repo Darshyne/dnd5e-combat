@@ -35,12 +35,21 @@ export function createDispatcher({ read, write, execute, enqueue, publish=() => 
   const staged = new Map();
   /** Porteur → dernière écriture partie : celles d'un même porteur arrivent dans l'ordre. */
   const writing = new Map();
+  /**
+   * §153 : porteur → résolution partie à l'écriture, pas encore sur le porteur. Sans elle, un lecteur placé entre le départ d'une
+   * écriture regroupée et son arrivée relisait l'ancien porteur (aucune résolution) : la première sauvegarde d'une zone, lancée dans
+   * cet intervalle, passait pour une sauvegarde libre et était perdue (Esprit couard, sans Dice So Nice pour retarder les jets).
+   */
+  const inflight = new Map();
 
-  const peek = carrierId => staged.has(carrierId) ? staged.get(carrierId).resolution : read(carrierId);
+  const peek = carrierId => staged.has(carrierId) ? staged.get(carrierId).resolution
+    : (inflight.has(carrierId) ? inflight.get(carrierId) : read(carrierId));
 
   function writeInOrder(carrierId, resolution) {
+    inflight.set(carrierId, resolution);
     const next = (writing.get(carrierId) ?? Promise.resolve()).then(() => write(carrierId, resolution));
-    writing.set(carrierId, next.catch(() => {}));
+    const settled = () => { if ( inflight.get(carrierId) === resolution ) inflight.delete(carrierId); };
+    writing.set(carrierId, next.then(settled, settled));
     return next;
   }
 

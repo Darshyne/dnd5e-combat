@@ -7,8 +7,10 @@ import { describe, it, expect } from "vitest";
 import { createDispatcher } from "../module/scripts/runtime/dispatcher.mjs";
 import { STEPS } from "../module/scripts/core/action.mjs";
 
-function world({ reaction=null, coalesce=false, flushMs=250, think=5 }={}) {
+function world({ reaction=null, coalesce=false, flushMs=250, think=5, writeMs=0 }={}) {
   const flags = new Map();
+  const peeks = [];
+  let dispatcher = null;
   const journal = [];
   const published = [];
   const queues = new Map();
@@ -21,6 +23,7 @@ function world({ reaction=null, coalesce=false, flushMs=250, think=5 }={}) {
     journal.push(`${command.type}${command.on ? `:${command.on}` : ""} @${flags.get(carrier).step}`);
     if ( command.type === "askReactions" ) {
       await new Promise(resolve => setTimeout(resolve, think));   // quelqu'un réfléchit
+      peeks.push(dispatcher.peek(carrier)?.step ?? null);         // ce qu'un lecteur voit pendant l'attente
       return command.tokens.map(token => ({ type: "reactionResolved", token, ...(reaction ?? { used: null, ac: 12 }) }));
     }
     if ( command.type === "apply" ) return [{ type: "applied", entries: command.entries.map(e => ({
@@ -29,13 +32,16 @@ function world({ reaction=null, coalesce=false, flushMs=250, think=5 }={}) {
       after: e.multiplier ? { value: 20 - (8 * e.multiplier), temp: 0 } : null
     })) }];
   };
-  const dispatcher = createDispatcher({
+  dispatcher = createDispatcher({
     read: id => flags.get(id) ?? null,
-    write: async (id, resolution) => { flags.set(id, resolution); journal.push(`écrit ${resolution.step}`); },
+    write: async (id, resolution) => {
+      if ( writeMs ) await new Promise(resolve => setTimeout(resolve, writeMs));   // l'écriture met du temps à arriver
+      flags.set(id, resolution); journal.push(`écrit ${resolution.step}`);
+    },
     execute, enqueue, coalesce: () => coalesce, flushMs,
     publish: (resolution, event) => published.push(`${event.type}→${resolution.step}`)
   });
-  return { flags, journal, published, dispatcher };
+  return { flags, journal, published, dispatcher, peeks };
 }
 
 const T = (n, extra={}) => ({ token: `T${n}`, actor: `A${n}`, name: `Cible ${n}`, ac: 12, ...extra });
@@ -143,6 +149,15 @@ describe("répartiteur", () => {
       const i = journal.indexOf("écrit awaitingReaction");
       expect(i).toBeGreaterThan(-1);
       expect(i).toBeLessThan(journal.indexOf("echo:attack @awaitingReaction"));   // écrit pendant l'attente, avant la réponse
+    });
+
+    it("§153 : pendant qu'une écriture regroupée est en route, peek rend l'état parti, pas l'ancien porteur", async () => {
+      // Écriture partie à 10 ms, arrivée à 80 ms ; le lecteur regarde à 30 ms, pendant le trajet.
+      const { dispatcher, peeks } = world({ coalesce: true, flushMs: 10, writeMs: 70, think: 30, reaction: { used: null, ac: 12 } });
+      await dispatcher.open("U", opening({ attack: true, damage: "author" }, []));
+      await dispatcher.send("U", { type: "attackRolled", roll: { total: 15, isCritical: false, isFumble: false }, messageId: "Atk",
+        targets: [T(1, { canReact: true })] });
+      expect(peeks).toEqual([STEPS.AWAITING_REACTION]);
     });
   });
 });

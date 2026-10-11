@@ -321,8 +321,12 @@ export async function removeTransientRegions(usageMessageId) {
   for ( const scene of game.scenes ) {
     const ids = scene.regions.filter(r => r.getFlag(MODULE_ID, "transient") === usageMessageId).map(r => r.id);
     if ( !ids.length ) continue;
-    await scene.deleteEmbeddedDocuments("Region", ids);
-    removed += ids.length;
+    // §153 : deux retraits peuvent se croiser (fin de la résolution, délai d'une zone vide) : une région déjà partie n'est pas une erreur.
+    const left = ids.filter(id => scene.regions.has(id));
+    if ( !left.length ) continue;
+    try { await scene.deleteEmbeddedDocuments("Region", left); }
+    catch(err) { if ( !/does not exist/.test(err?.message ?? "") ) throw err; }
+    removed += left.length;
   }
   return removed;
 }

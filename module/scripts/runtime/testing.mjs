@@ -805,8 +805,8 @@ function effectOrigins({ tokenId }) {
   const actor = tokenOf({ tokenId }).actor;
   return (actor?.effects ?? []).map(e => {
     const item = originItemOf(e);
-    return { effect: e.name, origin: e.origin ?? null, systemOrigin: e.system?.origin ?? null, item: item?.name ?? null,
-      identifier: item ? identifierOf(item).id : null };
+    return { id: e.id, effect: e.name, origin: e.origin ?? null, systemOrigin: e.system?.origin ?? null, item: item?.name ?? null,
+      identifier: item ? identifierOf(item).id : null, statuses: Array.from(e.statuses ?? []), disabled: !!e.disabled };
   });
 }
 

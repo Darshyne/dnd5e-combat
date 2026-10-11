@@ -216,14 +216,14 @@ export default {
     const z5 = await centreOf(zombi);
     let discord = false;
     for ( let n = 0; (n < 12) && !discord; n++ ) {
-      await ctx.removeEffectsNamed(zombi, /chamaille|Discord|Bicker/i);
+      await ctx.removeEffectsNamed(zombi, /chamaille|Discord|Bicker|Arguing/i);
       const s = await ctx.use({ tokenId: mage.id, itemId: symbol, activityId: "DHsotF5GdSA4Nrpz", area: { shape: "circle", ...z5, radius: grid } });
       if ( s.regionId ) ctx.restore(() => ctx.call("delete-scene-object", { type: "Region", objectId: s.regionId }).catch(() => {}));
       await ctx.settle(s.usageMessageId, { timeoutMs: 45000 }).catch(() => null);
       await pause(1500);
-      discord = (await ctx.effects(zombi)).some(e => /chamaille|Discord|Bicker/i.test(e.name ?? ""));
+      discord = (await ctx.effects(zombi)).some(e => /chamaille|Discord|Bicker|Arguing/i.test(e.name ?? ""));
     }
-    ctx.restore(() => ctx.removeEffectsNamed(zombi, /chamaille|Discord|Bicker/i));
+    ctx.restore(() => ctx.removeEffectsNamed(zombi, /chamaille|Discord|Bicker|Arguing/i));
     if ( ctx.expect(discord, "Discorde posée sur le Zombi (12 essais au plus)") ) {
       const check = await ctx.engine("rollCheck", { tokenId: zombi.id, ability: "str" });
       ctx.expect(/kl|dis/.test(check?.formula ?? ""), `test de Force du Zombi au Désavantage (${check?.formula})`);
@@ -233,7 +233,7 @@ export default {
       const attack = (await ctx.messagesSince(since)).find(m => m.type === "attack");
       ctx.expect(attack?.rolls?.[0]?.options?.advantageMode === -1, `attaque du Zombi au Désavantage (mode ${attack?.rolls?.[0]?.options?.advantageMode})`);
     }
-    await ctx.removeEffectsNamed(zombi, /chamaille|Discord|Bicker/i);
+    await ctx.removeEffectsNamed(zombi, /chamaille|Discord|Bicker|Arguing/i);
 
     // 6. Interdiction : une zone de 4 × 4 cases à l'est du Zombi et du Bandit ; tous deux y entrent — le Zombi (mort-vivant) subit
     // 5d10, le Bandit (humanoïde) rien.

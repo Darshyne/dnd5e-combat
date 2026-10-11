@@ -48,6 +48,13 @@ export default {
         for ( const d of r?.windows ?? [] ) {
           const b = (d.buttons ?? []).find(x => re.test(x.label ?? ""));
           if ( b ) { await ctx.call("answer-dialog", { id: d.id, button: b.action ?? b.label }); return { labels: (d.buttons ?? []).map(x => x.label) }; }
+          // Beaucoup d'options : une liste déroulante (adapter/choices.mjs, §113) et un bouton « Valider ».
+          for ( const f of (d.fields ?? []).filter(x => x.type === "select") ) {
+            const o = (f.options ?? []).find(x => re.test(x.label ?? ""));
+            if ( !o ) continue;
+            await ctx.call("answer-dialog", { id: d.id, fields: { [f.name]: o.value }, button: "list" });
+            return { labels: (f.options ?? []).map(x => x.label) };
+          }
         }
       }
       return null;
@@ -117,7 +124,7 @@ export default {
     }
 
     // Foulée effroyable, à l'arrivée à côté du Bandit.
-    const dread = await step(/effroyable.*arriv|Dreadful.*arriv/i, { near: true });
+    const dread = await step(/effroyable.*arriv|Dreadful.*(arriv|destination)/i, { near: true });
     const td = dread.res?.targets?.find(x => x.name === "Bandit");
     ctx.expect(dread.res?.plan?.save?.ability === "wis" && !!td?.save, `Foulée effroyable : Sagesse du Bandit (${td?.save?.total})`);
     ctx.expect((td?.save?.success === false) ? ((td?.damage?.applied ?? 0) > 0) : ((td?.damage?.applied ?? 0) === 0), `2d10 psychiques ⇔ ratée (${td?.damage?.applied ?? 0})`);

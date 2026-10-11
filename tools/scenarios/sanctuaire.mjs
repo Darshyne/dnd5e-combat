@@ -22,11 +22,12 @@ export default {
     const cast = await ctx.use({ tokenId: mage.id, identifier: "sanctuary", activityType: "utility", targetTokenIds: [mage.id] });
     await ctx.settle(cast.usageMessageId).catch(() => null);
     await new Promise(r => setTimeout(r, 1500));
-    const shielded = (await ctx.effects(mage)).some(e => /prot[ée]g|sanctu/i.test(e.name ?? ""));
-    ctx.expect(shielded, `« Protégé » posé sur le Magicien (${(await ctx.effects(mage)).map(e => e.name).join(", ")})`);
+    // L'effet par l'identifiant du sort qui l'a posé, pas par son nom (« Protégé » / « Warded » selon la langue du MJ).
+    const shielded = (await ctx.effectsFrom(mage, "sanctuary")).length > 0;
+    ctx.expect(shielded, `effet de Sanctuaire posé sur le Magicien (${(await ctx.effects(mage)).map(e => e.name).join(", ")})`);
     ctx.restore(async () => {
-      for ( const e of (await ctx.effects(mage)).filter(e => /prot[ée]g|sanctu/i.test(e.name ?? "")) ) {
-        await ctx.call("remove-embedded-effect", { uuid: `Actor.${mage.actorId}`, effectId: e._id ?? e.id }).catch(() => {});
+      for ( const e of await ctx.effectsFrom(mage, "sanctuary") ) {
+        await ctx.call("remove-embedded-effect", { uuid: `Actor.${mage.actorId}`, effectId: e.id }).catch(() => {});
       }
     });
     if ( !shielded ) return;

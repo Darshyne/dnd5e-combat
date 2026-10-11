@@ -22,11 +22,13 @@ export default {
     if ( !pcRef ) { ctx.log("aucun personnage joueur sur la scène : non applicable"); return; }
     const pc = await ctx.token(pcRef.name);
     const itemId = await ctx.ensureItem(pc, SPELL, { system: { method: "atwill" } });
-    const ward = () => ctx.effects(pc).then(list => list.filter(e => /Protection contre la mort|Death Ward/i.test(e.name ?? "")));
+    // Par l'identifiant du sort, pas par le nom de l'effet (« Protection from Death » dans un client anglais).
+    const ward = () => ctx.effectsFrom(pc, "death-ward");
 
     const used = await ctx.use({ tokenId: pc.id, itemId, targetTokenIds: [pc.id], usageConfig: { "dnd5e-combat": { autoReact: "none" } } });
     ctx.expect(used.used, "Protection contre la mort lancée sur lui-même");
-    await sleep(2500);
+    // L'effet arrive à la fin de l'animation : on l'attend (10 s au plus) plutôt qu'un délai fixe.
+    for ( const until = Date.now() + 10000; (Date.now() < until) && !(await ward()).length; ) await sleep(500);
     ctx.expect((await ward()).length === 1, `l'effet du sort est posé (${(await ctx.effects(pc)).map(e => e.name).join(", ")})`);
 
     await ctx.setHp(pc, 5);

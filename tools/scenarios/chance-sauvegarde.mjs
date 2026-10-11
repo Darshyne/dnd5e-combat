@@ -23,7 +23,10 @@ export default {
     for ( const id of ["phbsplCommand000", "phbsplHoldPerson", "phbsplBless00000", "phbsplSleetStorm"] ) await ctx.ensureItem(cleric, SRD + id, atWill);
     const pattern = /Béni|Bless|Paralys|Injonction|Command|Immobil|Hold|concentr/i;
     const cleanup = async () => {
-      for ( const t of [cleric, fighter, zombi] ) await ctx.removeEffectsNamed(t, pattern);
+      for ( const t of [cleric, fighter, zombi] ) {
+        await ctx.removeEffectsNamed(t, pattern);
+        await ctx.removeEffectsFrom(t, "bless", "command", "hold-person", "sleet-storm");   // quelle que soit la langue
+      }
       await ctx.removeStatusEffects(zombi, "paralyzed");
       await ctx.call("set-status", { tokenId: zombi.id, statusId: "paralyzed", active: false }).catch(() => {});
     };
@@ -56,7 +59,8 @@ export default {
     // Bénédiction : +1d4 au calcul, la chance d'échec baisse.
     const before = await chance(fighter, "command");
     await ctx.use({ tokenId: cleric.id, identifier: "bless", consume: false, targetTokenIds: [fighter.id] });
-    await pause(2000);
+    // L'effet arrive à la fin de l'animation : on l'attend (10 s au plus).
+    for ( const until = Date.now() + 10000; (Date.now() < until) && !(await ctx.effectsFrom(fighter, "bless")).length; ) await pause(500);
     const blessed = await chance(fighter, "command");
     ctx.expect(blessed?.dice?.some(d => (d.faces === 4) && (d.sign !== -1)) && (blessed.fail < before.fail),
       `Bénédiction : +1d4 compté, échec ${Math.round(before.fail * 100)} % → ${Math.round(blessed.fail * 100)} %`);

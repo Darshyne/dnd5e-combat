@@ -216,6 +216,16 @@ function makeContext(mcp) {
       }
     },
 
+    /** Retire d'un token les effets posés par les items d'identifiants donnés (`effectsFrom`), quelle que soit la langue. */
+    async removeEffectsFrom(token, ...identifiers) {
+      const { data } = await mcp.call("get-scene-object", { type: "Token", objectId: token.id });
+      const scene = (await ctx.scene()).sceneId;
+      const target = data.actorLink ? { documentType: "Actor", id: data.actorId } : { uuid: `Scene.${scene}.Token.${token.id}.Actor.${data.actorId}` };
+      for ( const e of await ctx.effectsFrom(token, ...identifiers) ) {
+        await mcp.call("remove-embedded-effect", { ...target, effectId: e.id }).catch(() => {});
+      }
+    },
+
     async gridSize() {
       const s = await mcp.call("get-scene", {});
       return s.grid?.size ?? s.scene?.grid?.size ?? 100;
@@ -270,6 +280,16 @@ function makeContext(mcp) {
       const { data } = await mcp.call("get-scene-object", { type: "Token", objectId: token.id });
       if ( data.actorLink ) return (await mcp.call("get-actor", { actorId: data.actorId })).effects ?? [];
       return data.delta?.effects ?? [];
+    },
+
+    /**
+     * Les effets d'un token posés par un item d'identifiant dnd5e donné (le sort, la capacité, l'objet d'origine), quelle que
+     * soit la langue du client du MJ : le nom d'un effet suit la traduction (« Warded » / « Protégé »), son origine non.
+     * Rend `[{ id, effect, identifier, statuses, disabled }]` ; plusieurs identifiants possibles.
+     */
+    async effectsFrom(token, ...identifiers) {
+      const all = await this.engine("effectOrigins", { tokenId: token.id ?? token });
+      return (all ?? []).filter(e => identifiers.includes(e.identifier));
     },
 
     /** L'id de l'item d'un token par son identifiant dnd5e, stable quelle que soit la langue. */

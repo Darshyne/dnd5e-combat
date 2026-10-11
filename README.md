@@ -1,5 +1,7 @@
 # DAS · Core (`dnd5e-combat`)
 
+**[Website](https://darshyne.github.io)** · **[Discord](https://discord.gg/PDSq8dYdTP)** (questions, bugs, ideas)
+
 A D&D 5.5 (2024 rules) rules and combat engine for **Foundry VTT V14** and **dnd5e 6.x**. It is the core of
 **Darshyne's Automation Suite (DAS)**: a single module owns the whole combat loop, replacing Midi-QOL, CPR and the like.
 

@@ -285,8 +285,10 @@ function otherHandBusy(item) {
 function gripVersatile(config, activity, { explicit }) {
   const item = activity?.item;
   if ( (item?.type !== "weapon") || !item.system.properties?.has?.("ver") ) return;
+  const versatile = item._source?.system?.damage?.versatile;
+  const twoHandedDamage = !(versatile?.custom?.enabled && !versatile.custom.formula?.trim());   // §151
   const mode = versatileGrip({ mode: config.attackMode ?? null, modes: (item.system.attackModes ?? []).map(m => m.value),
-    explicit, otherHandBusy: otherHandBusy(item) });
+    explicit, otherHandBusy: otherHandBusy(item), twoHandedDamage });
   if ( !mode ) return;
   config.attackMode = mode;
   if ( config.rolls?.[0]?.options ) config.rolls[0].options.attackMode = mode;

@@ -52,15 +52,18 @@ export function resolveAttack(roll, targets) {
  * §149 : arme Polyvalente (« peut être maniée à une ou à deux mains », dé plus grand à deux mains) — à la manière de BG3, la prise à
  * deux mains quand rien n'occupe l'autre main (ni bouclier, ni autre arme tenue). Un mode choisi par le joueur (menu, fenêtre de dnd5e)
  * est gardé ; un lancer ou une main secondaire ne changent pas.
- * @param {{mode: string|null, modes: string[], explicit: boolean, otherHandBusy: boolean}} data
- *   `mode` : le mode en vigueur (demandé, repris de la mémoire de dnd5e, ou rien) ; `modes` : ceux de l'arme ; `explicit` : choisi.
+ * §151 : une arme dont les dégâts à deux mains sont vides (formule personnalisée activée mais vide — la Lance des personnages
+ * pré-tirés du Manuel, celle des gardes du Bestiaire) reste à une main : à deux mains, dnd5e ne lancerait aucun dé.
+ * @param {{mode: string|null, modes: string[], explicit: boolean, otherHandBusy: boolean, twoHandedDamage?: boolean}} data
+ *   `mode` : le mode en vigueur (demandé, repris de la mémoire de dnd5e, ou rien) ; `modes` : ceux de l'arme ; `explicit` : choisi ;
+ *   `twoHandedDamage` : la prise à deux mains a des dégâts.
  * @returns {string|null}  « twoHanded » (l'autre main libre) ou « oneHanded » (prise), ou null pour laisser le jet tel quel.
  */
-export function versatileGrip({ mode, modes, explicit, otherHandBusy }) {
+export function versatileGrip({ mode, modes, explicit, otherHandBusy, twoHandedDamage=true }) {
   if ( explicit || !modes?.includes("twoHanded") || !modes.includes("oneHanded") ) return null;
   if ( mode && !["oneHanded", "twoHanded"].includes(mode) ) return null;
   // L'autre main prise (bouclier, autre arme) : à une main — même si dnd5e se souvenait d'une prise à deux mains.
-  const want = otherHandBusy ? "oneHanded" : "twoHanded";
+  const want = (otherHandBusy || !twoHandedDamage) ? "oneHanded" : "twoHanded";
   return (mode === want) ? null : want;
 }
 

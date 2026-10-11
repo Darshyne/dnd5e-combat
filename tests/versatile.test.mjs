@@ -17,4 +17,10 @@ describe("§149 : arme Polyvalente, la prise", () => {
     expect(versatileGrip({ mode: "thrown", modes, explicit: false, otherHandBusy: false })).toBe(null);
     expect(versatileGrip({ mode: null, modes: ["oneHanded"], explicit: false, otherHandBusy: false })).toBe(null);
   });
+
+  it("§151 : dégâts à deux mains vides — reste à une main, même si dnd5e se souvenait des deux mains", () => {
+    expect(versatileGrip({ mode: null, modes, explicit: false, otherHandBusy: false, twoHandedDamage: false })).toBe("oneHanded");
+    expect(versatileGrip({ mode: "twoHanded", modes, explicit: false, otherHandBusy: false, twoHandedDamage: false })).toBe("oneHanded");
+    expect(versatileGrip({ mode: "oneHanded", modes, explicit: false, otherHandBusy: false, twoHandedDamage: false })).toBe(null);
+  });
 });

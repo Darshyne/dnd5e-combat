@@ -22,6 +22,11 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { chooseRoller } from "../core/roller.mjs";
+import { closeRollDialogAfter } from "./dialogs.mjs";
+
+/** §141 : la requête « sauvegarde de concentration » envoyée au joueur connecté ; sa réponse. */
+export const CONCENTRATION_QUERY = `${MODULE_ID}.concentration`;
+export const CONCENTRATION_TIMEOUT = 40000;   // la fenêtre du jet est bornée par adapter/dialogs.mjs
 
 /** Le joueur connecté qui doit lancer pour cet acteur, ou null si c'est au moteur. */
 export function rollerFor(actor) {
@@ -51,6 +56,33 @@ export async function rollConcentration({ actor, dc, ability }, promptId) {
   return actor.rollConcentration(config, { configure: false }, {
     data: { flags: { [MODULE_ID]: { concentrationPrompt: promptId } } }
   });
+}
+
+/**
+ * §141 : côté joueur — la fenêtre du jet de concentration s'ouvre sur SON écran, comme les sauvegardes demandées par le moteur
+ * (adapter/saves.mjs, `handleSaveQuery`) ; ce sont ses dés. Au bout du délai, la fenêtre se ferme et le jet part seul. Rend true si le
+ * jet est fait (la carte de demande est alors retirée par le MJ actif, `concentrationPrompt`), false sinon : la carte reste.
+ * @param {{actor: string, dc: number, ability?: string, prompt: string}} payload
+ */
+export async function handleConcentrationQuery({ actor: actorUuid, dc, ability=null, prompt }) {
+  const actor = await fromUuid(actorUuid);
+  if ( !actor ) return false;
+  ui.notifications.info(game.i18n.format("DND5ECOMBAT.DemandeConcentrationJoueur", { name: actor.name, dc }));
+  let timedOut = false;
+  const cancel = closeRollDialogAfter(actor, () => { timedOut = true; });
+  const args = () => {
+    const config = { target: dc };
+    if ( ability ) config.ability = ability;
+    return [config, { data: { flags: { [MODULE_ID]: { concentrationPrompt: prompt } } } }];
+  };
+  const [config, message] = args();
+  let rolls = await actor.rollConcentration(config, { configure: true }, message);
+  cancel();
+  if ( !rolls?.length && timedOut ) {
+    const [again, againMessage] = args();
+    rolls = await actor.rollConcentration(again, { configure: false }, againMessage);
+  }
+  return !!(Array.isArray(rolls) ? rolls.length : rolls);
 }
 
 /**

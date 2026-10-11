@@ -772,6 +772,7 @@
   "DND5ECOMBAT.AideTest.Gain1d4": "+1d4 (concentration)",
   "DND5ECOMBAT.AideTest.GainAvantage": "Avantage",
   "DND5ECOMBAT.AideTest.Etat.pending": "Demande envoyée…",
+  "DND5ECOMBAT.DemandeConcentrationJoueur": "{name} : sauvegarde de concentration (DD {dc})",
   "DND5ECOMBAT.AideTest.Attente": "Une aide est en route : le jet attend sa réponse",
   "DND5ECOMBAT.AideTest.Etat.granted": "Accordée",
   "DND5ECOMBAT.AideTest.Etat.refused": "Refusée",

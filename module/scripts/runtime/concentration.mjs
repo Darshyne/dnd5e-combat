@@ -1,16 +1,17 @@
 import {
   rollerFor, readConcentrationPrompt, rollConcentration, readConcentrationSave, breakConcentration, removeRegionsOf,
-  isConcentrationEffect, concentrationDisabled
+  isConcentrationEffect, concentrationDisabled, CONCENTRATION_QUERY, CONCENTRATION_TIMEOUT, handleConcentrationQuery
 } from "../adapter/concentration.mjs";
 import { tieSummonToConcentration, removeSummonsOf, joinSummonerCombat, summonItemOf } from "../adapter/summons.mjs";
 
+import { MODULE_ID } from "../constants.mjs";
 import { route } from "./router.mjs";
 import { log, waitForDice } from "./shared.mjs";
 
 /**
  * Le système vient de demander une sauvegarde de concentration, ou de proposer d'y mettre fin.
- * Pour un PJ dont le joueur est connecté, la carte native reste : c'est à lui de cliquer, ce sont
- * ses dés. Pour tous les autres, le moteur fait ce que ferait le clic du MJ.
+ * Pour un PJ dont le joueur est connecté : §141, la fenêtre du jet s'ouvre sur son écran (requête), ce sont ses dés ; sans réponse,
+ * la carte native reste, à cliquer. Pour tous les autres, le moteur fait ce que ferait le clic du MJ.
  */
 async function onPrompt(message) {
   const prompt = readConcentrationPrompt(message);
@@ -22,7 +23,17 @@ async function onPrompt(message) {
     await message.delete();
     return;
   }
-  if ( rollerFor(prompt.actor) ) return;
+  const userId = rollerFor(prompt.actor);
+  if ( userId ) {
+    log(`${prompt.actor.name}: concentration saving throw DC ${prompt.dc}, asked to the player`);
+    try {
+      await game.users.get(userId)?.query(CONCENTRATION_QUERY, { actor: prompt.actor.uuid, dc: prompt.dc, ability: prompt.ability ?? null,
+        prompt: message.id }, { timeout: CONCENTRATION_TIMEOUT });
+    } catch(err) {
+      console.warn(`${MODULE_ID} | concentration of ${prompt.actor.name}: no answer from the player, the card stays`, err);
+    }
+    return;
+  }
   log(`${prompt.actor.name}: concentration saving throw DC ${prompt.dc}`);
   await rollConcentration(prompt, message.id);
 }
@@ -41,6 +52,7 @@ async function onSave(message) {
 }
 
 export function registerConcentration() {
+  CONFIG.queries[CONCENTRATION_QUERY] = handleConcentrationQuery;   // sur tous les clients : c'est le joueur qui répond
   route("createChatMessage", message => {
     if ( message.type === "prompt" ) return onPrompt(message);
     if ( message.type === "save" ) return onSave(message);

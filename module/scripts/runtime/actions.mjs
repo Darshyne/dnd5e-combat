@@ -789,6 +789,9 @@ export async function reactionApproach(actor, target, activity) {
 }
 
 export async function engage(token, target, activity, { mode=null, fast=false, usage=null, event=null, choice=null }={}) {
+  // §150 : le mode qu'un voisin a mis dans la configuration d'utilisation (`{ "dnd5e-combat": { attackMode } }` : la main secondaire de la
+  // Barre) — sans lui, il se perdait entre la visée et le jet.
+  mode ??= usage?.[0]?.[MODULE_ID]?.attackMode ?? null;
   // §18.22 : un geste de contact sur une cible qui ne s'y prête pas est refusé avant tout déplacement.
   const refusal = contactRefusal(token, target, activity);
   if ( refusal ) {

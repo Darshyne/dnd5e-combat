@@ -292,10 +292,22 @@ function gripVersatile(config, activity, { explicit }) {
   if ( config.rolls?.[0]?.options ) config.rolls[0].options.attackMode = mode;
 }
 
-function onPreRollAttack(config, dialog) {
+function onPreRollAttack(config, dialog, message) {
   const activity = config.subject;
+  // §150 : le mode porté par la carte d'utilisation (`flags["dnd5e-combat"].attackMode`, posé à l'utilisation depuis la configuration :
+  // la main secondaire de la Barre) — le jet que dnd5e enchaîne lui-même (activity/attack.mjs, `_triggerSubsequentActions` :
+  // `system.origin`) ne passe pas par `engage`, qui seul retenait le mode d'un clic.
+  const usageId = message?.data?.system?.origin ?? null;
+  const carried = usageId ? game.messages.get(usageId)?.getFlag(MODULE_ID, "attackMode") : null;
   // Attaque engagée à la souris : le mode (« lancer ») est déjà choisi, et le jet part sans dialogue.
   const pending = activity?.uuid ? takePendingAttack(activity) : null;
+  if ( !pending?.mode && carried && activity?.item?.system.attackModes?.some(m => m.value === carried) ) {
+    config.attackMode = carried;
+    if ( config.rolls?.[0]?.options ) config.rolls[0].options.attackMode = carried;
+    if ( pending?.fast && dialog ) dialog.configure = false;
+    if ( pending?.confirmed ) config[MODULE_ID] = { ...(config[MODULE_ID] ?? {}), confirmed: true };
+    return true;
+  }
   if ( pending ) {
     if ( pending.fast && dialog ) dialog.configure = false;
     if ( pending.confirmed ) config[MODULE_ID] = { ...(config[MODULE_ID] ?? {}), confirmed: true };   // portée déjà acceptée

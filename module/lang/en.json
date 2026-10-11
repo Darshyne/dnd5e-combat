@@ -772,6 +772,7 @@
   "DND5ECOMBAT.AideTest.Gain1d4": "+1d4 (Concentration)",
   "DND5ECOMBAT.AideTest.GainAvantage": "Advantage",
   "DND5ECOMBAT.AideTest.Etat.pending": "Request sent…",
+  "DND5ECOMBAT.AideTest.Attente": "An aid is on its way: the roll waits for its answer",
   "DND5ECOMBAT.AideTest.Etat.granted": "Granted",
   "DND5ECOMBAT.AideTest.Etat.refused": "Refused",
   "DND5ECOMBAT.AideTest.TitreAssistance": "Guidance — {name}",

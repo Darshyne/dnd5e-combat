@@ -30,6 +30,19 @@ async function untilApplied(test, ms=10000) {
   return false;
 }
 
+/**
+ * §140 : tant qu'une aide est en attente, les boutons de jet sont bloqués — l'Assistance met quelques secondes à arriver (résolution du
+ * MJ actif, animation comprise) : un clic sur « Normal » entre-temps lançait le d20 sans le 1d4.
+ */
+function lockRoll(app) {
+  const pending = Array.from(states.get(app)?.values() ?? []).some(s => s.status === "pending");
+  for ( const button of app.element?.querySelectorAll('[data-application-part="buttons"] button') ?? [] ) {
+    button.disabled = pending;
+    if ( pending ) button.dataset.tooltip = loc("AideTest.Attente");
+    else if ( button.dataset.tooltip === loc("AideTest.Attente") ) delete button.dataset.tooltip;
+  }
+}
+
 function grantAdvantage(app) {
   app.config.advantage = true;
   // `advantageMode` : la formule affichée le montre ; le bouton cliqué décide toujours au final (_finalizeConfig).
@@ -49,6 +62,7 @@ async function onAsk(app, aid, test) {
   if ( state.get(key) ) return;
   state.set(key, { status: "pending", aid });
   if ( app.rendered ) app.render({ parts: ["formulas"] });   // partiel : le choix de caractéristique du formulaire reste
+  lockRoll(app);
   const granted = await requestSkillAid({ kind: aid.kind, helper: aid.helper, tester: aid.tester, ...test });
   if ( granted && (aid.kind === "guidance") ) await untilApplied(() => isGuided(app.config.subject, test.skill));
   if ( granted && (aid.kind === "inspiration") ) await untilApplied(() => !!inspirationOf(app.config.subject));
@@ -56,7 +70,8 @@ async function onAsk(app, aid, test) {
   if ( !app.rendered ) return;
   if ( granted && (aid.kind === "help") ) grantAdvantage(app);
   else if ( granted && (aid.kind === "guidance") ) app.rebuild();
-  app.render({ parts: ["formulas"] });
+  await app.render({ parts: ["formulas"] });
+  lockRoll(app);
 }
 
 function onRender(app, element) {
@@ -97,6 +112,7 @@ function onRender(app, element) {
     });
   }
   section._aids = aids;
+  lockRoll(app);   // un rendu complet refait les boutons de jet
   section.innerHTML = `<legend>${esc(loc("AideTest.Titre"))}</legend>${buttons}`;
 }
 

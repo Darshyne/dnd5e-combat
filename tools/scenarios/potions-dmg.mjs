@@ -77,7 +77,7 @@ export default {
     await part("rapidité", async () => {
       await drink("dmgPotionOfSpeed", "cast");
       const fx = await names();
-      ctx.expect(fx.some(n => /h[aâ]t/i.test(n)) && !(await has("concentrating")), `Potion de rapidité : Hâte, sans concentration (${fx.join(", ")})`);
+      ctx.expect(fx.some(n => /h[aâ]t|hast/i.test(n)) && !(await has("concentrating")), `Potion de rapidité : Hâte, sans concentration (${fx.join(", ")})`);
       for ( const e of await newEffects() ) await ctx.call("remove-embedded-effect", { documentType: "Actor", id: actorId, effectId: e._id }).catch(() => {});
       await pause(3000);
       ctx.expect(!(await has("incapacitated")), `fin de l'effet : pas de léthargie (${(await names()).join(", ") || "rien"})`);

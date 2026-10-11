@@ -646,8 +646,7 @@ export async function approachDoor(token, wall) {
   const here = cellOf(token);
   if ( cells.some(c => (c.i === here.i) && (c.j === here.j)) ) return true;
   if ( isGrappled(token) ) { ui.notifications.warn(loc("Empoignade.Immobile", { name: token.name })); return false; }
-  // §147 : `maxCost` — un déplacement hors du budget du tour (la Réaction de Murmures dissonants : la Vitesse entière).
-  const plan = planPath(token, { cells, level: token._source.level ?? undefined }, { maxCost: maxCost ?? movementCap(token) });
+  const plan = planPath(token, { cells, level: token._source.level ?? undefined }, { maxCost: movementCap(token) });
   if ( !plan ) { ui.notifications.warn(loc("Deplacement.AucunChemin")); return false; }
   if ( !plan.arrives ) { ui.notifications.warn(loc("Porte.HorsDatteinte")); return false; }
   if ( !plan.waypoints.length ) return true;
@@ -670,7 +669,8 @@ export async function walkToGap(token, anchor, gap, { maxCost=null }={}) {
   const bounds = { i0: top.i, j0: top.j, i1: bottom.i, j1: bottom.j };
   const cells = cellsAtGap(footprintOf(anchor), sizeOf(token), gap, bounds);
   if ( !cells.length || isGrappled(token) ) return false;
-  const plan = planPath(token, { cells, level: token._source.level ?? undefined }, { maxCost: movementCap(token) });
+  // §147 : `maxCost` — un déplacement hors du budget du tour (la Réaction de Murmures dissonants : la Vitesse entière).
+  const plan = planPath(token, { cells, level: token._source.level ?? undefined }, { maxCost: maxCost ?? movementCap(token) });
   if ( plan?.waypoints?.length ) await walkSafely(token, plan);
   return footprintDistance(footprintOf(token), footprintOf(anchor)) === gap;
 }

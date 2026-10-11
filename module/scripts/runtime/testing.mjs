@@ -17,6 +17,7 @@ import { perfApi } from "./perf.mjs";
 import { planPath, stairsOf, cellOf, stairsDestinations, stopWalking } from "../adapter/movement.mjs";
 import { combatantFor, readBudget, movementOf } from "../adapter/turn.mjs";
 import { useIssues } from "./turn.mjs";
+import { setDoorOpen, doorState } from "./doors.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { moveTo, movementCap, selfTeleportOf, currentTeleport, teleportClick, dashStrike, dashTargets, dashProblem, lineDashOf, transpose as transposeIntent, takeStairs as takeStairsIntent } from "./actions.mjs";
 import { dismissFamiliar, recallFamiliar, recallRefusal, canPocket, canRecall } from "./familiar.mjs";
@@ -809,4 +810,16 @@ function effectOrigins({ tokenId }) {
   });
 }
 
-export const testApi = Object.freeze({ issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime });
+/**
+ * §152 : ouvrir ou fermer une porte comme l'entrée « Ouvrir / Fermer » du menu (`setDoorOpen` : s'avancer au contact par
+ * `approachDoor`, puis agir). Rend l'état de la porte et la position du token après coup.
+ */
+async function door({ tokenId, wallId, open=true }) {
+  const token = tokenOf({ tokenId });
+  const wall = canvas.walls.get(wallId);
+  if ( !wall?.isDoor ) throw new Error(`wall ${wallId} is not a door of the viewed scene`);
+  await setDoorOpen(token, wall, open);
+  return { state: doorState(wall), x: token._source.x, y: token._source.y };
+}
+
+export const testApi = Object.freeze({ issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door });

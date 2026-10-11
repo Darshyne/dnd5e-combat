@@ -84,7 +84,11 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
   const offhand = weapon && (attackMode?.endsWith("offhand") === true);
   const spellSlot = (item?.type === "spell") && ((item.system.level ?? 0) > 0)
     && !["atwill", "innate", "ritual"].includes(item.system.method)
-    && (activity.consumption?.spellSlot !== false);
+    && (activity.consumption?.spellSlot !== false)
+    // §144 : un sort lancé par un autre objet (activité « cast » : Ennemi juré, objet magique) est une copie marquée `cachedFor` ; dnd5e
+    // ne lui fait jamais dépenser d'emplacement (activity/mixin.mjs : `consume.spellSlot = !linked && …`) — ni la règle « un sort à
+    // emplacement par tour ».
+    && !item.getFlag?.("dnd5e", "cachedFor");
   const replaces = contentOf(item).entry?.replacesAttack === true;
   return {
     cost: costOverride ?? costFor(activity),

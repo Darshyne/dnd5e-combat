@@ -18,6 +18,7 @@ import { poolsOf } from "../adapter/absorb.mjs";
 import { movableZoneOf } from "../runtime/zones.mjs";
 import { carriedLightsOf, carriedLightState } from "../adapter/lights.mjs";
 import { toggleCarriedLight } from "../runtime/lights.mjs";
+import { ritualModeOf } from "../adapter/grimoire.mjs";
 
 /**
  * Le budget du tour d'un combattant, tel que le moteur le juge : une action reste disponible tant que l'action Attaquer a
@@ -118,7 +119,18 @@ function wards(actor) {
     value: pool, max: Number(item.system.uses?.max) || pool }));
 }
 
-export const uiApi = { budget, wards, movableZone, movement, issues, cost, multiattackLeft: multiattack, light: lightState, globalLight: globalLightState,
+/**
+ * §139 : comment ce sort se lancerait maintenant — « ritual » : en rituel d'office (sans emplacement, même non préparé avec Savoir
+ * rituel) ; « ask » : le joueur choisira rituel ou emplacement ; « none » : comme d'habitude. Une interface ne grise pas un sort
+ * « ritual » faute de préparation ni d'emplacement.
+ * @param {Activity} activity
+ * @returns {"none"|"ritual"|"ask"}
+ */
+function ritual(activity) {
+  try { return ritualModeOf(activity); } catch { return "none"; }
+}
+
+export const uiApi = { budget, wards, movableZone, movement, issues, cost, ritual, multiattackLeft: multiattack, light: lightState, globalLight: globalLightState,
   /** §41.4 : `tokenMenu(token)` — les entrées du menu contextuel de ce token pour le token en main (ui/pointer.mjs). */
   tokenMenu: menuEntriesFor,
   /**

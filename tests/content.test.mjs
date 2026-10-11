@@ -147,7 +147,7 @@ describe("contenu livré", () => {
   it("réunit déclencheurs et auras par identifiant", () => {
     expect(Object.keys(CONTENT).sort()).toEqual([
       "aberrant-anatomy", "abjure-foes", "absorb-elements", "action-surge", "adrenaline-rush", "agile", "air-form", "alchemists-fire",
-      "alert", "ambush", "ancient-might", "animal-friendship", "animate-objects", "arcane-eye", "arcane-hand", "arcane-vigor",
+      "alert", "ambush", "ancient-might", "animal-friendship", "animate-objects", "arcane-eye", "arcane-hand", "arcane-recovery", "arcane-vigor",
       "arcane-ward", "armor-of-agathys", "arms-of-hadar", "assassinate", "athlete", "aura-of-authority", "aura-of-bravery",
       "aura-of-courage", "aura-of-devotion", "aura-of-protection", "aura-of-vitality", "avenger-spirit", "avenging-angel",
       "bait-and-switch", "banishing-smite", "bastion-of-law", "beacon-of-hope", "beguiling-defenses", "bestow-curse", "bigbys-hand",
@@ -192,7 +192,7 @@ describe("contenu livré", () => {
       "project-image", "projected-ward", "protection", "protection-from-energy", "protection-from-evil-and-good",
       "protection-from-poison", "prowl", "psychic-defenses", "pushing-attack", "quickened-spell", "radiant-soul", "rage", "raise-dead",
       "rally", "ray-of-enfeeblement", "ray-of-frost", "reckless-attack", "regeneration", "relentless-endurance", "relentless-rage",
-      "resistance", "resurrection", "revivify", "riposte", "rumbling-movement", "sanctuary", "sanguine-drain", "savage-attacker",
+      "resistance", "resurrection", "revivify", "riposte", "ritual-adept", "rumbling-movement", "sanctuary", "sanguine-drain", "savage-attacker",
       "scorching-ray", "sculpt-spells", "sear-undead", "searing-smite", "sentinel", "sentinel-at-deaths-door", "shade-spirit",
       "shadow-stealth", "shadow-walk", "shadowy-dodge", "sharp-eye-ravenloft", "sharpshooter", "shield", "shield-master", "shillelagh",
       "shining-smite", "shocking-grasp", "sickening-vapors", "silence", "skulker", "slam", "slasher", "sleep", "sleet-storm", "slow",

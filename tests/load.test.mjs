@@ -50,7 +50,7 @@ describe("chargement du module", () => {
 
   it("relance d'abord (§16.21), puis la visée (ui), l'utilisation sans fenêtre (§68), la Métamagie, la légalité (runtime), les portes, sur dnd5e.preUseActivity", () => {
     expect(api.api.routes()["dnd5e.preUseActivity"].map(r => r.label)).toEqual([
-      "recast of a lasting spell", "targeting: target expected", "projectiles: one per target, the rest chained", "use without dialog", "metamagic: spell not modified", "use legality", "gates: Sanctuary, Counterspell, pre-attack reactions, Portent", "summon on targets: neighbours asked", "self area: without the \"Place Template\" box", "Reckless Attack: prompt",
+      "recast of a lasting spell", "targeting: target expected", "projectiles: one per target, the rest chained", "use without dialog", "metamagic: spell not modified", "use legality", "gates: Sanctuary, Counterspell, pre-attack reactions, Portent", "summon on targets: neighbours asked", "Ritual: cast without a spell slot", "self area: without the \"Place Template\" box", "Reckless Attack: prompt",
       "swallow: Bite not refused", "potion: concentration not removed", "light object: placed on cast", "light source: dnd5e consumption not skipped"
     ]);
   });

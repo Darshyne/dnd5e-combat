@@ -2,11 +2,18 @@
  * Le Magicien du Manuel des joueurs 2024 (SPEC §28), module premium `dnd-players-handbook` 2.2.0 (pack `classes`, items `phbwzd…`).
  * Déjà là : Égide arcanique et Égide projetée de l'Abjurateur (§16.11, content/absorbs.mjs).
  *
- * Ce que dnd5e fait déjà seul : Restauration magique, Savoir rituel, Érudition, Mémorisation de sort, Maîtrise des sorts et Sorts
- * de prédilection (enchantements « toujours préparé »), Troisième œil (effets), Créatures fantasmagoriques (convocations).
+ * Ce que dnd5e fait déjà seul : Érudition, Mémorisation de sort, Maîtrise des sorts et Sorts de prédilection (enchantements
+ * « toujours préparé »), Troisième œil (effets), Créatures fantasmagoriques (convocations). §139 : Restauration magique et Savoir
+ * rituel ci-dessous (dnd5e n'en fait rien : la copie du Manuel n'a qu'une activité « Récupérer » qui dépense l'utilisation).
  */
 
 export const WIZARD = Object.freeze({
+  // §139 : Savoir rituel — « tout sort de votre grimoire qui a l'étiquette Rituel, même non préparé, mais seulement en rituel »
+  // (runtime/grimoire.mjs : hors combat, sans emplacement).
+  "ritual-adept": { ritualAdept: { class: "wizard" } },
+  // §139 : Restauration magique — au Repos court, des emplacements dépensés dont la somme des niveaux ne dépasse pas la moitié du
+  // niveau de Magicien (arrondie au supérieur), aucun du 6e niveau ou plus ; une fois par Repos long (l'utilisation de l'item).
+  "arcane-recovery": { slotRecovery: { class: "wizard", maxLevel: 5 } },
   // Façonneur de sorts (Évocateur 3) : « désignez jusqu'à 1 + le niveau du sort créatures : elles réussissent automatiquement leur
   // jet de sauvegarde et ne subissent aucun dégât » — le moteur désigne les alliés du lanceur (même disposition).
   "sculpt-spells": { sculptSpells: true },

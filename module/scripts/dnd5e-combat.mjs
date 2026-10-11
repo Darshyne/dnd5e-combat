@@ -20,6 +20,7 @@ import { registerMetamagic } from "./runtime/metamagic.mjs";
 import { registerReactions } from "./runtime/reactions.mjs";
 import { registerGates } from "./runtime/gates.mjs";
 import { registerPortent } from "./runtime/portent.mjs";
+import { registerGrimoire } from "./runtime/grimoire.mjs";
 import { registerDispel } from "./runtime/dispel.mjs";
 import { registerTriggers } from "./runtime/triggers.mjs";
 import { registerContent, contentApi } from "./runtime/content.mjs";
@@ -115,6 +116,7 @@ import { registerOil } from "./runtime/oil.mjs";
  * `perf` : le relevé des temps du moteur sur ce client (§98, runtime/perf.mjs) — `table()`, `report()`, `longTasks()`, `reset()`.
  * `mcp` : fonctions de test appelées par le connecteur (`call-module-api`), arguments et résultats en JSON (runtime/testing.mjs).
  * `ui` : ce qu'une interface externe lit (§40.1, ui/api.mjs) — `budget(combatant)`, `movement(token)`, `issues(activity)`, `cost(activity)` (§137),
+ *   `ritual(activity)` (§139 : « none » / « ritual » / « ask »),
  *   `multiattackLeft(actor)`, `light(token)`, `globalLight()`. Le moteur ne connaît aucune interface.
  * `light(token)` : la lumière où se tient un token (ui/illumination.mjs) — le même que `ui.light`, gardé à ce nom.
  * `approach(token, { cells, level })` : faire marcher un token par le chemin du moteur jusqu'à la plus proche des cases
@@ -177,6 +179,7 @@ Hooks.once("init", () => {
   gated(registerSummonHandover);   // §118 : après la légalité — une utilisation refusée ne réclame rien aux voisins
   gated(registerReactions);
   gated(registerPortent);   // §36 : Présage (Repos long, requête du devin)
+  gated(registerGrimoire);   // §139 : rituels sans emplacement, Restauration magique
   gated(registerDispel);   // §37.2 : Dissipation de la magie
   gated(registerTriggers);
   gated(registerVision);

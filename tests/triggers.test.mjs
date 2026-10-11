@@ -91,7 +91,7 @@ describe("contenu livré", () => {
     const provided = ["activity.type", "activity.isAttack", "activity.isSpell", "activity.isWeapon", "activity.identifier", "activity.id", "activity.hasProperty",
       "source.hasStatus", "source.hasEffect", "source.creatureType", "source.allyNearTarget", "source.summonNearTarget", "source.seesTarget",
       "target.hasStatus", "target.hasEffect", "target.hasEffectFrom", "target.sizeAtMost", "target.within", "target.seesSource",
-      "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "damage.hasType", "target.hpAtMost"];
+      "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "damage.hasType", "target.hpAtMost", "hit.stoppableBy"];
     const known = Object.fromEntries(provided.map(k => [k, true]));
     for ( const d of all ) expect(unknownFacts(d.if, known), d.id).toEqual([]);
   });
@@ -104,7 +104,10 @@ describe("contenu livré", () => {
   });
 
   it("Bouclier et Représailles infernales : les mêmes fenêtres qu'avant, la cible en plus", () => {
-    expect(select(all.filter(d => d.id === "shield"), "isHit")).toHaveLength(1);
+    const stoppable = { "hit.stoppableBy": () => true };
+    expect(select(all.filter(d => d.id === "shield"), "isHit", stoppable)).toHaveLength(1);
+    // §138 : pas sur un coup que +5 ne changerait pas (critique, ou jet au-dessus de la CA + 5).
+    expect(select(all.filter(d => d.id === "shield"), "isHit", { "hit.stoppableBy": () => false })).toHaveLength(0);
     const sees = { "target.seesSource": want => want === true };
     const [rebuke] = select(all.filter(d => d.id === "hellish-rebuke"), "isDamaged", sees);
     expect(stepsOf(rebuke, "use")[0].target).toBe("source");
@@ -113,7 +116,7 @@ describe("contenu livré", () => {
   it("Représailles infernales exige de voir qui vous a blessé (P1) ; Bouclier, non", () => {
     const blind = { "target.seesSource": want => want === false };
     expect(select(all.filter(d => d.id === "hellish-rebuke"), "isDamaged", blind)).toHaveLength(0);
-    expect(select(all.filter(d => d.id === "shield"), "isHit", blind)).toHaveLength(1);
+    expect(select(all.filter(d => d.id === "shield"), "isHit", { ...blind, "hit.stoppableBy": () => true })).toHaveLength(1);
   });
 
   it("zones : Rayon de lune agit à l'entrée et en fin de tour ; la Sphère de feu n'est pas une zone (§16.15 : pulse)", () => {

@@ -24,7 +24,8 @@
 
 export const TRIGGERS = Object.freeze({
   // Réactions (règles 2024)
-  "shield": [{ on: "isHit", do: [{ type: "use" }] }],
+  // §138 : seulement quand +5 à la CA peut changer le coup (pas sur un critique, ni sur un jet qui dépasse la CA + 5).
+  "shield": [{ on: "isHit", if: { "hit.stoppableBy": 5 }, do: [{ type: "use" }] }],
   // Esquive instinctive (PHB, roublard 5) : « quand un attaquant que vous voyez vous touche avec un jet d'attaque, vous
   // pouvez utiliser votre réaction pour réduire de moitié les dégâts de l'attaque » (§16.11, B14).
   // §74 : Parade du Monster Manual 2024 (`mmParry000000000`, Noble, Chevalier…) — « touché par un jet d'attaque de corps à corps

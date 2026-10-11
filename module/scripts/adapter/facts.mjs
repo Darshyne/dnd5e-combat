@@ -192,7 +192,7 @@ export const conditionImmunitiesOf = actor => Array.from(actor?.system?.traits?.
  * `sourceToken` / `targetToken` : leurs tokens quand le moment les connaît (sinon retrouvés par l'acteur).
  * Une clé absente ici est inconnue du cœur, et une condition qui l'emploie ne tient jamais.
  */
-export function factsFor({ source=null, target=null, activity=null, sourceToken=null, targetToken=null, attackMode=null, damageTypes=null, condition=null, self=null, selfToken=null }={}) {
+export function factsFor({ source=null, target=null, activity=null, sourceToken=null, targetToken=null, attackMode=null, damageTypes=null, condition=null, self=null, selfToken=null, resolution=null }={}) {
   const properties = activity?.item?.system?.properties;
   // « Une attaque au corps à corps » : activité d'attaque de type mêlée, sauf un jet en mode lancé ou à distance
   // (même règle que dnd5e, data/activity/attack-data.mjs, `getRollData` : `roll.attack.type`).
@@ -239,6 +239,16 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     // §133 : la créature visée manie une arme équipée de cette propriété (Duelliste défensif : « Finesse ») ; c'est le réacteur lui-même
     // (Protection : « une cible autre que vous ») ; le réacteur porte un bouclier.
     // §135 : la créature blessée résiste à l'un des types de ces dégâts (Faveur de résistance aux énergies : Redirection d'énergie).
+    // §138 : le coup qui vient de toucher `target` deviendrait-il un échec avec n de CA en plus (Bouclier : +5) ? Jamais sur un coup
+    // critique (un 20 naturel touche toujours) ; sans résolution connue (avant la fenêtre), on ne l'exclut pas.
+    "hit.stoppableBy": n => {
+      const hit = (resolution?.targets ?? []).find(t => fromUuidSync(t.token, { strict: false })?.actor === target);
+      const total = resolution?.attack?.roll?.total;
+      if ( !hit || !Number.isFinite(total) ) return true;
+      if ( hit.critical ) return false;
+      const ac = Number.isFinite(hit.ac) ? hit.ac : (target?.system?.attributes?.ac?.value ?? 0);
+      return total < ac + (hit.cover?.bonus ?? 0) + Number(n);
+    },
     "damage.resisted": want => ((damageTypes ?? []).some(t => target?.system?.traits?.dr?.value?.has?.(t) === true) === want),
     "target.wieldsProperty": prop => (target?.items ?? []).some(i => (i.type === "weapon") && i.system.equipped && i.system.properties?.has?.(prop)),
     "target.isSelf": want => (!!self && !!target && (self === target)) === want,

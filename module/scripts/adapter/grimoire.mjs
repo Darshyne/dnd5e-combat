@@ -38,8 +38,9 @@ export function ritualModeOf(activity) {
     ritual: item.system.properties?.has?.("ritual") === true,
     requiresSlot: !!(activity.requiresSpellSlot && activity.consumption?.spellSlot),
     inCombat: !!combatantFor(actor),
-    // Préparé : la méthode « spell » se prépare ; les autres (pacte…) sont connus, donc prêts.
-    prepared: (item.system.method !== "spell") || !!item.system.prepared,
+    // Préparé : une méthode qui se prépare (CONFIG.DND5E.spellcasting[…].prepares : « spell », « pact ») demande `prepared` ; les
+    // autres (inné, à volonté…) sont toujours prêts.
+    prepared: !CONFIG.DND5E.spellcasting?.[item.system.method]?.prepares || !!item.system.prepared,
     adept,
     slotLeft: slotLeft(item)
   });

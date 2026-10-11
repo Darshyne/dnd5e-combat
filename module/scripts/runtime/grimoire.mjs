@@ -17,12 +17,14 @@ import { log, loc, notice } from "./shared.mjs";
 
 const tokenOfActor = actor => actor?.getActiveTokens?.(false, true)?.[0] ?? null;
 
-/** En rituel : sans emplacement, au niveau du sort, sans fenêtre de niveau. */
-function asRitual(activity, usageConfig, dialogConfig) {
+/**
+ * En rituel : sans emplacement, au niveau du sort. La fenêtre d'utilisation reste ce que les réglages en font : un rituel qui invoque
+ * (Appel de familier) y choisit sa forme.
+ */
+function asRitual(activity, usageConfig) {
   usageConfig.consume = { ...((usageConfig.consume && (typeof usageConfig.consume === "object")) ? usageConfig.consume : {}), spellSlot: false };
   usageConfig.scaling = 0;
   usageConfig[MODULE_ID] = { ...(usageConfig[MODULE_ID] ?? {}), ritual: "ritual" };
-  if ( dialogConfig ) dialogConfig.configure = false;
   notice(tokenOfActor(activity.actor), loc("Rituel.Lance", { item: activity.item.name }), "gain");
   log(`${activity.actor.name}: ${activity.item.name} cast as a Ritual (no spell slot, +10 minutes)`);
 }
@@ -33,7 +35,7 @@ function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
   const mode = (ours.ritual === "ritual") ? "ritual" : ritualModeOf(activity);
   if ( mode === "none" ) return true;
   if ( mode === "ritual" ) {
-    asRitual(activity, usageConfig, dialogConfig);
+    asRitual(activity, usageConfig);
     return true;
   }
   // Préparé, un emplacement reste : rituel ou emplacement, au joueur ; fermée sans choisir, rien n'est lancé.

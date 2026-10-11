@@ -793,6 +793,7 @@
   "DND5ECOMBAT.AideTest.TitreInspiration": "Inspiration bardique — {name}",
   "DND5ECOMBAT.AideTest.DemandeInspiration": "{name} vous demande votre Inspiration bardique pour son test ({test}) : il pourra ajouter {formula} s'il le rate (action Bonus en combat ; il vous reste {left} utilisation(s)).",
   "DND5ECOMBAT.AideTest.SansInspiration": "{name} n'a plus d'Inspiration bardique à donner.",
+  "DND5ECOMBAT.Inspiration.QuestionDD": "Test ({what}) : {total} contre DD {needed}, raté de {gap}. Utiliser votre Inspiration bardique ({formula}) ?",
   "DND5ECOMBAT.Inspiration.QuestionTest": "Test ({what}) : {total}. Raté ? Utiliser votre Inspiration bardique ({formula}) ?",
   "DND5ECOMBAT.Recette.bonusDamage.Nom": "Dégâts bonus",
   "DND5ECOMBAT.Recette.bonusDamage.Aide": "Ajoute des dégâts aux jets de dégâts du porteur qui remplissent la condition (Maléfice, Voile spirituel).",

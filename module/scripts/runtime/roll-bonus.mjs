@@ -37,10 +37,13 @@ async function onCheckRolled(rolls, { skill=null, tool=null, ability=null, subje
   const total = rolls?.[0]?.total;
   if ( !actor?.isOwner || !Number.isFinite(total) ) return;
   const what = checkName({ skill, tool, ability });
+  // §148 : le DD du test quand le jet le porte (carte de demande, DD donné au jet : `options.target` du D20Roll).
+  const dc = Number.isFinite(rolls?.[0]?.options?.target) ? rolls[0].options.target : null;
   const added = await offerRollBonus(actor, { kind: "check", what, total, skill, d20: keptD20(rolls?.[0]) });
   if ( added ) log(`${actor.name}: die added to their check, ${total} + ${added} = ${total + added}`);
-  // §113 : l'Inspiration bardique sur un test (« quand la créature rate un Test d20 ») — le DD est inconnu : au joueur de juger.
-  const inspired = await offerInspiration(actor, { what, total: total + added, needed: null });
+  // §113 : l'Inspiration bardique sur un test (« quand la créature rate un Test d20 ») — sans DD connu, au joueur de juger ; §148 : avec
+  // le DD, la question le dit, et rien sur une réussite ni quand le dé ne pourrait pas suffire.
+  const inspired = await offerInspiration(actor, { what, total: total + added, needed: dc, test: true });
   if ( inspired ) log(`${actor.name}: Bardic Inspiration on their check, ${total + added} + ${inspired} = ${total + added + inspired}`);
 }
 

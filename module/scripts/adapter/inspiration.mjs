@@ -12,6 +12,7 @@ import { originItemOf } from "./facts.mjs";
 import { identifierOf, contentOf } from "./content.mjs";
 import { askChoice } from "./choices.mjs";
 import { combatantFor, readBudget, writeBudget } from "./turn.mjs";
+import { inspirationOffer } from "../core/inspiration.mjs";
 
 const t = (key, data) => game.i18n.format(`DND5ECOMBAT.Inspiration.${key}`, data ?? {});
 
@@ -50,15 +51,22 @@ export function inspirationSourceOf(bard) {
 /**
  * La question (joueur de la créature, sinon MJ), puis le dé : rend le résultat à ajouter, ou 0 (refusé, pas d'inspiration).
  * @param {Actor} actor
- * @param {{what: string, total: number, needed: number|null}} context  Le jet raté : « attaque » ou « sauvegarde », son total, le
- *   seuil ; `needed` null pour un test libre (§113), dont le moteur ne connaît pas le DD.
+ * @param {{what: string, total: number, needed: number|null, test?: boolean}} context  Le jet raté : « attaque » ou « sauvegarde », son
+ *   total, le seuil ; `needed` null pour un test libre (§113), dont le moteur ne connaît pas le DD. §148 : `test` — un test dont le DD
+ *   est connu (porté par le jet) : la question le dit.
  */
-export async function offerInspiration(actor, { what, total, needed }) {
+export async function offerInspiration(actor, { what, total, needed, test=false }) {
   const inspiration = inspirationOf(actor);
   if ( !inspiration ) return 0;
+  // §148 : seuil connu — rien sur une réussite, ni quand même le plus haut résultat du dé ne suffirait (le dé ne se gâche pas).
+  let max = null;
+  try { max = new Roll(inspiration.formula).evaluateSync({ maximize: true }).total; } catch { /* formule inconnue : on propose */ }
+  const offer = inspirationOffer({ total, needed, max });
+  if ( offer !== "offer" ) return 0;
   const answer = await askChoice(actor, {
     actor: actor.uuid, item: t("Nom"),
     prompt: (needed === null) ? t("QuestionTest", { what, total, formula: inspiration.formula })
+      : test ? t("QuestionDD", { what, total, needed, gap: needed - total, formula: inspiration.formula })
       : t("Question", { what, total, needed, formula: inspiration.formula }),
     // « Non » d'abord : sans réponse dans le délai, askChoice retient la première option — l'inspiration n'est pas dépensée sans accord
     // (choix de l'utilisateur le 2026-09-29, comme la Chance du ténébreux).

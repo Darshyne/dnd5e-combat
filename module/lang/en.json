@@ -793,6 +793,7 @@
   "DND5ECOMBAT.AideTest.TitreInspiration": "Bardic Inspiration — {name}",
   "DND5ECOMBAT.AideTest.DemandeInspiration": "{name} asks for your Bardic Inspiration on their check ({test}): they may add {formula} if they fail (Bonus Action in combat; you have {left} use(s) left).",
   "DND5ECOMBAT.AideTest.SansInspiration": "{name} has no Bardic Inspiration left to give.",
+  "DND5ECOMBAT.Inspiration.QuestionDD": "Check ({what}): {total} against DC {needed}, failed by {gap}. Use your Bardic Inspiration ({formula})?",
   "DND5ECOMBAT.Inspiration.QuestionTest": "Check ({what}): {total}. Failed? Use your Bardic Inspiration ({formula})?",
   "DND5ECOMBAT.Recette.bonusDamage.Nom": "Bonus damage",
   "DND5ECOMBAT.Recette.bonusDamage.Aide": "Adds damage to the bearer's damage rolls that meet the condition (Hex, Spirit Shroud).",

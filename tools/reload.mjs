@@ -22,8 +22,9 @@ async function engine(mcp, fn) {
   return r.result;
 }
 
+let mcp;
 try {
-  const mcp = await connect();
+  mcp = await connect();
   const before = await engine(mcp, "status");
   await engine(mcp, "reload");
   process.stdout.write(`F5 du client de ${before.user} (moteur ${before.version})`);
@@ -43,4 +44,6 @@ try {
 } catch(err) {
   console.error(`\nreload : ${err.message}`);
   process.exitCode = 1;
+} finally {
+  await mcp?.close();
 }

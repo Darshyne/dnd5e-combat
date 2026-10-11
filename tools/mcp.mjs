@@ -17,8 +17,9 @@ if ( !tool ) {
   process.exit(2);
 }
 
+let mcp;
 try {
-  const mcp = await connect();
+  mcp = await connect();
   if ( tool === "--list" ) console.log((await mcp.list()).join("\n"));
   else {
     const result = await mcp.call(tool, rawParams ? JSON.parse(rawParams) : {});
@@ -27,4 +28,6 @@ try {
 } catch(err) {
   console.error(`mcp : ${err.message}`);
   process.exitCode = 1;
+} finally {
+  await mcp?.close();
 }

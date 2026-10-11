@@ -51,6 +51,18 @@ export async function connect({ url=process.env.MCP_URL ?? DEFAULT_URL, client="
       if ( result.isError ) throw new Error(`${tool} : ${text}`);
       try { return JSON.parse(text); }
       catch { return text; }
+    },
+
+    /**
+     * Ferme la session côté serveur (DELETE). Sans ça chaque appel laissait une session ouverte :
+     * 844 en une journée de tests, et le connecteur est tombé. Sans effet si déjà fermée.
+     */
+    async close() {
+      if ( !sessionId ) return;
+      const id = sessionId;
+      sessionId = null;
+      try { await fetch(url, { method: "DELETE", headers: { "Mcp-Session-Id": id } }); }
+      catch { /* serveur arrêté : rien à fermer */ }
     }
   };
 }

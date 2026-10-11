@@ -57,6 +57,22 @@ export async function writeBudget(combatant, budget) {
 }
 
 /**
+ * Le coût d'une activité au budget du tour (§137 : aussi lu par l'interface, `api.ui.cost`) : l'activation de la donnée, sauf règle.
+ */
+export function costFor(activity) {
+  const item = activity.item;
+  // §31 : une activité qui « remplace une de vos attaques » (Souffle) se décompte comme une attaque de l'action Attaquer — §90 : même
+  // sans activation dans la donnée (Frappe commandée : « lorsque vous entreprenez l'action Attaque »).
+  const replaces = contentOf(item).entry?.replacesAttack === true;
+  // §134 : Observateur, Fouille rapide — « vous pouvez prendre l'action Chercher par une action Bonus » : l'action Bonus si elle est
+  // libre, sinon l'action.
+  const quickSearch = (item?.system?.identifier === "dnd5e-combat-search")
+    && Array.from(activity.actor?.items ?? []).some(i => contentOf(i).entry?.quickSearch === true);
+  const searchCost = quickSearch ? (((() => { const c = combatantFor(activity.actor); return c ? (readBudget(c).bonus ?? 1) : 1; })() >= 1) ? "bonus" : "action") : null;
+  return searchCost ?? costOf(activity.activation?.type) ?? (replaces ? "action" : null);
+}
+
+/**
  * Ce qu'une activité demande au budget (UseRequest du cœur). `costOverride` : « utiliser ma réaction ».
  * `attackMode` : le mode d'attaque s'il est connu. `offhand` est le mode de dnd5e pour une arme Légère
  * (data/item/weapon.mjs:188-195 ; les dégâts y perdent déjà le modificateur positif, attack-data.mjs:426) ;
@@ -69,16 +85,9 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
   const spellSlot = (item?.type === "spell") && ((item.system.level ?? 0) > 0)
     && !["atwill", "innate", "ritual"].includes(item.system.method)
     && (activity.consumption?.spellSlot !== false);
-  // §31 : une activité qui « remplace une de vos attaques » (Souffle) se décompte comme une attaque de l'action Attaquer — §90 : même
-  // sans activation dans la donnée (Frappe commandée : « lorsque vous entreprenez l'action Attaque »).
   const replaces = contentOf(item).entry?.replacesAttack === true;
-  // §134 : Observateur, Fouille rapide — « vous pouvez prendre l'action Chercher par une action Bonus » : l'action Bonus si elle est
-  // libre, sinon l'action.
-  const quickSearch = (item?.system?.identifier === "dnd5e-combat-search")
-    && Array.from(activity.actor?.items ?? []).some(i => contentOf(i).entry?.quickSearch === true);
-  const searchCost = quickSearch ? (((() => { const c = combatantFor(activity.actor); return c ? (readBudget(c).bonus ?? 1) : 1; })() >= 1) ? "bonus" : "action") : null;
   return {
-    cost: costOverride ?? searchCost ?? costOf(activity.activation?.type) ?? (replaces ? "action" : null),
+    cost: costOverride ?? costFor(activity),
     weaponAttack: ((activity.type === "attack") && ["weapon", "unarmed"].includes(activity.attack?.type?.classification)) || replaces,
     usesSpellSlot: spellSlot,
     lightWeapon: weapon && (item.system.properties?.has("lgt") === true),

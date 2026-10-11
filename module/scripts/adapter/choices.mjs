@@ -14,15 +14,19 @@ export const CHOICE_QUERY = `${MODULE_ID}.choice`;
 /** Délai laissé au joueur ; au-delà, le MJ choisit. */
 const CHOICE_TIMEOUT = 20000;   // au-delà du délai de la fenêtre (adapter/dialogs.mjs)
 
+/** §137 : une question sans délai (un choix fait une fois, à l'arrivée d'un don) — la requête attend le joueur jusque-là. */
+const UNTIMED_TIMEOUT = 600000;
+
 /** Au-delà de ce nombre d'options, une liste déroulante plutôt qu'un bouton par option. */
 const LIST_ABOVE = 6;
 
 /**
  * Côté de celui qui choisit : une fenêtre, un bouton par option.
- * @param {{actor: string, item: string, prompt: string|null, options: Array<{id: string, label: string}>}} payload
+ * @param {{actor: string, item: string, prompt: string|null, options: Array<{id: string, label: string}>, untimed?: boolean}} payload
+ *   `untimed` (§137) : pas de délai ni de compte à rebours ; fermée sans choisir, rien n'est choisi.
  * @returns {Promise<{id: string}|null>}  null si la fenêtre est fermée sans choisir.
  */
-export async function handleChoiceQuery({ actor: actorUuid, item, prompt, options }) {
+export async function handleChoiceQuery({ actor: actorUuid, item, prompt, options, untimed=false }) {
   const actor = await fromUuid(actorUuid);
   const question = `<p>${prompt ?? game.i18n.localize("DND5ECOMBAT.ChoixEffet")}</p>`;
   // §113 : au-delà de quelques options (Assistance : 18 compétences), une liste déroulante — un bouton par option faisait une
@@ -35,12 +39,14 @@ export async function handleChoiceQuery({ actor: actorUuid, item, prompt, option
   const list = many ? `<select name="pick" class="dnd5e-combat-choice-list" autofocus>${options
     .map((o, i) => ({ i, label: o.label })).sort((a, b) => a.label.localeCompare(b.label, game.i18n.lang))
     .map(o => `<option value="${o.i}">${foundry.utils.escapeHTML(String(o.label))}</option>`).join("")}</select>` : "";
-  // Sans réponse dans le délai : la première option.
-  const picked = await timedWait({
+  const config = {
     window: { title: game.i18n.format("DND5ECOMBAT.ChoixTitre", { item, name: actor?.name ?? "" }) },
     content: `${question}${list}`,
     buttons
-  }, { fallback: "pick0" });
+  };
+  // Sans réponse dans le délai : la première option. §137 : sans délai, la fenêtre attend.
+  const picked = untimed ? await foundry.applications.api.DialogV2.wait({ ...config, rejectClose: false })
+    : await timedWait(config, { fallback: "pick0" });
   const option = options[Number(String(picked ?? "").replace("pick", ""))];
   return picked?.startsWith?.("pick") && option ? { id: option.id } : null;
 }
@@ -57,8 +63,10 @@ export async function askChoice(actor, payload) {
   let answer = null;
   if ( userId === game.user.id ) return handleChoiceQuery(payload);
   if ( userId ) {
-    try { answer = await game.users.get(userId).query(CHOICE_QUERY, payload, { timeout: CHOICE_TIMEOUT }); }
+    try { answer = await game.users.get(userId).query(CHOICE_QUERY, payload, { timeout: payload.untimed ? UNTIMED_TIMEOUT : CHOICE_TIMEOUT }); }
     catch(err) { console.warn(`${MODULE_ID} | choice for ${actor.name}: no answer from the player`, err); }
+    // §137 : une question sans délai reste au joueur — fermée sans choisir, le MJ n'est pas consulté à sa place.
+    if ( payload.untimed ) return answer;
   }
   return answer ?? handleChoiceQuery(payload);
 }

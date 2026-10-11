@@ -217,14 +217,19 @@ export function resistanceIgnoredBy(actor, activity) {
   return Array.from(out);
 }
 
-/** Expert élémentaire : la question du type, au joueur (sinon au MJ), notée sur l'item. MJ actif, à l'arrivée du don et au chargement. */
+/**
+ * Expert élémentaire : la question du type, au joueur (sinon au MJ), notée sur l'item. MJ actif, à l'arrivée du don et au chargement.
+ * §137 : sans délai — un choix fait une fois ; fermée sans réponse, rien n'est noté et la question revient au prochain chargement
+ * (d'ici là, le don ne s'applique à aucun type).
+ */
 async function askElementalType(item) {
   if ( !item?.actor || (contentOf(item).entry?.elementalAdept !== true) || ELEMENTAL_TYPES.includes(item.getFlag(MODULE_ID, "elementalType")) ) return;
   const taken = new Set(elementalTypes(item.actor));
   const options = ELEMENTAL_TYPES.filter(t => !taken.has(t)).map(t => ({ id: t, label: game.i18n.localize(CONFIG.DND5E.damageTypes[t]?.label ?? t) }));
   if ( !options.length ) return;
-  const answer = await askChoice(item.actor, { actor: item.actor.uuid, item: item.name, prompt: loc("ExpertElementaire.Question", { item: item.name }), options });
-  const type = answer?.id ?? options[0].id;
+  const answer = await askChoice(item.actor, { actor: item.actor.uuid, item: item.name, prompt: loc("ExpertElementaire.Question", { item: item.name }), options, untimed: true });
+  const type = answer?.id;
+  if ( !ELEMENTAL_TYPES.includes(type) ) return;
   await item.setFlag(MODULE_ID, "elementalType", type);
   log(`${item.actor.name}: ${item.name}, damage type ${type}`);
 }

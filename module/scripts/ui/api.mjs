@@ -7,7 +7,7 @@
  */
 
 import { reactionAvailable, movementAllowance } from "../core/turn.mjs";
-import { combatantFor, currentTurnKey, isOwnTurn, readBudget, movementOf, historyCosts } from "../adapter/turn.mjs";
+import { combatantFor, currentTurnKey, isOwnTurn, readBudget, movementOf, historyCosts, costFor } from "../adapter/turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { multiattackLeft } from "../adapter/multiattack.mjs";
 import { movementCap } from "../runtime/actions.mjs";
@@ -73,6 +73,18 @@ function issues(activity, options={}) {
 }
 
 /**
+ * §137 : ce que coûterait cette activité au budget du tour, tel que le moteur le jugera — « action », « bonus », « reaction », autre
+ * chose ou null. Diffère de l'activation de la donnée quand une règle la change (Observateur : Chercher par une action Bonus, tant
+ * qu'elle est libre).
+ * @param {Activity} activity
+ * @returns {string|null}
+ */
+function cost(activity) {
+  if ( !activity?.actor ) return null;
+  try { return costFor(activity) ?? null; } catch { return null; }
+}
+
+/**
  * §111 : l'activité a-t-elle une zone déplaçable déjà posée (Rayon de lune) ? L'utiliser la déplace alors (ui/pointer.mjs, §16.14) :
  * rien n'est lancé, aucun emplacement n'est dépensé — une interface ne doit ni la griser faute d'emplacement, ni demander un niveau.
  * @param {Activity} activity
@@ -106,7 +118,7 @@ function wards(actor) {
     value: pool, max: Number(item.system.uses?.max) || pool }));
 }
 
-export const uiApi = { budget, wards, movableZone, movement, issues, multiattackLeft: multiattack, light: lightState, globalLight: globalLightState,
+export const uiApi = { budget, wards, movableZone, movement, issues, cost, multiattackLeft: multiattack, light: lightState, globalLight: globalLightState,
   /** §41.4 : `tokenMenu(token)` — les entrées du menu contextuel de ce token pour le token en main (ui/pointer.mjs). */
   tokenMenu: menuEntriesFor,
   /**

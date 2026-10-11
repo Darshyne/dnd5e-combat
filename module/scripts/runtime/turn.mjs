@@ -1,7 +1,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { checkUse, spendUse, refundUse, basicAction, BASIC_ACTION_FLAGS, effectiveCost } from "../core/turn.mjs";
 import { rangeIssue } from "../core/range.mjs";
-import { throwableAttackMode } from "../core/attack.mjs";
+import { throwableAttackMode, versatileGrip } from "../core/attack.mjs";
 import {
   combatantFor, isOwnTurn, readBudget, writeBudget, requestFor, attacksPerAction, rangeOf, reachOf, canBeThrown,
   distanceBetween, usageTokenOf as usageToken, currentTurnKey, freshBudgetFor, movementOf } from "../adapter/turn.mjs";
@@ -274,6 +274,24 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
  * Avant le dialogue du jet d'attaque : une arme de mêlée qui se lance, contre des cibles toutes
  * hors d'allonge, est présélectionnée en mode « lancer ». Le joueur garde la main dans le dialogue.
  */
+/** §149 : l'autre main est-elle prise — un bouclier, ou une autre arme tenue (pas une arme naturelle ni la frappe à mains nues) ? */
+function otherHandBusy(item) {
+  return Array.from(item?.actor?.items ?? []).some(i => (i !== item) && i.system?.equipped && (
+    ((i.type === "equipment") && (i.system.type?.value === "shield"))
+    || ((i.type === "weapon") && (i.system.type?.value !== "natural") && (i.system.identifier !== "unarmed-strike"))));
+}
+
+/** §149 : arme Polyvalente — à deux mains quand l'autre main est libre (core/attack.mjs, `versatileGrip`). */
+function gripVersatile(config, activity, { explicit }) {
+  const item = activity?.item;
+  if ( (item?.type !== "weapon") || !item.system.properties?.has?.("ver") ) return;
+  const mode = versatileGrip({ mode: config.attackMode ?? null, modes: (item.system.attackModes ?? []).map(m => m.value),
+    explicit, otherHandBusy: otherHandBusy(item) });
+  if ( !mode ) return;
+  config.attackMode = mode;
+  if ( config.rolls?.[0]?.options ) config.rolls[0].options.attackMode = mode;
+}
+
 function onPreRollAttack(config, dialog) {
   const activity = config.subject;
   // Attaque engagée à la souris : le mode (« lancer ») est déjà choisi, et le jet part sans dialogue.
@@ -287,10 +305,18 @@ function onPreRollAttack(config, dialog) {
       return true;
     }
   }
+  // §149 : un mode « choisi » — demandé, ni repris de la mémoire de dnd5e, ni celui par défaut.
+  const byDefaultMode = activity?.item?.system.attackModes?.[0]?.value ?? null;
+  const rememberedMode = activity?.item?.getFlag?.("dnd5e", `last.${activity.id}.attackMode`) ?? null;
+  const explicit = !!config[MODULE_ID]?.modeChosen
+    || (!!config.attackMode && (config.attackMode !== byDefaultMode) && (config.attackMode !== rememberedMode));
   // Seule la relance après la fenêtre de portée a déjà choisi son mode (`modeChosen`) ; une attaque simplement confirmée
   // (connecteur, visée) garde la présélection — sans elle, une javeline lancée partait en mêlée, sans `system.mode` sur le
   // message ni javeline dépensée (vu le 2026-09-28, style Armes de jet).
-  if ( config[MODULE_ID]?.modeChosen || !activity?.item || !canBeThrown(activity) ) return true;
+  if ( config[MODULE_ID]?.modeChosen || !activity?.item || !canBeThrown(activity) ) {
+    gripVersatile(config, activity, { explicit });
+    return true;
+  }
   // §39.2 : un autre mode que celui par défaut de dnd5e (le premier : activity/attack.mjs:111-113) demandé (main
   // secondaire, deux mains) est gardé — mais pas le dernier mode que dnd5e a simplement repris de sa mémoire
   // (activity/attack.mjs:95) : après un lancer, une attaque au contact repartait en « lancer ».
@@ -311,6 +337,7 @@ function onPreRollAttack(config, dialog) {
     config.attackMode = mode;
     if ( config.rolls?.[0]?.options ) config.rolls[0].options.attackMode = mode;
   }
+  gripVersatile(config, activity, { explicit });
   return true;
 }
 

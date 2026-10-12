@@ -498,8 +498,15 @@
  *     cellWall?: true                           §172 : mur d'une case d'épaisseur (Mur d'épines, Barrière de lames) — posé sur une
  *                                               rangée de cases (centres, sans diagonale, bouts prolongés d'une demi-case) ; son
  *                                               anneau, tiré d'un disque, est une bande à l'intérieur du cercle
- *     coverThrough?: "half"|"threeQuarters"     §172 : la zone donne cet abri à qui est derrière elle (une ligne entre l'attaquant et
- *                                               la cible qui la traverse, ni l'un ni l'autre dedans) — Barrière de lames
+ *     coverThrough?: degré | { degree, against }  §172 : la zone donne cet abri (« half », « threeQuarters », « total ») à qui est
+ *                                               derrière elle (une ligne entre l'attaquant et la cible qui la traverse, ni l'un ni
+ *                                               l'autre dedans) — Barrière de lames ; `against: "rangedWeapon"` (§173) : contre les
+ *                                               seules attaques à distance avec une arme (Mur de vent : les projectiles ratent)
+ *     thinWall?: true                           §173 : un mur fin (Mur de vent, de pierre, de glace, de force, prismatique) — posé
+ *                                               sans diagonale ; à l'apparition, les créatures dont l'espace touche le mur sont dans la
+ *                                               zone ; on y « entre » en le traversant ; le disque d'un globe devient un anneau fin
+ *     wallAura?: { distance, units, activity, on }  §173 : une zone de `distance` des deux côtés du mur, qui rejoue l'activité sœur
+ *                                               aux moments `on` (Mur prismatique : sauvegarde d'aveuglement à 6 m)
  *     wallSide?: { distance, units }          §169 : mur à face brûlante (Mur de feu) — posé sans diagonale ; à l'apparition, sauvegarde
  *                                               des créatures dont l'espace touche le mur ; ensuite, sans sauvegarde : qui le traverse
  *                                               (une fois par tour), qui finit son tour à `distance` du côté brûlant (région à part,
@@ -517,7 +524,8 @@
  *     levitate?: { effect, height, units }      §164 : le porteur de l'effet s'élève de `height` à la pose, redescend quand il tombe (Lévitation)
  *     prismatic?: { indigo, violet }            §164 : un d8 par cible choisit la couleur — 1 à 5 : le type des dégâts (feu, acide,
  *                                               foudre, poison, froid) ; 6 : l'effet `indigo`, 7 : l'effet `violet`, sans dégâts ; 8 : deux
- *                                               rayons (Embruns prismatiques)
+ *                                               rayons (Embruns prismatiques) ; `all` (§173) : toutes les couches à la fois (Mur
+ *                                               prismatique traversé) ; `activities` : seulement pour ces activités
  *     barrier?: { radius, units, exceptTypes? }  §163 : une créature (hors `exceptTypes`) n'entre pas dans l'Émanation, ni n'y frappe au
  *                                               corps à corps sans allonge (Coquille antivie, adapter/barriers.mjs)
  *     seesInvisible?: true                      §161 : le porteur d'un effet de l'item voit les créatures Invisibles (Détection de
@@ -679,7 +687,7 @@ export const EFFECT_ENDS = Object.freeze(["casterTurnStart", "casterTurnEnd", "b
 /** Ce qui ouvre une attaque en action Bonus (`bonusAttack.after`). */
 export const BONUS_ATTACK_AFTER = Object.freeze(["critical", "felled"]);
 
-export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "swapPlaces", "sweep", "commandStrike", "casterPulse", "zoneEnd", "afterTeleport", "saveDamage", "onNatural1", "searchBonus", "atZero", "afterSneak", "effectStatuses", "changesForm", "actionOrBonus", "sharesSpace", "placesSummons", "lifesteal", "rerollInitiative", "savageAttacker", "initiativeSwap", "healingRerolls", "effectWhile", "rangedFeat", "piercer", "critMark", "grappleDamage", "haltOnReaction", "concentrationBreaker", "interposeShield", "elementalAdept", "ignoresResistance", "quickStand", "quickSearch", "opportunityDisadvantage", "peerlessAim", "fortifiedHealing", "overwhelmingStrike", "spellRecall", "lastStandHeal", "reactiveStrike", "ritualAdept", "slotRecovery", "fleeOnFailedSave", "halfOnMiss", "saveDisadvantageFor", "limitedAction", "noActions", "hpTiers", "endsCurses", "tempHpPool", "revivesFull", "seesInvisible", "globe", "blink", "walls", "pointWall", "barrier", "recastCost", "levitate", "prismatic", "wallSide", "cellWall", "coverThrough"]);
+export const ENTRY_KEYS = Object.freeze(["smite", "metamagic", "endurance", "replacesAttack", "hitRider", "potentCantrip", "sculptSpells", "supremeHealing", "discipleOfLife", "blessedHealer", "martialArts", "flurry", "stunningStrike", "openHand", "effectEnds", "effectThen", "actionEnds", "blocksHealing", "noOpportunityAttacks", "byWounds", "oneAttack", "rage", "persistentRage", "reckless", "relentless", "grantsAction", "movesAfter", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "thrownDamage", "sneakAttack", "sneakBonus", "cunningStrikes", "cunningStrikeMax", "evasion", "elusive", "holdsStill", "empower", "discharge", "healsDownedMax", "failMargins", "reactions", "lastStand", "forOneAttack", "basicActions", "sharedHp", "secondPhase", "savedEffects", "ignoresCloseCombat", "triggers", "aura", "onHit", "choice", "targets", "trace", "teleport", "lineDash", "absorb", "summon", "movable", "burst", "recast", "atTurnStart", "bolt", "obscures", "healMax", "duplicates", "saveAdvantage", "onFell", "bonusAttack", "reactiveSpell", "projectiles", "leap", "light", "revealsInvisible", "effectsExpire", "usageLimits", "enchantTarget", "ranges", "tether", "pact", "damageShield", "hitDiceHeal", "breaksOn", "noReactions", "cures", "advantageIfFighting", "emanation", "regeneration", "fortitude", "noOpportunity", "drain", "swallow", "resize", "orders", "portent", "dispel", "counter", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "curesAll", "potionEffect", "castTargets", "effectChanges", "difficultTerrain", "storm", "stableAtZero", "effectsIf", "contest", "wardsAtZero", "zoneCharges", "noDamage", "selfZone", "zoneAffects", "pendingDie", "rolledAc", "swapPlaces", "sweep", "commandStrike", "casterPulse", "zoneEnd", "afterTeleport", "saveDamage", "onNatural1", "searchBonus", "atZero", "afterSneak", "effectStatuses", "changesForm", "actionOrBonus", "sharesSpace", "placesSummons", "lifesteal", "rerollInitiative", "savageAttacker", "initiativeSwap", "healingRerolls", "effectWhile", "rangedFeat", "piercer", "critMark", "grappleDamage", "haltOnReaction", "concentrationBreaker", "interposeShield", "elementalAdept", "ignoresResistance", "quickStand", "quickSearch", "opportunityDisadvantage", "peerlessAim", "fortifiedHealing", "overwhelmingStrike", "spellRecall", "lastStandHeal", "reactiveStrike", "ritualAdept", "slotRecovery", "fleeOnFailedSave", "halfOnMiss", "saveDisadvantageFor", "limitedAction", "noActions", "hpTiers", "endsCurses", "tempHpPool", "revivesFull", "seesInvisible", "globe", "blink", "walls", "pointWall", "barrier", "recastCost", "levitate", "prismatic", "wallSide", "cellWall", "coverThrough", "thinWall", "wallAura"]);
 export const CHOICE_EFFECTS = Object.freeze(["one"]);
 /** §38, §90 : les jets auxquels un `rollBonus` s'ajoute. */
 export const ROLL_BONUS_ON = Object.freeze(["save", "check", "attack", "initiative"]);
@@ -1495,7 +1503,23 @@ function validateRogue(entry, at, errors) {
   if ( ("revivesFull" in entry) && (entry.revivesFull !== true) ) errors.push(`${at}revivesFull: true or absent`);
   if ( ("pointWall" in entry) && (entry.pointWall !== false) ) errors.push(`${at}pointWall: false or absent`);
   if ( ("cellWall" in entry) && (entry.cellWall !== true) ) errors.push(`${at}cellWall: true or absent`);
-  if ( ("coverThrough" in entry) && !["half", "threeQuarters"].includes(entry.coverThrough) ) errors.push(`${at}coverThrough: "half" or "threeQuarters"`);
+  if ( "coverThrough" in entry ) {
+    const c = entry.coverThrough;
+    const degree = isObject(c) ? c.degree : c;
+    if ( !["half", "threeQuarters", "total"].includes(degree)
+      || (isObject(c) && !(Object.keys(c).every(k => ["degree", "against"].includes(k)) && (!("against" in c) || (c.against === "rangedWeapon")))) ) {
+      errors.push(`${at}coverThrough: "half", "threeQuarters", "total", or { degree, against: "rangedWeapon" }`);
+    }
+  }
+  if ( ("thinWall" in entry) && (entry.thinWall !== true) ) errors.push(`${at}thinWall: true or absent`);
+  if ( "wallAura" in entry ) {
+    const a = entry.wallAura;
+    if ( !(isObject(a) && (typeof a.distance === "number") && (a.distance > 0) && (typeof a.units === "string") && isId(a.activity)
+      && Array.isArray(a.on) && a.on.length && a.on.every(m => ["enter", "turnStart", "turnEnd"].includes(m))
+      && Object.keys(a).every(k => ["distance", "units", "activity", "on"].includes(k))) ) {
+      errors.push(`${at}wallAura: { distance, units, activity, on: [enter|turnStart|turnEnd] }`);
+    }
+  }
   if ( ("wallSide" in entry) && !(isObject(entry.wallSide) && (typeof entry.wallSide.distance === "number") && (entry.wallSide.distance > 0)
     && (typeof entry.wallSide.units === "string") && Object.keys(entry.wallSide).every(k => ["distance", "units"].includes(k))) ) errors.push(`${at}wallSide: { distance: number > 0, units }`);
   if ( ("walls" in entry) && !(isObject(entry.walls) && (!("move" in entry.walls) || (entry.walls.move === false)) && (!("sight" in entry.walls) || (entry.walls.sight === true))
@@ -1506,7 +1530,10 @@ function validateRogue(entry, at, errors) {
     && Object.keys(entry.globe).every(k => ["radius", "units", "maxLevel", "everywhere"].includes(k))) ) errors.push(`${at}globe: { radius > 0, units, maxLevel, everywhere? }`);
   if ( ("recastCost" in entry) && !["bonus", "action"].includes(entry.recastCost) ) errors.push(`${at}recastCost: bonus | action`);
   if ( ("levitate" in entry) && !(isObject(entry.levitate) && isId(entry.levitate.effect) && Number.isFinite(entry.levitate.height) && (typeof entry.levitate.units === "string")) ) errors.push(`${at}levitate: { effect, height, units }`);
-  if ( ("prismatic" in entry) && !(isObject(entry.prismatic) && isId(entry.prismatic.indigo) && isId(entry.prismatic.violet)) ) errors.push(`${at}prismatic: { indigo, violet } (effect ids)`);
+  if ( ("prismatic" in entry) && !(isObject(entry.prismatic) && isId(entry.prismatic.indigo) && isId(entry.prismatic.violet)
+    && (!("all" in entry.prismatic) || (entry.prismatic.all === true))
+    && (!("activities" in entry.prismatic) || (Array.isArray(entry.prismatic.activities) && entry.prismatic.activities.every(isId)))
+    && Object.keys(entry.prismatic).every(k => ["indigo", "violet", "all", "activities"].includes(k))) ) errors.push(`${at}prismatic: { indigo, violet, all?, activities? } (effect / activity ids)`);
   if ( ("barrier" in entry) && !(isObject(entry.barrier) && Number.isFinite(entry.barrier.radius) && (entry.barrier.radius > 0) && (typeof entry.barrier.units === "string")
     && (!("exceptTypes" in entry.barrier) || (Array.isArray(entry.barrier.exceptTypes) && entry.barrier.exceptTypes.every(t => CREATURE_TYPES.includes(t))))
     && Object.keys(entry.barrier).every(k => ["radius", "units", "exceptTypes"].includes(k))) ) errors.push(`${at}barrier: { radius > 0, units, exceptTypes? }`);
@@ -1712,7 +1739,7 @@ export function mergeEntries(layers) {
     // §20
     for ( const key of ["sneakAttack", "evasion", "elusive", "holdsStill", "cunningStrikeMax", "grantsAction", "movesAfter", "studiedAttacks",
       "heroicWarrior", "greatWeaponFighting", "thrownDamage", "rage", "persistentRage", "reckless", "relentless", "blocksHealing",
-      "noOpportunityAttacks", "byWounds", "oneAttack", "martialArts", "flurry", "stunningStrike", "openHand", "smite", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "replacesAttack", "hitRider", "metamagic", "portent", "dispel", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "savageAttacker", "initiativeSwap", "healingRerolls", "effectWhile", "rangedFeat", "piercer", "critMark", "grappleDamage", "haltOnReaction", "concentrationBreaker", "interposeShield", "elementalAdept", "ignoresResistance", "quickStand", "quickSearch", "opportunityDisadvantage", "peerlessAim", "fortifiedHealing", "overwhelmingStrike", "spellRecall", "lastStandHeal", "reactiveStrike", "ritualAdept", "slotRecovery", "fleeOnFailedSave", "halfOnMiss", "saveDisadvantageFor", "limitedAction", "noActions", "hpTiers", "endsCurses", "tempHpPool", "revivesFull", "seesInvisible", "globe", "blink", "walls", "pointWall", "barrier", "recastCost", "levitate", "prismatic", "wallSide", "cellWall", "coverThrough"] ) if ( key in layer ) out[key] = layer[key];   // §129–§135, §157
+      "noOpportunityAttacks", "byWounds", "oneAttack", "martialArts", "flurry", "stunningStrike", "openHand", "smite", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "replacesAttack", "hitRider", "metamagic", "portent", "dispel", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "savageAttacker", "initiativeSwap", "healingRerolls", "effectWhile", "rangedFeat", "piercer", "critMark", "grappleDamage", "haltOnReaction", "concentrationBreaker", "interposeShield", "elementalAdept", "ignoresResistance", "quickStand", "quickSearch", "opportunityDisadvantage", "peerlessAim", "fortifiedHealing", "overwhelmingStrike", "spellRecall", "lastStandHeal", "reactiveStrike", "ritualAdept", "slotRecovery", "fleeOnFailedSave", "halfOnMiss", "saveDisadvantageFor", "limitedAction", "noActions", "hpTiers", "endsCurses", "tempHpPool", "revivesFull", "seesInvisible", "globe", "blink", "walls", "pointWall", "barrier", "recastCost", "levitate", "prismatic", "wallSide", "cellWall", "coverThrough", "thinWall", "wallAura"] ) if ( key in layer ) out[key] = layer[key];   // §129–§135, §157
     if ( "effectEnds" in layer ) out.effectEnds = { ...(out.effectEnds ?? {}), ...layer.effectEnds };
     if ( "effectThen" in layer ) out.effectThen = { ...(out.effectThen ?? {}), ...layer.effectThen };
     if ( "actionEnds" in layer ) out.actionEnds = { ...(out.actionEnds ?? {}), ...layer.actionEnds };

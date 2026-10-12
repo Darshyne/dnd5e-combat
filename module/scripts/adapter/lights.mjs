@@ -108,7 +108,8 @@ export async function lightUpRegion(region) {
 }
 
 /**
- * §170 : un mur posé par points (Mur de feu) — une rangée de sources de chaque côté, tous les 3 m, à un dixième de case de la ligne
+ * §170 : un mur posé par points (Mur de feu) — une rangée de sources de chaque côté, tous les 3 m (§173 : la moitié du rayon pour une
+ * grande lumière), à un dixième de case de la ligne
  * (le mur arrête la lumière : chaque rangée éclaire son côté). Couleur et animation de la règle ; transparence réduite, les sources se
  * recouvrant. MJ actif.
  */
@@ -118,7 +119,9 @@ async function lightUpWall(region, rule) {
   if ( !geometry ) return null;
   const grid = region.parent.grid;
   const perUnit = grid.size / grid.distance;
-  const step = toGridUnits(10, "ft", grid) * perUnit;
+  // Tous les 3 m ; plus espacées pour une grande lumière (Mur prismatique : 30 m) — la moitié de son rayon le plus court.
+  const shortest = Math.min(...[rule.bright, rule.dim].filter(v => Number.isFinite(v) && (v > 0)));
+  const step = toGridUnits(Math.max(10, shortest / 2), rule.units ?? "ft", grid) * perUnit;
   const points = wallLightPoints(geometry, step, grid.size / 10);
   const config = {
     bright: Number.isFinite(rule.bright) ? toGridUnits(rule.bright, rule.units, grid) : 0,

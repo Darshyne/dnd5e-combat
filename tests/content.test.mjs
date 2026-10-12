@@ -214,7 +214,7 @@ describe("contenu livré", () => {
       "unarmed-strike", "uncanny-dodge", "undead-fortitude", "vampiric-bite", "vampiric-touch", "vicious-mockery", "vile-appearance",
       "vitriolic-sphere", "vow-of-enmity", "wails-from-the-grave", "wall-of-fire", "wall-of-force", "wall-of-ice", "wall-of-stone",
       "wall-of-thorns", "war-caster", "war-priest", "warding-bond", "warding-flare", "watchers", "water-element", "water-form",
-      "watery-rush", "web", "weird", "wild-companion", "wild-resurgence", "witch-bolt", "wrath-of-the-sea", "wrath-of-the-wild",
+      "watery-rush", "web", "weird", "wild-companion", "wild-resurgence", "wind-wall", "witch-bolt", "wrath-of-the-sea", "wrath-of-the-wild",
       "wrathful-smite", "yolandes-regal-presence"
     ]);
     expect(CONTENT["aura-of-protection"].aura.radius).toBe(10);

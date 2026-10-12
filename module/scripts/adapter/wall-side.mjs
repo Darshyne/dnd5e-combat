@@ -23,6 +23,34 @@ export function wallSideRuleOf(region) {
   return activity?.item ? (contentOf(activity.item).entry?.wallSide ?? null) : null;
 }
 
+/** L'entrée du contenu du sort qui a posé cette région, ou null. */
+function entryOfRegion(region) {
+  const uuid = region?.getFlag?.("dnd5e", "activity");
+  const activity = uuid ? fromUuidSync(uuid, { strict: false }) : null;
+  return activity?.item ? (contentOf(activity.item).entry ?? null) : null;
+}
+
+/**
+ * §169, §173 : un mur fin (Mur de feu, de vent, de pierre, de glace, de force, prismatique) — le mur lui-même, pas une zone qu'il a
+ * posée : à l'apparition, les créatures dont l'espace le touche ; on y « entre » en le traversant.
+ */
+export function isThinWall(region) {
+  if ( !region || region.getFlag?.(MODULE_ID, "sideOf") || region.getFlag?.(MODULE_ID, "auraOf") ) return false;
+  const entry = entryOfRegion(region);
+  return !!(entry?.wallSide || (entry?.thinWall === true));
+}
+
+/** §173 : la zone `wallAura` du sort qui a posé ce mur, ou null. */
+export function wallAuraRuleOf(region) {
+  if ( !region || region.getFlag?.(MODULE_ID, "sideOf") || region.getFlag?.(MODULE_ID, "auraOf") ) return null;
+  return entryOfRegion(region)?.wallAura ?? null;
+}
+
+/** La zone `wallAura` posée pour ce mur, ou null. */
+export function auraRegionOf(wall) {
+  return wall?.parent?.regions.find(r => r.getFlag(MODULE_ID, "auraOf") === wall.id) ?? null;
+}
+
 /** §172 : le sort qui a posé cette région est-il un mur épais posé sur les cases (`cellWall`) ? */
 export function isCellWall(region) {
   const uuid = region?.getFlag?.("dnd5e", "activity");

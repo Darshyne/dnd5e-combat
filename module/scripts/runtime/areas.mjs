@@ -10,7 +10,7 @@ import { placeAreaAt } from "../adapter/self-area.mjs";
 import { positionOf as position, committedPosition } from "../adapter/turn.mjs";
 import { noteSummonExpiry, expiredSummons } from "../adapter/summons.mjs";
 import { holdZoneEffects, holdDifficultTerrain } from "../adapter/zone-effects.mjs";
-import { wallSideRuleOf, crossesWallRegion } from "../adapter/wall-side.mjs";
+import { wallSideRuleOf, isThinWall, crossesWallRegion } from "../adapter/wall-side.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { announce } from "./triggers.mjs";
@@ -197,8 +197,8 @@ function onMoveToken(token, movement) {
     const waypoints = [...(movement.passed?.waypoints ?? []), movement.destination].filter(Boolean).map(position);
     let steps = null;
     for ( const region of regions ) {
-      // §169 : un mur à face brûlante est fin — on « y entre » aussi en le traversant (un anneau peut passer par des centres de case).
-      if ( wallSideRuleOf(region) ) {
+      // §169, §173 : un mur fin — on « y entre » aussi en le traversant (un anneau peut passer par des centres de case).
+      if ( isThinWall(region) ) {
         steps ??= passedCells(token, movement);
         if ( steps.length && crossesWallRegion(region, token, [position(movement.origin), ...steps]) ) tick(region, token, "enter");
       }

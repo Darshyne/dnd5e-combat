@@ -35,6 +35,8 @@ export const LIGHTS = Object.freeze({
   "produce-flame": { on: "effect", bright: 20, dim: 40, units: "ft" },
   // §170 : Mur de feu — le texte ne dit rien de la lumière ; choix de table (2026-10-12) : celle d'une grande flamme, de chaque côté.
   "wall-of-fire": { on: "wall", bright: 10, dim: 20, units: "ft", color: "#ff8a2b", animation: { type: "torch", speed: 3, intensity: 3 } },
+  // §173 : Mur prismatique — « Lumière vive dans un rayon de 30 m et Lumière faible sur 30 m de plus ».
+  "prismatic-wall": { on: "wall", bright: 100, dim: 200, units: "ft" },
   "light": { on: "summon", carried: true, single: true },
   "continual-flame": { on: "summon", carried: true }
 });

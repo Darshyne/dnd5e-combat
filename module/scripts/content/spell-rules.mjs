@@ -302,11 +302,19 @@ export const SPELL_RULES = Object.freeze({
   // effets). (Les sections de CA et de PV des murs de glace et de pierre, les créatures prises dans le mur : au MJ.)
   // §169 : « opaque » — des murs du cœur qui arrêtent la vue, pas le déplacement ; face brûlante à 3 m.
   "wall-of-fire": { walls: { move: false, sight: true }, wallSide: { distance: 10, units: "ft" } },
-  "wall-of-force": { walls: {} },
-  "wall-of-ice": { walls: { activities: ["c4ttlpiIpyf3dFdf", "zjpb29Tww0iuv1P3"] } },
+  // §173 : murs fins — posés sans diagonale, les créatures qui touchent le mur à l'apparition, un globe en anneau fin.
+  "wall-of-force": { walls: {}, thinWall: true },
+  "wall-of-ice": { walls: { activities: ["c4ttlpiIpyf3dFdf", "zjpb29Tww0iuv1P3"] }, thinWall: true },
   "forcecage": { walls: {} },
-  "wall-of-stone": { walls: { sight: true } },
-  "prismatic-wall": { walls: { move: false, sight: true, activities: ["5f0JerdDSOQQXiTe", "fOYr1bgsB1VXROcm"] } },
+  "wall-of-stone": { walls: { sight: true }, thinWall: true },
+  // §173 : la traversée — les sept couches d'un coup (une sauvegarde : simplification), l'aveuglement à 6 m, rien ne passe au travers ;
+  // « vous et les créatures que vous désignez » : le lanceur et ses alliés épargnés.
+  "prismatic-wall": { walls: { move: false, sight: true, activities: ["5f0JerdDSOQQXiTe", "fOYr1bgsB1VXROcm"] }, thinWall: true, zoneAffects: "enemy",
+    coverThrough: "total", prismatic: { indigo: "CbAuJQPoOViKebWs", violet: "EIaFpuWAfQKSkFyp", all: true, activities: ["fxEIn0sNwZReZJhV"] },
+    wallAura: { distance: 20, units: "ft", activity: "Pm0Re9Gt8pJNaF1C", on: ["enter", "turnStart"] },
+    triggers: [{ on: ["enter"], do: [{ type: "replay", activity: "fxEIn0sNwZReZJhV" }] }] },
+  // §173 : « les flèches, carreaux et autres projectiles ordinaires lancés sur des cibles derrière le mur […] ratent automatiquement ».
+  "wind-wall": { thinWall: true, coverThrough: { degree: "total", against: "rangedWeapon" } },
   // §172 : posé sur une rangée de cases ; « pour chaque tranche de 30 cm parcourue dans le mur, il faut dépenser 1,20 m » : ×4.
   "wall-of-thorns": { walls: { move: false, sight: true }, cellWall: true, difficultTerrain: { cost: 4 } },
   // §163 : Champ antimagie — « les sorts n'affectent rien dans l'Émanation, et on n'y en lance pas » (la suspension des effets et objets

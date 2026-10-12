@@ -165,7 +165,7 @@ export function rangedFeatsOf(actor, activity, attackMode=null) {
 
 /** §131 : l'abri de la cible contre cette attaque — un don de tir peut ignorer l'abri partiel ou aux trois quarts. */
 export function coverAgainst(origin, target, activity, attackMode, options={}) {
-  const cover = coverFor(origin, target, options);
+  const cover = coverFor(origin, target, { ...options, activity, attackMode });
   return coverLeft(cover, activity ? rangedFeatsOf(origin?.actor, activity, attackMode).cover : false);
 }
 

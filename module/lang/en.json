@@ -120,6 +120,7 @@
   "DND5ECOMBAT.MurFace.Question": "Which side of the ring of fire burns?",
   "DND5ECOMBAT.MurFace.Interieur": "Inward (burns what is inside)",
   "DND5ECOMBAT.MurFace.Exterieur": "Outward (protects what is inside)",
+  "DND5ECOMBAT.MurAura.Nom": "surroundings",
   "DND5ECOMBAT.Zone.enter": "{item} — {name} enters the area",
   "DND5ECOMBAT.Zone.turnEnd": "{item} — {name} ends their turn in the area",
   "DND5ECOMBAT.Zone.casterPulse": "{item}: {activity}",

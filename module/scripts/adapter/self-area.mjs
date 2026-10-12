@@ -237,7 +237,7 @@ export function wallAreaOf(activity) {
   const entry = contentOf(activity.item).entry;
   const cells = entry?.cellWall === true;
   const length = (size || 0) * count * perUnit;
-  return { shape: "wall", token, length, width: Math.max(1, (width || 1) * perUnit), orthogonal: cells || !!entry?.wallSide,
+  return { shape: "wall", token, length, width: Math.max(1, (width || 1) * perUnit), orthogonal: cells || !!entry?.wallSide || (entry?.thinWall === true),
     cells, half: scene.grid.size / 2, lineLength: cells ? Math.max(0, length - scene.grid.size) : length };
 }
 

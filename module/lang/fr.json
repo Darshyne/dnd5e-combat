@@ -120,6 +120,7 @@
   "DND5ECOMBAT.MurFace.Question": "De quel côté l'anneau de feu brûle-t-il ?",
   "DND5ECOMBAT.MurFace.Interieur": "Vers l'intérieur (brûle ce qui est dedans)",
   "DND5ECOMBAT.MurFace.Exterieur": "Vers l'extérieur (protège ce qui est dedans)",
+  "DND5ECOMBAT.MurAura.Nom": "abords",
   "DND5ECOMBAT.Zone.enter": "{item} — {name} entre dans la zone",
   "DND5ECOMBAT.Zone.turnEnd": "{item} — {name} termine son tour dans la zone",
   "DND5ECOMBAT.Zone.casterPulse": "{item} : {activity}",

@@ -278,3 +278,21 @@ export function cellWallShapes(points, length, width, half) {
 export function innerRingShapes({ x, y, radius }, width) {
   return [{ type: "ring", x, y, radius, innerWidth: Math.min(width, radius), outerWidth: 0 }];
 }
+
+/**
+ * §173 : la zone à `distance` d'un mur fin, des deux côtés (Mur prismatique : l'aveuglement à 6 m) — un rectangle autour de chaque
+ * segment, prolongé de `distance` à ses bouts ; pour un anneau, une bande de `distance` de part et d'autre du cercle.
+ */
+export function auraShapes(geometry, distance) {
+  if ( geometry?.ring ) {
+    const { x, y, radius } = geometry.ring;
+    return [{ type: "ring", x, y, radius, innerWidth: Math.min(distance, radius), outerWidth: distance }];
+  }
+  return (geometry?.lines ?? []).map(([x1, y1, x2, y2]) => {
+    const len = Math.hypot(x2 - x1, y2 - y1) || 1;
+    const ux = ((x2 - x1) / len) * distance, uy = ((y2 - y1) / len) * distance;
+    const nx = -uy, ny = ux;
+    const a = { x: x1 - ux, y: y1 - uy }, b = { x: x2 + ux, y: y2 + uy };
+    return { type: "polygon", points: [a.x + nx, a.y + ny, b.x + nx, b.y + ny, b.x - nx, b.y - ny, a.x - nx, a.y - ny].map(v => Math.round(v)) };
+  });
+}

@@ -335,11 +335,13 @@ async function wallSide({ regionId, flip=false }) {
 }
 
 /** §172 : l'abri de la cible contre l'attaquant, tel que le verdict le calculera (`coverFor`), ou null. */
-function cover({ attackerId, targetId }) {
+function cover({ attackerId, targetId, itemId=null }) {
   const attacker = canvas.scene?.tokens.get(attackerId);
   const target = canvas.scene?.tokens.get(targetId);
   if ( !attacker || !target ) throw new Error("token not found on the viewed scene");
-  return coverFor(attacker, target, { quiet: true });
+  // §173 : avec l'attaque d'un item (une arme à distance devant le Mur de vent).
+  const activity = itemId ? attacker.actor?.items.get(itemId)?.system.activities.find(a => a.type === "attack") ?? null : null;
+  return coverFor(attacker, target, { quiet: true, activity });
 }
 
 async function summonAt({ tokenId, itemId, activityId=null, profile=null, actorUuid=null, x, y }) {

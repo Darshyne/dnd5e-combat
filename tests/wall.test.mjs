@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { polylineLength, clampPolyline, wallLineShapes, lineAxis, polygonEdges, orthogonalize, sideOfSegment, wallGeometry, defaultSide, sideShapes, ringShapes, crossesWall, touchesWall, wallLightPoints, cellWallShapes, innerRingShapes } from "../module/scripts/core/wall.mjs";
+import { polylineLength, clampPolyline, wallLineShapes, lineAxis, polygonEdges, orthogonalize, sideOfSegment, wallGeometry, defaultSide, sideShapes, ringShapes, crossesWall, touchesWall, wallLightPoints, cellWallShapes, innerRingShapes, auraShapes } from "../module/scripts/core/wall.mjs";
 
 describe("§162 : mur posé par points", () => {
   it("la ligne brisée ramenée à la longueur du sort", () => {
@@ -95,5 +95,12 @@ describe("§172 : mur épais sur les cases", () => {
   it("l'anneau : une bande à l'intérieur du cercle", () => {
     expect(innerRingShapes({ x: 0, y: 0, radius: 280 }, 140)).toEqual([{ type: "ring", x: 0, y: 0, radius: 280, innerWidth: 140, outerWidth: 0 }]);
     expect(wallGeometry(innerRingShapes({ x: 0, y: 0, radius: 280 }, 140)).ring.radius).toBe(210);
+  });
+});
+
+describe("§173 : la zone autour d'un mur fin", () => {
+  it("un rectangle autour du segment, prolongé aux bouts ; une bande autour de l'anneau", () => {
+    expect(auraShapes({ lines: [[0, 0, 100, 0]] }, 20)).toEqual([{ type: "polygon", points: [-20, 20, 120, 20, 120, -20, -20, -20] }]);
+    expect(auraShapes({ ring: { x: 0, y: 0, radius: 100 } }, 20)).toEqual([{ type: "ring", x: 0, y: 0, radius: 100, innerWidth: 20, outerWidth: 20 }]);
   });
 });

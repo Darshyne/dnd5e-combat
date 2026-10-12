@@ -104,11 +104,16 @@ const PRISM_TYPES = Object.freeze({ 1: "fire", 2: "acid", 3: "lightning", 4: "po
  * §164 : Embruns prismatiques (`prismatic`) — un d8 par cible ; sur un 8, deux rayons (les 8 relancés). Rend les couleurs tirées,
  * l'entrée du plan réduite à leurs effets (sans dégâts s'il n'y a que de l'indigo ou du violet) et les types de dégâts. Null sans la règle.
  */
-async function prismaticFor(item, entry) {
+async function prismaticFor(item, entry, activity=null, plan=null) {
   const rule = item ? contentOf(item).entry?.prismatic : null;
   if ( !rule ) return null;
+  // L'activité qui a fait le jet : un rejeu de zone par une sœur garde, dans ses drapeaux, l'activité de la pose — celle de la
+  // sauvegarde du plan dit la sœur (Mur prismatique : la « Traversal Save »).
+  const ids = [activity?.id, String(plan?.save?.activity ?? "").split(".").pop()].filter(Boolean);
+  if ( rule.activities && !rule.activities.some(id => ids.includes(id)) ) return null;
   const d8 = async () => (await new Roll("1d8").evaluate()).total;
-  let colors = [await d8()];
+  // §173 : le Mur prismatique traversé — toutes les couches à la fois (une sauvegarde pour toutes : simplification).
+  let colors = rule.all ? [1, 2, 3, 4, 5, 6, 7] : [await d8()];
   if ( colors[0] === 8 ) {
     colors = [];
     while ( colors.length < 2 ) { const c = await d8(); if ( c !== 8 ) colors.push(c); }
@@ -251,7 +256,7 @@ const COMMANDS = {
       // pouvoir étourdissant, Parole divine) : le premier palier qui tient ; aucun, aucun effet.
       const tier = hpTierFor(activity?.item, patient, entry, resolution.plan);
       if ( tier ) entry = tier.entry;
-      const prism = await prismaticFor(activity?.item, entry);
+      const prism = await prismaticFor(activity?.item, entry, activity, resolution.plan);
       if ( prism ) {
         entry = prism.entry;
         const names = prism.colors.map(c => loc(`Prisme.${c}`)).join(", ");

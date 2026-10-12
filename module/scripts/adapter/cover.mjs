@@ -92,11 +92,18 @@ function bodiesAround(attacker, target) {
     .map(t => rectOf(t));
 }
 
+/** Une attaque à distance avec une arme (tir, ou arme lancée) ? */
+function isRangedWeaponAttack(activity, attackMode) {
+  if ( (activity?.type !== "attack") || (activity.item?.type !== "weapon") ) return false;
+  if ( attackMode ) return /ranged|thrown/.test(attackMode);
+  return activity.attack?.type?.value === "ranged";
+}
+
 /**
  * §172 : l'abri que donne une zone de sort `coverThrough` (Barrière de lames : trois quarts) quand la ligne d'un centre à l'autre la
  * traverse, ni l'attaquant ni la cible dedans ; le plus fort de ces zones, ou null.
  */
-function zoneCoverBetween(attacker, target, posA) {
+function zoneCoverBetween(attacker, target, posA, activity=null, attackMode=null) {
   const a = rectOf(attacker, posA ? { ...committedPosition(attacker), ...posA } : undefined);
   const b = rectOf(target);
   const path = [{ x: a.x + (a.width / 2), y: a.y + (a.height / 2) }, { x: b.x + (b.width / 2), y: b.y + (b.height / 2) }];
@@ -104,8 +111,11 @@ function zoneCoverBetween(attacker, target, posA) {
   for ( const region of attacker.parent.regions ) {
     const uuid = region.getFlag("dnd5e", "activity");
     const item = uuid ? fromUuidSync(uuid, { strict: false })?.item : null;
-    const degree = item ? contentOf(item).entry?.coverThrough : null;
-    if ( !degree ) continue;
+    const rule = item ? contentOf(item).entry?.coverThrough : null;
+    if ( !rule ) continue;
+    // §173 : contre les seules attaques à distance avec une arme (Mur de vent : flèches, carreaux, armes lancées).
+    if ( (rule.against === "rangedWeapon") && !isRangedWeaponAttack(activity, attackMode) ) continue;
+    const degree = rule.degree ?? rule;
     if ( attacker.testInsideRegion(region, posA ? { ...committedPosition(attacker), ...posA } : committedPosition(attacker))
       || target.testInsideRegion(region, committedPosition(target)) ) continue;
     const geometry = wallGeometryOf(region);
@@ -122,9 +132,11 @@ function zoneCoverBetween(attacker, target, posA) {
  * @param {object} [options]
  * @param {object} [options.posA]     Position hypothétique de l'attaquant (au bout d'une approche).
  * @param {boolean} [options.quiet]   Pas de trace en console (calcul au survol).
+ * @param {Activity} [options.activity]   §173 : l'attaque (un abri de zone peut ne valoir que contre les armes à distance).
+ * @param {string} [options.attackMode]
  * @returns {{degree: string, bonus: number|null, byCreature: boolean}|null}
  */
-export function coverFor(attacker, target, { posA, quiet=false }={}) {
+export function coverFor(attacker, target, { posA, quiet=false, activity=null, attackMode=null }={}) {
   if ( !attacker?.parent || (attacker.parent !== target?.parent) || !canJudgeCover(attacker.parent) ) return null;
   if ( COVER_STATUSES.some(s => target.actor?.statuses.has(s)) ) return null;
   const grid = attacker.parent.grid;
@@ -134,7 +146,7 @@ export function coverFor(attacker, target, { posA, quiet=false }={}) {
     blocked: rayBlocker(attacker, target, { posA }), inset: grid.size * INSET_FRACTION
   });
   // §172 : une zone qui donne un abri à qui est derrière (Barrière de lames) — la ligne entre les deux la traverse.
-  const behind = zoneCoverBetween(attacker, target, posA);
+  const behind = zoneCoverBetween(attacker, target, posA, activity, attackMode);
   if ( behind && (strongerCover(cover.degree, behind) !== cover.degree) ) {
     Object.assign(cover, { degree: behind, bonus: COVER[behind].bonus, byCreature: false });
   }

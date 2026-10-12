@@ -99,7 +99,7 @@ describe("Invocation d'animaux (§16.22) : schéma", () => {
   it("pilot free, pulse on/affects", () => {
     expect(validateEntry({ summon: { initiative: "none", pilot: { cost: "free", distance: 30, units: "ft" }, pulse: { item: "pack-damage", radius: 10, units: "ft", on: ["turnEnd", "enter", "moves"], affects: "enemy" } } })).toEqual([]);
     expect(validateEntry({ summon: { initiative: "none", pulse: { item: "x", radius: 10, units: "ft", on: ["start"], affects: "ally" } } })).toEqual([
-      "summon.pulse.on: turnEnd, enter, moves", "summon.pulse.affects: any, enemy"
+      "summon.pulse.on: turnEnd, enter, moves, turnStart, casterTurnStart", "summon.pulse.affects: any, enemy"
     ]);
   });
 });

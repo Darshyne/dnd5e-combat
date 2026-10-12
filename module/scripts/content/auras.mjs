@@ -25,6 +25,12 @@ export const AURAS = Object.freeze({
   // §16.47 : Passage sans trace (PHB 2024) — « vous et chaque créature de votre choix à 9 m ou moins de vous » : une aura
   // tenue tant que le sort l'est (`whileActive`) ; dnd5e ne pose son +10 qu'une fois, sur les cibles du lancement.
   "pass-without-trace": { whileActive: true, includeSelf: true, affects: "ally", radius: 30, units: "ft" },
+  // §159 (relevé des sorts, lot 3) : auras de sort posées une fois sur les cibles du lancement par la donnée — tenues tant que le sort
+  // l'est, elles suivent le lanceur (Émanation de 9 m) et valent pour les alliés qui y entrent.
+  "crusaders-mantle": { whileActive: true, includeSelf: true, affects: "ally", radius: 30, units: "ft", effect: "A0Ygu7lYccaS4Q1K" },
+  "aura-of-life": { whileActive: true, includeSelf: true, affects: "ally", radius: 30, units: "ft", effect: "GV4hKah5zwQ3Bisx" },
+  "aura-of-purity": { whileActive: true, includeSelf: true, affects: "ally", radius: 30, units: "ft", effect: "oKsHTNzigUbEVvxo" },
+  "circle-of-power": { whileActive: true, includeSelf: true, affects: "ally", radius: 30, units: "ft", effect: "WuYsg2mftQltuDIK" },
   // §18.12 : auras à bonus du Monster Manual, dont l'effet est absent, vide ou faux — les changements sont déclarés ici.
   // Autorité (Capitaine et Seigneur de guerre hobgobelins) : le hobgobelin lui-même et ses alliés à 3 m — aucun effet dans le MM.
   "aura-of-authority": { includeSelf: true, affects: "ally", changes: ADVANTAGE_ATTACKS_AND_SAVES },

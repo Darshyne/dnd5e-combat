@@ -58,7 +58,8 @@
  *                                               l'objet à 0 PV aussi. `pulse: { item, radius, units }` : une créature
  *                                               qui finit son tour à `radius` de l'objet subit l'activité de son
  *                                               item `item` (identifiant ; Sphère de feu : « flames ») ; `on` : les
- *                                               moments (turnEnd par défaut ; enter : une créature arrive à portée ;
+ *                                               moments (turnEnd par défaut ; enter : une créature arrive à portée ; turnStart : elle commence son tour à portée ;
+ *                                               casterTurnStart : au début du tour du lanceur, contre UN ennemi à portée (§159) ;
  *                                               moves : l'objet arrive à portée d'elle), une fois par tour et par
  *                                               créature ; `affects: "enemy"` : seulement les ennemis du lanceur
  *     burst?: { activity, radius, units, from? } après le jet d'attaque, touché ou raté, le moteur joue l'activité sœur
@@ -1255,7 +1256,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
 }
 
 export const PILOT_COSTS = Object.freeze(["action", "bonus", "free"]);
-export const PULSE_MOMENTS = Object.freeze(["turnEnd", "enter", "moves"]);
+export const PULSE_MOMENTS = Object.freeze(["turnEnd", "enter", "moves", "turnStart", "casterTurnStart"]);
 export const PILOT_ON_CAST = Object.freeze(["use", "command"]);
 
 function validateSummon(summon, at, errors) {

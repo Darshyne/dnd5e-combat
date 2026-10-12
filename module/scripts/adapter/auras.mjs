@@ -79,7 +79,8 @@ export function aurasOf(actor) {
       console.warn(`${MODULE_ID} | aura "${item.name}" of ${actor.name} ignored: ${(effect || merged.changes) ? "unknown radius" : "no effect to copy"}`);
       continue;
     }
-    auras.push({ item, effect, key: item.system.identifier ?? item.id, ...merged });
+    // §159 : `effect` (l'id du contenu, dans `merged`) ne doit pas remplacer l'effet trouvé.
+    auras.push({ item, key: item.system.identifier ?? item.id, ...merged, effect });
   }
   return auras;
 }

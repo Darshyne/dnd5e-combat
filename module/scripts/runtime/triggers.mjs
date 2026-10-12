@@ -160,7 +160,7 @@ function turnMoment(moment, combatant, turnKey=null) {
         const item = await fromUuid(d.item ?? "");
         // §157 : une activité de soin (Héroïsme : PV temporaires au début de chaque tour) passe par le même chemin — ses dés ont le
         // type « temphp » ou « healing », que dnd5e applique comme un soin.
-        const heals = item?.system?.activities?.get?.(step.activity ?? "")?.type === "heal";
+        const heals = (item?.system?.activities?.get?.(step.activity ?? "")?.type === "heal") || ["healing", "temphp"].includes(step.damageType);
         await inflict({
           step, item, scaling: effect.getFlag?.("dnd5e", "scaling") ?? 0, targetUuid: token.uuid,
           speaker: ChatMessage.implementation.getSpeaker({ token }),

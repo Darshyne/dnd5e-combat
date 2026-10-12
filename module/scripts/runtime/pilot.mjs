@@ -25,6 +25,7 @@ import {
 } from "../adapter/pilot.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { pulseAgainst } from "../adapter/areas.mjs";
+import { summonItemOf } from "../adapter/summons.mjs";
 import { convertLength } from "../core/units.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
@@ -232,13 +233,40 @@ async function pulseAtTurnEnd(combat, prior) {
   }
 }
 
+/**
+ * §159 : début du tour d'une créature (`summon.pulse.on`) — `turnStart` : elle commence son tour à portée de l'invocation (Gardien
+ * de la foi, Invocation d'élémentaire) ; `casterTurnStart` : c'est le tour du lanceur, l'invocation frappe UN ennemi à portée, le plus
+ * proche (Chien de garde de Mordenkainen : « au début de votre tour, le chien tente de mordre un ennemi à 1,50 m de lui »). MJ actif.
+ */
+async function pulseAtTurnStart(combat, prior, current) {
+  const combatant = combat.combatants.get(current?.combatantId);
+  const started = combatant?.token;
+  if ( !started?.actor || isPilotedCombatant(combatant) ) return;
+  for ( const source of started.parent.tokens ) {
+    const pulse = pulseOf(source);
+    if ( !pulse ) continue;
+    const on = pulse.rule.on ?? ["turnEnd"];
+    if ( on.includes("turnStart") && pulseReaches(source, pulse, started) ) await pulseOnce(source, pulse, started, "turnStart");
+    if ( on.includes("casterTurnStart") && (summonItemOf(source)?.actor === started.actor) ) {
+      const near = source.parent.tokens.filter(t => pulseReaches(source, pulse, t))
+        .sort((a, b) => distanceBetween(source, a).value - distanceBetween(source, b).value);
+      if ( near.length ) await pulseOnce(source, pulse, near[0], "casterTurnStart");
+      else log(`${source.name}: nobody within reach at ${started.name}'s turn start`);
+    }
+  }
+}
+
 /** Ce que l'objet frappe : pas lui-même, pas un mort, pas un objet piloté ; `affects: "enemy"` : les ennemis du lanceur. */
 function pulseCanHit(source, pulse, token) {
   if ( (token === source) || !token.actor || token.hidden || isObjectToken(token) ) return false;
   if ( token.actor.statuses.has(CONFIG.specialStatusEffects.DEFEATED) ) return false;
   if ( pulse.rule.affects !== "enemy" ) return true;
   const pilot = pilotOf(source);
-  const caster = pilot ? summonerToken(pilot) : null;
+  // §159 : une invocation non pilotée (Chien de garde, Gardien de la foi) juge les ennemis d'après son lanceur aussi — sa propre
+  // disposition est souvent neutre.
+  const owner = pilot ? null : summonItemOf(source)?.actor;
+  const caster = pilot ? summonerToken(pilot)
+    : (owner?.getActiveTokens?.(false, true) ?? []).find(t => t.parent === source.parent) ?? null;
   return areHostile(caster?.disposition ?? source.disposition, token.disposition);
 }
 
@@ -340,6 +368,7 @@ export function registerPilot() {
   route("combatStart", (combat, updateData) => onCombatAdvance(combat, updateData, { direction: 1 }), { label: "piloted object: turn skipped (start)" });
   route("combatTurnChange", onTurnChange, { executor: true, label: "piloted object: turn not skipped" });
   route("combatTurnChange", pulseAtTurnEnd, { executor: true, label: "summoned object: end of turn within range" });
+  route("combatTurnChange", pulseAtTurnStart, { executor: true, label: "summoned object: start of turn within range" });
   route("updateActor", onUpdateActor, { executor: true, label: "piloted object: spell ends at 0 HP" });
   route("createToken", onCreateToken, { executor: true, label: "piloted object: command on cast" });
   route("moveToken", onMoveToken, { executor: true, label: "piloted object: command not paid" });

@@ -234,6 +234,13 @@ export const SPELL_RULES = Object.freeze({
   "heroism": { triggers: [{ on: "startOfTurn", via: "effect", fromEffect: "zCpsdUyNz8bL3LF5", do: [{ type: "damage", to: "bearer", activity: "dnd5eactivity000" }] }] },
   // Fracassement : « une Créature artificielle a le Désavantage au jet de sauvegarde ».
   "shatter": { saveDisadvantageFor: ["construct"] },
+  // §159 : Aura de vie — « un allié à 0 PV qui commence son tour dans l'aura regagne 1 PV » ; Aura de pureté — « Avantage aux JS
+  // pour éviter ou finir Aveuglé, Charmé, Assourdi, Effrayé, Paralysé, Empoisonné ou Étourdi » ; Cercle de pouvoir — « Avantage aux
+  // JS contre les sorts et autres effets magiques » (« aucun dégât sur une réussite à moitié » : non repris). Portés par l'effet
+  // de l'aura (content/auras.mjs).
+  "aura-of-life": { triggers: [{ on: "startOfTurn", via: "effect", if: { "target.atZero": true }, do: [{ type: "damage", to: "bearer", formula: "1", damageType: "healing" }] }] },
+  "aura-of-purity": { saveAdvantage: ["blinded", "charmed", "deafened", "frightened", "paralyzed", "poisoned", "stunned"] },
+  "circle-of-power": { saveAdvantage: ["magic"] },
   "conjure-woodland-beings": {
     selfZone: { dnd5eactivity000: { type: "radius", size: 10, units: "ft" } },
     zoneAffects: "enemy",

@@ -60,6 +60,17 @@ export const SUMMONS = Object.freeze({
     pilot: { cost: "free", distance: 30, units: "ft", occupies: false },
     pulse: { item: "pack-damage", radius: 10, units: "ft", on: ["turnEnd", "enter", "moves"], affects: "enemy" }
   },
+  // §159 (relevé des sorts, lot 3). Appel de destrier : « partage votre initiative et agit juste après vous ». Épée de Mordenkainen :
+  // « attaque à l'apparition, puis par une action Bonus, se déplace de 9 m et attaque » (« Move and Attack »). Invocation de fée :
+  // l'esprit attaque à l'apparition, puis par une action Bonus « se téléporte de 9 m et attaque » (le pilote le déplace : la
+  // téléportation est approchée par un déplacement, sans attaque d'opportunité). Gardien de la foi : « un ennemi qui arrive à 3 m
+  // du gardien pour la première fois d'un tour ou y commence son tour » fait la sauvegarde de « Guarded Area » (la limite de 60 dégâts
+  // n'est pas reprise). Chien de garde : « au début de votre tour, le chien tente de mordre un ennemi à 1,50 m de lui ».
+  "find-steed": after,
+  "mordenkainens-sword": piloted(30, "use"),
+  "conjure-fey": piloted(30, "use"),
+  "guardian-of-faith": { initiative: "none", pulse: { item: "guarded-area", radius: 10, units: "ft", on: ["enter", "turnStart"], affects: "enemy" } },
+  "mordenkainens-faithful-hound": { initiative: "none", pulse: { item: "bite", radius: 5, units: "ft", on: ["casterTurnStart"], affects: "enemy" } },
   "arcane-eye": { initiative: "none", endsSpell: true, pilot: { cost: "bonus", distance: 30, units: "ft", occupies: false } },
   "dancing-lights": { initiative: "none", endsSpell: true, pilot: {
     cost: "bonus", distance: 60, units: "ft", occupies: false, shared: true, cluster: { distance: 20, units: "ft" }, leash: true

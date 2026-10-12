@@ -20,7 +20,7 @@ import { effectKey, effectOfProfile, poolEffectsOf } from "./usage.mjs";
 import { timedWait, closeRollDialogAfter } from "./dialogs.mjs";
 import { pushOf } from "./basics.mjs";
 import { blockedFor } from "./eligibility.mjs";
-import { conditionImmunitiesOf, originItemOf } from "./facts.mjs";
+import { conditionImmunitiesOf, originItemOf, creatureTypeOf } from "./facts.mjs";
 import { contentOf } from "./content.mjs";
 import { usageTokenOf } from "./turn.mjs";
 import { areHostile } from "../core/reaction.mjs";
@@ -271,8 +271,11 @@ export async function requestSaves(usageMessage, save, targets, { askPlayers=tru
     if ( !actor ) continue;
     const abilities = save.abilities ?? [save.ability];
     ability = bestSaveAbility(actor, abilities);
-    const disadvantage = token.uuid === heightened;
-    if ( disadvantage ) console.log(`${MODULE_ID} | Heightened Spell: ${token.name} has Disadvantage on its saving throw`);
+    // §157 : « une Créature artificielle a le Désavantage au jet de sauvegarde » (Fracassement) — `saveDisadvantageFor` du contenu.
+    const byType = (contentOf(activity.item).entry?.saveDisadvantageFor ?? []).includes(creatureTypeOf(actor));
+    const disadvantage = (token.uuid === heightened) || byType;
+    if ( token.uuid === heightened ) console.log(`${MODULE_ID} | Heightened Spell: ${token.name} has Disadvantage on its saving throw`);
+    else if ( byType ) console.log(`${MODULE_ID} | ${activity.item.name}: ${token.name} (${creatureTypeOf(actor)}) has Disadvantage on its saving throw`);
     // §36 : Présage — « à décider avant le jet » : un devin qui voit la cible peut remplacer son d20 par un jet noté. La question
     // retient la demande (jusqu'à la réponse ou au délai de la fenêtre) : c'est le prix de « avant le jet ».
     const foretold = (await foretellFor(token, { kind: "save", item: activity.item.name, auto, declined }))?.value ?? null;

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  freshBudget, costOf, checkUse, spendUse, dash, disengage, dodge, toggleResource, movementAllowance
+  freshBudget, costOf, checkUse, spendUse, dash, disengage, dodge, toggleResource, movementAllowance, basicAction, refundUse
 } from "../module/scripts/core/turn.mjs";
 import { rangeIssue } from "../module/scripts/core/range.mjs";
 
@@ -163,5 +163,39 @@ describe("§19.6 : plusieurs réactions par round, une par tour", () => {
     const r = { cost: "reaction", weaponAttack: false, usesSpellSlot: false };
     b = spendUse(b, r, { isOwnTurn: false, attacksPerAction: 1, turnKey: "c.1.0" });
     expect(checkUse(b, r, { isOwnTurn: false, turnKey: "c.1.1" })).toEqual(["noReaction"]);
+  });
+});
+
+describe("§157 : action limitée de Hâte", () => {
+  const hasted = () => ({ ...freshBudget(), limited: 1 });
+  const extra = { isOwnTurn: true, attacksPerAction: 2 };
+  it("l'action prise, une seule attaque d'arme de plus — même avec Attaque supplémentaire", () => {
+    let b = spendUse(hasted(), sword, extra);
+    b = spendUse(b, sword, extra);
+    expect(b.action).toBe(0);
+    expect(checkUse(b, sword, mine)).toEqual([]);
+    b = spendUse(b, sword, extra);
+    expect(b.limited).toBe(0);
+    expect(b.attacks).toEqual({ granted: 1, used: 1 });
+    expect(checkUse(b, sword, mine)).toEqual(["noAction"]);
+  });
+  it("ni sort ni autre action", () => {
+    const b = { ...spendUse(hasted(), cantrip, mine) };
+    expect(checkUse(b, cantrip, mine)).toEqual(["noAction"]);
+  });
+  it("Foncer, Se désengager, Se cacher — pas Esquiver", () => {
+    const b = { ...hasted(), action: 0 };
+    expect(checkUse(b, { ...cantrip, basic: "dash" }, mine)).toEqual([]);
+    expect(checkUse(b, { ...cantrip, basic: "hide" }, mine)).toEqual([]);
+    expect(checkUse(b, { ...cantrip, basic: "dodge" }, mine)).toEqual(["noAction"]);
+    expect(basicAction(b, "dash")).toMatchObject({ limited: 0, dashed: true, action: 0 });
+    expect(basicAction(b, "dodge")).toMatchObject({ limited: 1, dodging: true });
+  });
+  it("l'action d'abord, la limitée ensuite ; rendue avec une annulation", () => {
+    const before = hasted();
+    const after = spendUse(before, cantrip, mine);
+    expect(after).toMatchObject({ action: 0, limited: 1 });
+    const used = spendUse(after, sword, mine);
+    expect(refundUse(used, after, used)).toMatchObject({ limited: 1 });
   });
 });

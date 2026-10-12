@@ -13,6 +13,8 @@
 import { spentMovement } from "../core/movement.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
+import { basicActionOf } from "./basics.mjs";
+import { originItemOf, comesFromItemEffect } from "./facts.mjs";
 import { freshBudget, costOf } from "../core/turn.mjs";
 import { convertLength } from "../core/units.mjs";
 import { readUnitFactors } from "./units.mjs";
@@ -41,7 +43,16 @@ export function reactionsPerRound(actor) {
 
 /** Budget neuf d'un combattant, à ses réactions par round. */
 export function freshBudgetFor(combatant) {
-  return freshBudget({ reactions: reactionsPerRound(combatant?.actor) });
+  return { ...freshBudget({ reactions: reactionsPerRound(combatant?.actor) }), limited: hasLimitedAction(combatant?.actor) ? 1 : 0 };
+}
+
+/** §157 : l'acteur porte-t-il l'effet d'un item qui donne l'action limitée (`limitedAction` : l'effet « Hasted » de Hâte) ? */
+function hasLimitedAction(actor) {
+  return Array.from(actor?.effects ?? []).some(e => {
+    if ( e.disabled || e.isSuppressed ) return false;
+    const id = contentOf(originItemOf(e)).entry?.limitedAction;
+    return !!id && comesFromItemEffect(e, id);
+  });
 }
 
 export function isOwnTurn(combatant) {
@@ -100,7 +111,8 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
     // M1 (§18.6) : les Attaques multiples d'un monstre, lues dans son texte anglais.
     multiattack: multiattackOf(activity.actor),
     keys: useKeysOf(activity),
-    opensMultiattack: !!item && isMultiattackItem(item)
+    opensMultiattack: !!item && isMultiattackItem(item),
+    basic: item ? (basicActionOf(item) ?? contentOf(item).entry?.basicActions?.[activity.id] ?? null) : null   // §157 : l'action limitée de Hâte
   };
 }
 

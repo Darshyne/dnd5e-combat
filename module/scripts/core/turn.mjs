@@ -40,6 +40,7 @@ export function freshBudget({ reactions=1 }={}) {
     flurry: 0,      // §24 : frappes à mains nues gratuites ouvertes par le Déluge de coups
     flurryAny: false,   // §27 : … attaques d'arme comprises (Prêtre de guerre)
     bonusMove: 0,   // §20 : déplacement ouvert en plus ce tour (Repli du Roublard : la moitié de la Vitesse), unités de la grille
+    limited: 0,     // §157 : action limitée (Hâte) — une seule attaque d'arme, Foncer, Se désengager ou Se cacher, quand l'action est prise
     stopped: false   // §16.59 : tour achevé par un ordre (Injonction) — plus de déplacement
   };
 }
@@ -78,6 +79,15 @@ export function effectiveCost(budget, request) {
   return request.cost;
 }
 
+/** §157 : ce que l'action limitée de Hâte permet — « une attaque (une seule), Foncer, Se désengager, Se cacher, Utiliser ». */
+export const LIMITED_ACTION_KINDS = Object.freeze(["dash", "disengage", "hide"]);
+
+/** §157 : l'action limitée (Hâte) couvre-t-elle cette utilisation, l'action du tour étant prise ? */
+function coveredByLimitedAction(budget, request) {
+  if ( !((budget.limited ?? 0) >= 1) || (budget.action >= 1) || (request.cost !== "action") ) return false;
+  return request.weaponAttack || LIMITED_ACTION_KINDS.includes(request.basic);
+}
+
 /** Cette attaque d'arme est-elle couverte par une action Attaquer déjà payée ? */
 function coveredByAttackAction(budget, request) {
   return request.weaponAttack && (request.cost === "action") && (budget.attacks.used < budget.attacks.granted);
@@ -108,7 +118,8 @@ export function checkUse(budget, request, { isOwnTurn, turnKey=null }) {
   const cost = effectiveCost(budget, request);
   if ( !cost ) return (request.offhand && !isOwnTurn) ? ["notYourTurn", ...issues] : issues;
   if ( (cost !== "reaction") && !isOwnTurn ) issues.push("notYourTurn");
-  if ( (cost === "action") && (budget.action < 1) && !coveredByAttackAction(budget, request) && !coveredByMultiattack(budget, request) ) issues.push("noAction");
+  if ( (cost === "action") && (budget.action < 1) && !coveredByAttackAction(budget, request) && !coveredByMultiattack(budget, request)
+    && !coveredByLimitedAction(budget, request) ) issues.push("noAction");
   if ( (cost === "bonus") && (budget.bonus < 1) ) issues.push("noBonus");
   if ( (cost === "reaction") && !reactionAvailable(budget, turnKey) ) issues.push("noReaction");
   if ( request.usesSpellSlot && isOwnTurn && budget.slotCast ) issues.push("slotAlreadyCast");
@@ -146,6 +157,11 @@ export function spendUse(budget, request, { isOwnTurn, attacksPerAction, turnKey
     next.attacks = { granted: attackCount(plan), used: opening.attacks };
   }
   else if ( coveredByAttackAction(budget, request) ) next.attacks.used += 1;
+  // §157 : l'action limitée de Hâte — une seule attaque, même avec Attaque supplémentaire.
+  else if ( coveredByLimitedAction(budget, request) ) {
+    next.limited = 0;
+    if ( request.weaponAttack ) next.attacks = { granted: 1, used: 1 };
+  }
   else {
     next[request.cost] = Math.max(0, budget[request.cost] - 1);
     if ( request.cost === "reaction" ) next.reactedAt = turnKey;
@@ -165,7 +181,7 @@ export function spendUse(budget, request, { isOwnTurn, attacksPerAction, turnKey
  */
 export function refundUse(current, before, after) {
   const next = { ...current, attacks: { ...current.attacks } };
-  for ( const key of ["action", "bonus", "reaction"] ) {
+  for ( const key of ["action", "bonus", "reaction", "limited"] ) {
     next[key] = Math.max(0, (current[key] ?? 0) + ((before[key] ?? 0) - (after[key] ?? 0)));
   }
   const usedDelta = (after.attacks?.used ?? 0) - (before.attacks?.used ?? 0);
@@ -198,6 +214,8 @@ export const BASIC_ACTION_FLAGS = Object.freeze({ dash: "dashed", disengage: "di
 export function basicAction(budget, kind) {
   const flag = BASIC_ACTION_FLAGS[kind];
   if ( !flag ) return budget;
+  // §157 : l'action prise, l'action limitée de Hâte paie Foncer ou Se désengager.
+  if ( (budget.action < 1) && ((budget.limited ?? 0) >= 1) && LIMITED_ACTION_KINDS.includes(kind) ) return { ...budget, limited: 0, [flag]: true };
   return { ...budget, action: Math.max(0, budget.action - 1), [flag]: true };
 }
 

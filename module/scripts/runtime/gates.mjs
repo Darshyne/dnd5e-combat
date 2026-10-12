@@ -105,6 +105,35 @@ async function passWards(activity, origin, wards) {
 /*  Contresort : fenêtre de réaction des hostiles */
 /* -------------------------------------------- */
 
+/**
+ * §157 : les créatures visées par une utilisation sans jet d'attaque, hostiles à l'utilisateur, qui ont une réaction `isTargeted`
+ * pour elle (Bouclier contre Projectile magique), avec leurs options.
+ */
+function targetedCandidates(activity, origin, targets) {
+  const out = [];
+  for ( const token of targets ) {
+    if ( !token.actor || !areHostile(token.disposition, origin.disposition) ) continue;
+    if ( token.actor.statuses.has(CONFIG.specialStatusEffects.DEFEATED) ) continue;
+    const actor = token.actor;
+    const options = reactionOptions(actor, "isTargeted",
+      matching("isTargeted", { actor, target: actor, source: origin.actor, activity, sourceToken: origin, targetToken: token }));
+    if ( options.length ) out.push({ token, actor, options });
+  }
+  return out;
+}
+
+/** §157 : chaque créature visée réagit, l'une après l'autre ; la réaction est résolue avant l'utilisation (son effet compte déjà). */
+async function passTargeted(activity, origin, candidates, { auto }) {
+  for ( const { token, actor, options } of candidates ) {
+    log(`${origin.name} uses ${activity.item.name} on ${token.name}: ${token.name} can react (${options.map(o => o.name).join(", ")})`);
+    const answer = await askReaction(actor, {
+      actor: actor.uuid, options, target: origin.uuid, auto,
+      prompt: { key: "ReactionCible", data: { caster: origin.name, spell: activity.item.name } }
+    });
+    if ( answer?.message ) await settled(answer.message);
+  }
+}
+
 /** Qui peut réagir au lancement de ce sort, avec quoi. */
 function counterCandidates(activity, origin) {
   const out = [];
@@ -196,7 +225,9 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   // §36 : Présage — un devin qui voit l'attaquant (ou l'attaquant lui-même) peut remplacer le d20 du jet ; « avant le jet ». Seulement
   // quand les cibles sont désignées : le mode visée relance l'utilisation, la question serait posée deux fois.
   const seers = (preAttack && targets.length) ? seersOf(origin) : [];
-  if ( !wards.length && !candidates.length && !reactors.length && !seers.length ) return true;
+  // §157 : une utilisation sans jet d'attaque qui vise des créatures (un projectile de Projectile magique) — leur fenêtre `isTargeted`.
+  const targeted = ((activity.type !== "attack") && (auto !== "none") && targets.length) ? targetedCandidates(activity, origin, targets) : [];
+  if ( !wards.length && !candidates.length && !reactors.length && !seers.length && !targeted.length ) return true;
 
   // Les cibles du lanceur, à remettre avant la relance : une réaction jouée sur ce même client (le MJ qui contrôle
   // les deux) les a remplacées par les siennes (vu le 2026-09-24 : le Rayon relancé sans cible, ou sur le lanceur).
@@ -204,6 +235,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   (async () => {
     if ( wards.length && !(await passWards(activity, origin, wards)) ) return;
     if ( candidates.length && !(await passCounters(activity, origin, candidates, { auto, castLevel: castLevelFor(activity, usageConfig) })) ) return;
+    if ( targeted.length ) await passTargeted(activity, origin, targeted, { auto });
     let mods = reactors.length ? await askAttackReactions(activity, origin, reactors, { auto }) : null;
     const foretold = seers.length ? await foretellFor(origin, { kind: "attack", item: activity.item.name, auto }) : null;
     if ( foretold ) {

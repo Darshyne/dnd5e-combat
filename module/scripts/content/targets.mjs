@@ -12,6 +12,8 @@
 export const TARGETS = Object.freeze({
   // « Choisissez un Humanoïde… », « Un Humanoïde que vous voyez… », « Chaque Humanoïde dans une Sphère… »
   "hold-person": { types: ["humanoid"] },
+  // §157 : Bouclier — « vous ne subissez aucun dégât de Projectile magique » tant qu'il tient.
+  "magic-missile": { unaffectedIf: { "target.hasEffect": "shield" } },
   "charm-person": { types: ["humanoid"] },
   "dominate-person": { types: ["humanoid"] },
   "calm-emotions": { types: ["humanoid"] },

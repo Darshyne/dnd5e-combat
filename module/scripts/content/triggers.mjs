@@ -25,7 +25,11 @@
 export const TRIGGERS = Object.freeze({
   // Réactions (règles 2024)
   // §138 : seulement quand +5 à la CA peut changer le coup (pas sur un critique, ni sur un jet qui dépasse la CA + 5).
-  "shield": [{ on: "isHit", if: { "hit.stoppableBy": 5 }, do: [{ type: "use" }] }],
+  "shield": [
+    { on: "isHit", if: { "hit.stoppableBy": 5 }, do: [{ type: "use" }] },
+    // §157 : « … ou quand vous êtes visé par Projectile magique » — une fois : protégé, il n'y a plus rien à gagner.
+    { on: "isTargeted", if: { "activity.identifier": "magic-missile", not: { "target.hasEffect": "shield" } }, do: [{ type: "use", target: "self", activity: "dnd5eactivity000" }] }
+  ],
   // Esquive instinctive (PHB, roublard 5) : « quand un attaquant que vous voyez vous touche avec un jet d'attaque, vous
   // pouvez utiliser votre réaction pour réduire de moitié les dégâts de l'attaque » (§16.11, B14).
   // §74 : Parade du Monster Manual 2024 (`mmParry000000000`, Noble, Chevalier…) — « touché par un jet d'attaque de corps à corps
@@ -190,7 +194,12 @@ export const TRIGGERS = Object.freeze({
 
   // Effet qui cesse sur dégâts (SPEC §16, B8) : « le sort prend fin pour une cible qui subit des dégâts ». Porté par
   // l'effet posé (Neutralisé ; Charmé et Neutralisé). Secouer la créature (une action d'un autre) reste à la main.
-  "sleep": [{ on: "isDamaged", via: "effect", do: [{ type: "remove" }] }],
+  "sleep": [
+    { on: "isDamaged", via: "effect", do: [{ type: "remove" }] },
+    // §157 : « Neutralisée jusqu'à la fin de son prochain tour, où elle refait le jet ; ratée, Inconsciente pour la durée » — une
+    // sauvegarde, comptée : réussie, l'effet tombe ; ratée, plus de jet, l'effet reste et reçoit Inconscient.
+    { on: "endOfTurn", via: "effect", do: [{ type: "resave", tally: { successes: 1, failures: 1, status: "unconscious" } }] }
+  ],
   "hypnotic-pattern": [{ on: "isDamaged", via: "effect", do: [{ type: "remove" }] }],
   // §65 : Suggestion — « la suggestion prend fin si vous ou vos alliés infligez des dégâts à la cible » : seulement ces dégâts-là.
   "suggestion": [{ on: "isDamaged", via: "effect", by: "originSide", do: [{ type: "remove" }] }],
@@ -250,7 +259,7 @@ export const TRIGGERS = Object.freeze({
   ],
   // Flèche acide de Melf : « 2d4 dégâts d'acide à la fin de son prochain tour » — l'effet « Lingering Acid »
   // (NgglkyjzTbDh5Loa) posé au toucher, l'activité « Dégâts d'acide persistants » (uAyE5DrJp0YpElcw, au niveau de lancement).
-  // (« Raté : la moitié des dégâts initiaux » n'est pas repris.)
+  // « Raté : la moitié des dégâts initiaux » : `halfOnMiss` (content/spell-rules.mjs, §157).
   "melfs-acid-arrow": [{ on: "endOfTurn", via: "effect", fromEffect: "NgglkyjzTbDh5Loa",
     do: [{ type: "damage", to: "bearer", activity: "uAyE5DrJp0YpElcw" }, { type: "remove" }] }],
   // Sphère de vitriol : sur une sauvegarde ratée, 5d4 d'acide encore à la fin du tour suivant de la cible — l'effet

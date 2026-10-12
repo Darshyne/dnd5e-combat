@@ -283,6 +283,8 @@ function casterRules(activity, plan, message=null) {
   const level = spellLevelOf(item);
   const out = { ...plan };
   if ( plan.damage && (level === 0) && has("potentCantrip") ) out.potent = true;
+  // §157 : l'item lui-même fait la moitié des dégâts sur un raté (Flèche acide de Melf) — même règle, pour lui seul.
+  if ( plan.damage && plan.attack && (contentOf(item).entry?.halfOnMiss === true) ) out.potent = true;
   if ( plan.save && (spellSchoolOf(item) === "evo") && has("sculptSpells") ) out.sculpt = 1 + level;
   // §32 : Métamagie portée par la carte — Sort prévenant : autant d'alliés que le modificateur de Charisme (au moins un) réussissent
   // d'office, comme le Façonneur de sorts ; Sort intensifié : la première cible hostile a le Désavantage (adapter/saves.mjs).

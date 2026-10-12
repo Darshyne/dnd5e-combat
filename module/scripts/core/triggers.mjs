@@ -49,6 +49,9 @@ export const MOMENTS = Object.freeze({
   // §19.6 : fenêtres sans attente, comme « blessé ».
   isMissed: "an attack just missed the creature (Riposte, Disarming Attack: reaction window)",
   enemyTurnEnd: "a hostile creature ends its turn (reaction window; it is the source)",
+  // §157 : avant une utilisation SANS jet d'attaque qui la vise (chaque projectile de Projectile magique est une utilisation) — la
+  // créature visée peut réagir (Bouclier). Faits : le réacteur en `target` et `actor`, l'utilisateur en `source`.
+  isTargeted: "a hostile creature is about to use an activity without attack roll that targets the creature (Shield against Magic Missile: reaction window)",
   isAttacked: "a creature is about to attack the bearer (Sanctuary: the attacker's saving throw, via an effect; §34: the target's reaction window, before the roll — Shadowy Dodge)",
   // §34 : une créature hostile au réacteur s'apprête à faire un jet d'attaque, contre lui ou un allié : fenêtre de réaction avant le
   // jet (Éclat protecteur). Les faits voient le réacteur en `self`, l'attaquant en `source`, la créature visée en `target`.

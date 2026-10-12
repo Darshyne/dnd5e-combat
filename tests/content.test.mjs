@@ -6,7 +6,7 @@ const facts = Object.fromEntries(["activity.type", "activity.isAttack", "activit
   "activity.hasProperty", "source.hasStatus", "source.hasEffect", "source.creatureType", "source.allyNearTarget", "source.summonNearTarget", "source.seesTarget",
   "target.hasStatus", "target.hasEffect", "target.hasEffectFrom", "hit.stoppableBy", "damage.resisted", "target.grappledBySource", "target.wieldsProperty", "target.isSelf", "self.hasShield", "target.sizeAtMost", "target.within", "target.seesSource", "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "target.atZero", "target.isDead", "damage.hasType", "target.hpAtMost", "condition.gained",
   "target.wounded", "target.bloodied", "source.classLevelAtLeast", "target.nearSelf", "self.seesTarget", "target.hasNotActed", "source.onOwnTurn", "activity.dealsType", "source.hasFeature", "activity.cantripOf", "activity.school", "activity.enchantedBy", "source.wildShaped", "activity.classSpell", "source.resists", "source.nearSelf", "self.seesSource", "source.hasEffectFromTarget", "source.hasSense"].map(k => [k, true]));
-const MOMENTS_LIST = "isHit, isDamaged, leavesReach, enemyDisengages, enter, turnStart, turnEnd, moves, preDamageRoll, hit, failedSave, startOfTurn, endOfTurn, preAttackRoll, castsSpell, isMissed, enemyTurnEnd, isAttacked, enemyAttacks, allyAttacks, gainsCondition, allyIsHit, allyIsDamaged";
+const MOMENTS_LIST = "isHit, isDamaged, leavesReach, enemyDisengages, enter, turnStart, turnEnd, moves, preDamageRoll, hit, failedSave, startOfTurn, endOfTurn, preAttackRoll, castsSpell, isMissed, enemyTurnEnd, isTargeted, isAttacked, enemyAttacks, allyAttacks, gainsCondition, allyIsHit, allyIsDamaged";
 
 describe("validation d'une entrée", () => {
   it("accepte une entrée complète et bien formée", () => {
@@ -175,7 +175,7 @@ describe("contenu livré", () => {
       "gibbering", "goading-attack", "grappler", "grasping-hand", "grasping-vine", "grease", "great-weapon-fighting",
       "great-weapon-master", "greater-portent", "guidance", "guiding-bolt", "gust-of-wind", "hand-of-healing",
       "hand-of-ultimate-mercy", "haste", "healer", "healers-kit", "heat-aura", "heat-metal", "heavy-armor-master", "heightened-spell",
-      "hellish-rebuke", "heroic-warrior", "hex", "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-aura",
+      "hellish-rebuke", "heroic-warrior", "heroism", "hex", "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-aura",
       "holy-nimbus", "holy-water", "hunger-of-hadar", "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "illusory-self",
       "improved-cunning-strike", "innate-sorcery", "instinctive-pounce", "interception", "invisibility", "invoke-duplicity",
       "knowledge-from-a-past-life", "lamp", "lantern-bullseye", "lantern-hooded", "large-form", "lay-on-hands", "leading-evasion",
@@ -194,7 +194,7 @@ describe("contenu livré", () => {
       "rally", "ray-of-enfeeblement", "ray-of-frost", "reckless-attack", "regeneration", "relentless-endurance", "relentless-rage",
       "resistance", "resurrection", "revivify", "riposte", "ritual-adept", "rumbling-movement", "sanctuary", "sanguine-drain", "savage-attacker",
       "scorching-ray", "sculpt-spells", "sear-undead", "searing-smite", "sentinel", "sentinel-at-deaths-door", "shade-spirit",
-      "shadow-stealth", "shadow-walk", "shadowy-dodge", "sharp-eye-ravenloft", "sharpshooter", "shield", "shield-master", "shillelagh",
+      "shadow-stealth", "shadow-walk", "shadowy-dodge", "sharp-eye-ravenloft", "sharpshooter", "shatter", "shield", "shield-master", "shillelagh",
       "shining-smite", "shocking-grasp", "sickening-vapors", "silence", "skulker", "slam", "slasher", "sleep", "sleet-storm", "slow",
       "smelting-charge", "sneak-attack", "spare-the-dying", "speedy", "spell-resistance", "spell-sniper", "spike-growth",
       "spirit-guardians", "spirit-shroud", "spiritual-weapon", "staggering-smite", "starry-wisp", "steady-aim", "stench",

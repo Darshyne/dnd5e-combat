@@ -102,7 +102,9 @@ export const SPELL_RULES = Object.freeze({
   // Hâte (niveau 3), `phbsplHaste00000` : « quand le sort prend fin, la cible est Neutralisée et sa Vitesse est de 0 jusqu'à la fin
   // de son prochain tour » — l'effet « Lethargy » (S5XcFawnnNHO8bUr) posé quand « Hasted » (NEFWcyysYgsE6de3) cesse, d'où que
   // vienne la fin (durée, concentration rompue, dissipation) ; §42.2, runtime/endings.mjs.
-  "haste": { effectThen: { NEFWcyysYgsE6de3: "S5XcFawnnNHO8bUr" }, effectEnds: { S5XcFawnnNHO8bUr: "bearerTurnEnd" } },
+  // §157 : « une action supplémentaire à chacun de ses tours, qui ne peut servir qu'à Attaquer (une seule attaque), Foncer, Se
+  // désengager, Se cacher ou Utiliser » — `limitedAction` sur l'effet « Hasted ».
+  "haste": { limitedAction: "NEFWcyysYgsE6de3", effectThen: { NEFWcyysYgsE6de3: "S5XcFawnnNHO8bUr" }, effectEnds: { S5XcFawnnNHO8bUr: "bearerTurnEnd" } },
   "bestow-curse": BESTOW_CURSE,
   // Dissipation de la magie (niveau 3, Clerc, Druide…), `phbsplDispelMagi` : une activité utilitaire sans effet ; le moteur fait
   // cesser les sorts en cours sur les cibles désignées (§37.2, runtime/dispel.mjs).
@@ -189,6 +191,13 @@ export const SPELL_RULES = Object.freeze({
   // Repli expéditif : « vous effectuez l'action Foncer, et jusqu'à la fin du sort vous pouvez la refaire par une action Bonus » —
   // l'utilisation prend Foncer ; la relancer pendant la concentration ne dépense pas d'emplacement.
   "expeditious-retreat": { basicActions: { dnd5eactivity000: "dash" }, recast: true },
+  // Flèche acide de Melf : « sur un échec, la flèche éclabousse la cible d'acide pour la moitié des dégâts initiaux seulement ».
+  "melfs-acid-arrow": { halfOnMiss: true },
+  // Héroïsme : « au début de chacun de ses tours, elle gagne des PV temporaires égaux à votre modificateur de caractéristique
+  // d'incantation » — l'activité de soin (PV temporaires) rejouée sur le porteur de « Bravery » (zCpsdUyNz8bL3LF5).
+  "heroism": { triggers: [{ on: "startOfTurn", via: "effect", fromEffect: "zCpsdUyNz8bL3LF5", do: [{ type: "damage", to: "bearer", activity: "dnd5eactivity000" }] }] },
+  // Fracassement : « une Créature artificielle a le Désavantage au jet de sauvegarde ».
+  "shatter": { saveDisadvantageFor: ["construct"] },
   "conjure-woodland-beings": {
     selfZone: { dnd5eactivity000: { type: "radius", size: 10, units: "ft" } },
     zoneAffects: "enemy",

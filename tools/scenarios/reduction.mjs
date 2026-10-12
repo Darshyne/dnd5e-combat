@@ -6,7 +6,7 @@
  *  2. Esquive instinctive (PHB, donnée au Roublard) : touché, le Roublard réagit (`autoReact: "first"`), les dégâts de
  *     l'attaque sont divisés par deux (arrondi inférieur). `autoReact` est recopié sur la carte par le client qui UTILISE
  *     l'attaque — celui du MJ qui porte le connecteur : il doit avoir le code ≥ 0.38.0 (F5).
- *  3. Lien protecteur (PHB) lancé par le Magicien sur le Guerrier : le Guerrier touché, le Magicien subit le même montant
+ *  3. Lien protecteur (PHB) lancé par le Magicien sur le Guerrier : le Guerrier touché, le Magicien subit le même montant (après la Résistance du Guerrier, §156)
  *     — par le moteur, ou par BLFX s'il est actif (il l'automatise déjà : le moteur s'efface, un seul propriétaire).
  * Les items sont donnés AVANT d'inscrire les remises en état (qui s'exécutent de la dernière à la première) : les effets
  * tombent avant que leurs items ne soient retirés — une animation BLFX ne se retire que si l'item d'origine existe encore.
@@ -126,10 +126,11 @@ export default {
     if ( !ctx.expect(!!bond, "le Zombi touche le Guerrier (20 essais au plus)") ) return;
     const lostFighter = hp0.get(fighter.id) - await ctx.hp(fighter);
     const lostMage2 = mageMax - await ctx.hp(mage);
-    // BLFX automatise déjà le Lien protecteur (son message « You share the same fate! ») : le moteur s'efface alors.
-    const shared = bond.messages.find(m => m.flags?.["dnd5e-combat"]?.shared)
-      ?? (await ctx.call("list-chat-messages", { limit: 12 })).messages?.find(m => /same fate/i.test(m.flavor ?? m.content ?? ""));
-    ctx.expect(!!shared, `partage des dégâts annoncé (${shared?.flags?.["dnd5e-combat"]?.shared ? "par le moteur" : shared ? "par BLFX" : "absent"})`);
+    // §156 : le moteur partage toujours, BLFX présent ou non (son déclencheur « applyDamage » est désarmé : pas de « same fate »).
+    const recent = (await ctx.call("list-chat-messages", { limit: 12 })).messages ?? [];
+    const shared = bond.messages.find(m => m.flags?.["dnd5e-combat"]?.shared) ?? recent.find(m => m.flags?.["dnd5e-combat"]?.shared);
+    ctx.expect(!!shared, "partage des dégâts annoncé par le moteur");
+    ctx.expect(!recent.some(m => /same fate/i.test(m.flavor ?? m.content ?? "")), "BLFX ne partage pas une seconde fois");
     ctx.expect((lostFighter > 0) && (lostMage2 === lostFighter), `le Guerrier perd ${lostFighter} PV, le Magicien aussi : ${lostMage2}`);
   }
 };

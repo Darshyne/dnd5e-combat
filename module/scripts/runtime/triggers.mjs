@@ -14,7 +14,7 @@ import { resaveAgainst } from "../adapter/areas.mjs";
 import { seesBetween } from "../adapter/vision.mjs";
 import { tallySettled } from "../core/tally.mjs";
 import { leaveTrace } from "../adapter/traces.mjs";
-import { damageSharedElsewhere } from "../adapter/interop.mjs";
+import { foreignDamageShare, disarmForeignDamageShare } from "../adapter/interop.mjs";
 import { inflict } from "../adapter/retaliation.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
@@ -276,8 +276,9 @@ function onDamaged(actor, changes) {
       }
       // Lien protecteur (§16.11) : le lanceur de l'effet subit le même montant (ou la formule déclarée).
       for ( const step of stepsOf(d, "damage").filter(s => s.to === "origin") ) {
-        const owner = damageSharedElsewhere(effect);
-        if ( owner ) { log(`${d.name}: damage sharing already done by ${owner}, the engine steps aside`); continue; }
+        // §156 : le moteur partage toujours ; un module qui le ferait aussi est désarmé avant (ci-dessous), et encore ici au besoin.
+        const owner = await disarmForeignDamageShare(effect).catch(() => null);
+        if ( owner ) log(`${d.name}: damage sharing by ${owner} disarmed, the engine shares`);
         const origin = await fromUuid(d.source ?? "");
         if ( !origin || (origin === actor) || !((origin.system?.attributes?.hp?.value ?? 0) > 0) ) continue;
         const amount = step.formula ? (await new Roll(step.formula).evaluate()).total : -changes.total;
@@ -299,7 +300,22 @@ function onDamaged(actor, changes) {
   });
 }
 
+/**
+ * §156 : un effet dont l'item déclare un partage de dégâts vers le lanceur (Lien protecteur), qu'un autre module marque pour le
+ * faire aussi (BLFX, après la création de l'effet) : sa marque est désarmée — sinon le lanceur paierait deux fois.
+ */
+async function onEffectMarked(effect) {
+  if ( !foreignDamageShare(effect) || (effect.parent?.documentName !== "Actor") ) return;
+  const shares = declarationsOfEffects(effect.parent)
+    .some(d => (d.effect === effect.uuid) && [d.on].flat().includes("isDamaged") && stepsOf(d, "damage").some(s => s.to === "origin"));
+  if ( !shares ) return;
+  const owner = await disarmForeignDamageShare(effect);
+  if ( owner ) log(`${effect.name}: damage sharing by ${owner} disarmed, the engine shares`);
+}
+
 export function registerTriggers() {
+  route("createActiveEffect", onEffectMarked, { executor: true, label: "Warding Bond: foreign damage sharing not disarmed" });
+  route("updateActiveEffect", onEffectMarked, { executor: true, label: "Warding Bond: foreign damage sharing not disarmed" });
   route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "trigger bonus damage" });
   route("combatTurnChange", onTurnChange, { executor: true, label: "creature's turn: triggers interrupted" });
   route("dnd5e.preApplyDamage", recordDamager, { label: "damage taken: source not recorded" });

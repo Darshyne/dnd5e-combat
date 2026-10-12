@@ -70,6 +70,32 @@ function speakerToken(message) {
 /** Les propriétés de dégâts sont un Set côté système, un tableau dans un flag. */
 const serializeDamages = damages => damages.map(d => ({ ...d, properties: Array.from(d.properties ?? []) }));
 /** La créature porte-t-elle un effet d'un item `healMax` (Lueur d'espoir) — effet posé ou transféré ? */
+/**
+ * §160 : le palier de PV (`hpTiers` du contenu) qui vaut pour cette cible, lu sur ses PV actuels (avant les dégâts) : l'entrée du plan
+ * réécrite (dégâts retirés si `damage: false`, effets réduits à `effects`) et les états à poser. Null sans paliers.
+ */
+function hpTierFor(item, actor, entry, plan=null) {
+  const tiers = item ? contentOf(item).entry?.hpTiers : null;
+  if ( !tiers?.length || !actor ) return null;
+  const hp = Number(actor.system?.attributes?.hp?.value ?? 0);
+  const tier = tiers.find(t => !("atMost" in t) || (hp <= t.atMost));
+  if ( !tier ) return { hp, statuses: [], entry: { ...entry, multiplier: 0, effects: [], steps: [] } };
+  // Un sort à sauvegarde (Parole divine) ne pose ses états que sur une sauvegarde ratée : la cible qui a réussi n'a reçu aucun effet.
+  const failed = !plan?.save || ((entry.effects ?? []).length > 0);
+  return { hp, statuses: failed ? (tier.statuses ?? []) : [], entry: {
+    ...entry,
+    multiplier: (tier.damage === false) ? 0 : entry.multiplier,
+    effects: tier.effects ? (entry.effects ?? []).filter(e => tier.effects.includes(e.id)) : entry.effects
+  } };
+}
+
+/** §161 : le niveau auquel le sort du message est lancé — celui de l'item, plus la montée d'emplacement que dnd5e note (`scaling`). */
+function castLevelOfMessage(message) {
+  const item = message?.getAssociatedActivity?.()?.item ?? message?.getAssociatedItem?.() ?? null;
+  if ( item?.type !== "spell" ) return null;
+  return Number(item.system?.level ?? 0) + (Number(message.getFlag?.("dnd5e", "scaling")) || 0);
+}
+
 function healsMax(actor) {
   for ( const effect of actor?.appliedEffects ?? [] ) {
     const item = originItemOf(effect);
@@ -193,12 +219,16 @@ const COMMANDS = {
     const extra = [];
     const slotHeal = resolution.plan.heal ? slotHealBonus(source?.actor ?? activity?.actor, activity) : null;
     let healedOther = false;
-    for ( const entry of command.entries ) {
+    for ( let entry of command.entries ) {
       // Riposte (§16.9) : jugée au moment du coup, avant ses dégâts (« tant que vous avez ces PV temporaires »).
       const struck = resolution.plan.attack ? await fromUuid(entry.token) : null;
       const retaliations = struck ? retaliationsFor({ bearerToken: struck, attackerToken: source, activity, attackMode }) : [];
       // §16.24 : une cible sous Lueur d'espoir (`healMax`) regagne le maximum du soin.
       const patient = (await fromUuid(entry.token))?.actor;
+      // §160 : paliers de PV (`hpTiers`) — l'issue se choisit d'après les PV de la cible AVANT les dégâts (Mot de pouvoir mortel, Mot de
+      // pouvoir étourdissant, Parole divine) : le premier palier qui tient ; aucun, aucun effet.
+      const tier = hpTierFor(activity?.item, patient, entry, resolution.plan);
+      if ( tier ) entry = tier.entry;
       const healed = (resolution.plan.heal && (entry.multiplier > 0)
         && (healsMax(patient) || healsDownedToMax(source?.actor ?? activity?.actor, activity, patient)))
         ? await maximizedHealing(damageMessage) : null;
@@ -293,6 +323,13 @@ const COMMANDS = {
           const uuid = await applyStatusToToken(carrier, entry.token, step.status);
           if ( uuid ) { effects.push(uuid); log(`${step.name ?? "condition"}: ${target?.name} receives "${step.status}"`); }
         }
+      }
+      for ( const status of tier?.statuses ?? [] ) {
+        // L'état d'abord, les PV ensuite : à 0 PV, dnd5e et le moteur posent eux-mêmes Mort (même id, `dnd5edead0000000`) — deux
+        // créations croisées faisaient échouer la résolution (vu le 2026-10-12, Parole divine).
+        const uuid = await applyStatusToToken(carrier, entry.token, status);
+        if ( uuid ) { effects.push(uuid); log(`${activity?.item?.name}: ${target?.name} at ${tier.hp} HP receives "${status}"`); }
+        if ( status === "dead" ) await target?.actor?.update({ "system.attributes.hp.value": 0 });
       }
       entries.push({ token: entry.token, actor: entry.actor, before: hp?.before ?? null, after: hp?.after ?? null, effects });
       for ( const r of retaliations ) {
@@ -454,7 +491,7 @@ const dispatcher = createDispatcher({
  * Complète des cibles avec ce qui dépend des états et de la situation (core/conditions.mjs) :
  * échec d'office à la sauvegarde du plan, coup critique d'office, réaction possible si touchée.
  */
-async function enrich(targets, plan, originUuid, activityUuid=null, attackMode=null) {
+async function enrich(targets, plan, originUuid, activityUuid=null, attackMode=null, castLevel=null) {
   const activity = activityUuid ? await fromUuid(activityUuid) : null;
   const origin = plan.attack && originUuid ? await fromUuid(originUuid) : null;
   const factors = origin ? readUnitFactors() : null;
@@ -480,7 +517,7 @@ async function enrich(targets, plan, originUuid, activityUuid=null, attackMode=n
     const cover = (origin && token && (target.ac !== null) && (target.ac !== undefined)) ? coverAgainst(origin, token, activity, attackMode) : null;
     const ac = cover ? ((cover.bonus === null) ? null : target.ac + cover.bonus) : target.ac;
     // §16.8 : type de créature, règle du contenu, immunité à tous les effets — la cible reste lisible, hors d'atteinte.
-    const unaffected = await unaffectedBy(activity, plan, token);
+    const unaffected = await unaffectedBy(activity, plan, token, { castLevel });
     if ( unaffected ) log(`${target.name}: unaffected by ${activity?.item?.name ?? "the action"} (${unaffected.reason}${unaffected.detail ? `: ${unaffected.detail}` : ""})`);
     out.push({
       ...target,
@@ -513,7 +550,7 @@ async function openingFor(message, usage, extra={}) {
   // §16.27 : la répartition des projectiles faite à la visée multiple (Projectile magique).
   const pairs = game.messages.get(usage.origin ?? message.id)?.getFlag(MODULE_ID, "allocation");   // [[token, nombre], …]
   const allocation = Array.isArray(pairs) ? Object.fromEntries(pairs) : null;
-  return { id: foundry.utils.randomID(), ...data, choice, allocation, targets: await enrich(usage.targets, usage.plan, speakerToken(message), usage.activity), ...extra };
+  return { id: foundry.utils.randomID(), ...data, choice, allocation, targets: await enrich(usage.targets, usage.plan, speakerToken(message), usage.activity, null, castLevelOfMessage(message)), ...extra };
 }
 
 /* -------------------------------------------- */
@@ -570,7 +607,8 @@ async function onAttackMessage(message) {
   }
   await waitForDice(message);
   const rolled = async plan => {
-    const targets = await enrich(attack.targets, plan, speakerToken(message), attack.activity, message.rolls?.[0]?.options?.attackMode ?? message.system?.mode ?? null);
+    const targets = await enrich(attack.targets, plan, speakerToken(message), attack.activity, message.rolls?.[0]?.options?.attackMode ?? message.system?.mode ?? null,
+      castLevelOfMessage(game.messages.get(message.system?.origin ?? "") ?? message));
     return { type: "attackRolled", roll: await inspiredAttack(message, attack.roll, targets), messageId: message.id, targets };
   };
   // Le message d'utilisation attend ce jet : c'est lui le porteur.

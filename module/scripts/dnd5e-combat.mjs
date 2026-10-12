@@ -71,6 +71,8 @@ import { registerGrapple } from "./runtime/grapple.mjs";
 import { registerProne } from "./runtime/prone.mjs";
 import { registerBreaks } from "./runtime/breaks.mjs";
 import { registerCure } from "./runtime/cure.mjs";
+import { registerBlink } from "./runtime/blink.mjs";
+import { registerWalls } from "./runtime/walls.mjs";
 import { registerCureUi } from "./ui/cure.mjs";
 import { registerKindleUi } from "./ui/kindle.mjs";
 import { registerSkillAid } from "./runtime/skill-aid.mjs";
@@ -228,6 +230,8 @@ Hooks.once("init", () => {
   gated(registerProne);
   gated(registerBreaks);
   gated(registerCure);
+  gated(registerBlink);
+  gated(registerWalls);
   gated(registerStabilize);   // §50 : trousse de soins
   gated(registerPotions);   // §53 : sort d'une potion sans concentration
   gated(registerOil);   // §54 : l'huile s'enflamme

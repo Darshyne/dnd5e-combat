@@ -241,6 +241,74 @@ export const SPELL_RULES = Object.freeze({
   "aura-of-life": { triggers: [{ on: "startOfTurn", via: "effect", if: { "target.atZero": true }, do: [{ type: "damage", to: "bearer", formula: "1", damageType: "healing" }] }] },
   "aura-of-purity": { saveAdvantage: ["blinded", "charmed", "deafened", "frightened", "paralyzed", "poisoned", "stunned"] },
   "circle-of-power": { saveAdvantage: ["magic"] },
+  // §160 (relevé des sorts, lot 4 : soins, états, seuils de PV). Guérison : « met fin à Aveuglé, Assourdi et Empoisonné » ; Guérison
+  // de groupe : idem, sur chaque cible (la réserve de 700 PV à répartir : au MJ — chaque cible regagne jusqu'à 700) ; Mot de pouvoir
+  // guérisseur : « Charmé, Effrayé, Paralysé, Empoisonné, Étourdi prennent fin » (se relever par sa Réaction : au joueur).
+  "heal": { curesAll: ["blinded", "deafened", "poisoned"] },
+  "mass-heal": { curesAll: ["blinded", "deafened", "poisoned"] },
+  "power-word-heal": { curesAll: ["charmed", "frightened", "paralyzed", "poisoned", "stunned"] },
+  // Délivrance des malédictions : « toutes les malédictions qui affectent une créature prennent fin » — celles des sorts.
+  "remove-curse": { endsCurses: ["bestow-curse", "hex"] },
+  // Régénération : « la cible regagne 1 PV au début de chacun de ses tours » (l'effet « Regenerating » est vide).
+  "regenerate": { triggers: [{ on: "startOfTurn", via: "effect", fromEffect: "O73gdwM6cCbr9LXn", do: [{ type: "damage", to: "bearer", formula: "1", damageType: "healing" }] }] },
+  // Mot de pouvoir fortifiant : 120 PV temporaires répartis à parts égales entre les cibles (jusqu'à six).
+  "power-word-fortify": { tempHpPool: 120 },
+  // Résurrection, Résurrection suprême : « revient à la vie avec tous ses PV » (l'état Mort cesse : content/spells.mjs, `cures`).
+  "resurrection": { revivesFull: true },
+  "true-resurrection": { revivesFull: true },
+  // Mot de pouvoir mortel : « 100 PV ou moins : elle meurt ; sinon, 12d12 dégâts psychiques ».
+  "power-word-kill": { hpTiers: [{ atMost: 100, damage: false, statuses: ["dead"] }, {}] },
+  // Mot de pouvoir étourdissant : « 150 PV ou moins : Étourdie ; sinon, Vitesse 0 jusqu'au début de votre prochain tour ». (La
+  // sauvegarde de Constitution en fin de tour de l'Étourdie : la donnée n'a pas d'activité de sauvegarde — au MJ.)
+  "power-word-stun": { hpTiers: [{ atMost: 150, effects: ["o7XJceFSBTiIIPFo"] }, { effects: ["B5dLPDfw1fDtfRW1"] }], effectEnds: { B5dLPDfw1fDtfRW1: "casterTurnStart" } },
+  // Parole divine, sur une sauvegarde ratée : 20 PV ou moins, morte ; 30, Aveuglée, Assourdie, Étourdie ; 40, Aveuglée et Assourdie ;
+  // 50, Assourdie ; au-delà, rien. Deux effets de la donnée n'ont pas leurs états. (Durées propres à chaque palier, bannissement des
+  // Célestes, Élémentaires, Fées, Fiélons : au MJ.)
+  "divine-word": {
+    hpTiers: [{ atMost: 20, effects: [], statuses: ["dead"] }, { atMost: 30, effects: ["grWj3oo8iH8egvi1"] },
+      { atMost: 40, effects: ["8O8KymREuOZFi45g"] }, { atMost: 50, effects: ["qZvAfjU2H6Fg6y6M"] }],
+    effectStatuses: { "8O8KymREuOZFi45g": ["blinded", "deafened"], qZvAfjU2H6Fg6y6M: ["deafened"] }
+  },
+  // §161 (relevé des sorts, lot 5a). Détection de l'invisibilité : « vous voyez les créatures et objets Invisibles comme s'ils étaient
+  // visibles » (le plan Éthéré : non repris).
+  "see-invisibility": { seesInvisible: true },
+  // Injonction (Compulsion) : « à la fin de chacun de ses tours, la cible refait le JS de Sagesse » (le déplacement dans la direction
+  // choisie par une action Bonus : au MJ).
+  "compulsion": { triggers: [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }] }] },
+  // Télékinésie : sur un JS de Force raté, « … Entravée jusqu'à la fin de votre prochain tour » ; relancée par une action Magie pendant
+  // la concentration, sans emplacement (le déplacement de 9 m dans la direction choisie : au MJ).
+  "telekinesis": {
+    recast: true,
+    triggers: [{ on: "failedSave", do: [{ type: "status", status: "restrained" }] }],
+    effectEnds: { "status:restrained": "casterTurnEnd" }
+  },
+  // Sphère résiliente d'Otiluke : « rien — objets physiques, énergie ou effets de sorts — ne la traverse » : la cible enfermée est
+  // immunisée contre tous les dégâts (l'effet « Enclosed in Sphere » est vide). Qu'elle ne puisse rien atteindre dehors : au MJ.
+  "otilukes-resilient-sphere": { effectChanges: { U5UciD171a5jcc7s: ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"].map(t => ({ key: "system.traits.di.value", type: "add", value: t })) } },
+  // Globe d'invulnérabilité : « un sort de niveau 5 ou moins lancé de l'extérieur ne peut affecter quoi que ce soit dans l'Émanation de
+  // 3 m » (la montée d'emplacement du globe : non reprise).
+  "globe-of-invulnerability": { globe: { radius: 10, units: "ft", maxLevel: 5 } },
+  // Clignotement : 1d6 en fin de tour, 4–6 → Éthéré jusqu'au début du tour suivant (runtime/blink.mjs).
+  "blink": { blink: "La5ofK0TnPSTL3iq" },
+  // Invocation d'élémentaires mineurs : « tant que le sort dure, vos attaques infligent 2d8 dégâts de plus (acide, froid, feu ou foudre,
+  // au choix) à une créature dans l'Émanation de 4,50 m » (le terrain difficile pour les ennemis : non repris).
+  "conjure-minor-elementals": { triggers: [{ on: "preDamageRoll",
+    if: { "activity.isAttack": true, "source.hasEffect": "conjure-minor-elementals", "target.within": { distance: 15, units: "ft" } },
+    do: [{ type: "damage", formula: "2d8", damageType: ["acid", "cold", "fire", "lightning"] }] }] },
+  // §162 : les murs se posent par points (ui/pointer.mjs, `aimWall`) et lèvent les murs du cœur qu'ils sont. Mur de force, Mur de glace,
+  // Cage de force : rien ne les traverse (la vue, si : le Mur de force est invisible, la glace et la cage laissent voir) ; Mur de
+  // pierre : ni le déplacement ni la vue ; Mur prismatique, Mur d'épines : la vue est arrêtée, on peut les traverser (et en subir les
+  // effets). (Les sections de CA et de PV des murs de glace et de pierre, les créatures prises dans le mur : au MJ.)
+  "wall-of-force": { walls: {} },
+  "wall-of-ice": { walls: { activities: ["c4ttlpiIpyf3dFdf", "zjpb29Tww0iuv1P3"] } },
+  "forcecage": { walls: {} },
+  "wall-of-stone": { walls: { sight: true } },
+  "prismatic-wall": { walls: { move: false, sight: true, activities: ["5f0JerdDSOQQXiTe", "fOYr1bgsB1VXROcm"] } },
+  "wall-of-thorns": { walls: { move: false, sight: true } },
+  "arcane-gate": { pointWall: false },
+  "gate": { pointWall: false },
+  "demiplane": { pointWall: false },
+  "mordenkainens-magnificent-mansion": { pointWall: false },
   "conjure-woodland-beings": {
     selfZone: { dnd5eactivity000: { type: "radius", size: 10, units: "ft" } },
     zoneAffects: "enemy",

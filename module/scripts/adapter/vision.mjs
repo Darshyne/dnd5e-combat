@@ -30,7 +30,7 @@ import { contentOf, identifierOf } from "./content.mjs";
 import { readUnitFactors } from "./units.mjs";
 import { convertLength } from "../core/units.mjs";
 import { sensesThrough, DEVILS_SIGHT } from "../core/light.mjs";
-import { revealedInvisible } from "./facts.mjs";
+import { revealedInvisible, seesInvisible } from "./facts.mjs";
 
 const SOURCE_PREFIX = "dnd5e-combat";
 
@@ -121,11 +121,12 @@ function detectionModesOf(doc) {
 }
 
 /** Les points de test d'une cible à sa position validée, dans la forme attendue par les modes de détection. */
-function testsFor(target) {
+function testsFor(target, observer=null) {
   const pos = committedPosition(target);
   const level = canvas.scene.levels?.get?.(target.level) ?? canvas.level;
   const tests = target.getVisibilityTestPoints(pos).map(point => ({ point, level, los: new Map() }));
-  return { object: revealedInvisible(target.actor) ? unveiled(target.object) : target.object, level, tests };
+  // §161 : l'observateur qui voit l'Invisible (Détection de l'invisibilité) la voit comme une autre.
+  return { object: (revealedInvisible(target.actor) || seesInvisible(observer?.actor)) ? unveiled(target.object) : target.object, level, tests };
 }
 
 /**
@@ -157,7 +158,7 @@ export function canSee(observer, target) {
   if ( !target.object || target.hidden ) return false;   // un token caché par le MJ est hors jeu pour tout le monde
   const source = sourceFor(observer);
   if ( !source ) return null;
-  const config = testsFor(target);
+  const config = testsFor(target, observer);
 
   // §16.24 et §16.31 : une zone qui bloque la vue (Nappe de brouillard, Ténèbres) entre les deux, ou autour de l'un
   // d'eux : la vue ne passe pas — seuls jugent les sens qui ne voient pas, et, dans des ténèbres, la vision véritable et
@@ -276,7 +277,7 @@ function seesThroughBlock(observer, target, source, config, blocked) {
   }
   if ( blocked.darkness && !blocked.fog ) {
     const range = devilsSightRange(observer);
-    const invisible = target.hasStatusEffect?.(CONFIG.specialStatusEffects.INVISIBLE) && !revealedInvisible(target.actor);
+    const invisible = target.hasStatusEffect?.(CONFIG.specialStatusEffects.INVISIBLE) && !revealedInvisible(target.actor) && !seesInvisible(observer.actor);
     const blind = observer.hasStatusEffect?.(CONFIG.specialStatusEffects.BLIND);
     if ( range && !invisible && !blind && (distance <= range) && inSight() ) return true;
   }

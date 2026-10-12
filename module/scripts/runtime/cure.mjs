@@ -6,7 +6,8 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { route } from "./router.mjs";
-import { contentOf } from "../adapter/content.mjs";
+import { contentOf, identifierOf } from "../adapter/content.mjs";
+import { originItemOf } from "../adapter/facts.mjs";
 import { usageTokenOf } from "../adapter/turn.mjs";
 import { log, loc, notice } from "./shared.mjs";
 
@@ -21,7 +22,27 @@ async function removeStatus(targetUuid, status) {
   return ids.length;
 }
 
-async function handleCure({ target, status }) {
+async function handleCure({ target, status, value=null }) {
+  // §160 : « réduit d'un niveau l'Épuisement » (Restauration suprême).
+  if ( status === "exhaustion-1" ) {
+    const actor = (await fromUuid(target))?.actor;
+    const level = Number(actor?.system?.attributes?.exhaustion) || 0;
+    if ( actor && level ) await actor.update({ "system.attributes.exhaustion": level - 1 });
+    return level ? 1 : 0;
+  }
+  // §160 : les actes sur la cible qui demandent le MJ (cible d'un autre) — PV, PV temporaires, malédictions.
+  if ( status === "hp" ) { const actor = (await fromUuid(target))?.actor; if ( actor ) await actor.update({ "system.attributes.hp.value": value }); return 1; }
+  if ( status === "temphp" ) {
+    const actor = (await fromUuid(target))?.actor;
+    if ( actor && (value > (Number(actor.system.attributes.hp.temp) || 0)) ) await actor.update({ "system.attributes.hp.temp": value });
+    return 1;
+  }
+  if ( status === "curses" ) {
+    const actor = (await fromUuid(target))?.actor;
+    const ids = (actor?.effects ?? []).filter(e => value.includes(identifierOf(originItemOf(e) ?? {}).id)).map(e => e.id);
+    if ( ids.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", ids);
+    return ids.length;
+  }
   if ( status === "exhaustion" ) {
     const actor = (await fromUuid(target))?.actor;
     if ( actor ) await actor.update({ "system.attributes.exhaustion": 0 });
@@ -30,9 +51,14 @@ async function handleCure({ target, status }) {
   return removeStatus(target, status);
 }
 
-/** Fait cesser `status` sur le token `target` (TokenDocument). */
+/** Un acte sur la cible : ici si on la possède, sinon par le MJ actif. */
+const onTarget = (target, status, value=null) => (target.actor?.isOwner ? handleCure({ target: target.uuid, status, value })
+  : game.users.activeGM?.query(CURE_QUERY, { target: target.uuid, status, value }, { timeout: 10000 }).catch(() => 0));
+
+/** Fait cesser `status` sur le token `target` (TokenDocument). Épuisement : un niveau de moins (§160, Restauration suprême). */
 export async function cureStatus(target, status) {
-  const n = target.actor?.isOwner ? await removeStatus(target.uuid, status)
+  const n = (status === "exhaustion") ? await onTarget(target, "exhaustion-1")
+    : target.actor?.isOwner ? await removeStatus(target.uuid, status)
     : await game.users.activeGM?.query(CURE_QUERY, { target: target.uuid, status }, { timeout: 10000 }).catch(() => 0);
   const label = game.i18n.localize(CONFIG.DND5E.conditionTypes[status]?.name ?? status);
   log(`${target.name}: ${label} ends (${n} effect(s))`);
@@ -45,12 +71,32 @@ export async function cureStatus(target, status) {
  * Potion de vitalité : Épuisement et Empoisonné). La cible : la première du message, sinon l'utilisateur (une potion bue).
  */
 async function onPostUseAll(activity, usageConfig, results) {
-  const list = contentOf(activity?.item).entry?.curesAll;
-  if ( !list?.length || !activity.actor?.isOwner ) return;
-  const first = results?.message?.system?.targets?.[0]?.token;
-  const target = (first ? await fromUuid(first) : null) ?? usageTokenOf(activity);
-  if ( !target?.actor ) return;
-  for ( const status of list ) {
+  const entry = contentOf(activity?.item).entry;
+  if ( !activity?.actor?.isOwner || !entry ) return;
+  // §160 : toutes les cibles du message (Guérison de groupe), sinon l'utilisateur (une potion bue).
+  const listed = await Promise.all((results?.message?.system?.targets ?? []).map(t => fromUuid(t.token)));
+  const targets = listed.filter(t => t?.actor);
+  if ( !targets.length && usageTokenOf(activity)?.actor ) targets.push(usageTokenOf(activity));
+  // §160 : Délivrance des malédictions — les effets des sorts de malédiction cessent.
+  if ( entry.endsCurses?.length ) for ( const target of targets ) {
+    const n = await onTarget(target, "curses", entry.endsCurses);
+    log(`${activity.item.name}: ${n} curse effect(s) end on ${target.name}`);
+  }
+  // §160 : Mot de pouvoir fortifiant — « 120 PV temporaires répartis à parts égales entre les créatures choisies ».
+  if ( entry.tempHpPool && targets.length ) {
+    const share = Math.floor(entry.tempHpPool / targets.length);
+    for ( const target of targets ) await onTarget(target, "temphp", share);
+    log(`${activity.item.name}: ${share} temporary HP each to ${targets.map(t => t.name).join(", ")}`);
+  }
+  // §160 : Résurrection — « revient à la vie avec tous ses PV ».
+  if ( entry.revivesFull ) for ( const target of targets ) {
+    const hp = target.actor.system.attributes.hp;
+    await onTarget(target, "hp", hp.effectiveMax ?? hp.max);
+    log(`${activity.item.name}: ${target.name} back to ${hp.effectiveMax ?? hp.max} HP`);
+  }
+  const list = entry.curesAll;
+  if ( !list?.length ) return;
+  for ( const target of targets ) for ( const status of list ) {
     if ( status === "exhaustion" ) {
       const level = target.actor.system?.attributes?.exhaustion ?? 0;
       if ( level > 0 ) {

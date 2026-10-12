@@ -14,7 +14,7 @@ import { rangeIssue } from "../core/range.mjs";
 import { verbalSpellBlocked, hampersRangedAttack, forbiddenAgainstCharmer, requiresSight, INCAPACITATING } from "../core/conditions.mjs";
 import { distanceBetween, rangeOf } from "./turn.mjs";
 import { visionFacts, isVisionAvailable, canSee, tokenOf } from "./vision.mjs";
-import { originItemOf, revealedInvisible } from "./facts.mjs";
+import { originItemOf, revealedInvisible, seesInvisible } from "./facts.mjs";
 import { grappledElsewhere } from "./grapple.mjs";
 import { helpedAgainst } from "./help.mjs";
 import { spellCommandOf } from "./pilot.mjs";
@@ -99,10 +99,12 @@ export function registerTurnStatuses() {
   }
 }
 
-export function statusesOf(token) {
+export function statusesOf(token, observer=null) {
   const statuses = Array.from(token?.actor?.statuses ?? []);
-  // §16.36 : « ne peut pas bénéficier de l'état Invisible » (Poussière d'étoile, Lueurs féeriques).
-  return revealedInvisible(token?.actor) ? statuses.filter(s => s !== "invisible") : statuses;
+  // §16.36 : « ne peut pas bénéficier de l'état Invisible » (Poussière d'étoile, Lueurs féeriques) ; §161 : l'autre partie de
+  // l'attaque voit l'Invisible (Détection de l'invisibilité).
+  const visible = revealedInvisible(token?.actor) || seesInvisible(observer?.actor);
+  return visible ? statuses.filter(s => s !== "invisible") : statuses;
 }
 
 /** Deux tokens sont-ils à 5 ft ou moins l'un de l'autre ? */
@@ -179,8 +181,8 @@ export function attackContext(origin, target, activity, attackMode, factors, { p
   const ranged = isRangedAttack(activity, attackMode);
   const feats = rangedFeatsOf(origin?.actor, activity, attackMode);   // §131
   return {
-    attacker: statusesOf(origin),
-    target: statusesOf(target),
+    attacker: statusesOf(origin, target),
+    target: statusesOf(target, origin),
     adjacent: areAdjacent(origin, target, factors, { posA }),
     ranged,
     longRange: ranged && !feats.longRange && (rangeIssue(distanceBetween(origin, target, { posA }), rangeOf(activity, attackMode), factors) === "longRange"),

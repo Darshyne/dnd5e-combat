@@ -16,6 +16,8 @@ import { convertLength } from "../core/units.mjs";
 import { committedPosition, usageTokenOf } from "./turn.mjs";
 import { readUnitFactors } from "./units.mjs";
 import { templateOf } from "./template.mjs";
+import { contentOf } from "./content.mjs";
+import { clampPolyline, wallLineShapes } from "../core/wall.mjs";
 
 /**
  * La forme et le token d'une zone à poser d'office, ou null (dnd5e pose comme d'habitude) : portée personnelle, zone
@@ -203,4 +205,44 @@ export function aimedRegionData(activity, { token }, shapeData) {
  */
 export function placeAimedArea(activity, area, shapeData) {
   return createAreaRegions(activity, area.token, [aimedRegionData(activity, area, shapeData)]);
+}
+
+/* -------------------------------------------- */
+/*  Murs posés par points (§162)                */
+/* -------------------------------------------- */
+
+/**
+ * §162 : un sort à gabarit « wall » (Mur de feu, Mur de force en panneaux, Barrière de lames…) se pose par points : la ligne brisée
+ * qu'ils dessinent, au plus la longueur totale du sort (la taille du gabarit, fois le nombre de panneaux), de son épaisseur. Rend
+ * ce qu'il faut à la visée (longueur et épaisseur en pixels), ou null : pas un mur, lanceur absent de la scène affichée, pas le
+ * droit de créer une région.
+ * @param {Activity} activity
+ * @returns {{shape: "wall", token: TokenDocument, length: number, width: number}|null}
+ */
+export function wallAreaOf(activity) {
+  const template = activity?.target?.template;
+  if ( template?.type !== "wall" ) return null;
+  // Portails et portes (Portail arcanique, Portail, Demi-plan, Manoir) : pas des murs.
+  if ( contentOf(activity.item).entry?.pointWall === false ) return null;
+  const token = usageTokenOf(activity);
+  if ( !token?.parent || (token.parent !== canvas?.scene) ) return null;
+  if ( !game.user.can("REGION_CREATE") ) return null;
+  const scene = token.parent;
+  const perUnit = scene.grid.size / scene.grid.distance;
+  const { size, width } = dimensionsOf(activity, scene);
+  const count = Math.max(1, Number(template.count) || 1);
+  return { shape: "wall", token, length: (size || 0) * count * perUnit, width: Math.max(1, (width || 1) * perUnit) };
+}
+
+/**
+ * Pose le mur le long des points, en émettant les hooks de dnd5e autour de la création : une région, une forme « line » par segment.
+ * @param {Activity} activity
+ * @param {{token: TokenDocument, length: number, width: number}} area  `wallAreaOf`.
+ * @param {Array<{x: number, y: number}>} points
+ * @returns {Promise<RegionDocument[]|null>}
+ */
+export function placeWallArea(activity, area, points) {
+  const shapes = wallLineShapes(clampPolyline(points, area.length || Infinity), area.width);
+  if ( !shapes.length ) return Promise.resolve(null);
+  return createAreaRegions(activity, area.token, [{ ...regionData(activity, area.token, shapes[0], false), shapes }]);
 }

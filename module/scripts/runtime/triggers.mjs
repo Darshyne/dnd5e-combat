@@ -102,8 +102,10 @@ function onPreRollDamage(config, dialog, message) {
   for ( const s of agreed ) {
     // Même forme qu'une part du système (data/activity/base-activity.mjs:933-939) ; le critique
     // s'applique à toutes les parts du jet, dés bonus compris (règle 2024).
-    config.rolls.push({ data, parts: [s.formula], options: { type: s.damageType, types: [s.damageType], properties: [] } });
-    log(`bonus damage: ${s.name} +${s.formula} ${s.damageType}`);
+    // §161 : une liste de types — dnd5e en propose le choix au jet (Invocation d'élémentaires mineurs : acide, froid, feu, foudre).
+    const types = [s.damageType].flat();
+    config.rolls.push({ data, parts: [s.formula], options: { type: types[0], types, properties: [] } });
+    log(`bonus damage: ${s.name} +${s.formula} ${types.join("/")}`);
   }
   if ( agreed.length ) foundry.utils.setProperty(message, `data.flags.${MODULE_ID}.bonuses`, agreed);
   return true;

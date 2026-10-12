@@ -9,7 +9,35 @@ import { MODULE_ID } from "../constants.mjs";
 import { typeAllowed, immuneToAll } from "../core/eligibility.mjs";
 import { holds } from "../core/triggers.mjs";
 import { contentOf } from "./content.mjs";
-import { factsFor, creatureTypeOf, conditionImmunitiesOf } from "./facts.mjs";
+import { factsFor, creatureTypeOf, conditionImmunitiesOf, originItemOf } from "./facts.mjs";
+import { distanceBetween } from "./turn.mjs";
+import { readUnitFactors } from "./units.mjs";
+import { convertLength } from "../core/units.mjs";
+import { isSpellCast } from "./scrolls.mjs";
+
+/**
+ * §161 : Globe d'invulnérabilité — « un sort de niveau 5 ou moins lancé de l'extérieur ne peut affecter quoi que ce soit dans
+ * l'Émanation » (contenu `globe: { radius, units, maxLevel }`, tenu par un effet du lanceur du globe, concentration comprise). Rend le
+ * globe qui protège la cible de ce sort, ou null. `castLevel` : le niveau auquel le sort est lancé.
+ */
+function globeAgainst(activity, token, castLevel) {
+  if ( !isSpellCast(activity?.item) || !token?.parent ) return null;
+  const caster = activity.actor?.getActiveTokens?.(false, true)?.find(t => t.parent === token.parent) ?? null;
+  const factors = readUnitFactors();
+  for ( const holder of token.parent.tokens ) {
+    for ( const effect of holder.actor?.effects ?? [] ) {
+      if ( effect.disabled || effect.isSuppressed ) continue;
+      const item = originItemOf(effect);
+      const rule = item ? contentOf(item).entry?.globe : null;
+      if ( !rule || (castLevel > rule.maxLevel) ) continue;
+      let radius = rule.radius;
+      try { radius = convertLength(rule.radius, rule.units, token.parent.grid.units, factors); } catch { /* unité de la grille */ }
+      const inside = t => !!t && (distanceBetween(holder, t).value <= radius + 1e-6);
+      if ( inside(token) && !inside(caster) ) return item;
+    }
+  }
+  return null;
+}
 
 const effectKey = e => e._id ?? e.uuid;
 
@@ -43,9 +71,11 @@ async function statusesOfRef(ref) {
  * immunité à chacun de ses effets quand elle ne fait rien d'autre (core/eligibility.mjs, `immuneToAll`).
  * @returns {Promise<{reason: "type"|"content"|"immune", detail?: string}|null>}
  */
-export async function unaffectedBy(activity, plan, token) {
+export async function unaffectedBy(activity, plan, token, { castLevel=null }={}) {
   const actor = token?.actor;
   if ( !actor || !activity ) return null;
+  const globe = globeAgainst(activity, token, castLevel ?? Number(activity.item?.system?.level ?? 0));
+  if ( globe ) return { reason: "globe", detail: globe.name };
   const rule = targetRuleOf(activity);
   const types = wrongTypeFor(activity, actor);
   if ( types ) return { reason: "type", detail: types.join(",") };

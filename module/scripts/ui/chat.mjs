@@ -46,7 +46,8 @@ function renderModifiers(html, modifiers) {
 /** « Maléfice : +1d6 nécrotique » : les lignes, sous le jet de dégâts ou sur la carte unique. */
 export function bonusLines(bonuses) {
   const typeName = t => game.i18n.localize(CONFIG.DND5E.damageTypes[t]?.label ?? t);
-  return bonuses.map(b => ({ css: "note", text: loc("DegatsBonus", { name: b.name, formula: b.formula, type: typeName(b.damageType) }) }));
+  // §161 : plusieurs types au choix (Invocation d'élémentaires mineurs).
+  return bonuses.map(b => ({ css: "note", text: loc("DegatsBonus", { name: b.name, formula: b.formula, type: [b.damageType].flat().map(typeName).join(" / ") }) }));
 }
 
 function renderBonuses(html, bonuses) {
@@ -57,6 +58,7 @@ function renderBonuses(html, bonuses) {
 function unaffectedText({ reason, detail }) {
   if ( reason === "type" ) return loc("NonAffecte.type", { types: typesLabel((detail ?? "").split(",").filter(Boolean)) });
   if ( reason === "immune" ) return loc("NonAffecte.immune", { status: statusName(detail) });
+  if ( reason === "globe" ) return loc("NonAffecte.globe", { item: detail ?? "" });
   return loc("NonAffecte.content");
 }
 

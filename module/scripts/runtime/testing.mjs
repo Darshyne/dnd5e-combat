@@ -287,6 +287,27 @@ async function rollCard({ messageId }) {
  * `placeSummons` :40494) est remplacé par la position donnée, sur CETTE instance d'activité et le temps de l'appel.
  * Outil de test seulement : le moteur, lui, laisse le placement au système.
  */
+/**
+ * §162 : un mur posé par points, comme la visée de l'interface le ferait après les clics (ui/pointer.mjs, `aimWall`) : l'activité est
+ * utilisée avec les points (`aimed: { type: "wall", points }`), la région et ses murs suivent `postUseActivity`. Rend l'id de la région.
+ */
+async function wall({ tokenId, itemId, activityId=null, points }) {
+  if ( !game.user.isGM ) throw new Error("GM only");
+  const token = canvas.scene?.tokens.get(tokenId);
+  const item = token?.actor?.items.get(itemId);
+  const activity = activityId ? item?.system.activities.get(activityId) : item?.system.activities.find(a => a.target?.template?.type === "wall");
+  if ( !activity ) throw new Error("wall activity not found");
+  const before = new Set(canvas.scene.regions.map(r => r.id));
+  await activity.use({ consume: false, create: { measuredTemplate: false },
+    [MODULE_ID]: { confirmed: true, autoReact: "none", aimed: { type: "wall", points } } }, { configure: false });
+  for ( let i = 0; i < 40; i++ ) {
+    const region = canvas.scene.regions.find(r => !before.has(r.id));
+    if ( region ) return { regionId: region.id, shapes: region.shapes.map(s => s.type) };
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  return { regionId: null };
+}
+
 async function summonAt({ tokenId, itemId, activityId=null, profile=null, actorUuid=null, x, y }) {
   if ( !game.user.isGM ) throw new Error("GM only");
   const token = canvas.scene?.tokens.get(tokenId);
@@ -822,4 +843,4 @@ async function door({ tokenId, wallId, open=true }) {
   return { state: doorState(wall), x: token._source.x, y: token._source.y };
 }
 
-export const testApi = Object.freeze({ issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door });
+export const testApi = Object.freeze({ wall, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door });

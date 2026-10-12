@@ -20,7 +20,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { selfAreaOf, placeSelfArea, aimedAreaOf, placeAimedArea } from "../adapter/self-area.mjs";
+import { selfAreaOf, placeSelfArea, aimedAreaOf, placeAimedArea, wallAreaOf, placeWallArea } from "../adapter/self-area.mjs";
 import { suppliesTemplate, withTemplate } from "../adapter/template.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
@@ -85,8 +85,26 @@ function placeAimedShape(activity, area, shapeData) {
   });
 }
 
+/** §162 : pose le mur dessiné (points) — intention de la visée par points (ui/pointer.mjs). */
+export function placeWall(activity, points) {
+  const area = wallAreaOf(activity);
+  if ( !area ) return Promise.resolve(null);
+  return placeWallArea(activity, area, points).then(created => {
+    if ( created?.length ) log(`${activity.item?.name ?? activity.name}: wall placed through ${points.length} points`);
+    return created;
+  }, err => {
+    console.error(`${MODULE_ID} | wall not placed`, err);
+    return null;
+  });
+}
+
 function onPostUse(activity, usageConfig, results) {
   const aimed = usageConfig?.[MODULE_ID]?.aimed;
+  // §162 : un mur visé par points.
+  if ( aimed?.type === "wall" ) {
+    if ( results ) placeWall(activity, aimed.points ?? []);
+    return;
+  }
   if ( aimed ) {
     const area = results ? aimedAreaOf(activity) : null;
     if ( area ) placeAimedShape(activity, area, aimed);

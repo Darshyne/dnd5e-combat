@@ -73,6 +73,19 @@ export function revealedInvisible(actor) {
 }
 
 /**
+ * §161 : l'observateur voit-il les créatures Invisibles (Détection de l'invisibilité : « vous voyez les créatures et objets
+ * Invisibles comme s'ils étaient visibles ») — un effet actif d'un item au contenu `seesInvisible` ?
+ */
+export function seesInvisible(actor) {
+  for ( const effect of actor?.appliedEffects ?? actor?.effects ?? [] ) {
+    if ( effect.disabled || effect.isSuppressed ) continue;
+    const item = originItemOf(effect);
+    if ( item && (contentOf(item).entry?.seesInvisible === true) ) return true;
+  }
+  return false;
+}
+
+/**
  * L'effet vient-il de l'effet d'item de cet id ? Le plateau d'effets de dnd5e copie l'effet d'item en gardant sa source
  * (`_stats.duplicateSource`, ou `compendiumSource` depuis un compendium : effect-application.mjs, `_prepareEffectData`).
  */

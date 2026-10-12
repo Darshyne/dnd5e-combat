@@ -67,8 +67,9 @@ import { floatNotice } from "./feedback.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { effectOfProfile, potionCastsOnDrinker } from "../adapter/usage.mjs";
 import { isPotion } from "../adapter/potions.mjs";
-import { aimedAreaOf, aimedShapeData, aimedRegionData } from "../adapter/self-area.mjs";
-import { castAimed, placeAimed } from "../runtime/self-area.mjs";
+import { aimedAreaOf, aimedShapeData, aimedRegionData, wallAreaOf } from "../adapter/self-area.mjs";
+import { castAimed, placeAimed, placeWall } from "../runtime/self-area.mjs";
+import { clampPolyline, polylineLength } from "../core/wall.mjs";
 
 const setting = key => game.settings.get(MODULE_ID, key);
 const inCombat = () => game.combat?.started === true;
@@ -336,6 +337,23 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
       return false;
     }
   }
+  // §162 : un mur (gabarit « wall ») se pose par points — le niveau d'abord, puis deux points ou plus ; l'activité part avec eux.
+  const wall = (ours.aimed || ours.confirmed || !canvas.ready || (usageConfig.create?.measuredTemplate !== true)) ? null : wallAreaOf(activity);
+  if ( wall && wall.token.object && wall.token.isOwner ) {
+    closeSheetFor(activity);
+    stopTargeting();
+    usageConfig.create.measuredTemplate = false;
+    if ( dialogConfig ) {
+      dialogConfig.options ??= {};
+      dialogConfig.options.display = foundry.utils.mergeObject(dialogConfig.options.display ?? {}, { create: false }, { inplace: false });
+    }
+    configureFirst(activity, usageConfig, dialogConfig).then(chosen => {
+      if ( !chosen ) return;
+      return aimWall(activity, wall, points => exclusive(() => castAimed(activity,
+        [chosen.config, { ...(dialogConfig ?? {}), configure: false }, messageConfig], { type: "wall", points })));
+    }).catch(err => console.error(`${MODULE_ID} | wall placement`, err));
+    return false;
+  }
   // §59 : un cône, une ligne ou un cube de portée personnelle (souffle, Mains brûlantes, Éclair, Vague tonnante) — le niveau
   // d'abord, puis la zone suit la souris autour du lanceur ; le clic la pose et lance l'activité.
   const aim = (ours.aimed || ours.confirmed || !canvas.ready || (usageConfig.create?.measuredTemplate !== true) || lineDashOf(activity))
@@ -475,6 +493,82 @@ async function aimArea(activity, area, then) {
   finally { placing = null; announceTargeting(); }
 }
 
+/** La longueur en pieds (unités de la grille) pour le bandeau. */
+const gridUnits = px => Math.round((px / canvas.dimensions.size) * canvas.dimensions.distance);
+
+/**
+ * §162 : la pose d'un mur par points. Clic gauche : un point (au coin de case le plus proche, la longueur restante bornée) ; le segment
+ * suivant suit la souris ; clic droit ou Entrée : terminé (deux points au moins) ; Échap : rien. Le mur se termine seul quand sa
+ * longueur est atteinte. `then(points)` reçoit la ligne brisée, en pixels.
+ * @param {Activity} activity
+ * @param {{token: TokenDocument, length: number, width: number}} area  `wallAreaOf`.
+ * @param {(points: Array<{x: number, y: number}>) => any} then
+ */
+async function aimWall(activity, area, then) {
+  if ( !canvas.ready ) return;
+  stopTargeting();
+  const points = [];
+  const g = new PIXI.Graphics();
+  canvas.controls.addChild(g);
+  const color = Number(foundry.utils.Color.from(game.user.color)) || 0xff6400;
+  const max = area.length || Infinity;
+  const snap = p => canvas.grid.getSnappedPoint(p, { mode: CONST.GRID_SNAPPING_MODES.VERTEX });
+  const say = cursor => {
+    const used = polylineLength(clampPolyline(cursor ? [...points, cursor] : points, max));
+    const left = Number.isFinite(max) ? loc("Mur.Reste", { n: gridUnits(Math.max(0, max - used)), units: canvas.scene.grid.units }) : "";
+    promptText = `${loc(points.length < 2 ? "Mur.Poser" : "Mur.Continuer", { item: activity.item.name })}${left ? ` ${left}` : ""}`;
+    announceTargeting();
+  };
+  const draw = cursor => {
+    const line = clampPolyline(cursor ? [...points, cursor] : points, max);
+    g.clear();
+    if ( !line.length ) return;
+    g.lineStyle(Math.max(area.width, 6), color, 0.6).moveTo(line[0].x, line[0].y);
+    for ( const p of line.slice(1) ) g.lineTo(p.x, p.y);
+    g.lineStyle(0).beginFill(color, 0.9);
+    for ( const p of points ) g.drawCircle(p.x, p.y, 6);
+    g.endFill();
+  };
+  const result = await new Promise(resolve => {
+    let done = false;
+    const finish = value => {
+      if ( done ) return;
+      done = true;
+      canvas.stage.off("pointermove", onMove);
+      canvas.stage.off("pointerdown", onDown);
+      window.removeEventListener("keydown", onKey, true);
+      g.destroy();
+      resolve(value);
+    };
+    const onMove = event => { const p = snap(event.getLocalPosition(canvas.stage)); draw(p); say(p); };
+    const onDown = event => {
+      if ( event.button === 2 ) return finish(points.length >= 2 ? clampPolyline(points, max) : null);
+      if ( event.button !== 0 ) return;
+      event.stopPropagation();
+      const p = snap(event.getLocalPosition(canvas.stage));
+      points.push(p);
+      const line = clampPolyline(points, max);
+      if ( (line.length < points.length) || (polylineLength(line) >= max - 0.5) ) return finish(line.length >= 2 ? line : null);
+      draw(p); say(p);
+    };
+    const onKey = event => {
+      if ( event.key === "Escape" ) { event.preventDefault(); finish(null); }
+      else if ( event.key === "Enter" ) { event.preventDefault(); finish(points.length >= 2 ? clampPolyline(points, max) : null); }
+    };
+    placing = { activity, cancel: () => finish(null) };
+    canvas.stage.on("pointermove", onMove);
+    canvas.stage.on("pointerdown", onDown);
+    window.addEventListener("keydown", onKey, true);
+    promptTargeting(loc("Mur.Poser", { item: activity.item.name }));
+    say(null);
+  });
+  placing = null;
+  promptText = null;
+  announceTargeting();
+  if ( !result ) return ui.notifications.info(loc("Visee.Annulee"));
+  await then(result);
+}
+
 /**
  * §70 : après une utilisation d'Appel de la foudre — à l'incantation, le nuage que dnd5e vient de poser est habillé en orage ;
  * puis (incantation comme relance) l'éclair se vise sous le nuage : un cercle de 1,50 m suit la souris sans sortir du nuage,
@@ -527,6 +621,12 @@ async function aimBolt(activity, cloud) {
 /** §59 : le bouton « Placer la zone » de la carte d'un cône ou d'une ligne de portée personnelle — la même visée. */
 function onPreTemplate(activity) {
   if ( lineDashOf(activity) ) return;
+  // §162 : un mur, par points.
+  const wall = wallAreaOf(activity);
+  if ( wall?.token.object && wall.token.isOwner ) {
+    aimWall(activity, wall, points => placeWall(activity, points)).catch(err => console.error(`${MODULE_ID} | wall placement`, err));
+    return false;
+  }
   const aim = aimedAreaOf(activity);
   if ( !aim?.token.object || !aim.token.isOwner ) return;
   aimArea(activity, aim, shape => placeAimed(activity, shape)).catch(err => console.error(`${MODULE_ID} | area targeting`, err));
@@ -691,7 +791,7 @@ function stopTargeting() {
   recalling = null;
   hideReticle();
   targeting = null;
-  if ( placing ) canvas.regions?._cancelPlacement?.();
+  if ( placing ) { canvas.regions?._cancelPlacement?.(); placing.cancel?.(); }
   placing = null;
   promptText = null;
   hideHitChance();

@@ -380,7 +380,8 @@ function readPlan(message) {
       if ( !activity.healing?.formula ) return null;
       // §24 : Parade — le « soin » n'est qu'un montant retiré aux dégâts (adapter/reactions.mjs) : rien à appliquer.
       if ( message.getFlag?.(MODULE_ID, "reduceOnly") ) return null;
-      return { ...common, targets, plan: { damage: "system", heal: true, effects: effectsOf(activity, () => "always") } };
+      // §164 : rejouée par une zone (Lumière guérisseuse d'Invocation de céleste), personne n'a cliqué — le moteur lance les soins.
+      return { ...common, targets, plan: { damage: message.getFlag?.(MODULE_ID, "areaTick") ? "author" : "system", heal: true, effects: effectsOf(activity, () => "always") } };
     case "utility":
       if ( !applicableEffectsOf(activity).length ) return null;
       // Une activité qui prend une action de base (Ruse : Se cacher, §20) : le moteur la fait (runtime/hide.mjs) ; l'effet

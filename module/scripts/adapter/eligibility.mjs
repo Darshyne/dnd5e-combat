@@ -33,7 +33,8 @@ function globeAgainst(activity, token, castLevel) {
       let radius = rule.radius;
       try { radius = convertLength(rule.radius, rule.units, token.parent.grid.units, factors); } catch { /* unité de la grille */ }
       const inside = t => !!t && (distanceBetween(holder, t).value <= radius + 1e-6);
-      if ( inside(token) && !inside(caster) ) return item;
+      // §163 : `everywhere` (Champ antimagie) — d'où que vienne le sort.
+      if ( inside(token) && (rule.everywhere || !inside(caster)) ) return item;
     }
   }
   return null;

@@ -21,6 +21,7 @@ import { isObjectToken } from "./bodies.mjs";
 import { hasNotActedYet } from "../core/sneak.mjs";
 import { isSpellCast, spellSchoolOf } from "./scrolls.mjs";
 import { grapplerOf } from "./grapple.mjs";
+import { areHostile } from "../core/reaction.mjs";
 
 /** Rangs de taille de dnd5e (config.mjs, `actorSizes`), pour « de taille G ou inférieure ». */
 const SIZE_RANK = Object.freeze({ tiny: 0, sm: 1, med: 2, lg: 3, huge: 4, grg: 5 });
@@ -274,6 +275,11 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     "source.creatureType": creatureTypeOf(source),
     // §157 : l'attaquant a l'un de ces sens (`senses.ranges` de dnd5e, data/shared/senses-field.mjs:15) — Flou : « une créature
     // dotée de vision aveugle ou de vision véritable n'est pas affectée ».
+    // §164 : la cible est-elle du camp de la source (pas hostile) ? Invocation de céleste : soin pour les alliés, brûlure pour les ennemis.
+    "target.allied": want => {
+      const s = tokenOf(source, sourceToken), t = tokenOf(target, targetToken);
+      return (!!s && !!t && !areHostile(s.disposition, t.disposition)) === want;
+    },
     "source.hasSense": names => [names].flat().some(n => Number(source?.system?.attributes?.senses?.ranges?.[n]) > 0),
     // §16.8 : le type de la cible (« humanoid »…) et ses immunités aux états (Sommeil : immunité à l'Épuisement).
     "target.creatureType": creatureTypeOf(target),

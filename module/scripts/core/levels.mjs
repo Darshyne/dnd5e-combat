@@ -52,7 +52,7 @@ export const FEATURE_LEVELS = Object.freeze({
   registerSpaceSharing: F, registerEmpower: F, registerLifesteal: F, registerDischarge: F, registerMastery: F, registerSneak: F, registerFighter: F, registerFeats: F, registerEffectWhile: F, registerGrimoire: F, registerFlee: F,
   registerMonk: F, registerSmite: F, registerManeuverDice: F, registerRollBonus: F, registerNaturalOne: F, registerRise: F,
   registerAfterSneak: F, registerCantrips: F, registerEndings: F, registerActionEnd: F, registerBarbarian: F,
-  registerSwallow: F, registerFamiliars: F, registerBreaks: F, registerCure: F, registerBlink: F, registerWalls: F, registerPotions: F, registerOil: F,
+  registerSwallow: F, registerFamiliars: F, registerBreaks: F, registerCure: F, registerBlink: F, registerWalls: F, registerElevationSpells: F, registerPotions: F, registerOil: F,
   registerSkillAid: F, registerLights: F, registerWildShape: F, registerEnchant: F, registerTether: F, registerDefenses: F,
   registerSize: F, registerOrders: F, registerVigor: F, registerCureUi: F, registerKindleUi: F, registerSkillAidUi: F
 });

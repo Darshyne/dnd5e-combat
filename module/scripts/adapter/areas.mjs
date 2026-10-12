@@ -16,7 +16,8 @@ import { contentOf } from "./content.mjs";
 import { convertLength } from "../core/units.mjs";
 import { readUnitFactors } from "./units.mjs";
 import { translateShapes, shapeCenter, expiryTime, siblingsByMoment } from "../core/area.mjs";
-import { stepsOf } from "../core/triggers.mjs";
+import { stepsOf, holds } from "../core/triggers.mjs";
+import { factsFor } from "./facts.mjs";
 import { committedPosition } from "./turn.mjs";
 import { declarationsOfItem } from "./triggers.mjs";
 
@@ -43,6 +44,27 @@ export function areaRulesOf(activity) {
   const casterPulse = !!contentOf(activity.item).entry?.casterPulse || !!contentOf(activity.item).entry?.zoneEnd;
   // §80 : une activité par moment quand elles diffèrent (Faim de Hadar).
   return (on.size || casterPulse) ? { on: Array.from(on), activity: sibling, activities: siblingsByMoment(perDeclaration), ...(casterPulse ? { casterPulse } : {}) } : null;
+}
+
+/**
+ * §164 : l'activité à rejouer sur CETTE créature quand une déclaration de zone porte une condition (`if`) : la première qui tient, avec le
+ * lanceur en source et la créature en cible (Invocation de céleste : Lumière guérisseuse pour un allié, brûlante pour un ennemi). Null :
+ * aucune déclaration conditionnelle ne vaut, la zone rejoue comme d'habitude.
+ */
+export function conditionalReplay(usageMessage, event, token) {
+  const activity = usageMessage?.getAssociatedActivity?.();
+  const item = activity?.item;
+  if ( !item ) return null;
+  const caster = usageMessage.getAssociatedActor?.() ?? null;
+  const { scene, token: speaker } = usageMessage.speaker ?? {};
+  const casterToken = (scene && speaker) ? (game.scenes.get(scene)?.tokens.get(speaker) ?? null) : null;
+  for ( const d of declarationsOfItem(item) ) {
+    if ( !d.if || !d.on.includes(event) ) continue;
+    const step = stepsOf(d, "replay").find(s => s.activity && item.system.activities?.get(s.activity));
+    if ( !step ) continue;
+    if ( holds(d.if, factsFor({ source: caster, target: token.actor, activity, sourceToken: casterToken, targetToken: token })) ) return step.activity;
+  }
+  return null;
 }
 
 /** La zone d'une activité instantanée n'a plus de raison d'être une fois la résolution close. */

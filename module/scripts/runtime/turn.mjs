@@ -25,6 +25,7 @@ import { pilotUsage, refundCommand, spellCommandUsage } from "./pilot.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
+import { antimagicAround, barrierBetween } from "../adapter/barriers.mjs";
 import { windowDisengaged } from "./reactions.mjs";
 
 /* -------------------------------------------- */
@@ -124,7 +125,9 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
   const own = combatant ? isOwnTurn(combatant) : true;
   let request = requestFor(activity, forcedCost, { attackMode });
   if ( pilot ) request = { ...request, cost: commandPlan(pilot, "use").pay, weaponAttack: false, usesSpellSlot: false, offhand: false };
-  if ( recast ) request = { ...request, usesSpellSlot: false };   // §16.21 : relance sans emplacement
+  // §16.21 : relance sans emplacement ; §164 : au coût de la règle (Vif carquois : une action Bonus).
+  const recastCost = contentOf(activity.item).entry?.recastCost ?? null;
+  if ( recast ) request = { ...request, usesSpellSlot: false, ...(recastCost ? { cost: recastCost } : {}) };
   request = monkRequest(activity, request, budget);
   // « Move Lights » : la commande de déplacement portée par le sort — gratuite si elle est déjà ouverte ce tour.
   const ordered = pilot ? null : spellCommandOf(activity);
@@ -140,11 +143,14 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
     noReactions: reactionsBlocked(activity.actor), actionOrBonus: !!budget && actionOrBonusOnly(activity.actor), budget });
   // §22 : « en Rage, vous ne pouvez pas lancer de sorts ».
   const raging = isSpellCast(activity.item) && isRaging(activity.actor);   // §48 : lire un parchemin aussi
+  // §163 : Champ antimagie — on n'y lance aucun sort.
+  const antimagic = (isSpellCast(activity.item) && !pilot) ? antimagicAround(usageToken(activity)) : null;
   const lines = [
     ...issues.map(i => loc(`Souci.${i}`)),
     ...(outOfAmmunition(activity, attackMode) ? [loc("Souci.noAmmunition", { item: activity.item.name })] : []),
     ...(silenced ? [loc("Souci.silenced")] : []),
     ...(raging ? [loc("Souci.rage")] : []),
+    ...(antimagic ? [loc("Souci.antimagic", { item: antimagic.item.name })] : []),
     ...limits.issues.map(i => loc(`Souci.${i}`, { item: limits.item ?? "" })),
     ...incapacitated.map(i => loc(`Souci.${i}`))
   ];
@@ -239,9 +245,11 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const charmed = aimed.filter(t => charmers.has(t.actor.uuid));
   const unseen = (origin && sightRequired(activity)) ? aimed.filter(t => canSee(origin, t.document) === false) : [];
   // §62 : une créature cachée, ni vue ni perçue autrement, n'a pas de position connue — pas de cible (une zone, si).
+  // §163 : Coquille antivie — pas de coup au corps à corps à travers la barrière.
+  const fenced = origin ? aimed.map(t => ({ name: t.name, zone: barrierBetween(origin, t.document, activity) })).filter(t => t.zone) : [];
   const lost = (origin && !activity.target?.template?.type) ? aimed.filter(t => !unseen.includes(t)
     && locationUnknown({ hidden: hiddenDcOf(t.actor) !== null, sees: canSee(origin, t.document) })) : [];
-  if ( !use.lines.length && !range.blocking.length && !seenBy.length && !wrongType.length && !charmed.length && !unseen.length && !lost.length ) return true;
+  if ( !use.lines.length && !range.blocking.length && !seenBy.length && !wrongType.length && !charmed.length && !unseen.length && !lost.length && !fenced.length ) return true;
 
   const lines = [
     ...use.lines,
@@ -250,7 +258,8 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     ...wrongType.map(t => loc("Souci.wrongType", { name: t.name, types: typesLabel(t.types), item: activity.item.name })),
     ...charmed.map(t => loc("Souci.charmed", { name: t.name })),
     ...unseen.map(t => loc("Souci.notSeen", { name: t.name })),
-    ...lost.map(t => loc("Souci.hiddenTarget", { name: t.name }))
+    ...lost.map(t => loc("Souci.hiddenTarget", { name: t.name })),
+    ...fenced.map(t => loc("Souci.barrier", { name: t.name, item: t.zone.item.name }))
   ];
   // Une action tentée hors de son tour est souvent une réaction (attaque d'opportunité).
   const asReaction = !!combatant && !own && (request.cost === "action") && (budget.reaction > 0);
@@ -425,7 +434,11 @@ async function onUsageMessage(message) {
     return;
   }
   if ( request && (!request.cost || (request.cost === "free")) ) return;   // §16.27 : un projectile enchaîné ne coûte rien
-  if ( request && message.getFlag(MODULE_ID, "recast") ) request.usesSpellSlot = false;
+  if ( request && message.getFlag(MODULE_ID, "recast") ) {
+    request.usesSpellSlot = false;
+    const recastCost = contentOf(activity.item).entry?.recastCost;
+    if ( recastCost ) request.cost = recastCost;   // §164
+  }
   let after = kind ? basicAction(before, kind)
     : spendUse(before, request, { isOwnTurn: isOwnTurn(combatant), attacksPerAction: attacksPerAction(combatant.actor), turnKey: currentTurnKey() });
   for ( const k of [declared].flat() ) if ( k && BASIC_ACTION_FLAGS[k] ) after = { ...after, [BASIC_ACTION_FLAGS[k]]: true };

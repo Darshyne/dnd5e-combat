@@ -37,6 +37,8 @@ export function meleeWeaponHit(activity, attackMode) {
 export function smiteRuleOf(item, rule) {
   const activities = item?.system?.activities;
   if ( !rule || !activities ) return null;
+  // §164 : un châtiment sans dés ajoutés au coup (Grêle d'épines : les dégâts sont ceux de sa sauvegarde).
+  if ( !rule.damage ) return rule;
   if ( activities.get(rule.damage) ) return rule;
   const dice = a => (a.damage?.parts ?? []).some(p => p.number && p.denomination);
   const damaged = activities.find(a => (a.id !== rule.save) && dice(a));
@@ -45,14 +47,21 @@ export function smiteRuleOf(item, rule) {
     save: activities.get(rule.save) ? rule.save : undefined, effect: item.effects?.get(rule.effect) ? rule.effect : undefined };
 }
 
-export function smiteOptions(actor) {
+/** §164 : un coup à distance avec une arme (Grêle d'épines). */
+export function rangedWeaponHit(activity, attackMode) {
+  const mode = attackMode ?? "";
+  return (activity?.type === "attack") && (activity.item?.type === "weapon")
+    && ((activity.attack?.type?.value === "ranged") || mode.startsWith("thrown"));
+}
+
+export function smiteOptions(actor, { ranged=false }={}) {
   const combatant = combatantFor(actor);
   if ( combatant && !((readBudget(combatant)?.bonus ?? 1) >= 1) ) return [];
   const spells = actor?.system?.spells ?? {};
   const out = [];
   for ( const item of actor?.items ?? [] ) {
     const rule = isSpellCast(item) ? smiteRuleOf(item, contentOf(item).entry?.smite) : null;
-    if ( !rule ) continue;
+    if ( !rule || (!!rule.ranged !== ranged) ) continue;
     const base = Number(item.system.level) || 1;
     const uses = item.system.uses;
     if ( Number(uses?.max) && ((uses.value ?? (Number(uses.max) - (uses.spent ?? 0))) > 0) ) {
@@ -185,6 +194,7 @@ export function smiteDamage(option, target) {
     if ( !part?.number || !part.denomination ) return { formula: null, type: null };
     return { formula: `${part.number}d${part.denomination}`, type };
   }
+  if ( !rule.damage ) return { formula: null, type: null };   // §164 : Grêle d'épines
   const undead = ["fiend", "undead"].includes(creatureTypeOf(target?.actor));
   const activity = item.system.activities?.get((undead && rule.fiends) ? rule.fiends : rule.damage);
   const part = activity?.damage?.parts?.[0];
@@ -258,7 +268,8 @@ export async function chooseSmite(activity, attackMessage) {
   if ( !target ) return null;
   // Les châtiments : un coup au corps à corps avec une arme ou à mains nues ; les faveurs d'espèce : tout jet d'attaque.
   const mode = attackMessage.system?.mode;
-  const options = [...(meleeWeaponHit(activity, mode) ? smiteOptions(actor) : []), ...riderOptions(actor, target, activity, mode)];
+  const options = [...(meleeWeaponHit(activity, mode) ? smiteOptions(actor) : []),
+    ...(rangedWeaponHit(activity, mode) ? smiteOptions(actor, { ranged: true }) : []), ...riderOptions(actor, target, activity, mode)];
   if ( !options.length ) return null;
   const option = await askSmite(actor, target, options);
   const dice = option ? smiteDamage(option, target) : null;

@@ -42,6 +42,7 @@ import { createDispatcher } from "./dispatcher.mjs";
 import { askHitReactions, canReactToHit, windowIsDamaged, windowIsMissed, askDamageGuardians } from "./reactions.mjs";
 import { offerInterpose, markConcentrationBreaker, resistanceIgnoredBy, offerPeerlessAim, fortifiedExtra } from "./feats.mjs";
 import { enqueue } from "./queue.mjs";
+import { liftToken } from "./elevation-spells.mjs";
 import { route } from "./router.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
@@ -94,6 +95,27 @@ function castLevelOfMessage(message) {
   const item = message?.getAssociatedActivity?.()?.item ?? message?.getAssociatedItem?.() ?? null;
   if ( item?.type !== "spell" ) return null;
   return Number(item.system?.level ?? 0) + (Number(message.getFlag?.("dnd5e", "scaling")) || 0);
+}
+
+/** §164 : les couleurs d'Embruns prismatiques — 1 à 5, un type de dégâts ; 6, indigo ; 7, violet. */
+const PRISM_TYPES = Object.freeze({ 1: "fire", 2: "acid", 3: "lightning", 4: "poison", 5: "cold" });
+
+/**
+ * §164 : Embruns prismatiques (`prismatic`) — un d8 par cible ; sur un 8, deux rayons (les 8 relancés). Rend les couleurs tirées,
+ * l'entrée du plan réduite à leurs effets (sans dégâts s'il n'y a que de l'indigo ou du violet) et les types de dégâts. Null sans la règle.
+ */
+async function prismaticFor(item, entry) {
+  const rule = item ? contentOf(item).entry?.prismatic : null;
+  if ( !rule ) return null;
+  const d8 = async () => (await new Roll("1d8").evaluate()).total;
+  let colors = [await d8()];
+  if ( colors[0] === 8 ) {
+    colors = [];
+    while ( colors.length < 2 ) { const c = await d8(); if ( c !== 8 ) colors.push(c); }
+  }
+  const types = colors.filter(c => PRISM_TYPES[c]).map(c => PRISM_TYPES[c]);
+  const keep = [colors.includes(6) ? rule.indigo : null, colors.includes(7) ? rule.violet : null].filter(Boolean);
+  return { colors, types, entry: { ...entry, multiplier: types.length ? entry.multiplier : 0, effects: (entry.effects ?? []).filter(e => keep.includes(e.id)) } };
 }
 
 function healsMax(actor) {
@@ -229,12 +251,22 @@ const COMMANDS = {
       // pouvoir étourdissant, Parole divine) : le premier palier qui tient ; aucun, aucun effet.
       const tier = hpTierFor(activity?.item, patient, entry, resolution.plan);
       if ( tier ) entry = tier.entry;
+      const prism = await prismaticFor(activity?.item, entry);
+      if ( prism ) {
+        entry = prism.entry;
+        const names = prism.colors.map(c => loc(`Prisme.${c}`)).join(", ");
+        log(`${activity.item.name}: ${(await fromUuid(entry.token))?.name} — ${prism.colors.join(" + ")} (${names})`);
+        const struckToken = await fromUuid(entry.token);
+        if ( struckToken ) notice(struckToken, loc("Prisme.Rayons", { colors: names }), "gain");
+      }
       const healed = (resolution.plan.heal && (entry.multiplier > 0)
         && (healsMax(patient) || healsDownedToMax(source?.actor ?? activity?.actor, activity, patient)))
         ? await maximizedHealing(damageMessage) : null;
       if ( healed ) log(`maximum healing for ${entry.token} (${healed.map(d => d.value).join(" + ")})`);
       // Rien à lire sans jet (sauvegarde ou effet seuls : `multiplier` 0, pas de `damageRoll`).
       let rolled = (entry.multiplier > 0) ? (healed ?? deserializeDamages(resolution.damageRoll?.damages ?? [])) : [];
+      // §164 : le type de chaque rayon d'Embruns prismatiques ; deux rayons de dégâts, deux fois les dégâts.
+      if ( prism?.types.length ) rolled = prism.types.flatMap(type => rolled.map(d => ({ ...d, type })));
       // §27 : Disciple de la Vie — des PV de plus au soin d'un sort lancé par un emplacement.
       if ( slotHeal?.disciple && (entry.multiplier > 0) && rolled.some(d => d.type === "healing") ) {
         rolled = [...rolled, { type: "healing", value: slotHeal.disciple, properties: new Set() }];
@@ -318,6 +350,11 @@ const COMMANDS = {
             await target.actor.endConcentration();
             log(`${step.name ?? "concentration"}: ${target.name}'s is broken`);
           }
+        }
+        else if ( step.type === "lift" ) {
+          // §164 : Inversion de la gravité — la zone de cette utilisation (la plus récente de l'activité) chute avec elle.
+          const region = target?.parent?.regions?.filter(r => r.getFlag("dnd5e", "activity") === activity?.uuid).at(-1) ?? null;
+          await liftToken(target, step, region);
         }
         else if ( step.type === "status" ) {
           const uuid = await applyStatusToToken(carrier, entry.token, step.status);

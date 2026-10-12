@@ -8,6 +8,7 @@
  * Rien n'est patché : `preMoveToken` est un hook public du cœur.
  */
 
+import { barrierCrossed } from "../adapter/barriers.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { movementAllowance } from "../core/turn.mjs";
 import { areHostile } from "../core/reaction.mjs";
@@ -880,6 +881,14 @@ export async function castOnTargets(activity, [config, dialog, message], picks) 
  */
 function onPreMoveToken(token, movement, operation) {
   if ( !token.actor ) return true;
+  // §163 : Coquille antivie — on n'y entre pas en marchant, MJ compris (ce sont ses créatures qu'elle repousse). Téléportation et
+  // déplacement forcé (`displace`) : pas une marche.
+  const steps = movement.pending.waypoints.filter(w => !CONFIG.Token.movement.actions[w.action]?.teleport && (w.action !== "displace"));
+  const fence = steps.length ? barrierCrossed(token, steps.map(w => positionOf(w))) : null;
+  if ( fence ) {
+    ui.notifications.warn(loc("Deplacement.Barriere", { name: token.name, item: fence.item.name }));
+    return false;
+  }
   if ( !game.user.isGM && !playerMayMove(token, movement) ) return false;
   // §117 : les attaques d'opportunité sont une règle générale — niveau Assisté et au-dessus ; au niveau Essentiel, on marche.
   return levelAtLeast("assisted") ? opportunityFirst(token, movement, operation) : true;

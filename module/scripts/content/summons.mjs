@@ -67,6 +67,10 @@ export const SUMMONS = Object.freeze({
   // du gardien pour la première fois d'un tour ou y commence son tour » fait la sauvegarde de « Guarded Area » (la limite de 60 dégâts
   // n'est pas reprise). Chien de garde : « au début de votre tour, le chien tente de mordre un ennemi à 1,50 m de lui ».
   "find-steed": after,
+  // §164 : Invocation d'élémentaire — « quand une créature entre dans l'espace de l'esprit ou commence son tour à 1,50 m de lui », la
+  // sauvegarde de l'élément (8d8, Entravée) ; un item par élément (air, terre, feu, eau). L'esprit n'agit pas. (« Une seule créature
+  // Entravée à la fois » : au MJ.)
+  "conjure-elemental": { initiative: "none", pulse: { item: ["air-element", "earth-element", "fire-element", "water-element"], radius: 5, units: "ft", on: ["enter", "turnStart"], affects: "enemy" } },
   "mordenkainens-sword": piloted(30, "use"),
   "conjure-fey": piloted(30, "use"),
   "guardian-of-faith": { initiative: "none", pulse: { item: "guarded-area", radius: 10, units: "ft", on: ["enter", "turnStart"], affects: "enemy" } },

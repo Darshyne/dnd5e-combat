@@ -17,9 +17,11 @@ import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
 import { strikeAgainst } from "../adapter/areas.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
-import { combatantFor, readBudget, writeBudget } from "../adapter/turn.mjs";
+import { combatantFor, readBudget, writeBudget, distanceBetween } from "../adapter/turn.mjs";
 import { pushAway } from "../adapter/movement.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
+import { convertLength } from "../core/units.mjs";
+import { contentOf } from "../adapter/content.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log } from "./shared.mjs";
@@ -69,6 +71,16 @@ async function onResolution(resolution) {
   if ( !source ) return;
   log(`${smite.name}: ${target.name} makes their saving throw`);
   await strikeAgainst(save, source, target, { flavor: "DND5ECOMBAT.Chatiment.Carte" });
+  // §164 : « la cible et chaque créature à 1,50 m d'elle » (Grêle d'épines).
+  const burst = contentOf(item).entry?.smite?.burst;
+  if ( !burst ) return;
+  let radius = burst.radius;
+  try { radius = convertLength(burst.radius, burst.units, target.parent.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  for ( const other of target.parent.tokens ) {
+    if ( (other === target) || !other.actor || other.hidden || (distanceBetween(target, other).value > radius + 1e-6) ) continue;
+    log(`${smite.name}: ${other.name}, within ${burst.radius} ${burst.units} of ${target.name}, makes their saving throw`);
+    await strikeAgainst(save, source, other, { flavor: "DND5ECOMBAT.Chatiment.Carte" });
+  }
 }
 
 /**

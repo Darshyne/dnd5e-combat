@@ -305,6 +305,36 @@ export const SPELL_RULES = Object.freeze({
   "wall-of-stone": { walls: { sight: true } },
   "prismatic-wall": { walls: { move: false, sight: true, activities: ["5f0JerdDSOQQXiTe", "fOYr1bgsB1VXROcm"] } },
   "wall-of-thorns": { walls: { move: false, sight: true } },
+  // §163 : Champ antimagie — « les sorts n'affectent rien dans l'Émanation, et on n'y en lance pas » (la suspension des effets et objets
+  // magiques déjà là, la téléportation : au MJ) ; Coquille antivie — « empêche les créatures autres que les Créatures artificielles et
+  // les Morts-vivants d'y entrer ou d'atteindre à travers » (le sort qui prend fin quand le lanceur force une créature à la traverser : au MJ).
+  // §164 (relevé des sorts, lot 5c). Esprits d'Invocation d'élémentaire (items de l'esprit invoqué) : « une créature Entravée refait la
+  // sauvegarde au début de chacun de ses tours ; ratée, 4d8 ; réussie, elle se libère ». Le feu : son effet Entravé n'est relié à rien.
+  "air-element": { triggers: [{ on: "startOfTurn", via: "effect", fromEffect: "NGnrAr3HdReYoTjS", do: [{ type: "resave" }, { type: "damage", to: "bearer", activity: "OeBjTLqhK4uDBBuD" }] }] },
+  "earth-element": { triggers: [{ on: "startOfTurn", via: "effect", fromEffect: "i5T6yzxlsSnXxGGa", do: [{ type: "resave" }, { type: "damage", to: "bearer", activity: "BpPMuUAvi25WtIqp" }] }] },
+  "fire-element": { choice: { pool: { kKPSUm9WDEDhhQtt: ["BWZxm9qxlXDSF6Dy"] } }, triggers: [{ on: "startOfTurn", via: "effect", fromEffect: "BWZxm9qxlXDSF6Dy", do: [{ type: "resave" }, { type: "damage", to: "bearer", activity: "5PCXGij7otAlYyL2" }] }] },
+  "water-element": { triggers: [{ on: "startOfTurn", via: "effect", fromEffect: "fwIobATMREr7g26x", do: [{ type: "resave" }, { type: "damage", to: "bearer", activity: "K1lCqatPi2PsSDio" }] }] },
+  // Invocation de céleste : le Cylindre rejoue, une fois par tour, quand une créature y entre ou y finit son tour — Lumière guérisseuse
+  // pour un allié, Lumière brûlante pour un ennemi (déplaçable : content/movables.mjs).
+  "conjure-celestial": { triggers: [
+    { on: ["enter", "turnEnd"], if: { "target.allied": true }, do: [{ type: "replay", activity: "ke8eykrnAdAq5nfZ" }] },
+    { on: ["enter", "turnEnd"], if: { "target.allied": false }, do: [{ type: "replay", activity: "naMU3mLP7jLZu1IG" }] }
+  ] },
+  // Vif carquois : « quand vous lancez le sort, et par une action Bonus à chacun de vos tours suivants, deux attaques avec une arme à
+  // munitions » — deux attaques gratuites ouvertes (comme le Déluge de coups), la relance à l'action Bonus. (Seulement une arme à
+  // munitions : au joueur.)
+  "swift-quiver": { flurry: { activity: "DE7WqJFIWGteZ8xU", strikes: 2, weapons: true }, recast: true, recastCost: "bonus" },
+  // Lévitation : la cible s'élève de 6 m, redescend quand le sort prend fin (se déplacer par une action Magie : au MJ).
+  "levitate": { levitate: { effect: "axhLHcJQHprSpHRD", height: 20, units: "ft" } },
+  // Inversion de la gravité : sur un échec, la créature tombe vers le haut, au sommet du Cylindre (30 m) ; le sort fini, elle chute.
+  "reverse-gravity": { triggers: [{ on: "failedSave", do: [{ type: "lift", height: 100, units: "ft" }] }] },
+  // Embruns prismatiques : un d8 par cible pour la couleur (la sauvegarde rejouée de l'indigo, la téléportation du violet : au MJ).
+  "prismatic-spray": { prismatic: { indigo: "cCQh7iXKnT8PKmc1", violet: "jFAGct9YCYvLJodW" } },
+  // Grêle d'épines : « immédiatement après avoir touché une créature avec une arme à distance » ; la cible et chaque créature à 1,50 m
+  // d'elle font la sauvegarde.
+  "hail-of-thorns": { smite: { save: "dnd5eactivity000", ranged: true, burst: { radius: 5, units: "ft" } } },
+  "antimagic-field": { globe: { radius: 10, units: "ft", maxLevel: 9, everywhere: true } },
+  "antilife-shell": { barrier: { radius: 10, units: "ft", exceptTypes: ["construct", "undead"] } },
   "arcane-gate": { pointWall: false },
   "gate": { pointWall: false },
   "demiplane": { pointWall: false },

@@ -209,6 +209,9 @@ function outcomeStepsOf(item, moment, when) {
  */
 function saveEffectsOf(activity) {
   const entry = activity.item ? contentOf(activity.item).entry : null;
+  // §158 : les effets d'une zone `zoneEffects` sont portés par la zone (entrée, sortie) — la sauvegarde ne les pose pas en plus
+  // (Tempête radieuse de Jallarzi : Aveuglé, Assourdi « tant qu'elle est dans le Cylindre »).
+  if ( entry?.zoneEffects === true ) return [];
   const saved = new Set(entry?.savedEffects ?? []);
   const margins = entry?.failMargins ?? {};
   return effectsOf(activity, e => saved.has(effectKey(e)) ? "saved" : (e.onSave === true ? "always" : "failedSave"))

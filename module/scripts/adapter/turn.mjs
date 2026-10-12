@@ -43,14 +43,17 @@ export function reactionsPerRound(actor) {
 
 /** Budget neuf d'un combattant, à ses réactions par round. */
 export function freshBudgetFor(combatant) {
-  return { ...freshBudget({ reactions: reactionsPerRound(combatant?.actor) }), limited: hasLimitedAction(combatant?.actor) ? 1 : 0 };
+  return { ...freshBudget({ reactions: reactionsPerRound(combatant?.actor) }), limited: carriesRuleEffect(combatant?.actor, "limitedAction") ? 1 : 0 };
 }
 
-/** §157 : l'acteur porte-t-il l'effet d'un item qui donne l'action limitée (`limitedAction` : l'effet « Hasted » de Hâte) ? */
-function hasLimitedAction(actor) {
-  return Array.from(actor?.effects ?? []).some(e => {
+/**
+ * L'acteur porte-t-il l'effet que le contenu de son item d'origine nomme sous `key` (§157 `limitedAction` : « Hasted » de Hâte ;
+ * §158 `noActions` : « Stinking Poison » du Nuage nauséabond) ? `effect` : ne regarder que celui-là.
+ */
+export function carriesRuleEffect(actor, key, effect=null) {
+  return (effect ? [effect] : Array.from(actor?.effects ?? [])).some(e => {
     if ( e.disabled || e.isSuppressed ) return false;
-    const id = contentOf(originItemOf(e)).entry?.limitedAction;
+    const id = contentOf(originItemOf(e)).entry?.[key];
     return !!id && comesFromItemEffect(e, id);
   });
 }
@@ -60,7 +63,10 @@ export function isOwnTurn(combatant) {
 }
 
 export function readBudget(combatant) {
-  return combatant.getFlag(MODULE_ID, "turn") ?? freshBudgetFor(combatant);
+  const budget = combatant.getFlag(MODULE_ID, "turn") ?? freshBudgetFor(combatant);
+  // §158 : Nuage nauséabond — « ne peut prendre ni action ni action Bonus » tant qu'il porte l'effet. Lu ici, pas écrit : la remise
+  // du budget au changement de tour pouvait arriver APRÈS l'effet posé au début du tour et le défaire (vu le 2026-10-12).
+  return carriesRuleEffect(combatant.actor, "noActions") ? { ...budget, action: 0, bonus: 0, limited: 0 } : budget;
 }
 
 export async function writeBudget(combatant, budget) {

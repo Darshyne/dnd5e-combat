@@ -6,5 +6,7 @@
 
 export const MOVABLES = Object.freeze({
   // « Vous pouvez effectuer une action Magie lors de vos tours suivants pour déplacer le Cylindre de 18 m au maximum. »
-  "moonbeam": { distance: 60, units: "ft" }
+  "moonbeam": { distance: 60, units: "ft" },
+  // §158 : Nuée de dagues — « par une action Magie lors de vos tours suivants, vous pouvez téléporter le Cube de 9 m au maximum ».
+  "cloud-of-daggers": { distance: 30, units: "ft" }
 });

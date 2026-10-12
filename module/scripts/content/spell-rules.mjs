@@ -135,10 +135,46 @@ export const SPELL_RULES = Object.freeze({
   "umbral-dagger": { stableAtZero: true, effectsIf: { "target.atZero": true } },
   "entangle": { difficultTerrain: { types: ["plants"] } },
   "spike-growth": { difficultTerrain: { types: ["plants"] } },
-  "web": { difficultTerrain: { types: ["webs"] } },
-  "grease": { difficultTerrain: {} },
+  // §158 (relevé des sorts, lot 2 : zones qui durent). Toile d'araignée : « … qui y entre pour la première fois d'un tour ou y
+  // commence son tour fait un JS de Dextérité ; raté, Entravée tant qu'elle est dans la toile ou jusqu'à ce qu'elle se libère » ; « une
+  // action pour un test de Force (Athlétisme) contre votre DD ». Les 2d4 de feu de la donnée sont ceux d'une toile qui brûle : pas
+  // lancés au rejeu (la combustion reste au MJ). Zone légèrement obscurcie : non reprise.
+  "web": {
+    difficultTerrain: { types: ["webs"] },
+    noDamage: ["dnd5eactivity000"],
+    triggers: [{ on: ["enter", "turnStart"], do: [{ type: "replay" }] }, { on: "failedSave", do: [{ type: "status", status: "restrained" }] }],
+    actionEnds: { "status:restrained": { by: "bearer", roll: "check" } }
+  },
+  // Graisse : « … qui y entre ou y termine son tour fait un JS de Dextérité ou a l'état À terre ».
+  "grease": {
+    difficultTerrain: {},
+    triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }, { on: "failedSave", do: [{ type: "status", status: "prone" }] }]
+  },
   "sleet-storm": { difficultTerrain: {} },
-  "evards-black-tentacles": { difficultTerrain: {} },
+  // Tentacules noirs d'Evard : « … qui y entre pour la première fois d'un tour ou y termine son tour » rejoue la sauvegarde ; « une action
+  // pour un test de Force (Athlétisme) contre votre DD » met fin à Entravé.
+  "evards-black-tentacles": {
+    difficultTerrain: {},
+    triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }],
+    actionEnds: { NDytclFrNmC418CS: { by: "bearer", roll: "check" } }
+  },
+  // Brume mortelle, Nuage incendiaire : la sphère rejoue sa sauvegarde à l'entrée et en fin de tour, et « s'éloigne de 3 m de vous au
+  // début de chacun de vos tours » (fortement obscurcie : content/bursts.mjs).
+  "cloudkill": { triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }], casterPulse: { at: "turnStart", by: [], away: { distance: 10, units: "ft" } } },
+  "incendiary-cloud": { triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }], casterPulse: { at: "turnStart", by: [], away: { distance: 10, units: "ft" } } },
+  // Fléau d'insectes : rejeu à l'entrée et en fin de tour, terrain difficile (légèrement obscurci : non repris).
+  "insect-plague": { difficultTerrain: {}, triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }] },
+  // Barrière de lames : mur ou anneau, rejeu à l'entrée et en fin de tour, terrain difficile. (L'abri des trois quarts à travers le
+  // mur : non repris.)
+  "blade-barrier": { difficultTerrain: {}, triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }] },
+  // Tempête radieuse de Jallarzi : « tant qu'elle est dans le Cylindre, une créature est Aveuglée et Assourdie et ne peut lancer de
+  // sort à composante verbale » — porté par la zone, pas par la sauvegarde ; dégâts à l'entrée et en fin de tour.
+  "jallarzis-storm-of-radiance": { zoneEffects: true, triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }] },
+  // Faim de Hadar : terrain difficile (Ténèbres : content/lights.mjs).
+  "hunger-of-hadar": { difficultTerrain: {} },
+  // Nuage nauséabond : « Empoisonnée jusqu'à la fin du tour en cours ; ainsi Empoisonnée, elle ne peut prendre ni action ni action
+  // Bonus » (l'effet « Stinking Poison »).
+  "stinking-cloud": { noActions: "gFid0DG5HydORpr3" },
   // §86 : Présence royale de Yolande — « Surround Self » (OJHRKWz8JvLzyl9R) n'a pas d'émanation dans la donnée : 10 ft sur soi,
   // posée d'office ; « une créature que vous voyez… vous pouvez la forcer » : les alliés épargnés. Qui y entre (ou que
   // l'émanation recouvre) ou y finit son tour : « Emanation Save » (dzeoGwKOPG7PHbyE, Sagesse, 4d6 psychiques), une fois par tour ;

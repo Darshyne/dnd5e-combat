@@ -85,9 +85,10 @@ function casterPulse(region, caster, at) {
     await writeAreaState(region, { ...state, pulses: n });
     const entry = pulseFor(rule, n);
     const sibling = entry ? item.system.activities?.get(entry.activity) : null;
-    if ( !sibling ) { log(`${region.name}: caster's turn ${n}, nothing to replay`); return; }
-    // Tsunami : le mur s'éloigne du lanceur avant de frapper.
+    // Tsunami : le mur s'éloigne du lanceur avant de frapper ; §158 : Brume mortelle, Nuage incendiaire ne font que dériver (les
+    // créatures que la zone recouvre en arrivant y « entrent » : le rejeu de l'entrée suit).
     if ( rule.away ) await driftAway(region, caster, rule.away);
+    if ( !sibling ) { if ( !rule.away ) log(`${region.name}: caster's turn ${n}, nothing to replay`); return; }
     if ( entry.pay ) await payWithoutUse(sibling);
     if ( entry.use ) {
       await sibling.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: false } }, { configure: false }, { create: false });

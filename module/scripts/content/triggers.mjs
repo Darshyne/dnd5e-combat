@@ -105,7 +105,8 @@ export const TRIGGERS = Object.freeze({
   // sauvegarde de Dextérité, À terre sur un échec (l'item n'a pas d'effet : l'état est posé par le moteur).
   "sleet-storm": [
     { on: ["enter", "turnStart"], do: [{ type: "replay" }] },
-    { on: "failedSave", do: [{ type: "status", status: "prone" }] }
+    // §158 : « … elle a l'état À terre ; si elle se concentre, sa Concentration est rompue ».
+    { on: "failedSave", do: [{ type: "status", status: "prone" }, { type: "breakConcentration" }] }
   ],
 
   // Déplacement forcé (SPEC §16) : « le choc l'éloigne de 3 m de vous » sur un échec…

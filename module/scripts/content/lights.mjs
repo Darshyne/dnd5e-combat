@@ -21,6 +21,8 @@ export const REVEALS_INVISIBLE = Object.freeze(["starry-wisp", "faerie-fire"]);
 
 export const LIGHTS = Object.freeze({
   "darkness": { on: "area", darkness: true },
+  // §158 : Faim de Hadar — « la Sphère est emplie de Ténèbres magiques » (qui y est entièrement ne voit rien : la vision le juge).
+  "hunger-of-hadar": { on: "area", darkness: true },
   "daylight": { on: "area", bright: 60, dim: 120, units: "ft", dispels: 3 },
   "starry-wisp": { on: "effect", dim: 10, units: "ft" },
   "faerie-fire": { on: "effect", dim: 10, units: "ft" },

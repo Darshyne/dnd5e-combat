@@ -24,7 +24,8 @@ export function actionEndingsOf(actor, by) {
     const item = originItemOf(effect);
     const rules = item ? contentOf(item).entry?.actionEnds : null;
     if ( !rules ) continue;
-    const key = Object.keys(rules).find(id => comesFromItemEffect(effect, id));
+    // §158 : `status:<id>` — un état posé par une étape `status` de l'item (Toile d'araignée : Entravé).
+    const key = Object.keys(rules).find(id => id.startsWith("status:") ? effect.statuses?.has?.(id.slice(7)) : comesFromItemEffect(effect, id));
     const rule = key ? rules[key] : null;
     if ( !rule || (rule.by !== by) ) continue;
     let check = null;

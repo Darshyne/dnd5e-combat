@@ -54,7 +54,7 @@ export const FEATURE_LEVELS = Object.freeze({
   registerAfterSneak: F, registerCantrips: F, registerEndings: F, registerActionEnd: F, registerBarbarian: F,
   registerSwallow: F, registerFamiliars: F, registerBreaks: F, registerCure: F, registerBlink: F, registerWalls: F, registerWallSide: F, registerElevationSpells: F, registerPotions: F, registerOil: F,
   registerSkillAid: F, registerLights: F, registerWildShape: F, registerEnchant: F, registerTether: F, registerDefenses: F,
-  registerSize: F, registerOrders: F, registerVigor: F, registerCureUi: F, registerKindleUi: F, registerSkillAidUi: F
+  registerSize: F, registerOrders: F, registerVigor: F, registerCureUi: F, registerWallSideUi: F, registerKindleUi: F, registerSkillAidUi: F
 });
 
 /** Le niveau minimal d'une fonction (absente de la table : Intégral, par prudence). */

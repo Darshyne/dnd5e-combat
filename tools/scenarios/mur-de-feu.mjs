@@ -7,8 +7,9 @@
  *  - à son tour, il traverse le mur vers le nord : dégâts sans sauvegarde ; il repasse au sud : rien (une fois par tour) ; il finit son
  *    tour au sud : dégâts sans sauvegarde ;
  *  - la face retournée passe au nord ;
- *  - en anneau autour du Zombi, le Magicien dehors : le disque posé devient un anneau fin (forme « ring »), ses murs sur le rayon,
- *    la face brûlante à l'intérieur ; le Zombi y finit son tour : dégâts.
+ *  - §170 : des lumières de chaque côté (10/20 ft), retirées avec le mur ; le bruit de feu si darsh-animations est actif ;
+ *  - en anneau autour du Zombi : le disque posé devient un anneau fin (forme « ring »), ses murs sur le rayon ; la fenêtre « de quel
+ *    côté » (§171) répondue « vers l'extérieur » : la couronne autour brûle ; retourné vers l'intérieur, le Zombi y finit son tour : dégâts.
  * Remet positions, PV, combat ; les régions et murs posés tombent avec la remise en état du lanceur.
  */
 const MODULE_ID = "dnd5e-combat";
@@ -66,6 +67,10 @@ export default {
       `sans diagonale : ${lines.map(l => `${Math.round(l.rotation)}° ${Math.round(l.length / grid * 5)} ft`).join(", ")}`);
     ctx.expect((s.walls.length === 2) && s.walls.every(w => (w.move === 0) && (w.sight === 20)), `opaque : ${s.walls.length} murs, déplacement ${s.walls.map(w => w.move).join("/")}, vue ${s.walls.map(w => w.sight).join("/")}`);
     ctx.expect(s.side === -1, `côté brûlant à l'opposé du Magicien (côté ${s.side})`);
+    // §170 : la lumière, des deux côtés ; le bruit (darsh-animations, s'il est actif).
+    const above = s.lights.filter(l => l.y < 33 * grid).length, below = s.lights.filter(l => l.y > 33 * grid).length;
+    ctx.expect((above > 0) && (below > 0) && s.lights.every(l => (l.bright === 10) && (l.dim === 20)), `lumière : ${s.lights.length} sources (${above} au nord, ${below} au sud), 10/20 ft`);
+    ctx.log(`bruit de feu : ${s.sounds} son(s) d'ambiance`);
     const south = (s.burning?.shapes ?? []).find(x => x.type === "polygon" && x.points.some((v, i) => (i % 2) && (v > 33 * grid)));
     ctx.expect(!!south && (Math.max(...south.points.filter((_, i) => i % 2)) === 35 * grid), `face brûlante au sud, 10 ft (${JSON.stringify(s.burning?.shapes?.map(x => x.points))})`);
     await pause(2500);
@@ -106,6 +111,8 @@ export default {
     await ctx.call("delete-scene-object", { type: "Region", objectId: placed.regionId }).catch(() => {});
     await pause(1500);
     ctx.expect(!(await sceneObjects("Region")).some(r => [placed.regionId, s.burning?.id].includes(r.id ?? r._id)), "le mur retiré, sa face brûlante aussi");
+    const lightsLeft = (await sceneObjects("AmbientLight")).filter(l => s.lights.some(x => (x.x === l.x) && (x.y === l.y))).length;
+    ctx.expect(!lightsLeft, `le mur retiré, ses lumières aussi (${lightsLeft} restante(s))`);
 
     // 4. En anneau autour du Zombi, le Magicien dehors.
     if ( !ctx.expect(await turnOf(mage), "tour du Magicien (anneau)") ) return;
@@ -115,16 +122,28 @@ export default {
     // Le Manuel des joueurs pose un disque (« cylinder »), dnd5e un anneau (« ring ») ; la pose par coordonnées, un disque.
     const ring = Object.entries(item?.system?.activities ?? {}).find(([, a]) => ["cylinder", "ring"].includes(a.target?.template?.type))?.[0];
     if ( !ctx.expect(!!ring, "anneau : activité trouvée") ) return;
+    const known = (await ctx.call("list-dialogs", {})).windows.map(w => w.id);
     const used = await ctx.use({ tokenId: mage.id, itemId: fire, activityId: ring, consume: false, area: { shape: "circle", ...centre, radius: 2 * grid } });
     if ( !ctx.expect(!!used.regionId, "anneau : région posée") ) return;
     regions.push(used.regionId);
+    // §171 : la fenêtre « de quel côté » s'ouvre chez qui l'a posé (ici le MJ) — vers l'extérieur.
+    let asked = null;
+    for ( let i = 0; (i < 10) && !asked; i++ ) {
+      asked = (await ctx.call("list-dialogs", { dialogsOnly: true, excludeIds: known, waitMs: 1000 }).catch(() => null))?.windows?.[0] ?? null;
+    }
+    if ( ctx.expect(!!asked, `anneau : on demande de quel côté il brûle (« ${asked?.title ?? "aucune fenêtre"} »)`) ) {
+      await ctx.call("answer-dialog", { id: asked.id, button: "outward" });
+    }
     s = null;
-    for ( let i = 0; (i < 20) && !s?.burning; i++ ) { await pause(500); s = await state(used.regionId); }
+    for ( let i = 0; (i < 20) && !((s?.side === -1) && s?.burning); i++ ) { await pause(500); s = await state(used.regionId); }
+    ctx.expect((s.side === -1) && (s.burning?.shapes?.[0]?.type === "ring"), `anneau : vers l'extérieur — la couronne autour brûle (côté ${s.side}, ${s.burning?.shapes?.map(x => x.type).join(", ")})`);
+    s = await ctx.engine("wallSide", { regionId: used.regionId, flip: true });
     const ringShape = s.shapes.find(x => x.type === "ring");
     ctx.expect((s.shapes.length === 1) && !!ringShape && (ringShape.innerWidth + ringShape.outerWidth < grid),
       `anneau fin : ${s.shapes.map(x => `${x.type} ${Math.round(x.radius)} (${Math.round(x.innerWidth ?? 0)} + ${Math.round(x.outerWidth ?? 0)})`).join(", ")}`);
     ctx.expect((s.walls.length === 24) && s.walls.every(w => w.sight === 20), `anneau : ${s.walls.length} murs sur le rayon`);
-    ctx.expect((s.side === 1) && (s.burning?.shapes?.length === 1), `anneau : la face brûlante à l'intérieur (côté ${s.side})`);
+    ctx.expect((s.side === 1) && (s.burning?.shapes?.[0]?.type === "circle"), `anneau retourné : vers l'intérieur (côté ${s.side})`);
+    ctx.expect(s.lights.length > 0, `anneau : ${s.lights.length} lumières, ${s.sounds} son(s)`);
     await pause(3000);
     if ( !ctx.expect(await turnOf(zombi), "tour du Zombi (anneau)") ) return;
     before = await ctx.hp(zombi);

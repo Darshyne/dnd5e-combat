@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { polylineLength, clampPolyline, wallLineShapes, lineAxis, polygonEdges, orthogonalize, sideOfSegment, wallGeometry, defaultSide, sideShapes, ringShapes, crossesWall, touchesWall } from "../module/scripts/core/wall.mjs";
+import { polylineLength, clampPolyline, wallLineShapes, lineAxis, polygonEdges, orthogonalize, sideOfSegment, wallGeometry, defaultSide, sideShapes, ringShapes, crossesWall, touchesWall, wallLightPoints } from "../module/scripts/core/wall.mjs";
 
 describe("§162 : mur posé par points", () => {
   it("la ligne brisée ramenée à la longueur du sort", () => {
@@ -67,5 +67,17 @@ describe("§169 : mur à face brûlante", () => {
     const ring = { ring: { x: 0, y: 0, radius: 200 } };
     expect(touchesWall(ring, { x: 150, y: -50, width: 100, height: 100 })).toBe(true);
     expect(touchesWall(ring, { x: -50, y: -50, width: 100, height: 100 })).toBe(false);   // au centre
+  });
+});
+
+describe("§170 : les lumières d'un mur", () => {
+  it("de part et d'autre de la ligne, bouts compris", () => {
+    const pts = wallLightPoints({ lines: [[0, 0, 280, 0]] }, 280, 10);
+    expect(pts).toEqual([{ x: 0, y: -10 }, { x: 0, y: 10 }, { x: 280, y: -10 }, { x: 280, y: 10 }]);
+  });
+  it("autour d'un anneau, dedans et dehors", () => {
+    const pts = wallLightPoints({ ring: { x: 0, y: 0, radius: 280 } }, 280, 10);
+    expect(pts.length).toBe(14);
+    expect(pts.slice(0, 2)).toEqual([{ x: 270, y: 0 }, { x: 290, y: 0 }]);
   });
 });

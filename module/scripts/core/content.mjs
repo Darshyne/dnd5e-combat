@@ -84,7 +84,7 @@
  *     revealsInvisible?: true                   le porteur d'un effet de l'item « ne peut pas bénéficier de l'état
  *                                               Invisible » (Poussière d'étoile, Lueurs féeriques, §16.36) : la vision
  *                                               simulée et l'état forfaitaire le jugent comme s'il ne l'était pas
- *     light?: { on, bright?, dim?, units?, darkness?, dispels?, carried?, single? }
+ *     light?: { on, bright?, dim?, units?, darkness?, dispels?, carried?, single?, color?, animation? }
  *                                               lumière ou ténèbres du sort (§16.31, core/light.mjs). `on` : « area » = une
  *                                               source sur la zone posée, qui la suit et part avec elle (`darkness: true` :
  *                                               ténèbres magiques du rayon de la zone, qui bloquent la vue comme la brume,
@@ -93,6 +93,8 @@
  *                                               font briller leur porteur ; « summon » = l'objet invoqué porte sa lumière,
  *                                               `carried` : au lancement, le joueur choisit « au sol » ou « sur moi » (le
  *                                               lanceur brille) et la couleur (§16.35) ;
+ *                                               « wall » (§170) = une rangée de sources de chaque côté d'un mur posé par
+ *                                               points (Mur de feu), qui naissent, suivent et partent avec lui ;
  *                                               `single` : relancer le sort éteint le précédent. Rayons en convention de
  *                                               Foundry (`dim` = rayon extérieur de la lumière faible)
  *     saveAdvantage?: string[]                  le porteur de l'item a l'avantage aux sauvegardes contre une activité qui
@@ -1390,12 +1392,15 @@ function validateLight(l, at, errors) {
   if ( (("bright" in l) || ("dim" in l)) && ((typeof l.units !== "string") || !l.units) ) errors.push(`${at}.units: unit required`);
   if ( (l.on === "effect") && !(l.dim > 0) && !(l.bright > 0) ) errors.push(`${at}: a light effect needs a radius`);
   if ( (l.on === "area") && !l.darkness && !(l.dim > 0) && !(l.bright > 0) ) errors.push(`${at}: a light area needs a radius`);
+  if ( (l.on === "wall") && !(l.dim > 0) && !(l.bright > 0) ) errors.push(`${at}: a wall light needs a radius`);
+  if ( ("color" in l) && !((typeof l.color === "string") && /^#[0-9a-fA-F]{6}$/.test(l.color)) ) errors.push(`${at}.color: "#rrggbb"`);
+  if ( ("animation" in l) && (!isObject(l.animation) || (typeof l.animation.type !== "string")) ) errors.push(`${at}.animation: { type, speed?, intensity? }`);
   for ( const flag of ["darkness", "carried", "single"] ) if ( (flag in l) && (l[flag] !== true) ) errors.push(`${at}.${flag}: true or absent`);
   if ( l.darkness && (l.on !== "area") ) errors.push(`${at}.darkness: only on an area`);
   if ( ("dispels" in l) && !(Number.isInteger(l.dispels) && (l.dispels >= 0)) ) errors.push(`${at}.dispels: spell level (integer)`);
   if ( (l.carried || l.single) && (l.on !== "summon") ) errors.push(`${at}: carried and single only apply to a summon`);
   for ( const key of Object.keys(l) ) {
-    if ( !["on", "bright", "dim", "units", "darkness", "dispels", "carried", "single"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
+    if ( !["on", "bright", "dim", "units", "darkness", "dispels", "carried", "single", "color", "animation"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
   }
 }
 

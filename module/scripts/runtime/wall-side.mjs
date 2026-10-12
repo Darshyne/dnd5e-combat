@@ -21,12 +21,16 @@ function casterCenter(region) {
   return object ? object.center : null;
 }
 
-/** À la pose : le côté brûlant, et l'anneau fin à la place du disque. */
-async function onCreate(region) {
+/** À la pose : le côté brûlant (sauf s'il est déjà choisi, §171), et l'anneau fin à la place du disque. */
+function onCreate(region) {
   if ( !wallSideRuleOf(region) ) return;
+  return enqueue(`wallSide:${region.id}`, () => setUp(region));
+}
+
+async function setUp(region) {
   const geometry = wallGeometryOf(region);
   if ( !geometry ) return;
-  const side = defaultSide(geometry, casterCenter(region));
+  const side = region.getFlag(MODULE_ID, "wallSide")?.side ?? defaultSide(geometry, casterCenter(region));
   const update = { [`flags.${MODULE_ID}.wallSide`]: { side } };
   // Le disque d'un gabarit « cylinder » (Manuel des joueurs) devient un anneau fin ; un gabarit « ring » (dnd5e) l'est déjà.
   if ( geometry.ring && !region.shapes.some(s => s.type === "ring") ) {
@@ -80,26 +84,33 @@ async function onDelete(region) {
   if ( side ) await side.delete();
 }
 
-/** Côté MJ actif : retourner la face brûlante. */
-export async function handleFlipWallSide({ region: uuid }) {
-  const wall = await fromUuid(uuid);
+/**
+ * Côté MJ actif : retourner la face brûlante, ou la mettre d'un côté donné (`side` : +1 à gauche du tracé ou à l'intérieur de l'anneau,
+ * -1 de l'autre côté). À la file avec la pose de la face : un choix fait pendant qu'elle se pose ne se perd pas.
+ */
+export function handleFlipWallSide({ region: uuid, side: wanted=null }) {
+  const wall = fromUuidSync(uuid, { strict: false });
   if ( !wall || !wallSideRuleOf(wall) ) return false;
-  const side = -(wall.getFlag(MODULE_ID, "wallSide")?.side ?? 1);
-  await wall.setFlag(MODULE_ID, "wallSide", { side });
-  const burning = sideRegionOf(wall);
-  if ( burning ) await burning.update({ shapes: sideShapes(wallGeometryOf(wall), side, sideDepthOf(wall.parent, wallSideRuleOf(wall))) });
-  log(`area "${wall.name}": burning side flipped`);
-  return true;
+  return enqueue(`wallSide:${wall.id}`, async () => {
+    const current = wall.getFlag(MODULE_ID, "wallSide")?.side ?? 1;
+    const side = [1, -1].includes(wanted) ? wanted : -current;
+    if ( side === current ) return true;
+    await wall.setFlag(MODULE_ID, "wallSide", { side });
+    const burning = sideRegionOf(wall);
+    if ( burning ) await burning.update({ shapes: sideShapes(wallGeometryOf(wall), side, sideDepthOf(wall.parent, wallSideRuleOf(wall))) });
+    log(`area "${wall.name}": burning side ${wanted ? "set" : "flipped"}`);
+    return true;
+  });
 }
 
-/** Intention « retourner la face brûlante de ce mur » (le client qui agit ; le MJ actif écrit). */
-export async function flipWallSide(wall) {
+/** Intention « retourner la face brûlante de ce mur » ou « la mettre de ce côté » (le client qui agit ; le MJ actif écrit). */
+export async function flipWallSide(wall, side=null) {
   const gm = game.users.activeGM;
   if ( !gm ) { ui.notifications.warn(loc("Zone.SansMJ")); return false; }
-  const payload = { region: wall.uuid };
+  const payload = { region: wall.uuid, ...(side ? { side } : {}) };
   const done = gm.isSelf ? await handleFlipWallSide(payload)
     : await gm.query(FLIP_WALL_QUERY, payload, { timeout: 10000 }).catch(err => { console.warn(`${MODULE_ID} | wall side`, err); return false; });
-  if ( done ) ui.notifications.info(loc("MurFace.Retournee", { item: wall.name.replace(/\s*\[.*\]$/, "") }));
+  if ( done && !side ) ui.notifications.info(loc("MurFace.Retournee", { item: wall.name.replace(/\s*\[.*\]$/, "") }));
   return done;
 }
 

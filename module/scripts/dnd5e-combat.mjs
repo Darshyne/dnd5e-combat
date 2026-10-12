@@ -76,6 +76,7 @@ import { registerWalls } from "./runtime/walls.mjs";
 import { registerWallSide } from "./runtime/wall-side.mjs";
 import { registerElevationSpells } from "./runtime/elevation-spells.mjs";
 import { registerCureUi } from "./ui/cure.mjs";
+import { registerWallSideUi } from "./ui/wall-side.mjs";
 import { registerKindleUi } from "./ui/kindle.mjs";
 import { registerSkillAid } from "./runtime/skill-aid.mjs";
 import { registerSkillAidUi } from "./ui/skill-aid.mjs";
@@ -262,6 +263,7 @@ Hooks.once("init", () => {
   gated(registerPerception);   // §62 : la brume cache à l'écran, l'ouïe montre ce qu'on entend
   gated(registerVigor);
   gated(registerCureUi);
+  gated(registerWallSideUi);   // §171 : anneau de feu — vers l'intérieur ou vers l'extérieur
   gated(registerKindleUi);   // §52 : boîte à amadou
   gated(registerSkillAidUi);   // §113 : section « Aides » de la fenêtre de jet d'un test
   gated(registerAutomation);

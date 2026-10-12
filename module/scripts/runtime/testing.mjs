@@ -324,7 +324,10 @@ async function wallSide({ regionId, flip=false }) {
     side: region.getFlag(MODULE_ID, "wallSide")?.side ?? null,
     shapes: region.shapes.map(s => s.toObject()),
     burning: burning ? { id: burning.id, shapes: burning.shapes.map(s => s.toObject()), area: burning.getFlag(MODULE_ID, "area") } : null,
-    walls: canvas.scene.walls.filter(w => w.getFlag(MODULE_ID, "zone") === region.id).map(w => ({ c: w.c, move: w.move, sight: w.sight }))
+    walls: canvas.scene.walls.filter(w => w.getFlag(MODULE_ID, "zone") === region.id).map(w => ({ c: w.c, move: w.move, sight: w.sight })),
+    // §170 : ses lumières ; et les sons qu'un module voisin y aurait posés (`flags.*.wall`).
+    lights: canvas.scene.lights.filter(l => l.getFlag(MODULE_ID, "region") === region.id).map(l => ({ x: l.x, y: l.y, bright: l.config.bright, dim: l.config.dim })),
+    sounds: canvas.scene.sounds.filter(s => Object.values(s.flags ?? {}).some(f => f?.wall === region.id)).length
   };
 }
 

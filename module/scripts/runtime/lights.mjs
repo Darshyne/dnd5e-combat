@@ -13,6 +13,7 @@ import { tokenOf } from "../adapter/facts.mjs";
 import { invalidateVision } from "../adapter/vision.mjs";
 import { veilOnCreate, veilExisting, unveil, isRevealEffect } from "../adapter/reveal.mjs";
 import { route } from "./router.mjs";
+import { enqueue } from "./queue.mjs";
 import { log, loc, notice } from "./shared.mjs";
 
 export const EXTINGUISH_QUERY = `${MODULE_ID}.extinguish`;
@@ -119,23 +120,25 @@ async function onBurnOut(effect) {
 }
 
 export function registerLights() {
-  route("createRegion", async region => {
+  // À la file par région : la création et un redessin aussitôt après (l'anneau du Mur de feu, §170) ne posent pas deux fois.
+  const queued = (region, task) => enqueue(`light:${region.id}`, task);
+  route("createRegion", region => queued(region, async () => {
     const done = await lightUpRegion(region);
     if ( !done ) return;
     const { light, dispelled } = done;
     log(`zone: ${light.config.negative ? `darkness (${light.config.dim} ${region.parent.grid.units})`
       : `light ${light.config.bright}/${light.config.dim} ${region.parent.grid.units}`}${dispelled ? `, ${dispelled} darkness zone(s) dispelled` : ""}`);
-  }, { executor: true, label: "zone light not placed" });
+  }), { executor: true, label: "zone light not placed" });
 
-  route("updateRegion", async (region, changes) => {
+  route("updateRegion", (region, changes) => {
     if ( !("shapes" in changes) && !("elevation" in changes) ) return;
-    if ( await followRegion(region) ) log("zone moved: its light follows");
+    return queued(region, async () => { if ( await followRegion(region) ) log("zone moved: its light follows"); });
   }, { executor: true, label: "zone light not moved" });
 
-  route("deleteRegion", async region => {
+  route("deleteRegion", region => queued(region, async () => {
     const n = await extinguishRegion(region);
     if ( n ) log(`zone removed: ${n} light(s) extinguished`);
-  }, { executor: true, label: "zone light not extinguished" });
+  }), { executor: true, label: "zone light not extinguished" });
 
   // Toute région peut porter des ténèbres : la vision simulée est à refaire quand l'une naît, bouge ou disparaît.
   for ( const hook of ["createRegion", "updateRegion", "deleteRegion"] ) route(hook, () => invalidateVision(), { label: "vision: sources to rebuild" });

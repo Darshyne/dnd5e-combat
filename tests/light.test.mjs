@@ -56,7 +56,7 @@ describe("schéma de la clé light", () => {
     }
   });
   it("refuse ce qui ne tient pas", () => {
-    expect(validateEntry({ light: { on: "partout" } })).toContain("light.on: area, effect, summon");
+    expect(validateEntry({ light: { on: "partout" } })).toContain("light.on: area, effect, summon, wall");
     expect(validateEntry({ light: { on: "effect" } })).toContain("light: a light effect needs a radius");
     expect(validateEntry({ light: { on: "effect", dim: 10 } })).toContain("light.units: unit required");
     expect(validateEntry({ light: { on: "effect", dim: 10, units: "ft", darkness: true } })).toContain("light.darkness: only on an area");

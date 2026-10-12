@@ -220,3 +220,33 @@ export function circleEdges({ x, y, radius }, n=24) {
   const pts = Array.from({ length: n }, (_, i) => [x + (radius * Math.cos((2 * Math.PI * i) / n)), y + (radius * Math.sin((2 * Math.PI * i) / n))]);
   return pts.map((p, i) => [...p, ...pts[(i + 1) % n]].map(Math.round));
 }
+
+/**
+ * §170 : où poser les lumières d'un mur — un point tous les `step` pixels le long de chaque segment (bouts compris), ou du cercle,
+ * décalé de `offset` de chaque côté : le mur arrête la lumière, une source posée sur sa ligne n'éclairerait ni l'un ni l'autre côté.
+ * @param {{lines: number[][]}|{ring: {x: number, y: number, radius: number}}} geometry
+ * @returns {Array<{x: number, y: number}>}
+ */
+export function wallLightPoints(geometry, step, offset) {
+  const out = [];
+  if ( geometry?.ring ) {
+    const { x, y, radius } = geometry.ring;
+    const n = Math.max(6, Math.ceil((2 * Math.PI * radius) / step));
+    for ( let i = 0; i < n; i++ ) {
+      const a = (2 * Math.PI * i) / n;
+      for ( const r of [radius - offset, radius + offset] ) out.push({ x: Math.round(x + (r * Math.cos(a))), y: Math.round(y + (r * Math.sin(a))) });
+    }
+    return out;
+  }
+  for ( const [x1, y1, x2, y2] of geometry?.lines ?? [] ) {
+    const len = Math.hypot(x2 - x1, y2 - y1);
+    if ( len < 1e-6 ) continue;
+    const n = Math.max(1, Math.round(len / step));
+    const nx = ((y2 - y1) / len) * offset, ny = (-(x2 - x1) / len) * offset;
+    for ( let i = 0; i <= n; i++ ) {
+      const px = x1 + (((x2 - x1) * i) / n), py = y1 + (((y2 - y1) * i) / n);
+      for ( const s of [1, -1] ) out.push({ x: Math.round(px + (s * nx)), y: Math.round(py + (s * ny)) });
+    }
+  }
+  return out;
+}

@@ -10,7 +10,7 @@
  */
 
 /** Les modes de `light.on`. */
-export const LIGHT_ON = Object.freeze(["area", "effect", "summon"]);
+export const LIGHT_ON = Object.freeze(["area", "effect", "summon", "wall"]);
 
 /**
  * Les rayons de la source d'une zone : ceux de la règle, sinon (ténèbres) le rayon de la zone elle-même.

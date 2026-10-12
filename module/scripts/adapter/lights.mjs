@@ -7,6 +7,7 @@
  *    déplacée avec lui par le cœur, documents/token.mjs:2486, d'où un `updateRegion`) et disparaît avec elle.
  *  - Effet (`on: "effect"`) : l'effet posé reçoit, à sa création, des changements `token.light.*` — appliqués au token par
  *    le cœur V14 (client/documents/actor.mjs:248, TokenDocument#applyActiveEffects) et retirés avec l'effet.
+ *  - Mur (`on: "wall"`, §170) : une rangée de lumières ambiantes de chaque côté d'un mur posé par points, reposée s'il est redessiné.
  *  - Invocation (`on: "summon"`) : l'objet invoqué porte déjà sa lumière (acteur « Lumière » du PHB : 20/40 ft). `carried` :
  *    au lancement, le joueur choisit (ui/light.mjs) « au sol » (l'objet est posé) ou « sur moi » (le lanceur reçoit un effet
  *    qui le fait briller de la même lumière), et la couleur. `single` : les lumières précédentes du même sort s'éteignent.
@@ -20,18 +21,20 @@ import { readUnitFactors } from "./units.mjs";
 import { convertLength } from "../core/units.mjs";
 import { shapeCenter } from "../core/area.mjs";
 import { areaLightRadii, tokenLightChanges, dispelledBy, burnSeconds, lightPlan, burnoutPlan, handsOf } from "../core/light.mjs";
+import { wallLightPoints } from "../core/wall.mjs";
+import { wallGeometryOf } from "./wall-side.mjs";
 
 /** La règle de lumière d'un item, ou null. */
 export function lightRuleOf(item) {
   return item ? (contentOf(item).entry?.light ?? null) : null;
 }
 
-/** L'activité et la règle de lumière de zone d'une région posée par dnd5e, ou null. */
-function areaRuleOf(region) {
+/** L'activité et la règle de lumière d'une région posée par dnd5e (`on` : « area » par défaut, ou « wall »), ou null. */
+function areaRuleOf(region, on="area") {
   const uuid = region.getFlag?.("dnd5e", "activity");
   const activity = uuid ? fromUuidSync(uuid, { strict: false }) : null;
   const rule = lightRuleOf(activity?.item);
-  return (rule?.on === "area") ? { activity, rule } : null;
+  return (rule?.on === on) ? { activity, rule } : null;
 }
 
 function toGridUnits(value, units, grid) {
@@ -79,6 +82,8 @@ function lightsOf(region) {
  * @returns {Promise<{light: AmbientLightDocument, dispelled: number}|null>}
  */
 export async function lightUpRegion(region) {
+  const wall = areaRuleOf(region, "wall");
+  if ( wall ) return lightUpWall(region, wall.rule);
   const found = areaRuleOf(region);
   if ( !found || lightsOf(region).length ) return null;
   const { rule } = found;
@@ -102,8 +107,40 @@ export async function lightUpRegion(region) {
   return light ? { light, dispelled } : null;
 }
 
+/**
+ * §170 : un mur posé par points (Mur de feu) — une rangée de sources de chaque côté, tous les 3 m, à un dixième de case de la ligne
+ * (le mur arrête la lumière : chaque rangée éclaire son côté). Couleur et animation de la règle ; transparence réduite, les sources se
+ * recouvrant. MJ actif.
+ */
+async function lightUpWall(region, rule) {
+  if ( lightsOf(region).length ) return null;
+  const geometry = wallGeometryOf(region);
+  if ( !geometry ) return null;
+  const grid = region.parent.grid;
+  const perUnit = grid.size / grid.distance;
+  const step = toGridUnits(10, "ft", grid) * perUnit;
+  const points = wallLightPoints(geometry, step, grid.size / 10);
+  const config = {
+    bright: Number.isFinite(rule.bright) ? toGridUnits(rule.bright, rule.units, grid) : 0,
+    dim: Number.isFinite(rule.dim) ? toGridUnits(rule.dim, rule.units, grid) : 0,
+    ...(rule.color ? { color: rule.color, alpha: 0.25 } : {}),
+    ...(rule.animation ? { animation: { ...rule.animation } } : {})
+  };
+  const created = await region.parent.createEmbeddedDocuments("AmbientLight", points.map(p => ({
+    x: p.x, y: p.y, elevation: regionElevation(region), levels: Array.from(region.levels ?? []), walls: true, vision: false,
+    config, flags: { [MODULE_ID]: { region: region.id } }
+  })));
+  return created.length ? { light: created[0], dispelled: 0, count: created.length } : null;
+}
+
 /** La zone a bougé (déplacée, ou emportée par le token auquel elle est attachée) : sa lumière la suit. */
 export async function followRegion(region) {
+  // §170 : un mur redessiné (le disque changé en anneau) — ses lumières sont reposées.
+  if ( areaRuleOf(region, "wall") ) {
+    const n = await extinguishRegion(region);
+    const done = await lightUpRegion(region);
+    return (n || done) ? (done?.count ?? 0) : 0;
+  }
   const lights = lightsOf(region);
   const center = regionCenter(region);
   if ( !lights.length || !center ) return 0;

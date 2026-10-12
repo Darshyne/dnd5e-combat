@@ -628,7 +628,7 @@ const BOOTED_AT = Date.now();
  * — celui qui exécute le moteur (`game.users.activeGM`). `tools/reload.mjs` s'en sert pour savoir que le F5 a eu lieu.
  */
 function status() {
-  return { version: game.modules.get(MODULE_ID)?.version ?? null, bootedAt: BOOTED_AT, ready: game.ready === true, worldTime: game.time?.worldTime ?? null,
+  return { version: game.modules.get(MODULE_ID)?.version ?? null, bootedAt: BOOTED_AT, ready: game.ready === true, hidden: document.hidden === true, worldTime: game.time?.worldTime ?? null,
     user: game.user.name, activeGM: game.users.activeGM?.id === game.user.id, hidden: document.hidden === true };
 }
 

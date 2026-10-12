@@ -5,6 +5,9 @@
  *  - arrêté en route, il s'arrête sur une case (coin aligné sur la grille), entre le départ et l'arrivée ;
  *  - mis en pause en route, de même, et le jeu est sorti de pause à la fin.
  * Remet le Zombi à sa place entre chaque marche.
+ * §166 : l'arrêt en route ne se juge que dans une fenêtre du MJ VISIBLE. Masquée (`document.hidden`, fenêtre en arrière-plan), le
+ * navigateur ne joue plus les animations : le cœur enchaîne tous les morceaux de la marche d'un coup, le déplacement est déjà
+ * « completed » quand l'arrêt arrive (vu le 2026-10-12) — rien à arrêter. Le scénario le dit et ne juge que la marche complète.
  */
 const CELLS = 8;
 
@@ -26,6 +29,10 @@ export default {
     ctx.expect((full.after.x === goal.x) && (full.after.y === goal.y), `marche complète : arrivé en ${full.after.x}, ${full.after.y} (${full.elapsedMs} ms)`);
     await home();
 
+    if ( (await ctx.engine("status"))?.hidden ) {
+      ctx.log("fenêtre du MJ en arrière-plan : les animations ne tournent pas, l'arrêt en route ne se juge pas (§166) — à rejouer fenêtre visible");
+      return;
+    }
     const stopped = await ctx.engine("move", { tokenId: zombi.id, point, stopAfterMs: Math.round(full.elapsedMs / 3) });
     ctx.expect(between(stopped.after) && onGrid(stopped.after),
       `arrêtée en route : ${(stopped.after.x - start.x) / grid} case(s) sur ${CELLS}, sur la grille (${stopped.elapsedMs} ms)`);

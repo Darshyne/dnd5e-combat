@@ -30,7 +30,8 @@ function endRuleOf(effect) {
   const item = originItemOf(effect);
   const rules = item ? contentOf(item).entry?.effectEnds : null;
   if ( !rules ) return null;
-  const key = Object.keys(rules).find(id => comesFromItemEffect(effect, id));
+  // §157 : `status:<id>` — un état posé par l'item sans effet à lui (étape `status` : Étourdi du Châtiment de stupeur).
+  const key = Object.keys(rules).find(id => id.startsWith("status:") ? effect.statuses?.has?.(id.slice(7)) : comesFromItemEffect(effect, id));
   return key ? { when: rules[key], caster: item.actor ?? null } : null;
 }
 

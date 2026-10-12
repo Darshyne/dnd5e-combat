@@ -152,6 +152,43 @@ export const SPELL_RULES = Object.freeze({
   // §86 : Invocation d'êtres sylvestres — « Cast » (dnd5eactivity000, la sauvegarde de la pose) sans émanation dans la donnée :
   // 10 ft sur soi ; alliés épargnés ; entrée et fin de tour : « Emanation Save » (UkXLSgFbCBI9CHMf, Sagesse, 5d8 de force), une
   // fois par tour. (« Se désengager par une action Bonus » : l'activité « Disengage » de l'item.)
+  // §157 (relevé des sorts, lot 1). Flou : l'effet « Blurred » (PsuBObX6WLcNEvUw, sans changement) n'est relié à aucune activité —
+  // posé sur le lanceur ; « une créature dotée de vision aveugle ou de vision véritable n'est pas affectée ».
+  "blur": {
+    choice: { pool: { dnd5eactivity000: ["PsuBObX6WLcNEvUw"] } },
+    triggers: [{ on: "preAttackRoll", via: "effect",
+      if: { "target.hasEffect": "blur", not: { "source.hasSense": ["blindsight", "truesight"] } }, do: [{ type: "disadvantage" }] }]
+  },
+  // État cadavérique : l'effet « Cataleptic » (LEOWoE0nlVC8VRka : Aveuglé, Neutralisé, Vitesse 0, résistances) n'est relié à aucune
+  // activité.
+  "feign-death": { choice: { pool: { dnd5eactivity000: ["LEOWoE0nlVC8VRka"] } } },
+  // Duel forcé : « Désavantage aux jets d'attaque contre toute créature autre que vous » — l'effet « Compelled » est vide. (La laisse
+  // de 9 m et les fins du sort : au MJ.)
+  "compelled-duel": {
+    triggers: [{ on: "preAttackRoll", via: "effect",
+      if: { "source.hasEffect": "compelled-duel", not: { "source.hasEffectFromTarget": "compelled-duel" } }, do: [{ type: "disadvantage" }] }]
+  },
+  // Châtiment de révélation : « les jets d'attaque contre elle ont l'Avantage » (effet posé par `smite.effect`, content/paladin.mjs).
+  "shining-smite": {
+    triggers: [{ on: "preAttackRoll", via: "effect", if: { "target.hasEffect": "shining-smite" }, do: [{ type: "advantage" }] }]
+  },
+  // Châtiment de tonnerre : « repoussée de 3 m et À terre » sur une sauvegarde ratée — À terre par l'effet de la donnée.
+  "thunderous-smite": { triggers: [{ on: "failedSave", do: [{ type: "move", mode: "push", distance: 10, units: "ft" }] }] },
+  // Châtiment de stupeur : « Étourdie jusqu'à la fin de votre prochain tour » — la sauvegarde de la donnée ne pose rien.
+  "staggering-smite": {
+    triggers: [{ on: "failedSave", do: [{ type: "status", status: "stunned" }] }],
+    effectEnds: { "status:stunned": "casterTurnEnd" }
+  },
+  // Métal brûlant : qui garde l'objet a « le Désavantage aux jets d'attaque et aux tests de caractéristique jusqu'au début de votre
+  // prochain tour » — l'effet « Heated Metal » (VVQbCUE5W44bF4QU) est vide.
+  "heat-metal": {
+    effectChanges: { VVQbCUE5W44bF4QU: ["str", "dex", "con", "int", "wis", "cha"].map(a => ({ key: `system.abilities.${a}.check.roll.mode`, type: "add", value: "-1" })) },
+    effectEnds: { VVQbCUE5W44bF4QU: "casterTurnStart" },
+    triggers: [{ on: "preAttackRoll", via: "effect", fromEffect: "VVQbCUE5W44bF4QU", if: { "source.hasEffect": "heat-metal" }, do: [{ type: "disadvantage" }] }]
+  },
+  // Repli expéditif : « vous effectuez l'action Foncer, et jusqu'à la fin du sort vous pouvez la refaire par une action Bonus » —
+  // l'utilisation prend Foncer ; la relancer pendant la concentration ne dépense pas d'emplacement.
+  "expeditious-retreat": { basicActions: { dnd5eactivity000: "dash" }, recast: true },
   "conjure-woodland-beings": {
     selfZone: { dnd5eactivity000: { type: "radius", size: 10, units: "ft" } },
     zoneAffects: "enemy",

@@ -24,6 +24,8 @@ export const LIGHTS = Object.freeze({
   "daylight": { on: "area", bright: 60, dim: 120, units: "ft", dispels: 3 },
   "starry-wisp": { on: "effect", dim: 10, units: "ft" },
   "faerie-fire": { on: "effect", dim: 10, units: "ft" },
+  // §157 : Châtiment de révélation — « la cible émet une Lumière vive dans un rayon de 1,50 m ».
+  "shining-smite": { on: "effect", bright: 5, dim: 5, units: "ft" },
   // Lame de feu (§16.41) : « la lame émet une Lumière vive dans un rayon de 3 m et une Lumière faible sur 3 m de plus » — sur la
   // trace que le moteur pose au lanceur.
   "flame-blade": { on: "effect", bright: 10, dim: 20, units: "ft" },

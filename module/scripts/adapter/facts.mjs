@@ -259,6 +259,9 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     "source.hasEffectFromTarget": id => hasEffectFrom(source, id, target),
     // Type de créature de l'attaquant (Protection contre le mal et le bien : aberration, céleste, élémentaire, fée, fiélon, mort-vivant).
     "source.creatureType": creatureTypeOf(source),
+    // §157 : l'attaquant a l'un de ces sens (`senses.ranges` de dnd5e, data/shared/senses-field.mjs:15) — Flou : « une créature
+    // dotée de vision aveugle ou de vision véritable n'est pas affectée ».
+    "source.hasSense": names => [names].flat().some(n => Number(source?.system?.attributes?.senses?.ranges?.[n]) > 0),
     // §16.8 : le type de la cible (« humanoid »…) et ses immunités aux états (Sommeil : immunité à l'Épuisement).
     "target.creatureType": creatureTypeOf(target),
     "target.immuneTo": id => conditionImmunitiesOf(target).includes(id),

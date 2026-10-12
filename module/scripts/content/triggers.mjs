@@ -164,7 +164,11 @@ export const TRIGGERS = Object.freeze({
   "wrathful-smite": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }] }],
   // Assassin imaginaire : « un JS de Sagesse à la fin de chacun de ses tours ; raté, elle subit de nouveau les dégâts
   // psychiques ; réussi, le sort prend fin » — les dégâts sont ceux de l'activité du sort, au niveau lancé.
-  "phantasmal-killer": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }, { type: "damage", to: "bearer", activity: "dnd5eactivity000" }] }],
+  "phantasmal-killer": [
+    { on: "endOfTurn", via: "effect", do: [{ type: "resave" }, { type: "damage", to: "bearer", activity: "dnd5eactivity000" }] },
+    // §157 : « Désavantage aux tests de caractéristique ET aux jets d'attaque » — l'effet ne porte que les tests.
+    { on: "preAttackRoll", via: "effect", if: { "source.hasEffect": "phantasmal-killer" }, do: [{ type: "disadvantage" }] }
+  ],
   // Ennemi subconscient : « une cible Effrayée fait un JS de Sagesse à la fin de chacun de ses tours ; raté, 5d10 dégâts
   // psychiques ; réussi, le sort prend fin sur elle » — l'activité « End of Turn Save » (nuStSySOEkwOUnXf) porte les 5d10.
   "weird": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }, { type: "damage", to: "bearer", activity: "nuStSySOEkwOUnXf" }] }],

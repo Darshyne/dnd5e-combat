@@ -14,7 +14,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { rollerFor } from "./concentration.mjs";
-import { committedPosition } from "./turn.mjs";
+import { committedPosition, currentTurnKey } from "./turn.mjs";
 import { areaOriginOf, reachesFromPoint, sphereOf, insideSphere } from "./space.mjs";
 import { effectKey, effectOfProfile, poolEffectsOf } from "./usage.mjs";
 import { timedWait, closeRollDialogAfter } from "./dialogs.mjs";
@@ -407,7 +407,8 @@ export async function applyStatusToToken(usageMessage, tokenUuid, status) {
   // Un état est un effet `condition`, dont le modèle de dnd5e retire `system.origin` (data/active-effect/
   // condition.mjs:12) : l'origine va dans le champ `origin` du cœur, que `originItemOf` lit en repli.
   const activity = usageMessage.getAssociatedActivity?.();
-  if ( activity ) await effect.update({ origin: activity.uuid });
+  // §157 : le tour de la pose noté, comme pour un effet d'item (runtime/cantrips.mjs) — « jusqu'à la fin de votre prochain tour ».
+  if ( activity ) await effect.update({ origin: activity.uuid, ...(game.combat?.started ? { [`flags.${MODULE_ID}.placedOn`]: currentTurnKey() } : {}) });
   return effect.uuid;
 }
 

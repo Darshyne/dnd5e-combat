@@ -374,7 +374,8 @@
  *     heroicWarrior?: true                      en combat, l'Inspiration héroïque au début de son tour s'il ne l'a pas (§21)
  *     greatWeaponFighting?: true                dés de dégâts d'une arme de corps à corps à deux mains : 1 et 2 comptent 3 (§21)
  *     thrownDamage?: number                     bonus aux dégâts d'une attaque à distance avec une arme de lancer (§21)
- *     effectEnds?: { <id d'effet>: "casterTurnStart"|"casterTurnEnd"|"bearerTurnStart"|"bearerTurnEnd" }
+ *     effectEnds?: { <id d'effet> | "status:<état>": "casterTurnStart"|"casterTurnEnd"|"bearerTurnStart"|"bearerTurnEnd" }
+ *                                               (`status:stunned` : l'état posé par une étape `status` de l'item, §157)
  *                                               l'effet de l'item tombe au début du prochain tour du lanceur, à la fin de son prochain
  *                                               tour, au début ou à la fin du prochain tour du porteur (Rayon de givre, Contact
  *                                               glacial, §23 ; léthargie de Hâte, §42.2)
@@ -1425,7 +1426,7 @@ function validateRogue(entry, at, errors) {
     const e = entry.effectEnds;
     if ( !isObject(e) || !Object.keys(e).length ) errors.push(`${at}effectEnds: { effect id: ${EFFECT_ENDS.join(" | ")} }`);
     else for ( const [id, when] of Object.entries(e) ) {
-      if ( !isId(id) ) errors.push(`${at}effectEnds.${id}: effect id (16 characters)`);
+      if ( !isId(id) && !/^status:[a-z]+$/.test(id) ) errors.push(`${at}effectEnds.${id}: effect id (16 characters) or status:<condition>`);
       if ( !EFFECT_ENDS.includes(when) ) errors.push(`${at}effectEnds.${id}: ${EFFECT_ENDS.join(", ")}`);
     }
   }

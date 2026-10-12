@@ -5,7 +5,7 @@ import { CONTENT, SHIPPED, registerTable, unregisterTable, registeredTables } fr
 const facts = Object.fromEntries(["activity.type", "activity.isAttack", "activity.isSpell", "activity.isWeapon", "activity.identifier", "activity.id",
   "activity.hasProperty", "source.hasStatus", "source.hasEffect", "source.creatureType", "source.allyNearTarget", "source.summonNearTarget", "source.seesTarget",
   "target.hasStatus", "target.hasEffect", "target.hasEffectFrom", "hit.stoppableBy", "damage.resisted", "target.grappledBySource", "target.wieldsProperty", "target.isSelf", "self.hasShield", "target.sizeAtMost", "target.within", "target.seesSource", "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "target.atZero", "target.isDead", "damage.hasType", "target.hpAtMost", "condition.gained",
-  "target.wounded", "target.bloodied", "source.classLevelAtLeast", "target.nearSelf", "self.seesTarget", "target.hasNotActed", "source.onOwnTurn", "activity.dealsType", "source.hasFeature", "activity.cantripOf", "activity.school", "activity.enchantedBy", "source.wildShaped", "activity.classSpell", "source.resists", "source.nearSelf", "self.seesSource", "source.hasEffectFromTarget"].map(k => [k, true]));
+  "target.wounded", "target.bloodied", "source.classLevelAtLeast", "target.nearSelf", "self.seesTarget", "target.hasNotActed", "source.onOwnTurn", "activity.dealsType", "source.hasFeature", "activity.cantripOf", "activity.school", "activity.enchantedBy", "source.wildShaped", "activity.classSpell", "source.resists", "source.nearSelf", "self.seesSource", "source.hasEffectFromTarget", "source.hasSense"].map(k => [k, true]));
 const MOMENTS_LIST = "isHit, isDamaged, leavesReach, enemyDisengages, enter, turnStart, turnEnd, moves, preDamageRoll, hit, failedSave, startOfTurn, endOfTurn, preAttackRoll, castsSpell, isMissed, enemyTurnEnd, isAttacked, enemyAttacks, allyAttacks, gainsCondition, allyIsHit, allyIsDamaged";
 
 describe("validation d'une entrée", () => {
@@ -151,13 +151,13 @@ describe("contenu livré", () => {
       "arcane-ward", "armor-of-agathys", "arms-of-hadar", "assassinate", "athlete", "aura-of-authority", "aura-of-bravery",
       "aura-of-courage", "aura-of-devotion", "aura-of-protection", "aura-of-vitality", "avenger-spirit", "avenging-angel",
       "bait-and-switch", "banishing-smite", "bastion-of-law", "beacon-of-hope", "beguiling-defenses", "bestow-curse", "bigbys-hand",
-      "bite", "blade-ward", "blazing-movement", "blessed-healer", "blessed-strikes", "blinding-smite", "blindness-deafness",
+      "bite", "blade-ward", "blazing-movement", "blessed-healer", "blessed-strikes", "blinding-smite", "blindness-deafness", "blur",
       "boon-of-combat-prowess", "boon-of-dimensional-travel", "boon-of-energy-resistance", "boon-of-fate", "boon-of-fortitude",
       "boon-of-irresistible-offense", "boon-of-recovery", "boon-of-speed", "boon-of-spell-recall", "boon-of-the-night-spirit", "brave",
       "breath-weapon", "brute-spirit", "bubble-dash", "bullseye-lantern", "call-lightning", "calm-emotions", "candle", "careful-spell",
       "cause-fear", "celestial-revelation", "channel-divinity", "channel-divinity-cleric", "charger", "charging-horn", "charm-monster",
       "charm-person", "chill-touch", "chromatic-orb", "circle-of-mortality", "cloud-of-daggers", "clouds-jaunt", "command",
-      "commanders-strike", "commanding-presence", "confusion", "conjure-animals", "conjure-woodland-beings", "contagion",
+      "commanders-strike", "commanding-presence", "compelled-duel", "confusion", "conjure-animals", "conjure-woodland-beings", "contagion",
       "continual-flame", "cordon-of-arrows", "corrosive-form", "cosmic-omen", "counterspell", "coward-spirit", "crossbow-expert",
       "crown-of-madness", "crusher", "cunning-action", "cunning-strike", "cutting-words", "dancing-lights", "dark-ones-blessing",
       "dark-ones-own-luck", "darkness", "daylight", "death-burst", "death-throes", "death-ward", "deathless-agility", "defense",
@@ -167,8 +167,8 @@ describe("contenu livré", () => {
       "dwarven-resilience", "earthquake", "echoing-soul", "elder-champion", "eldritch-blast", "eldritch-smite", "elemental-adept",
       "elemental-affinity", "elemental-fury", "elemental-weapon", "elixir-of-health", "elusive", "empowered-channeling",
       "empowered-evocation", "energy-drain", "engulf", "enhance-ability", "enlarge-reduce", "ensnaring-strike", "entangle",
-      "entangling-trail", "evards-black-tentacles", "evasion", "evasive-footwork", "eyebite", "faerie-fire", "fear", "fear-aura",
-      "feinting-attack", "fell-word", "feral-pounce", "feral-strike", "fetid-aura", "fetid-cloud", "fey-ancestry", "find-familiar",
+      "entangling-trail", "evards-black-tentacles", "evasion", "evasive-footwork", "expeditious-retreat", "eyebite", "faerie-fire", "fear", "fear-aura",
+      "feign-death", "feinting-attack", "fell-word", "feral-pounce", "feral-strike", "fetid-aura", "fetid-cloud", "fey-ancestry", "find-familiar",
       "fire-aura", "fire-form", "fire-shield", "fires-burn", "flame-aura", "flame-blade", "flaming-sphere", "flask-of-holy-water",
       "flesh-to-stone", "flyby", "foe-slayer", "fog-cloud", "forbiddance", "forceful-hand", "form-of-dread", "fortune-teller-spirit",
       "frenzied-rush", "frenzy", "friends", "frosts-chill", "gaseous-form", "gathered-whispers", "ghost-walk", "giant-insect",

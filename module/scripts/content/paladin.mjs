@@ -32,7 +32,9 @@ export const PALADIN = Object.freeze({
   // Châtiment de fournaise (1d6 feu ; §42.2 : la brûlure qui dure, effet « Seared », posée au coup — sa suite dans content/triggers.mjs),
   // Châtiment lumineux (2d6 radiants ; la marque « Shining » reste au MJ).
   "searing-smite": { smite: { damage: "M4KS57lcf4K6fUMU", effect: "A0tTvLeRetrC708K" } },
-  "shining-smite": { smite: { damage: "dnd5eactivity000" } },
+  // §157 : l'effet « Shining » (pBjrcT286iCAQrjm : ne peut être Invisible) posé sur la cible touchée ; l'Avantage contre elle et sa
+  // lumière : content/spell-rules.mjs, content/lights.mjs.
+  "shining-smite": { smite: { damage: "dnd5eactivity000", effect: "pBjrcT286iCAQrjm" } },
   // Châtiment tonitruant (2d6 tonnerre ; JS de Force ou À terre), Châtiment courroucé (1d6 nécrotiques ; JS de Sagesse ou Effrayé),
   // Châtiment étourdissant (4d6 psychiques ; JS de Sagesse),
   // Châtiment bannisseur (5d10 de force ; JS de Charisme ou banni).

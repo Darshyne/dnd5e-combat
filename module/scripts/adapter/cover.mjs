@@ -18,7 +18,10 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { coverBetween, bodyGivesCover } from "../core/cover.mjs";
+import { coverBetween, bodyGivesCover, strongerCover, COVER } from "../core/cover.mjs";
+import { crossesWall } from "../core/wall.mjs";
+import { contentOf } from "./content.mjs";
+import { wallGeometryOf } from "./wall-side.mjs";
 import { committedPosition } from "./turn.mjs";
 import { isDeadActor } from "./death.mjs";
 import { isObjectToken } from "./bodies.mjs";
@@ -90,6 +93,28 @@ function bodiesAround(attacker, target) {
 }
 
 /**
+ * §172 : l'abri que donne une zone de sort `coverThrough` (Barrière de lames : trois quarts) quand la ligne d'un centre à l'autre la
+ * traverse, ni l'attaquant ni la cible dedans ; le plus fort de ces zones, ou null.
+ */
+function zoneCoverBetween(attacker, target, posA) {
+  const a = rectOf(attacker, posA ? { ...committedPosition(attacker), ...posA } : undefined);
+  const b = rectOf(target);
+  const path = [{ x: a.x + (a.width / 2), y: a.y + (a.height / 2) }, { x: b.x + (b.width / 2), y: b.y + (b.height / 2) }];
+  let best = null;
+  for ( const region of attacker.parent.regions ) {
+    const uuid = region.getFlag("dnd5e", "activity");
+    const item = uuid ? fromUuidSync(uuid, { strict: false })?.item : null;
+    const degree = item ? contentOf(item).entry?.coverThrough : null;
+    if ( !degree ) continue;
+    if ( attacker.testInsideRegion(region, posA ? { ...committedPosition(attacker), ...posA } : committedPosition(attacker))
+      || target.testInsideRegion(region, committedPosition(target)) ) continue;
+    const geometry = wallGeometryOf(region);
+    if ( geometry && crossesWall(geometry, path) ) best = best ? strongerCover(best, degree) : degree;
+  }
+  return best;
+}
+
+/**
  * L'abri de la cible contre l'attaquant, ou null s'il n'y a rien à ajouter (pas d'abri, abri déjà
  * posé à la main, calcul impossible).
  * @param {TokenDocument} attacker
@@ -108,6 +133,11 @@ export function coverFor(attacker, target, { posA, quiet=false }={}) {
     target: rectOf(target), bodies: bodiesAround(attacker, target),
     blocked: rayBlocker(attacker, target, { posA }), inset: grid.size * INSET_FRACTION
   });
+  // §172 : une zone qui donne un abri à qui est derrière (Barrière de lames) — la ligne entre les deux la traverse.
+  const behind = zoneCoverBetween(attacker, target, posA);
+  if ( behind && (strongerCover(cover.degree, behind) !== cover.degree) ) {
+    Object.assign(cover, { degree: behind, bonus: COVER[behind].bonus, byCreature: false });
+  }
   if ( cover.degree === "none" ) return null;
   if ( !quiet ) console.log(`${MODULE_ID} | cover: ${target.name} against ${attacker.name} — ${cover.degree}${cover.byCreature ? " (creature in between)" : ""}`);
   return { degree: cover.degree, bonus: cover.bonus, byCreature: cover.byCreature };

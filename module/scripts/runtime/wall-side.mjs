@@ -6,8 +6,8 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { readAreaState } from "../adapter/areas.mjs";
-import { wallSideRuleOf, wallGeometryOf, sideDepthOf, sideRegionOf } from "../adapter/wall-side.mjs";
-import { defaultSide, sideShapes, ringShapes } from "../core/wall.mjs";
+import { wallSideRuleOf, wallGeometryOf, sideDepthOf, sideRegionOf, isCellWall } from "../adapter/wall-side.mjs";
+import { defaultSide, sideShapes, ringShapes, innerRingShapes } from "../core/wall.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 import { enqueue } from "./queue.mjs";
@@ -23,8 +23,19 @@ function casterCenter(region) {
 
 /** À la pose : le côté brûlant (sauf s'il est déjà choisi, §171), et l'anneau fin à la place du disque. */
 function onCreate(region) {
+  if ( isCellWall(region) ) return ringify(region);
   if ( !wallSideRuleOf(region) ) return;
   return enqueue(`wallSide:${region.id}`, () => setUp(region));
+}
+
+/** §172 : l'anneau d'un mur épais (Mur d'épines, Barrière de lames) que le Manuel pose en disque — une bande à l'intérieur du cercle. */
+async function ringify(region) {
+  const geometry = wallGeometryOf(region);
+  if ( !geometry?.ring || region.shapes.some(s => s.type === "ring") ) return;
+  const scene = region.parent;
+  const width = (Number(region.getFlag("dnd5e", "dimensions")?.width) || 5) * (scene.grid.size / scene.grid.distance);
+  await region.update({ shapes: innerRingShapes(geometry.ring, width) });
+  log(`area "${region.name}": ring of ${Math.round(width)} px inside the circle`);
 }
 
 async function setUp(region) {

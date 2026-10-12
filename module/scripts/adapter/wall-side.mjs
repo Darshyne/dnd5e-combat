@@ -23,6 +23,13 @@ export function wallSideRuleOf(region) {
   return activity?.item ? (contentOf(activity.item).entry?.wallSide ?? null) : null;
 }
 
+/** §172 : le sort qui a posé cette région est-il un mur épais posé sur les cases (`cellWall`) ? */
+export function isCellWall(region) {
+  const uuid = region?.getFlag?.("dnd5e", "activity");
+  const activity = uuid ? fromUuidSync(uuid, { strict: false }) : null;
+  return activity?.item ? (contentOf(activity.item).entry?.cellWall === true) : false;
+}
+
 /** La géométrie du mur (segments ou anneau), d'après ses formes. */
 export function wallGeometryOf(region) {
   return wallGeometry((region?.shapes ?? []).map(s => s.toObject?.() ?? s));

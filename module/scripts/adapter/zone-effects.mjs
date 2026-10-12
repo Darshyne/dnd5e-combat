@@ -23,7 +23,15 @@ const activityOf = region => {
 export async function holdDifficultTerrain(region) {
   const activity = activityOf(region);
   const rule = contentOf(activity?.item).entry?.difficultTerrain;
-  if ( !rule || region.behaviors.some(b => b.type === "dnd5e.difficultTerrain") ) return null;
+  if ( !rule || region.behaviors.some(b => ["dnd5e.difficultTerrain", "modifyMovementCost"].includes(b.type)) ) return null;
+  // §172 : un autre multiplicateur que ×2 (Mur d'épines : ×4) — le comportement « coût de déplacement » du cœur V14
+  // (client/data/region-behaviors/increase-movement-cost.mjs, `difficulties`). Tous les modes : le schéma ne garde que les siens (il
+  // est bâti avant que dnd5e retouche `CONFIG.Token.movement.actions` — filtrer comme lui n'en laissait aucun).
+  if ( rule.cost ) {
+    const difficulties = Object.fromEntries(Object.keys(CONFIG.Token.movement.actions).map(action => [action, rule.cost]));
+    const [behavior] = await region.createEmbeddedDocuments("RegionBehavior", [{ type: "modifyMovementCost", name: activity.item.name, system: { difficulties } }]);
+    return behavior;
+  }
   const [behavior] = await region.createEmbeddedDocuments("RegionBehavior", [{
     type: "dnd5e.difficultTerrain", name: activity.item.name, system: { magical: true, types: rule.types ?? [] }
   }]);

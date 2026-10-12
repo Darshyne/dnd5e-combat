@@ -44,6 +44,7 @@ import { carriedLightState } from "../adapter/lights.mjs";
 import { toggleCarriedLight } from "./lights.mjs";
 import { flipWallSide } from "./wall-side.mjs";
 import { sideRegionOf } from "../adapter/wall-side.mjs";
+import { coverFor } from "../adapter/cover.mjs";
 
 /** Le token désigné, sur la scène affichée par le MJ. */
 function tokenOf({ tokenId }) {
@@ -327,8 +328,18 @@ async function wallSide({ regionId, flip=false }) {
     walls: canvas.scene.walls.filter(w => w.getFlag(MODULE_ID, "zone") === region.id).map(w => ({ c: w.c, move: w.move, sight: w.sight })),
     // §170 : ses lumières ; et les sons qu'un module voisin y aurait posés (`flags.*.wall`).
     lights: canvas.scene.lights.filter(l => l.getFlag(MODULE_ID, "region") === region.id).map(l => ({ x: l.x, y: l.y, bright: l.config.bright, dim: l.config.dim })),
-    sounds: canvas.scene.sounds.filter(s => Object.values(s.flags ?? {}).some(f => f?.wall === region.id)).length
+    sounds: canvas.scene.sounds.filter(s => Object.values(s.flags ?? {}).some(f => f?.wall === region.id)).length,
+    // §172 : ses comportements (terrain difficile, coût de déplacement).
+    behaviors: region.behaviors.map(b => ({ type: b.type, system: b.system?.toObject?.() ?? null }))
   };
+}
+
+/** §172 : l'abri de la cible contre l'attaquant, tel que le verdict le calculera (`coverFor`), ou null. */
+function cover({ attackerId, targetId }) {
+  const attacker = canvas.scene?.tokens.get(attackerId);
+  const target = canvas.scene?.tokens.get(targetId);
+  if ( !attacker || !target ) throw new Error("token not found on the viewed scene");
+  return coverFor(attacker, target, { quiet: true });
 }
 
 async function summonAt({ tokenId, itemId, activityId=null, profile=null, actorUuid=null, x, y }) {
@@ -866,4 +877,4 @@ async function door({ tokenId, wallId, open=true }) {
   return { state: doorState(wall), x: token._source.x, y: token._source.y };
 }
 
-export const testApi = Object.freeze({ wall, wallSide, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door });
+export const testApi = Object.freeze({ wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door });

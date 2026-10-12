@@ -166,7 +166,8 @@ export const SPELL_RULES = Object.freeze({
   "insect-plague": { difficultTerrain: {}, triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }] },
   // Barrière de lames : mur ou anneau, rejeu à l'entrée et en fin de tour, terrain difficile. (L'abri des trois quarts à travers le
   // mur : non repris.)
-  "blade-barrier": { difficultTerrain: {}, triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }] },
+  // §172 : posée sur une rangée de cases ; « le mur offre un abri aux trois quarts ».
+  "blade-barrier": { difficultTerrain: {}, cellWall: true, coverThrough: "threeQuarters", triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }] },
   // Tempête radieuse de Jallarzi : « tant qu'elle est dans le Cylindre, une créature est Aveuglée et Assourdie et ne peut lancer de
   // sort à composante verbale » — porté par la zone, pas par la sauvegarde ; dégâts à l'entrée et en fin de tour.
   "jallarzis-storm-of-radiance": { zoneEffects: true, triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }] },
@@ -306,7 +307,8 @@ export const SPELL_RULES = Object.freeze({
   "forcecage": { walls: {} },
   "wall-of-stone": { walls: { sight: true } },
   "prismatic-wall": { walls: { move: false, sight: true, activities: ["5f0JerdDSOQQXiTe", "fOYr1bgsB1VXROcm"] } },
-  "wall-of-thorns": { walls: { move: false, sight: true } },
+  // §172 : posé sur une rangée de cases ; « pour chaque tranche de 30 cm parcourue dans le mur, il faut dépenser 1,20 m » : ×4.
+  "wall-of-thorns": { walls: { move: false, sight: true }, cellWall: true, difficultTerrain: { cost: 4 } },
   // §163 : Champ antimagie — « les sorts n'affectent rien dans l'Émanation, et on n'y en lance pas » (la suspension des effets et objets
   // magiques déjà là, la téléportation : au MJ) ; Coquille antivie — « empêche les créatures autres que les Créatures artificielles et
   // les Morts-vivants d'y entrer ou d'atteindre à travers » (le sort qui prend fin quand le lanceur force une créature à la traverser : au MJ).

@@ -250,3 +250,31 @@ export function wallLightPoints(geometry, step, offset) {
   }
   return out;
 }
+
+/* -------------------------------------------- */
+/*  Mur épais posé sur les cases (§172)         */
+/* -------------------------------------------- */
+
+/**
+ * §172 : un mur d'une case d'épaisseur (Mur d'épines, Barrière de lames) se pose sur une rangée de cases — les points au centre des
+ * cases, sans diagonale ; chaque segment est prolongé d'une demi-case à ses deux bouts, pour couvrir la première et la dernière case
+ * en entier (aux coins, deux segments se recouvrent). La ligne de centres est d'abord bornée à `length - 2 × half` : le mur, bouts
+ * compris, garde la longueur du sort.
+ * @param {Array<{x: number, y: number}>} points   Centres de case.
+ * @param {number} length   Longueur du sort, en pixels.
+ * @param {number} width    Épaisseur, en pixels.
+ * @param {number} half     Une demi-case, en pixels.
+ */
+export function cellWallShapes(points, length, width, half) {
+  const line = clampPolyline(orthogonalize(points), Number.isFinite(length) ? Math.max(0, length - (2 * half)) : Infinity);
+  if ( line.length === 1 ) return [{ type: "line", x: line[0].x - half, y: line[0].y, rotation: 0, length: 2 * half, width }];
+  return wallLineShapes(line, width).map(s => {
+    const r = (s.rotation * Math.PI) / 180;
+    return { ...s, x: s.x - (Math.cos(r) * half), y: s.y - (Math.sin(r) * half), length: s.length + (2 * half) };
+  });
+}
+
+/** L'anneau d'un mur épais tiré du disque de son gabarit : une bande de `width` à l'intérieur du cercle (son diamètre est celui du sort). */
+export function innerRingShapes({ x, y, radius }, width) {
+  return [{ type: "ring", x, y, radius, innerWidth: Math.min(width, radius), outerWidth: 0 }];
+}

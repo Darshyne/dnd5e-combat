@@ -17,7 +17,7 @@ import { committedPosition, usageTokenOf } from "./turn.mjs";
 import { readUnitFactors } from "./units.mjs";
 import { templateOf } from "./template.mjs";
 import { contentOf } from "./content.mjs";
-import { clampPolyline, wallLineShapes, orthogonalize } from "../core/wall.mjs";
+import { clampPolyline, wallLineShapes, orthogonalize, cellWallShapes } from "../core/wall.mjs";
 
 /**
  * La forme et le token d'une zone à poser d'office, ou null (dnd5e pose comme d'habitude) : portée personnelle, zone
@@ -217,7 +217,8 @@ export function placeAimedArea(activity, area, shapeData) {
  * ce qu'il faut à la visée (longueur et épaisseur en pixels), ou null : pas un mur, lanceur absent de la scène affichée, pas le
  * droit de créer une région.
  * @param {Activity} activity
- * @returns {{shape: "wall", token: TokenDocument, length: number, width: number, orthogonal: boolean}|null}
+ * @returns {{shape: "wall", token: TokenDocument, length: number, width: number, orthogonal: boolean, cells: boolean, half: number,
+ *   lineLength: number}|null}
  */
 export function wallAreaOf(activity) {
   const template = activity?.target?.template;
@@ -231,9 +232,13 @@ export function wallAreaOf(activity) {
   const perUnit = scene.grid.size / scene.grid.distance;
   const { size, width } = dimensionsOf(activity, scene);
   const count = Math.max(1, Number(template.count) || 1);
-  // §169 : un mur à face brûlante (Mur de feu) se pose sans diagonale.
-  const orthogonal = !!contentOf(activity.item).entry?.wallSide;
-  return { shape: "wall", token, length: (size || 0) * count * perUnit, width: Math.max(1, (width || 1) * perUnit), orthogonal };
+  // §169 : un mur à face brûlante (Mur de feu) se pose sans diagonale ; §172 : un mur épais (Mur d'épines, Barrière de lames), sur
+  // une rangée de cases — points au centre des cases, la ligne de centres plus courte d'une case que le mur.
+  const entry = contentOf(activity.item).entry;
+  const cells = entry?.cellWall === true;
+  const length = (size || 0) * count * perUnit;
+  return { shape: "wall", token, length, width: Math.max(1, (width || 1) * perUnit), orthogonal: cells || !!entry?.wallSide,
+    cells, half: scene.grid.size / 2, lineLength: cells ? Math.max(0, length - scene.grid.size) : length };
 }
 
 /**
@@ -244,7 +249,8 @@ export function wallAreaOf(activity) {
  * @returns {Promise<RegionDocument[]|null>}
  */
 export function placeWallArea(activity, area, points) {
-  const shapes = wallLineShapes(clampPolyline(area.orthogonal ? orthogonalize(points) : points, area.length || Infinity), area.width);
+  const shapes = area.cells ? cellWallShapes(points, area.length || Infinity, area.width, area.half)
+    : wallLineShapes(clampPolyline(area.orthogonal ? orthogonalize(points) : points, area.length || Infinity), area.width);
   if ( !shapes.length ) return Promise.resolve(null);
   return createAreaRegions(activity, area.token, [{ ...regionData(activity, area.token, shapes[0], false), shapes }]);
 }

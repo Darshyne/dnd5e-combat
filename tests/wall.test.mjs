@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { polylineLength, clampPolyline, wallLineShapes, lineAxis, polygonEdges, orthogonalize, sideOfSegment, wallGeometry, defaultSide, sideShapes, ringShapes, crossesWall, touchesWall, wallLightPoints } from "../module/scripts/core/wall.mjs";
+import { polylineLength, clampPolyline, wallLineShapes, lineAxis, polygonEdges, orthogonalize, sideOfSegment, wallGeometry, defaultSide, sideShapes, ringShapes, crossesWall, touchesWall, wallLightPoints, cellWallShapes, innerRingShapes } from "../module/scripts/core/wall.mjs";
 
 describe("§162 : mur posé par points", () => {
   it("la ligne brisée ramenée à la longueur du sort", () => {
@@ -79,5 +79,21 @@ describe("§170 : les lumières d'un mur", () => {
     const pts = wallLightPoints({ ring: { x: 0, y: 0, radius: 280 } }, 280, 10);
     expect(pts.length).toBe(14);
     expect(pts.slice(0, 2)).toEqual([{ x: 270, y: 0 }, { x: 290, y: 0 }]);
+  });
+});
+
+describe("§172 : mur épais sur les cases", () => {
+  it("des centres de case, sans diagonale, prolongés d'une demi-case ; la longueur du sort tenue bouts compris", () => {
+    // Cases de 100 px : de (50, 50) à (350, 60) → une rangée de 4 cases, 400 px.
+    const [s] = cellWallShapes([{ x: 50, y: 50 }, { x: 350, y: 60 }], 1000, 100, 50);
+    expect(s).toEqual({ type: "line", x: 0, y: 50, rotation: 0, length: 400, width: 100 });
+    // Longueur du sort 300 px : trois cases au plus.
+    expect(cellWallShapes([{ x: 50, y: 50 }, { x: 350, y: 50 }], 300, 100, 50)[0].length).toBe(300);
+    // Une seule case.
+    expect(cellWallShapes([{ x: 50, y: 50 }], 300, 100, 50)).toEqual([{ type: "line", x: 0, y: 50, rotation: 0, length: 100, width: 100 }]);
+  });
+  it("l'anneau : une bande à l'intérieur du cercle", () => {
+    expect(innerRingShapes({ x: 0, y: 0, radius: 280 }, 140)).toEqual([{ type: "ring", x: 0, y: 0, radius: 280, innerWidth: 140, outerWidth: 0 }]);
+    expect(wallGeometry(innerRingShapes({ x: 0, y: 0, radius: 280 }, 140)).ring.radius).toBe(210);
   });
 });

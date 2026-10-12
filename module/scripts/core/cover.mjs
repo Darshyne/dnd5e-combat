@@ -32,6 +32,12 @@ export const COVER = Object.freeze({
 
 const DEGREES = ["none", "half", "half", "threeQuarters", "total"];
 
+/** §172 : le plus fort de deux degrés d'abri. */
+export function strongerCover(a, b) {
+  const rank = d => ["none", "half", "threeQuarters", "total"].indexOf(d);
+  return rank(b) > rank(a) ? b : a;
+}
+
 /**
  * @typedef {object} Rect
  * @property {number} x  Coin haut-gauche.

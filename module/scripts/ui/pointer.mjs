@@ -513,10 +513,11 @@ async function aimWall(activity, area, then) {
   const g = new PIXI.Graphics();
   canvas.controls.addChild(g);
   const color = Number(foundry.utils.Color.from(game.user.color)) || 0xff6400;
-  const max = area.length || Infinity;
+  // §172 : un mur épais se pose de centre de case en centre de case ; sa ligne de centres est plus courte d'une case que le mur.
+  const max = (area.cells ? area.lineLength : area.length) || Infinity;
   // §169 : sans diagonale — le point suit l'axe où il s'écarte le plus du précédent.
   const snap = p => {
-    const v = canvas.grid.getSnappedPoint(p, { mode: CONST.GRID_SNAPPING_MODES.VERTEX });
+    const v = canvas.grid.getSnappedPoint(p, { mode: area.cells ? CONST.GRID_SNAPPING_MODES.CENTER : CONST.GRID_SNAPPING_MODES.VERTEX });
     return (area.orthogonal && points.length) ? orthogonalize([points.at(-1), v])[1] : v;
   };
   const say = cursor => {

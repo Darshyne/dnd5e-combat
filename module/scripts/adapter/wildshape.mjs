@@ -137,8 +137,10 @@ async function withConcreteImage(source) {
     const subjects = await wildcardFiles(subject);
     changes["prototypeToken.ring.subject.texture"] = subjects.length ? subjects[pick % subjects.length] : null;
   }
-  // `clone` ne développe pas les clés pointées.
-  return source.clone(foundry.utils.expandObject(changes), { keepId: true });
+  // `clone` ne développe pas les clés pointées. Hors du compendium (`pack: null`) : construite avec le contexte de son pack, la copie
+  // d'un acteur du Manuel des monstres reprenait l'image du compendium (`tokens/wolf-*.webp`, `randomImg`) et ignorait ces
+  // changements (vu en jeu le 2026-10-12, §155) ; dnd5e n'en lit que `toObject()`, le pack ne sert à rien ici.
+  return source.clone(foundry.utils.expandObject(changes), { keepId: true, pack: null });
 }
 
 /** Les fichiers d'un motif (`…/wolf-*.webp`), triés, comme le cœur les liste pour les images de token. */

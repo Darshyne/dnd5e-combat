@@ -27,6 +27,7 @@ import { endureAtZero } from "./species.mjs";
 import { wardAtZero } from "./ward.mjs";
 import { planFortitude, pendingFortitude } from "./fortitude.mjs";
 import { risingAtZero } from "./rise.mjs";
+import { isWildShaped } from "./wildshape.mjs";
 
 export const DEATH_QUERY = `${MODULE_ID}.deathSave`;
 const DEATH_TIMEOUT = 40000;
@@ -140,6 +141,9 @@ export async function ensureDowned(actor, { afterUpdate=false }={}) {
   if ( !hp ) return null;
   // §19.5 : une créature à seconde phase ne tombe pas, elle change de forme (runtime/coven.mjs).
   // §22 : Rage implacable — la sauvegarde de Constitution décide d'abord (runtime/barbarian.mjs) ; §61 : Robustesse de la non-vie.
+  // §155 : en Forme sauvage, 0 PV met fin à la forme (runtime/wildshape.mjs), qui supprime l'acteur transformé — y poser Inconscient
+  // croisait cette suppression (« The Actor … does not exist »).
+  if ( (hp.value <= 0) && isWildShaped(actor) ) return null;
   if ( (hp.value <= 0) && (transformsAtZero(actor) || standsAtZero(actor) || relentlessAtZero(actor) || pendingFortitude(actor) || risingAtZero(actor)) ) return null;
   const regenerates = (hp.value <= 0) && survivesZero(actor);
   if ( regenerates ) await dropAutoDead(actor);

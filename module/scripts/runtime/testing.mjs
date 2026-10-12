@@ -42,6 +42,8 @@ import { aidsFor, isGuided } from "../adapter/skill-aid.mjs";
 import { requestSkillAid } from "./skill-aid.mjs";
 import { carriedLightState } from "../adapter/lights.mjs";
 import { toggleCarriedLight } from "./lights.mjs";
+import { flipWallSide } from "./wall-side.mjs";
+import { sideRegionOf } from "../adapter/wall-side.mjs";
 
 /** Le token désigné, sur la scène affichée par le MJ. */
 function tokenOf({ tokenId }) {
@@ -306,6 +308,24 @@ async function wall({ tokenId, itemId, activityId=null, points }) {
     await new Promise(resolve => setTimeout(resolve, 100));
   }
   return { regionId: null };
+}
+
+/**
+ * §169 : l'état d'un mur à face brûlante — son côté, sa face brûlante (id, formes), ses murs du cœur ; `flip: true` la retourne d'abord
+ * (comme l'entrée du menu du lanceur).
+ */
+async function wallSide({ regionId, flip=false }) {
+  if ( !game.user.isGM ) throw new Error("GM only");
+  const region = canvas.scene?.regions.get(regionId);
+  if ( !region ) throw new Error(`region ${regionId} not found`);
+  if ( flip ) await flipWallSide(region);
+  const burning = sideRegionOf(region);
+  return {
+    side: region.getFlag(MODULE_ID, "wallSide")?.side ?? null,
+    shapes: region.shapes.map(s => s.toObject()),
+    burning: burning ? { id: burning.id, shapes: burning.shapes.map(s => s.toObject()), area: burning.getFlag(MODULE_ID, "area") } : null,
+    walls: canvas.scene.walls.filter(w => w.getFlag(MODULE_ID, "zone") === region.id).map(w => ({ c: w.c, move: w.move, sight: w.sight }))
+  };
 }
 
 async function summonAt({ tokenId, itemId, activityId=null, profile=null, actorUuid=null, x, y }) {
@@ -843,4 +863,4 @@ async function door({ tokenId, wallId, open=true }) {
   return { state: doorState(wall), x: token._source.x, y: token._source.y };
 }
 
-export const testApi = Object.freeze({ wall, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door });
+export const testApi = Object.freeze({ wall, wallSide, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { polylineLength, clampPolyline, wallLineShapes, lineAxis, polygonEdges } from "../module/scripts/core/wall.mjs";
+import { polylineLength, clampPolyline, wallLineShapes, lineAxis, polygonEdges, orthogonalize, sideOfSegment, wallGeometry, defaultSide, sideShapes, ringShapes, crossesWall, touchesWall } from "../module/scripts/core/wall.mjs";
 
 describe("§162 : mur posé par points", () => {
   it("la ligne brisée ramenée à la longueur du sort", () => {
@@ -17,5 +17,55 @@ describe("§162 : mur posé par points", () => {
   });
   it("les arêtes d'un polygone fermé", () => {
     expect(polygonEdges([0, 0, 10, 0, 10, 10])).toEqual([[0, 0, 10, 0], [10, 0, 10, 10], [10, 10, 0, 0]]);
+  });
+});
+
+describe("§169 : mur à face brûlante", () => {
+  it("pas de diagonale : chaque point aligné sur le précédent", () => {
+    expect(orthogonalize([{ x: 0, y: 0 }, { x: 300, y: 40 }, { x: 260, y: 500 }])).toEqual([{ x: 0, y: 0 }, { x: 300, y: 0 }, { x: 300, y: 500 }]);
+  });
+  it("la géométrie : segments, ou anneau (disque posé, puis anneau fin)", () => {
+    const line = { type: "line", x: 0, y: 0, rotation: 0, length: 200, width: 20 };
+    expect(wallGeometry([line])).toEqual({ lines: [[0, 0, 200, 0]] });
+    expect(wallGeometry([{ type: "circle", x: 50, y: 50, radius: 200 }])).toEqual({ ring: { x: 50, y: 50, radius: 200 } });
+    expect(wallGeometry(ringShapes({ x: 50, y: 50, radius: 200 }, 20))).toEqual({ ring: { x: 50, y: 50, radius: 200 } });
+    expect(wallGeometry([{ type: "ring", x: 50, y: 50, radius: 200, innerWidth: 0, outerWidth: 28 }])).toEqual({ ring: { x: 50, y: 50, radius: 214 } });
+    expect(wallGeometry([{ type: "ellipse", x: 50, y: 50, radiusX: 200, radiusY: 200 }])).toEqual({ ring: { x: 50, y: 50, radius: 200 } });
+  });
+  it("le côté brûlant par défaut : à l'opposé du lanceur", () => {
+    const g = { lines: [[0, 0, 200, 0]] };
+    expect(sideOfSegment(g.lines[0], { x: 100, y: -50 })).toBe(1);   // au nord d'un tracé vers l'est : à gauche
+    expect(defaultSide(g, { x: 100, y: -50 })).toBe(-1);
+    expect(defaultSide(g, { x: 100, y: 50 })).toBe(1);
+    const ring = { ring: { x: 0, y: 0, radius: 200 } };
+    expect(defaultSide(ring, { x: 10, y: 0 })).toBe(-1);   // dedans : l'extérieur brûle
+    expect(defaultSide(ring, { x: 500, y: 0 })).toBe(1);
+  });
+  it("les formes de la face brûlante", () => {
+    const [north] = sideShapes({ lines: [[0, 0, 200, 0]] }, 1, 200);
+    expect(north).toEqual({ type: "polygon", points: [0, 0, 200, 0, 200, -200, 0, -200] });
+    const [south] = sideShapes({ lines: [[0, 0, 200, 0]] }, -1, 200);
+    expect(south.points).toEqual([0, 0, 200, 0, 200, 200, 0, 200]);
+    expect(sideShapes({ ring: { x: 0, y: 0, radius: 200 } }, -1, 200)).toEqual([{ type: "ring", x: 0, y: 0, radius: 200, innerWidth: 0, outerWidth: 200 }]);
+    expect(sideShapes({ ring: { x: 0, y: 0, radius: 200 } }, 1, 200)).toEqual([{ type: "circle", x: 0, y: 0, radius: 200 }]);
+  });
+  it("traverser le mur : un pas d'un centre à l'autre qui coupe la ligne, ou le cercle", () => {
+    const g = { lines: [[0, 0, 300, 0]] };
+    expect(crossesWall(g, [{ x: 50, y: -50 }, { x: 50, y: 50 }])).toBe(true);
+    expect(crossesWall(g, [{ x: 50, y: -50 }, { x: 150, y: -50 }])).toBe(false);
+    expect(crossesWall(g, [{ x: 350, y: -50 }, { x: 350, y: 50 }])).toBe(false);   // au-delà du bout
+    const ring = { ring: { x: 0, y: 0, radius: 200 } };
+    expect(crossesWall(ring, [{ x: 150, y: 0 }, { x: 250, y: 0 }])).toBe(true);
+    expect(crossesWall(ring, [{ x: 50, y: 0 }, { x: 150, y: 0 }])).toBe(false);
+  });
+  it("à l'apparition : les espaces qui touchent le mur, des deux côtés, pas par un coin", () => {
+    const g = { lines: [[0, 0, 300, 0]] };
+    expect(touchesWall(g, { x: 0, y: -100, width: 100, height: 100 })).toBe(true);    // au nord, le long
+    expect(touchesWall(g, { x: 100, y: 0, width: 100, height: 100 })).toBe(true);     // au sud
+    expect(touchesWall(g, { x: 0, y: 100, width: 100, height: 100 })).toBe(false);    // une case plus loin
+    expect(touchesWall(g, { x: 300, y: 0, width: 100, height: 100 })).toBe(false);    // par le coin du bout
+    const ring = { ring: { x: 0, y: 0, radius: 200 } };
+    expect(touchesWall(ring, { x: 150, y: -50, width: 100, height: 100 })).toBe(true);
+    expect(touchesWall(ring, { x: -50, y: -50, width: 100, height: 100 })).toBe(false);   // au centre
   });
 });

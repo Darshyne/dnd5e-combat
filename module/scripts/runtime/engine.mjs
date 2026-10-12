@@ -587,7 +587,10 @@ async function openingFor(message, usage, extra={}) {
   // §16.27 : la répartition des projectiles faite à la visée multiple (Projectile magique).
   const pairs = game.messages.get(usage.origin ?? message.id)?.getFlag(MODULE_ID, "allocation");   // [[token, nombre], …]
   const allocation = Array.isArray(pairs) ? Object.fromEntries(pairs) : null;
-  return { id: foundry.utils.randomID(), ...data, choice, allocation, targets: await enrich(usage.targets, usage.plan, speakerToken(message), usage.activity, null, castLevelOfMessage(message)), ...extra };
+  let targets = await enrich(usage.targets, usage.plan, speakerToken(message), usage.activity, null, castLevelOfMessage(message));
+  // §169 : un rejeu sans sauvegarde (Mur de feu traversé, fin de tour du côté brûlant) — les dégâts pleins, d'office.
+  if ( usage.plan.save && message.getFlag(MODULE_ID, "areaTick")?.noSave ) targets = targets.map(t => ({ ...t, autoFail: "noSave" }));
+  return { id: foundry.utils.randomID(), ...data, choice, allocation, targets, ...extra };
 }
 
 /* -------------------------------------------- */

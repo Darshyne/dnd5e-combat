@@ -299,6 +299,8 @@ export const SPELL_RULES = Object.freeze({
   // Cage de force : rien ne les traverse (la vue, si : le Mur de force est invisible, la glace et la cage laissent voir) ; Mur de
   // pierre : ni le déplacement ni la vue ; Mur prismatique, Mur d'épines : la vue est arrêtée, on peut les traverser (et en subir les
   // effets). (Les sections de CA et de PV des murs de glace et de pierre, les créatures prises dans le mur : au MJ.)
+  // §169 : « opaque » — des murs du cœur qui arrêtent la vue, pas le déplacement ; face brûlante à 3 m.
+  "wall-of-fire": { walls: { move: false, sight: true }, wallSide: { distance: 10, units: "ft" } },
   "wall-of-force": { walls: {} },
   "wall-of-ice": { walls: { activities: ["c4ttlpiIpyf3dFdf", "zjpb29Tww0iuv1P3"] } },
   "forcecage": { walls: {} },

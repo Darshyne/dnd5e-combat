@@ -27,7 +27,7 @@ export const BOLTS = Object.freeze({ "call-lightning": { radius: 5, units: "ft" 
 
 /** Zones qui obscurcissent fortement (§16.24, `obscures`) : Nappe de brouillard — « la sphère est une zone à visibilité nulle ». */
 // §158 : Brume mortelle, Nuage incendiaire, Nuage nauséabond, Tempête de neige (« fortement obscurci ») ; Mur de feu (« opaque »).
-export const OBSCURES = Object.freeze(["fog-cloud", "cloudkill", "incendiary-cloud", "stinking-cloud", "sleet-storm", "wall-of-fire"]);
+export const OBSCURES = Object.freeze(["fog-cloud", "cloudkill", "incendiary-cloud", "stinking-cloud", "sleet-storm"]);
 
 /** Soins au maximum (§16.24, `healMax`) : Lueur d'espoir — « chaque fois qu'une cible regagne des PV, elle en regagne le maximum ». */
 export const HEAL_MAX = Object.freeze(["beacon-of-hope"]);

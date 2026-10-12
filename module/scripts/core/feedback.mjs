@@ -39,7 +39,8 @@ export function feedbackBetween(before, after) {
       if ( t.hit === false ) out.push({ token: t.token, kind: "miss" });
       else if ( t.critical ) out.push({ token: t.token, kind: "critical" });
     }
-    if ( t.save && !b.save ) out.push({ token: t.token, kind: t.save.success ? "saveSuccess" : "saveFail", auto: !!t.save.auto });
+    // §169 : un rejeu sans sauvegarde (`noSave`) n'en annonce aucune.
+    if ( t.save && !b.save && (t.save.auto !== "noSave") ) out.push({ token: t.token, kind: t.save.success ? "saveSuccess" : "saveFail", auto: !!t.save.auto });
   }
   return out;
 }

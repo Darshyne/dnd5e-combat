@@ -12,6 +12,7 @@
  *  - `SaveActivity#rollDamage` inscrit `system.onSave` sur le message de dégâts (save.mjs:86-91)
  */
 
+import { wallSideRuleOf, touchesWallRegion } from "./wall-side.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { rollerFor } from "./concentration.mjs";
 import { committedPosition, currentTurnKey } from "./turn.mjs";
@@ -67,6 +68,7 @@ export async function readActivityRegion(region) {
   const areaOrigin = areaOriginOf(region, originToken);
   // P2 : une vraie sphère — la tranche de la région en fait un cylindre, ses coins sont hors de la sphère.
   const sphere = sphereOf(region, activity, originToken);
+  const thinWall = !!wallSideRuleOf(region);
   return {
     activity: uuid,
     origin,
@@ -76,7 +78,9 @@ export async function readActivityRegion(region) {
     // les alliés du lanceur sont épargnés — le moteur ne pose pas la question (§16.23).
     affects: areaAffects(activity),
     // Appartenance calculée par le cœur (TokenDocument#testInsideRegion, client/documents/token.mjs:3236).
-    candidates: region.parent.tokens.filter(t => t.actor && !isObjectToken(t) && t.testInsideRegion(region, committedPosition(t))).map(t => ({
+    // §169 : un mur à face brûlante est fin, posé entre les cases — « dans sa zone » à l'apparition : l'espace touche le mur.
+    candidates: region.parent.tokens.filter(t => t.actor && !isObjectToken(t)
+      && (thinWall ? touchesWallRegion(region, t) : t.testInsideRegion(region, committedPosition(t)))).map(t => ({
       token: t.uuid,
       actor: t.actor.uuid,
       name: t.name,

@@ -68,3 +68,155 @@ export function polygonEdges(flat) {
   }
   return edges;
 }
+
+/* -------------------------------------------- */
+/*  Mur à face brûlante (§169)                  */
+/* -------------------------------------------- */
+
+/**
+ * §169 : chaque point aligné sur le précédent, sur l'axe où il s'en écarte le plus — un mur sans diagonale, le long des lignes de la
+ * grille (une diagonale coupait des cases en biais : quelques-unes seulement étaient « dedans »).
+ * @param {Array<{x: number, y: number}>} points
+ * @returns {Array<{x: number, y: number}>}
+ */
+export function orthogonalize(points) {
+  const out = [];
+  for ( const p of points ) {
+    const a = out.at(-1);
+    if ( !a ) out.push({ x: p.x, y: p.y });
+    else out.push(Math.abs(p.x - a.x) >= Math.abs(p.y - a.y) ? { x: p.x, y: a.y } : { x: a.x, y: p.y });
+  }
+  return out;
+}
+
+/**
+ * Le côté d'un segment où se trouve un point : +1 à gauche du sens de tracé (à l'écran, l'axe y vers le bas : la normale
+ * `(dy, -dx)`), -1 à droite, 0 sur sa droite.
+ */
+export function sideOfSegment([x1, y1, x2, y2], { x, y }) {
+  const d = ((y2 - y1) * (x - x1)) - ((x2 - x1) * (y - y1));
+  return Math.abs(d) < 1e-9 ? 0 : Math.sign(d);
+}
+
+/** Distance d'un point à un segment. */
+function distanceToSegment([x1, y1, x2, y2], { x, y }) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len2 = (dx * dx) + (dy * dy);
+  const t = len2 ? Math.max(0, Math.min(1, (((x - x1) * dx) + ((y - y1) * dy)) / len2)) : 0;
+  return Math.hypot(x - (x1 + (t * dx)), y - (y1 + (t * dy)));
+}
+
+/**
+ * La géométrie d'un mur à face brûlante, tirée des formes de sa région : des segments (formes « line »), ou un anneau — la forme « ring »
+ * du cœur V14 (gabarit « ring » de dnd5e, ou l'anneau fin que devient le disque d'un gabarit « cylinder »), ou ce disque lui-même (un
+ * cercle, ou une ellipse ronde posée par coordonnées).
+ * @param {object[]} shapes   Les formes de la région (données).
+ * @returns {{lines: number[][]}|{ring: {x: number, y: number, radius: number}}|null}
+ */
+export function wallGeometry(shapes, axisOf=lineAxis) {
+  const list = shapes ?? [];
+  const lines = list.filter(s => s.type === "line");
+  if ( lines.length ) return { lines: lines.map(s => axisOf(s)) };
+  const ring = list.find(s => (s.type === "ring") && Number.isFinite(s.radius));
+  // Le milieu de la bande : de `radius - innerWidth` à `radius + outerWidth`.
+  if ( ring ) return { ring: { x: ring.x, y: ring.y, radius: ring.radius + (((ring.outerWidth ?? 0) - (ring.innerWidth ?? 0)) / 2) } };
+  const disc = list.map(s => ((s.type === "ellipse") && (s.radiusX === s.radiusY)) ? { ...s, type: "circle", radius: s.radiusX } : s)
+    .find(s => (s.type === "circle") && Number.isFinite(s.radius) && !s.hole);
+  return disc ? { ring: { x: disc.x, y: disc.y, radius: disc.radius } } : null;
+}
+
+/**
+ * Le côté brûlant par défaut : celui où le lanceur n'est pas — pour une ligne, l'autre côté du segment le plus proche de lui ; pour
+ * un anneau, l'extérieur s'il est dedans, l'intérieur sinon. +1 : à gauche du tracé, ou l'intérieur de l'anneau ; -1 : l'inverse.
+ */
+export function defaultSide(geometry, caster) {
+  if ( !geometry || !caster ) return 1;
+  if ( geometry.ring ) return Math.hypot(caster.x - geometry.ring.x, caster.y - geometry.ring.y) < geometry.ring.radius ? -1 : 1;
+  const nearest = geometry.lines.reduce((best, l) => (distanceToSegment(l, caster) < distanceToSegment(best, caster) ? l : best));
+  return -(sideOfSegment(nearest, caster) || -1);
+}
+
+/**
+ * Les formes de la face brûlante : `depth` pixels le long de chaque segment, du côté choisi (un polygone par segment) ; pour un
+ * anneau, le disque intérieur (+1) ou la couronne de `depth` autour (-1, forme « ring »).
+ * @param {{lines: number[][]}|{ring: object}} geometry
+ * @param {1|-1} side
+ * @param {number} depth
+ */
+export function sideShapes(geometry, side, depth) {
+  if ( geometry?.ring ) {
+    const { x, y, radius } = geometry.ring;
+    return side > 0 ? [{ type: "circle", x, y, radius }] : [{ type: "ring", x, y, radius, innerWidth: 0, outerWidth: depth }];
+  }
+  return (geometry?.lines ?? []).map(([x1, y1, x2, y2]) => {
+    const len = Math.hypot(x2 - x1, y2 - y1) || 1;
+    const nx = (side * (y2 - y1) * depth) / len, ny = (side * -(x2 - x1) * depth) / len;
+    return { type: "polygon", points: [x1, y1, x2, y2, x2 + nx, y2 + ny, x1 + nx, y1 + ny].map(v => Math.round(v)) };
+  });
+}
+
+/** L'anneau fin d'un mur circulaire : la forme « ring » du cœur, d'épaisseur `width`, centrée sur le rayon. */
+export function ringShapes({ x, y, radius }, width) {
+  const half = Math.max(1, width / 2);
+  return [{ type: "ring", x, y, radius, innerWidth: Math.min(half, radius), outerWidth: half }];
+}
+
+/** Les deux segments se coupent-ils franchement (pas en bout, pas alignés) ? */
+function segmentsCross([ax, ay, bx, by], [cx, cy, dx, dy]) {
+  const o = (px, py, qx, qy, rx, ry) => Math.sign(((qx - px) * (ry - py)) - ((qy - py) * (rx - px)));
+  return (o(ax, ay, bx, by, cx, cy) * o(ax, ay, bx, by, dx, dy) < 0) && (o(cx, cy, dx, dy, ax, ay) * o(cx, cy, dx, dy, bx, by) < 0);
+}
+
+/**
+ * Un trajet (centres successifs) traverse-t-il le mur ? Une ligne : un pas qui coupe un segment ; un anneau : un pas qui passe d'un
+ * côté du cercle à l'autre.
+ * @param {{lines: number[][]}|{ring: object}} geometry
+ * @param {Array<{x: number, y: number}>} path
+ */
+export function crossesWall(geometry, path) {
+  for ( let i = 1; i < (path?.length ?? 0); i++ ) {
+    const a = path[i - 1], b = path[i];
+    if ( geometry?.ring ) {
+      const { x, y, radius } = geometry.ring;
+      const da = Math.hypot(a.x - x, a.y - y) - radius, db = Math.hypot(b.x - x, b.y - y) - radius;
+      if ( da * db < 0 ) return true;
+    }
+    else if ( (geometry?.lines ?? []).some(l => segmentsCross([a.x, a.y, b.x, b.y], l)) ) return true;
+  }
+  return false;
+}
+
+/**
+ * L'espace d'une créature (rectangle en pixels) touche-t-il le mur ? Un segment : il longe ou traverse le rectangle sur une longueur
+ * (un coin seul ne compte pas) ; un anneau : le cercle passe dans le rectangle. C'est « dans la zone » à l'apparition du mur, des deux
+ * côtés : sur la grille, un mur d'1 ft posé entre les cases ne couvre aucune case.
+ * @param {{lines: number[][]}|{ring: object}} geometry
+ * @param {{x: number, y: number, width: number, height: number}} rect
+ */
+export function touchesWall(geometry, { x, y, width, height }) {
+  const eps = 1e-6;
+  if ( geometry?.ring ) {
+    const { x: cx, y: cy, radius } = geometry.ring;
+    const near = Math.hypot(Math.max(x - cx, 0, cx - (x + width)), Math.max(y - cy, 0, cy - (y + height)));
+    const far = Math.max(...[[x, y], [x + width, y], [x, y + height], [x + width, y + height]].map(([px, py]) => Math.hypot(px - cx, py - cy)));
+    return (near < radius) && (far > radius);
+  }
+  return (geometry?.lines ?? []).some(([x1, y1, x2, y2]) => {
+    // Liang–Barsky : la part du segment dans le rectangle fermé.
+    let t0 = 0, t1 = 1;
+    const dx = x2 - x1, dy = y2 - y1;
+    for ( const [p, q] of [[-dx, x1 - x], [dx, (x + width) - x1], [-dy, y1 - y], [dy, (y + height) - y1]] ) {
+      if ( Math.abs(p) < eps ) { if ( q < -eps ) return false; continue; }
+      const r = q / p;
+      if ( p < 0 ) t0 = Math.max(t0, r); else t1 = Math.min(t1, r);
+      if ( t0 > t1 ) return false;
+    }
+    return (t1 - t0) * Math.hypot(dx, dy) > 0.5;
+  });
+}
+
+/** Les arêtes d'un cercle approché par `n` côtés (les murs du cœur d'un mur en anneau). */
+export function circleEdges({ x, y, radius }, n=24) {
+  const pts = Array.from({ length: n }, (_, i) => [x + (radius * Math.cos((2 * Math.PI * i) / n)), y + (radius * Math.sin((2 * Math.PI * i) / n))]);
+  return pts.map((p, i) => [...p, ...pts[(i + 1) % n]].map(Math.round));
+}

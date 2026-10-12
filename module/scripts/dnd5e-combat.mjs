@@ -73,6 +73,7 @@ import { registerBreaks } from "./runtime/breaks.mjs";
 import { registerCure } from "./runtime/cure.mjs";
 import { registerBlink } from "./runtime/blink.mjs";
 import { registerWalls } from "./runtime/walls.mjs";
+import { registerWallSide } from "./runtime/wall-side.mjs";
 import { registerElevationSpells } from "./runtime/elevation-spells.mjs";
 import { registerCureUi } from "./ui/cure.mjs";
 import { registerKindleUi } from "./ui/kindle.mjs";
@@ -233,6 +234,7 @@ Hooks.once("init", () => {
   gated(registerCure);
   gated(registerBlink);
   gated(registerWalls);
+  gated(registerWallSide);   // §169 : Mur de feu — côté brûlant, anneau fin, face brûlante
   gated(registerElevationSpells);
   gated(registerStabilize);   // §50 : trousse de soins
   gated(registerPotions);   // §53 : sort d'une potion sans concentration

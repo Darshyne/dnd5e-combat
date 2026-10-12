@@ -17,7 +17,7 @@ import { committedPosition, usageTokenOf } from "./turn.mjs";
 import { readUnitFactors } from "./units.mjs";
 import { templateOf } from "./template.mjs";
 import { contentOf } from "./content.mjs";
-import { clampPolyline, wallLineShapes } from "../core/wall.mjs";
+import { clampPolyline, wallLineShapes, orthogonalize } from "../core/wall.mjs";
 
 /**
  * La forme et le token d'une zone à poser d'office, ou null (dnd5e pose comme d'habitude) : portée personnelle, zone
@@ -217,7 +217,7 @@ export function placeAimedArea(activity, area, shapeData) {
  * ce qu'il faut à la visée (longueur et épaisseur en pixels), ou null : pas un mur, lanceur absent de la scène affichée, pas le
  * droit de créer une région.
  * @param {Activity} activity
- * @returns {{shape: "wall", token: TokenDocument, length: number, width: number}|null}
+ * @returns {{shape: "wall", token: TokenDocument, length: number, width: number, orthogonal: boolean}|null}
  */
 export function wallAreaOf(activity) {
   const template = activity?.target?.template;
@@ -231,7 +231,9 @@ export function wallAreaOf(activity) {
   const perUnit = scene.grid.size / scene.grid.distance;
   const { size, width } = dimensionsOf(activity, scene);
   const count = Math.max(1, Number(template.count) || 1);
-  return { shape: "wall", token, length: (size || 0) * count * perUnit, width: Math.max(1, (width || 1) * perUnit) };
+  // §169 : un mur à face brûlante (Mur de feu) se pose sans diagonale.
+  const orthogonal = !!contentOf(activity.item).entry?.wallSide;
+  return { shape: "wall", token, length: (size || 0) * count * perUnit, width: Math.max(1, (width || 1) * perUnit), orthogonal };
 }
 
 /**
@@ -242,7 +244,7 @@ export function wallAreaOf(activity) {
  * @returns {Promise<RegionDocument[]|null>}
  */
 export function placeWallArea(activity, area, points) {
-  const shapes = wallLineShapes(clampPolyline(points, area.length || Infinity), area.width);
+  const shapes = wallLineShapes(clampPolyline(area.orthogonal ? orthogonalize(points) : points, area.length || Infinity), area.width);
   if ( !shapes.length ) return Promise.resolve(null);
   return createAreaRegions(activity, area.token, [{ ...regionData(activity, area.token, shapes[0], false), shapes }]);
 }

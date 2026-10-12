@@ -134,7 +134,7 @@ function renderResolution(message, html, resolution) {
     if ( plan.save && reached ) {
       if ( !t.save ) { parts.push(loc("SauvegardeAttendue")); css = "pending"; }
       else {
-        parts.push(t.save.auto ? loc("SauvegardeDOffice", { status: statusName(t.save.auto) })
+        parts.push((t.save.auto === "noSave") ? loc("SansSauvegarde") : t.save.auto ? loc("SauvegardeDOffice", { status: statusName(t.save.auto) })
           : loc(t.save.success ? "SauvegardeReussie" : "SauvegardeRatee", { n: t.save.total }));
         if ( t.save.success && !plan.attack ) css = "miss";
       }

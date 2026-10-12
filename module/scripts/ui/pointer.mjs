@@ -67,9 +67,11 @@ import { floatNotice } from "./feedback.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { effectOfProfile, potionCastsOnDrinker } from "../adapter/usage.mjs";
 import { isPotion } from "../adapter/potions.mjs";
+import { wallsOfCaster } from "../adapter/wall-side.mjs";
+import { flipWallSide } from "../runtime/wall-side.mjs";
 import { aimedAreaOf, aimedShapeData, aimedRegionData, wallAreaOf } from "../adapter/self-area.mjs";
 import { castAimed, placeAimed, placeWall } from "../runtime/self-area.mjs";
-import { clampPolyline, polylineLength } from "../core/wall.mjs";
+import { clampPolyline, polylineLength, orthogonalize } from "../core/wall.mjs";
 
 const setting = key => game.settings.get(MODULE_ID, key);
 const inCombat = () => game.combat?.started === true;
@@ -512,7 +514,11 @@ async function aimWall(activity, area, then) {
   canvas.controls.addChild(g);
   const color = Number(foundry.utils.Color.from(game.user.color)) || 0xff6400;
   const max = area.length || Infinity;
-  const snap = p => canvas.grid.getSnappedPoint(p, { mode: CONST.GRID_SNAPPING_MODES.VERTEX });
+  // §169 : sans diagonale — le point suit l'axe où il s'écarte le plus du précédent.
+  const snap = p => {
+    const v = canvas.grid.getSnappedPoint(p, { mode: CONST.GRID_SNAPPING_MODES.VERTEX });
+    return (area.orthogonal && points.length) ? orthogonalize([points.at(-1), v])[1] : v;
+  };
   const say = cursor => {
     const used = polylineLength(clampPolyline(cursor ? [...points, cursor] : points, max));
     const left = Number.isFinite(max) ? loc("Mur.Reste", { n: gridUnits(Math.max(0, max - used)), units: canvas.scene.grid.units }) : "";
@@ -1008,6 +1014,11 @@ function selfEntries(token) {
   const pilot = pilotOf(token);
   for ( const activity of pilot ? commandActivities(pilot, { self: true }) : [] ) {
     entries.push({ icon: "fa-solid fa-hand", label: loc("Menu.Utiliser", { name: commandLabel(activity) }), run: event => useCommand(token, activity, event) });
+  }
+  // §169 : retourner la face brûlante d'un Mur de feu qu'il a posé.
+  if ( token.isOwner ) for ( const wall of wallsOfCaster(token) ) {
+    const item = fromUuidSync(wall.getFlag("dnd5e", "item") ?? "", { strict: false });
+    entries.push({ icon: "fa-solid fa-fire", label: loc("MurFace.Retourner", { item: item?.name ?? wall.name }), run: () => flipWallSide(wall) });
   }
   // §38.2 : Troc du filou — depuis l'illusion ou depuis son lanceur.
   const swap = transposeOf(token);

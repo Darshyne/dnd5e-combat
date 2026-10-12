@@ -5,6 +5,7 @@
 import { wallRuleOf, wallDataFor, zoneWallsOf } from "../adapter/walls.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
+import { enqueue } from "./queue.mjs";
 
 async function raise(region) {
   const rule = wallRuleOf(region);
@@ -20,12 +21,15 @@ async function lower(region) {
   if ( ids.length ) await region.parent.deleteEmbeddedDocuments("Wall", ids);
 }
 
+/** Murs posés de nouveau, à la file par région : la création et un redessin aussitôt après (l'anneau du §169) ne se croisent pas. */
+const redraw = region => enqueue(`walls:${region.id}`, async () => {
+  await lower(region);
+  if ( region.parent?.regions.has(region.id) ) await raise(region);
+});
+
 export function registerWalls() {
-  route("createRegion", raise, { executor: true, label: "area: walls not raised" });
-  route("updateRegion", async (region, changes) => {
-    if ( !("shapes" in changes) || !wallRuleOf(region) ) return;
-    await lower(region);
-    await raise(region);
-  }, { executor: true, label: "area: walls not moved" });
-  route("deleteRegion", region => lower(region), { executor: true, label: "area: walls not removed" });
+  route("createRegion", region => (wallRuleOf(region) ? redraw(region) : null), { executor: true, label: "area: walls not raised" });
+  route("updateRegion", (region, changes) => ((("shapes" in changes) && wallRuleOf(region)) ? redraw(region) : null),
+    { executor: true, label: "area: walls not moved" });
+  route("deleteRegion", region => enqueue(`walls:${region.id}`, () => lower(region)), { executor: true, label: "area: walls not removed" });
 }

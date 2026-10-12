@@ -10,6 +10,7 @@ import { placeAreaAt } from "../adapter/self-area.mjs";
 import { positionOf as position, committedPosition } from "../adapter/turn.mjs";
 import { noteSummonExpiry, expiredSummons } from "../adapter/summons.mjs";
 import { holdZoneEffects, holdDifficultTerrain } from "../adapter/zone-effects.mjs";
+import { wallSideRuleOf, crossesWallRegion } from "../adapter/wall-side.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { announce } from "./triggers.mjs";
@@ -44,7 +45,9 @@ function tick(region, token, event, turnKey=currentTurnKey(), { times=1 }={}) {
     log(`${region.name}: ${token.name} (${event})`);
     announce(event, { actor: token.actor, target: token.actor, region: region.uuid, usage: state.usage });
     const chosen = conditionalReplay(usageMessage, event, token) ?? siblingFor(state, event);   // §164
-    await replayAgainst(usageMessage, token, { region: region.uuid, event, ...(times > 1 ? { times } : {}) }, { activity: chosen });
+    // §169 : après son apparition, le mur à face brûlante blesse sans sauvegarde (traversée, fin de tour du côté brûlant).
+    const noSave = !!(wallSideRuleOf(region) || region.getFlag(MODULE_ID, "sideOf"));
+    await replayAgainst(usageMessage, token, { region: region.uuid, event, ...(times > 1 ? { times } : {}), ...(noSave ? { noSave } : {}) }, { activity: chosen });
     // §75 : une zone à nombre de déclenchements (`zoneCharges` : Cordon de flèches, 4 projectiles) tombe au dernier.
     const charges = contentOf(usageMessage.getAssociatedActivity?.()?.item).entry?.zoneCharges;
     if ( charges ) {
@@ -194,6 +197,11 @@ function onMoveToken(token, movement) {
     const waypoints = [...(movement.passed?.waypoints ?? []), movement.destination].filter(Boolean).map(position);
     let steps = null;
     for ( const region of regions ) {
+      // §169 : un mur à face brûlante est fin — on « y entre » aussi en le traversant (un anneau peut passer par des centres de case).
+      if ( wallSideRuleOf(region) ) {
+        steps ??= passedCells(token, movement);
+        if ( steps.length && crossesWallRegion(region, token, [position(movement.origin), ...steps]) ) tick(region, token, "enter");
+      }
       const before = isInside(token, region, position(movement.origin));
       if ( entersArea(before, waypoints.map(w => isInside(token, region, w))) ) tick(region, token, "enter");
       // §16.20 : « pour chaque tranche de 1,50 m parcourue » dans la zone — case par case le long du trajet réellement

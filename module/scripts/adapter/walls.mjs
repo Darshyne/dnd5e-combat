@@ -7,7 +7,8 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
-import { lineAxis, polygonEdges } from "../core/wall.mjs";
+import { lineAxis, polygonEdges, circleEdges } from "../core/wall.mjs";
+import { wallSideRuleOf, wallGeometryOf } from "./wall-side.mjs";
 
 /** La règle `walls` qui vaut pour cette région (activité qui l'a posée), ou null. */
 export function wallRuleOf(region) {
@@ -24,7 +25,10 @@ export function wallDataFor(region, rule) {
   const sense = CONST.EDGE_SENSE_TYPES.NORMAL;
   const none = CONST.EDGE_SENSE_TYPES.NONE;
   const lines = region.shapes.filter(s => s.type === "line");
-  const segments = (lines.length === region.shapes.length) ? lines.map(s => lineAxis(s))
+  // §169 : un mur en anneau (Mur de feu) — un seul cercle de murs, sur son rayon, pas le bord de l'anneau et de son trou.
+  const ring = wallSideRuleOf(region) ? wallGeometryOf(region)?.ring : null;
+  const segments = ring ? circleEdges(ring)
+    : (lines.length === region.shapes.length) ? lines.map(s => lineAxis(s))
     : region.polygons.flatMap(p => polygonEdges(p.points));
   return segments.map(c => ({
     c,

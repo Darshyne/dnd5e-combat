@@ -16,6 +16,8 @@ A D&D 5.5 (2024 rules) rules and combat engine for **Foundry VTT V14** and **dnd
 - **Vision and light rules**: who sees whom, bright light / dim light / darkness, Search, passive Perception.
 - Every class and species of the *Player's Handbook 2024* is automated, along with many monster abilities.
   Rules are declared per dnd5e identifier, so they apply to any creature, PC or NPC.
+  **[See the full list of what Core automates](https://darshyne.github.io/automated.html)** (spells, class features,
+  feats, species traits, monster abilities, items).
 
 The engine patches neither the Foundry core nor the system: it only uses public hooks. It exposes an API for
 neighbouring modules (`game.modules.get("dnd5e-combat").api`): UI state (`api.ui`, including the pending target

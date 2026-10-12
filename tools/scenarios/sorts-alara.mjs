@@ -54,13 +54,17 @@ export default {
     await ctx.removeEffectsNamed(bramo, /Assistance|Guidance/);
 
     // 3. Stabilisation.
-    await ctx.use({ tokenId: alara.id, identifier: "spare-the-dying", targetTokenIds: [bramo.id] });
-    await pause(1500);
+    // L'effet se pose à la fin de l'animation (BLFX, ~2,4 s dans `dnd-6`) : on attend la résolution, pas un délai fixe.
+    const spare = async () => {
+      const used = await ctx.use({ tokenId: alara.id, identifier: "spare-the-dying", targetTokenIds: [bramo.id] });
+      if ( used.usageMessageId ) await ctx.settle(used.usageMessageId).catch(() => null);
+      await pause(800);
+    };
+    await spare();
     ctx.expect(!(await statuses(bramo)).includes("stable"), "Stabilisation sur Bramo debout : rien");
     await ctx.setHp(bramo, 0);
     await pause(1500);
-    await ctx.use({ tokenId: alara.id, identifier: "spare-the-dying", targetTokenIds: [bramo.id] });
-    await pause(1500);
+    await spare();
     ctx.expect((await statuses(bramo)).includes("stable"), "Stabilisation sur Bramo à 0 PV : Stabilisé");
     await ctx.setHp(bramo, hpBramo);
     await pause(1500);

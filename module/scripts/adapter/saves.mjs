@@ -320,11 +320,18 @@ export async function requestSaves(usageMessage, save, targets, { askPlayers=tru
  * 2026-10-04 l'avait perdu (l'activité gardait le profil `dsK5sPtkUMySmyvw`, l'item n'avait plus d'effet). On le prend sur la fiche
  * d'origine (compendium) : même acteur (`_stats.compendiumSource`, sinon un compendium d'acteurs qui a son id), même item, même effet.
  * L'effet du compendium s'applique tel quel (dnd5e note sa source, effect-application.mjs:237). Rien d'écrit sur la fiche.
+ * §154 : d'abord la source de l'item lui-même — l'Image miroir de Kaalisti dans `dnd-6` (sort du Manuel, copié sur une fiche de
+ * personnage) citait trois effets qu'elle n'avait plus ; le sort du compendium les a, sous les mêmes ids.
  */
 async function lostEffectOf(activity, effectId) {
   const item = activity?.item;
   const actor = item?.actor;
   if ( !item || !actor ) return null;
+  const own = [item._stats?.compendiumSource, item.flags?.core?.sourceId].filter(u => typeof u === "string" && u.startsWith("Compendium."));
+  for ( const uuid of own ) {
+    const effect = (await fromUuid(uuid).catch(() => null))?.effects?.get(effectId);
+    if ( effect ) { console.log(`${MODULE_ID} | "${effect.name}" taken from the item's source (${uuid}): the world item lost it`); return effect; }
+  }
   const base = actor.isToken ? (actor.baseActor ?? actor) : actor;
   const sources = [base._stats?.compendiumSource, base.flags?.core?.sourceId].filter(u => typeof u === "string" && u.startsWith("Compendium."));
   for ( const uuid of sources ) {

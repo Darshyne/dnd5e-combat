@@ -14,8 +14,15 @@ export default {
 
   async run(ctx) {
     const { tokens } = await ctx.scene();
-    if ( !["Alara", "Zombi"].every(n => tokens.some(t => t.name === n)) ) { ctx.log("Alara ou le Zombi absent : non applicable"); return; }
-    const alara = await ctx.token("Alara");
+    // L'Alara qui connaît le sort : « Alara » dans `ravenloft`, « Alara Dhampir » dans `dnd-6` (où « Alara » est la fiche du
+    // Domaine de la Ruse, sans Caresse du vampire).
+    let alara = null;
+    for ( const name of ["Alara Dhampir", "Alara"] ) {
+      if ( !tokens.some(t => t.name === name) ) continue;
+      const t = await ctx.token(name);
+      if ( await ctx.itemId(t.id, "vampiric-touch").catch(() => null) ) { alara = t; break; }
+    }
+    if ( !alara || !tokens.some(t => t.name === "Zombi") ) { ctx.log("Alara (avec Caresse du vampire) ou le Zombi absent : non applicable"); return; }
     const zombi = await ctx.token("Zombi");
     const hpAlara = await ctx.hp(alara);
     const hpZombi = await ctx.hp(zombi);

@@ -108,6 +108,10 @@ export default {
     s = await ctx.engine("wallSide", { regionId: placed.regionId, flip: true });
     const north = (s.burning?.shapes ?? []).some(x => x.type === "polygon" && x.points.some((v, i) => (i % 2) && (v < 33 * grid)));
     ctx.expect((s.side === 1) && north, `retournée : la face brûlante au nord (côté ${s.side})`);
+    // Le coin extérieur (au nord-est du coin du L) : couvert par le carré qui relie les deux bandes.
+    const covers = (poly, x, y) => { const xs = poly.points.filter((_, i) => !(i % 2)), ys = poly.points.filter((_, i) => i % 2);
+      return (x > Math.min(...xs)) && (x < Math.max(...xs)) && (y > Math.min(...ys)) && (y < Math.max(...ys)); };
+    ctx.expect((s.burning?.shapes ?? []).some(x => (x.type === "polygon") && covers(x, 18 * grid, 32 * grid)), "retournée : le coin extérieur du L est couvert");
     await ctx.call("delete-scene-object", { type: "Region", objectId: placed.regionId }).catch(() => {});
     await pause(1500);
     ctx.expect(!(await sceneObjects("Region")).some(r => [placed.regionId, s.burning?.id].includes(r.id ?? r._id)), "le mur retiré, sa face brûlante aussi");

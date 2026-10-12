@@ -104,3 +104,14 @@ describe("§173 : la zone autour d'un mur fin", () => {
     expect(auraShapes({ ring: { x: 0, y: 0, radius: 100 } }, 20)).toEqual([{ type: "ring", x: 0, y: 0, radius: 100, innerWidth: 20, outerWidth: 20 }]);
   });
 });
+
+describe("§169 : la face brûlante aux coins", () => {
+  it("un carré relie les deux bandes au coin du tracé", () => {
+    // Vers l'est puis vers le sud ; côté +1 : au nord du premier, à l'est du second — le coin extérieur, au nord-est.
+    const shapes = sideShapes({ lines: [[0, 0, 200, 0], [200, 0, 200, 200]] }, 1, 100);
+    expect(shapes).toHaveLength(3);
+    expect(shapes[2]).toEqual({ type: "polygon", points: [200, 0, 200, -100, 300, -100, 300, 0] });
+    // Deux segments qui ne se touchent pas : pas de coin.
+    expect(sideShapes({ lines: [[0, 0, 200, 0], [400, 0, 400, 200]] }, 1, 100)).toHaveLength(2);
+  });
+});

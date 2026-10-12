@@ -148,11 +148,25 @@ export function sideShapes(geometry, side, depth) {
     const { x, y, radius } = geometry.ring;
     return side > 0 ? [{ type: "circle", x, y, radius }] : [{ type: "ring", x, y, radius, innerWidth: 0, outerWidth: depth }];
   }
-  return (geometry?.lines ?? []).map(([x1, y1, x2, y2]) => {
+  const lines = geometry?.lines ?? [];
+  const normal = ([x1, y1, x2, y2]) => {
     const len = Math.hypot(x2 - x1, y2 - y1) || 1;
-    const nx = (side * (y2 - y1) * depth) / len, ny = (side * -(x2 - x1) * depth) / len;
-    return { type: "polygon", points: [x1, y1, x2, y2, x2 + nx, y2 + ny, x1 + nx, y1 + ny].map(v => Math.round(v)) };
+    return { x: (side * (y2 - y1) * depth) / len, y: (side * -(x2 - x1) * depth) / len };
+  };
+  const shapes = lines.map(l => {
+    const [x1, y1, x2, y2] = l;
+    const n = normal(l);
+    return { type: "polygon", points: [x1, y1, x2, y2, x2 + n.x, y2 + n.y, x1 + n.x, y1 + n.y].map(v => Math.round(v)) };
   });
+  // Aux coins du tracé, le carré qui relie les deux bandes (au coin extérieur il manquait ; à l'intérieur, il tombe dans les bandes).
+  for ( let i = 1; i < lines.length; i++ ) {
+    const [, , px, py] = lines[i - 1];
+    const [qx, qy] = lines[i];
+    if ( Math.hypot(px - qx, py - qy) > 1 ) continue;
+    const a = normal(lines[i - 1]), b = normal(lines[i]);
+    shapes.push({ type: "polygon", points: [px, py, px + a.x, py + a.y, px + a.x + b.x, py + a.y + b.y, px + b.x, py + b.y].map(v => Math.round(v)) });
+  }
+  return shapes;
 }
 
 /** L'anneau fin d'un mur circulaire : la forme « ring » du cœur, d'épaisseur `width`, centrée sur le rayon. */

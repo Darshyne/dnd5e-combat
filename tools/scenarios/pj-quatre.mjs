@@ -21,6 +21,12 @@ export default {
     const warlock = await ctx.token("Kaalisti");
     const wizard = await ctx.token("Bramo");
     const druid = await ctx.token("Sylaene");
+    // Les fiches de la campagne seulement : ailleurs (`dnd-6`), des tokens du même nom sans l'Eau bénite ni la forme Panthère.
+    const out = await ctx.call("list-actors", {});
+    const actors = Array.isArray(out) ? out : (out.actors ?? Object.values(out).find(Array.isArray));
+    const pantherActor = actors.find(a => /^Sylaene \(Panth/.test(a.name));
+    const hasHoly = await ctx.itemId(wizard.id, "holy-water").then(() => true, () => false);
+    if ( !pantherActor || !hasHoly ) { ctx.log("forme Panthère de Sylaene ou Eau bénite de Bramo absente (fiches de la campagne) : non applicable"); return; }
     const grid = await ctx.gridSize();
     for ( const t of [zombi, warlock, wizard, druid] ) {
       const hp = await ctx.hp(t);
@@ -33,9 +39,6 @@ export default {
     const known = async () => (await ctx.call("list-dialogs", {})).windows.map(w => w.id);
 
     // 1. Échappée agile.
-    const out = await ctx.call("list-actors", {});
-    const actors = Array.isArray(out) ? out : (out.actors ?? Object.values(out).find(Array.isArray));
-    const pantherActor = actors.find(a => /^Sylaene \(Panth/.test(a.name));
     if ( ctx.expect(!!pantherActor, "forme Panthère de Sylaene dans le monde") ) {
       const at = await ctx.position(zombi);
       const before = new Set((await ctx.call("list-scene-objects", { types: ["Token"] })).objects.Token.map(t => t.id));

@@ -82,11 +82,20 @@ export default {
     // 2 bis. §18.26 : un clic sur l'escalier de son propre niveau — le token s'arrête à côté puis y entre en marchant, et le
     // cœur ouvre son dialogue « Change Level » ; on y répond (connecteur ≥ 0.29.0 : list-dialogs, answer-dialog).
     const ownStairs = found.stairs.cells.find(c => (c.i !== home.cell.i) || (c.j !== home.cell.j));
+    // §167 : l'id du dialogue du cœur est le même pour un escalier et un token donnés (« dialog-<comportement>-<token> ») — un dialogue
+    // resté ouvert d'un passage précédent masquait le nouveau (exclu comme « déjà là »). On ferme d'abord ceux qui traînent.
+    for ( const w of (await ctx.call("list-dialogs", { dialogsOnly: true }).catch(() => ({ windows: [] }))).windows ?? [] ) {
+      if ( String(w.id).startsWith("dialog-") && /Change Level|Changer de niveau/i.test(w.title ?? "") ) {
+        await ctx.call("answer-dialog", { id: w.id, button: "no" }).catch(() => ctx.call("answer-dialog", { id: w.id, close: true }).catch(() => {}));
+      }
+    }
     const known = (await ctx.call("list-dialogs", {})).windows.map(w => w.id);
     let entering = await ctx.call("call-module-api", { moduleId: "dnd5e-combat", fn: "move", args: { tokenId: walker.id, cell: ownStairs, levelId: home.level }, waitMs: 500 });
     let dialog = null;
-    for ( let n = 0; (n < 4) && !dialog && !entering.settled; n++ ) {
-      dialog = (await ctx.call("list-dialogs", { dialogsOnly: true, excludeIds: known, waitMs: 8000 })).windows[0] ?? null;
+    // §167 : par tranches de 2,5 s — fenêtre du MJ en arrière-plan, le navigateur ralentit ses minuteries et une attente de 8 s
+    // débordait le délai de 10 s du connecteur (« Timeout en attente de la reponse a list-dialogs ») ; un délai dépassé isolé n'arrête rien.
+    for ( let n = 0; (n < 12) && !dialog && !entering.settled; n++ ) {
+      dialog = (await ctx.call("list-dialogs", { dialogsOnly: true, excludeIds: known, waitMs: 2500 }).catch(() => null))?.windows?.[0] ?? null;
     }
     const levelField = dialog?.fields?.find(f => f.name === "level");
     ctx.expect(!!levelField && levelField.options.some(o => o.value === level), `le cœur ouvre son dialogue « ${dialog?.title ?? "—"} » (niveaux proposés : ${levelField?.options.map(o => o.label).join(", ") ?? "—"})`);
@@ -95,7 +104,9 @@ export default {
       const answer = await ctx.call("answer-dialog", { id: dialog.id, ...(levelField?.disabled ? {} : { fields: { level } }), button: "yes" });
       ctx.expect(!answer.stillOpen, `répondu « ${answer.clicked?.label ?? yes?.label} », dialogue fermé`);
     }
-    for ( let n = 0; (n < 8) && !entering.settled; n++ ) entering = await ctx.call("call-module-api", { callId: entering.callId, waitMs: 8000 });
+    for ( let n = 0; (n < 24) && !entering.settled; n++ ) {
+      entering = (await ctx.call("call-module-api", { callId: entering.callId, waitMs: 2500 }).catch(() => null)) ?? entering;
+    }
     if ( ctx.expect(entering.settled, "le déplacement s'achève après la réponse") ) {
       // Le cœur change le niveau APRÈS la fin du pas (change-level.mjs, `#moveToken`) : on attend qu'il l'ait fait.
       let upstairs = entering.result.after;

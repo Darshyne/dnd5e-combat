@@ -102,7 +102,12 @@ export function readConcentrationSave(message) {
 
 /** Même effet que le bouton « Rompre la concentration » de la carte de sauvegarde. */
 export async function breakConcentration(actor, saveMessage) {
-  const ended = await actor.endConcentration();
+  // Le lanceur tombé à 0 PV : sa concentration peut partir par un autre chemin au même moment (vu le 2026-10-12 : « ActiveEffect …
+  // does not exist! ») — elle est terminée, c'est ce qu'on voulait.
+  const ended = await actor.endConcentration().catch(err => {
+    if ( /does not exist/i.test(String(err?.message ?? err)) ) return [];
+    throw err;
+  });
   if ( ended?.length && saveMessage ) await saveMessage.update({ "system.outcome": "broken" });
   return ended ?? [];
 }

@@ -780,7 +780,7 @@ async function sequencer({ end=null }={}) {
   if ( end?.sounds?.length ) await S.SoundManager.endSounds({ sounds: end.sounds });
   return {
     available: true,
-    effects: (S.EffectManager.effects ?? []).map(e => ({ id: e.id, name: e.data?.name ?? null })),
+    effects: (S.EffectManager.effects ?? []).map(e => ({ id: e.id, name: e.data?.name ?? null, file: String(e.data?.file ?? "") })),
     sounds: (S.SoundManager.sounds ?? []).map(s => ({ id: s.data?._id ?? s.id, name: s.data?.name ?? null }))
   };
 }

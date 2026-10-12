@@ -2,6 +2,9 @@
 
 **[Website](https://darshyne.github.io)** · **[Discord](https://discord.gg/PDSq8dYdTP)** (questions, bugs, ideas)
 
+> **Beta.** Not every spell and feature is covered yet: some still need a click or a roll by hand. If one doesn't behave
+> as it should, tell us on [Discord](https://discord.gg/PDSq8dYdTP) or [open an issue](https://github.com/Darshyne/dnd5e-combat/issues).
+
 A D&D 5.5 (2024 rules) rules and combat engine for **Foundry VTT V14** and **dnd5e 6.x**. It is the core of
 **Darshyne's Automation Suite (DAS)**: a single module owns the whole combat loop, replacing Midi-QOL, CPR and the like.
 

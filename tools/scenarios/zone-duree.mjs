@@ -12,6 +12,10 @@ export default {
     const zombi = await ctx.token("Zombi");
     const hp0 = await ctx.hp(zombi);
     ctx.restore(() => ctx.setHp(zombi, hp0));
+    // Le Zombi du Monster Manual n'a que 15 PV : un Rayon de lune raté (radiant, sans Robustesse de la non-vie) l'abat dès la
+    // pose, et il n'y a plus de fin de tour à observer. Des PV hauts le temps du test ; les comptes partent de là.
+    const hp1 = 100;
+    await ctx.setHp(zombi, hp1);
 
     const box = await ctx.box(zombi);
     const centre = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
@@ -56,6 +60,6 @@ export default {
     ctx.expect(target.save?.total !== null && target.save?.success === (target.save?.total >= dc), `sauvegarde ${target.save?.total} contre DD ${dc} : ${target.save?.success ? "réussie" : "ratée"}`);
     const after = await ctx.hp(zombi);
     const total = atCast + (target.damage?.applied ?? 0);
-    ctx.expect(hp0 - after === total, `PV lus sur le token ${hp0} → ${after}, = ${atCast} (pose) + ${target.damage?.applied ?? 0} (rejeu)`);
+    ctx.expect(hp1 - after === total, `PV lus sur le token ${hp1} → ${after}, = ${atCast} (pose) + ${target.damage?.applied ?? 0} (rejeu)`);
   }
 };

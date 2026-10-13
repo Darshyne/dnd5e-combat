@@ -61,23 +61,30 @@ async function onResolution(resolution) {
   const target = fromUuidSync(smite.target, { strict: false });
   const hit = (resolution.targets ?? []).some(t => (t.token === smite.target) && (t.hit === true));
   if ( !target?.actor || !hit ) return;
-  if ( (target.actor.system.attributes?.hp?.value ?? 0) <= 0 ) return log(`${smite.name}: ${target.name} is at 0 Hit Points, no effect and no saving throw`);
+  // §176 : une cible tombée à 0 PV sous le coup ne subit ni l'effet ni la sauvegarde ; l'éclat (Grêle d'épines) touche pourtant
+  // ses voisines — « la cible et chaque créature à 1,50 m d'elle ».
+  const burst = contentOf(item).entry?.smite?.burst;
+  const down = (target.actor.system.attributes?.hp?.value ?? 0) <= 0;
+  if ( down ) log(`${smite.name}: ${target.name} is at 0 Hit Points, no effect and no saving throw`);
+  if ( down && !burst ) return;
   // §42.2 : l'effet que le sort pose en touchant, sans sauvegarde (« Seared », « Blinded »), au niveau lancé.
-  if ( smite.effect ) await placeItemEffect(item, smite.effect, target.actor, { scaling: smite.scaling ?? 0 });
+  if ( smite.effect && !down ) await placeItemEffect(item, smite.effect, target.actor, { scaling: smite.scaling ?? 0 });
   if ( !smite.save ) return;
   const save = item.system.activities?.get(smite.save);
   if ( !save ) return;
   const source = actor.getActiveTokens(false, true)[0] ?? null;
   if ( !source ) return;
-  log(`${smite.name}: ${target.name} makes their saving throw`);
-  await strikeAgainst(save, source, target, { flavor: "DND5ECOMBAT.Chatiment.Carte" });
+  if ( !down ) {
+    log(`${smite.name}: ${target.name} makes their saving throw`);
+    await strikeAgainst(save, source, target, { flavor: "DND5ECOMBAT.Chatiment.Carte" });
+  }
   // §164 : « la cible et chaque créature à 1,50 m d'elle » (Grêle d'épines).
-  const burst = contentOf(item).entry?.smite?.burst;
   if ( !burst ) return;
   let radius = burst.radius;
   try { radius = convertLength(burst.radius, burst.units, target.parent.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
   for ( const other of target.parent.tokens ) {
-    if ( (other === target) || !other.actor || other.hidden || (distanceBetween(target, other).value > radius + 1e-6) ) continue;
+    if ( (other === target) || !other.actor || other.hidden || ((other.actor.system.attributes?.hp?.value ?? 0) <= 0) ) continue;
+    if ( distanceBetween(target, other).value > radius + 1e-6 ) continue;
     log(`${smite.name}: ${other.name}, within ${burst.radius} ${burst.units} of ${target.name}, makes their saving throw`);
     await strikeAgainst(save, source, other, { flavor: "DND5ECOMBAT.Chatiment.Carte" });
   }

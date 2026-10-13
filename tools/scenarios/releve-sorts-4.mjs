@@ -151,6 +151,9 @@ export default {
 
     await part("Gardien de la foi", async () => {
       const itemId = await lend(cleric, "phbsplGuardianof");
+      // Le Zombi (15 PV) mourait sous le pouls : plus de cible au tour suivant, et une Mort que dnd5e et la remise en état
+      // retiraient chacun de leur côté (« ActiveEffect dnd5edead0000000 does not exist »). PV remis par `reset`.
+      await ctx.setHp(zombi, 100);
       if ( !ctx.expect(await fight([cleric, zombi]), "Gardien : tour du Clerc") ) return;
       const z = await ctx.position(zombi);
       const guardian = await summon(cleric, itemId, z.x + 2 * grid, z.y);
@@ -161,6 +164,9 @@ export default {
 
     await part("Chien de garde", async () => {
       const itemId = await lend(mage, "phbFaithfulHound");
+      // Le Zombi (15 PV) mourait sous le pouls : plus de cible au tour suivant, et une Mort que dnd5e et la remise en état
+      // retiraient chacun de leur côté (« ActiveEffect dnd5edead0000000 does not exist »). PV remis par `reset`.
+      await ctx.setHp(zombi, 100);
       if ( !ctx.expect(await fight([mage, zombi]), "Chien : tour du Magicien") ) return;
       const z = await ctx.position(zombi);
       const hound = await summon(mage, itemId, z.x + grid, z.y);

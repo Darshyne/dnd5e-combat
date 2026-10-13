@@ -71,7 +71,8 @@ export default {
     const box = await ctx.box(zombi);
     const sl = await until(slow, { targetTokenIds: [zombi.id], area: { shape: "rectangle", ...box } });
     if ( ctx.expect(!!sl, "Lenteur : le Zombi rate sa sauvegarde (20 essais au plus)") ) {
-      const slowed = async () => (await newEffects(zombi)).length > 0;
+      // L'effet du sort lui-même, par son nom : en combat, d'autres effets (statuts de tour) apparaissent sur le Zombi.
+      const slowed = async () => (await newEffects(zombi)).some(e => /Slowed|Ralenti|Lent/i.test(e.name ?? ""));
       ctx.expect(await slowed(), "le Zombi porte l'effet de Lenteur");
       await ctx.startCombat([mage, zombi]);
       const since = sl.origin;

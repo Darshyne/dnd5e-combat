@@ -159,6 +159,8 @@ export default {
       if ( !ctx.expect(!!bow, "Grêle d'épines : le Rôdeur a une arme à distance") ) return;
       const z = await ctx.position(zombi);
       await ctx.call("move-token", { tokenId: bandit.id, x: z.x + grid, y: z.y, elevation: 0 }); await pause(800);
+      // Le Zombi (15 PV) tombait sous la flèche : il faut qu'il soit encore debout pour sauvegarder (remis par `reset`).
+      for ( const t of [zombi, bandit] ) await ctx.setHp(t, 100);
       for ( let n = 1; n <= 10; n++ ) {
         const ids = (await ctx.call("list-dialogs", {})).windows.map(w => w.id);
         const since = await ctx.lastMessageId();

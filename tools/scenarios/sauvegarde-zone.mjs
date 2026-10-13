@@ -11,6 +11,8 @@ export default {
     const zombi = await ctx.token("Zombi");
     const hp0 = await ctx.hp(zombi);
     ctx.restore(() => ctx.setHp(zombi, hp0));
+    // Le Zombi n'a que 15 PV : des dégâts plafonnés à ses PV restants fausseraient « dégâts appliqués = jet ». PV hauts le temps du test.
+    await ctx.setHp(zombi, 100);
     const regionsBefore = (await ctx.call("list-scene-objects", { types: ["Region"] })).objects.Region ?? [];
 
     const box = await ctx.box(zombi);
@@ -36,7 +38,7 @@ export default {
     ctx.expect(!!damage && total > 0, `jet de dégâts de l'auteur (${total})`);
     ctx.expect(target.damage?.applied === expected, `dégâts appliqués ${target.damage?.applied} = ${target.save?.success ? "moitié de" : ""} ${total}`);
     const after = await ctx.hp(zombi);
-    ctx.expect(hp0 - after === target.damage?.applied, `PV lus sur le token ${hp0} → ${after}`);
+    ctx.expect(100 - after === target.damage?.applied, `PV lus sur le token 100 → ${after}`);
 
     // Le moteur laisse la zone quelques secondes (animations d'autres modules) avant de la retirer.
     let regionsAfter = [];

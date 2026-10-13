@@ -12,7 +12,7 @@ import { registerCoven } from "./runtime/coven.mjs";
 import { registerReduction } from "./runtime/reduction.mjs";
 import { registerZones } from "./runtime/zones.mjs";
 import { registerAltitude } from "./runtime/altitude.mjs";
-import { registerActions, approach } from "./runtime/actions.mjs";
+import { registerActions, approach, pathTo } from "./runtime/actions.mjs";
 import { registerFollow } from "./runtime/follow.mjs";
 import { registerFacing } from "./runtime/facing.mjs";
 import { registerTurn } from "./runtime/turn.mjs";
@@ -67,7 +67,7 @@ import { registerFamiliars } from "./runtime/familiar.mjs";
 import { registerAnimations } from "./runtime/animations.mjs";
 import { basicActionData } from "./adapter/basics.mjs";
 import { stopAllWalks } from "./adapter/movement.mjs";
-import { budgetIssues, spendBudget } from "./runtime/neighbours.mjs";
+import { budgetIssues, spendBudget, takeBasicAction } from "./runtime/neighbours.mjs";
 import { registerGrapple } from "./runtime/grapple.mjs";
 import { registerProne } from "./runtime/prone.mjs";
 import { registerBreaks } from "./runtime/breaks.mjs";
@@ -138,6 +138,9 @@ import { openDiagnostic } from "./ui/diagnostic.mjs";
  *   parchemins du monde (tools/macros/reprendre-parchemins.js).
  * `level()` : le niveau d'automatisation du monde, « essentials » | « assisted » | « full » (§117) ; `levelAtLeast(niveau)` ;
  *   `skippedRoutes()` : les écoutes non branchées à ce niveau.
+ * §179 : `approach(token, { target, reachCells, seeing })` — s'approcher d'une cible jusqu'à une allonge ou une portée (en cases), en
+ *   la voyant si demandé ; `path(token, { cells | target, reachCells, seeing }, { maxCost, extra })` → `{ arrives, moves, door }` ou null — un
+ *   chemin sans le parcourir (`extra` : la Vitesse en plus, pour un Sprint) ; `basics.take(actor, "dash" | "disengage" | "dodge")` — l'action de base sans item (PNJ), par le budget.
  * `vision.canSee(observer, target)` (§178) : l'observateur voit-il la cible, selon les règles de vision du moteur (lumière, murs,
  *   vision dans le noir, brume et ténèbres, Invisible — donc une Furtivité réussie —, Aveuglé) ? `true` / `false`, ou `null` quand on
  *   ne peut pas juger (vision simulée coupée, canevas absent, token non dessiné). Tokens ou documents ; lecture seule.
@@ -146,7 +149,7 @@ import { openDiagnostic } from "./ui/diagnostic.mjs";
  */
 const state = {
   active: false, reason: null, unitFactors: null, routes: describeRoutes, content: contentApi, reports: reportsApi, mcp: testApi, perf: perfApi,
-  ui: uiApi, light: lightState, approach, scrolls: { spellOf: scrollSpellOf }, basics: { data: basicActionData },
+  ui: uiApi, light: lightState, approach, scrolls: { spellOf: scrollSpellOf }, basics: { data: basicActionData, take: takeBasicAction }, path: pathTo,
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
   level: automationLevel, levelAtLeast, skippedRoutes,
   welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic },

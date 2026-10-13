@@ -502,7 +502,10 @@ export async function moveTo(token, point, { action=null, level=null }={}) {
  * @param {{ cells: {i: number, j: number}[], level?: string|null }} to
  * @returns {Promise<{ arrived: boolean, reason?: "notOwner"|"noCells"|"grappled"|"noPath"|"stopped"|"exhausted" }>}
  */
-export async function approach(token, { cells, level=null }={}) {
+export async function approach(token, { cells, level=null, target=null, reachCells=1, seeing=false }={}) {
+  // §179 : s'approcher d'une cible jusqu'à une allonge ou une portée donnée (en cases), « en la voyant » si demandé — la zone
+  // d'approche de `planPath` (celle d'une attaque), ouverte aux voisins.
+  if ( target ) return approachTarget(token, target, { reachCells, seeing });
   if ( !token?.isOwner ) return { arrived: false, reason: "notOwner" };
   if ( !Array.isArray(cells) || !cells.length ) return { arrived: false, reason: "noCells" };
   if ( isGrappled(token) ) return { arrived: false, reason: "grappled" };
@@ -525,6 +528,47 @@ export async function approach(token, { cells, level=null }={}) {
     await plan.door.update({ ds: CONST.WALL_DOOR_STATES.OPEN });
   }
   return onGoal() ? { arrived: true } : { arrived: false, reason: "noPath" };
+}
+
+/**
+ * §179 : marcher vers une cible jusqu'à `reachCells` cases d'elle (1 = au contact), sur son niveau ; `seeing` : seulement jusqu'à
+ * une case d'où on la voit (un tireur). Portes, attaques d'opportunité et budget du tour comme toute marche du moteur.
+ * @returns {Promise<{ arrived: boolean, reason?: "notOwner"|"grappled"|"noPath"|"stopped"|"exhausted" }>}
+ */
+async function approachTarget(token, target, { reachCells=1, seeing=false }={}) {
+  if ( !token?.isOwner ) return { arrived: false, reason: "notOwner" };
+  if ( isGrappled(token) ) return { arrived: false, reason: "grappled" };
+  const reach = Math.max(1, Math.round(reachCells) || 1);
+  const there = () => ((token._source.level ?? null) === (target._source.level ?? null))
+    && (footprintDistance(footprintOf(token), footprintOf(target)) <= reach - 1);
+  if ( there() ) return { arrived: true };
+  for ( let opened = 0; opened <= MAX_DOORS_PER_MOVE; opened++ ) {
+    const plan = planPath(token, { target, reachCells: reach, seeing }, { maxCost: movementCap(token), throughDoors: opened < MAX_DOORS_PER_MOVE });
+    if ( !plan ) return { arrived: false, reason: "noPath" };
+    if ( !plan.waypoints.length && !plan.door ) return (there() || plan.arrives) ? { arrived: true } : { arrived: false, reason: "exhausted" };
+    if ( plan.waypoints.length && !(await walkSafely(token, plan)) ) return { arrived: false, reason: "stopped" };
+    if ( !plan.door ) return (there() || plan.arrives) ? { arrived: true } : { arrived: false, reason: "exhausted" };
+    if ( !plan.arrives ) return { arrived: false, reason: "exhausted" };
+    await plan.door.update({ ds: CONST.WALL_DOOR_STATES.OPEN });
+  }
+  return there() ? { arrived: true } : { arrived: false, reason: "noPath" };
+}
+
+/**
+ * §179 : un chemin sans le parcourir — vers des cases (`cells`, `level`) ou une cible (`target`, `reachCells`, `seeing`). `maxCost` :
+ * le plafond de coût à tester (défaut : ce qui reste au token ce tour, Infinity hors combat), dans l'unité de la grille, cumulé avec
+ * l'historique du tour ; `extra` : un supplément au plafond du tour (sa Vitesse : « arriverait-il en Sprintant ? »). Rend
+ * `{ arrives, moves, door }` — `arrives` : le but est atteint dans le plafond —, ou null s'il n'y a pas de chemin.
+ */
+export function pathTo(token, { cells=null, level=null, target=null, reachCells=1, seeing=false }={}, { maxCost=null, extra=0 }={}) {
+  const doc = token?.document ?? token;
+  if ( !doc?.object ) return null;
+  const to = target ? { target: target.document ?? target, reachCells: Math.max(1, Math.round(reachCells) || 1), seeing }
+    : { cells: (cells ?? []).map(({ i, j }) => ({ i, j })), ...(level ? { level } : {}) };
+  if ( !target && !to.cells.length ) return null;
+  const plan = planPath(doc, to, { maxCost: maxCost ?? (movementCap(doc) + (Number(extra) || 0)), throughDoors: true });
+  if ( !plan ) return null;
+  return { arrives: !!plan.arrives && !plan.door, moves: plan.waypoints.length > 0, door: !!plan.door };
 }
 
 /**

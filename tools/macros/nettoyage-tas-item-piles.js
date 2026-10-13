@@ -1,64 +1,9 @@
 /**
- * Actions de base du moteur posées par erreur sur les tas d'Item Piles (SPEC §16.60, le 2026-09-27).
- * Macro de monde, à lancer par le MJ, **une fois le moteur en 0.118.0 ou plus** (avant, il les reposerait au chargement).
- * Deux choix : « Rapport » n'écrit rien et rend le compte rendu dans le chat (chuchoté au MJ), « Retirer » nettoie.
- *
- * Avant la 0.118.0, le moteur donnait ses actions de base (Pointe, Désengagement, Esquive, S'échapper, Intention, Furtivité,
- * Chercher, Soutien, Attaque à mains nues) à tout acteur de type « character » — dont l'acteur par défaut d'Item Piles,
- * « Default Item Pile » (et tout acteur de tas de ce type). Un tas posé sur la carte en hérite : il les montre comme butin, et
- * Item Piles peut nommer le tas d'après l'une d'elles.
- *
- * Ne touche QU'aux items que le moteur a posés (`flags["dnd5e-combat"].basicAction`), et seulement sur les acteurs de tas
- * (`flags["item-piles"].data.enabled`) : acteurs du monde, puis tokens non liés de toutes les scènes (items recopiés dans
- * leur delta). Aucun autre acteur, aucun autre item.
+ * Raccourci vers le diagnostic du monde de DAS · Core (SPEC §177), ouvert sur la vérification « actions de base sur les tas d'Item Piles ».
+ * La logique de cette macro vit désormais dans le module (runtime/diagnostic/checks.mjs, `item-piles`) : analyse sans rien écrire,
+ * réparation de ce que le MJ coche, après une sauvegarde vérifiée dans le compendium « DAS · Sauvegardes » (restaurable).
  */
-// « Rapport » n'écrit rien (compte rendu chuchoté au MJ) ; « Retirer » applique.
-// Textes : clés DND5ECOMBAT.Macro.ItemPilesBasics.* des fichiers de langue du module.
-const t = (key, data) => data ? game.i18n.format(`DND5ECOMBAT.Macro.ItemPilesBasics.${key}`, data) : game.i18n.localize(`DND5ECOMBAT.Macro.ItemPilesBasics.${key}`);
-if ( !game.user.isGM ) return ui.notifications.warn(t("GmOnly"));
-const choice = await foundry.applications.api.DialogV2.wait({
-  window: { title: t("Title") },
-  content: `<p>${t("ReportChangesNothing")}</p>`,
-  buttons: [{ action: "report", label: t("Report"), default: true }, { action: "apply", label: t("Apply") }],
-  rejectClose: false
-});
-if ( !choice ) return;
-const DRY = choice !== "apply";
-
-const isPile = actor => actor?.flags?.["item-piles"]?.data?.enabled === true;
-const isBasic = item => !!item.flags?.["dnd5e-combat"]?.basicAction;
-const lines = [];
-let total = 0;
-
-async function clean(actor, where) {
-  if ( !isPile(actor) ) return;
-  const basics = actor.items.filter(isBasic);
-  if ( !basics.length ) return;
-  total += basics.length;
-  lines.push(`<li><strong>${foundry.utils.escapeHTML(where)}</strong> : ${basics.map(i => foundry.utils.escapeHTML(i.name)).join(", ")}</li>`);
-  if ( !DRY ) await actor.deleteEmbeddedDocuments("Item", basics.map(i => i.id));
-}
-
-// 1. Acteurs du monde (dont « Default Item Pile »).
-for ( const actor of game.actors ) await clean(actor, t("ActorWhere", { name: actor.name }));
-
-// 2. Tokens non liés : les items que le delta a recopiés (les autres viennent de l'acteur de base, déjà nettoyé).
-for ( const scene of game.scenes ) {
-  for ( const token of scene.tokens ) {
-    if ( token.actorLink || !token.actor || !isPile(token.actor) ) continue;
-    const own = new Set((token.delta?.items ?? []).map(i => i.id));
-    const basics = token.actor.items.filter(i => isBasic(i) && own.has(i.id));
-    if ( !basics.length ) continue;
-    total += basics.length;
-    lines.push(`<li><strong>${foundry.utils.escapeHTML(t("PileWhere", { token: token.name, scene: scene.name }))}</strong> : ${basics.map(i => foundry.utils.escapeHTML(i.name)).join(", ")}</li>`);
-    if ( !DRY ) await token.actor.deleteEmbeddedDocuments("Item", basics.map(i => i.id));
-  }
-}
-
-const head = DRY ? t("HeadReport") : t("HeadDone");
-const body = total ? `<p>${t(DRY ? "ToRemove" : "Removed", { count: total })}</p><ul>${lines.join("")}</ul>`
-  : `<p>${t("Nothing")}</p>`;
-await ChatMessage.create({
-  content: `<h3>${t("Heading")}</h3><p>${head}</p>${body}`,
-  whisper: ChatMessage.getWhisperRecipients("GM").map(u => u.id)
-});
+const api = game.modules.get("dnd5e-combat")?.api;
+if ( !game.user.isGM ) return ui.notifications.warn(game.i18n.localize("DND5ECOMBAT.Diagnostic.MJSeul"));
+if ( !api?.diagnostic?.open ) return ui.notifications.error(game.i18n.localize("DND5ECOMBAT.Diagnostic.MoteurRequis"));
+api.diagnostic.open({ check: "item-piles" });

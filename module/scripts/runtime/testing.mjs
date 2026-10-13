@@ -45,6 +45,7 @@ import { toggleCarriedLight } from "./lights.mjs";
 import { flipWallSide } from "./wall-side.mjs";
 import { sideRegionOf } from "../adapter/wall-side.mjs";
 import { coverFor } from "../adapter/cover.mjs";
+import { listBackups as diagBackups, repairTasks, restore as diagRestore, scanWorld } from "./diagnostic/index.mjs";
 
 /** Le token désigné, sur la scène affichée par le MJ. */
 function tokenOf({ tokenId }) {
@@ -879,4 +880,39 @@ async function door({ tokenId, wallId, open=true }) {
   return { state: doorState(wall), x: token._source.x, y: token._source.y };
 }
 
-export const testApi = Object.freeze({ wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door });
+/* -------------------------------------------- */
+/*  §177 : diagnostic, pour les scénarios          */
+/* -------------------------------------------- */
+
+const plainTask = t => ({ id: t.id, check: t.check, root: t.root ?? null, fixable: typeof t.apply === "function", preselect: !!t.preselect,
+  where: String(t.where ?? "").replace(/<[^>]+>/g, ""), text: String(t.text ?? "").replace(/<[^>]+>/g, "") });
+
+/** Analyse (rien n'est écrit) : les tâches, sans leurs fonctions. */
+async function diagnosticScan({ checks=null }={}) {
+  const scan = await scanWorld(checks);
+  return Object.fromEntries(Object.entries(scan).map(([id, tasks]) => [id, tasks.map(plainTask)]));
+}
+
+/** Répare les tâches réparables de ces vérifications dont la racine est l'un de ces uuid (toutes si `roots` est absent). */
+async function diagnosticRepair({ checks=null, roots=null }={}) {
+  const scan = await scanWorld(checks);
+  const tasks = Object.values(scan).flat().filter(t => t.apply && (!roots || roots.includes(t.root?.uuid)));
+  const { backup, results } = await repairTasks(tasks);
+  return { backup, results: results.map(r => ({ ...plainTask(r.task), ok: r.ok, line: String(r.line).replace(/<[^>]+>/g, "") })) };
+}
+
+const diagnosticBackups = () => diagBackups();
+
+/** Après un scénario : retire ces entrées de sauvegarde, et le compendium s'il est vide et que le scénario l'a créé (`dropPack`). */
+async function diagnosticForget({ uuids=[], dropPack=false, actors=[] }={}) {
+  for ( const uuid of uuids ) await (await fromUuid(uuid).catch(() => null))?.delete();
+  // Les acteurs que le scénario a créés (marqués `flags.dnd5e-combat.scenario`), jamais un autre.
+  for ( const id of actors ) { const a = game.actors.get(id); if ( a?.getFlag(MODULE_ID, "scenario") ) await a.delete(); }
+  const pack = game.packs.get("world.das-backups");
+  const left = pack ? (await pack.getIndex()).size : 0;
+  if ( pack && dropPack && !left ) await pack.deleteCompendium();
+  return { left, dropped: !!(pack && dropPack && !left) };
+}
+const diagnosticRestore = ({ uuid }) => diagRestore(uuid);
+
+export const testApi = Object.freeze({ wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget });

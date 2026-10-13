@@ -16,7 +16,7 @@ describe("niveaux d'automatisation (§117)", () => {
   });
 
   it("chaque fonction du point d'entrée passe par gated() et a son niveau dans la table", () => {
-    const raw = Array.from(entry.matchAll(/^\s*(register[A-Z]\w*)\(\);/gm), m => m[1]).filter(n => n !== "registerLevel");
+    const raw = Array.from(entry.matchAll(/^\s*(register[A-Z]\w*)\(\);/gm), m => m[1]).filter(n => !["registerLevel", "registerWelcome"].includes(n));   // §177 : l'accueil, hors niveaux (déclaré même en veille)
     expect(raw, "appelées sans gated()").toEqual([]);
     const gatedNames = Array.from(entry.matchAll(/gated\((register[A-Z]\w*)\)/g), m => m[1]);
     expect(gatedNames.length).toBeGreaterThan(90);

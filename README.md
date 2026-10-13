@@ -59,6 +59,18 @@ The first setting of the module picks one of three levels (changing it reloads t
 
 `api.level()` / `api.levelAtLeast(level)` tell neighbour modules which level is active.
 
+## Welcome screen and world diagnostic
+
+The first time the module runs in a world, the GM sees a **welcome screen**: the three automation levels as big buttons,
+and the **world diagnostic**. It opens again from **Configure Settings → DAS · Core → Welcome and diagnostic**.
+
+The diagnostic scans the world for what needs repairing — Midi-QOL, DAE and CPR traces on sheets, Player's Handbook
+effects and item effects lost on import, old-format spell scrolls, CPR copies of basic actions, untranslated creature
+identifiers. **Scanning changes nothing.** You tick what to repair; every document about to change (actor, world item, or
+unlinked token) is first copied into the world compendium **"DAS · Backups"**, then read back and checked — if the copy is
+incomplete, nothing is modified. The **Backups** tab restores any repair exactly as it was (the current state is backed up
+first, so a restore can be undone too). The macros of the "GM tools" compendium open the same diagnostic.
+
 ## Darshyne's Automation Suite
 
 | Module | Role |

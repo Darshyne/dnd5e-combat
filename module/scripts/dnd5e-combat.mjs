@@ -113,6 +113,8 @@ import { scrollSpellOf } from "./adapter/scrolls.mjs";
 import { registerStabilize } from "./runtime/stabilize.mjs";
 import { registerPotions } from "./runtime/potions.mjs";
 import { registerOil } from "./runtime/oil.mjs";
+import { registerWelcome, openWelcome } from "./ui/welcome.mjs";
+import { openDiagnostic } from "./ui/diagnostic.mjs";
 
 /**
  * État global du module, exposé sur game.modules.get(MODULE_ID).api pour l'inspection.
@@ -135,12 +137,15 @@ import { registerOil } from "./runtime/oil.mjs";
  *   parchemins du monde (tools/macros/reprendre-parchemins.js).
  * `level()` : le niveau d'automatisation du monde, « essentials » | « assisted » | « full » (§117) ; `levelAtLeast(niveau)` ;
  *   `skippedRoutes()` : les écoutes non branchées à ce niveau.
+ * `welcome.open()` : l'écran d'accueil (§177) ; `diagnostic.open({ check })` : le diagnostic du monde (vérifications, réparation après
+ *   sauvegarde, restauration), sur une seule vérification si `check` est donné (macros « Outils du MJ »).
  */
 const state = {
   active: false, reason: null, unitFactors: null, routes: describeRoutes, content: contentApi, reports: reportsApi, mcp: testApi, perf: perfApi,
   ui: uiApi, light: lightState, approach, scrolls: { spellOf: scrollSpellOf }, basics: { data: basicActionData },
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
-  level: automationLevel, levelAtLeast, skippedRoutes
+  level: automationLevel, levelAtLeast, skippedRoutes,
+  welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic }
 };
 
 /** Pourquoi le moteur doit rester en veille dans ce monde, ou null s'il peut tourner. */
@@ -156,6 +161,8 @@ function standbyReason() {
 Hooks.once("init", () => {
   game.modules.get(MODULE_ID).api = state;
   state.reason = standbyReason();
+  // §177 : l'accueil et le diagnostic, même en veille (le diagnostic nettoie justement les traces de Midi-QOL). Hors niveaux.
+  registerWelcome();
   if ( state.reason ) return;
   // L'ordre de ces appels est l'ordre d'appel des inscrits d'un même hook (runtime/router.mjs).
   // Le moteur d'abord ; la souris (ui/pointer) avant la légalité (turn) : une activité sans cible

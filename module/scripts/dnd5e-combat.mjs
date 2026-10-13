@@ -28,6 +28,7 @@ import { registerContent, contentApi } from "./runtime/content.mjs";
 import { registerIcons } from "./runtime/icons.mjs";
 import { registerConditions } from "./runtime/conditions.mjs";
 import { registerVision } from "./runtime/vision.mjs";
+import { canSee as visionCanSee, isVisionAvailable } from "./adapter/vision.mjs";
 import { registerSpace } from "./runtime/space.mjs";
 import { registerSelfAreas } from "./runtime/self-area.mjs";
 import { registerAreas } from "./runtime/areas.mjs";
@@ -137,6 +138,9 @@ import { openDiagnostic } from "./ui/diagnostic.mjs";
  *   parchemins du monde (tools/macros/reprendre-parchemins.js).
  * `level()` : le niveau d'automatisation du monde, « essentials » | « assisted » | « full » (§117) ; `levelAtLeast(niveau)` ;
  *   `skippedRoutes()` : les écoutes non branchées à ce niveau.
+ * `vision.canSee(observer, target)` (§178) : l'observateur voit-il la cible, selon les règles de vision du moteur (lumière, murs,
+ *   vision dans le noir, brume et ténèbres, Invisible — donc une Furtivité réussie —, Aveuglé) ? `true` / `false`, ou `null` quand on
+ *   ne peut pas juger (vision simulée coupée, canevas absent, token non dessiné). Tokens ou documents ; lecture seule.
  * `welcome.open()` : l'écran d'accueil (§177) ; `diagnostic.open({ check })` : le diagnostic du monde (vérifications, réparation après
  *   sauvegarde, restauration), sur une seule vérification si `check` est donné (macros « Outils du MJ »).
  */
@@ -145,8 +149,15 @@ const state = {
   ui: uiApi, light: lightState, approach, scrolls: { spellOf: scrollSpellOf }, basics: { data: basicActionData },
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
   level: automationLevel, levelAtLeast, skippedRoutes,
-  welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic }
+  welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic },
+  vision: { canSee: publicCanSee }
 };
+
+/** §178 : la vision du moteur pour un voisin (lecture seule) — null quand la vision simulée est coupée ou ne peut pas juger. */
+function publicCanSee(observer, target) {
+  if ( !isVisionAvailable() ) return null;
+  return visionCanSee(observer?.document ?? observer, target?.document ?? target);
+}
 
 /** Pourquoi le moteur doit rester en veille dans ce monde, ou null s'il peut tourner. */
 function standbyReason() {

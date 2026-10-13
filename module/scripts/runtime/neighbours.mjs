@@ -6,6 +6,7 @@
 import { checkUse, spendUse, basicAction, BASIC_ACTION_FLAGS } from "../core/turn.mjs";
 import { windowDisengaged } from "./reactions.mjs";
 import { combatantFor, isOwnTurn, readBudget, writeBudget } from "../adapter/turn.mjs";
+import { dropHeld } from "../adapter/orders.mjs";
 
 const request = cost => ({ cost, weaponAttack: false, usesSpellSlot: false });
 
@@ -60,3 +61,26 @@ export async function takeBasicAction(actor, kind) {
   if ( (kind === "disengage") && combatant.token ) windowDisengaged(combatant.token);
   return true;
 }
+
+/**
+ * §180 : une sauvegarde demandée à une créature hors d'une résolution (un voisin : le test de moral d'un PNJ), lancée sans fenêtre,
+ * visible dans le chat comme les sauvegardes des PNJ que le moteur lance. Rend `{ total, d20, dc, success }`, ou null si rien n'a été
+ * lancé. `flavor` : le titre de la carte.
+ * @param {Actor} actor
+ * @param {{ ability: string, dc: number, advantage?: boolean, disadvantage?: boolean, flavor?: string }} request
+ */
+export async function requestSave(actor, { ability, dc, advantage=false, disadvantage=false, flavor=null }={}) {
+  if ( !actor || !ability ) return null;
+  const rolls = await actor.rollSavingThrow({ ability, target: dc, advantage, disadvantage }, { configure: false },
+    flavor ? { data: { flavor } } : {});
+  const roll = rolls?.[0];
+  if ( !roll ) return null;
+  return { total: roll.total, d20: roll.d20?.total ?? null, dc, success: Number.isFinite(dc) ? (roll.total >= dc) : null };
+}
+
+/**
+ * §180 : lâcher ce que la créature tient (comme l'ordre « Lâche » d'Injonction : au sol si un voisin en fait une pile, sinon
+ * déséquipé). Rend `{ items, pile, kept }` (adapter/orders.mjs `dropHeld`).
+ */
+export const dropHeldBy = token => dropHeld(token?.document ?? token);
+

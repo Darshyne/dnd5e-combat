@@ -29,6 +29,7 @@ import { basicActionOf } from "../adapter/basics.mjs";
 import { fearSources } from "../adapter/conditions.mjs";
 import { movesCloser } from "../core/conditions.mjs";
 import { cellsAtGap, footprintDistance } from "../core/orders.mjs";
+import { fleeGaps } from "../core/flee.mjs";
 
 /** Le centre d'un token à sa position validée. */
 function centerOf(token) {
@@ -722,6 +723,44 @@ export async function walkToGap(token, anchor, gap, { maxCost=null }={}) {
 
 /** Écart actuel, en cases, entre deux tokens (0 : au contact). */
 export const gapBetween = (a, b) => Math.max(0, footprintDistance(footprintOf(a), footprintOf(b)));
+
+/**
+ * §180 : s'éloigner d'une menace (un voisin : la fuite d'un PNJ). « Aussi loin que le déplacement du tour le permet » — plus `extra`
+ * (la Vitesse : un Sprint pris d'abord) —, par l'A* du moteur et sa marche (attaques d'opportunité, budget). Les écarts sont essayés
+ * du plus loin au plus près (`fleeGaps`, comme Murmures dissonants §147). `dryRun` : seulement dire si un écart plus grand est
+ * joignable, sans bouger. Rend `{ moved, from, to, reason? }` (`reason` : `notOwner` | `grappled` | `noMovement` | `cornered`).
+ */
+export async function fleeFrom(token, anchor, { extra=0, dryRun=false }={}) {
+  token = token?.document ?? token;
+  anchor = anchor?.document ?? anchor;
+  if ( !token?.isOwner ) return { moved: false, reason: "notOwner" };
+  const from = gapBetween(token, anchor);
+  if ( isGrappled(token) ) return { moved: false, from, to: from, reason: "grappled" };
+  const distance = token.parent.grid.distance || 5;
+  const cap = movementCap(token);
+  const history = historyCosts(token);
+  const speed = speedOf(token.actor, readUnitFactors())?.speed ?? 0;
+  const left = Number.isFinite(cap) ? (cap - history.spent - history.excluded) : speed;
+  const maxCost = (Number.isFinite(cap) ? cap : (history.spent + history.excluded + speed)) + (Number(extra) || 0);
+  const cells = Math.floor((Math.max(0, left) + (Number(extra) || 0)) / distance);
+  if ( cells <= 0 ) return { moved: false, from, to: from, reason: "noMovement" };
+  const grid = token.parent.grid;
+  const { sceneX, sceneY, sceneWidth, sceneHeight } = token.parent.dimensions;
+  const top = grid.getOffset({ x: sceneX + 1, y: sceneY + 1 });
+  const bottom = grid.getOffset({ x: sceneX + sceneWidth - 1, y: sceneY + sceneHeight - 1 });
+  const bounds = { i0: top.i, j0: top.j, i1: bottom.i, j1: bottom.j };
+  for ( const gap of fleeGaps(from, cells) ) {
+    const goal = cellsAtGap(footprintOf(anchor), sizeOf(token), gap, bounds);
+    if ( !goal.length ) continue;
+    const plan = planPath(token, { cells: goal, level: token._source.level ?? undefined }, { maxCost });
+    if ( !plan?.arrives || !plan.waypoints?.length ) continue;
+    if ( dryRun ) return { moved: false, from, to: gap, possible: true };
+    await walkSafely(token, plan);
+    const to = gapBetween(token, anchor);
+    return { moved: to !== from, from, to };
+  }
+  return { moved: false, from, to: from, reason: "cornered" };
+}
 
 /** Mode d'attaque imposé par un clic (« lancer »), lu au jet d'attaque (runtime/turn.mjs). Vie courte. */
 const pendingAttacks = new Map();

@@ -12,7 +12,7 @@ import { registerCoven } from "./runtime/coven.mjs";
 import { registerReduction } from "./runtime/reduction.mjs";
 import { registerZones } from "./runtime/zones.mjs";
 import { registerAltitude } from "./runtime/altitude.mjs";
-import { registerActions, approach, pathTo } from "./runtime/actions.mjs";
+import { registerActions, approach, pathTo, fleeFrom } from "./runtime/actions.mjs";
 import { registerFollow } from "./runtime/follow.mjs";
 import { registerFacing } from "./runtime/facing.mjs";
 import { registerTurn } from "./runtime/turn.mjs";
@@ -67,7 +67,7 @@ import { registerFamiliars } from "./runtime/familiar.mjs";
 import { registerAnimations } from "./runtime/animations.mjs";
 import { basicActionData } from "./adapter/basics.mjs";
 import { stopAllWalks } from "./adapter/movement.mjs";
-import { budgetIssues, spendBudget, takeBasicAction } from "./runtime/neighbours.mjs";
+import { budgetIssues, spendBudget, takeBasicAction, requestSave, dropHeldBy } from "./runtime/neighbours.mjs";
 import { registerGrapple } from "./runtime/grapple.mjs";
 import { registerProne } from "./runtime/prone.mjs";
 import { registerBreaks } from "./runtime/breaks.mjs";
@@ -141,6 +141,10 @@ import { openDiagnostic } from "./ui/diagnostic.mjs";
  * §179 : `approach(token, { target, reachCells, seeing })` — s'approcher d'une cible jusqu'à une allonge ou une portée (en cases), en
  *   la voyant si demandé ; `path(token, { cells | target, reachCells, seeing }, { maxCost, extra })` → `{ arrives, moves, door }` ou null — un
  *   chemin sans le parcourir (`extra` : la Vitesse en plus, pour un Sprint) ; `basics.take(actor, "dash" | "disengage" | "dodge")` — l'action de base sans item (PNJ), par le budget.
+ * §180 : `flee(token, from, { extra, dryRun })` → `{ moved, from, to, reason? }` — s'éloigner d'une menace aussi loin que le
+ *   déplacement du tour le permet (plus `extra`), ou seulement tester (`dryRun`) ; `save(actor, { ability, dc, advantage,
+ *   disadvantage, flavor })` → `{ total, d20, dc, success }` — une sauvegarde hors résolution, sans fenêtre ; `drop(token)` → `{ items,
+ *   pile, kept }` — lâcher ce qu'on tient (comme l'ordre « Lâche »).
  * `vision.canSee(observer, target)` (§178) : l'observateur voit-il la cible, selon les règles de vision du moteur (lumière, murs,
  *   vision dans le noir, brume et ténèbres, Invisible — donc une Furtivité réussie —, Aveuglé) ? `true` / `false`, ou `null` quand on
  *   ne peut pas juger (vision simulée coupée, canevas absent, token non dessiné). Tokens ou documents ; lecture seule.
@@ -150,6 +154,7 @@ import { openDiagnostic } from "./ui/diagnostic.mjs";
 const state = {
   active: false, reason: null, unitFactors: null, routes: describeRoutes, content: contentApi, reports: reportsApi, mcp: testApi, perf: perfApi,
   ui: uiApi, light: lightState, approach, scrolls: { spellOf: scrollSpellOf }, basics: { data: basicActionData, take: takeBasicAction }, path: pathTo,
+  flee: fleeFrom, save: requestSave, drop: dropHeldBy,
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
   level: automationLevel, levelAtLeast, skippedRoutes,
   welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic },

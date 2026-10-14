@@ -17,6 +17,14 @@ const RANGE_CELLS = 12;   // portée dessinée sans portée de vue sur le token 
 let layer = null;
 let pending = false;
 
+/** Une créature qui ne guette plus rien : à 0 PV, morte, inconsciente, neutralisée ou vaincue. */
+const OUT = ["dead", "unconscious", "incapacitated", "paralyzed", "petrified", "stunned", "sleeping"];
+function outOfPlay(doc) {
+  const actor = doc.actor;
+  if ( !actor || ((actor.system?.attributes?.hp?.value ?? 1) <= 0) ) return true;
+  return [...OUT, CONFIG.specialStatusEffects.DEFEATED].some(s => actor.statuses?.has(s));
+}
+
 /** Les tokens en mode furtif que ce client possède (sur la scène affichée). */
 function mySneakers() {
   return (canvas?.tokens?.placeables ?? []).filter(t => t.document.isOwner && isSneaking(t.document)
@@ -50,7 +58,7 @@ function draw() {
   const sneakers = mySneakers();
   if ( !sneakers.length ) return;
   for ( const token of canvas.tokens.placeables ) {
-    if ( sneakers.includes(token) || !token.visible || token.document.hidden ) continue;
+    if ( sneakers.includes(token) || !token.visible || token.document.hidden || outOfPlay(token.document) ) continue;
     const cone = coneOf(token.document);
     if ( !cone ) continue;
     const poly = conePolygon(token, cone);
@@ -87,5 +95,8 @@ export function registerStealthUI() {
   route("updateToken", (doc, changes) => {
     if ( ("rotation" in changes) || ("hidden" in changes) || ("sight" in changes) || (changes.flags?.[MODULE_ID]) ) schedule();
   }, label);
+  // PV et états : une créature qui tombe perd son cône.
+  route("updateActor", (actor, changes) => { if ( changes.system?.attributes?.hp ) schedule(); }, label);
+  for ( const hook of ["createActiveEffect", "deleteActiveEffect", "updateActiveEffect"] ) route(hook, schedule, label);
   route("canvasTearDown", () => { layer?.destroy?.(); layer = null; }, { label: "sneak: layer removed" });
 }

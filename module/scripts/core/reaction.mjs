@@ -8,6 +8,8 @@
  *  - "leavesReach"  une créature hostile quitte l'allonge (attaque d'opportunité)
  */
 
+import { hostileSides } from "./factions.mjs";
+
 /**
  * Les réactions qu'une créature peut proposer dans une fenêtre.
  * @param {Array<{on: string[]}>} declared   Déclarations canoniques de ses items (core/triggers.mjs).
@@ -45,7 +47,7 @@ export function entersAt(distances, reach) {
 export function reachStrikers(mover, others) {
   if ( mover.teleported ) return [];
   return others.filter(o => (o.enters >= 0) && o.reactionAvailable && !o.incapacitated && (o.hasLineOfEffect !== false)
-    && areHostile(mover.disposition, o.disposition)).map(o => o.token);
+    && hostileSides(mover, o)).map(o => o.token);
 }
 
 /** Deux camps sont-ils opposés ? Un neutre (0) ou un secret (-2) ne provoque ni ne subit rien. */
@@ -73,7 +75,7 @@ export function opportunityAttackers(mover, others) {
   if ( mover.disengaged || mover.teleported ) return [];
   return others.filter(o =>
     o.hasMeleeAttack && o.reactionAvailable && !o.incapacitated && (o.seesMover !== false) && (o.hasLineOfEffect !== false)
-    && areHostile(mover.disposition, o.disposition)
+    && hostileSides(mover, o)
     && (o.before <= o.reach + 1e-6) && (o.after > o.reach + 1e-6)
   ).map(o => o.token);
 }

@@ -52,6 +52,7 @@ import { duplicatesAgainst, duplicateEffectsOf } from "../adapter/duplicates.mjs
 import { log, loc, isExecutor, waitForDice, whenCanvasReady, notice } from "./shared.mjs";
 import { waitForAnimations } from "./animations.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
+import { areAllies } from "../adapter/factions.mjs";
 
 /** Combien de messages récents on remonte quand un jet ne dit pas à quelle action il se rapporte. */
 const LOOKBACK = 50;
@@ -572,7 +573,7 @@ async function enrich(targets, plan, originUuid, activityUuid=null, attackMode=n
       duplicates: plan.attack ? duplicatesAgainst(token?.actor, origin?.actor) : 0,
       // §20 : Esquive totale (Roublard, Moine, monstres) — jugée à l'application (core/action.mjs, `applicationPlan`).
       evasion: !!plan.save && evades(token?.actor),
-      sculpted: (sculpts > 0) && !!token && !!casterToken && (token.actor !== caster) && (token.disposition === casterToken.disposition)
+      sculpted: (sculpts > 0) && !!token && !!casterToken && (token.actor !== caster) && areAllies(token, casterToken)
         && (sculpts-- > 0),
       unaffected
     });
@@ -837,7 +838,7 @@ async function onRegionCreated(region) {
         // §91 : le lanceur, dont le tour fait agir la zone (`casterPulse`).
         source: area.origin ?? null,
         // §16.23 : les rejeux de la zone respectent qui elle affecte (Esprits gardiens épargnent les alliés).
-        affects: area.affects ?? "", originDisposition: area.originDisposition ?? null
+        affects: area.affects ?? "", originDisposition: area.originDisposition ?? null, originSide: area.originSide ?? null
       });
       log(`lasting area: acts on ${rules.on.join(", ")}, once per turn${rules.activity ? ` (replays activity ${rules.activity})` : ""}`);
       // Une zone qui n'agit qu'au déplacement (Croissance d'épines) ne fait rien à sa pose.

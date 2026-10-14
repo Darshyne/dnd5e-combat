@@ -9,7 +9,6 @@
  *    (dnd5e.mjs:447-467, 545) : y ajouter une entrée à `init` suffit à créer un état de token.
  */
 
-import { areHostile } from "../core/reaction.mjs";
 import { rangeIssue } from "../core/range.mjs";
 import { verbalSpellBlocked, hampersRangedAttack, forbiddenAgainstCharmer, requiresSight, INCAPACITATING } from "../core/conditions.mjs";
 import { distanceBetween, rangeOf } from "./turn.mjs";
@@ -25,6 +24,7 @@ import { isObjectToken } from "./bodies.mjs";
 import { isSpellCast } from "./scrolls.mjs";
 import { rangedFeatsFor, coverLeft, CROSSBOWS } from "../core/feats.mjs";
 import { coverFor } from "./cover.mjs";
+import { areEnemies } from "./factions.mjs";
 
 /**
  * Effrayé « tant que la source de la peur est en vue » (P1) : les sources sont les acteurs d'où
@@ -125,9 +125,9 @@ export function isRangedAttack(activity, attackMode) {
 export function hasHostileAdjacent(token, factors, posA=undefined) {
   // La vue en dernier : c'est le seul test coûteux.
   return token.parent.tokens.some(other => (other !== token) && other.actor && !other.hidden && !isObjectToken(other)
-    && areHostile(token.disposition, other.disposition) && areAdjacent(token, other, factors, { posA })
+    && areEnemies(token, other) && areAdjacent(token, other, factors, { posA })
     && hampersRangedAttack({
-      hostile: areHostile(token.disposition, other.disposition),
+      hostile: areEnemies(token, other),
       statuses: Array.from(other.actor.statuses),
       dead: isDeadActor(other.actor),
       seesAttacker: isVisionAvailable() ? canSee(other, token) : null

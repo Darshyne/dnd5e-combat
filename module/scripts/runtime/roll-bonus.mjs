@@ -24,6 +24,7 @@ import { swapPartners } from "../core/feats.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
+import { sideOf } from "../adapter/factions.mjs";
 
 /** Le nom du test : la compétence, l'outil ou la caractéristique. */
 function checkName({ skill, tool, ability }) {
@@ -113,7 +114,7 @@ async function alertSwap(combatant) {
   const item = actor?.items.find(i => contentOf(i).entry?.initiativeSwap === true);
   const combat = combatant?.parent;
   if ( !item || !combat ) return;
-  const view = c => ({ id: c.id, disposition: c.token?.disposition ?? null, initiative: c.initiative, incapacitated: unable(c.actor), down: false });
+  const view = c => ({ ...(c.token ? sideOf(c.token) : {}), id: c.id, disposition: c.token?.disposition ?? null, initiative: c.initiative, incapacitated: unable(c.actor), down: false });
   const ids = swapPartners(view(combatant), combat.combatants.contents.filter(c => c.actor).map(view));
   if ( !ids.length ) return;
   const partners = ids.map(id => combat.combatants.get(id));

@@ -6,10 +6,18 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
+import { areAllies } from "./factions.mjs";
 
 /** Les marques de Soutien posées sur un acteur. */
 export function helpMarksOn(actor) {
   return (actor?.effects ?? []).filter(e => e.getFlag?.(MODULE_ID, "help"));
+}
+
+/** §181 : l'auteur du Soutien est-il du camp de l'attaquant ? Factions si son token existe encore, sinon la disposition notée. */
+function helperAllied(help, attackerToken) {
+  const helper = help.helper ? fromUuidSync(help.helper, { strict: false }) : null;
+  if ( helper && attackerToken ) return areAllies(helper, attackerToken);
+  return help.disposition === attackerToken?.disposition;
 }
 
 /**
@@ -19,7 +27,7 @@ export function helpMarksOn(actor) {
 export function helpedAgainst(attackerToken, targetToken) {
   return helpMarksOn(targetToken?.actor).some(effect => {
     const help = effect.getFlag(MODULE_ID, "help");
-    return (help.disposition === attackerToken?.disposition) && (help.helper !== attackerToken?.uuid);
+    return helperAllied(help, attackerToken) && (help.helper !== attackerToken?.uuid);
   });
 }
 
@@ -27,7 +35,7 @@ export function helpedAgainst(attackerToken, targetToken) {
 export function helpMarksUsedBy(attackerToken, targetToken) {
   return helpMarksOn(targetToken?.actor).filter(effect => {
     const help = effect.getFlag(MODULE_ID, "help");
-    return (help.disposition === attackerToken?.disposition) && (help.helper !== attackerToken?.uuid);
+    return helperAllied(help, attackerToken) && (help.helper !== attackerToken?.uuid);
   });
 }
 

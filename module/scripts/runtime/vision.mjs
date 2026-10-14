@@ -9,6 +9,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { checkVisionApi, invalidateVision, disposeVision, setVisionAvailable } from "../adapter/vision.mjs";
 import { checkCoverApi, setCoverAvailable } from "../adapter/cover.mjs";
+import { CONES_SETTING, ANGLES_SETTING, DEFAULT_ANGLES_TEXT } from "../adapter/cone.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 
@@ -27,6 +28,9 @@ export function registerVision() {
   });
   world(VISION_SETTING);
   world(COVER_SETTING);
+  // §182 : cônes de vision hors combat (créatures du MJ), et leurs angles par type de créature.
+  world(CONES_SETTING, { onChange: () => Hooks.callAll(`${MODULE_ID}.conesChanged`) });
+  world(ANGLES_SETTING, { type: String, default: DEFAULT_ANGLES_TEXT, onChange: () => Hooks.callAll(`${MODULE_ID}.conesChanged`) });
 
   // Murs, lumières, scène (obscurité, niveaux), acteurs (sens, effets) : les sources sont à refaire.
   const stale = { label: "vision: sources to rebuild" };

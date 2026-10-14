@@ -11,12 +11,12 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { areHostile } from "../core/reaction.mjs";
 import { convertLength, isWithinRange } from "../core/units.mjs";
 import { readUnitFactors } from "./units.mjs";
 import { distanceBetween, reachOf, combatantFor, currentTurnKey } from "./turn.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { isDeadActor } from "./death.mjs";
+import { areEnemies } from "./factions.mjs";
 
 const loc = (key, data) => game.i18n.format(`DND5ECOMBAT.Botte.${key}`, data ?? {});
 
@@ -111,7 +111,7 @@ export function cleaveCandidates(attacker, first, activity) {
   const near = (a, b, range) => { try { return isWithinRange(distanceBetween(a, b), range, factors); } catch { return false; } };
   return first.parent.tokens.filter(t => (t !== first) && (t !== attacker) && t.actor && !t.hidden && !isObjectToken(t)
     && !isDeadActor(t.actor) && ((t.actor.system.attributes?.hp?.value ?? 1) > 0)
-    && areHostile(attacker.disposition, t.disposition)
+    && areEnemies(attacker, t)
     && near(first, t, { value: 5, units: "ft" }) && near(attacker, t, reach));
 }
 

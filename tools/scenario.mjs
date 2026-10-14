@@ -620,6 +620,10 @@ let skipped = 0;
 // retardé du moteur, après le filet de sécurité) est signalé en nommant ce scénario, et remis. Le Magicien et le Roublard se
 // retrouvaient hors de leur case sans que le filet le voie (2026-09-28).
 let previous = null;
+// §182 : les scénarios supposent une vue à 360° hors combat ; les cônes de vision sont coupés le temps de la passe (le scénario
+// `cones` les rallume lui-même), puis remis.
+const cones = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "visionCones", value: false }, waitMs: 8000 })
+  .then(r => r?.result?.before).catch(() => undefined);
 for ( const file of files ) {
   const { default: scenario } = await import(pathToFileURL(file).href);
   const named = wanted.length || external.includes(file);
@@ -681,6 +685,7 @@ for ( const file of files ) {
   console.log(ctx.failures.length ? `  ✗ ${ctx.failures.length} vérification(s) en défaut` : "  ✓ scénario tenu");
 }
 if ( activeAtStart && (activeNow !== activeAtStart) ) await useScene(activeAtStart);
+if ( cones !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "visionCones", value: cones }, waitMs: 8000 }).catch(() => null);
 console.log(`\n${files.length - skipped - failed}/${files.length - skipped} scénario(s) tenus${skipped ? ` (${skipped} interactif(s) sauté(s))` : ""}`);
 process.exitCode = failed ? 1 : 0;
 await mcp.close();

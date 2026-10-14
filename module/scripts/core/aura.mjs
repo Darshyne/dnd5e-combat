@@ -5,6 +5,8 @@
  * paladin. Fonctions pures, aucune dépendance à Foundry.
  */
 
+import { alliedSides } from "./factions.mjs";
+
 /**
  * @typedef {object} AuraSource
  * @property {string} token          UUID du token porteur de l'aura.
@@ -30,8 +32,8 @@ export function auraRecipients(source, candidates) {
     // Une émanation est arrêtée par un abri total (règles 2024) : plancher, plafond, mur plein — P2 (§14.2).
     if ( c.lineOfEffect === false ) return false;
     if ( source.types?.length && !source.types.includes(c.type) ) return false;
-    if ( source.affects === "ally" ) return c.disposition === source.disposition;
-    if ( source.affects === "enemy" ) return c.disposition !== source.disposition;
+    if ( source.affects === "ally" ) return alliedSides(c, source);     // §181 : factions, sinon dispositions
+    if ( source.affects === "enemy" ) return !alliedSides(c, source);
     return true;
   }).map(c => c.token);
 }

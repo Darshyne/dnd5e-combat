@@ -19,6 +19,7 @@ import { inflict } from "../adapter/retaliation.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
+import { sideOf } from "../adapter/factions.mjs";
 
 /**
  * L'activité de sauvegarde à rejouer : celle d'où vient l'effet, ou, pour un effet posé par une attaque dont la sauvegarde est
@@ -246,6 +247,12 @@ function dispositionOf(actor) {
   return (token?.document ?? token)?.disposition ?? null;
 }
 
+/** §181 : le camp du token d'un acteur sur la scène affichée, ou null. */
+function sideOfActor(actor) {
+  const token = actor ? tokenOf(actor) : null;
+  return token ? sideOf(token) : null;
+}
+
 /** §65 : les dégâts que l'acteur vient de subir viennent-ils du lanceur de l'effet ou d'un de ses alliés ? */
 function byOriginSide(actor, d) {
   const noted = actor.getFlag(MODULE_ID, "damagedBy");
@@ -253,7 +260,8 @@ function byOriginSide(actor, d) {
   const damager = fromUuidSync(noted.uuid, { strict: false });
   const origin = d.source ? fromUuidSync(d.source, { strict: false }) : null;
   return damagedByOriginSide({ damager: damager?.uuid ?? null, origin: origin?.uuid ?? null,
-    damagerDisposition: dispositionOf(damager), originDisposition: dispositionOf(origin) });
+    damagerDisposition: dispositionOf(damager), originDisposition: dispositionOf(origin),
+    damagerSide: sideOfActor(damager), originSide: sideOfActor(origin) });
 }
 
 function onDamaged(actor, changes) {

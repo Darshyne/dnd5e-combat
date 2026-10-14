@@ -8,9 +8,9 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { areHostile } from "../core/reaction.mjs";
 import { canSee, isVisionAvailable } from "./vision.mjs";
 import { isObjectToken } from "./bodies.mjs";
+import { areEnemies } from "./factions.mjs";
 
 export const OUT_OF_ACTION = ["incapacitated", "unconscious", "paralyzed", "petrified", "stunned", "dead"];
 
@@ -23,7 +23,7 @@ export function enemiesSeeing(token) {
   if ( !isVisionAvailable() || !token?.parent ) return null;
   const defeated = CONFIG.specialStatusEffects.DEFEATED;
   return token.parent.tokens.filter(other => (other !== token) && other.actor && !other.hidden && !isObjectToken(other)
-    && areHostile(token.disposition, other.disposition)
+    && areEnemies(token, other)
     && !OUT_OF_ACTION.some(s => other.actor.statuses.has(s)) && !other.actor.statuses.has(defeated)
     && (canSee(other, token) === true));
 }

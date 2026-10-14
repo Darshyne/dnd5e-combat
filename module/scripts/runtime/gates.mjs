@@ -18,7 +18,6 @@
 import { MODULE_ID } from "../constants.mjs";
 import { current, STEPS } from "../core/action.mjs";
 import { stepsOf } from "../core/triggers.mjs";
-import { areHostile } from "../core/reaction.mjs";
 import { rangeIssue } from "../core/range.mjs";
 import { usageTokenOf as usageToken, distanceBetween, rangeOf } from "../adapter/turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
@@ -32,6 +31,7 @@ import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { castLevelFor } from "../adapter/counter.mjs";
+import { areEnemies } from "../adapter/factions.mjs";
 
 const TERMINAL = new Set([STEPS.DONE, STEPS.MISSED, STEPS.UNDONE]);
 const RESOLUTION_WAIT_MS = 60000;
@@ -112,7 +112,7 @@ async function passWards(activity, origin, wards) {
 function targetedCandidates(activity, origin, targets) {
   const out = [];
   for ( const token of targets ) {
-    if ( !token.actor || !areHostile(token.disposition, origin.disposition) ) continue;
+    if ( !token.actor || !areEnemies(token, origin) ) continue;
     if ( token.actor.statuses.has(CONFIG.specialStatusEffects.DEFEATED) ) continue;
     const actor = token.actor;
     const options = reactionOptions(actor, "isTargeted",
@@ -139,7 +139,7 @@ function counterCandidates(activity, origin) {
   const out = [];
   const factors = readUnitFactors();
   for ( const token of origin.parent?.tokens ?? [] ) {
-    if ( (token === origin) || !token.actor || token.hidden || !areHostile(token.disposition, origin.disposition) ) continue;
+    if ( (token === origin) || !token.actor || token.hidden || !areEnemies(token, origin) ) continue;
     if ( token.actor.statuses.has(CONFIG.specialStatusEffects.DEFEATED) ) continue;
     const actor = token.actor;
     const options = reactionOptions(actor, "castsSpell",

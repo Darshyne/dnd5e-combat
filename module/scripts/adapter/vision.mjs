@@ -31,6 +31,7 @@ import { readUnitFactors } from "./units.mjs";
 import { convertLength } from "../core/units.mjs";
 import { sensesThrough, DEVILS_SIGHT } from "../core/light.mjs";
 import { revealedInvisible, seesInvisible } from "./facts.mjs";
+import { outsideCone } from "./cone.mjs";
 
 const SOURCE_PREFIX = "dnd5e-combat";
 
@@ -156,6 +157,7 @@ export function canSee(observer, target) {
   if ( !canvas?.ready || !observer || !target ) return null;
   if ( observer === target ) return true;
   if ( !target.object || target.hidden ) return false;   // un token caché par le MJ est hors jeu pour tout le monde
+  if ( outsideCone(observer, target) ) return false;   // §182 : hors combat, une créature du MJ ne voit que devant elle
   const source = sourceFor(observer);
   if ( !source ) return null;
   const config = testsFor(target, observer);

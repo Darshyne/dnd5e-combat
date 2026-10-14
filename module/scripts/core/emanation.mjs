@@ -4,7 +4,7 @@
  * « sauf s'il est Neutralisé », « autre qu'un Ghast », « immunisé … pendant 24 heures ». Fonctions pures, sans Foundry.
  */
 
-import { areHostile } from "./reaction.mjs";
+import { hostileSides } from "./factions.mjs";
 
 /**
  * Les moments d'une émanation : la fin du tour de son porteur, le début du tour d'une créature qui s'y trouve, la mort de
@@ -52,7 +52,7 @@ export function emanationTargets(source, candidates) {
     if ( !(c.distance <= source.radius + 1e-6) ) return false;
     if ( c.lineOfEffect === false ) return false;   // une émanation est arrêtée par un abri total (§14.2)
     if ( c.sees === false ) return false;
-    if ( source.affects === "enemy" ) return areHostile(source.disposition, c.disposition);   // « de son choix » : les camps opposés
+    if ( source.affects === "enemy" ) return hostileSides(source, c);   // « de son choix » : les camps opposés
     return true;
   }).map(c => c.token);
 }

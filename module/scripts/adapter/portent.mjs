@@ -20,6 +20,7 @@ import { rollerFor } from "./concentration.mjs";
 import { canSee } from "./vision.mjs";
 import { currentTurnKey } from "./turn.mjs";
 import { isObjectToken } from "./bodies.mjs";
+import { areAllies } from "./factions.mjs";
 
 export const PORTENT_QUERY = `${MODULE_ID}.portent`;
 /** §38.4 : réglage de monde « Présage du Devin » — le moteur le propose-t-il ? (actif par défaut) */
@@ -146,7 +147,7 @@ export async function foretellFor(subject, { kind, item, auto=null, declined=nul
   for ( const { token, choices } of seersOf(subject, { skip: declined }) ) {
     let value = null;
     if ( auto === "first" ) {
-      const friendly = (token === subject) || (token.disposition === subject.disposition);
+      const friendly = (token === subject) || areAllies(token, subject);
       const wanted = friendly ? choices[0] : choices.at(-1);
       // Écrit ici : ce client doit posséder le devin (les scénarios tournent chez le MJ) ; sinon, pas de Présage plutôt qu'une porte
       // interrompue.

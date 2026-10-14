@@ -277,3 +277,28 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-results li.ko i { color: var(--das-ko); }
 .das-backup { display: flex; align-items: center; gap: 1em; padding: 0.6em 0.8em; margin: 0.4em 0; border-radius: 8px; background: var(--das-surface); border: 1px solid var(--das-line); }
 .das-backup > div { flex: 1; }
+
+/* §181 : la fenêtre des factions */
+.das-factions__body { padding: 0.8em 1em 1em; display: flex; flex-direction: column; gap: 0.7em; }
+.das-factions__matrix { overflow-x: auto; }
+.das-factions table { border-collapse: collapse; width: 100%; }
+.das-factions th, .das-factions td { border: 1px solid var(--das-line); padding: 0.25em 0.35em; text-align: center; }
+.das-factions .das-faction-col { border-top: 3px solid var(--faction); font-weight: normal; font-size: 0.85em; max-width: 7em; }
+.das-factions .das-faction-col span { display: inline-block; max-width: 7em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.das-factions .das-faction-head { text-align: left; white-space: nowrap; background: var(--das-surface); }
+.das-faction-chip { display: inline-block; padding: 0.1em 0.6em; border-radius: 1em; border: 1px solid var(--faction); background: color-mix(in srgb, var(--faction) 30%, transparent); cursor: grab; }
+.das-factions .das-rel { cursor: pointer; min-width: 2.2em; color: var(--das-muted); }
+.das-factions .das-rel.self { background: var(--das-surface-2); cursor: default; }
+.das-factions .das-rel.hostile { background: color-mix(in srgb, var(--das-ko) 35%, transparent); color: var(--das-ink); }
+.das-factions .das-rel.neutral { background: color-mix(in srgb, #d6b34a 30%, transparent); color: var(--das-ink); }
+.das-factions .das-rel.allied { background: color-mix(in srgb, var(--das-ok) 30%, transparent); color: var(--das-ink); }
+.das-factions .das-rel:hover { outline: 2px solid var(--das-accent); }
+.das-factions tr.drop th, .das-factions__none.drop { outline: 2px dashed var(--das-accent); }
+.das-factions__none { border: 1px dashed var(--das-line); border-radius: 6px; padding: 0.5em 0.8em; display: flex; align-items: center; gap: 0.6em; color: var(--das-muted); }
+.das-factions__none .das-button { margin-left: auto; }
+.das-factions__tools { display: flex; gap: 0.6em; }
+.das-factions .das-icon { background: none; border: none; color: var(--das-muted); width: auto; padding: 0 0.3em; cursor: pointer; }
+.das-factions .das-icon:hover { color: var(--das-accent); }
+.das-factions__edit input[type=text] { width: 100%; }
+.das-factions__edit input[type=color] { width: 2.4em; height: 1.8em; padding: 0; border: none; background: none; }
+#token-hud .das-faction-hud i { color: var(--faction, inherit); }

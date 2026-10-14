@@ -34,7 +34,6 @@ import { identifierOf, contentOf, worldOverrides, setWorldOverride } from "../ad
 import { originItemOf } from "../adapter/facts.mjs";
 import { attackContext, areAdjacent } from "../adapter/conditions.mjs";
 import { attackModifiers } from "../core/conditions.mjs";
-import { areHostile } from "../core/reaction.mjs";
 import { opportunityThreats } from "./reactions.mjs";
 import { animationState } from "./animations.mjs";
 import { portentDice, portentOf, rollPortent } from "../adapter/portent.mjs";
@@ -46,6 +45,11 @@ import { flipWallSide } from "./wall-side.mjs";
 import { sideRegionOf } from "../adapter/wall-side.mjs";
 import { coverFor } from "../adapter/cover.mjs";
 import { listBackups as diagBackups, repairTasks, restore as diagRestore, scanWorld } from "./diagnostic/index.mjs";
+import { areEnemies } from "../adapter/factions.mjs";
+import { factionsApi } from "./factions.mjs";
+import { coneOf } from "../adapter/cone.mjs";
+import { canSee as canSeeToken } from "../adapter/vision.mjs";
+import { sightingOf } from "../adapter/search.mjs";
 
 /** Le token désigné, sur la scène affichée par le MJ. */
 function tokenOf({ tokenId }) {
@@ -544,7 +548,7 @@ function attackReasons({ attackerId, targetId, itemId, attackMode=null }) {
   const factors = readUnitFactors();
   const { advantage, disadvantage } = attackModifiers(attackContext(origin, target, activity, attackMode, factors));
   const adjacentHostiles = origin.parent.tokens.filter(t => (t !== origin) && t.actor && !t.hidden
-    && areHostile(origin.disposition, t.disposition) && areAdjacent(origin, t, factors)).map(t => t.name);
+    && areEnemies(origin, t) && areAdjacent(origin, t, factors)).map(t => t.name);
   return { advantage: advantage.map(r => `${r.who}.${r.key}`), disadvantage: disadvantage.map(r => `${r.who}.${r.key}`), adjacentHostiles };
 }
 
@@ -915,4 +919,39 @@ async function diagnosticForget({ uuids=[], dropPack=false, actors=[] }={}) {
 }
 const diagnosticRestore = ({ uuid }) => diagRestore(uuid);
 
-export const testApi = Object.freeze({ wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget });
+
+/**
+ * §181 : les factions, pour un scénario. `op` : `state` (réglage, rancunes, factions des tokens donnés), `snapshot` / `restore`
+ * (le réglage entier, `value`), `add` ({ name } → id), `relation` ({ a, b } faction ids, `relation` ou null), `assign`
+ * ({ tokenIds, faction|null, actor }), `between` ({ aId, bId } tokens → relation), `grudges` ({ clear }), `stance`.
+ */
+async function factions({ op="state", tokenIds=[], faction=null, actor=false, a, b, relation=null, aId, bId, name, value, clear=false, stance=null }={}) {
+  const scene = canvas.scene;
+  const tokens = tokenIds.map(id => tokenOf({ tokenId: id }));
+  switch ( op ) {
+    case "snapshot": return { value: foundry.utils.deepClone(game.settings.get(MODULE_ID, "factions")), grudges: scene.getFlag(MODULE_ID, "grudges") ?? [] };
+    case "restore":
+      await game.settings.set(MODULE_ID, "factions", value);
+      if ( clear ) await scene.unsetFlag(MODULE_ID, "grudges");
+      return { restored: true };
+    case "add": return { id: await factionsApi.add({ name }) };
+    case "relation": await factionsApi.setRelation(a, b, relation); return { relations: factionsApi.relations() };
+    case "assign": await factionsApi.assign(tokens.map(t => (actor ? t.baseActor : t)), faction); return { factions: tokens.map(t => factionsApi.of(t)) };
+    case "between": return { relation: factionsApi.relation(tokenOf({ tokenId: aId }), tokenOf({ tokenId: bId })) };
+    case "grudges": if ( clear ) await factionsApi.grudge(null, null, { clear: true, scene }); return { grudges: factionsApi.grudges(scene) };
+    case "stance": for ( const t of tokens ) await factionsApi.stance(t, stance); return { stances: tokens.map(t => t.getFlag(MODULE_ID, "stance") ?? null) };
+    default: return {
+      relations: factionsApi.relations(), grudges: factionsApi.grudges(scene),
+      tokens: tokens.map(t => ({ name: t.name, faction: factionsApi.of(t), disposition: t.disposition }))
+    };
+  }
+}
+
+/** §182 : l'observateur voit-il la cible (vision du moteur), et son cône. */
+function sees({ observerId, targetId }) {
+  const observer = tokenOf({ tokenId: observerId });
+  const target = tokenOf({ tokenId: targetId });
+  return { sees: canSeeToken(observer, target), cone: coneOf(observer), sighting: sightingOf(observer, target) };
+}
+
+export const testApi = Object.freeze({ wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees });

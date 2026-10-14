@@ -13,7 +13,6 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { areHostile } from "../core/reaction.mjs";
 import { isRaging, barbarianRule, statusEndsRage, endRage, keepRage, rageKeptOn, relentlessAtZero, recklessChoice } from "../adapter/rage.mjs";
 import { markData, marksOn } from "../adapter/mastery.mjs";
 import { combatantFor, isOwnTurn, readBudget, currentTurnKey, usageTokenOf } from "../adapter/turn.mjs";
@@ -24,6 +23,7 @@ import { timedWait } from "../adapter/dialogs.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log, loc, notice } from "./shared.mjs";
+import { areEnemies } from "../adapter/factions.mjs";
 
 /** Le token qui parle dans un message, ou null. */
 function speakerToken(message) {
@@ -35,7 +35,7 @@ function speakerToken(message) {
 function hostileTarget(message, token) {
   return (message.system?.targets ?? []).some(t => {
     const target = fromUuidSync(t.token ?? "", { strict: false });
-    return target && areHostile(token.disposition, target.disposition);
+    return target && areEnemies(token, target);
   });
 }
 

@@ -7,7 +7,6 @@
  */
 
 import { STEPS } from "../core/action.mjs";
-import { areHostile } from "../core/reaction.mjs";
 import { convertLength } from "../core/units.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { distanceBetween } from "../adapter/turn.mjs";
@@ -17,6 +16,7 @@ import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log } from "./shared.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
+import { areEnemies } from "../adapter/factions.mjs";
 
 const seen = new Set();
 
@@ -40,7 +40,7 @@ async function onResolution(resolution) {
     for ( const token of victim.parent.tokens ) {
       if ( (token === victim) || !token.actor || isObjectToken(token) || ((token.actor.system.attributes?.hp?.value ?? 0) <= 0) ) continue;
       const found = fellRuleOf(token.actor);
-      if ( !found || !areHostile(token.disposition, victim.disposition) ) continue;
+      if ( !found || !areEnemies(token, victim) ) continue;
       const mine = !!resolution.source && (token.actor.uuid === resolution.source);
       let limit = found.rule.radius;
       try { limit = convertLength(found.rule.radius, found.rule.units, victim.parent.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }

@@ -12,7 +12,6 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
-import { areHostile } from "../core/reaction.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { originItemOf, tokenOf } from "../adapter/facts.mjs";
 import { canSee } from "../adapter/vision.mjs";
@@ -22,6 +21,7 @@ import { comesFromItemEffect } from "../adapter/triggers.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log, loc, notice } from "./shared.mjs";
+import { areEnemies } from "../adapter/factions.mjs";
 
 const seen = new Set();
 
@@ -54,7 +54,7 @@ async function onResolution(resolution) {
       if ( (caster.system.attributes?.hp?.value ?? 0) <= 0 ) continue;
       // « vous ou un allié que vous voyez » : l'attaquant est le lanceur, ou n'est pas son ennemi et il le voit.
       if ( attacker?.uuid !== caster.uuid ) {
-        if ( !attackerToken || !casterToken || areHostile(casterToken.disposition, attackerToken.disposition) ) continue;
+        if ( !attackerToken || !casterToken || areEnemies(casterToken, attackerToken) ) continue;
         if ( rule.sees && (canSee(casterToken, attackerToken) === false) ) continue;
       }
       const amount = Roll.replaceFormulaData(rule.formula, item.getRollData());

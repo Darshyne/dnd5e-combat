@@ -18,7 +18,6 @@ import { spendUse } from "../core/turn.mjs";
 import { castCommand, nextPlayableTurn } from "../core/pilot.mjs";
 import { INCAPACITATING } from "../core/conditions.mjs";
 import { readBudget, writeBudget, isOwnTurn, distanceBetween, positionOf } from "../adapter/turn.mjs";
-import { areHostile } from "../core/reaction.mjs";
 import {
   pilotOf, commandPlan, summonerCombatant, writeCommand, readCommand, turnKey, isPilotedCombatant, pulseOf, commandKey,
   summonerToken, summonsOfWith
@@ -30,6 +29,7 @@ import { convertLength } from "../core/units.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
+import { areEnemies } from "../adapter/factions.mjs";
 
 /** Une écriture à la fois par objet. */
 const queues = new Map();
@@ -267,7 +267,7 @@ function pulseCanHit(source, pulse, token) {
   const owner = pilot ? null : summonItemOf(source)?.actor;
   const caster = pilot ? summonerToken(pilot)
     : (owner?.getActiveTokens?.(false, true) ?? []).find(t => t.parent === source.parent) ?? null;
-  return areHostile(caster?.disposition ?? source.disposition, token.disposition);
+  return areEnemies(caster ?? source, token);
 }
 
 /** La créature est-elle à portée de l'objet — à une position donnée de l'un ou de l'autre ? */

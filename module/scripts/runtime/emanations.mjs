@@ -21,6 +21,7 @@ import { canSee } from "../adapter/vision.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
+import { sideOf } from "../adapter/factions.mjs";
 
 const defeated = actor => actor.statuses.has("dead") || actor.statuses.has(CONFIG.specialStatusEffects.DEFEATED);
 
@@ -38,14 +39,14 @@ function reached(source, emanation, tokens, { dying=false }={}) {
     const distance = out ? Infinity : distanceBetween(source, t).value;
     const near = distance <= radius + 1e-6;
     return {
-      token: t.uuid, disposition: t.disposition, distance, out,
+      ...sideOf(t), token: t.uuid, distance, out,
       kin: near && emanation.kin && carriesEmanation(t.actor, emanation.key),
       immune: near && isImmuneTo(t.actor, emanation.key, source.uuid),
       lineOfEffect: near ? hasLineOfEffect(source, t) : null,
       sees: (near && emanation.sees) ? canSee(t, source) : null
     };
   });
-  const wanted = new Set(emanationTargets({ token: source.uuid, disposition: source.disposition, radius, affects: emanation.affects, inactive },
+  const wanted = new Set(emanationTargets({ ...sideOf(source), token: source.uuid, radius, affects: emanation.affects, inactive },
     candidates));
   return tokens.filter(t => wanted.has(t.uuid));
 }

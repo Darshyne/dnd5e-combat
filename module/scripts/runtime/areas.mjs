@@ -16,6 +16,8 @@ import { route } from "./router.mjs";
 import { announce } from "./triggers.mjs";
 import { log } from "./shared.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
+import { sideOf } from "../adapter/factions.mjs";
+import { alliedSides } from "../core/factions.mjs";
 const currentTurnKey = () => turnKeyOf(game.combat?.started ? game.combat.round : null, game.combat?.turn);
 
 /** Le token peut-il subir la zone ? Pas celui qui l'a posée depuis lui-même, pas un mort. */
@@ -25,7 +27,7 @@ function isAffectable(token, state) {
   if ( token.actor.statuses.has(CONFIG.specialStatusEffects.DEFEATED) ) return false;
   // §16.23 : même règle qu'à la pose (core/area.mjs, selectAreaTargets) — alliés ou ennemis du lanceur seulement.
   if ( !["ally", "enemy"].includes(state.affects) || (state.originDisposition === null) || (state.originDisposition === undefined) ) return true;
-  const sameSide = token.disposition === state.originDisposition;
+  const sameSide = alliedSides(sideOf(token), state.originSide ?? { disposition: state.originDisposition });   // §181
   return state.affects === "ally" ? sameSide : !sameSide;
 }
 
@@ -100,7 +102,7 @@ function casterPulse(region, caster, at) {
       return;
     }
     const inside = region.parent.tokens.filter(t => isInside(t, region) && isAffectable(t, state) && (!rule.ground || grounded(t)));
-    const tokens = pulseTargets(inside, caster.disposition, entry.max);
+    const tokens = pulseTargets(inside.map(t => ({ ...sideOf(t), doc: t })), sideOf(caster), entry.max).map(t => t.doc);
     if ( !tokens.length ) log(`${region.name}: caster's turn ${n}, nobody in the area`);
     if ( tokens.length ) {
       log(`${region.name}: caster's turn ${n}, "${sibling.name}" on ${tokens.map(t => t.name).join(", ")}`);

@@ -115,6 +115,11 @@ import { registerStabilize } from "./runtime/stabilize.mjs";
 import { registerPotions } from "./runtime/potions.mjs";
 import { registerOil } from "./runtime/oil.mjs";
 import { registerWelcome, openWelcome } from "./ui/welcome.mjs";
+import { registerFactions, factionsApi } from "./runtime/factions.mjs";
+import { coneOf } from "./adapter/cone.mjs";
+import { registerStealthMode, stealthApi } from "./runtime/stealth.mjs";
+import { registerStealthUI } from "./ui/stealth.mjs";
+import { registerFactionsUI, openFactions } from "./ui/factions.mjs";
 import { openDiagnostic } from "./ui/diagnostic.mjs";
 
 /**
@@ -158,13 +163,20 @@ const state = {
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
   level: automationLevel, levelAtLeast, skippedRoutes,
   welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic },
-  vision: { canSee: publicCanSee }
+  vision: { canSee: publicCanSee, cone: publicCone },
+  factions: { ...factionsApi, open: () => openFactions() },
+  sneak: stealthApi
 };
 
 /** §178 : la vision du moteur pour un voisin (lecture seule) — null quand la vision simulée est coupée ou ne peut pas juger. */
 function publicCanSee(observer, target) {
   if ( !isVisionAvailable() ) return null;
   return visionCanSee(observer?.document ?? observer, target?.document ?? target);
+}
+
+/** §182 : le cône de vision d'une créature (`{ angle, rotation }`, convention du cœur), ou null quand elle voit à 360°. */
+function publicCone(token) {
+  return coneOf(token?.document ?? token);
 }
 
 /** Pourquoi le moteur doit rester en veille dans ce monde, ou null s'il peut tourner. */
@@ -190,6 +202,8 @@ Hooks.once("init", () => {
   registerLevel();
   gated(registerPerf);   // §98 : le seuil du relevé des temps, avant que les hooks ne tournent
   gated(registerContent);
+  gated(registerFactions);   // §181 : la table des factions, avant toute règle qui juge ami / ennemi
+  gated(registerStealthMode);   // §183 : mode furtif des PJ (sort du mode à l'entrée en combat)
   gated(registerIcons);
   gated(registerEngine);
   gated(registerConcentration);
@@ -293,6 +307,8 @@ Hooks.once("init", () => {
   gated(registerKindleUi);   // §52 : boîte à amadou
   gated(registerSkillAidUi);   // §113 : section « Aides » de la fenêtre de jet d'un test
   gated(registerAutomation);
+  gated(registerFactionsUI);   // §181 : fenêtre, outil de la barre, HUD du token
+  gated(registerStealthUI);   // §183 : raccourci du mode furtif, cônes dessinés chez le joueur
   state.active = true;
 });
 

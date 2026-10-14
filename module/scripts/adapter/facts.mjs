@@ -21,7 +21,7 @@ import { isObjectToken } from "./bodies.mjs";
 import { hasNotActedYet } from "../core/sneak.mjs";
 import { isSpellCast, spellSchoolOf } from "./scrolls.mjs";
 import { grapplerOf } from "./grapple.mjs";
-import { areHostile } from "../core/reaction.mjs";
+import { areEnemies, areAllies } from "./factions.mjs";
 
 /** Rangs de taille de dnd5e (config.mjs, `actorSizes`), pour « de taille G ou inférieure ». */
 const SIZE_RANK = Object.freeze({ tiny: 0, sm: 1, med: 2, lg: 3, huge: 4, grg: 5 });
@@ -135,7 +135,7 @@ function allyNear(sourceToken, targetToken, range) {
   for ( const other of sourceToken.parent.tokens ) {
     if ( (other === sourceToken) || (other === targetToken) || !other.actor || other.hidden ) continue;
     if ( isObjectToken(other) ) continue;   // un objet piloté (arme, illusion) ou un tas au sol n'est pas un allié (§16.15, §16.60)
-    if ( other.disposition !== sourceToken.disposition ) continue;
+    if ( !areAllies(other, sourceToken) ) continue;
     const statuses = other.actor.statuses ?? new Set();
     if ( INCAPACITATING.some(s => statuses.has(s)) || statuses.has(CONFIG.specialStatusEffects.DEFEATED) ) continue;
     if ( within(other, targetToken, range) === true ) return true;
@@ -278,7 +278,7 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     // §164 : la cible est-elle du camp de la source (pas hostile) ? Invocation de céleste : soin pour les alliés, brûlure pour les ennemis.
     "target.allied": want => {
       const s = tokenOf(source, sourceToken), t = tokenOf(target, targetToken);
-      return (!!s && !!t && !areHostile(s.disposition, t.disposition)) === want;
+      return (!!s && !!t && !areEnemies(s, t)) === want;
     },
     "source.hasSense": names => [names].flat().some(n => Number(source?.system?.attributes?.senses?.ranges?.[n]) > 0),
     // §16.8 : le type de la cible (« humanoid »…) et ses immunités aux états (Sommeil : immunité à l'Épuisement).

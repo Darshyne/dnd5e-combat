@@ -24,13 +24,13 @@ import { blockedFor } from "./eligibility.mjs";
 import { conditionImmunitiesOf, originItemOf, creatureTypeOf } from "./facts.mjs";
 import { contentOf } from "./content.mjs";
 import { usageTokenOf } from "./turn.mjs";
-import { areHostile } from "../core/reaction.mjs";
 import { fightingAdvantage } from "../core/conditions.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { usageMetamagic } from "./metamagic.mjs";
 import { foretellFor } from "./portent.mjs";
 import { foretoldRange } from "../core/portent.mjs";
 import { isSpellCast } from "./scrolls.mjs";
+import { areEnemies, sideOf, factionOf } from "./factions.mjs";
 
 /**
  * L'activité d'un plan, telle que le message porteur la voit (mise à l'échelle du sort comprise).
@@ -73,6 +73,7 @@ export async function readActivityRegion(region) {
     activity: uuid,
     origin,
     originDisposition: originToken?.disposition ?? null,
+    originSide: originToken ? sideOf(originToken) : null,   // §181
     excludeOrigin: activity?.range?.units === "self",
     // « Vous pouvez désigner des créatures qui ne sont pas affectées » (`affects.choice`, Esprits gardiens) : par défaut,
     // les alliés du lanceur sont épargnés — le moteur ne pose pas la question (§16.23).
@@ -85,6 +86,7 @@ export async function readActivityRegion(region) {
       actor: t.actor.uuid,
       name: t.name,
       disposition: t.disposition,
+      faction: factionOf(t), stance: t.getFlag(MODULE_ID, "stance") ?? null,   // §181
       defeated: t.actor.statuses?.has(CONFIG.specialStatusEffects.DEFEATED) === true,
       lineOfEffect: reachesFromPoint(areaOrigin, t),
       inVolume: insideSphere(sphere, t)
@@ -138,7 +140,7 @@ function heightenedTarget(activity, usageMessage, targets) {
   const caster = usageTokenOf(activity);
   for ( const t of targets ) {
     const token = fromUuidSync(t.token ?? "", { strict: false });
-    if ( token && caster && areHostile(caster.disposition, token.disposition) ) return token.uuid;
+    if ( token && caster && areEnemies(caster, token) ) return token.uuid;
   }
   return null;
 }
@@ -151,7 +153,7 @@ export function fightingAdvantageFor(activity, token) {
   if ( !token || (contentOf(activity?.item).entry?.advantageIfFighting !== true) ) return false;
   const caster = usageTokenOf(activity);
   const targetInCombat = game.combats.some(c => c.started && c.combatants.some(x => x.tokenId === token.id));
-  return fightingAdvantage({ targetInCombat, hostile: !!caster && areHostile(caster.disposition, token.disposition) });
+  return fightingAdvantage({ targetInCombat, hostile: !!caster && areEnemies(caster, token) });
 }
 
 /** Les états que posent les effets d'une activité (profils `activity.effects[]`, lus par `effectOfProfile`, §126). */

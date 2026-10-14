@@ -82,7 +82,7 @@ function sideData(wall, side) {
         sideOf: wall.id,
         // Rejouée en fin de tour seulement : qui y finit son tour subit les dégâts (sans sauvegarde : runtime/areas.mjs).
         area: { on: ["turnEnd"], turnKey: state.turnKey, hit: [], usage: state.usage, activity: state.activity ?? null,
-          exclude: state.exclude ?? null, source: state.source ?? null, affects: state.affects ?? "", originDisposition: state.originDisposition ?? null }
+          exclude: state.exclude ?? null, source: state.source ?? null, affects: state.affects ?? "", originDisposition: state.originDisposition ?? null, originSide: state.originSide ?? null }
       }
     }
   };
@@ -104,7 +104,7 @@ function auraData(wall, rule) {
       [MODULE_ID]: {
         auraOf: wall.id,
         area: { on: [...rule.on], turnKey: state.turnKey, hit: [], usage: state.usage, activity: rule.activity,
-          exclude: state.exclude ?? null, source: state.source ?? null, affects: state.affects ?? "", originDisposition: state.originDisposition ?? null }
+          exclude: state.exclude ?? null, source: state.source ?? null, affects: state.affects ?? "", originDisposition: state.originDisposition ?? null, originSide: state.originSide ?? null }
       }
     }
   };

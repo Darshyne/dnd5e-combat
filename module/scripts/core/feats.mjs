@@ -4,6 +4,8 @@
  * Fonctions pures, aucune dépendance à Foundry.
  */
 
+import { alliedSides } from "./factions.mjs";
+
 /** Le premier terme de dés d'une part : nombre, faces, modificateurs. */
 const FIRST_DIE = /(\d*)d(\d+)((?:[a-z]+\d*)*)/;
 
@@ -52,7 +54,7 @@ export function rerollOnesOnce(part) {
  */
 export function swapPartners(self, others) {
   if ( self.incapacitated || self.down || !Number.isFinite(self.initiative) ) return [];
-  return others.filter(o => (o.id !== self.id) && (o.disposition === self.disposition) && Number.isFinite(o.initiative)
+  return others.filter(o => (o.id !== self.id) && alliedSides(o, self) && Number.isFinite(o.initiative)
     && !o.incapacitated && !o.down).map(o => o.id);
 }
 

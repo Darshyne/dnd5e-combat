@@ -19,6 +19,8 @@
  * Fonctions pures, aucune dépendance à Foundry.
  */
 
+import { factionRelation } from "./factions.mjs";
+
 /** Les moments connus. Un moment de réaction ouvre une fenêtre ; les autres agissent d'eux-mêmes. */
 export const MOMENTS = Object.freeze({
   isHit: "an attack just hit the creature (Shield: before damage; riposte, B9: on application)",
@@ -96,9 +98,12 @@ export const DAMAGED_BY = Object.freeze(["originSide"]);
  * (amicale ou hostile ; une créature neutre n'est l'alliée de personne). Auteur inconnu : non.
  * @param {{damager: string|null, origin: string|null, damagerDisposition?: number|null, originDisposition?: number|null}} who
  */
-export function damagedByOriginSide({ damager, origin, damagerDisposition=null, originDisposition=null }) {
+export function damagedByOriginSide({ damager, origin, damagerDisposition=null, originDisposition=null, damagerSide=null, originSide=null }) {
   if ( !damager || !origin ) return false;
   if ( damager === origin ) return true;
+  // §181 : quand les factions disent quelque chose de ce couple, elles l'emportent sur les dispositions.
+  const relation = (damagerSide && originSide) ? factionRelation(damagerSide, originSide) : null;
+  if ( relation ) return relation === "allied";
   return (damagerDisposition !== null) && (damagerDisposition === originDisposition) && [1, -1].includes(damagerDisposition);
 }
 

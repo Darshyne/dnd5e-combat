@@ -4,6 +4,8 @@
  * Fonctions pures, aucune dépendance à Foundry (SPEC §5.1).
  */
 
+import { alliedSides } from "./factions.mjs";
+
 /**
  * @typedef {object} AreaCandidate
  * @property {string} token        UUID du token.
@@ -26,14 +28,14 @@
  * @param {string} [options.affects]         `target.affects.type` de l'activité : "ally", "enemy", ou tout autre = tout le monde.
  * @returns {AreaCandidate[]}
  */
-export function selectAreaTargets(candidates, { origin, originDisposition, excludeOrigin, affects }) {
+export function selectAreaTargets(candidates, { origin, originDisposition, originSide=null, excludeOrigin, affects }) {
   return candidates.filter(c => {
     if ( c.defeated || (c.lineOfEffect === false) || (c.inVolume === false) ) return false;
     if ( c.token === origin ) return !excludeOrigin && (affects !== "enemy");
     if ( (affects !== "ally") && (affects !== "enemy") ) return true;
     // Sans camp connu pour le lanceur, on ne devine pas : tout le monde est affecté, le MJ annulera au besoin.
     if ( (originDisposition === null) || (originDisposition === undefined) ) return true;
-    const sameSide = c.disposition === originDisposition;
+    const sameSide = alliedSides(c, originSide ?? { disposition: originDisposition });   // §181 : factions, sinon dispositions
     return affects === "ally" ? sameSide : !sameSide;
   });
 }
@@ -172,7 +174,9 @@ export function pulseFor(rule, n) {
  * @param {number} [max]
  */
 export function pulseTargets(tokens, casterDisposition, max) {
-  const hostile = t => (casterDisposition !== null) && (casterDisposition !== undefined) && (t.disposition !== casterDisposition);
+  // §181 : le lanceur peut venir comme un camp (`{ disposition, faction, uuid }`) ou comme une simple disposition.
+  const caster = ((casterDisposition !== null) && (typeof casterDisposition === "object")) ? casterDisposition : { disposition: casterDisposition };
+  const hostile = t => (caster.disposition !== null) && (caster.disposition !== undefined) && !alliedSides(t, caster);
   const ordered = [...tokens.filter(hostile), ...tokens.filter(t => !hostile(t))];
   return max ? ordered.slice(0, max) : ordered;
 }

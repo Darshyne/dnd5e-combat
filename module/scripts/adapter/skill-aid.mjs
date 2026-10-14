@@ -13,6 +13,7 @@ import { combatantFor, distanceBetween, rangeOf } from "./turn.mjs";
 import { inspirationOf, inspirationSourceOf } from "./inspiration.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { readUnitFactors } from "./units.mjs";
+import { areAllies } from "./factions.mjs";
 
 export const GUIDANCE = "guidance";
 
@@ -73,7 +74,7 @@ export function aidsFor(actor, { skill=null, tool=null }={}) {
     try { return isWithinRange(distanceBetween(token, other), reach, factors); }
     catch { return false; }
   };
-  const tokens = scene.tokens.filter(t => t.actor && !isObjectToken(t) && ((t === token) || (t.disposition === token.disposition)));
+  const tokens = scene.tokens.filter(t => t.actor && !isObjectToken(t) && ((t === token) || areAllies(t, token)));
   const byId = new Map(tokens.map(t => [t.id, t]));
   const sources = new Map(tokens.map(t => [t.id, inspirationSourceOf(t.actor)]));
   const candidates = tokens.map(t => {

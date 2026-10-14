@@ -1,5 +1,5 @@
 import { MODULE_ID } from "../constants.mjs";
-import { opportunityAttackers, areHostile, entersAt, reachStrikers } from "../core/reaction.mjs";
+import { opportunityAttackers, entersAt, reachStrikers } from "../core/reaction.mjs";
 import { convertLength } from "../core/units.mjs";
 import {
   REACTION_QUERY, handleReactionQuery, setReactionApproach, reactionOptions, reactionState, meleeAttacksOf, reactiveStrikesOf, reactiveSpellsOf, askReaction, currentAc, opportunityBlocked
@@ -22,6 +22,7 @@ import { reactionApproach } from "./actions.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { poolsOf } from "../adapter/absorb.mjs";
 import { takeReactionDamage } from "../adapter/marks.mjs";
+import { areEnemies, areSworn, sideOf } from "../adapter/factions.mjs";
 
 /** §134 : Rapide — le nom de l'item qui donne le Désavantage aux attaques d'opportunité contre cet acteur, ou null. */
 function hamperedBy(actor) {
@@ -59,7 +60,7 @@ function guardiansOf(hitToken, attackerToken, activity, { publish=false, resolut
   for ( const other of hitToken.parent.tokens ) {
     const actor = other.actor;
     if ( !actor || (other === hitToken) || (other === attackerToken) || isObjectToken(other) ) continue;
-    if ( areHostile(other.disposition, hitToken.disposition) || ((actor.system.attributes?.hp?.value ?? 0) <= 0) ) continue;
+    if ( areEnemies(other, hitToken) || ((actor.system.attributes?.hp?.value ?? 0) <= 0) ) continue;
     const options = reactionsOf(actor, "allyIsHit", { source: attackerToken?.actor ?? null, target, activity, resolution,
       self: actor, selfToken: other, sourceToken: attackerToken, targetToken: hitToken }, { publish });
     if ( options.length ) out.push({ token: other, options });
@@ -158,7 +159,7 @@ export async function askDamageGuardians(targetUuid, sourceUuid, activity, { aut
   for ( const other of hurtToken.parent.tokens ) {
     const actor = other.actor;
     if ( !actor || (other === hurtToken) || (other === attacker) || isObjectToken(other) ) continue;
-    if ( areHostile(other.disposition, hurtToken.disposition) || ((actor.system.attributes?.hp?.value ?? 0) <= 0) ) continue;
+    if ( areEnemies(other, hurtToken) || ((actor.system.attributes?.hp?.value ?? 0) <= 0) ) continue;
     const pool = poolsOf(actor).find(p => p.pool > 0);   // d'abord le moins cher : sans égide pleine, pas d'absorption
     // §78 : une Interposition ne demande pas de réserve.
     const options = reactionsOf(actor, "allyIsDamaged", { source: attacker?.actor ?? null, target, activity, self: actor, selfToken: other,
@@ -282,7 +283,7 @@ export function attackReactors(activity, origin, targets) {
     if ( own.length ) out.push({ token: target, target, options: own });
     for ( const other of target.parent?.tokens ?? [] ) {
       if ( (other === origin) || !alive(other) || other.hidden ) continue;
-      if ( areHostile(other.disposition, target.disposition) || !areHostile(other.disposition, origin.disposition) ) continue;
+      if ( areEnemies(other, target) || !areEnemies(other, origin) ) continue;
       const options = reactionsOf(other.actor, "enemyAttacks", { source: origin.actor, target: target.actor, activity, self: other.actor,
         selfToken: other, sourceToken: origin, targetToken: target }, { publish: true });
       if ( options.length && !out.some(o => o.token === other) ) out.push({ token: other, target, options });
@@ -292,8 +293,8 @@ export function attackReactors(activity, origin, targets) {
   // Présage cosmique, Fortune). Une fenêtre par réacteur, contre la première cible qui lui est hostile. Un neutre n'a pas d'alliés.
   for ( const other of origin.parent?.tokens ?? [] ) {
     if ( (other === origin) || !alive(other) || other.hidden || out.some(o => o.token === other) ) continue;
-    if ( ![1, -1].includes(origin.disposition) || (other.disposition !== origin.disposition) ) continue;
-    const target = targets.find(t => alive(t) && areHostile(other.disposition, t.disposition));
+    if ( !areSworn(other, origin) ) continue;   // §181 : factions, sinon même disposition non neutre
+    const target = targets.find(t => alive(t) && areEnemies(other, t));
     if ( !target ) continue;
     const options = reactionsOf(other.actor, "allyAttacks", { source: origin.actor, target: target.actor, activity, self: other.actor,
       selfToken: other, sourceToken: origin, targetToken: target }, { publish: true });
@@ -338,7 +339,7 @@ export function windowDisengaged(tokenDocument) {
   for ( const other of tokenDocument.parent.tokens ) (async () => {
     const actor = other.actor;
     if ( !actor || (other === tokenDocument) || other.hidden || isObjectToken(other) ) return;
-    if ( !areHostile(other.disposition, tokenDocument.disposition) || ((actor.system.attributes?.hp?.value ?? 0) <= 0) ) return;
+    if ( !areEnemies(other, tokenDocument) || ((actor.system.attributes?.hp?.value ?? 0) <= 0) ) return;
     const options = reactionsOf(actor, "enemyDisengages", { source: mover, self: actor, selfToken: other, sourceToken: tokenDocument,
       target: mover, targetToken: tokenDocument }, { publish: true });
     if ( !options.length ) return;
@@ -379,7 +380,7 @@ function onEnemyTurnEnd(combat, prior) {
   if ( !ended?.actor || !ended.parent ) return;
   for ( const other of ended.parent.tokens ) {
     const actor = other.actor;
-    if ( !actor || (other === ended) || isObjectToken(other) || !areHostile(other.disposition, ended.disposition) ) continue;
+    if ( !actor || (other === ended) || isObjectToken(other) || !areEnemies(other, ended) ) continue;
     if ( (actor.system.attributes?.hp?.value ?? 0) <= 0 ) continue;
     const options = reactionsOf(actor, "enemyTurnEnd",
       { source: ended.actor, target: actor, sourceToken: ended, targetToken: other }, { publish: true });
@@ -436,7 +437,7 @@ export function opportunityThreats(token, waypoints) {
       let strikeReach = strike.reach;
       try { strikeReach = convertLength(strike.reach, strike.units, gridUnits, factors); } catch { /* valeur brute */ }
       const enters = entersAt(path.map(pos => distanceBetween(other, token, { posB: pos }).value), strikeReach);
-      strikers.push({ token: other.uuid, disposition: other.disposition, enters,
+      strikers.push({ ...sideOf(other), token: other.uuid, enters,
         hasLineOfEffect: (enters >= 0) ? hasLineOfEffect(other, token, { posB: path[enters] }) : null, ...reactionState(other.actor) });
     }
     const melee = meleeAttacksOf(other.actor);
@@ -448,7 +449,7 @@ export function opportunityThreats(token, waypoints) {
       if ( (distances[n] <= reach + 1e-6) && (distances[n + 1] > reach + 1e-6) ) { leaves = n; break; }
     }
     others.push({
-      token: other.uuid, disposition: other.disposition, reach,
+      ...sideOf(other), token: other.uuid, reach,
       before: leaves >= 0 ? distances[leaves] : distances[0],
       after: leaves >= 0 ? distances[leaves + 1] : distances.at(-1),
       leaves, hasMeleeAttack: melee.options.length > 0,
@@ -460,10 +461,10 @@ export function opportunityThreats(token, waypoints) {
   }
   const attacks = opportunityAttackers({
     // §18.15 : Agile, Vol rasant — comme un Désengagement, pour ce déplacement.
-    disposition: token.disposition, teleported,
+    ...sideOf(token), teleported,
     disengaged: (readBudget(mover).disengaged === true) || avoidsOpportunity(token.actor, token, waypoints)
   }, others).map(uuid => ({ uuid, at: others.find(o => o.token === uuid)?.leaves ?? 0 }));
-  const strikes = reachStrikers({ disposition: token.disposition, teleported }, strikers)
+  const strikes = reachStrikers({ ...sideOf(token), teleported }, strikers)
     .map(uuid => ({ uuid, enters: true, at: strikers.find(o => o.token === uuid).enters - 1 }));
   if ( !strikes.length ) return attacks.map(a => a.uuid);
   return [...strikes, ...attacks].sort((a, b) => a.at - b.at).map(a => (a.enters ? { token: a.uuid, enters: true } : a.uuid));

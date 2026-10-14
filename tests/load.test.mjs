@@ -29,7 +29,7 @@ describe("chargement du module", () => {
   });
 
   it("expose ses fonctions de test au connecteur sous api.mcp (call-module-api), et elles seules", () => {
-    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "advanceTime", "animations", "attackReasons", "budget", "chatCards", "closeWindow", "cover", "dash", "diagnosticBackups", "diagnosticForget", "diagnosticRepair", "diagnosticRestore", "diagnosticScan", "door", "effectOrigins", "enchant", "endings", "familiar", "familiarPocket", "familiarRecall", "follow", "followState", "heal", "hurt", "identify", "inventory", "issues", "lightState", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "placeRegionAt", "plan", "planning", "portent", "reload", "reports", "restoreItem", "rollCard", "rollCheck", "rollSave", "runMacro", "saveChance", "sequencer", "setting", "skillAid", "skillAids", "stairs", "stairsAt", "stats", "status", "storm", "stormStrike", "summonAt", "takeStairs", "teleport", "teleportPick", "threats", "toggleLight", "transpose", "unfollow", "use", "view", "wall", "wallSide", "windows"]);
+    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "advanceTime", "animations", "attackReasons", "budget", "chatCards", "closeWindow", "cover", "dash", "diagnosticBackups", "diagnosticForget", "diagnosticRepair", "diagnosticRestore", "diagnosticScan", "door", "effectOrigins", "enchant", "endings", "factions", "familiar", "familiarPocket", "familiarRecall", "follow", "followState", "heal", "hurt", "identify", "inventory", "issues", "lightState", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "placeRegionAt", "plan", "planning", "portent", "reload", "reports", "restoreItem", "rollCard", "rollCheck", "rollSave", "runMacro", "saveChance", "sees", "sequencer", "setting", "skillAid", "skillAids", "stairs", "stairsAt", "stats", "status", "storm", "stormStrike", "summonAt", "takeStairs", "teleport", "teleportPick", "threats", "toggleLight", "transpose", "unfollow", "use", "view", "wall", "wallSide", "windows"]);
     expect(Object.isFrozen(api.api.mcp)).toBe(true);
   });
 
@@ -55,9 +55,9 @@ describe("chargement du module", () => {
     ]);
   });
 
-  it("déclare annulables les hooks `pre…` du système et du cœur, et `dnd5e.teleport` (appelé par Hooks.call), et eux seuls", () => {
+  it("déclare annulables les hooks `pre…` du système et du cœur, `dnd5e.teleport` et `dropCanvasData` (appelés par Hooks.call, board.mjs:2490), et eux seuls", () => {
     const cancellable = Object.entries(api.api.routes()).filter(([, rs]) => rs.some(r => r.cancellable)).map(([h]) => h).sort();
-    expect(cancellable).toEqual(["dnd5e.postAttackRollConfiguration", "dnd5e.preCreateMeasuredTemplate", "dnd5e.preRollAttackV2", "dnd5e.preRollConcentrationV2", "dnd5e.preRollDamageV2", "dnd5e.preSummon", "dnd5e.preUseActivity", "dnd5e.teleport", "preCreateActiveEffect", "preCreateItem", "preMoveToken", "preUpdateActiveEffect", "preUpdateItem", "preUpdateToken"]);
+    expect(cancellable).toEqual(["dnd5e.postAttackRollConfiguration", "dnd5e.preCreateMeasuredTemplate", "dnd5e.preRollAttackV2", "dnd5e.preRollConcentrationV2", "dnd5e.preRollDamageV2", "dnd5e.preSummon", "dnd5e.preUseActivity", "dnd5e.teleport", "dropCanvasData", "preCreateActiveEffect", "preCreateItem", "preMoveToken", "preUpdateActiveEffect", "preUpdateItem", "preUpdateToken"]);
   });
 
   it("enregistre les requêtes entre clients", () => {

@@ -5,13 +5,14 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { areHostile } from "../core/reaction.mjs";
 import { LIGHT } from "../core/illumination.mjs";
 import { hiddenEffectsOf, OUT_OF_ACTION } from "./hide.mjs";
 import { canSee, blockedBetween, hasLineOfSight } from "./vision.mjs";
 import { perceivedOnToken, sensesToward, tokenPoint } from "./illumination.mjs";
 import { committedPosition } from "./turn.mjs";
 import { isObjectToken } from "./bodies.mjs";
+import { areEnemies } from "./factions.mjs";
+import { outsideCone } from "./cone.mjs";
 
 /** Le DD pour trouver cet acteur caché (le plus haut de ses effets de Furtivité), ou null s'il n'est pas caché. */
 export function hiddenDcOf(actor) {
@@ -30,7 +31,7 @@ export function searchCandidates(searcher) {
   const out = [];
   for ( const token of scene.tokens ) {
     if ( (token === searcher) || token.hidden || !token.actor || isObjectToken(token) ) continue;
-    if ( !areHostile(searcher.disposition, token.disposition) ) continue;
+    if ( !areEnemies(searcher, token) ) continue;
     const dc = hiddenDcOf(token.actor);
     if ( dc === null ) continue;
     out.push({ id: token.uuid, token, dc, ...sightingOf(searcher, token) });
@@ -52,6 +53,7 @@ export function sightingOf(observer, target) {
   if ( sensed || observer.actor?.statuses?.has("blinded") ) return { sensed, seeable: false, disadvantage: false };
   const eye = observer.getVisionOrigin?.(committedPosition(observer)) ?? tokenPoint(observer);
   if ( !hasLineOfSight(eye, target, observer.parent.levels?.get?.(observer.level)) ) return { sensed, seeable: false, disadvantage: false };
+  if ( outsideCone(observer, target) ) return { sensed, seeable: false, disadvantage: false };   // §182 : dans son dos
   const blocked = blockedBetween(observer, target);
   const senses = sensesToward(observer, tokenPoint(target));
   const throughDarkness = senses.devilsSight || senses.truesight;
@@ -75,7 +77,7 @@ export function passiveObservers(hidden) {
   for ( const token of scene.tokens ) {
     const actor = token.actor;
     if ( (token === hidden) || token.hidden || !actor || isObjectToken(token) ) continue;
-    if ( !areHostile(hidden.disposition, token.disposition) ) continue;
+    if ( !areEnemies(hidden, token) ) continue;
     if ( OUT_OF_ACTION.some(s => actor.statuses.has(s)) || actor.statuses.has(defeated) ) continue;
     const passive = Number(actor.system?.skills?.prc?.passive);
     out.push({ token, passive, ...sightingOf(token, hidden) });

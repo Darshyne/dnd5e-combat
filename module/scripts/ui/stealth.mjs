@@ -1,0 +1,91 @@
+/**
+ * §183 : l'interface du mode furtif — le raccourci (Alt+C par défaut, réglable dans les commandes de Foundry) qui bascule les tokens
+ * contrôlés, et, sur le client d'un joueur dont un token est en mode furtif, les **cônes de vision** (§182) des créatures qu'il voit
+ * sur la scène, découpés par les murs (polygone de vision du cœur, `ClockwiseSweepPolygon`, angle et rotation du token : la convention
+ * du cœur, shapes/limited-angle-polygon.mjs:53). Rien n'est écrit : un dessin local.
+ */
+
+import { MODULE_ID } from "../constants.mjs";
+import { route } from "../runtime/router.mjs";
+import { loc } from "../runtime/shared.mjs";
+import { coneOf } from "../adapter/cone.mjs";
+import { isSneaking, setSneaking } from "../runtime/stealth.mjs";
+
+const FILL = 0xd94040;
+const RANGE_CELLS = 12;   // portée dessinée sans portée de vue sur le token : douze cases
+
+let layer = null;
+let pending = false;
+
+/** Les tokens en mode furtif que ce client possède (sur la scène affichée). */
+function mySneakers() {
+  return (canvas?.tokens?.placeables ?? []).filter(t => t.document.isOwner && isSneaking(t.document)
+    && !(game.user.isGM && !t.controlled));
+}
+
+function ensureLayer() {
+  if ( layer && !layer.destroyed ) return layer;
+  layer = new PIXI.Graphics();
+  layer.eventMode = "none";
+  layer.zIndex = 50;
+  canvas.interface?.addChild(layer);
+  return layer;
+}
+
+/** Le polygone d'un cône, découpé par les murs. */
+function conePolygon(token, cone) {
+  const doc = token.document;
+  const cells = Number(doc.sight?.range) > 0 ? Number(doc.sight.range) / canvas.dimensions.distance : RANGE_CELLS;
+  const radius = cells * canvas.dimensions.size;
+  const config = { type: "sight", angle: cone.angle, rotation: cone.rotation, radius, level: doc.level ? canvas.scene.levels?.get?.(doc.level) : undefined };
+  try { return CONFIG.Canvas.polygonBackends.sight.create(token.center, config); }
+  catch { return null; }
+}
+
+function draw() {
+  pending = false;
+  if ( !canvas?.ready ) return;
+  const g = ensureLayer();
+  g.clear();
+  const sneakers = mySneakers();
+  if ( !sneakers.length ) return;
+  for ( const token of canvas.tokens.placeables ) {
+    if ( sneakers.includes(token) || !token.visible || token.document.hidden ) continue;
+    const cone = coneOf(token.document);
+    if ( !cone ) continue;
+    const poly = conePolygon(token, cone);
+    if ( !poly?.points?.length ) continue;
+    g.lineStyle(2, FILL, 0.8).beginFill(FILL, 0.18).drawPolygon(poly.points).endFill();
+  }
+}
+
+/** Redessiner à la prochaine image (une fois, quel que soit le nombre d'évènements). */
+function schedule() {
+  if ( pending ) return;
+  pending = true;
+  requestAnimationFrame(draw);
+}
+
+export function registerStealthUI() {
+  game.keybindings?.register?.(MODULE_ID, "sneak", {
+    name: "DND5ECOMBAT.Furtif.Raccourci", hint: "DND5ECOMBAT.Furtif.RaccourciAide",
+    editable: [{ key: "KeyC", modifiers: ["Alt"] }],
+    onDown: () => {
+      const tokens = (canvas?.tokens?.controlled ?? []).filter(t => t.document.isOwner);
+      if ( !tokens.length ) return false;
+      Promise.all(tokens.map(t => setSneaking(t.document))).then(results => {
+        const refused = results.find(r => r.reason === "inCombat");
+        if ( refused ) ui.notifications.info(loc("Furtif.EnCombat"));
+        else ui.notifications.info(loc(results[0]?.sneaking ? "Furtif.Entre" : "Furtif.Sort"));
+      });
+      return true;
+    }
+  });
+  const label = { label: "sneak: cones redrawn" };
+  for ( const hook of ["canvasReady", "refreshToken", "controlToken", "sightRefresh", "createToken", "deleteToken",
+    "updateCombat", "deleteCombat", `${MODULE_ID}.sneak`, `${MODULE_ID}.conesChanged`] ) route(hook, schedule, label);
+  route("updateToken", (doc, changes) => {
+    if ( ("rotation" in changes) || ("hidden" in changes) || ("sight" in changes) || (changes.flags?.[MODULE_ID]) ) schedule();
+  }, label);
+  route("canvasTearDown", () => { layer?.destroy?.(); layer = null; }, { label: "sneak: layer removed" });
+}

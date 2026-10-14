@@ -49,7 +49,8 @@ import { askEnchantWeapon } from "./enchant.mjs";
 import { takeForm, leaveForm } from "../runtime/wildshape.mjs";
 import { canStandUp, standUp } from "../runtime/prone.mjs";
 import { shapeCenter } from "../core/area.mjs";
-import { targetRule, targetRefusal, relationOf } from "../core/targeting.mjs";
+import { targetRule, targetRefusal } from "../core/targeting.mjs";
+import { relationForTargeting } from "../adapter/factions.mjs";
 import { closeLegalityDialogs, openLegalityDialogs } from "../runtime/turn.mjs";
 import { escapableRestraintsOf } from "../adapter/escape.mjs";
 import { escapeGrapple, holdsOf, releaseGrapple } from "../runtime/grapple.mjs";
@@ -246,7 +247,7 @@ const TARGET_REFUSALS = { self: "Retour.PasSoi", notAlly: "Retour.PasAllie", not
 
 /** Le type de cible de l'activité refuse-t-il cette créature (soi-même, mauvais camp) ? Le texte du refus, ou null. */
 function targetTypeRefusal(me, hover, activity) {
-  const why = targetRefusal(ruleOf(activity), { isSelf: hover === me, relation: relationOf(me.disposition, hover.disposition) });
+  const why = targetRefusal(ruleOf(activity), { isSelf: hover === me, relation: relationForTargeting(me, hover) });
   return why ? loc(TARGET_REFUSALS[why]) : null;
 }
 

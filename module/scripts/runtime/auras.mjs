@@ -11,6 +11,7 @@ import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { log, isExecutor } from "./shared.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
+import { sideOf } from "../adapter/factions.mjs";
 
 const isInactive = actor => actor.statuses.has("incapacitated") || actor.statuses.has("dead")
   || actor.statuses.has(CONFIG.specialStatusEffects.DEFEATED);
@@ -44,7 +45,7 @@ async function refreshScene(scene) {
     let radius = aura.radius;
     try { radius = convertLength(aura.radius, aura.units, gridUnits, factors); } catch { /* unité inconnue : valeur brute */ }
     const source = {
-      token: sourceToken.uuid, key: aura.key, disposition: sourceToken.disposition,
+      ...sideOf(sourceToken), token: sourceToken.uuid, key: aura.key,
       inactive: isInactive(sourceToken.actor), radius, affects: aura.affects,
       includeSelf: aura.includeSelf === true, value: auraValue(aura, sourceToken.actor), types: aura.types ?? null
     };
@@ -54,7 +55,7 @@ async function refreshScene(scene) {
       // §16.47 : qui porte déjà l'effet d'origine du sort n'en reçoit pas de copie.
       const distance = carriesOriginal(t.actor, aura) ? Infinity : (t === sourceToken ? 0 : distanceBetween(sourceToken, t).value);
       const lineOfEffect = ((t === sourceToken) || (distance > radius + 1e-6)) ? null : hasLineOfEffect(sourceToken, t);
-      return { token: t.uuid, disposition: t.disposition, distance, lineOfEffect, type: t.actor.system.details?.type?.value ?? null };
+      return { ...sideOf(t), token: t.uuid, distance, lineOfEffect, type: t.actor.system.details?.type?.value ?? null };
     });
     auras.push({ source, recipients: auraRecipients(source, candidates) });
     auraBySlot.set(`${source.token}|${source.key}`, { aura, sourceToken });
@@ -99,8 +100,12 @@ export function registerAuras() {
   const always = () => refresh();
   // Début et fin de combat : avec le réglage « en combat seulement », les auras s'allument et s'éteignent.
   for ( const hook of ["canvasReady", `${MODULE_ID}.refreshAuras`, "combatStart", "deleteCombat", "moveToken",
-    "createToken", "deleteToken", "createItem", "deleteItem"] ) route(hook, always, auras);
-  route("updateToken", (token, changes) => { if ( ("hidden" in changes) || ("disposition" in changes) ) refresh(); }, auras);
+    "createToken", "deleteToken", "createItem", "deleteItem", `${MODULE_ID}.factionsChanged`] ) route(hook, always, auras);
+  route("updateToken", (token, changes) => {
+    // §181 : une faction ou une attitude qui change déplace les camps.
+    const flags = changes.flags?.[MODULE_ID] ?? {};
+    if ( ("hidden" in changes) || ("disposition" in changes) || ("faction" in flags) || ("-=faction" in flags) || ("stance" in flags) || ("-=stance" in flags) ) refresh();
+  }, auras);
   // Un état qui éteint l'aura (neutralisé), un Charisme qui change, un item d'aura ajouté ou retiré.
   // Nos propres copies ne relancent rien : elles ne changent ni les porteurs ni les distances.
   const onEffect = effect => { if ( !effect.getFlag(MODULE_ID, "aura") ) refresh(); };

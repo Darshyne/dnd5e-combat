@@ -11,7 +11,6 @@
 import { barrierCrossed } from "../adapter/barriers.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { movementAllowance } from "../core/turn.mjs";
-import { areHostile } from "../core/reaction.mjs";
 import { footprintGap, chooseBasicAttack, dragMultiplier, dragAllowance } from "../core/movement.mjs";
 import { convertLength } from "../core/units.mjs";
 import { combatantFor, readBudget, movementOf, speedOf, rangeOf, committedPosition, historyCosts, distanceBetween, positionOf, usageTokenOf } from "../adapter/turn.mjs";
@@ -42,6 +41,7 @@ import { levelAtLeast } from "./levels.mjs";
 import { route } from "./router.mjs";
 import { afterTeleportOptions } from "./teleport-options.mjs";
 import { loc, notice, log } from "./shared.mjs";
+import { areEnemies } from "../adapter/factions.mjs";
 
 /* -------------------------------------------- */
 /*  Ce que le tour permet                       */
@@ -444,11 +444,10 @@ export function basicAttack(actor) {
   return activity ? { id: activity.uuid, activity, melee: activity.attack?.type?.value !== "ranged" } : null;
 }
 
-/** Hostilité, d'après les dispositions. Un objet piloté (disposition « secrète ») prend celle de son lanceur. */
+/** Hostilité : factions, sinon dispositions (§181). Un objet piloté (disposition « secrète ») prend le camp de son lanceur. */
 export function hostileTo(me, other) {
   const pilot = pilotOf(me);
-  const mine = pilot ? (summonerToken(pilot)?.disposition ?? me.disposition) : me.disposition;
-  return areHostile(mine, other.disposition);
+  return areEnemies(pilot ? (summonerToken(pilot) ?? me) : me, other);
 }
 
 /* -------------------------------------------- */

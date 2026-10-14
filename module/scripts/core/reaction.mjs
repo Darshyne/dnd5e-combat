@@ -10,6 +10,9 @@
 
 import { hostileSides } from "./factions.mjs";
 
+/** Deux camps sont-ils opposés ? (défini avec les factions, §181 ; réexporté ici pour les appelants d'avant) */
+export { areHostile } from "./factions.mjs";
+
 /**
  * Les réactions qu'une créature peut proposer dans une fenêtre.
  * @param {Array<{on: string[]}>} declared   Déclarations canoniques de ses items (core/triggers.mjs).
@@ -48,11 +51,6 @@ export function reachStrikers(mover, others) {
   if ( mover.teleported ) return [];
   return others.filter(o => (o.enters >= 0) && o.reactionAvailable && !o.incapacitated && (o.hasLineOfEffect !== false)
     && hostileSides(mover, o)).map(o => o.token);
-}
-
-/** Deux camps sont-ils opposés ? Un neutre (0) ou un secret (-2) ne provoque ni ne subit rien. */
-export function areHostile(a, b) {
-  return ((a === 1) && (b === -1)) || ((a === -1) && (b === 1));
 }
 
 /**

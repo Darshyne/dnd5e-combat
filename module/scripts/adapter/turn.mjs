@@ -22,6 +22,12 @@ import { depthOf, verticalExtent, verticalGap } from "../core/space.mjs";
 import { multiattackOf, useKeysOf, isMultiattackItem } from "./multiattack.mjs";
 import { pendingMetamagic, distantRange } from "./metamagic.mjs";
 
+/** Les acteurs de la scène du combat (tokens non liés compris), une fois chacun. */
+export function combatSceneActors(combat) {
+  const scene = combat?.scene ?? canvas.scene;
+  return [...new Set((scene?.tokens ?? []).map(t => t.actor).filter(Boolean))];
+}
+
 /** Le combattant d'un acteur dans le combat en cours, ou null hors combat. */
 export function combatantFor(actor) {
   if ( !actor || !game.combat?.started ) return null;

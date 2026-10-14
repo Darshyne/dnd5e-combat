@@ -11,7 +11,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { current, STEPS } from "../core/action.mjs";
 import { planPurge } from "../core/purge.mjs";
 import { route } from "./router.mjs";
-import { log } from "./shared.mjs";
+import { log, isExecutor } from "./shared.mjs";
 
 export const PURGE_MAX_SETTING = "chatPurgeMax";
 export const PURGE_KEEP_SETTING = "chatPurgeKeep";
@@ -35,7 +35,7 @@ function entries() {
 
 async function purge() {
   timer = null;
-  if ( running || !game.users.activeGM?.isSelf ) return;
+  if ( running || !isExecutor() ) return;
   const max = setting(PURGE_MAX_SETTING);
   const ids = planPurge(entries(), { max, keep: Math.min(setting(PURGE_KEEP_SETTING), max) });
   if ( !ids.length ) return;

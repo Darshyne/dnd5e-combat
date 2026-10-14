@@ -6,8 +6,7 @@
  * d'origine, ou le texte français d'une fiche sans original. Fonctions pures, sans Foundry.
  */
 
-const plain = html => String(html ?? "").replace(/&amp;/g, "&").replace(/\[\[[^\]]*\]\]/g, "…")
-  .replace(/&Reference\[([^\]]+)\](?:\{[^}]*\})?/g, "$1").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/’/g, "'").replace(/\s+/g, " ");
+import { plainStatText as plain } from "./text.mjs";
 
 /** Types de dégâts nommés en français dans la phrase du drain. */
 const FRENCH_TYPES = { "nécrotiques": "necrotic", "nécrotique": "necrotic", "radiants": "radiant", "psychiques": "psychic" };

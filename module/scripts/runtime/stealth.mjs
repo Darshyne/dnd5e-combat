@@ -17,7 +17,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { route } from "./router.mjs";
-import { log, loc } from "./shared.mjs";
+import { log, loc, isExecutor } from "./shared.mjs";
 import { isHidden, spottedBy, stealthRules, RULES_SETTING } from "../adapter/stealth.mjs";
 import { canSee } from "../adapter/vision.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
@@ -27,7 +27,8 @@ import { toggleHidden, endHiding } from "./hide.mjs";
 
 export { isHidden };
 
-const OUT = ["dead", "unconscious", "incapacitated", "paralyzed", "petrified", "stunned", "sleeping"];
+/** Les états d'une créature qui ne guette plus rien (avec 0 PV et Vaincu) : elle ne repère ni ne voit de cône. */
+export const OUT = Object.freeze(["dead", "unconscious", "incapacitated", "paralyzed", "petrified", "stunned", "sleeping"]);
 const able = doc => {
   const actor = doc?.actor;
   if ( !actor || doc.hidden || ((actor.system?.attributes?.hp?.value ?? 1) <= 0) ) return false;
@@ -53,7 +54,7 @@ let timer = null;
 
 /** Juger la scène affichée bientôt (plusieurs évènements → un seul passage). */
 function schedule() {
-  if ( timer || (stealthRules() !== "bg3") || (game.users.activeGM?.isSelf !== true) ) return;
+  if ( timer || (stealthRules() !== "bg3") || !isExecutor() ) return;
   timer = setTimeout(() => { timer = null; check(canvas?.scene).catch(err => console.error(`${MODULE_ID} | stealth: check failed`, err)); }, 250);
 }
 

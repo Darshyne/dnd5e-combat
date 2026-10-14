@@ -10,7 +10,7 @@ import { combatantFor } from "./turn.mjs";
 import { ritualMode } from "../core/grimoire.mjs";
 
 /** Le lanceur a-t-il encore un emplacement (ou un emplacement de pacte) du niveau du sort ou plus ? */
-function slotLeft(item) {
+export function slotLeft(item) {
   const level = item.system?.level ?? 0;
   return Object.values(item.actor?.system?.spells ?? {}).some(s => (s?.value > 0) && ((s.level ?? 0) >= level));
 }

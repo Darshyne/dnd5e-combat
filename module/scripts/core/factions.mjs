@@ -9,8 +9,10 @@
  * La table est injectée par l'adaptateur (`useFactionTable`), comme l'aléa : le cœur ne lit aucun réglage.
  */
 
-/** Amical contre Hostile (copie de `reaction.mjs` `areHostile`, sans import croisé). */
-function areHostile(a, b) {
+import { relationOf } from "./targeting.mjs";
+
+/** Deux dispositions sont-elles opposées (Amical contre Hostile) ? Un neutre (0) ou un secret (-2) ne provoque ni ne subit rien. */
+export function areHostile(a, b) {
   return ((a === 1) && (b === -1)) || ((a === -1) && (b === 1));
 }
 
@@ -173,11 +175,7 @@ export function alliedSides(a, b) {
  */
 export function targetRelation(a, b) {
   const r = factionRelation(a, b);
-  if ( !r ) {
-    const mine = a?.disposition, theirs = b?.disposition;
-    if ( ![1, -1].includes(mine) || ![1, -1].includes(theirs) ) return "neutral";
-    return mine === theirs ? "same" : "opposed";
-  }
+  if ( !r ) return relationOf(a?.disposition, b?.disposition);
   return r === "allied" ? "same" : (r === "hostile" ? "opposed" : "neutral");
 }
 

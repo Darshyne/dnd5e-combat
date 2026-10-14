@@ -4,9 +4,7 @@
  * Fonctions pures, sans Foundry.
  */
 
-const plain = html => String(html ?? "").replace(/&amp;/g, "&").replace(/\[\[[^\]]*\]\]/g, "…")
-  .replace(/&Reference\[([^\]]+)\](?:\{[^}]*\})?/g, "$1").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ")
-  .replace(/[’]/g, "'");
+import { plainStatText as plain } from "./text.mjs";
 
 /**
  * - `damageAt` : « at the start of each of the behir's turns » (`ownerStart`), « at the start of each of its turns »

@@ -57,12 +57,11 @@ const onTarget = (target, status, value=null) => (target.actor?.isOwner ? handle
 
 /** Fait cesser `status` sur le token `target` (TokenDocument). Épuisement : un niveau de moins (§160, Restauration suprême). */
 export async function cureStatus(target, status) {
-  const n = (status === "exhaustion") ? await onTarget(target, "exhaustion-1")
-    : target.actor?.isOwner ? await removeStatus(target.uuid, status)
-    : await game.users.activeGM?.query(CURE_QUERY, { target: target.uuid, status }, { timeout: 10000 }).catch(() => 0);
+  // Sans MJ actif pour une cible d'un autre, la requête ne rend rien : rien n'a cessé.
+  const n = Number(await onTarget(target, (status === "exhaustion") ? "exhaustion-1" : status)) || 0;
   const label = game.i18n.localize(CONFIG.DND5E.conditionTypes[status]?.name ?? status);
   log(`${target.name}: ${label} ends (${n} effect(s))`);
-  notice(target, loc("Retour.FinEffet", { item: label }), "ended");
+  if ( n > 0 ) notice(target, loc("Retour.FinEffet", { item: label }), "ended");
   return n;
 }
 
@@ -100,8 +99,7 @@ async function onPostUseAll(activity, usageConfig, results) {
     if ( status === "exhaustion" ) {
       const level = target.actor.system?.attributes?.exhaustion ?? 0;
       if ( level > 0 ) {
-        await (target.actor.isOwner ? target.actor.update({ "system.attributes.exhaustion": 0 })
-          : game.users.activeGM?.query(CURE_QUERY, { target: target.uuid, status }, { timeout: 10000 }).catch(() => 0));
+        await onTarget(target, "exhaustion");
         log(`${target.name}: Exhaustion ${level} → 0`);
       }
       continue;

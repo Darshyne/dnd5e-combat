@@ -13,6 +13,7 @@ import { activityToUse } from "../core/activity-choice.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { originItemOf, isWounded } from "../adapter/facts.mjs";
 import { swallowOf } from "../adapter/swallow.mjs";
+import { slotLeft } from "../adapter/grimoire.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 
@@ -39,12 +40,6 @@ function freeCast(item, a) {
   const left = u => (u?.max > 0) && (u.value > 0);
   const onItem = (a.consumption?.targets ?? []).some(t => (t.type === "itemUses") && !t.target);
   return onItem ? left(item.system.uses) : left(a.uses);
-}
-
-/** Le lanceur a-t-il encore un emplacement (ou un emplacement de pacte) du niveau du sort ou plus ? */
-function slotLeft(item) {
-  const level = item.system?.level ?? 0;
-  return Object.values(item.actor?.system?.spells ?? {}).some(s => (s?.value > 0) && ((s.level ?? 0) >= level));
 }
 
 /** Les temps d'incantation qui coûtent quelque chose au tour (§46) — pas « spéciale », « début / fin de tour », ni aucun. */

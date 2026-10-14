@@ -9,7 +9,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc } from "../runtime/shared.mjs";
 import { coneOf } from "../adapter/cone.mjs";
-import { isHidden, setHidden } from "../runtime/stealth.mjs";
+import { isHidden, setHidden, OUT } from "../runtime/stealth.mjs";
 
 const FILL = 0xd94040;
 const RANGE_CELLS = 12;   // portée dessinée sans portée de vue sur le token : douze cases
@@ -18,7 +18,6 @@ let layer = null;
 let pending = false;
 
 /** Une créature qui ne guette plus rien : à 0 PV, morte, inconsciente, neutralisée ou vaincue. */
-const OUT = ["dead", "unconscious", "incapacitated", "paralyzed", "petrified", "stunned", "sleeping"];
 function outOfPlay(doc) {
   const actor = doc.actor;
   if ( !actor || ((actor.system?.attributes?.hp?.value ?? 1) <= 0) ) return true;

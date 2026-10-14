@@ -17,7 +17,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
 import { masteryEffect, grazeDamage, toppleDC, cleaveModifier, markExpires } from "../core/mastery.mjs";
 import { masteryOf, attackModOf, marksOn, markData, markModifiers } from "../adapter/mastery.mjs";
-import { currentTurnKey } from "../adapter/turn.mjs";
+import { currentTurnKey, combatSceneActors } from "../adapter/turn.mjs";
 import { pushAway } from "../adapter/movement.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { askChoice } from "../adapter/choices.mjs";
@@ -160,15 +160,9 @@ async function onAttackRolled(message) {
   }
 }
 
-/** Les acteurs de la scène du combat (tokens non liés compris), une fois chacun. */
-function actorsOf(combat) {
-  const scene = combat?.scene ?? canvas.scene;
-  return [...new Set((scene?.tokens ?? []).map(t => t.actor).filter(Boolean))];
-}
-
 async function expire(combat, combatantId, moment, key) {
   if ( !combatantId ) return;
-  for ( const actor of actorsOf(combat) ) {
+  for ( const actor of combatSceneActors(combat) ) {
     const gone = marksOn(actor).filter(e => {
       const m = e.getFlag(MODULE_ID, "mastery");
       return markExpires(m.kind, { moment, sourceTurn: m.combatant === combatantId, turnKey: key, placedOn: m.placedOn });

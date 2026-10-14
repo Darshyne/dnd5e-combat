@@ -20,7 +20,7 @@ import { STEPS } from "../core/action.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { originItemOf, isWounded } from "../adapter/facts.mjs";
 import { comesFromItemEffect } from "../adapter/triggers.mjs";
-import { currentTurnKey } from "../adapter/turn.mjs";
+import { currentTurnKey, combatSceneActors } from "../adapter/turn.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log } from "./shared.mjs";
@@ -62,14 +62,11 @@ function onPreCreateEffect(effect) {
   return true;
 }
 
-/** Les acteurs de la scène du combat, une fois chacun. */
-const actorsOf = combat => [...new Set(((combat?.scene ?? canvas.scene)?.tokens ?? []).map(t => t.actor).filter(Boolean))];
-
 async function expire(combat, prior, current) {
   const priorActor = combat.combatants.get(prior?.combatantId)?.actor ?? null;
   const currentActor = combat.combatants.get(current?.combatantId)?.actor ?? null;
   const priorKey = prior ? `${combat.id}.${prior.round}.${prior.turn}` : null;
-  for ( const actor of actorsOf(combat) ) {
+  for ( const actor of combatSceneActors(combat) ) {
     const gone = actor.effects.filter(effect => {
       const rule = endRuleOf(effect);
       if ( !rule ) return false;

@@ -108,16 +108,17 @@ export function missingBasicActions(actor, { familiar=false }={}) {
     .map(([kind]) => kind);
 }
 
+/** L'item d'attaque à mains nues d'un acteur (le nôtre ou celui d'une classe), ou undefined. */
+const unarmedStrikeOf = actor => actor?.items.find(i => (i.system.identifier === "unarmed-strike") && (i.type === "weapon"));
+
 /** La sauvegarde « Lutte / Bousculade » de l'attaque à mains nues d'un acteur (la nôtre ou celle d'une classe), ou null. */
 export function grappleShoveOf(actor) {
-  const item = actor?.items.find(i => (i.system.identifier === "unarmed-strike") && (i.type === "weapon"));
-  return item?.system.activities?.find(a => a.type === "save") ?? null;
+  return unarmedStrikeOf(actor)?.system.activities?.find(a => a.type === "save") ?? null;
 }
 
 /** L'attaque à mains nues d'un acteur, ou null. */
 export function unarmedAttackOf(actor) {
-  const item = actor?.items.find(i => (i.system.identifier === "unarmed-strike") && (i.type === "weapon"));
-  return item?.system.activities?.find(a => a.type === "attack") ?? null;
+  return unarmedStrikeOf(actor)?.system.activities?.find(a => a.type === "attack") ?? null;
 }
 
 /** L'activité de Soutien (action de base) d'un acteur, ou null. */

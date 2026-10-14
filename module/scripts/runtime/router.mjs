@@ -15,6 +15,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { recordTiming } from "./perf.mjs";
+import { isExecutor } from "./shared.mjs";
 
 /**
  * @param {object} deps
@@ -96,7 +97,7 @@ export function createRouter({ subscribe, isExecutor, report, refused=() => {}, 
 
 const router = createRouter({
   subscribe: (hook, fn) => Hooks.on(hook, fn),
-  isExecutor: () => game.users.activeGM?.isSelf === true,
+  isExecutor,
   report: (entry, err) => {
     console[entry.level](`${MODULE_ID} | ${entry.label}`, err);
     if ( entry.notify ) ui.notifications.error(entry.notify, { localize: true });

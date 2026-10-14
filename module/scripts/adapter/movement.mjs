@@ -699,8 +699,6 @@ function checkpointed(move, stoppable=true) {
  */
 const walks = new Map();
 
-export const isWalking = token => walks.has(token);
-
 /**
  * Arrête la marche de ce token au prochain point de contrôle (la case libre où l'animation en cours le mène). Rend vrai
  * s'il marchait. Seul le client qui a lancé un déplacement peut l'arrêter (`stopMovement`, documents/token.mjs:762) :

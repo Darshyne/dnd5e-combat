@@ -8,8 +8,6 @@
  *   Token  un token non lié : sa copie propre de l'acteur (ce que ses objets et effets sont devenus dans son delta).
  */
 
-export const ROOT_TYPES = Object.freeze(["Actor", "Item", "Token"]);
-
 /** Les collections incluses d'une racine, par sorte. */
 export const EMBEDDED = Object.freeze({ Actor: ["items", "effects"], Item: ["effects"], Token: ["items", "effects"] });
 

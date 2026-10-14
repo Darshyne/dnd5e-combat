@@ -99,12 +99,6 @@ export function sideRegionOf(wall) {
   return wall?.parent?.regions.find(r => r.getFlag(MODULE_ID, "sideOf") === wall.id) ?? null;
 }
 
-/** Le mur dont cette région est la face brûlante, ou null. */
-export function wallOfSide(region) {
-  const id = region?.getFlag?.(MODULE_ID, "sideOf");
-  return id ? (region.parent?.regions.get(id) ?? null) : null;
-}
-
 /** Les murs à face brûlante de la scène posés par ce lanceur (son acteur). */
 export function wallsOfCaster(token) {
   const actor = token?.actor;

@@ -31,7 +31,7 @@ import { statusesOf, areAdjacent, evades, coverAgainst } from "../adapter/condit
 import { currentAc } from "../adapter/reactions.mjs";
 import { askChoice, CHOICE_QUERY, handleChoiceQuery } from "../adapter/choices.mjs";
 import { askAllocation, ALLOCATION_QUERY, handleAllocationQuery } from "../adapter/projectiles.mjs";
-import { coverFor, canJudgeCover, isCoverAvailable } from "../adapter/cover.mjs";
+import { canJudgeCover, isCoverAvailable } from "../adapter/cover.mjs";
 import { ensureRegionElevation } from "../adapter/space.mjs";
 import { pushAway } from "../adapter/movement.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";

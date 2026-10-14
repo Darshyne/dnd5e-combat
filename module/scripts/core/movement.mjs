@@ -1,9 +1,8 @@
 /**
- * Déplacement : ce qu'il reste à parcourir, jusqu'où un chemin est payable, où se placer pour
- * atteindre une cible, quelle attaque est « l'attaque de base ». Noyau pur, en cases.
+ * Déplacement : ce qui a été dépensé, où se placer pour atteindre une cible, quelle attaque est « l'attaque de base ». Noyau
+ * pur, en cases.
  */
 
-/** Déplacement encore disponible ce tour, jamais négatif. */
 /**
  * Déplacement dépensé ce tour : la somme des coûts, hors téléportation et déplacement forcé (SPEC §16.10 : Pas brumeux,
  * une poussée ne consomment pas le déplacement de la créature). `teleport` : l'action du segment est de celles que le
@@ -20,26 +19,6 @@ export function spentMovement(waypoints) {
     else spent += w.cost;
   }
   return { spent, excluded };
-}
-
-export function remainingMovement(allowance, spent) {
-  return Math.max(0, allowance - spent);
-}
-
-/**
- * Nombre de pas d'un chemin que l'on peut payer.
- * @param {number[]} stepCosts  Coût de chaque pas, dans l'unité du budget.
- * @param {number} remaining    Déplacement restant, même unité.
- */
-export function affordableSteps(stepCosts, remaining) {
-  let spent = 0;
-  let n = 0;
-  for ( const cost of stepCosts ) {
-    if ( spent + cost > remaining + 1e-6 ) break;
-    spent += cost;
-    n++;
-  }
-  return n;
 }
 
 /**

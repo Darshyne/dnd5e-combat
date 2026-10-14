@@ -17,10 +17,9 @@ const primalStrike = (formula, improved) => ({ on: "preDamageRoll", oncePerTurn:
  * Incantation puissante, l'autre option de Fureur élémentaire : « ajoutez votre modificateur de Sagesse aux dégâts de tout sort
  * mineur de Druide ». Comme les Impacts bénis du Clerc (§27), la fiche ne dit pas l'option retenue : Attaques primitives par
  * défaut ; pour un druide à Incantation puissante, la surcouche du monde remplace les déclarations de l'item :
- *   game.modules.get("dnd5e-combat").api.content.set("elemental-fury", { triggers: DRUID_POTENT_SPELLCASTING })
+ *   game.modules.get("dnd5e-combat").api.content.set("elemental-fury", { triggers: [{ on: "preDamageRoll",
+ *     if: { "activity.cantripOf": "druid" }, do: [{ type: "damage", formula: "@abilities.wis.mod", damageType: "weapon" }] }] })
  */
-export const DRUID_POTENT_SPELLCASTING = Object.freeze([{ on: "preDamageRoll", if: { "activity.cantripOf": "druid" },
-  do: [{ type: "damage", formula: "@abilities.wis.mod", damageType: "weapon" }] }]);
 
 /** Courroux des mers (Mers 3) : sur une sauvegarde ratée, outre les dégâts de froid, une cible de taille G au plus est poussée de
  * 4,50 m en s'éloignant du druide. Enfant de la tempête (Mers 14) reprend la même sauvegarde (son activité). */

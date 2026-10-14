@@ -3,7 +3,6 @@
  * sort de portée ou passe derrière un abri total, l'oublier quand la concentration tombe. Sur le MJ actif.
  */
 
-import { MODULE_ID } from "../constants.mjs";
 import { tetherOfActivity, recordTether, clearTether, tetherItems, tetherBroken } from "../adapter/tether.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
 import { route } from "./router.mjs";

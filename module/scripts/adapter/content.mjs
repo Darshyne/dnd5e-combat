@@ -26,9 +26,6 @@ let contentEnabled = true;
 export function setContentEnabled(enabled) {
   contentEnabled = !!enabled;
 }
-export function isContentEnabled() {
-  return contentEnabled;
-}
 
 /** Les clés de faits que le cœur des conditions connaît (pour valider une entrée). */
 export const KNOWN_FACTS = factsFor();

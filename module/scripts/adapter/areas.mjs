@@ -381,7 +381,8 @@ export async function emanationAgainst(activity, source, tokens, moment) {
  * @param {Activity} activity
  * @param {TokenDocument} source      L'avaleur.
  * @param {TokenDocument[]} tokens    Les avalés.
- * @param {string} moment             core/swallow.mjs, SWALLOW_MOMENTS.
+ * @param {string} moment             `ownerStart` | `ownerEnd` | `ownerEndOnce` | `targetStart` (début / fin du tour de l'avaleur,
+ *                                     fin du tour suivant une fois, début du tour de l'avalé).
  * @param {{event?: string, flavor?: string}} [options]  §18.21 : `engulf` — l'activité d'entrée sur qui le cube traverse.
  */
 export async function swallowAgainst(activity, source, tokens, moment, { event="swallow", flavor="DND5ECOMBAT.Avale.Degats" }={}) {

@@ -16,11 +16,10 @@ const divineStrike = (formula, improved) => ({ on: "preDamageRoll", oncePerTurn:
  * Incantation puissante, l'autre option d'Impacts bénis : « ajoutez votre modificateur de Sagesse aux dégâts de tout sort mineur de
  * Clerc ». La fiche ne dit pas quelle option a été retenue : Impact divin est déclaré par défaut ; pour un clerc qui a choisi
  * Incantation puissante, la surcouche du monde remplace les déclarations de l'item :
- *   game.modules.get("dnd5e-combat").api.content.set("blessed-strikes", { triggers: POTENT_SPELLCASTING })
+ *   game.modules.get("dnd5e-combat").api.content.set("blessed-strikes", { triggers: [{ on: "preDamageRoll",
+ *     if: { "activity.cantripOf": "cleric" }, do: [{ type: "damage", formula: "@abilities.wis.mod", damageType: "weapon" }] }] })
  * (ou le flag `flags["dnd5e-combat"].triggers` de l'item de ce clerc seul).
  */
-export const POTENT_SPELLCASTING = Object.freeze([{ on: "preDamageRoll", if: { "activity.cantripOf": "cleric" },
-  do: [{ type: "damage", formula: "@abilities.wis.mod", damageType: "weapon" }] }]);
 
 export const CLERIC = Object.freeze({
   // Éclat protecteur (Lumière 3) : en Réaction, le clerc donne le Désavantage au jet d'attaque d'une créature qu'il voit à 9 m ou

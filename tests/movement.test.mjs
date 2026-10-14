@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { findPath, corners, cellDistance } from "../module/scripts/core/pathfind.mjs";
 import {
-  remainingMovement, affordableSteps, footprintGap, approach, chooseBasicAttack, spentMovement
+  footprintGap, approach, chooseBasicAttack, spentMovement
 } from "../module/scripts/core/movement.mjs";
 
 const key = c => `${c.i},${c.j}`;
@@ -95,19 +95,6 @@ describe("corners", () => {
   });
   it("cellDistance compte à huit voisins", () => {
     expect(cellDistance({ i: 0, j: 0 }, { i: 3, j: -2 })).toBe(3);
-  });
-});
-
-describe("budget de déplacement", () => {
-  it("reste à parcourir, jamais négatif", () => {
-    expect(remainingMovement(30, 10)).toBe(20);
-    expect(remainingMovement(30, 45)).toBe(0);
-  });
-  it("coupe le chemin à ce qu'on peut payer", () => {
-    expect(affordableSteps([5, 5, 5, 5], 12)).toBe(2);
-    expect(affordableSteps([5, 10, 5], 15)).toBe(2);
-    expect(affordableSteps([5, 5], 0)).toBe(0);
-    expect(affordableSteps([5, 5], 10)).toBe(2);
   });
 });
 

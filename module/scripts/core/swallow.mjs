@@ -8,9 +8,6 @@ const plain = html => String(html ?? "").replace(/&amp;/g, "&").replace(/\[\[[^\
   .replace(/&Reference\[([^\]]+)\](?:\{[^}]*\})?/g, "$1").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ")
   .replace(/[’]/g, "'");
 
-/** Quand l'avalé subit les dégâts : début / fin du tour de l'avaleur, début du tour de l'avalé, fin du tour suivant (une fois). */
-export const SWALLOW_MOMENTS = Object.freeze(["ownerStart", "ownerEnd", "ownerEndOnce", "targetStart"]);
-
 /**
  * - `damageAt` : « at the start of each of the behir's turns » (`ownerStart`), « at the start of each of its turns »
  *   (`targetStart` : Kraken, Blob, Tertre), « at the end of each of the toad's turns » (`ownerEnd`), « At the end of the

@@ -55,9 +55,6 @@ export function potionOfCast(item) {
   return pending.get(key) ?? null;
 }
 
-/** L'utilisation vient-elle d'une potion (la potion elle-même, ou le sort qu'elle a lancé) ? */
-export const fromPotion = item => isPotion(item) || !!potionOfCast(item);
-
 /**
  * `preCreateActiveEffect` : un effet d'item que le contenu complète (`effectChanges` — Vol, Escalade : « une vitesse de vol / d'escalade
  * égale à votre Vitesse », que les données du Guide ne donnent pas). `@walk` : la vitesse au sol du porteur, lue à la pose.

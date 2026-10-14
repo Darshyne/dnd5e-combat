@@ -63,15 +63,6 @@ export function emptyPocket(master) {
   return pocketOf(master) ? master.unsetFlag(MODULE_ID, POCKET) : null;
 }
 
-/** Les tokens familiers de ce maître, sur toutes les scènes. */
-export function familiarTokensOf(master) {
-  const out = [];
-  for ( const scene of game.scenes ) {
-    for ( const token of scene.tokens ) if ( masterOf(token) === master ) out.push(token);
-  }
-  return out;
-}
-
 /**
  * Un token provisoire (jamais créé) du familier gardé, à une position de la scène du maître : pour mesurer la distance et
  * l'occupation avec les fonctions du moteur. Lié à l'acteur de base : un delta ne sert à rien ici.

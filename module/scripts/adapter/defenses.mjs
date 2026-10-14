@@ -8,11 +8,10 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { reduceDamageOfType, hitDiceAllowed } from "../core/defenses.mjs";
-import { turnKeyOf } from "../core/area.mjs";
 import { contentOf } from "./content.mjs";
 import { originItemOf } from "./facts.mjs";
-
-const currentTurnKey = () => (game.combat?.started ? turnKeyOf(game.combat.round, game.combat.turn) : null);
+// La clé porte l'id du combat : la marque « une fois par tour » d'un combat précédent ne compte plus.
+import { currentTurnKey } from "./turn.mjs";
 
 /** Un objet porté qui protège (§65) : équipé, et harmonisé s'il exige une harmonisation. */
 function worn(item) {

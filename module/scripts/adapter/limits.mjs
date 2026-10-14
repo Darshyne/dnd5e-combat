@@ -1,22 +1,20 @@
 /**
  * Limites d'utilisation d'une activité (SPEC §16.40, `usageLimits`), lues dans Foundry. « Déjà utilisée ce tour » : une marque
- * sur l'acteur (`flags["dnd5e-combat"].usedOnTurn.<id d'activité>` = clé du tour), posée après l'utilisation.
+ * sur l'acteur (`flags["dnd5e-combat"].usedOnTurn.<id d'activité>` = clé du tour), posée après l'utilisation. La clé porte l'id
+ * du combat (`currentTurnKey`) : la marque d'un combat précédent ne compte plus au même round et au même rang.
  */
 
 import { MODULE_ID } from "../constants.mjs";
 import { usageLimitIssues, lowestSlotLevel } from "../core/limits.mjs";
 import { resourceFeedback } from "../core/feedback.mjs";
-import { turnKeyOf } from "../core/area.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
-import { combatantFor, movementOf } from "./turn.mjs";
+import { combatantFor, movementOf, currentTurnKey } from "./turn.mjs";
 import { readUnitFactors } from "./units.mjs";
 
 /** La règle de limite de cette activité, ou null. */
 export function usageLimitOf(activity) {
   return activity?.item ? (contentOf(activity.item).entry?.usageLimits?.[activity.id] ?? null) : null;
 }
-
-const currentTurnKey = () => (game.combat?.started ? turnKeyOf(game.combat.round, game.combat.turn) : null);
 
 /** Les utilisations restantes de l'item de cet identifiant chez l'acteur, ou null s'il n'en a pas. */
 function remainingUses(actor, identifier) {

@@ -28,12 +28,15 @@ export function orderPlan(order) {
   }
 }
 
-/** Écart en cases entre deux emprises `{ i, j, w, h }` (diagonale = 1 case) ; 0 au contact, -1 si elles se chevauchent. */
+/**
+ * Écart en cases entre deux emprises `{ i, j, w, h }` (diagonale = 1 case) ; 0 au contact, -1 si elles se chevauchent.
+ * `i` est la ligne et `j` la colonne (`grid.getOffset`) : `i` va avec la hauteur `h`, `j` avec la largeur `w`.
+ */
 export function footprintDistance(a, b) {
-  const dx = Math.max(b.i - (a.i + a.w), a.i - (b.i + b.w));
-  const dy = Math.max(b.j - (a.j + a.h), a.j - (b.j + b.h));
-  if ( (dx < 0) && (dy < 0) ) return -1;
-  return Math.max(dx, dy, 0);
+  const di = Math.max(b.i - (a.i + a.h), a.i - (b.i + b.h));
+  const dj = Math.max(b.j - (a.j + a.w), a.j - (b.j + b.w));
+  if ( (di < 0) && (dj < 0) ) return -1;
+  return Math.max(di, dj, 0);
 }
 
 /**
@@ -42,9 +45,9 @@ export function footprintDistance(a, b) {
  */
 export function cellsAtGap(anchor, size, gap, bounds) {
   const out = [];
-  for ( let i = anchor.i - size.w - gap; i <= anchor.i + anchor.w + gap; i++ ) {
-    for ( let j = anchor.j - size.h - gap; j <= anchor.j + anchor.h + gap; j++ ) {
-      if ( (i < bounds.i0) || (j < bounds.j0) || ((i + size.w - 1) > bounds.i1) || ((j + size.h - 1) > bounds.j1) ) continue;
+  for ( let i = anchor.i - size.h - gap; i <= anchor.i + anchor.h + gap; i++ ) {
+    for ( let j = anchor.j - size.w - gap; j <= anchor.j + anchor.w + gap; j++ ) {
+      if ( (i < bounds.i0) || (j < bounds.j0) || ((i + size.h - 1) > bounds.i1) || ((j + size.w - 1) > bounds.j1) ) continue;
       if ( footprintDistance({ i, j, ...size }, anchor) === gap ) out.push({ i, j });
     }
   }

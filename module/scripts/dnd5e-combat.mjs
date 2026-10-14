@@ -117,6 +117,7 @@ import { registerOil } from "./runtime/oil.mjs";
 import { registerWelcome, openWelcome } from "./ui/welcome.mjs";
 import { registerFactions, factionsApi } from "./runtime/factions.mjs";
 import { coneOf } from "./adapter/cone.mjs";
+import { canHear as hearingCanHear } from "./adapter/hearing.mjs";
 import { registerStealthMode, stealthApi } from "./runtime/stealth.mjs";
 import { registerStealthUI } from "./ui/stealth.mjs";
 import { registerFactionsUI, openFactions } from "./ui/factions.mjs";
@@ -163,7 +164,7 @@ const state = {
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
   level: automationLevel, levelAtLeast, skippedRoutes,
   welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic },
-  vision: { canSee: publicCanSee, cone: publicCone },
+  vision: { canSee: publicCanSee, cone: publicCone, canHear: publicCanHear },
   factions: { ...factionsApi, open: () => openFactions() },
   sneak: stealthApi
 };
@@ -172,6 +173,11 @@ const state = {
 function publicCanSee(observer, target) {
   if ( !isVisionAvailable() ) return null;
   return visionCanSee(observer?.document ?? observer, target?.document ?? target);
+}
+
+/** §186 : l'ouïe du moteur pour un voisin (lecture seule) — murs et planchers qui arrêtent le son, Assourdi, cible cachée ; sans portée. */
+function publicCanHear(observer, target) {
+  return hearingCanHear(observer?.document ?? observer, target?.document ?? target);
 }
 
 /** §182 : le cône de vision d'une créature (`{ angle, rotation }`, convention du cœur), ou null quand elle voit à 360°. */

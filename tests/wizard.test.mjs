@@ -2,9 +2,10 @@ import { describe, it, expect } from "vitest";
 import { open, advance, applicationPlan, STEPS } from "../module/scripts/core/action.mjs";
 import { validateEntry } from "../module/scripts/core/content.mjs";
 import { CONTENT } from "../module/scripts/content/index.mjs";
+import { RESOLUTION_BASE } from "./helpers.mjs";
 
 const T = (n, extra={}) => ({ token: `T${n}`, actor: `A${n}`, name: `Cible ${n}`, ac: 12, ...extra });
-const base = { id: "r", carrier: "M", origin: "M", activity: "Act", source: "Src" };
+const base = RESOLUTION_BASE;
 const roll = total => ({ total, isCritical: false, isFumble: false });
 const damages = [{ type: "fire", value: 10, properties: [] }];
 const effect = { id: "E", activity: "Act", when: "always" };

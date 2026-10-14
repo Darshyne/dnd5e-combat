@@ -3,9 +3,10 @@ import {
   open, advance, STEPS, RESOLUTION_VERSION, current, affectedTargets, pendingSaves, wantsDamageRoll,
   isCriticalHit, applicationPlan, undoPlan, pendingAllocation, allocateDarts
 } from "../module/scripts/core/action.mjs";
+import { RESOLUTION_BASE } from "./helpers.mjs";
 
 const T = (n, extra={}) => ({ token: `T${n}`, actor: `A${n}`, name: `Cible ${n}`, ac: 12, ...extra });
-const base = { id: "r", carrier: "M", origin: "M", activity: "Act", source: "Src" };
+const base = RESOLUTION_BASE;
 const roll = (total, extra={}) => ({ total, isCritical: false, isFumble: false, ...extra });
 const types = commands => commands.map(c => c.type === "echo" ? `echo:${c.on}` : c.type);
 const FIRE = [{ type: "fire", value: 8, properties: [] }];

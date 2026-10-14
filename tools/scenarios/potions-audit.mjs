@@ -10,6 +10,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 export default {
   name: "audit des potions — ce que chacune fait vraiment",
+  audit: true,   // un diagnostic : joué seulement quand on le nomme (`node tools/scenario.mjs potions-audit`)
 
   async run(ctx) {
     const { tokens } = await ctx.scene();

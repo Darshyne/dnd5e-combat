@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { masteryEffect, grazeDamage, toppleDC, cleaveModifier, markExpires, MASTERIES } from "../module/scripts/core/mastery.mjs";
+import { RESOLUTION_BASE } from "./helpers.mjs";
 
 const hit = { hit: true, damaged: true, melee: true, size: "med", down: false };
 const miss = { ...hit, hit: false, damaged: false };
@@ -130,7 +131,7 @@ import { open, advance, applicationPlan, STEPS } from "../module/scripts/core/ac
 
 describe("§24 Moine : Parade et schéma", () => {
   const T = (n, extra={}) => ({ token: `T${n}`, actor: `A${n}`, name: `Cible ${n}`, ac: 12, ...extra });
-  const base = { id: "r", carrier: "M", origin: "M", activity: "Act", source: "Src" };
+  const base = RESOLUTION_BASE;
   const roll = total => ({ total, isCritical: false, isFumble: false });
   it("Parade : la réaction réduit les dégâts de l'attaque d'un montant (plan d'application)", () => {
     let { resolution } = open({ ...base, plan: { attack: true, damage: "author" }, targets: [] });

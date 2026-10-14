@@ -1,7 +1,7 @@
 /**
  * Le compendium « Outils du MJ » (pack `outils`, SPEC §56) : les macros de réparation et d'initialisation d'un monde, dans l'ordre
- * où les lancer. Les fichiers `.js` de ce dossier en sont la source ; `npm run packs` construit le compendium, `npm run dist`
- * l'archive pour la Forge. Toute macro de ce dossier doit figurer ici (`tests/macros.test.mjs`).
+ * où les lancer. Les fichiers `.js` de ce dossier en sont la source ; `npm run packs` construit le compendium (la release GitHub le
+ * construit aussi, `.github/workflows/release.yml`). Toute macro de ce dossier doit figurer ici (`tests/macros.test.mjs`).
  */
 export const MACROS = [
   { file: "nettoyage-midi.js", name: "1. Clean Midi-QOL, DAE and CPR from sheets",

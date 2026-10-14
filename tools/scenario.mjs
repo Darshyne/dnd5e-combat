@@ -9,6 +9,9 @@
  *   node tools/scenario.mjs attaque zone    ceux-là seulement (nom de fichier sans extension)
  *   node tools/scenario.mjs <dossier|fichier.mjs>   des scénarios gardés ailleurs (le dépôt d'un autre module), mêlables aux noms
  *
+ * Un scénario marqué `interactive: true` (il attend un clic du MJ) ou `audit: true` (un diagnostic qui relève, sans vérifier) ne se
+ * joue que nommé.
+ *
  * Prérequis : serveur du connecteur lancé, monde de test ouvert chez le MJ (réglage « Outils de
  * test » activé), scène affichée avec les tokens que le scénario nomme, et **F5 du client du MJ
  * après tout changement du moteur** (c'est lui qui l'exécute). Un scénario remet en état ce qu'il
@@ -630,8 +633,12 @@ const stealthRules = await mcp.call("call-module-api", { moduleId: "dnd5e-combat
 for ( const file of files ) {
   const { default: scenario } = await import(pathToFileURL(file).href);
   const named = wanted.length || external.includes(file);
-  // Un scénario qui attend un clic du MJ (`interactive`) ne se joue que nommé.
-  if ( scenario.interactive && !named ) { console.log(`\n· ${scenario.name ?? basename(file)} : interactif, sauté (le nommer pour le jouer)`); skipped++; continue; }
+  // Un scénario qui attend un clic du MJ (`interactive`), ou un diagnostic qui relève sans rien vérifier (`audit`), ne se joue que nommé.
+  if ( (scenario.interactive || scenario.audit) && !named ) {
+    console.log(`\n· ${scenario.name ?? basename(file)} : ${scenario.audit ? "diagnostic" : "interactif"}, sauté (le nommer pour le jouer)`);
+    skipped++;
+    continue;
+  }
   console.log(`\n▶ ${scenario.name ?? basename(file)}`);
   if ( arenaScene ) {
     const target = (scenario.scene === "keep") ? keepScene : arenaScene;
@@ -690,6 +697,6 @@ for ( const file of files ) {
 if ( activeAtStart && (activeNow !== activeAtStart) ) await useScene(activeAtStart);
 if ( stealthRules !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "stealthRules", value: stealthRules }, waitMs: 8000 }).catch(() => null);
 if ( cones !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "visionCones", value: cones }, waitMs: 8000 }).catch(() => null);
-console.log(`\n${files.length - skipped - failed}/${files.length - skipped} scénario(s) tenus${skipped ? ` (${skipped} interactif(s) sauté(s))` : ""}`);
+console.log(`\n${files.length - skipped - failed}/${files.length - skipped} scénario(s) tenus${skipped ? ` (${skipped} interactif(s) ou diagnostic(s) sauté(s))` : ""}`);
 process.exitCode = failed ? 1 : 0;
 await mcp.close();

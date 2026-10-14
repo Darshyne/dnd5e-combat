@@ -6,6 +6,7 @@ import { usageLimitIssues } from "../module/scripts/core/limits.mjs";
 import { movementAllowance, freshBudget } from "../module/scripts/core/turn.mjs";
 import { validateEntry } from "../module/scripts/core/content.mjs";
 import { CONTENT } from "../module/scripts/content/index.mjs";
+import { RESOLUTION_BASE } from "./helpers.mjs";
 
 describe("§20 Attaque sournoise : quand elle s'applique", () => {
   const ok = { weapon: true, finesse: true, rangedWeapon: false, advantageMode: 1, allyNear: false };
@@ -64,7 +65,7 @@ describe("§20 Assassinat : une créature qui n'a pas encore joué", () => {
 });
 
 describe("§20 Esquive totale", () => {
-  const base = { id: "r", carrier: "M", origin: "M", activity: "Act", source: "Src" };
+  const base = RESOLUTION_BASE;
   const T = (n, extra={}) => ({ token: `T${n}`, actor: `A${n}`, name: `Cible ${n}`, ac: 12, ...extra });
   const multipliers = (save, targets, totals) => {
     let { resolution } = open({ ...base, plan: { save, damage: "author", effects: [] }, targets });

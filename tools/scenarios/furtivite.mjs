@@ -1,7 +1,7 @@
 /**
  * Furtivité (Hide, SPEC §15.2, règles 2024), le Magicien en combat avec le Zombi :
- *  1. Furtivité jusqu'à réussir le test de Discrétion DD 15 : un effet Invisible est posé, qui porte le DD
- *     pour le localiser (son total) ;
+ *  1. Furtivité jusqu'à réussir le test de Discrétion DD 15 : un effet « caché » est posé, qui porte le DD pour le localiser
+ *     (son total), sans l'état Invisible du cœur (§185) : le Zombi (ennemi) ne voit plus le Magicien, le Guerrier (allié) si ;
  *  2. une attaque à la Dague : la Furtivité cesse après le jet ;
  *  3. de nouveau caché, Rayon de givre (composante verbale) : elle cesse aussi.
  * Les conditions (hors de vue de tout ennemi) passent par la légalité : ce scénario les confirme d'office ;

@@ -5,8 +5,7 @@
   "scripts": {
     "test": "vitest run",
     "scenario": "node tools/scenario.mjs",
-    "packs": "node tools/packs.mjs",
-    "dist": "node tools/dist.mjs"
+    "packs": "node tools/packs.mjs"
   },
   "devDependencies": {
     "@foundryvtt/foundryvtt-cli": "^3.0.4",

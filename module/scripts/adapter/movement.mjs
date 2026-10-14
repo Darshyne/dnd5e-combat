@@ -34,7 +34,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { findPath, corners, cellDistance } from "../core/pathfind.mjs";
+import { findPath, turningPoints, cellDistance } from "../core/pathfind.mjs";
 import { approach, pushDirection, footprintGap } from "../core/movement.mjs";
 import { convertLength } from "../core/units.mjs";
 import { committedPosition, combatantFor, readBudget, writeBudget } from "./turn.mjs";
@@ -560,7 +560,7 @@ export function planPath(token, to, { maxCost=Infinity, throughDoors=false }={})
   // Les virages seuls, mais chacun porte les cases alignées avant lui où l'on peut s'arrêter (`stops`), et `through` s'il
   // est lui-même sur une case prise : la marche s'interrompt case par case (`walk`), jamais chez un autre.
   const toWaypoints = list => {
-    const kept = new Set(corners(list));
+    const kept = new Set(turningPoints(list));
     const out = [];
     let stops = [];
     for ( const cell of list.slice(1) ) {

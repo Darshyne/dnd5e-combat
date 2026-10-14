@@ -64,7 +64,7 @@ const resolutionOn = message => message ? current(dispatcher.peek(message.id)) :
 export const CHAT_LIGHT_SETTING = "chatLight";
 
 /** Le token qui parle dans un message, ou null. */
-function speakerToken(message) {
+function speakerTokenUuid(message) {
   const { scene, token } = message?.speaker ?? {};
   return scene && token ? `Scene.${scene}.Token.${token}` : null;
 }
@@ -238,7 +238,7 @@ const COMMANDS = {
   async apply(command, carrier, resolution) {
     const damageMessage = game.messages.get(resolution.damageRoll?.messageId);
     const activity = carrier.getAssociatedActivity?.({ scaled: true }) ?? null;
-    const source = await fromUuid(speakerToken(carrier) ?? "");
+    const source = await fromUuid(speakerTokenUuid(carrier) ?? "");
     // §112 : les PV tombent quand l'animation (BLFX, par Sequencer) arrive, pas à son départ.
     await waitForAnimations([source?.uuid, ...command.entries.map(e => e.token)]);
     const resave = carrier.getFlag(MODULE_ID, "resave");
@@ -458,7 +458,7 @@ const COMMANDS = {
       if ( attackMessage && (attackMessage.id !== carrier.id) ) await attackMessage.setFlag(MODULE_ID, "verdict", { carrier: carrier.id });
       // §19.6 : fenêtre « raté » (Riposte, Désarmement) — pour chaque cible que l'attaque n'a pas touchée.
       const missed = resolution.targets.filter(t => (t.hit === false) && !t.unaffected).map(t => t.token);
-      if ( missed.length ) windowIsMissed(missed, speakerToken(carrier), carrier.speaker?.alias ?? "",
+      if ( missed.length ) windowIsMissed(missed, speakerTokenUuid(carrier), carrier.speaker?.alias ?? "",
         { activity: resolution.activity, auto: autoReactOf(carrier, resolution) });
       return;
     }
@@ -475,7 +475,7 @@ const COMMANDS = {
   window(command, carrier, resolution) {
     // §19 : ce qui a blessé — l'activité (Défenses : « une attaque de mêlée ») et les types de dégâts (Absorption des éléments).
     const damageTypes = [...new Set((resolution?.damageRoll?.damages ?? []).map(d => d.type).filter(Boolean))];
-    if ( command.window === "isDamaged" ) windowIsDamaged(command.tokens, speakerToken(carrier), carrier.speaker?.alias ?? "",
+    if ( command.window === "isDamaged" ) windowIsDamaged(command.tokens, speakerTokenUuid(carrier), carrier.speaker?.alias ?? "",
       { activity: resolution?.activity ?? null, damageTypes, auto: autoReactOf(carrier, resolution) });
   },
 
@@ -593,7 +593,7 @@ async function openingFor(message, usage, extra={}) {
   // §16.27 : la répartition des projectiles faite à la visée multiple (Projectile magique).
   const pairs = game.messages.get(usage.origin ?? message.id)?.getFlag(MODULE_ID, "allocation");   // [[token, nombre], …]
   const allocation = Array.isArray(pairs) ? Object.fromEntries(pairs) : null;
-  let targets = await enrich(usage.targets, usage.plan, speakerToken(message), usage.activity, null, castLevelOfMessage(message));
+  let targets = await enrich(usage.targets, usage.plan, speakerTokenUuid(message), usage.activity, null, castLevelOfMessage(message));
   // §169 : un rejeu sans sauvegarde (Mur de feu traversé, fin de tour du côté brûlant) — les dégâts pleins, d'office.
   if ( usage.plan.save && message.getFlag(MODULE_ID, "areaTick")?.noSave ) targets = targets.map(t => ({ ...t, autoFail: "noSave" }));
   return { id: foundry.utils.randomID(), ...data, choice, allocation, targets, ...extra };
@@ -629,7 +629,7 @@ async function inspiredAttack(message, roll, targets) {
   if ( roll.isFumble || roll.isCritical ) return roll;
   const missed = resolveAttack(roll, targets.filter(t => !t.unaffected)).filter(t => t.reason === "miss");
   if ( !missed.length ) return roll;
-  const actor = (await fromUuid(speakerToken(message) ?? ""))?.actor ?? message.getAssociatedActor?.() ?? null;
+  const actor = (await fromUuid(speakerTokenUuid(message) ?? ""))?.actor ?? message.getAssociatedActor?.() ?? null;
   if ( !actor ) return roll;
   const needed = Math.min(...missed.map(t => t.ac));
   const bonus = await offerInspiration(actor, { what: loc("Inspiration.Attaque"), total: roll.total, needed });
@@ -653,7 +653,7 @@ async function onAttackMessage(message) {
   }
   await waitForDice(message);
   const rolled = async plan => {
-    const targets = await enrich(attack.targets, plan, speakerToken(message), attack.activity, message.rolls?.[0]?.options?.attackMode ?? message.system?.mode ?? null,
+    const targets = await enrich(attack.targets, plan, speakerTokenUuid(message), attack.activity, message.rolls?.[0]?.options?.attackMode ?? message.system?.mode ?? null,
       castLevelOfMessage(game.messages.get(message.system?.origin ?? "") ?? message));
     return { type: "attackRolled", roll: await inspiredAttack(message, attack.roll, targets), messageId: message.id, targets };
   };

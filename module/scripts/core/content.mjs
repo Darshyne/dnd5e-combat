@@ -8,7 +8,7 @@
  *   {
  *     triggers?: [{ on, if?, do, via? }]        déclarations du registre (core/triggers.mjs) ; `via: "effect"` :
  *                                               portée par les effets que l'item pose (sauvegarde répétée)
- *     aura?: { radius?, units?, affects?, includeSelf?, effect?, radiusFormula?, changes?, types? }
+ *     aura?: { radius?, units?, affects?, includeSelf?, effect?, radiusFormula?, changes?, types?, whileActive? }
  *                                               `changes` : les changements de la copie, à la place de l'effet de l'item
  *                                               (effet absent, vide ou faux dans le Monster Manual, §18.12) — la copie ne
  *                                               porte alors aucun état ; `types` : seulement ces types de créature
@@ -1635,9 +1635,9 @@ export function validateTable(table, { facts={} }={}) {
 }
 
 /**
- * Combine les couches, de la moins à la plus spécifique (module → monde → item). Par clé :
- * `triggers` est REMPLACÉ (une liste se réécrit entière), `aura`, `onHit`, `choice` et `targets` sont fusionnés
- * champ par champ (corriger un rayon sans redire le reste).
+ * Combine les couches, de la moins à la plus spécifique (module → monde → item). Par clé : une liste (`triggers`, `reactions`,
+ * `counter`…) est REMPLACÉE, elle se réécrit entière ; la plupart des objets de réglage (`aura`, `onHit`, `choice`, `targets`… :
+ * voir chaque ligne ci-dessous) sont fusionnés champ par champ (corriger un rayon sans redire le reste).
  * @param {Array<object|null|undefined>} layers
  * @returns {object|null}  null si aucune couche ne dit rien.
  */

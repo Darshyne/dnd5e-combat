@@ -89,13 +89,16 @@ export function floatNotice(token, text, kind="prompt") {
   show([{ token: token?.uuid ?? token, kind, text }]);
 }
 
-/** Un effet qui cesse sur dégâts (runtime/triggers.mjs, message `ended`) : chez tout le monde, au-dessus de celui qui le portait. */
-/** §16.40 : ce qu'une utilisation a rendu ou dépensé (Regain sauvage), au-dessus du token de l'utilisateur, chez tout le monde. */
+/** Le texte d'un changement de ressource (`resourceChangesOf`) : « +1 emplacement niv. 2 », « −1 Forme sauvage ». */
 function resourceText(c) {
   const sign = c.kind === "gain" ? "+" : "−";
   return c.type === "spellSlots" ? loc("Retour.Emplacement", { sign, n: c.n, level: c.level }) : loc("Retour.Utilisation", { sign, n: c.n, item: c.name ?? "" });
 }
 
+/**
+ * À la création d'un message, chez tout le monde : §16.40, ce qu'une utilisation a rendu ou dépensé (Regain sauvage), au-dessus du
+ * token de l'utilisateur ; et un effet qui cesse sur dégâts (runtime/triggers.mjs, message `ended`), au-dessus de celui qui le portait.
+ */
 function onCreateMessage(message) {
   if ( (message.type === "usage") && game.settings.get(MODULE_ID, "feedbackText") && canvas?.ready
     && ((Date.now() - (message.timestamp ?? 0)) <= FRESH_MS) ) {

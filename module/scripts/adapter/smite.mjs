@@ -24,11 +24,6 @@ export function meleeWeaponHit(activity, attackMode) {
 }
 
 /**
- * Les châtiments possibles : pour chaque sort qui en déclare un, chaque niveau d'emplacement restant (et l'emplacement de pacte), et
- * l'utilisation gratuite de l'item s'il en a une. Rien sans action Bonus disponible en combat.
- * @returns {Array<{item: Item5e, rule: object, level: number, slot: string|null, free: boolean, label: string}>}
- */
-/**
  * §128 : la règle d'un châtiment pour CET exemplaire du sort. Une copie plus ancienne (le Châtiment de fournaise des personnages
  * pré-tirés du Manuel des joueurs : une seule activité, de sauvegarde, qui porte les dés) n'a pas l'activité de dégâts déclarée —
  * on prend alors celle de l'objet qui porte des dés, et on oublie ce que la copie n'a pas (sauvegarde, effet, activité « fiends »).
@@ -54,6 +49,11 @@ export function rangedWeaponHit(activity, attackMode) {
     && ((activity.attack?.type?.value === "ranged") || mode.startsWith("thrown"));
 }
 
+/**
+ * Les châtiments possibles : pour chaque sort qui en déclare un, chaque niveau d'emplacement restant (et l'emplacement de pacte), et
+ * l'utilisation gratuite de l'item s'il en a une. Rien sans action Bonus disponible en combat.
+ * @returns {Array<{item: Item5e, rule: object, level: number, slot: string|null, free: boolean, label: string}>}
+ */
 export function smiteOptions(actor, { ranged=false }={}) {
   const combatant = combatantFor(actor);
   if ( combatant && !((readBudget(combatant)?.bonus ?? 1) >= 1) ) return [];

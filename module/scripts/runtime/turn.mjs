@@ -279,10 +279,6 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   return false;
 }
 
-/**
- * Avant le dialogue du jet d'attaque : une arme de mêlée qui se lance, contre des cibles toutes
- * hors d'allonge, est présélectionnée en mode « lancer ». Le joueur garde la main dans le dialogue.
- */
 /** §149 : l'autre main est-elle prise — un bouclier, ou une autre arme tenue (pas une arme naturelle ni la frappe à mains nues) ? */
 function otherHandBusy(item) {
   return Array.from(item?.actor?.items ?? []).some(i => (i !== item) && i.system?.equipped && (
@@ -303,6 +299,10 @@ function gripVersatile(config, activity, { explicit }) {
   if ( config.rolls?.[0]?.options ) config.rolls[0].options.attackMode = mode;
 }
 
+/**
+ * Avant le dialogue du jet d'attaque : une arme de mêlée qui se lance, contre des cibles toutes
+ * hors d'allonge, est présélectionnée en mode « lancer ». Le joueur garde la main dans le dialogue.
+ */
 function onPreRollAttack(config, dialog, message) {
   const activity = config.subject;
   // §150 : le mode porté par la carte d'utilisation (`flags["dnd5e-combat"].attackMode`, posé à l'utilisation depuis la configuration :

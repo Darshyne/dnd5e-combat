@@ -29,6 +29,12 @@ import { fearSources } from "../adapter/conditions.mjs";
 import { movesCloser } from "../core/conditions.mjs";
 import { cellsAtGap, footprintDistance } from "../core/orders.mjs";
 import { fleeGaps } from "../core/flee.mjs";
+import { opportunityThreats, resolveOpportunity } from "./reactions.mjs";
+import { levelAtLeast } from "./levels.mjs";
+import { route } from "./router.mjs";
+import { afterTeleportOptions } from "./teleport-options.mjs";
+import { loc, notice, log } from "./shared.mjs";
+import { areEnemies } from "../adapter/factions.mjs";
 
 /** Le centre d'un token à sa position validée. */
 function centerOf(token) {
@@ -36,12 +42,6 @@ function centerOf(token) {
   const grid = token.parent.grid;
   return { x: pos.x + ((pos.width ?? 1) * grid.sizeX) / 2, y: pos.y + ((pos.height ?? 1) * grid.sizeY) / 2, elevation: pos.elevation };
 }
-import { opportunityThreats, resolveOpportunity } from "./reactions.mjs";
-import { levelAtLeast } from "./levels.mjs";
-import { route } from "./router.mjs";
-import { afterTeleportOptions } from "./teleport-options.mjs";
-import { loc, notice, log } from "./shared.mjs";
-import { areEnemies } from "../adapter/factions.mjs";
 
 /* -------------------------------------------- */
 /*  Ce que le tour permet                       */
@@ -105,11 +105,6 @@ export function occupiedAt(token, position) {
 const refusedTeleports = new Set();
 
 /**
- * `dnd5e.teleport` (activité native « teleport » de dnd5e 6, documents/activity/teleport.mjs) : la destination doit
- * être un espace inoccupé que la créature voit (Pas brumeux, Porte dimensionnelle : « un espace inoccupé… »). La
- * distance, elle, est déjà bornée par la planification du cœur (`maxDistance`). Sur le client qui planifie.
- */
-/**
  * La portée d'une téléportation, dans l'unité de la scène : celle de l'activité native (`teleport.value`, préparée par
  * dnd5e, teleport-data.mjs), sinon celle que le contenu déclare (`teleport`). null : sans limite.
  */
@@ -121,6 +116,11 @@ function teleportLimit(activity, scene) {
   catch { return Number(rule.distance); }
 }
 
+/**
+ * `dnd5e.teleport` (activité native « teleport » de dnd5e 6, documents/activity/teleport.mjs) : la destination doit
+ * être un espace inoccupé que la créature voit (Pas brumeux, Porte dimensionnelle : « un espace inoccupé… »). La
+ * distance, elle, est déjà bornée par la planification du cœur (`maxDistance`). Sur le client qui planifie.
+ */
 function onTeleport(activity, plans) {
   for ( const { token, plan } of plans ?? [] ) {
     const doc = token?.document;
@@ -190,14 +190,6 @@ async function planDeclaredTeleport(activity, object, { distance, units }) {
   return [{ token: object, plan, moved }];
 }
 
-/**
- * Intention « se téléporter » (Foulée brumeuse) : le token de la créature est contrôlé, et la planification du cœur
- * s'ouvre aussitôt — celle de l'activité native (`planTeleport`, bouton « Téléporter » de sa carte), ou la même pour un
- * item qui la déclare. BG3 : on choisit la case dans la foulée. Une destination refusée (case prise, pas en vue)
- * rouvre la visée ; Échap l'abandonne.
- * @param {Activity} activity
- * @returns {Promise<boolean>}  true si la créature s'est téléportée.
- */
 let teleporting = null;
 
 /** La téléportation dont on choisit la destination sur ce client (`{ token, limit }`, portée dans l'unité de la scène), ou null. */
@@ -227,6 +219,14 @@ export async function teleportTo(activity, token, { x, y }) {
   return true;
 }
 
+/**
+ * Intention « se téléporter » (Foulée brumeuse) : le token de la créature est contrôlé, et la planification du cœur
+ * s'ouvre aussitôt — celle de l'activité native (`planTeleport`, bouton « Téléporter » de sa carte), ou la même pour un
+ * item qui la déclare. BG3 : on choisit la case dans la foulée. Une destination refusée (case prise, pas en vue)
+ * rouvre la visée ; Échap l'abandonne.
+ * @param {Activity} activity
+ * @returns {Promise<boolean>}  true si la créature s'est téléportée.
+ */
 export async function teleportSelf(activity) {
   const rule = selfTeleportOf(activity);
   const token = activity?.getUsageToken?.() ?? activity?.actor?.getActiveTokens?.(false, true)?.[0] ?? null;

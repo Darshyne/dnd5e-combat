@@ -55,7 +55,7 @@ import { isHidden, spottedBy } from "../adapter/stealth.mjs";
 import { lightAt as lightAtPoint, tokenPoint as stealthPoint } from "../adapter/illumination.mjs";
 
 /** Le token désigné, sur la scène affichée par le MJ. */
-function tokenOf({ tokenId }) {
+function viewedToken({ tokenId }) {
   if ( !game.user.isGM ) throw new Error("GM only");
   const scene = canvas.scene;
   if ( !scene || !canvas.ready ) throw new Error("no scene displayed");
@@ -75,7 +75,7 @@ function cellArg(token, { cell, point }) {
 const finite = n => (Number.isFinite(n) ? n : null);
 
 /** Position validée d'un token : ce que lit le moteur. */
-function positionOf(token) {
+function positionJson(token) {
   const { x, y, elevation, level } = token._source;
   return { x, y, elevation: elevation ?? 0, level: level ?? null, cell: cellOf(token), movementAction: token.movementAction ?? null };
 }
@@ -85,7 +85,7 @@ const waypointOf = ({ x, y, elevation, level, action, climb }) =>
 
 /** Les escaliers et échelles de la scène, avec les cases qu'ils couvrent (centre dans la région). */
 function stairs({ tokenId }) {
-  const token = tokenOf({ tokenId });
+  const token = viewedToken({ tokenId });
   const grid = token.parent.grid;
   return stairsOf(token.parent, token.actor).map(({ region, levels, multiplier }) => {
     const b = region.bounds;   // client/documents/region.mjs:129
@@ -101,7 +101,7 @@ function stairs({ tokenId }) {
 
 /** Le chemin que prendrait le moteur, sans bouger. `maxCost` : plafond de coût (unité de la grille), sinon celui du tour. */
 function plan({ tokenId, cell, point, levelId, maxCost }) {
-  const token = tokenOf({ tokenId });
+  const token = viewedToken({ tokenId });
   const target = cellArg(token, { cell, point });
   const cap = Number.isFinite(maxCost) ? maxCost : movementCap(token);
   const found = planPath(token, { cell: target, level: levelId ?? token._source.level }, { maxCost: cap, throughDoors: true });
@@ -118,9 +118,9 @@ function plan({ tokenId, cell, point, levelId, maxCost }) {
 
 /** Le budget de déplacement du token dans le combat en cours (null hors combat). */
 function movement({ tokenId }) {
-  const token = tokenOf({ tokenId });
+  const token = viewedToken({ tokenId });
   const combatant = token.actor ? combatantFor(token.actor) : null;
-  const out = { position: positionOf(token), viewedLevel: canvas.level?.id ?? null, cap: finite(movementCap(token)), combat: null };
+  const out = { position: positionJson(token), viewedLevel: canvas.level?.id ?? null, cap: finite(movementCap(token)), combat: null };
   if ( !combatant ) return out;
   const m = movementOf(combatant, readUnitFactors());
   const budget = readBudget(combatant);
@@ -135,10 +135,10 @@ function movement({ tokenId }) {
  * `pauseAfterMs` met le jeu en pause en route (et l'en sort à l'arrivée).
  */
 async function move({ tokenId, cell, point, levelId, action, stopAfterMs, pauseAfterMs }) {
-  const token = tokenOf({ tokenId });
+  const token = viewedToken({ tokenId });
   const target = cellArg(token, { cell, point });
   const opened = new Set(foundry.applications.instances.keys());
-  const before = positionOf(token);
+  const before = positionJson(token);
   const started = Date.now();
   const timers = [];
   if ( Number.isFinite(stopAfterMs) ) timers.push(setTimeout(() => stopWalking(token), stopAfterMs));
@@ -148,35 +148,35 @@ async function move({ tokenId, cell, point, levelId, action, stopAfterMs, pauseA
     timers.forEach(clearTimeout);
     if ( Number.isFinite(pauseAfterMs) && game.paused ) game.togglePause(false, { broadcast: true });
   }
-  const after = positionOf(token);
+  const after = positionJson(token);
   const newWindows = windows().filter(w => !opened.has(w.id));
   return { before, after, elapsedMs: Date.now() - started, viewedLevel: canvas.level?.id ?? null, newWindows };
 }
 
 /** §41.2 : où mène l'escalier sous ce point pour ce token (ce que lit le curseur et le menu). */
 function stairsAt({ tokenId, point }) {
-  return stairsDestinations(tokenOf({ tokenId }), point);
+  return stairsDestinations(viewedToken({ tokenId }), point);
 }
 
 /** §41.2 : prendre l'escalier sous ce point jusqu'à `levelId`, comme un clic dessus (sans le dialogue du cœur). */
 async function takeStairs({ tokenId, point, levelId }) {
-  const token = tokenOf({ tokenId });
+  const token = viewedToken({ tokenId });
   const opened = new Set(foundry.applications.instances.keys());
-  const before = positionOf(token);
+  const before = positionJson(token);
   await takeStairsIntent(token, point, levelId);
-  return { before, after: positionOf(token), viewedLevel: canvas.level?.id ?? null, newWindows: windows().filter(w => !opened.has(w.id)) };
+  return { before, after: positionJson(token), viewedLevel: canvas.level?.id ?? null, newWindows: windows().filter(w => !opened.has(w.id)) };
 }
 
 /** §41.3 : l'ordre de suivre, de ne plus suivre, et qui suit qui. */
 async function follow({ followerId, leaderId }) {
-  return { following: await followIntent(tokenOf({ tokenId: followerId }), tokenOf({ tokenId: leaderId })) };
+  return { following: await followIntent(viewedToken({ tokenId: followerId }), viewedToken({ tokenId: leaderId })) };
 }
 async function unfollow({ tokenId }) {
-  return { stopped: await unfollowIntent(tokenOf({ tokenId })) };
+  return { stopped: await unfollowIntent(viewedToken({ tokenId })) };
 }
 function followState({ tokenId }) {
-  const token = tokenOf({ tokenId });
-  return { leader: leaderOf(token)?.id ?? null, followers: followersOf(token).map(t => t.id), position: positionOf(token) };
+  const token = viewedToken({ tokenId });
+  return { leader: leaderOf(token)?.id ?? null, followers: followersOf(token).map(t => t.id), position: positionJson(token) };
 }
 
 /**
@@ -194,10 +194,10 @@ async function familiar({ tokenId, clear=false }) {
       items: (pocket.token.delta?.items ?? []).map(i => i.name) } : null };
 }
 async function familiarPocket({ tokenId }) {
-  return { done: await dismissFamiliar(tokenOf({ tokenId })) };
+  return { done: await dismissFamiliar(viewedToken({ tokenId })) };
 }
 async function familiarRecall({ tokenId, point }) {
-  const token = tokenOf({ tokenId });
+  const token = viewedToken({ tokenId });
   const refusal = recallRefusal(token, point);
   const done = refusal ? false : await recallFamiliar(token, point);
   return { done, refusal, tokens: token.parent.tokens.filter(t => isFamiliarToken(t)).map(t => ({ id: t.id, name: t.name, x: t.x, y: t.y,
@@ -209,14 +209,14 @@ async function familiarRecall({ tokenId, point }) {
  * geste : sans `targetId`, le token prend « S'échapper » pour lui-même ; avec, il met fin au premier effet de la cible.
  */
 function endings({ tokenId }) {
-  const token = tokenOf({ tokenId });
+  const token = viewedToken({ tokenId });
   const tell = e => ({ effect: e.effect.id, name: e.effect.name, item: e.item.name, by: e.rule.by, roll: e.rule.roll ?? null, dc: e.check?.dc ?? null });
   return { own: ownEndingsOf(token.actor).map(tell), byOther: endingsOn(token).map(tell) };
 }
 async function actionEnd({ tokenId, targetId=null }) {
-  const token = tokenOf({ tokenId });
+  const token = viewedToken({ tokenId });
   if ( !targetId ) { await escapeGrapple(token); return { done: true }; }
-  const target = tokenOf({ tokenId: targetId });
+  const target = viewedToken({ tokenId: targetId });
   const ending = endingsOn(target)[0];
   return { done: ending ? await endFor(token, target, ending) : false };
 }
@@ -292,13 +292,6 @@ async function rollCard({ messageId }) {
 }
 
 /**
- * Une invocation posée à une case fixe, pour un scénario. L'activité est utilisée sans invoquer (`create.summons: false` :
- * carte, concentration, budget comme en jeu), puis `placeSummons` est appelé avec le premier profil (ou `profile`) ; le
- * placement interactif de dnd5e (`getPlacement`, un clic sur le canevas, dnd5e 6.0.3 dnd5e.mjs:40825-40843, appelé par
- * `placeSummons` :40494) est remplacé par la position donnée, sur CETTE instance d'activité et le temps de l'appel.
- * Outil de test seulement : le moteur, lui, laisse le placement au système.
- */
-/**
  * §162 : un mur posé par points, comme la visée de l'interface le ferait après les clics (ui/pointer.mjs, `aimWall`) : l'activité est
  * utilisée avec les points (`aimed: { type: "wall", points }`), la région et ses murs suivent `postUseActivity`. Rend l'id de la région.
  */
@@ -352,6 +345,13 @@ function cover({ attackerId, targetId, itemId=null }) {
   return coverFor(attacker, target, { quiet: true, activity });
 }
 
+/**
+ * Une invocation posée à une case fixe, pour un scénario. L'activité est utilisée sans invoquer (`create.summons: false` :
+ * carte, concentration, budget comme en jeu), puis `placeSummons` est appelé avec le premier profil (ou `profile`) ; le
+ * placement interactif de dnd5e (`getPlacement`, un clic sur le canevas, dnd5e 6.0.3 dnd5e.mjs:40825-40843, appelé par
+ * `placeSummons` :40494) est remplacé par la position donnée, sur CETTE instance d'activité et le temps de l'appel.
+ * Outil de test seulement : le moteur, lui, laisse le placement au système.
+ */
 async function summonAt({ tokenId, itemId, activityId=null, profile=null, actorUuid=null, x, y }) {
   if ( !game.user.isGM ) throw new Error("GM only");
   const token = canvas.scene?.tokens.get(tokenId);
@@ -378,7 +378,7 @@ async function summonAt({ tokenId, itemId, activityId=null, profile=null, actorU
  * vitesses, PV, bonus aux attaques et aux sauvegardes — pour vérifier un effet passif sans passer par une attaque.
  */
 function stats({ tokenId }) {
-  const tok = tokenOf({ tokenId });
+  const tok = viewedToken({ tokenId });
   const actor = tok.actor;
   const a = actor?.system?.attributes ?? {};
   // dnd5e 6 range les bonus de jets sous `system.rolls` (`system.bonuses` ne garde que le DD de sort) et y traduit les
@@ -399,12 +399,6 @@ function stats({ tokenId }) {
   };
 }
 
-/**
- * Une destination de téléportation de soi (Foulée brumeuse), comme la rendrait le clic de la planification du cœur : le
- * plan passe par le même point de contrôle (`dnd5e.teleport`, que le moteur tient : portée, case occupée, vue —
- * runtime/actions.mjs, `onTeleport`) ; accepté, le token se téléporte (action « blink »). Seul le clic lui-même (la
- * planification interactive du cœur) n'est pas joué.
- */
 /** La visée d'une téléportation en cours sur ce client : celle du moteur, et la planification du cœur (`_movementPlanningContext`). */
 function planning() {
   const ctx = canvas.tokens?._movementPlanningContext ?? null;
@@ -465,7 +459,7 @@ const shapeCenterOf = shape => (Array.isArray(shape.points)
 
 /** §70 : l'orage d'un item sur la scène (nuage, « déjà là », visée en cours). */
 function storm({ tokenId, itemId }) {
-  const item = tokenOf({ tokenId }).actor?.items.get(itemId);
+  const item = viewedToken({ tokenId }).actor?.items.get(itemId);
   const cloud = cloudOf(item);
   return { cloud: cloud ? { id: cloud.id, stormy: !!cloud.getFlag(MODULE_ID, "stormy"), behaviors: cloud.behaviors.map(b => b.type),
     visibility: cloud.visibility, circle: cloudCircle(cloud) } : null, aiming: !!boltAim() };
@@ -476,8 +470,14 @@ function teleportPick({ x, y }) {
   return { picked: teleportClick({ x, y }) };
 }
 
+/**
+ * Une destination de téléportation de soi (Foulée brumeuse), comme la rendrait le clic de la planification du cœur : le
+ * plan passe par le même point de contrôle (`dnd5e.teleport`, que le moteur tient : portée, case occupée, vue —
+ * runtime/actions.mjs, `onTeleport`) ; accepté, le token se téléporte (action « blink »). Seul le clic lui-même (la
+ * planification interactive du cœur) n'est pas joué.
+ */
 async function teleport({ tokenId, itemId, x, y }) {
-  const token = tokenOf({ tokenId });
+  const token = viewedToken({ tokenId });
   const activity = token.actor?.items.get(itemId)?.system.activities?.find(a => selfTeleportOf(a)) ?? null;
   if ( !activity ) throw new Error("no self-teleport on this item");
   const from = { x: token._source.x, y: token._source.y, elevation: token._source.elevation ?? 0, level: token._source.level ?? null };
@@ -486,14 +486,9 @@ async function teleport({ tokenId, itemId, x, y }) {
   if ( accepted ) await afterTeleport(activity, selfTeleportOf(activity));
   // §92 : les options de la Foulée des fées, comme après le vrai geste — sans les attendre (le scénario répond à la question).
   if ( accepted ) afterTeleportOptions(activity, token, from).catch(err => console.error(err));
-  return { accepted, position: positionOf(token) };
+  return { accepted, position: positionJson(token) };
 }
 
-/**
- * Rend un item à un acteur sous son identifiant d'origine (`keepId`), pour un scénario qui le lui a fait perdre (Lâche
- * d'Injonction posée en tas par un module voisin) : le connecteur crée toujours un nouvel identifiant, et le filet de sécurité du lanceur
- * retire les items qu'il ne connaissait pas.
- */
 /**
  * §121 : allumer ou éteindre une source portée sans passer par son activité (la Torche n'en a pas), comme le menu de l'inventaire ;
  * rend le résultat et l'état de la source. `on` absent : l'inverse.
@@ -519,6 +514,11 @@ async function advanceTime({ seconds }) {
   return { worldTime: game.time.worldTime };
 }
 
+/**
+ * Rend un item à un acteur sous son identifiant d'origine (`keepId`), pour un scénario qui le lui a fait perdre (Lâche
+ * d'Injonction posée en tas par un module voisin) : le connecteur crée toujours un nouvel identifiant, et le filet de sécurité du lanceur
+ * retire les items qu'il ne connaissait pas.
+ */
 async function restoreItem({ actorId, itemData }) {
   if ( !game.user.isGM ) throw new Error("GM only");
   const actor = game.actors.get(actorId);
@@ -530,8 +530,8 @@ async function restoreItem({ actorId, itemData }) {
 
 /** La chance d'échec de la sauvegarde que la pastille afficherait (§15.3), pour la comparer au vrai jet. */
 function saveChance({ casterId, targetId, itemId, activityId=null }) {
-  const caster = tokenOf({ tokenId: casterId });
-  const target = tokenOf({ tokenId: targetId });
+  const caster = viewedToken({ tokenId: casterId });
+  const target = viewedToken({ tokenId: targetId });
   const item = caster.actor?.items.get(itemId);
   const activity = activityId ? item?.system.activities.get(activityId) : item?.system.activities.find(a => a.type === "save");
   const info = saveChanceOf(caster, target, activity);
@@ -543,8 +543,8 @@ function saveChance({ casterId, targetId, itemId, activityId=null }) {
  * hostiles au contact de l'attaquant — pour comprendre un jet « normal » inattendu.
  */
 function attackReasons({ attackerId, targetId, itemId, attackMode=null }) {
-  const origin = tokenOf({ tokenId: attackerId });
-  const target = tokenOf({ tokenId: targetId });
+  const origin = viewedToken({ tokenId: attackerId });
+  const target = viewedToken({ tokenId: targetId });
   const activity = origin.actor?.items.get(itemId)?.system.activities.find(a => a.type === "attack");
   if ( !activity ) throw new Error("no attack on this item");
   const factors = readUnitFactors();
@@ -570,7 +570,7 @@ async function overrideContent({ identifier, entry=null }) {
  * glisser-déposer sur la carte (Décharge répulsive sur la Décharge occulte). Rend l'id de l'effet posé.
  */
 async function enchant({ tokenId, itemId, activityId, targetItemId, profile=null }) {
-  const actor = tokenOf({ tokenId }).actor;
+  const actor = viewedToken({ tokenId }).actor;
   const activity = actor?.items.get(itemId)?.system.activities?.get(activityId);
   const target = actor?.items.get(targetItemId);
   if ( !activity || !target ) throw new Error("activity or item not found");
@@ -580,7 +580,7 @@ async function enchant({ tokenId, itemId, activityId, targetItemId, profile=null
 
 /** §23 : soigne un token comme le ferait un sort (`applyDamage` de type « healing ») ; rend ses PV avant et après. */
 async function heal({ tokenId, amount }) {
-  const actor = tokenOf({ tokenId }).actor;
+  const actor = viewedToken({ tokenId }).actor;
   const before = actor.system.attributes.hp.value;
   await actor.applyDamage([{ value: amount, type: "healing" }]);
   return { before, after: actor.system.attributes.hp.value };
@@ -588,7 +588,7 @@ async function heal({ tokenId, amount }) {
 
 /** §23 : des dégâts à un token, par `applyDamage` (résistances comprises) ; rend ses PV avant et après. */
 async function hurt({ tokenId, amount, type="bludgeoning", properties=[] }) {
-  const actor = tokenOf({ tokenId }).actor;
+  const actor = viewedToken({ tokenId }).actor;
   const before = actor.system.attributes.hp.value;
   // `properties` : celles du jet (« sil » : arme argentée, §78).
   await actor.applyDamage([{ value: amount, type, properties: new Set(properties) }]);
@@ -597,7 +597,7 @@ async function hurt({ tokenId, amount, type="bludgeoning", properties=[] }) {
 
 /** §23 : un jet de sauvegarde du token, sans fenêtre ; rend sa formule et son total. */
 async function rollSave({ tokenId, ability }) {
-  const rolls = await tokenOf({ tokenId }).actor.rollSavingThrow({ ability }, { configure: false });
+  const rolls = await viewedToken({ tokenId }).actor.rollSavingThrow({ ability }, { configure: false });
   return { formula: rolls?.[0]?.formula ?? null, total: rolls?.[0]?.total ?? null, d20: rolls?.[0]?.d20?.total ?? null };
 }
 
@@ -610,26 +610,26 @@ function perf({ limit=20, reset=false }={}) {
 
 /** §93 : ce qu'un 1 naturel déclenche chez la créature (le jet lui-même ne se force pas) — sans l'attendre : le scénario répond. */
 function naturalOne({ tokenId }) {
-  naturalOneFor(tokenOf({ tokenId }).actor, "test").catch(err => console.error(err));
+  naturalOneFor(viewedToken({ tokenId }).actor, "test").catch(err => console.error(err));
   return { started: true };
 }
 
 /** §90 : un test de compétence (`skill`) ou de caractéristique (`ability`), sans fenêtre ; ce qui suit le jet (dé ajouté) n'est pas attendu. */
 async function rollCheck({ tokenId, skill=null, ability=null }) {
-  const actor = tokenOf({ tokenId }).actor;
+  const actor = viewedToken({ tokenId }).actor;
   const rolls = skill ? await actor.rollSkill({ skill }, { configure: false }) : await actor.rollAbilityCheck({ ability }, { configure: false });
   return { formula: rolls?.[0]?.formula ?? null, total: rolls?.[0]?.total ?? null, d20: rolls?.[0]?.d20?.total ?? null };
 }
 
 /** §113 : les aides que la fenêtre d'un test de compétence ou d'outil proposerait à ce token. */
 function skillAids({ tokenId, skill=null, tool=null }) {
-  return aidsFor(tokenOf({ tokenId }).actor, { skill, tool }).map(a => ({ kind: a.kind, helper: a.helper.name, token: a.token.id, self: a.self }));
+  return aidsFor(viewedToken({ tokenId }).actor, { skill, tool }).map(a => ({ kind: a.kind, helper: a.helper.name, token: a.token.id, self: a.self }));
 }
 
 /** §113 : l'aide demandée comme le ferait le bouton de la fenêtre ; rend si elle est donnée, et si l'Assistance est posée (attendue 10 s). */
 async function skillAid({ tokenId, helperTokenId, kind, skill=null, tool=null }) {
-  const tester = tokenOf({ tokenId });
-  const helper = tokenOf({ tokenId: helperTokenId }).actor;
+  const tester = viewedToken({ tokenId });
+  const helper = viewedToken({ tokenId: helperTokenId }).actor;
   const granted = await requestSkillAid({ kind, helper, tester, skill, tool });
   let guided = skill ? isGuided(tester.actor, skill) : false;
   for ( let waited = 0; granted && (kind === "guidance") && !guided && (waited < 10000); waited += 250 ) {
@@ -641,24 +641,24 @@ async function skillAid({ tokenId, helperTokenId, kind, skill=null, tool=null })
 
 /** §23 : qui menacerait d'une attaque d'opportunité un déplacement en ligne droite jusqu'à ce point (noms). */
 function threats({ tokenId, point }) {
-  const token = tokenOf({ tokenId });
+  const token = viewedToken({ tokenId });
   const at = token.parent.grid.getTopLeftPoint(token.parent.grid.getOffset(point));
   const waypoints = [{ x: at.x, y: at.y, elevation: token._source.elevation, action: "walk" }];
   return opportunityThreats(token, waypoints).map(e => (typeof e === "string")
     ? (fromUuidSync(e, { strict: false })?.name ?? e) : `${fromUuidSync(e.token, { strict: false })?.name ?? e.token} (reactive strike)`);
 }
 
-/** §20 : le budget du tour d'un combattant (action, action Bonus, Foncer, Se désengager, Vitesse à 0, déplacement en plus). */
 /** Ce qui cloche dans une utilisation (légalité du tour, états), sans l'utiliser ; `cost` force le coût (« bonus », « reaction »). */
 function issues({ tokenId, itemId, activityType=null, cost=null }) {
-  const item = tokenOf({ tokenId }).actor?.items.get(itemId);
+  const item = viewedToken({ tokenId }).actor?.items.get(itemId);
   const activity = item?.system.activities.find(a => !activityType || (a.type === activityType));
   if ( !activity ) throw new Error("activity not found");
   return useIssues(activity, { cost }).lines;
 }
 
+/** §20 : le budget du tour d'un combattant (action, action Bonus, Foncer, Se désengager, Vitesse à 0, déplacement en plus). */
 function budget({ tokenId }) {
-  const token = tokenOf({ tokenId });
+  const token = viewedToken({ tokenId });
   const combatant = token.actor ? combatantFor(token.actor) : null;
   return combatant ? { ...readBudget(combatant), combatantId: combatant.id, cap: finite(movementCap(token)) } : null;
 }
@@ -698,10 +698,6 @@ function reload() {
 }
 
 /**
- * §19.9 : sous quel identifiant le moteur reconnaît chaque item d'un token, d'où il le tient (item, source, compendium, nom) et
- * les clés de contenu qui s'y attachent — pour les items premium sans identifiant (Ravenloft), traduits par Babele.
- */
-/**
  * L'inventaire des capacités du monde (acteurs du monde, pas les tokens non liés) : une ligne par identifiant et type d'item,
  * avec qui la porte, ce que le moteur en connaît (`rules` : les clés de contenu), ses activités, ses effets et le début de son
  * texte anglais d'origine. `types` filtre les types d'item (par défaut tout sauf l'équipement de base et le butin).
@@ -731,8 +727,12 @@ function inventory({ types=null, textLength=700 }={}) {
   return Array.from(rows.values()).sort((a, b) => (b.actors.length - a.actors.length) || String(a.identifier).localeCompare(String(b.identifier)));
 }
 
+/**
+ * §19.9 : sous quel identifiant le moteur reconnaît chaque item d'un token, d'où il le tient (item, source, compendium, nom) et
+ * les clés de contenu qui s'y attachent — pour les items premium sans identifiant (Ravenloft), traduits par Babele.
+ */
 function identify({ tokenId }) {
-  const actor = tokenOf({ tokenId }).actor;
+  const actor = viewedToken({ tokenId }).actor;
   return (actor?.items ?? []).map(item => {
     const { id, from } = identifierOf(item);
     return { item: item.name, id: item.id, identifier: id, from, rules: Object.keys(contentOf(item).entry ?? {}) };
@@ -744,7 +744,7 @@ function identify({ tokenId }) {
  * valeurs connues) ; `clear: true` les efface. Rend le nombre de d20 du devin et son état.
  */
 async function portent({ tokenId, roll=false, rolls=null, clear=false }) {
-  const actor = tokenOf({ tokenId }).actor;
+  const actor = viewedToken({ tokenId }).actor;
   if ( !actor ) throw new Error("token without an actor");
   if ( clear ) await actor.unsetFlag(MODULE_ID, "portent");
   else if ( Array.isArray(rolls) ) await actor.setFlag(MODULE_ID, "portent", { rolls, turn: null });
@@ -754,7 +754,7 @@ async function portent({ tokenId, roll=false, rolls=null, clear=false }) {
 
 /** §38.2 : l'échange de place du Troc du filou, comme l'entrée du menu (depuis l'illusion ou son lanceur) ; positions avant / après. */
 async function transpose({ tokenId }) {
-  const token = tokenOf({ tokenId });
+  const token = viewedToken({ tokenId });
   const at = t => ({ x: t._source.x, y: t._source.y });
   const before = at(token);
   const done = await transposeIntent(token);
@@ -831,7 +831,7 @@ async function use({ tokenId, itemId, activityType=null, extra=null, consume=fal
  */
 async function dash({ tokenId, itemId, x, y, preview=false }) {
   if ( !game.user.isGM ) throw new Error("GM only");
-  const token = tokenOf({ tokenId });
+  const token = viewedToken({ tokenId });
   const activity = token.actor?.items.get(itemId)?.system.activities?.find(a => lineDashOf(a)) ?? null;
   if ( !activity ) throw new Error("no straight-line charge on this item");
   if ( preview ) {
@@ -844,7 +844,7 @@ async function dash({ tokenId, itemId, x, y, preview=false }) {
   const used = await dashStrike(activity, [{ consume: false, [MODULE_ID]: { confirmed: true, autoReact: "none" } }, {}, {}], { x, y });
   for ( let i = 0; (i < 30) && ((token._source.x !== x) || (token._source.y !== y)); i++ ) await new Promise(r => setTimeout(r, 100));
   const message = game.messages.contents.findLast(m => (m.type === "usage") && m.getFlag(MODULE_ID, "dash"));
-  return { used, position: positionOf(token), messageId: (message && (message.id !== before)) ? message.id : null,
+  return { used, position: positionJson(token), messageId: (message && (message.id !== before)) ? message.id : null,
     targets: (message?.system.targets ?? []).map(t => t.name), regions: canvas.scene.regions.filter(r => r.getFlag("dnd5e", "activity") === activity.uuid).length };
 }
 
@@ -863,10 +863,9 @@ function chatCards({ count=6 }={}) {
   });
 }
 
-/** Ce que `api.mcp` expose. */
 /** §53 : pour chaque effet d'un token, l'item d'origine que le moteur retrouve (item détruit : relu dans le message). */
 function effectOrigins({ tokenId }) {
-  const actor = tokenOf({ tokenId }).actor;
+  const actor = viewedToken({ tokenId }).actor;
   return (actor?.effects ?? []).map(e => {
     const item = originItemOf(e);
     return { id: e.id, effect: e.name, origin: e.origin ?? null, systemOrigin: e.system?.origin ?? null, item: item?.name ?? null,
@@ -879,7 +878,7 @@ function effectOrigins({ tokenId }) {
  * `approachDoor`, puis agir). Rend l'état de la porte et la position du token après coup.
  */
 async function door({ tokenId, wallId, open=true }) {
-  const token = tokenOf({ tokenId });
+  const token = viewedToken({ tokenId });
   const wall = canvas.walls.get(wallId);
   if ( !wall?.isDoor ) throw new Error(`wall ${wallId} is not a door of the viewed scene`);
   await setDoorOpen(token, wall, open);
@@ -929,7 +928,7 @@ const diagnosticRestore = ({ uuid }) => diagRestore(uuid);
  */
 async function factions({ op="state", tokenIds=[], faction=null, actor=false, a, b, relation=null, aId, bId, name, value, clear=false, stance=null }={}) {
   const scene = canvas.scene;
-  const tokens = tokenIds.map(id => tokenOf({ tokenId: id }));
+  const tokens = tokenIds.map(id => viewedToken({ tokenId: id }));
   switch ( op ) {
     case "snapshot": return { value: foundry.utils.deepClone(game.settings.get(MODULE_ID, "factions")), grudges: scene.getFlag(MODULE_ID, "grudges") ?? [] };
     case "restore":
@@ -939,7 +938,7 @@ async function factions({ op="state", tokenIds=[], faction=null, actor=false, a,
     case "add": return { id: await factionsApi.add({ name }) };
     case "relation": await factionsApi.setRelation(a, b, relation); return { relations: factionsApi.relations() };
     case "assign": await factionsApi.assign(tokens.map(t => (actor ? t.baseActor : t)), faction); return { factions: tokens.map(t => factionsApi.of(t)) };
-    case "between": return { relation: factionsApi.relation(tokenOf({ tokenId: aId }), tokenOf({ tokenId: bId })) };
+    case "between": return { relation: factionsApi.relation(viewedToken({ tokenId: aId }), viewedToken({ tokenId: bId })) };
     case "grudges": if ( clear ) await factionsApi.grudge(null, null, { clear: true, scene }); return { grudges: factionsApi.grudges(scene) };
     case "stance": for ( const t of tokens ) await factionsApi.stance(t, stance); return { stances: tokens.map(t => t.getFlag(MODULE_ID, "stance") ?? null) };
     default: return {
@@ -951,14 +950,14 @@ async function factions({ op="state", tokenIds=[], faction=null, actor=false, a,
 
 /** §182 : l'observateur voit-il la cible (vision du moteur), et son cône. */
 function sees({ observerId, targetId }) {
-  const observer = tokenOf({ tokenId: observerId });
-  const target = tokenOf({ tokenId: targetId });
+  const observer = viewedToken({ tokenId: observerId });
+  const target = viewedToken({ tokenId: targetId });
   return { sees: canSeeToken(observer, target), cone: coneOf(observer), sighting: sightingOf(observer, target) };
 }
 
 /** §184 : la Furtivité BG3, pour un scénario. `op` : `state` | `set` ({ on }) | `check` | `forget`. */
 async function stealth({ op="state", tokenId, on=true }={}) {
-  const token = tokenOf({ tokenId });
+  const token = viewedToken({ tokenId });
   if ( op === "set" ) await setHidden(token, on);
   if ( op === "check" ) await stealthCheck(token.parent);
   const point = lightAtPoint(stealthPoint(token));
@@ -967,4 +966,5 @@ async function stealth({ op="state", tokenId, on=true }={}) {
     light: point?.level ?? null };
 }
 
+/** Ce que `api.mcp` expose. */
 export const testApi = Object.freeze({ wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth });

@@ -124,7 +124,7 @@ export function findPath({ start, goals, isGoal, heuristic, canStep, canEnd=() =
 }
 
 /** Retire les cases intermédiaires alignées : il ne reste que le départ, les virages et l'arrivée. */
-export function corners(path) {
+export function turningPoints(path) {
   if ( path.length <= 2 ) return path.slice();
   const out = [path[0]];
   for ( let n = 1; n < path.length - 1; n++ ) {

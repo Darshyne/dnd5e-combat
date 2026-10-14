@@ -344,7 +344,7 @@ export function visionFacts(attacker, target) {
 /* -------------------------------------------- */
 
 /** Le token d'un acteur sur la scène affichée : le sien (non lié), sinon le premier de ses tokens. */
-export function tokenOf(actor) {
+export function tokenOnViewedScene(actor) {
   if ( !actor ) return null;
   if ( actor.token?.parent === canvas?.scene ) return actor.token;
   return actor.getActiveTokens?.(true, true)?.[0] ?? null;
@@ -356,7 +356,7 @@ export function tokenOf(actor) {
  */
 export function seesBetween(observerActor, targetActor) {
   if ( !available ) return null;
-  return canSee(tokenOf(observerActor), tokenOf(targetActor));
+  return canSee(tokenOnViewedScene(observerActor), tokenOnViewedScene(targetActor));
 }
 
 /**

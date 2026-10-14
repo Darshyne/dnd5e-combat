@@ -1381,20 +1381,15 @@ function setCursor(kind) {
   else delete document.body.dataset.dnd5eCombatCursor;
 }
 
-/**
- * Survol : aperçu du chemin (en combat) et chance de toucher (§15.3) quand un clic sur ce token
- * lancerait une attaque — attaque de base en combat, ou activité en attente en mode visée. Si le
- * clic ferait d'abord approcher, la chance est calculée depuis la case d'arrivée, comme `engage`.
- */
-/**
- * §16.29 : ce qu'un clic sur cette créature donnerait, hors du corps à corps (qui s'approche) — null si rien ne s'y oppose,
- * sinon le texte du refus (« Hors de portée », « Hors de vue », ou celui du rebond : « Déjà visé… », « … à plus de 30 ft »).
- */
 /** Le token sous la souris. */
 function hoveredToken() {
   return canvas.tokens.hover?.document ?? null;
 }
 
+/**
+ * §16.29 : ce qu'un clic sur cette créature donnerait, hors du corps à corps (qui s'approche) — null si rien ne s'y oppose,
+ * sinon le texte du refus (« Hors de portée », « Hors de vue », ou celui du rebond : « Déjà visé… », « … à plus de 30 ft »).
+ */
 function refusalFor(me, hover, activity, usageConfig=null) {
   const wrongTarget = targetTypeRefusal(me, hover, activity);
   if ( wrongTarget ) return wrongTarget;
@@ -1500,6 +1495,11 @@ function teleportHover(event) {
   return true;
 }
 
+/**
+ * Survol : aperçu du chemin (en combat) et chance de toucher (§15.3) quand un clic sur ce token
+ * lancerait une attaque — attaque de base en combat, ou activité en attente en mode visée. Si le
+ * clic ferait d'abord approcher, la chance est calculée depuis la case d'arrivée, comme `engage`.
+ */
 const onPointerMove = foundry.utils.throttle(event => {
   if ( onBoard(event) && teleportHover(event) ) return;
   if ( dashing ) return onBoard(event) ? dashHover(event) : undefined;

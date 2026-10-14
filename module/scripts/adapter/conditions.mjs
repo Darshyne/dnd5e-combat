@@ -12,7 +12,7 @@
 import { rangeIssue } from "../core/range.mjs";
 import { verbalSpellBlocked, hampersRangedAttack, forbiddenAgainstCharmer, requiresSight, INCAPACITATING } from "../core/conditions.mjs";
 import { distanceBetween, rangeOf } from "./turn.mjs";
-import { visionFacts, isVisionAvailable, canSee, tokenOf } from "./vision.mjs";
+import { visionFacts, isVisionAvailable, canSee, tokenOnViewedScene } from "./vision.mjs";
 import { originItemOf, revealedInvisible, seesInvisible } from "./facts.mjs";
 import { grappledElsewhere } from "./grapple.mjs";
 import { helpedAgainst } from "./help.mjs";
@@ -36,7 +36,7 @@ export function frightenedSourceSeen(origin) {
   let known = 0;
   for ( const effect of origin.actor.effects ) {
     if ( effect.disabled || effect.isSuppressed || !effect.statuses?.has("frightened") ) continue;
-    const source = tokenOf(originItemOf(effect)?.actor);
+    const source = tokenOnViewedScene(originItemOf(effect)?.actor);
     if ( !source ) return null;   // source inconnue : l'état s'applique
     known++;
     if ( canSee(origin, source) !== false ) return true;
@@ -49,7 +49,7 @@ export function fearSources(token) {
   const out = [];
   for ( const effect of token?.actor?.effects ?? [] ) {
     if ( effect.disabled || effect.isSuppressed || !effect.statuses?.has("frightened") ) continue;
-    const source = tokenOf(originItemOf(effect)?.actor);
+    const source = tokenOnViewedScene(originItemOf(effect)?.actor);
     if ( source && (source.parent === token.parent) && (source !== token) ) out.push(source);
   }
   return out;

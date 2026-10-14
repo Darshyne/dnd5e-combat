@@ -8,7 +8,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { enchantTargetOf, applyEnchantmentTo, pactRuleOf, conjureWeapon } from "../adapter/enchant.mjs";
 import { rewritePactChanges } from "../core/pact.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
-import { tokenOf } from "../adapter/vision.mjs";
+import { tokenOnViewedScene } from "../adapter/vision.mjs";
 import { route } from "./router.mjs";
 import { log, loc, notice } from "./shared.mjs";
 
@@ -69,7 +69,7 @@ async function onPostUse(activity, usageConfig, results) {
   if ( !gm ) return ui.notifications.warn(loc("Enchant.SansMJ"));
   const name = gm.isSelf ? await handleEnchant(payload) : await gm.query(ENCHANT_QUERY, payload, { timeout: 10000 }).catch(() => null);
   const item = await fromUuid(itemUuid);
-  const token = tokenOf(item?.parent);
+  const token = tokenOnViewedScene(item?.parent);
   if ( name && token ) notice(token, loc("Enchant.Applique", { item: item.name, effect: name }), "gain");
 }
 

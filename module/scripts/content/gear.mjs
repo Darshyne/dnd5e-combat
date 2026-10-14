@@ -2,10 +2,10 @@
  * Les objets du Manuel des joueurs 2024 (SPEC §49) : ce que dnd5e laisse à la main sur leurs effets.
  */
 
-/** L'effet « Burning. » / « Embrasement » que pose le feu grégeois (même id dans le Manuel des joueurs et sa copie Midi). */
+/** L'effet « Burning. » / « Embrasement » que pose le feu grégeois (même id dans le Manuel des joueurs et ses copies). */
 const ALCHEMISTS_FIRE_BURNING = "HL12olRyPOCmmMQ5";
 
-/** Les activités de la trousse de soins dont la portée est « personnelle » (Manuel des joueurs, CPR) : au contact. */
+/** Les activités de la trousse de soins dont la portée est « personnelle » (Manuel des joueurs, et une copie tierce courante) : au contact. */
 const HEALERS_KIT_ACTIVITIES = ["bsWqOT06BB3Vb2hg", "1jlZEx9V2TITY9OT"];
 
 /** Flamme nue : lumière orangée qui vacille (animation « torch » du cœur). */
@@ -56,7 +56,7 @@ export const GEAR = Object.freeze({
   "potion-of-diminution": { potionEffect: "NXdtOxX4HvPeodml" },
   // Trousse de soins : une action Utiliser et une utilisation stabilisent une créature Inconsciente à 0 PV, sans test de
   // Médecine — l'activité utilitaire de dnd5e ne fait rien (runtime/stabilize.mjs).
-  // Sa portée est « personnelle » dans le Manuel des joueurs et chez CPR alors qu'elle vise une créature : au contact.
+  // Sa portée est « personnelle » dans le Manuel des joueurs (et une copie tierce courante) alors qu'elle vise une créature : au contact.
   "healers-kit": {
     stabilizes: true,
     ranges: Object.fromEntries(HEALERS_KIT_ACTIVITIES.map(id => [id, { value: 5, units: "ft" }])),

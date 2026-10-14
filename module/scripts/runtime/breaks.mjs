@@ -13,7 +13,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { breakMoments } from "../core/conditions.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
-import { tokenOf } from "../adapter/vision.mjs";
+import { tokenOnViewedScene } from "../adapter/vision.mjs";
 import { route } from "./router.mjs";
 import { log, loc, notice } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
@@ -30,7 +30,7 @@ async function breakEffects(actor, moments, exceptItem=null, { before=null }={})
   });
   if ( !broken.length ) return;
   await actor.deleteEmbeddedDocuments("ActiveEffect", broken.map(e => e.id));
-  const token = tokenOf(actor);
+  const token = tokenOnViewedScene(actor);
   for ( const e of broken ) {
     log(`${actor.name}: ${e.name} ends (${moments.join(", ")})`);
     if ( token ) notice(token, loc("Retour.FinEffet", { item: e.name }), "ended");

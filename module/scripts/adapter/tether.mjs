@@ -13,7 +13,7 @@ import { concentrationOn } from "./summons.mjs";
 import { distanceBetween } from "./turn.mjs";
 import { readUnitFactors } from "./units.mjs";
 import { coverFor, hasLineOfEffect } from "./cover.mjs";
-import { tokenOf } from "./vision.mjs";
+import { tokenOnViewedScene } from "./vision.mjs";
 
 /** La règle de lien d'un item, ou null. */
 export function tetherRuleOf(item) {
@@ -60,7 +60,7 @@ export function tetherItems(actor) {
 export function tetherBroken(item) {
   const rule = tetherRuleOf(item);
   const target = tetheredToken(item);
-  const caster = tokenOf(item?.actor);
+  const caster = tokenOnViewedScene(item?.actor);
   if ( !rule || !target || !caster || (caster.parent !== target.parent) ) return null;
   let maxRange = rule.range.value;
   try { maxRange = convertLength(rule.range.value, rule.range.units, caster.parent.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }

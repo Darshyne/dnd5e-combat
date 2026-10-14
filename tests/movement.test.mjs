@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { findPath, corners, cellDistance } from "../module/scripts/core/pathfind.mjs";
+import { findPath, turningPoints, cellDistance } from "../module/scripts/core/pathfind.mjs";
 import {
   footprintGap, approach, chooseBasicAttack, spentMovement
 } from "../module/scripts/core/movement.mjs";
@@ -88,10 +88,10 @@ describe("findPath", () => {
   });
 });
 
-describe("corners", () => {
+describe("turningPoints", () => {
   it("ne garde que les virages", () => {
     const path = [{ i: 0, j: 0 }, { i: 0, j: 1 }, { i: 0, j: 2 }, { i: 1, j: 3 }, { i: 2, j: 4 }, { i: 2, j: 5 }];
-    expect(corners(path)).toEqual([{ i: 0, j: 0 }, { i: 0, j: 2 }, { i: 2, j: 4 }, { i: 2, j: 5 }]);
+    expect(turningPoints(path)).toEqual([{ i: 0, j: 0 }, { i: 0, j: 2 }, { i: 2, j: 4 }, { i: 2, j: 5 }]);
   });
   it("cellDistance compte à huit voisins", () => {
     expect(cellDistance({ i: 0, j: 0 }, { i: 3, j: -2 })).toBe(3);

@@ -1,7 +1,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { attackModifiers, combineTargets } from "../core/conditions.mjs";
 import { attackContext, registerTurnStatuses, setStatus, TURN_STATUSES, frightenedSourceSeen } from "../adapter/conditions.mjs";
-import { tokenOf } from "../adapter/vision.mjs";
+import { tokenOnViewedScene } from "../adapter/vision.mjs";
 import { declaredAttackBonuses } from "../adapter/triggers.mjs";
 import { readBudget, usageTokenOf as usageToken } from "../adapter/turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
@@ -90,7 +90,7 @@ function onPreRollAbilityCheck(config) {
   const actor = config.subject;
   const roll = config.rolls?.[0];
   if ( !actor?.statuses?.has("frightened") || !roll ) return true;
-  if ( frightenedSourceSeen(tokenOf(actor)) === false ) return true;
+  if ( frightenedSourceSeen(tokenOnViewedScene(actor)) === false ) return true;
   roll.options ??= {};
   roll.options.disadvantage = true;
   log(`${actor.name}: Frightened → disadvantage on ability check`);

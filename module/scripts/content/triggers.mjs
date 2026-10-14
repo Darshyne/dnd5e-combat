@@ -19,7 +19,7 @@
  *   { type: "ward", activity? }          avec `via: "effect"` : l'attaquant du porteur doit réussir la sauvegarde (isAttacked)
  *
  * Identifiants vérifiés dans packs/_source/spells24 de dnd5e 6.0.3 (`system.identifier`), et pour les
- * items hors SRD dans le module premium PHB 2.2.0 ou les fiches de `dandd` (INVENTAIRE_PJ.md).
+ * items hors SRD dans le module premium PHB 2.2.0.
  */
 
 export const TRIGGERS = Object.freeze({
@@ -82,7 +82,7 @@ export const TRIGGERS = Object.freeze({
     if: { "activity.isAttack": true, "target.hasEffectFrom": "hex" },
     do: [{ type: "damage", formula: "1d6", damageType: "necrotic" }]
   }],
-  // Voile spirituel (Tasha, item « Automatisations Darsh » de l'occultiste de la table) : +1d8 aux attaques qui touchent
+  // Voile spirituel (Tasha) : +1d8 aux attaques qui touchent
   // une créature à 10 ft ou moins du lanceur, tant que celui-ci porte l'effet du sort. Le type (radiant, nécrotique, froid) est choisi à l'incantation : nécrotique
   // ici, l'item de la fiche pourra le corriger dans son flag `triggers`.
   "spirit-shroud": [{
@@ -134,7 +134,7 @@ export const TRIGGERS = Object.freeze({
     { on: "failedSave", do: [{ type: "move", mode: "push", distance: 15, units: "ft" }] }
   ],
   // …Télékinésiste (PHB, feats, identifiant `telekinetic` ; ses trois activités sont des sauvegardes de Force) :
-  // repoussé de 1,50 m. L'item du magicien de la table (`telekinetic-shove`, CPR) sera remplacé par celui du compendium (INVENTAIRE §E)…
+  // repoussé de 1,50 m…
   "telekinetic": [{ on: "failedSave", do: [{ type: "move", mode: "push", distance: 5, units: "ft" }] }],
   // …Fouet d'épines (PHB, spells) : une cible de taille G au plus est tirée de 3 m au plus vers le lanceur.
   "thorn-whip": [{ on: "hit", if: { "target.sizeAtMost": "lg" }, do: [{ type: "move", mode: "pull", distance: 10, units: "ft" }] }],
@@ -308,7 +308,7 @@ export const TRIGGERS = Object.freeze({
     if: { "target.hasEffect": "faerie-fire", "source.seesTarget": true },
     do: [{ type: "advantage" }]
   }],
-  // Tactique de meute (MM 2024, 18 créatures ; le Loup de la druide de la table) : un allié non Neutralisé à 5 ft de la cible.
+  // Tactique de meute (MM 2024, 18 créatures) : un allié non Neutralisé à 5 ft de la cible.
   "pack-tactics": [{
     on: "preAttackRoll",
     if: { "source.allyNearTarget": { distance: 5, units: "ft" } },

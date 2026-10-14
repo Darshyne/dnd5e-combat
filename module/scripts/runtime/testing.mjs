@@ -50,6 +50,9 @@ import { factionsApi } from "./factions.mjs";
 import { coneOf } from "../adapter/cone.mjs";
 import { canSee as canSeeToken } from "../adapter/vision.mjs";
 import { sightingOf } from "../adapter/search.mjs";
+import { setSneaking, check as stealthCheck, stealthViews } from "./stealth.mjs";
+import { isSneaking, spottedBy } from "../adapter/stealth.mjs";
+import { lightAt as lightAtPoint, tokenPoint as stealthPoint } from "../adapter/illumination.mjs";
 
 /** Le token désigné, sur la scène affichée par le MJ. */
 function tokenOf({ tokenId }) {
@@ -954,4 +957,15 @@ function sees({ observerId, targetId }) {
   return { sees: canSeeToken(observer, target), cone: coneOf(observer), sighting: sightingOf(observer, target) };
 }
 
-export const testApi = Object.freeze({ wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees });
+/** §184 : la Furtivité BG3, pour un scénario. `op` : `state` | `set` ({ on }) | `check` | `forget`. */
+async function stealth({ op="state", tokenId, on=true }={}) {
+  const token = tokenOf({ tokenId });
+  if ( op === "set" ) await setSneaking(token, on);
+  if ( op === "check" ) await stealthCheck(token.parent);
+  const point = lightAtPoint(stealthPoint(token));
+  return { sneaking: isSneaking(token), spottedBy: spottedBy(token).map(id => token.parent.tokens.get(id)?.name ?? id),
+    views: Object.fromEntries(Object.entries(stealthViews(token.id)).map(([id, v]) => [token.parent.tokens.get(id)?.name ?? id, v])),
+    light: point?.level ?? null };
+}
+
+export const testApi = Object.freeze({ wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth });

@@ -1189,5 +1189,13 @@
   "DND5ECOMBAT.Furtif.RaccourciAide": "Hors combat : bascule le mode furtif des tokens contrôlés ; les cônes de vision des créatures que vous voyez s'affichent.",
   "DND5ECOMBAT.Furtif.Entre": "Mode furtif : les cônes de vision des créatures que vous voyez s'affichent.",
   "DND5ECOMBAT.Furtif.Sort": "Fin du mode furtif.",
-  "DND5ECOMBAT.Furtif.EnCombat": "Pas de mode furtif en combat."
+  "DND5ECOMBAT.Furtif.EnCombat": "Pas de mode furtif en combat.",
+  "DND5ECOMBAT.Furtif.Titre": "Furtivité",
+  "DND5ECOMBAT.Furtif.Doute": "{observer} a cru percevoir quelque chose ({target} a raté sa Discrétion).",
+  "DND5ECOMBAT.Furtif.Repere": "{observer} a repéré {target}.",
+  "DND5ECOMBAT.Furtif.ReperePleineLumiere": "{observer} a repéré {target}, en pleine lumière.",
+  "DND5ECOMBAT.Reglage.stealthRules.Nom": "Règles de Furtivité",
+  "DND5ECOMBAT.Reglage.stealthRules.Aide": "2024 : les règles du Manuel (action Se cacher). BG3 : hors combat, un PJ en mode furtif (Alt+C) marche à demi-vitesse et n'est vu d'une créature du MJ que si elle le repère — aussitôt en pleine lumière ; sinon, à chaque entrée dans son champ de vision, Discrétion contre sa Perception passive (active si elle a déjà un doute) : un échec, elle doute ; deux, elle le repère. Attaquer donne l'Avantage puis fait sortir du mode furtif.",
+  "DND5ECOMBAT.Reglage.stealthRules.2024": "2024 (Manuel des joueurs)",
+  "DND5ECOMBAT.Reglage.stealthRules.bg3": "BG3 (mode furtif, détection progressive)"
 }

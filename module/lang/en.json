@@ -1189,5 +1189,13 @@
   "DND5ECOMBAT.Furtif.RaccourciAide": "Out of combat: toggles sneak mode for the controlled tokens; the vision cones of the creatures you see are shown.",
   "DND5ECOMBAT.Furtif.Entre": "Sneak mode: the vision cones of the creatures you see are shown.",
   "DND5ECOMBAT.Furtif.Sort": "Sneak mode off.",
-  "DND5ECOMBAT.Furtif.EnCombat": "No sneak mode in combat."
+  "DND5ECOMBAT.Furtif.EnCombat": "No sneak mode in combat.",
+  "DND5ECOMBAT.Furtif.Titre": "Stealth",
+  "DND5ECOMBAT.Furtif.Doute": "{observer} thinks they noticed something ({target} failed their Stealth).",
+  "DND5ECOMBAT.Furtif.Repere": "{observer} spotted {target}.",
+  "DND5ECOMBAT.Furtif.ReperePleineLumiere": "{observer} spotted {target}, in bright light.",
+  "DND5ECOMBAT.Reglage.stealthRules.Nom": "Stealth rules",
+  "DND5ECOMBAT.Reglage.stealthRules.Aide": "2024: the Player's Handbook rules (Hide action). BG3: out of combat, a PC in sneak mode (Alt+C) walks at half speed and is only seen by a GM creature that spots them — at once in bright light; otherwise, each time they enter its field of view, Stealth against its passive Perception (active if it is already suspicious): one failure, it is suspicious; two, it spots them. Attacking gives Advantage, then leaves sneak mode.",
+  "DND5ECOMBAT.Reglage.stealthRules.2024": "2024 (Player's Handbook)",
+  "DND5ECOMBAT.Reglage.stealthRules.bg3": "BG3 (sneak mode, progressive detection)"
 }

@@ -19,7 +19,7 @@ import { combatantFor, readBudget, movementOf } from "../adapter/turn.mjs";
 import { useIssues } from "./turn.mjs";
 import { setDoorOpen, doorState } from "./doors.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
-import { moveTo, movementCap, selfTeleportOf, currentTeleport, teleportClick, dashStrike, dashTargets, dashProblem, lineDashOf, transpose as transposeIntent, takeStairs as takeStairsIntent } from "./actions.mjs";
+import { moveTo, movementCap, selfTeleportOf, teleportTo, afterTeleport, currentTeleport, teleportClick, dashStrike, dashTargets, dashProblem, dashLimit, lineDashOf, transpose as transposeIntent, takeStairs as takeStairsIntent } from "./actions.mjs";
 import { dismissFamiliar, recallFamiliar, recallRefusal, canPocket, canRecall } from "./familiar.mjs";
 import { pocketOf, isFamiliarToken, emptyPocket } from "../adapter/familiar.mjs";
 import { basicActionOf } from "../adapter/basics.mjs";
@@ -480,11 +480,10 @@ async function teleport({ tokenId, itemId, x, y }) {
   const token = tokenOf({ tokenId });
   const activity = token.actor?.items.get(itemId)?.system.activities?.find(a => selfTeleportOf(a)) ?? null;
   if ( !activity ) throw new Error("no self-teleport on this item");
-  const elevation = token._source.elevation ?? 0;
-  const plans = [{ token: token.object, plan: { destination: { x, y, elevation } } }];
-  const accepted = Hooks.call("dnd5e.teleport", activity, plans) !== false;
-  const from = { x: token._source.x, y: token._source.y, elevation, level: token._source.level ?? null };
-  if ( accepted ) await token.move([{ x, y, elevation, action: "blink", snapped: true }], { [MODULE_ID]: { cleared: true } });
+  const from = { x: token._source.x, y: token._source.y, elevation: token._source.elevation ?? 0, level: token._source.level ?? null };
+  // Le même chemin que le clic du joueur (`teleportSelf`) : validation, `blink`, puis l'activité d'arrivée (`teleport.then`).
+  const accepted = await teleportTo(activity, token, { x, y });
+  if ( accepted ) await afterTeleport(activity, selfTeleportOf(activity));
   // §92 : les options de la Foulée des fées, comme après le vrai geste — sans les attendre (le scénario répond à la question).
   if ( accepted ) afterTeleportOptions(activity, token, from).catch(err => console.error(err));
   return { accepted, position: positionOf(token) };
@@ -837,9 +836,9 @@ async function dash({ tokenId, itemId, x, y, preview=false }) {
   if ( !activity ) throw new Error("no straight-line charge on this item");
   if ( preview ) {
     const to = { x, y, elevation: token._source.elevation ?? 0 };
-    const movement = token.actor.system.attributes?.movement;
+    // La limite de la visée (`dashRefusal`) : la Vitesse convertie dans l'unité de la scène.
     return { targets: dashTargets(token, to, lineDashOf(activity)).map(t => t.name),
-      problem: dashProblem(token, to, Number(movement?.speeds?.walk ?? movement?.walk) || null)?.[0] ?? null };
+      problem: dashProblem(token, to, dashLimit(token))?.[0] ?? null };
   }
   const before = game.messages.contents.at(-1)?.id ?? null;
   const used = await dashStrike(activity, [{ consume: false, [MODULE_ID]: { confirmed: true, autoReact: "none" } }, {}, {}], { x, y });

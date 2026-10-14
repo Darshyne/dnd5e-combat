@@ -140,6 +140,17 @@ const TOO_FAR_COLOR = "#d03030";
 /** §119 : la consigne de la visée ouverte (le texte de sa notification), que le bandeau garde à l'écran. */
 let promptText = null;
 
+/**
+ * Fin d'une pose : `placing` n'est remis à null que s'il est encore celui de cette pose. Une pose attend la souris (`await`) ;
+ * pendant ce temps une autre visée peut s'ouvrir (`stopTargeting` annule la pose, puis une offre ou un autre sort pose son propre
+ * état), que la fin de l'ancienne ne doit pas effacer.
+ */
+function endPlacing(mine) {
+  if ( placing !== mine ) return false;
+  placing = null;
+  return true;
+}
+
 /** §118 : quelle visée est ouverte, pour les voisins. */
 function targetingKind() {
   if ( picking ) return picking.group ? "group" : "projectiles";
@@ -427,7 +438,7 @@ async function placeZone(activity, zone) {
   const source = zone.region.toObject();
   const shape = source.shapes?.[0];
   if ( !shape || !canvas.ready ) return;
-  placing = { activity };
+  const mine = placing = { activity };
   announceTargeting();
   promptTargeting(loc("Zone.Choisir", { item: activity.item.name }));
   const far = s => tooFarForZone(zone, shapeCenter(s.toObject()));
@@ -452,7 +463,7 @@ async function placeZone(activity, zone) {
     if ( !point ) return ui.notifications.info(loc("Visee.Annulee"));
     await exclusive(() => moveZone(activity, point));
   } catch(err) { console.error(`${MODULE_ID} | area move`, err); }
-  finally { placing = null; announceTargeting(); }
+  finally { endPlacing(mine); announceTargeting(); }
 }
 
 /**
@@ -467,7 +478,7 @@ async function placeZone(activity, zone) {
 async function aimArea(activity, area, then) {
   if ( !canvas.ready ) return;
   stopTargeting();
-  placing = { activity };
+  const mine = placing = { activity };
   announceTargeting();
   promptTargeting(loc("Zone.Viser", { item: activity.item.name, name: area.token.name }));
   let last = null;
@@ -489,11 +500,11 @@ async function aimArea(activity, area, then) {
     });
     const shape = placed?.shapes?.length ? placed.shapes[0].toObject() : null;
     if ( !shape ) return ui.notifications.info(loc("Visee.Annulee"));
-    placing = null;
+    endPlacing(mine);
     announceTargeting();
     await then(shape);
   } catch(err) { console.error(`${MODULE_ID} | area targeting`, err); }
-  finally { placing = null; announceTargeting(); }
+  finally { endPlacing(mine); announceTargeting(); }
 }
 
 /** La longueur en pieds (unités de la grille) pour le bandeau. */
@@ -511,6 +522,7 @@ async function aimWall(activity, area, then) {
   if ( !canvas.ready ) return;
   stopTargeting();
   const points = [];
+  let mine = null;
   const g = new PIXI.Graphics();
   canvas.controls.addChild(g);
   const color = Number(foundry.utils.Color.from(game.user.color)) || 0xff6400;
@@ -563,15 +575,14 @@ async function aimWall(activity, area, then) {
       if ( event.key === "Escape" ) { event.preventDefault(); finish(null); }
       else if ( event.key === "Enter" ) { event.preventDefault(); finish(points.length >= 2 ? clampPolyline(points, max) : null); }
     };
-    placing = { activity, cancel: () => finish(null) };
+    mine = placing = { activity, cancel: () => finish(null) };
     canvas.stage.on("pointermove", onMove);
     canvas.stage.on("pointerdown", onDown);
     window.addEventListener("keydown", onKey, true);
     promptTargeting(loc("Mur.Poser", { item: activity.item.name }));
     say(null);
   });
-  placing = null;
-  promptText = null;
+  if ( endPlacing(mine) ) promptText = null;
   announceTargeting();
   if ( !result ) return ui.notifications.info(loc("Visee.Annulee"));
   await then(result);
@@ -598,7 +609,7 @@ async function aimBolt(activity, cloud) {
   const circle = cloudCircle(cloud);
   if ( !circle ) return;
   stopTargeting();
-  placing = { activity };
+  const mine = placing = { activity };
   announceTargeting();
   setBoltAim({ activity, cloud });
   promptTargeting(loc("Orage.Viser", { item: activity.item.name }));
@@ -618,12 +629,12 @@ async function aimBolt(activity, cloud) {
     });
     const shape = placed?.shapes?.length ? placed.shapes[0].toObject() : null;
     if ( !shape ) return;
-    placing = null;
+    endPlacing(mine);
     announceTargeting();
     setBoltAim(null);
     await exclusive(() => strike(activity, cloud, { x: shape.x, y: shape.y }));
   } catch(err) { console.error(`${MODULE_ID} | lightning bolt targeting`, err); }
-  finally { placing = null; announceTargeting(); setBoltAim(null); }
+  finally { endPlacing(mine); announceTargeting(); setBoltAim(null); }
 }
 
 /** §59 : le bouton « Placer la zone » de la carte d'un cône ou d'une ligne de portée personnelle — la même visée. */

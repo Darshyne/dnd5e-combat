@@ -169,7 +169,7 @@ export function selfTeleportOf(activity) {
  * créature à 1,50 m de sa nouvelle position… »), utilisée aussitôt depuis la nouvelle position — une zone sur soi se pose
  * d'office (runtime/self-area.mjs).
  */
-async function afterTeleport(activity, rule) {
+export async function afterTeleport(activity, rule) {
   const next = rule.then ? activity.item?.system.activities?.get(rule.then) : null;
   if ( !next ) return;
   log(`${activity.item.name}: on arrival, ${next.name || next.item.name}`);
@@ -219,7 +219,7 @@ export function teleportClick(point) {
 }
 
 /** Téléporter vers la case choisie d'un clic : la validation de `onTeleport` (et de quiconque écoute), puis un `blink`. */
-async function teleportTo(activity, token, { x, y }) {
+export async function teleportTo(activity, token, { x, y }) {
   const elevation = token._source.elevation ?? 0;
   const plans = [{ token: token.object, plan: { destination: { x, y, elevation } } }];
   if ( Hooks.call("dnd5e.teleport", activity, plans) === false ) return false;
@@ -267,7 +267,7 @@ export function lineDashOf(activity) {
 }
 
 /** « Une distance maximale égale à sa vitesse » : la Vitesse de marche, dans l'unité de la scène (null : aucune). */
-function dashLimit(token) {
+export function dashLimit(token) {
   const movement = token.actor?.system.attributes?.movement;
   const walk = Number(movement?.speeds?.walk ?? movement?.walk);
   if ( !Number.isFinite(walk) ) return null;

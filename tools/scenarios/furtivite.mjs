@@ -11,7 +11,7 @@ const MODULE_ID = "dnd5e-combat";
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 export default {
-  name: "furtivité — caché (Invisible, DD), fin à l'attaque et au sort verbal",
+  name: "furtivité — caché (DD, invisible pour les ennemis seuls), fin à l'attaque et au sort verbal",
 
   async run(ctx) {
     const mage = await ctx.token("Magicien");
@@ -50,8 +50,14 @@ export default {
 
     // 1. Caché.
     const hidden = await hideUntilHidden();
-    ctx.expect(!!hidden && (hidden.statuses ?? []).includes("invisible"),
-      `caché : effet Invisible « ${hidden?.name ?? "absent"} », DD ${hidden?.flags?.[MODULE_ID]?.hidden?.dc ?? "?"}`);
+    // §185 : l'effet ne porte plus l'état Invisible du cœur ; le moteur rend le token invisible à ses ennemis seuls.
+    ctx.expect(!!hidden && !(hidden.statuses ?? []).includes("invisible"),
+      `caché : effet « ${hidden?.name ?? "absent"} », DD ${hidden?.flags?.[MODULE_ID]?.hidden?.dc ?? "?"}, sans l'état Invisible du cœur`);
+    if ( hidden ) {
+      ctx.expect((await ctx.engine("sees", { observerId: zombi.id, targetId: mage.id })).sees === false, "le Zombi (ennemi) ne le voit plus");
+      const ally = await ctx.token("Guerrier").catch(() => null);
+      if ( ally ) ctx.expect((await ctx.engine("sees", { observerId: ally.id, targetId: mage.id })).sees === true, "le Guerrier (allié) le voit toujours");
+    }
     ctx.expect((hidden?.flags?.[MODULE_ID]?.hidden?.dc ?? 0) >= 15, "le DD pour le localiser est le total du test (≥ 15)");
     if ( !hidden ) return;
 

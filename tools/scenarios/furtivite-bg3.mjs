@@ -23,6 +23,13 @@ export default {
       const r = await ctx.engine("setting", { key, value });
       ctx.restore(() => ctx.engine("setting", { key, value: r.before }));
     }
+    // Seuls le Zombi (l'ennemi qui regarde), le Guerrier et le Clerc (un allié) : un autre ennemi le repérerait aussi.
+    for ( const t of tokens.filter(t => !["Zombi", "Guerrier", "Clerc"].includes(t.name)) ) {
+      const { data } = await ctx.call("get-scene-object", { type: "Token", objectId: t.id });
+      if ( data.hidden ) continue;
+      await ctx.call("update-scene-object", { type: "Token", objectId: t.id, data: { hidden: true } });
+      ctx.restore(() => ctx.call("update-scene-object", { type: "Token", objectId: t.id, data: { hidden: false } }));
+    }
     const st = (op="state", extra={}) => ctx.engine("stealth", { op, tokenId: rogue.id, ...extra });
     ctx.restore(() => st("set", { on: false }));
     const { data: z } = await ctx.call("get-scene-object", { type: "Token", objectId: zombi.id });
@@ -37,7 +44,9 @@ export default {
     // 1. Dans son dos.
     await st("set", { on: true });
     let s = await go(behind);
-    ctx.expect(s.sneaking && !s.spottedBy.length, "furtif dans son dos : pas repéré");
+    ctx.expect(s.hidden && !s.spottedBy.length, "caché dans son dos, sans jet : pas repéré");
+    const ally = await ctx.token("Clerc").catch(() => null);
+    if ( ally ) ctx.expect((await ctx.engine("sees", { observerId: ally.id, targetId: rogue.id })).sees === true, "un allié (le Clerc) le voit toujours");
     ctx.expect((await ctx.engine("sees", { observerId: zombi.id, targetId: rogue.id })).sees === false, "le Zombi ne le voit pas");
 
     // 2. Devant, en pleine lumière.
@@ -87,13 +96,13 @@ export default {
       const used = await ctx.use({ tokenId: rogue.id, identifier: "greatsword", activityType: "attack", targetTokenIds: [zombi.id] });
       if ( used.usageMessageId ) await ctx.settle(used.usageMessageId).catch(() => null);
       await pause(800);
-      ctx.expect((await st()).sneaking === false, "après l'attaque : sorti du mode furtif");
+      ctx.expect((await st()).hidden === false, "après l'attaque : plus caché");
     }
     else ctx.log("pas d'épée à deux mains sur le Guerrier : attaque non vérifiée");
 
     // 5. Sortir du mode furtif.
     await st("set", { on: false });
     s = await st();
-    ctx.expect(!s.sneaking && !s.spottedBy.length, "hors du mode : plus rien");
+    ctx.expect(!s.hidden && !s.spottedBy.length, "plus caché : plus rien");
   }
 };

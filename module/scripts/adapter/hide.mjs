@@ -4,7 +4,7 @@
  * de vision de tout ennemi. Le moteur juge la seconde exactement (vision simulée, adapter/vision.mjs) ;
  * la première en découle — si aucun ennemi ne vous voit, c'est l'obscurité, un abri ou ses sens —, sauf
  * des ennemis qui ne voient de toute façon rien (Aveuglés) : au MJ de trancher.
- * Réussie, la Furtivité est un effet « Invisible » sur l'acteur, qui porte le DD pour vous localiser.
+ * Réussie, la Furtivité est un effet sur l'acteur, qui porte le DD pour vous localiser ; le moteur le rend invisible à ses ennemis (§185).
  */
 
 import { MODULE_ID } from "../constants.mjs";
@@ -36,7 +36,8 @@ export function hiddenEffectsOf(actor) {
 /** Données de l'effet de Furtivité réussie : l'état Invisible, et le DD pour vous localiser. */
 export function hiddenEffectData(dc, name) {
   return {
-    name, img: "icons/svg/cowled.svg", transfer: false, disabled: false, statuses: ["invisible"], changes: [],
+    // §185 : pas l'état Invisible du cœur (il cachait aussi le token au groupe) ; le moteur le rend invisible à ses ennemis seuls.
+    name, img: "icons/svg/cowled.svg", transfer: false, disabled: false, statuses: [], changes: [],
     showIcon: CONST.ACTIVE_EFFECT_SHOW_ICON.ALWAYS,
     flags: { [MODULE_ID]: { hidden: { dc } } }
   };

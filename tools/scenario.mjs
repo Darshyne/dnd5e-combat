@@ -624,6 +624,9 @@ let previous = null;
 // `cones` les rallume lui-même), puis remis.
 const cones = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "visionCones", value: false }, waitMs: 8000 })
   .then(r => r?.result?.before).catch(() => undefined);
+// §185 : de même, la Furtivité des règles 2024 (le scénario `furtivite-bg3` passe lui-même en BG3).
+const stealthRules = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "stealthRules", value: "2024" }, waitMs: 8000 })
+  .then(r => r?.result?.before).catch(() => undefined);
 for ( const file of files ) {
   const { default: scenario } = await import(pathToFileURL(file).href);
   const named = wanted.length || external.includes(file);
@@ -685,6 +688,7 @@ for ( const file of files ) {
   console.log(ctx.failures.length ? `  ✗ ${ctx.failures.length} vérification(s) en défaut` : "  ✓ scénario tenu");
 }
 if ( activeAtStart && (activeNow !== activeAtStart) ) await useScene(activeAtStart);
+if ( stealthRules !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "stealthRules", value: stealthRules }, waitMs: 8000 }).catch(() => null);
 if ( cones !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "visionCones", value: cones }, waitMs: 8000 }).catch(() => null);
 console.log(`\n${files.length - skipped - failed}/${files.length - skipped} scénario(s) tenus${skipped ? ` (${skipped} interactif(s) sauté(s))` : ""}`);
 process.exitCode = failed ? 1 : 0;

@@ -50,8 +50,8 @@ import { factionsApi } from "./factions.mjs";
 import { coneOf } from "../adapter/cone.mjs";
 import { canSee as canSeeToken } from "../adapter/vision.mjs";
 import { sightingOf } from "../adapter/search.mjs";
-import { setSneaking, check as stealthCheck, stealthViews } from "./stealth.mjs";
-import { isSneaking, spottedBy } from "../adapter/stealth.mjs";
+import { setHidden, check as stealthCheck, stealthViews } from "./stealth.mjs";
+import { isHidden, spottedBy } from "../adapter/stealth.mjs";
 import { lightAt as lightAtPoint, tokenPoint as stealthPoint } from "../adapter/illumination.mjs";
 
 /** Le token désigné, sur la scène affichée par le MJ. */
@@ -960,10 +960,10 @@ function sees({ observerId, targetId }) {
 /** §184 : la Furtivité BG3, pour un scénario. `op` : `state` | `set` ({ on }) | `check` | `forget`. */
 async function stealth({ op="state", tokenId, on=true }={}) {
   const token = tokenOf({ tokenId });
-  if ( op === "set" ) await setSneaking(token, on);
+  if ( op === "set" ) await setHidden(token, on);
   if ( op === "check" ) await stealthCheck(token.parent);
   const point = lightAtPoint(stealthPoint(token));
-  return { sneaking: isSneaking(token), spottedBy: spottedBy(token).map(id => token.parent.tokens.get(id)?.name ?? id),
+  return { hidden: isHidden(token), sneaking: isHidden(token), spottedBy: spottedBy(token).map(id => token.parent.tokens.get(id)?.name ?? id),
     views: Object.fromEntries(Object.entries(stealthViews(token.id)).map(([id, v]) => [token.parent.tokens.get(id)?.name ?? id, v])),
     light: point?.level ?? null };
 }

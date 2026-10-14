@@ -1,6 +1,6 @@
 /**
- * §183 : l'interface du mode furtif — le raccourci (Alt+C par défaut, réglable dans les commandes de Foundry) qui bascule les tokens
- * contrôlés, et, sur le client d'un joueur dont un token est en mode furtif, les **cônes de vision** (§182) des créatures qu'il voit
+ * §183, §185 : l'interface de la Furtivité — le raccourci (Alt+C par défaut, réglable dans les commandes de Foundry) qui prend l'action
+ * Furtivité hors combat pour les tokens contrôlés (ou en sort), et, sur le client d'un joueur dont un token est caché, les **cônes de vision** (§182) des créatures qu'il voit
  * sur la scène, découpés par les murs (polygone de vision du cœur, `ClockwiseSweepPolygon`, angle et rotation du token : la convention
  * du cœur, shapes/limited-angle-polygon.mjs:53). Rien n'est écrit : un dessin local.
  */
@@ -9,7 +9,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc } from "../runtime/shared.mjs";
 import { coneOf } from "../adapter/cone.mjs";
-import { isSneaking, setSneaking } from "../runtime/stealth.mjs";
+import { isHidden, setHidden } from "../runtime/stealth.mjs";
 
 const FILL = 0xd94040;
 const RANGE_CELLS = 12;   // portée dessinée sans portée de vue sur le token : douze cases
@@ -27,7 +27,7 @@ function outOfPlay(doc) {
 
 /** Les tokens en mode furtif que ce client possède (sur la scène affichée). */
 function mySneakers() {
-  return (canvas?.tokens?.placeables ?? []).filter(t => t.document.isOwner && isSneaking(t.document)
+  return (canvas?.tokens?.placeables ?? []).filter(t => t.document.isOwner && isHidden(t.document)
     && !(game.user.isGM && !t.controlled));
 }
 
@@ -81,10 +81,9 @@ export function registerStealthUI() {
     onDown: () => {
       const tokens = (canvas?.tokens?.controlled ?? []).filter(t => t.document.isOwner);
       if ( !tokens.length ) return false;
-      Promise.all(tokens.map(t => setSneaking(t.document))).then(results => {
-        const refused = results.find(r => r.reason === "inCombat");
-        if ( refused ) ui.notifications.info(loc("Furtif.EnCombat"));
-        else ui.notifications.info(loc(results[0]?.sneaking ? "Furtif.Entre" : "Furtif.Sort"));
+      // §185 : l'action Furtivité (hors combat, sans coût) ou en sortir ; ses messages viennent de runtime/hide.mjs.
+      Promise.all(tokens.map(t => setHidden(t.document))).then(results => {
+        if ( results.some(r => r.reason === "inCombat") ) ui.notifications.info(loc("Furtif.EnCombat"));
       });
       return true;
     }

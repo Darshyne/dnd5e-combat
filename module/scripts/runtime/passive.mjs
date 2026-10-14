@@ -15,6 +15,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { hiddenEffectsOf } from "../adapter/hide.mjs";
 import { hiddenDcOf, passiveObservers } from "../adapter/search.mjs";
 import { passiveNotice } from "../core/search.mjs";
+import { stealthRules } from "../adapter/stealth.mjs";
 import { route } from "./router.mjs";
 import { log, loc, notice } from "./shared.mjs";
 
@@ -30,7 +31,8 @@ function recipients(actor, withOwners) {
 async function judge(hidden) {
   const mode = game.settings.get(MODULE_ID, SETTING);
   const actor = hidden?.actor;
-  if ( (mode === "off") || !actor ) return [];
+  // §185 : en règles BG3, la détection est celle de runtime/stealth.mjs (un test à chaque entrée dans un champ de vision).
+  if ( (mode === "off") || !actor || (stealthRules() === "bg3") ) return [];
   const dc = hiddenDcOf(actor);
   if ( dc === null ) return [];
   const effects = hiddenEffectsOf(actor);

@@ -32,7 +32,7 @@ import { convertLength } from "../core/units.mjs";
 import { sensesThrough, DEVILS_SIGHT } from "../core/light.mjs";
 import { revealedInvisible, seesInvisible } from "./facts.mjs";
 import { outsideCone } from "./cone.mjs";
-import { sneakHides } from "./stealth.mjs";
+import { hiddenFrom } from "./stealth.mjs";
 
 const SOURCE_PREFIX = "dnd5e-combat";
 
@@ -152,15 +152,15 @@ function unveiled(token) {
  * compris, aux positions validées.
  * @param {TokenDocument} observer
  * @param {TokenDocument} target
- * @param {{ignoreSneak?: boolean}} [options]  §184 : juger comme si la cible n'était pas en mode furtif (la détection elle-même).
+ * @param {{ignoreHidden?: boolean}} [options]  §185 : juger comme si la cible n'était pas cachée (la détection elle-même).
  * @returns {boolean|null}  null : impossible à dire ici (canevas absent, token non dessiné).
  */
-export function canSee(observer, target, { ignoreSneak=false }={}) {
+export function canSee(observer, target, { ignoreHidden=false }={}) {
   if ( !canvas?.ready || !observer || !target ) return null;
   if ( observer === target ) return true;
   if ( !target.object || target.hidden ) return false;   // un token caché par le MJ est hors jeu pour tout le monde
   if ( outsideCone(observer, target) ) return false;   // §182 : hors combat, une créature du MJ ne voit que devant elle
-  if ( !ignoreSneak && sneakHides(observer, target) ) return false;   // §184 : un PJ furtif qu'elle n'a pas repéré
+  if ( !ignoreHidden && hiddenFrom(observer, target) ) return false;   // §185 : caché, pour un ennemi qui ne l'a pas repéré
   const source = sourceFor(observer);
   if ( !source ) return null;
   const config = testsFor(target, observer);

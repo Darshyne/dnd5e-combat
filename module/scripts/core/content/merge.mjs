@@ -3,10 +3,71 @@
  */
 
 import { isObject } from "./shared.mjs";
+
 /**
- * Combine les couches, de la moins à la plus spécifique (module → monde → item). Par clé : une liste (`triggers`, `reactions`,
- * `counter`…) est REMPLACÉE, elle se réécrit entière ; la plupart des objets de réglage (`aura`, `onHit`, `choice`, `targets`… :
- * voir chaque ligne ci-dessous) sont fusionnés champ par champ (corriger un rayon sans redire le reste).
+ * Comment une clé passe d'une couche à la suivante :
+ *  - `replace`   la valeur de la couche la plus spécifique, telle quelle ;
+ *  - `shallow`   un objet de réglage fusionné champ par champ (corriger un rayon sans redire le reste) ;
+ *  - `copy`      un objet remplacé entier (une copie) ; `list` : une liste remplacée entière (une copie) ;
+ *  - `deep`      une copie profonde (objets imbriqués) ;
+ *  - `triggers`  la liste des déclarations, remplacée entière (une seule déclaration devient une liste) ;
+ *  - `trace`     un objet fusionné champ par champ, ou une valeur simple qui le remplace.
+ */
+const STRATEGIES = Object.freeze({
+  replace: (prev, value) => value,
+  shallow: (prev, value) => ({ ...(prev ?? {}), ...value }),
+  copy: (prev, value) => ({ ...value }),
+  list: (prev, value) => [...value],
+  deep: (prev, value) => JSON.parse(JSON.stringify(value)),
+  triggers: (prev, value) => (Array.isArray(value) ? [...value] : [value]),
+  trace: (prev, value) => ((typeof value === "object") ? { ...((typeof prev === "object") ? prev : {}), ...value } : value)
+});
+
+/** La stratégie de chaque clé d'entrée (toutes celles de `ENTRY_KEYS`, tests/content.test.mjs), dans l'ordre où elles s'écrivent. */
+export const MERGE = Object.freeze({
+  triggers: "triggers", aura: "shallow", onHit: "shallow", choice: "shallow", targets: "shallow", trace: "trace",
+  enchantTarget: "replace", ranges: "shallow", tether: "shallow", pact: "shallow", damageShield: "shallow",
+  hitDiceHeal: "shallow", teleport: "shallow", lineDash: "shallow", absorb: "shallow", summon: "shallow",
+  movable: "shallow", burst: "shallow", recast: "replace", obscures: "replace", revealsInvisible: "replace",
+  effectsExpire: "replace", usageLimits: "shallow", healMax: "replace", duplicates: "replace", reactiveSpell: "replace",
+  saveAdvantage: "list", onFell: "shallow", bonusAttack: "shallow", projectiles: "shallow", leap: "shallow",
+  bolt: "shallow", light: "shallow", atTurnStart: "shallow", breaksOn: "list", noReactions: "replace",
+  actionOrBonus: "replace", cures: "list", curesAll: "list", potionEffect: "replace", castTargets: "replace",
+  effectChanges: "shallow", advantageIfFighting: "replace", emanation: "shallow", regeneration: "replace",
+  fortitude: "replace", noOpportunity: "replace", sharesSpace: "replace", placesSummons: "replace", drain: "replace",
+  swallow: "replace", savedEffects: "list", ignoresCloseCombat: "replace", sharedHp: "replace", failMargins: "shallow",
+  resize: "shallow", orders: "list", reactions: "copy", lastStand: "copy", counter: "copy", difficultTerrain: "copy",
+  storm: "copy", stableAtZero: "replace", wardsAtZero: "replace", zoneCharges: "replace", noDamage: "list",
+  selfZone: "deep", zoneAffects: "replace", pendingDie: "copy", rolledAc: "copy", swapPlaces: "copy", sweep: "copy",
+  commandStrike: "copy", zoneEnd: "copy", onNatural1: "copy", casterPulse: "deep", searchBonus: "copy", lifesteal: "copy",
+  rerollInitiative: "copy", effectStatuses: "deep", atZero: "deep", afterSneak: "copy", saveDamage: "shallow",
+  afterTeleport: "deep", effectsIf: "replace", contest: "copy", forOneAttack: "replace", basicActions: "shallow",
+  secondPhase: "shallow", changesForm: "shallow", empower: "shallow", discharge: "shallow", healsDownedMax: "replace",
+  sneakAttack: "replace", evasion: "replace", elusive: "replace", holdsStill: "replace", cunningStrikeMax: "replace",
+  grantsAction: "replace", movesAfter: "replace", studiedAttacks: "replace", heroicWarrior: "replace",
+  greatWeaponFighting: "replace", thrownDamage: "replace", rage: "replace", persistentRage: "replace", reckless: "replace",
+  relentless: "replace", blocksHealing: "replace", noOpportunityAttacks: "replace", byWounds: "replace",
+  oneAttack: "replace", martialArts: "replace", flurry: "replace", stunningStrike: "replace", openHand: "replace",
+  smite: "replace", supremeHealing: "replace", discipleOfLife: "replace", blessedHealer: "replace",
+  potentCantrip: "replace", sculptSpells: "replace", endurance: "replace", replacesAttack: "replace", hitRider: "replace",
+  metamagic: "replace", portent: "replace", dispel: "replace", zoneEffects: "replace", rollBonus: "replace",
+  transpose: "replace", stabilizes: "replace", carriedLight: "replace", kindles: "replace", savageAttacker: "replace",
+  initiativeSwap: "replace", healingRerolls: "replace", effectWhile: "replace", rangedFeat: "replace", piercer: "replace",
+  critMark: "replace", grappleDamage: "replace", haltOnReaction: "replace", concentrationBreaker: "replace",
+  interposeShield: "replace", elementalAdept: "replace", ignoresResistance: "replace", quickStand: "replace",
+  quickSearch: "replace", opportunityDisadvantage: "replace", peerlessAim: "replace", fortifiedHealing: "replace",
+  overwhelmingStrike: "replace", spellRecall: "replace", lastStandHeal: "replace", reactiveStrike: "replace",
+  ritualAdept: "replace", slotRecovery: "replace", fleeOnFailedSave: "replace", halfOnMiss: "replace",
+  saveDisadvantageFor: "replace", limitedAction: "replace", noActions: "replace", hpTiers: "replace",
+  endsCurses: "replace", tempHpPool: "replace", revivesFull: "replace", seesInvisible: "replace", globe: "replace",
+  blink: "replace", walls: "replace", pointWall: "replace", barrier: "replace", recastCost: "replace", levitate: "replace",
+  prismatic: "replace", wallSide: "replace", cellWall: "replace", coverThrough: "replace", thinWall: "replace",
+  wallAura: "replace", effectEnds: "shallow", effectThen: "shallow", actionEnds: "shallow", sneakBonus: "shallow",
+  cunningStrikes: "shallow"
+});
+
+/**
+ * Combine les couches, de la moins à la plus spécifique (module → monde → item), clé par clé selon `MERGE`.
  * @param {Array<object|null|undefined>} layers
  * @returns {object|null}  null si aucune couche ne dit rien.
  */
@@ -15,105 +76,7 @@ export function mergeEntries(layers) {
   for ( const layer of layers ) {
     if ( !isObject(layer) || !Object.keys(layer).length ) continue;
     out ??= {};
-    if ( "triggers" in layer ) out.triggers = Array.isArray(layer.triggers) ? [...layer.triggers] : [layer.triggers];
-    if ( "aura" in layer ) out.aura = { ...(out.aura ?? {}), ...layer.aura };
-    if ( "onHit" in layer ) out.onHit = { ...(out.onHit ?? {}), ...layer.onHit };
-    if ( "choice" in layer ) out.choice = { ...(out.choice ?? {}), ...layer.choice };
-    if ( "targets" in layer ) out.targets = { ...(out.targets ?? {}), ...layer.targets };
-    if ( "trace" in layer ) out.trace = (typeof layer.trace === "object") ? { ...((typeof out.trace === "object") ? out.trace : {}), ...layer.trace } : layer.trace;
-    if ( "enchantTarget" in layer ) out.enchantTarget = layer.enchantTarget;
-    if ( "ranges" in layer ) out.ranges = { ...(out.ranges ?? {}), ...layer.ranges };
-    if ( "tether" in layer ) out.tether = { ...(out.tether ?? {}), ...layer.tether };
-    if ( "pact" in layer ) out.pact = { ...(out.pact ?? {}), ...layer.pact };
-    if ( "damageShield" in layer ) out.damageShield = { ...(out.damageShield ?? {}), ...layer.damageShield };
-    if ( "hitDiceHeal" in layer ) out.hitDiceHeal = { ...(out.hitDiceHeal ?? {}), ...layer.hitDiceHeal };
-    if ( "teleport" in layer ) out.teleport = { ...(out.teleport ?? {}), ...layer.teleport };
-    if ( "lineDash" in layer ) out.lineDash = { ...(out.lineDash ?? {}), ...layer.lineDash };
-    if ( "absorb" in layer ) out.absorb = { ...(out.absorb ?? {}), ...layer.absorb };
-    if ( "summon" in layer ) out.summon = { ...(out.summon ?? {}), ...layer.summon };
-    if ( "movable" in layer ) out.movable = { ...(out.movable ?? {}), ...layer.movable };
-    if ( "burst" in layer ) out.burst = { ...(out.burst ?? {}), ...layer.burst };
-    if ( "recast" in layer ) out.recast = layer.recast;
-    if ( "obscures" in layer ) out.obscures = layer.obscures;
-    if ( "revealsInvisible" in layer ) out.revealsInvisible = layer.revealsInvisible;
-    if ( "effectsExpire" in layer ) out.effectsExpire = layer.effectsExpire;
-    if ( "usageLimits" in layer ) out.usageLimits = { ...(out.usageLimits ?? {}), ...layer.usageLimits };
-    if ( "healMax" in layer ) out.healMax = layer.healMax;
-    if ( "duplicates" in layer ) out.duplicates = layer.duplicates;
-    if ( "reactiveSpell" in layer ) out.reactiveSpell = layer.reactiveSpell;
-    if ( "saveAdvantage" in layer ) out.saveAdvantage = [...layer.saveAdvantage];
-    if ( "onFell" in layer ) out.onFell = { ...(out.onFell ?? {}), ...layer.onFell };
-    if ( "bonusAttack" in layer ) out.bonusAttack = { ...(out.bonusAttack ?? {}), ...layer.bonusAttack };
-    if ( "projectiles" in layer ) out.projectiles = { ...(out.projectiles ?? {}), ...layer.projectiles };
-    if ( "leap" in layer ) out.leap = { ...(out.leap ?? {}), ...layer.leap };
-    if ( "bolt" in layer ) out.bolt = { ...(out.bolt ?? {}), ...layer.bolt };
-    if ( "light" in layer ) out.light = { ...(out.light ?? {}), ...layer.light };
-    if ( "atTurnStart" in layer ) out.atTurnStart = { ...(out.atTurnStart ?? {}), ...layer.atTurnStart };
-    // §16.47
-    if ( "breaksOn" in layer ) out.breaksOn = [...layer.breaksOn];
-    if ( "noReactions" in layer ) out.noReactions = layer.noReactions;
-    if ( "actionOrBonus" in layer ) out.actionOrBonus = layer.actionOrBonus;   // §77
-    if ( "cures" in layer ) out.cures = [...layer.cures];
-    if ( "curesAll" in layer ) out.curesAll = [...layer.curesAll];
-    if ( "potionEffect" in layer ) out.potionEffect = layer.potionEffect;
-    if ( "castTargets" in layer ) out.castTargets = layer.castTargets;
-    if ( "effectChanges" in layer ) out.effectChanges = { ...(out.effectChanges ?? {}), ...layer.effectChanges };
-    if ( "advantageIfFighting" in layer ) out.advantageIfFighting = layer.advantageIfFighting;
-    if ( "emanation" in layer ) out.emanation = { ...(out.emanation ?? {}), ...layer.emanation };
-    if ( "regeneration" in layer ) out.regeneration = layer.regeneration;
-    if ( "fortitude" in layer ) out.fortitude = layer.fortitude;
-    if ( "noOpportunity" in layer ) out.noOpportunity = layer.noOpportunity;
-    if ( "sharesSpace" in layer ) out.sharesSpace = layer.sharesSpace;   // §105
-    if ( "placesSummons" in layer ) out.placesSummons = layer.placesSummons;   // §109
-    if ( "drain" in layer ) out.drain = layer.drain;
-    if ( "swallow" in layer ) out.swallow = layer.swallow;
-    if ( "savedEffects" in layer ) out.savedEffects = [...layer.savedEffects];
-    if ( "ignoresCloseCombat" in layer ) out.ignoresCloseCombat = layer.ignoresCloseCombat;
-    if ( "sharedHp" in layer ) out.sharedHp = layer.sharedHp;
-    if ( "failMargins" in layer ) out.failMargins = { ...(out.failMargins ?? {}), ...layer.failMargins };
-    if ( "resize" in layer ) out.resize = { ...(out.resize ?? {}), ...layer.resize };
-    if ( "orders" in layer ) out.orders = [...layer.orders];
-    if ( "reactions" in layer ) out.reactions = { ...layer.reactions };
-    if ( "lastStand" in layer ) out.lastStand = { ...layer.lastStand };
-    if ( "counter" in layer ) out.counter = { ...layer.counter };
-    if ( "difficultTerrain" in layer ) out.difficultTerrain = { ...layer.difficultTerrain };   // §69
-    if ( "storm" in layer ) out.storm = { ...layer.storm };   // §70
-    if ( "stableAtZero" in layer ) out.stableAtZero = layer.stableAtZero;   // §71
-    if ( "wardsAtZero" in layer ) out.wardsAtZero = layer.wardsAtZero;   // §73
-    if ( "zoneCharges" in layer ) out.zoneCharges = layer.zoneCharges;   // §75
-    if ( "noDamage" in layer ) out.noDamage = [...layer.noDamage];   // §81
-    if ( "selfZone" in layer ) out.selfZone = JSON.parse(JSON.stringify(layer.selfZone));   // §86
-    if ( "zoneAffects" in layer ) out.zoneAffects = layer.zoneAffects;   // §86
-    if ( "pendingDie" in layer ) out.pendingDie = { ...layer.pendingDie };   // §89
-    if ( "rolledAc" in layer ) out.rolledAc = { ...layer.rolledAc };   // §89
-    for ( const key of ["swapPlaces", "sweep", "commandStrike", "zoneEnd", "onNatural1"] ) if ( key in layer ) out[key] = { ...layer[key] };   // §90, §91, §93
-    if ( "casterPulse" in layer ) out.casterPulse = JSON.parse(JSON.stringify(layer.casterPulse));   // §91
-    if ( "searchBonus" in layer ) out.searchBonus = { ...layer.searchBonus };   // §94
-    for ( const key of ["lifesteal", "rerollInitiative"] ) if ( key in layer ) out[key] = { ...layer[key] };   // §120
-    if ( "effectStatuses" in layer ) out.effectStatuses = JSON.parse(JSON.stringify(layer.effectStatuses));   // §96
-    if ( "atZero" in layer ) out.atZero = JSON.parse(JSON.stringify(layer.atZero));   // §95
-    if ( "afterSneak" in layer ) out.afterSneak = { ...layer.afterSneak };   // §95
-    if ( "saveDamage" in layer ) out.saveDamage = { ...(out.saveDamage ?? {}), ...layer.saveDamage };   // §92
-    if ( "afterTeleport" in layer ) out.afterTeleport = JSON.parse(JSON.stringify(layer.afterTeleport));   // §92
-    if ( "effectsIf" in layer ) out.effectsIf = layer.effectsIf;   // §71
-    if ( "contest" in layer ) out.contest = { ...layer.contest };   // §72
-    if ( "forOneAttack" in layer ) out.forOneAttack = layer.forOneAttack;
-    if ( "basicActions" in layer ) out.basicActions = { ...(out.basicActions ?? {}), ...layer.basicActions };
-    if ( "secondPhase" in layer ) out.secondPhase = { ...(out.secondPhase ?? {}), ...layer.secondPhase };
-    if ( "changesForm" in layer ) out.changesForm = { ...(out.changesForm ?? {}), ...layer.changesForm };   // §76
-    // §19.9
-    if ( "empower" in layer ) out.empower = { ...(out.empower ?? {}), ...layer.empower };
-    if ( "discharge" in layer ) out.discharge = { ...(out.discharge ?? {}), ...layer.discharge };
-    if ( "healsDownedMax" in layer ) out.healsDownedMax = layer.healsDownedMax;
-    // §20
-    for ( const key of ["sneakAttack", "evasion", "elusive", "holdsStill", "cunningStrikeMax", "grantsAction", "movesAfter", "studiedAttacks",
-      "heroicWarrior", "greatWeaponFighting", "thrownDamage", "rage", "persistentRage", "reckless", "relentless", "blocksHealing",
-      "noOpportunityAttacks", "byWounds", "oneAttack", "martialArts", "flurry", "stunningStrike", "openHand", "smite", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "replacesAttack", "hitRider", "metamagic", "portent", "dispel", "zoneEffects", "rollBonus", "transpose", "stabilizes", "carriedLight", "kindles", "savageAttacker", "initiativeSwap", "healingRerolls", "effectWhile", "rangedFeat", "piercer", "critMark", "grappleDamage", "haltOnReaction", "concentrationBreaker", "interposeShield", "elementalAdept", "ignoresResistance", "quickStand", "quickSearch", "opportunityDisadvantage", "peerlessAim", "fortifiedHealing", "overwhelmingStrike", "spellRecall", "lastStandHeal", "reactiveStrike", "ritualAdept", "slotRecovery", "fleeOnFailedSave", "halfOnMiss", "saveDisadvantageFor", "limitedAction", "noActions", "hpTiers", "endsCurses", "tempHpPool", "revivesFull", "seesInvisible", "globe", "blink", "walls", "pointWall", "barrier", "recastCost", "levitate", "prismatic", "wallSide", "cellWall", "coverThrough", "thinWall", "wallAura"] ) if ( key in layer ) out[key] = layer[key];   // §129–§135, §157
-    if ( "effectEnds" in layer ) out.effectEnds = { ...(out.effectEnds ?? {}), ...layer.effectEnds };
-    if ( "effectThen" in layer ) out.effectThen = { ...(out.effectThen ?? {}), ...layer.effectThen };
-    if ( "actionEnds" in layer ) out.actionEnds = { ...(out.actionEnds ?? {}), ...layer.actionEnds };
-    if ( "sneakBonus" in layer ) out.sneakBonus = { ...(out.sneakBonus ?? {}), ...layer.sneakBonus };
-    if ( "cunningStrikes" in layer ) out.cunningStrikes = { ...(out.cunningStrikes ?? {}), ...layer.cunningStrikes };
+    for ( const [key, how] of Object.entries(MERGE) ) if ( key in layer ) out[key] = STRATEGIES[how](out[key], layer[key]);
   }
   return out;
 }

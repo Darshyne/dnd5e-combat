@@ -21,6 +21,39 @@ export function isExecutor() {
   return game.users.activeGM?.isSelf === true;
 }
 
+/**
+ * Faire `handler(payload)` chez le MJ actif : ici si l'on est lui, sinon par la requête `query` (`CONFIG.queries`). Sans MJ actif :
+ * l'avertissement `noGm` (clé de traduction, s'il y en a une) et `fallback`. Une requête sans réponse (délai, erreur) rend
+ * `fallback`, journalisée sous `label` s'il est donné. Une erreur du traitement local, elle, remonte.
+ * @param {string} query
+ * @param {(payload: object) => any} handler
+ * @param {object} payload
+ * @param {{timeout?: number, noGm?: string|null, fallback?: any, label?: string|null}} [options]
+ */
+export async function viaActiveGM(query, handler, payload, { timeout=10000, noGm=null, fallback=null, label=null }={}) {
+  const gm = game.users.activeGM;
+  if ( !gm ) {
+    if ( noGm ) ui.notifications.warn(loc(noGm));
+    return fallback;
+  }
+  if ( gm.isSelf ) return handler(payload);
+  return gm.query(query, payload, { timeout }).catch(err => {
+    if ( label ) console.warn(`${MODULE_ID} | ${label}`, err);
+    return fallback;
+  });
+}
+
+/**
+ * Un acte sur un document : ici si ce client le possède (`isOwner`), sinon par le MJ actif (`query`), sans avertissement. Pas de MJ
+ * actif, ou pas de réponse : `fallback`.
+ */
+export async function viaOwnerOrGM(isOwner, query, handler, payload, { timeout=10000, fallback=null }={}) {
+  if ( isOwner ) return handler(payload);
+  const gm = game.users.activeGM;
+  if ( !gm ) return fallback;
+  return gm.query(query, payload, { timeout }).catch(() => fallback);
+}
+
 /** Au-delà, on juge sans attendre le canevas (et on le dit). */
 export const CANVAS_WAIT_MAX_MS = 5000;
 

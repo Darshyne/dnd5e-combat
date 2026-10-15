@@ -25,7 +25,7 @@ import { droppedByNeighbour } from "../adapter/orders.mjs";
 import { budgetIssues, spendBudget } from "./neighbours.mjs";
 import { askAnyway } from "./turn.mjs";
 import { route } from "./router.mjs";
-import { log, loc, notice } from "./shared.mjs";
+import { log, loc, notice, viaActiveGM } from "./shared.mjs";
 
 export const POCKET_QUERY = `${MODULE_ID}.familiarPocket`;
 export const RECALL_QUERY = `${MODULE_ID}.familiarRecall`;
@@ -63,10 +63,8 @@ async function legalForMaster(master, title) {
 }
 
 function askGM(query, payload, here) {
-  const gm = game.users.activeGM;
-  if ( !gm ) { ui.notifications.warn(loc("Familier.SansMJ")); return false; }
-  if ( gm.isSelf ) return here(payload, { user: game.user });
-  return gm.query(query, payload, { timeout: 15000 }).catch(err => { console.warn(`${MODULE_ID} | familiar`, err); return false; });
+  return viaActiveGM(query, p => here(p, { user: game.user }), payload,
+    { timeout: 15000, noGm: "Familier.SansMJ", fallback: false, label: "familiar" });
 }
 
 /**

@@ -8,7 +8,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { stabilize } from "../adapter/death.mjs";
 import { route } from "./router.mjs";
-import { log, loc, notice } from "./shared.mjs";
+import { log, loc, notice, viaOwnerOrGM } from "./shared.mjs";
 
 export const STABILIZE_QUERY = `${MODULE_ID}.stabilize`;
 
@@ -27,8 +27,7 @@ async function onPostUse(activity, usageConfig, results) {
   const token = first ? await fromUuid(first) : null;
   if ( !token?.actor ) { log(`${activity.item.name}: no target to stabilize`); return; }
   const args = { target: token.uuid, activity: activity.uuid };
-  const done = token.actor.isOwner ? await handleStabilize(args)
-    : await game.users.activeGM?.query(STABILIZE_QUERY, args, { timeout: 10000 }).catch(() => false);
+  const done = await viaOwnerOrGM(!!token.actor.isOwner, STABILIZE_QUERY, handleStabilize, args, { fallback: false });
   if ( done ) log(`${activity.item.name}: ${token.name} stabilized by ${activity.actor.name}`);
   else notice(token, loc("Retour.PasAStabiliser", { name: token.name }));
 }

@@ -10,7 +10,7 @@ import { rewritePactChanges } from "../core/pact.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
 import { tokenOnViewedScene } from "../adapter/vision.mjs";
 import { route } from "./router.mjs";
-import { log, loc, notice } from "./shared.mjs";
+import { log, loc, notice, viaActiveGM } from "./shared.mjs";
 
 export const ENCHANT_QUERY = `${MODULE_ID}.enchant`;
 
@@ -65,9 +65,8 @@ async function onPostUse(activity, usageConfig, results) {
   const concentration = results?.effects?.find?.(e => e.statuses?.has?.("concentrating")) ?? concentrationOn(activity.item);
   const payload = { activity: activity.uuid, item: itemUuid, profile: usageConfig.enchantmentProfile,
     message: results?.message?.uuid ?? null, concentration: concentration?.uuid ?? null, pactDamage: usageConfig[MODULE_ID]?.pactDamage ?? null };
-  const gm = game.users.activeGM;
-  if ( !gm ) return ui.notifications.warn(loc("Enchant.SansMJ"));
-  const name = gm.isSelf ? await handleEnchant(payload) : await gm.query(ENCHANT_QUERY, payload, { timeout: 10000 }).catch(() => null);
+  if ( !game.users.activeGM ) return ui.notifications.warn(loc("Enchant.SansMJ"));
+  const name = await viaActiveGM(ENCHANT_QUERY, handleEnchant, payload);
   const item = await fromUuid(itemUuid);
   const token = tokenOnViewedScene(item?.parent);
   if ( name && token ) notice(token, loc("Enchant.Applique", { item: item.name, effect: name }), "gain");

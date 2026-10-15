@@ -9,7 +9,7 @@ import { route } from "./router.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
 import { usageTokenOf } from "../adapter/turn.mjs";
-import { log, loc, notice } from "./shared.mjs";
+import { log, loc, notice, viaOwnerOrGM } from "./shared.mjs";
 
 export const CURE_QUERY = `${MODULE_ID}.cure`;
 
@@ -52,8 +52,8 @@ async function handleCure({ target, status, value=null }) {
 }
 
 /** Un acte sur la cible : ici si on la possède, sinon par le MJ actif. */
-const onTarget = (target, status, value=null) => (target.actor?.isOwner ? handleCure({ target: target.uuid, status, value })
-  : game.users.activeGM?.query(CURE_QUERY, { target: target.uuid, status, value }, { timeout: 10000 }).catch(() => 0));
+const onTarget = (target, status, value=null) =>
+  viaOwnerOrGM(!!target.actor?.isOwner, CURE_QUERY, handleCure, { target: target.uuid, status, value }, { fallback: 0 });
 
 /** Fait cesser `status` sur le token `target` (TokenDocument). Épuisement : un niveau de moins (§160, Restauration suprême). */
 export async function cureStatus(target, status) {

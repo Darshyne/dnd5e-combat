@@ -16,7 +16,7 @@ import { usageTokenOf } from "../adapter/turn.mjs";
 import { searchRollMode, searchVerdicts } from "../core/search.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { route } from "./router.mjs";
-import { log, loc, notice } from "./shared.mjs";
+import { log, loc, notice, viaOwnerOrGM } from "./shared.mjs";
 
 export const SEARCH_QUERY = `${MODULE_ID}.search`;
 
@@ -28,8 +28,7 @@ async function removeHiding(targetUuid) {
 }
 
 async function reveal(token) {
-  if ( token.actor?.isOwner ) return removeHiding(token.uuid);
-  return game.users.activeGM?.query(SEARCH_QUERY, { target: token.uuid }, { timeout: 10000 }).catch(() => 0) ?? 0;
+  return viaOwnerOrGM(!!token.actor?.isOwner, SEARCH_QUERY, ({ target }) => removeHiding(target), { target: token.uuid }, { fallback: 0 });
 }
 
 async function onPostUse(activity) {

@@ -14,7 +14,7 @@ import { invalidateVision } from "../adapter/vision.mjs";
 import { veilOnCreate, veilExisting, unveil, isRevealEffect } from "../adapter/reveal.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
-import { log, loc, notice } from "./shared.mjs";
+import { log, loc, notice, viaActiveGM } from "./shared.mjs";
 
 export const EXTINGUISH_QUERY = `${MODULE_ID}.extinguish`;
 
@@ -26,11 +26,8 @@ async function handleExtinguish({ item: itemUuid }, { user }={}) {
 }
 
 /** Éteindre les lumières précédentes d'un item : par le MJ actif, qui peut retirer des tokens. */
-async function extinguishBefore(item) {
-  const gm = game.users.activeGM;
-  if ( !gm ) return 0;
-  if ( gm.isSelf ) return handleExtinguish({ item: item.uuid });
-  return gm.query(EXTINGUISH_QUERY, { item: item.uuid }, { timeout: 10000 }).catch(() => 0);
+function extinguishBefore(item) {
+  return viaActiveGM(EXTINGUISH_QUERY, handleExtinguish, { item: item.uuid }, { fallback: 0 });
 }
 
 /** §16.35 : intention « éteindre » (bouton de la fenêtre de choix) — les lumières de l'item s'éteignent, rien n'est lancé. */

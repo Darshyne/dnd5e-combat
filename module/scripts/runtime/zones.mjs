@@ -13,7 +13,7 @@ import { activeZoneOf, zoneCenter, moveZoneTo, readAreaState } from "../adapter/
 import { combatantFor, isOwnTurn, readBudget, writeBudget } from "../adapter/turn.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { askAnyway } from "./turn.mjs";
-import { log, loc } from "./shared.mjs";
+import { log, loc, viaActiveGM } from "./shared.mjs";
 import { lengthIn } from "../adapter/units.mjs";
 
 export const MOVE_ZONE_QUERY = `${MODULE_ID}.moveZone`;
@@ -64,10 +64,7 @@ export async function moveZone(activity, point) {
   }
   if ( lines.length && !(await askAnyway(`${activity.item.name} — ${activity.actor?.name ?? ""}`, lines)) ) return true;
   const payload = { region: region.uuid, point: { x: point.x, y: point.y }, actor: activity.actor?.uuid ?? null, cost };
-  const gm = game.users.activeGM;
-  if ( !gm ) { ui.notifications.warn(loc("Zone.SansMJ")); return true; }
-  if ( gm.isSelf ) await handleMoveZone(payload);
-  else await gm.query(MOVE_ZONE_QUERY, payload, { timeout: 10000 }).catch(err => console.warn(`${MODULE_ID} | area move`, err));
+  await viaActiveGM(MOVE_ZONE_QUERY, handleMoveZone, payload, { noGm: "Zone.SansMJ", label: "area move" });
   return true;
 }
 

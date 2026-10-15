@@ -10,7 +10,7 @@ import { readAreaState } from "../adapter/areas.mjs";
 import { wallSideRuleOf, wallGeometryOf, sideDepthOf, sideRegionOf, isCellWall, isThinWall, wallAuraRuleOf, auraRegionOf } from "../adapter/wall-side.mjs";
 import { defaultSide, sideShapes, ringShapes, innerRingShapes, auraShapes } from "../core/wall.mjs";
 import { route } from "./router.mjs";
-import { log, loc } from "./shared.mjs";
+import { log, loc, viaActiveGM } from "./shared.mjs";
 import { enqueue } from "./queue.mjs";
 
 export const FLIP_WALL_QUERY = `${MODULE_ID}.flipWallSide`;
@@ -156,11 +156,8 @@ export function handleFlipWallSide({ region: uuid, side: wanted=null }) {
 
 /** Intention « retourner la face brûlante de ce mur » ou « la mettre de ce côté » (le client qui agit ; le MJ actif écrit). */
 export async function flipWallSide(wall, side=null) {
-  const gm = game.users.activeGM;
-  if ( !gm ) { ui.notifications.warn(loc("Zone.SansMJ")); return false; }
   const payload = { region: wall.uuid, ...(side ? { side } : {}) };
-  const done = gm.isSelf ? await handleFlipWallSide(payload)
-    : await gm.query(FLIP_WALL_QUERY, payload, { timeout: 10000 }).catch(err => { console.warn(`${MODULE_ID} | wall side`, err); return false; });
+  const done = await viaActiveGM(FLIP_WALL_QUERY, handleFlipWallSide, payload, { noGm: "Zone.SansMJ", fallback: false, label: "wall side" });
   if ( done && !side ) ui.notifications.info(loc("MurFace.Retournee", { item: wall.name.replace(/\s*\[.*\]$/, "") }));
   return done;
 }

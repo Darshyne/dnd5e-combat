@@ -25,7 +25,7 @@ import {
 import { pulseAgainst } from "../adapter/areas.mjs";
 import { summonItemOf } from "../adapter/summons.mjs";
 import { route } from "./router.mjs";
-import { log, loc } from "./shared.mjs";
+import { log, loc, viaActiveGM } from "./shared.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { lengthIn } from "../adapter/units.mjs";
@@ -117,10 +117,7 @@ export async function dismissPilot(tokenDoc) {
   if ( !tokenDoc.getFlag(MODULE_ID, "summonedBy") ) {
     // Pas de concentration à rompre : le token lui-même part, par le MJ actif (un joueur ne supprime pas de token).
     if ( !canDismiss(tokenDoc) ) return false;
-    const gm = game.users.activeGM;
-    if ( !gm ) return false;
-    if ( gm.isSelf ) return handleDismiss({ token: tokenDoc.uuid });
-    return gm.query(DISMISS_QUERY, { token: tokenDoc.uuid }, { timeout: 10000 }).catch(() => false);
+    return viaActiveGM(DISMISS_QUERY, handleDismiss, { token: tokenDoc.uuid }, { fallback: false });
   }
   const effect = fromUuidSync(tokenDoc.getFlag(MODULE_ID, "summonedBy") ?? "", { strict: false });
   if ( !effect?.isOwner ) return false;

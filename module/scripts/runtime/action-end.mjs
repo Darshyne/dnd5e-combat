@@ -19,7 +19,7 @@ import { setStatus } from "../adapter/conditions.mjs";
 import { combatantFor, readBudget, writeBudget, isOwnTurn } from "../adapter/turn.mjs";
 import { joinToken } from "./actions.mjs";
 import { saveActivityOf } from "./triggers.mjs";
-import { log, loc, notice } from "./shared.mjs";
+import { log, loc, notice, viaActiveGM } from "./shared.mjs";
 
 export const ACTION_END_QUERY = `${MODULE_ID}.actionEnd`;
 
@@ -47,11 +47,8 @@ async function handleActionEnd({ effect: uuid }) {
   return true;
 }
 
-async function askExecutor(effect) {
-  const gm = game.users.activeGM;
-  if ( !gm ) { ui.notifications.warn(loc("Fin.SansMJ")); return false; }
-  if ( gm.isSelf ) return handleActionEnd({ effect: effect.uuid });
-  return gm.query(ACTION_END_QUERY, { effect: effect.uuid }, { timeout: 10000 }).catch(() => false);
+function askExecutor(effect) {
+  return viaActiveGM(ACTION_END_QUERY, handleActionEnd, { effect: effect.uuid }, { noGm: "Fin.SansMJ", fallback: false });
 }
 
 /** Les effets du porteur qu'il fait cesser lui-même par une action. */

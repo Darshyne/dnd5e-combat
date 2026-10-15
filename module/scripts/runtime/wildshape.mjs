@@ -7,7 +7,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { isWildShape, transformActor, revertForm, isWildShaped, formShouldEnd, expiredForms } from "../adapter/wildshape.mjs";
 import { route } from "./router.mjs";
-import { log, loc } from "./shared.mjs";
+import { log, viaActiveGM } from "./shared.mjs";
 
 export const TRANSFORM_QUERY = `${MODULE_ID}.transform`;
 export const REVERT_QUERY = `${MODULE_ID}.revertForm`;
@@ -40,11 +40,8 @@ async function handleRevert({ actor: actorUuid, reason=null }, { user }={}) {
 }
 
 /** Par le MJ actif, ou ici si l'on est lui. */
-async function asGM(query, handler, payload) {
-  const gm = game.users.activeGM;
-  if ( !gm ) { ui.notifications.warn(loc("Forme.SansMJ")); return false; }
-  if ( gm.isSelf ) return handler(payload);
-  return gm.query(query, payload, { timeout: 20000 }).catch(err => { console.warn(`${MODULE_ID} | Wild Shape`, err); return false; });
+function asGM(query, handler, payload) {
+  return viaActiveGM(query, handler, payload, { timeout: 20000, noGm: "Forme.SansMJ", fallback: false, label: "Wild Shape" });
 }
 
 /**

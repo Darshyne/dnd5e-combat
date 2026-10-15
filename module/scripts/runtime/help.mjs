@@ -12,11 +12,7 @@ import { basicActionOfActivity } from "../adapter/basics.mjs";
 import { helpMarksOn, helpMarksUsedBy, markHelped } from "../adapter/help.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
-
-const speakerTokenOf = message => {
-  const { scene, token } = message.speaker ?? {};
-  return (scene && token) ? game.scenes.get(scene)?.tokens.get(token) ?? null : null;
-};
+import { speakerTokenOf } from "../adapter/turn.mjs";
 
 async function onUsage(message) {
   const activity = message.getAssociatedActivity?.();

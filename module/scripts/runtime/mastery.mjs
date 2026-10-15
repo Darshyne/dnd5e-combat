@@ -17,7 +17,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
 import { masteryEffect, grazeDamage, toppleDC, cleaveModifier, markExpires } from "../core/mastery.mjs";
 import { masteryOf, attackModOf, marksOn, markData, markModifiers } from "../adapter/mastery.mjs";
-import { currentTurnKey, combatSceneActors } from "../adapter/turn.mjs";
+import { currentTurnKey, combatSceneActors, speakerTokenOf } from "../adapter/turn.mjs";
 import { pushAway } from "../adapter/movement.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { askChoice } from "../adapter/choices.mjs";
@@ -30,12 +30,6 @@ import { log, loc, notice } from "./shared.mjs";
 
 /** La clé du tour de combat en cours (« combat.round.tour »), ou null hors combat. */
 const turnKey = () => currentTurnKey();
-
-/** Le token qui parle dans un message, ou null. */
-function speakerToken(message) {
-  const { scene, token } = message?.speaker ?? {};
-  return game.scenes.get(scene)?.tokens.get(token) ?? null;
-}
 
 /** Propriétés physiques de l'arme que garde une part de dégâts (magique, argentée, adamantine). */
 const physical = weapon => Array.from(weapon?.system?.properties ?? []).filter(p => CONFIG.DND5E.itemProperties[p]?.isPhysical);
@@ -114,7 +108,7 @@ async function onResolution(resolution) {
   const attackMessage = game.messages.get(resolution.attack?.messageId ?? "");
   if ( !attackMessage ) return;
   seen.add(resolution.id);
-  const source = speakerToken(attackMessage);
+  const source = speakerTokenOf(attackMessage);
   const activity = fromUuidSync(resolution.activity, { strict: false });
   const weapon = activity?.item ?? null;
   if ( !source?.actor || !weapon ) return;
@@ -144,7 +138,7 @@ async function onResolution(resolution) {
 /* -------------------------------------------- */
 
 async function onAttackRolled(message) {
-  const source = speakerToken(message);
+  const source = speakerTokenOf(message);
   if ( !source?.actor ) return;
   const removed = new Set();
   for ( const t of message.system?.targets ?? [] ) {

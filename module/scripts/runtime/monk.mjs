@@ -17,7 +17,7 @@ import { STEPS } from "../core/action.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { strikeAgainst } from "../adapter/areas.mjs";
-import { currentTurnKey } from "../adapter/turn.mjs";
+import { currentTurnKey, speakerTokenOf } from "../adapter/turn.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log, loc } from "./shared.mjs";
@@ -88,11 +88,6 @@ function focusOf(actor, identifier) {
   return { item, left: Number.isFinite(left) ? left : 0 };
 }
 
-function speakerToken(message) {
-  const { scene, token } = message?.speaker ?? {};
-  return game.scenes.get(scene)?.tokens.get(token) ?? null;
-}
-
 async function stunningStrike(source, target, activity) {
   const found = ruleOf(source.actor, "stunningStrike");
   if ( !found || !monkWeapon(activity) ) return;
@@ -134,7 +129,7 @@ async function onResolution(resolution) {
   if ( (resolution?.step !== STEPS.DONE) || !resolution.plan?.attack ) return;
   const usage = game.messages.get(resolution.origin ?? "");
   const attackMessage = game.messages.get(resolution.attack?.messageId ?? "");
-  const source = speakerToken(attackMessage) ?? speakerToken(usage);
+  const source = speakerTokenOf(attackMessage) ?? speakerTokenOf(usage);
   const activity = fromUuidSync(resolution.activity, { strict: false });
   if ( !source?.actor || !activity ) return;
   for ( const t of resolution.targets ?? [] ) {

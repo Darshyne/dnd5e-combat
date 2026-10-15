@@ -9,7 +9,7 @@ import { select, stepsOf, BEARER_MOMENTS, damagedByOriginSide } from "../core/tr
 import { declarationsOf, declarationsOfEffects, factsFor, tokenOf, consumedMarks } from "../adapter/triggers.mjs";
 import { identifierOf } from "../adapter/content.mjs";
 import { comesFromItemEffect, originItemOf } from "../adapter/facts.mjs";
-import { usageTokenOf } from "../adapter/turn.mjs";
+import { usageTokenOf, speakerTokenOf } from "../adapter/turn.mjs";
 import { resaveAgainst } from "../adapter/areas.mjs";
 import { seesBetween } from "../adapter/vision.mjs";
 import { tallySettled } from "../core/tally.mjs";
@@ -196,8 +196,7 @@ function onTurnChange(combat, prior, current) {
  * L'attaque qui POSE la marque (Rayon traçant) la pose après son propre jet : elle ne la consomme pas.
  */
 async function onAttackRolled(message) {
-  const { scene, token } = message.speaker ?? {};
-  const sourceToken = (scene && token) ? game.scenes.get(scene)?.tokens.get(token) ?? null : null;
+  const sourceToken = speakerTokenOf(message);
   if ( !sourceToken ) return;
   const activity = message.getAssociatedActivity?.() ?? null;
   const removed = new Set();

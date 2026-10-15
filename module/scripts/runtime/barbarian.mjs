@@ -15,7 +15,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { isRaging, barbarianRule, statusEndsRage, endRage, keepRage, rageKeptOn, relentlessAtZero, recklessChoice } from "../adapter/rage.mjs";
 import { markData, marksOn } from "../adapter/mastery.mjs";
-import { combatantFor, isOwnTurn, readBudget, currentTurnKey, usageTokenOf } from "../adapter/turn.mjs";
+import { combatantFor, isOwnTurn, readBudget, currentTurnKey, usageTokenOf, speakerTokenOf } from "../adapter/turn.mjs";
 import { ensureDowned } from "../adapter/death.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { tokenOf } from "../adapter/facts.mjs";
@@ -24,12 +24,6 @@ import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log, loc, notice } from "./shared.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
-
-/** Le token qui parle dans un message, ou null. */
-function speakerToken(message) {
-  const { scene, token } = message?.speaker ?? {};
-  return game.scenes.get(scene)?.tokens.get(token) ?? null;
-}
 
 /** Une des cibles du message est-elle hostile à ce token ? */
 function hostileTarget(message, token) {
@@ -56,7 +50,7 @@ async function stopRage(actor, why) {
 /* -------------------------------------------- */
 
 async function onMessage(message) {
-  const token = speakerToken(message);
+  const token = speakerTokenOf(message);
   const actor = token?.actor ?? message.getAssociatedActor?.();
   if ( !actor ) return;
   if ( message.type === "usage" ) {

@@ -242,6 +242,12 @@ export function positionOf({ x, y, elevation, width, height, depth, shape, level
   return { x, y, elevation, width, height, depth: depthOf({ width, height, depth }), shape, level };
 }
 
+/** Le token qui parle dans un message (`speaker.scene` / `speaker.token`), ou null. */
+export function speakerTokenOf(message) {
+  const { scene, token } = message?.speaker ?? {};
+  return (scene && token) ? (game.scenes.get(scene)?.tokens.get(token) ?? null) : null;
+}
+
 /** Le token qui utilise une activité. `getUsageToken()` rend déjà un TokenDocument (activity/mixin.mjs:1252). */
 export function usageTokenOf(activity) {
   return activity.getUsageToken?.() ?? activity.actor?.token ?? activity.actor?.getActiveTokens()[0]?.document ?? null;

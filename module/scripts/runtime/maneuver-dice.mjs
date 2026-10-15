@@ -26,7 +26,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
 import { contentOf } from "../adapter/content.mjs";
-import { currentTurnKey, combatantFor, readBudget, writeBudget, distanceBetween, historyCosts } from "../adapter/turn.mjs";
+import { currentTurnKey, combatantFor, readBudget, writeBudget, distanceBetween, historyCosts, speakerTokenOf } from "../adapter/turn.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
 import { usesLeftFor } from "../adapter/inspiration.mjs";
 import { payWithoutUse } from "../adapter/reactions.mjs";
@@ -208,8 +208,7 @@ async function onUsageCard(message) {
   const activity = message.getAssociatedActivity?.();
   const entry = activity?.item ? contentOf(activity.item).entry : null;
   if ( !entry || !activity.actor ) return;
-  const { scene, token } = message.speaker ?? {};
-  const self = game.scenes.get(scene)?.tokens.get(token) ?? tokenOf(activity.actor);
+  const self = speakerTokenOf(message) ?? tokenOf(activity.actor);
   const other = fromUuidSync(message.system?.targets?.[0]?.token ?? "", { strict: false });
   if ( entry.commandStrike?.activity === activity.id ) await commandStrike(activity, activity.actor, other);
   const swapped = (entry.swapPlaces?.activity === activity.id) && self ? await swapPlaces(activity.item, self, other) : true;

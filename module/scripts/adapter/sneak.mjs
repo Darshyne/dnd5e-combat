@@ -17,6 +17,7 @@ import { turnKeyOf } from "../core/area.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
 import { factsFor } from "./facts.mjs";
 import { timedWait } from "./dialogs.mjs";
+import { speakerTokenOf } from "./turn.mjs";
 
 /** Types d'armes à distance de dnd5e (`CONFIG.DND5E.weaponTypes`) : une arme de corps à corps lancée n'en est pas une. */
 const RANGED_WEAPON_TYPES = Object.freeze(["simpleR", "martialR"]);
@@ -81,8 +82,7 @@ export function sneakAttackFor(activity, attackMessage) {
   const targets = attackMessage.system?.targets ?? [];
   if ( targets.length !== 1 ) return null;   // « une créature que vous touchez »
   const target = fromUuidSync(targets[0].token ?? "", { strict: false });
-  const { scene, token } = attackMessage.speaker ?? {};
-  const source = game.scenes.get(scene)?.tokens.get(token) ?? null;
+  const source = speakerTokenOf(attackMessage);
   if ( !target?.actor || !source ) return null;
   const weapon = activity.item;
   const dice = sneakDiceOf(item);

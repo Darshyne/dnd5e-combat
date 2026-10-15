@@ -16,7 +16,7 @@ import { contentOf } from "./content.mjs";
 import { translateShapes, shapeCenter, expiryTime, siblingsByMoment } from "../core/area.mjs";
 import { stepsOf, holds } from "../core/triggers.mjs";
 import { factsFor } from "./facts.mjs";
-import { committedPosition } from "./turn.mjs";
+import { committedPosition, speakerTokenOf } from "./turn.mjs";
 import { declarationsOfItem } from "./triggers.mjs";
 import { lengthIn } from "./units.mjs";
 
@@ -55,8 +55,7 @@ export function conditionalReplay(usageMessage, event, token) {
   const item = activity?.item;
   if ( !item ) return null;
   const caster = usageMessage.getAssociatedActor?.() ?? null;
-  const { scene, token: speaker } = usageMessage.speaker ?? {};
-  const casterToken = (scene && speaker) ? (game.scenes.get(scene)?.tokens.get(speaker) ?? null) : null;
+  const casterToken = speakerTokenOf(usageMessage);
   for ( const d of declarationsOfItem(item) ) {
     if ( !d.if || !d.on.includes(event) ) continue;
     const step = stepsOf(d, "replay").find(s => s.activity && item.system.activities?.get(s.activity));

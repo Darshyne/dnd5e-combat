@@ -32,6 +32,7 @@ import { declarationsOfItem } from "./triggers.mjs";
 import { isSpellCast, spellLevelOf, spellSchoolOf } from "./scrolls.mjs";
 import { templateOf } from "./template.mjs";
 import { isPotion, potionOfCast } from "./potions.mjs";
+import { speakerTokenOf } from "./turn.mjs";
 
 /** Clé stable d'un effet de l'activité (`_id` pour un effet de l'item, `uuid` pour un effet de référence). */
 export const effectKey = e => e._id ?? e.uuid;
@@ -74,8 +75,7 @@ const effectsOf = (activity, when, condition=null) => applicableEffectsOf(activi
 
 /** M5 (§18.8) : la variante d'attaque que la situation désigne, pour la première cible du message. */
 function attackVariant(message, activity, targets) {
-  const { scene, token } = message.speaker ?? {};
-  const attacker = game.scenes.get(scene)?.tokens.get(token) ?? null;
+  const attacker = speakerTokenOf(message);
   const target = targets[0]?.token ? fromUuidSync(targets[0].token) : null;
   return attacker ? useTimeVariant(activity, attacker, target) : null;
 }
@@ -153,10 +153,10 @@ const messageTargets = message => (message.system.targets ?? []).map(t => ({
 
 /** Celui qui parle dans le message, comme cible (activité qui ne vise que soi). */
 function selfTarget(message) {
-  const { scene, token: id, actor: actorId } = message.speaker ?? {};
+  const actorId = message.speaker?.actor;
   // §133 : une réaction utilisée sur le client d'un joueur qui n'a pas son token sélectionné (Parade du Duelliste défensif) parle sans
   // token (`speaker.token` null) : le token actif de l'acteur.
-  const token = game.scenes.get(scene)?.tokens.get(id)
+  const token = speakerTokenOf(message)
     ?? (actorId ? (game.actors.get(actorId)?.getActiveTokens?.(false, true)?.[0] ?? null) : null);
   return token?.actor ? [{ token: token.uuid, actor: token.actor.uuid, name: token.name, ac: null }] : [];
 }

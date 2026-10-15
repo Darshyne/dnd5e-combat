@@ -34,7 +34,7 @@ import { askChoice } from "../adapter/choices.mjs";
 import { tokenOf } from "../adapter/facts.mjs";
 import { movementCap } from "./actions.mjs";
 import { route } from "./router.mjs";
-import { log, loc, notice } from "./shared.mjs";
+import { log, loc, notice, sleep } from "./shared.mjs";
 
 const FLAG = "pendingDie";
 
@@ -63,7 +63,7 @@ async function onPostUse(activity, usageConfig, results) {
     const roll = await new Roll(activity.roll.formula, activity.getRollData()).evaluate();
     await roll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }), flavor: `${activity.item.name} : ${activity.roll.name || "CA"}` });
     // Après la résolution de l'utilitaire, qui pose l'effet de la donnée (vide) : on le remplace par le nôtre, le bonus écrit dedans.
-    await new Promise(r => setTimeout(r, 1500));
+    await sleep(1500);
     const effect = await placeItemEffect(activity.item, rolled.effect, actor);
     if ( effect ) {
       await effect.update({ "system.changes": [{ key: "system.attributes.ac.bonus", type: "add", value: String(roll.total) }] });

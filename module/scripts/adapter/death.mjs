@@ -29,6 +29,12 @@ import { planFortitude, pendingFortitude } from "./fortitude.mjs";
 import { risingAtZero } from "./rise.mjs";
 import { isWildShaped } from "./wildshape.mjs";
 
+/**
+ * Le temps laissé à dnd5e pour poser son état à 0 PV (Mort, Inconscient) sur le client qui a écrit les PV (`updateDowned`,
+ * data/actor/templates/attributes.mjs:732) avant qu'une règle du moteur ne le lise ou ne le remplace.
+ */
+export const AFTER_ZERO_HP_MS = 400;
+
 export const DEATH_QUERY = `${MODULE_ID}.deathSave`;
 const DEATH_TIMEOUT = 40000;
 
@@ -156,7 +162,7 @@ export async function ensureDowned(actor, { afterUpdate=false }={}) {
   // lui laisse un instant, et on ne pose l'état que s'il manque encore : une écriture des PV dans le delta d'un token non lié
   // (outil, macro) ne passe pas par `updateDowned`, et rien d'autre ne le poserait.
   if ( afterUpdate && !regenerates && (systemDowned(actor) === status) ) {
-    await new Promise(resolve => setTimeout(resolve, 400));
+    await new Promise(resolve => setTimeout(resolve, AFTER_ZERO_HP_MS));
     if ( actor.statuses.has(status) ) return null;
   }
   await setDeathStatus(actor, status);

@@ -28,14 +28,13 @@ import { attackReactors, askAttackReactions, rememberAttackMods } from "./reacti
 import { keepPendingAttack } from "./actions.mjs";
 import { seersOf, foretellFor } from "../adapter/portent.mjs";
 import { route } from "./router.mjs";
-import { log, loc } from "./shared.mjs";
+import { log, loc, sleep } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { castLevelFor } from "../adapter/counter.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 
 const TERMINAL = new Set([STEPS.DONE, STEPS.MISSED, STEPS.UNDONE]);
 const RESOLUTION_WAIT_MS = 60000;
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 /** Attend qu'une résolution soit tranchée, depuis n'importe quel client (on lit le flag). null au-delà du délai. */
 async function settled(messageId) {

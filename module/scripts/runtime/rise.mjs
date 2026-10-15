@@ -9,18 +9,18 @@
 import { MODULE_ID } from "../constants.mjs";
 import { riseAtZeroOf, settleRise, resetRise, beginRise, endRise } from "../adapter/rise.mjs";
 import { askChoice } from "../adapter/choices.mjs";
-import { ensureDowned } from "../adapter/death.mjs";
+import { ensureDowned, AFTER_ZERO_HP_MS } from "../adapter/death.mjs";
 import { tokenOf } from "../adapter/facts.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
-import { log, loc, notice } from "./shared.mjs";
+import { log, loc, notice, sleep } from "./shared.mjs";
 
 const lastDamage = new Map();
 
 function onZero(actor) {
   if ( !riseAtZeroOf(actor) ) return;
   return enqueue(`rise:${actor.uuid}`, async () => {
-    await new Promise(resolve => setTimeout(resolve, 400));   // dnd5e pose son état à 0 PV sur le client qui a écrit les PV
+    await sleep(AFTER_ZERO_HP_MS);
     const found = riseAtZeroOf(actor);
     if ( !found ) return;
     const { item, rule, activity } = found;
@@ -57,7 +57,7 @@ async function decide(actor, item, rule, activity) {
     if ( token?.object ) canvas.tokens.setTargets([token.id]);
     await activity.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: true } }, { configure: false })
       .catch(err => console.error(`${MODULE_ID} | ${item.name}: rise`, err));
-    await new Promise(resolve => setTimeout(resolve, 2500));
+    await sleep(2500);
     const hp = actor.system.attributes?.hp?.value ?? 0;
     if ( token ) notice(token, loc("Relever.Fait", { name: actor.name, hp }), "gain");
     log(`${item.name}: ${actor.name} rises with ${hp} Hit Points`);

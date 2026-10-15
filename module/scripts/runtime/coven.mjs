@@ -6,10 +6,11 @@
 import { sharedHpItemOf, shareHp, isSharedWrite, transformsAtZero, enterSecondPhase, covenMembers, standsAtZero, standAtOne,
   purgeEffects, formChangeOf, changeForm } from "../adapter/coven.mjs";
 import { contentOf } from "../adapter/content.mjs";
-import { log, loc } from "./shared.mjs";
+import { log, loc, sleep } from "./shared.mjs";
 import { burstAtZero } from "./emanations.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
+import { AFTER_ZERO_HP_MS } from "../adapter/death.mjs";
 
 /** Une file pour tous les cercles : deux écarts reportés l'un après l'autre ne s'écrasent pas. */
 const QUEUE = "coven";
@@ -34,7 +35,7 @@ function onZero(actor) {
   return enqueue(QUEUE, async () => {
     try {
       // dnd5e pose Mort sur le client qui a écrit les PV (`updateDowned`) : on lui laisse le temps, la phase le retire.
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await sleep(AFTER_ZERO_HP_MS);
       if ( (actor.system?.attributes?.hp?.value ?? 1) > 0 ) return;
       // §19.6 : le dernier carré passe avant tout — il ne tombe pas.
       const stood = await standAtOne(actor);

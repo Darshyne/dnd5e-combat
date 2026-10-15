@@ -21,10 +21,9 @@ import { readUnitFactors } from "../adapter/units.mjs";
 import { movementCap, walkToGap, gapBetween } from "./actions.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
-import { log, loc, notice } from "./shared.mjs";
+import { log, loc, notice, sleep } from "./shared.mjs";
 
 const handled = new Set();
-const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function onResolution(resolution) {
   if ( (resolution?.step !== STEPS.DONE) || handled.has(resolution.origin) ) return;
@@ -63,7 +62,7 @@ async function obey(combatant) {
   const plan = orderPlan(held.order);
   if ( !plan ) return;
   // La remise à neuf du budget (runtime/turn.mjs, inscrite avant) part au même changement de tour : on la laisse arriver.
-  await pause(600);
+  await sleep(600);
   await held.effect.setFlag(MODULE_ID, "order", { ...held.effect.getFlag(MODULE_ID, "order"), done: true });
   const caster = held.from ? await fromUuid(held.from) : null;
   const lines = [loc(`Ordre.${held.order}.Execute`, { name: token.name, caster: caster?.name ?? "" })];

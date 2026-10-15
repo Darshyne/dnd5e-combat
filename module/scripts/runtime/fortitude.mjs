@@ -7,11 +7,11 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { fortitudeOf, pendingFortitude, clearFortitude } from "../adapter/fortitude.mjs";
-import { ensureDowned } from "../adapter/death.mjs";
+import { ensureDowned, AFTER_ZERO_HP_MS } from "../adapter/death.mjs";
 import { tokenOf } from "../adapter/facts.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
-import { log, loc, notice } from "./shared.mjs";
+import { log, loc, notice, sleep } from "./shared.mjs";
 
 /** Sur le client qui applique les dégâts : les types réellement subis, pour exclure les dégâts radiants. */
 function onCalculateDamage(actor, damages, options) {
@@ -24,7 +24,7 @@ function onCalculateDamage(actor, damages, options) {
 function onZero(actor) {
   if ( !actor || !pendingFortitude(actor) ) return;
   return enqueue(`fortitude:${actor.uuid}`, async () => {
-    await new Promise(resolve => setTimeout(resolve, 400));   // dnd5e pose son état à 0 PV sur le client qui a écrit les PV
+    await sleep(AFTER_ZERO_HP_MS);
     const pending = pendingFortitude(actor);
     if ( !pending ) return;
     if ( (actor.system.attributes?.hp?.value ?? 1) > 0 ) return clearFortitude(actor);

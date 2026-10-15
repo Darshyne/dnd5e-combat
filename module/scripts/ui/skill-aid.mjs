@@ -13,7 +13,7 @@ import { aidsFor, isGuided } from "../adapter/skill-aid.mjs";
 import { inspirationOf } from "../adapter/inspiration.mjs";
 import { requestSkillAid } from "../runtime/skill-aid.mjs";
 import { route } from "../runtime/router.mjs";
-import { loc } from "../runtime/shared.mjs";
+import { loc, sleep } from "../runtime/shared.mjs";
 
 const esc = s => foundry.utils.escapeHTML(String(s ?? ""));
 
@@ -25,7 +25,7 @@ const keyOf = aid => `${aid.kind}.${aid.token.id}`;
 async function untilApplied(test, ms=10000) {
   for ( let waited = 0; waited < ms; waited += 250 ) {
     if ( test() ) return true;
-    await new Promise(r => setTimeout(r, 250));
+    await sleep(250);
   }
   return false;
 }

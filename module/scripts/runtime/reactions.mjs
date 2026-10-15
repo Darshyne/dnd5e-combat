@@ -16,7 +16,7 @@ import { originItemOf, tokenOf } from "../adapter/facts.mjs";
 import { duplicatesAgainst } from "../adapter/duplicates.mjs";
 import { announce, matching } from "./triggers.mjs";
 import { route } from "./router.mjs";
-import { log } from "./shared.mjs";
+import { log, sleep } from "./shared.mjs";
 import { reactionApproach } from "./actions.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { poolsOf } from "../adapter/absorb.mjs";
@@ -477,7 +477,7 @@ async function attackSettled(usageId) {
     return ((r?.carrier === usageId) || (r?.origin === usageId)) && ["done", "missed", "undone"].includes(r.step);
   });
   const until = Date.now() + RESOLUTION_WAIT;
-  while ( !over() && (Date.now() < until) ) await new Promise(resolve => setTimeout(resolve, 250));
+  while ( !over() && (Date.now() < until) ) await sleep(250);
 }
 
 /** Côté MJ actif : propose chaque attaque d'opportunité, l'une après l'autre, et attend son issue. */

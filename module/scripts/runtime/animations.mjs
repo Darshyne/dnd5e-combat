@@ -16,7 +16,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { relevantAnimations } from "../core/animations.mjs";
 import { route } from "./router.mjs";
-import { log } from "./shared.mjs";
+import { log, sleep } from "./shared.mjs";
 
 export const SYNC_SETTING = "syncAnimations";
 export const WAIT_SETTING = "animationWait";
@@ -60,7 +60,6 @@ function onEnded(effect) {
   live.delete(effect.id);
 }
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const sequencerActive = () => !!game.modules.get("sequencer")?.active;
 
 /**

@@ -16,13 +16,13 @@ import { MODULE_ID } from "../constants.mjs";
 import { isRaging, barbarianRule, statusEndsRage, endRage, keepRage, rageKeptOn, relentlessAtZero, recklessChoice } from "../adapter/rage.mjs";
 import { markData, marksOn } from "../adapter/mastery.mjs";
 import { combatantFor, isOwnTurn, readBudget, currentTurnKey, usageTokenOf, speakerTokenOf, turnKeyAt } from "../adapter/turn.mjs";
-import { ensureDowned } from "../adapter/death.mjs";
+import { ensureDowned, AFTER_ZERO_HP_MS } from "../adapter/death.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { tokenOf } from "../adapter/facts.mjs";
 import { timedWait } from "../adapter/dialogs.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
-import { log, loc, notice } from "./shared.mjs";
+import { log, loc, notice, sleep } from "./shared.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { spendItemUses } from "../adapter/uses.mjs";
 
@@ -97,7 +97,7 @@ function onEffectCreated(effect) {
 function onZero(actor) {
   if ( !actor || !relentlessAtZero(actor) ) return;
   return enqueue(`rage:${actor.uuid}`, async () => {
-    await new Promise(resolve => setTimeout(resolve, 400));   // dnd5e pose son état à 0 PV sur le client qui a écrit les PV
+    await sleep(AFTER_ZERO_HP_MS);
     const found = relentlessAtZero(actor);
     if ( !found || ((actor.system.attributes?.hp?.value ?? 1) > 0) ) return;
     const dc = found.activity.save?.dc?.value ?? 10;

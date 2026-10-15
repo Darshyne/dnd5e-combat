@@ -53,6 +53,7 @@ import { sightingOf } from "../adapter/search.mjs";
 import { setHidden, check as stealthCheck, stealthViews } from "./stealth.mjs";
 import { isHidden, spottedBy } from "../adapter/stealth.mjs";
 import { lightAt as lightAtPoint, tokenPoint as stealthPoint } from "../adapter/illumination.mjs";
+import { sleep } from "./shared.mjs";
 
 /** Le token désigné, sur la scène affichée par le MJ. */
 function viewedToken({ tokenId }) {
@@ -256,7 +257,7 @@ async function perceived({ observerId, targetIds=[] }) {
   const before = canvas.tokens.controlled.map(t => t.id);
   observer.control({ releaseOthers: true });
   canvas.perception.update({ initializeVision: true });
-  await new Promise(resolve => setTimeout(resolve, 400));
+  await sleep(400);
   const out = {};
   for ( const id of targetIds ) {
     const token = canvas.tokens.get(id);
@@ -307,7 +308,7 @@ async function wall({ tokenId, itemId, activityId=null, points }) {
   for ( let i = 0; i < 40; i++ ) {
     const region = canvas.scene.regions.find(r => !before.has(r.id));
     if ( region ) return { regionId: region.id, shapes: region.shapes.map(s => s.type) };
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await sleep(100);
   }
   return { regionId: null };
 }
@@ -633,7 +634,7 @@ async function skillAid({ tokenId, helperTokenId, kind, skill=null, tool=null })
   const granted = await requestSkillAid({ kind, helper, tester, skill, tool });
   let guided = skill ? isGuided(tester.actor, skill) : false;
   for ( let waited = 0; granted && (kind === "guidance") && !guided && (waited < 10000); waited += 250 ) {
-    await new Promise(r => setTimeout(r, 250));
+    await sleep(250);
     guided = isGuided(tester.actor, skill);
   }
   return { granted, guided };
@@ -815,7 +816,7 @@ async function use({ tokenId, itemId, activityType=null, extra=null, consume=fal
   // `consume` : comme un vrai clic, ressources dépensées (§77 : sans charge, la fenêtre « Plus de charge » du MJ).
   try { used = await activity.use({ ...(consume ? {} : { consume: false }), [MODULE_ID]: { confirmed: true, autoReact: "none", ...(extra ?? {}) } }, { configure: true }); }
   finally { Hooks.off("renderActivityUsageDialog", hook); }
-  for ( let i = 0; (i < 30) && !mine().length; i++ ) await new Promise(r => setTimeout(r, 100));
+  for ( let i = 0; (i < 30) && !mine().length; i++ ) await sleep(100);
   return {
     messageId: used?.message?.id ?? null,
     dialog,
@@ -842,7 +843,7 @@ async function dash({ tokenId, itemId, x, y, preview=false }) {
   }
   const before = game.messages.contents.at(-1)?.id ?? null;
   const used = await dashStrike(activity, [{ consume: false, [MODULE_ID]: { confirmed: true, autoReact: "none" } }, {}, {}], { x, y });
-  for ( let i = 0; (i < 30) && ((token._source.x !== x) || (token._source.y !== y)); i++ ) await new Promise(r => setTimeout(r, 100));
+  for ( let i = 0; (i < 30) && ((token._source.x !== x) || (token._source.y !== y)); i++ ) await sleep(100);
   const message = game.messages.contents.findLast(m => (m.type === "usage") && m.getFlag(MODULE_ID, "dash"));
   return { used, position: positionJson(token), messageId: (message && (message.id !== before)) ? message.id : null,
     targets: (message?.system.targets ?? []).map(t => t.name), regions: canvas.scene.regions.filter(r => r.getFlag("dnd5e", "activity") === activity.uuid).length };

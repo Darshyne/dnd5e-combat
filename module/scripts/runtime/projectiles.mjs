@@ -16,11 +16,10 @@ import { allocateDarts } from "../core/action.mjs";
 import { projectilesOf, projectileCount, handleAllocationQuery, leapOf } from "../adapter/projectiles.mjs";
 import { distanceBetween } from "../adapter/turn.mjs";
 import { route } from "./router.mjs";
-import { log, loc, notice } from "./shared.mjs";
+import { log, loc, notice, sleep } from "./shared.mjs";
 import { lengthIn } from "../adapter/units.mjs";
 
 const started = new Set();
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * §16.27 : le rebond de l'Orbe chromatique vise une créature à `radius` de la dernière cible, jamais visée par ce lancement ;

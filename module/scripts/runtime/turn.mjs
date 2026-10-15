@@ -23,7 +23,7 @@ import { freesMovement } from "../adapter/opportunity.mjs";
 import { takePendingAttack } from "./actions.mjs";
 import { pilotUsage, refundCommand, spellCommandUsage } from "./pilot.mjs";
 import { route } from "./router.mjs";
-import { log, loc } from "./shared.mjs";
+import { log, loc, sleep } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { antimagicAround, barrierBetween } from "../adapter/barriers.mjs";
 import { windowDisengaged } from "./reactions.mjs";
@@ -488,7 +488,7 @@ async function onAttackMessage(message) {
   // même MJ au \`createChatMessage\` de l'utilisation, peut ne pas être encore là. On l'attend un peu.
   let spent = usage.getFlag(MODULE_ID, "spent");
   for ( let waited = 0; !spent && (waited < SPENT_WAIT_MS); waited += 100 ) {
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await sleep(100);
     spent = usage.getFlag(MODULE_ID, "spent");
   }
   const combatant = spent ? game.combat?.combatants.get(spent.combatant) : null;

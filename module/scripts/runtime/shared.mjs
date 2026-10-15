@@ -14,6 +14,9 @@ export function notice(token, text, kind="refused") {
   if ( uuid ) Hooks.callAll(`${MODULE_ID}.notice`, { token: uuid, text, kind });
 }
 
+/** Attendre `ms` millisecondes. */
+export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 export const loc = (key, data) => data ? game.i18n.format(`DND5ECOMBAT.${key}`, data) : game.i18n.localize(`DND5ECOMBAT.${key}`);
 
 /** SPEC §5.3 : le MJ actif est l'unique exécutant du moteur. */
@@ -79,7 +82,7 @@ export function createCanvasWait({ isReady, sleep }, maxMs=CANVAS_WAIT_MAX_MS, s
 
 export const whenCanvasReady = createCanvasWait({
   isReady: () => !!globalThis.canvas?.ready,
-  sleep: ms => new Promise(resolve => setTimeout(resolve, ms))
+  sleep
 });
 
 /** Au-delà, on continue sans les dés 3D : une animation qui ne se joue pas ne retient pas le jeu. */
@@ -110,6 +113,6 @@ export function createDiceWait({ animation, isHidden, sleep, report=() => {} }, 
 export const waitForDice = createDiceWait({
   animation: id => (game.modules.get("dice-so-nice")?.active && game.dice3d) ? game.dice3d.waitFor3DAnimationByMessageID(id) : null,
   isHidden: () => document.hidden === true,
-  sleep: ms => new Promise(resolve => setTimeout(resolve, ms)),
+  sleep,
   report: why => log(`3D dice: continuing without waiting (${why})`)
 });

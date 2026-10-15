@@ -1243,6 +1243,15 @@ function swallow(event) {
   event.preventDefault();
 }
 
+/** Une visée qui attend un clic du joueur (cible, projectiles ou groupe, ruée, rappel d'un familier) ; pas la pose d'une zone. */
+const aimingByClick = () => !!(targeting || picking || dashing || recalling);
+
+/** Fermer la visée en cours ; une visée multiple relâche aussi les cibles déjà choisies. */
+function cancelAiming() {
+  if ( picking ) clearTargets();
+  stopTargeting();
+}
+
 /** Une action en cours qu'un clic droit annulerait (hors mode visée) : dialogue de légalité, jet pas encore lancé. */
 const cancellable = () => (openLegalityDialogs().length > 0) || !!pendingRoll();
 
@@ -1274,7 +1283,7 @@ function onPointerDown(event) {
   down = null;
   if ( !onBoard(event) || ![0, 2].includes(event.button) ) return;
   down = { x: event.clientX, y: event.clientY, button: event.button, at: Date.now() };
-  if ( targeting || picking || dashing || recalling || ((event.button === 2) && cancellable()) ) return swallow(event);
+  if ( aimingByClick() || ((event.button === 2) && cancellable()) ) return swallow(event);
   // §39.3 : un module voisin peut réclamer un clic gauche (fouiller un coffre, un cadavre, un tas au sol — Darsh Loot) en
   // répondant `false` au hook `dnd5e-combat.claimClick` (appelé par Hooks.call) : le moteur l'ignore alors entièrement (ni
   // déplacement, ni attaque). Le moteur ne connaît aucun de ces modules ; sans eux, rien ne change.
@@ -1299,25 +1308,20 @@ function onPointerUp(event) {
   if ( !start || (start.button !== event.button) || !onBoard(event) ) return;
   if ( Math.hypot(event.clientX - start.x, event.clientY - start.y) > 6 ) return;   // c'était un glisser
   // Un appui long est le ping du cœur (500 ms) : ce n'est pas un ordre de déplacement.
-  if ( !targeting && !picking && !dashing && !recalling && ((Date.now() - start.at) > LONG_PRESS_MS) ) return;
+  if ( !aimingByClick() && ((Date.now() - start.at) > LONG_PRESS_MS) ) return;
   if ( !targeting && !picking && (event.button === 2) && cancellable() ) return exclusive(cancelInProgress);
   const hover = hoveredToken();
   const left = event.button === 0;
 
-  if ( dashing ) {
-    if ( !left ) { stopTargeting(); return ui.notifications.info(loc("Visee.Annulee")); }
-    return dashTo(scenePoint(event));
+  // Clic droit pendant une visée : elle se ferme.
+  if ( !left && aimingByClick() ) {
+    cancelAiming();
+    return ui.notifications.info(loc("Visee.Annulee"));
   }
-  if ( recalling ) {
-    if ( !left ) { stopTargeting(); return ui.notifications.info(loc("Visee.Annulee")); }
-    return recallTo(scenePoint(event));
-  }
-  if ( picking ) {
-    if ( !left ) { clearTargets(); stopTargeting(); return ui.notifications.info(loc("Visee.Annulee")); }
-    return pickTarget(hover);
-  }
+  if ( dashing ) return dashTo(scenePoint(event));
+  if ( recalling ) return recallTo(scenePoint(event));
+  if ( picking ) return pickTarget(hover);
   if ( targeting ) {
-    if ( !left ) { stopTargeting(); return ui.notifications.info(loc("Visee.Annulee")); }
     if ( !hover ) return;
     // §16.29 : un refus (hors de portée, rebond impossible) laisse la visée ouverte.
     const refusal = refusalFor(targeting.token, hover, targeting.activity, targeting.usage?.[0]);
@@ -1562,7 +1566,6 @@ const onPointerMove = foundry.utils.throttle(event => {
         : (activity.attack?.type?.value === "ranged") ? "ranged" : "melee";
     }
   }
-  else if ( hover && (targeting || picking) ) cursor = "invalid";   // soi-même, en mode visée
   else if ( !hover && !targeting && hoveredDoor() ) cursor = null;   // §18.25 : l'icône de porte garde le curseur du cœur
   // §41.2 : un escalier que le token peut prendre — le clic l'y mène, que le clic-déplacement soit actif ou non.
   else if ( onStairs ) {
@@ -1606,9 +1609,8 @@ function onKeyDown(event) {
   if ( (event.key === "Enter") && picking?.group && picking.picks.length ) { swallow(event); return finishGroup(); }
   if ( event.key !== "Escape" ) return;
   if ( menu ) { closeMenu(); swallow(event); }
-  else if ( targeting || picking || dashing || recalling ) {   // une zone en cours de pose : Échap est au cœur
-    if ( picking ) clearTargets();
-    stopTargeting();
+  else if ( aimingByClick() ) {   // une zone en cours de pose : Échap est au cœur
+    cancelAiming();
     swallow(event);
   }
 }

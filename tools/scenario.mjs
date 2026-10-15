@@ -10,7 +10,8 @@
  *   node tools/scenario.mjs <dossier|fichier.mjs>   des scénarios gardés ailleurs (le dépôt d'un autre module), mêlables aux noms
  *
  * Un scénario marqué `interactive: true` (il attend un clic du MJ) ou `audit: true` (un diagnostic qui relève, sans vérifier) ne se
- * joue que nommé.
+ * joue que nommé. `scene` : "keep" (Restored Keep), un nom de scène (« metres », « Redbrand Hideout [30x20] » : la scène de ce
+ * nom, le scénario sauté si elle manque), ou rien (l'arène de test).
  *
  * Prérequis : serveur du connecteur lancé, monde de test ouvert chez le MJ (réglage « Outils de
  * test » activé), scène affichée avec les tokens que le scénario nomme, et **F5 du client du MJ
@@ -22,7 +23,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { connect } from "./lib/connector.mjs";
-import { ARENA, RESTORED_KEEP, METRES } from "./lib/stages.mjs";
+import { ARENA, RESTORED_KEEP } from "./lib/stages.mjs";
 
 const MODULE_ID = "dnd5e-combat";
 const TERMINAL = new Set(["done", "missed", "undone"]);
@@ -587,7 +588,8 @@ const sceneList = Array.isArray(scenes) ? scenes : (scenes.scenes ?? []);
 // `ARENE=0` : sans l'arène (la scène active), pour comparer.
 const arenaScene = (process.env.ARENE === "0") ? null : (sceneList.find(s => s.name === ARENA.name) ?? null);
 const keepScene = sceneList.find(s => s.id === RESTORED_KEEP.scene) ?? null;
-const metresScene = sceneList.find(s => s.name === METRES.name) ?? null;
+/** La scène nommée d'un scénario (`scene` : un nom ou un id, autre que "keep"), ou null. */
+const namedScene = name => sceneList.find(s => (s.name === name) || (s.id === name)) ?? null;
 const activeAtStart = sceneList.find(s => s.active)?.id ?? null;
 let activeNow = activeAtStart;
 
@@ -641,11 +643,13 @@ for ( const file of files ) {
     continue;
   }
   console.log(`\n▶ ${scenario.name ?? basename(file)}`);
-  // `scene: "metres"` : la scène en mètres, où qu'elle soit ; absente, le scénario n'est pas applicable.
-  if ( (scenario.scene === "metres") && !metresScene ) { console.log(`    scène « ${METRES.name} » absente : non applicable`); skipped++; continue; }
-  if ( scenario.scene === "metres" ) {
-    if ( metresScene.id !== activeNow ) previous = null;
-    await useScene(metresScene.id);
+  // `scene: "<nom>"` (autre que "keep") : la scène de ce nom, où qu'elle soit (« metres », « Redbrand Hideout [30x20] ») ; absente,
+  // le scénario n'est pas applicable.
+  const own = (scenario.scene && (scenario.scene !== "keep")) ? namedScene(scenario.scene) : null;
+  if ( scenario.scene && (scenario.scene !== "keep") && !own ) { console.log(`    scène « ${scenario.scene} » absente : non applicable`); skipped++; continue; }
+  if ( own ) {
+    if ( own.id !== activeNow ) previous = null;
+    await useScene(own.id);
   }
   else if ( arenaScene ) {
     const target = (scenario.scene === "keep") ? keepScene : arenaScene;

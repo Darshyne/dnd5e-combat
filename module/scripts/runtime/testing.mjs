@@ -967,8 +967,15 @@ async function stealth({ op="state", tokenId, on=true }={}) {
   if ( op === "set" ) await setHidden(token, on);
   if ( op === "check" ) await stealthCheck(token.parent);
   const point = lightAtPoint(stealthPoint(token));
-  return { hidden: isHidden(token), sneaking: isHidden(token), spottedBy: spottedBy(token).map(id => token.parent.tokens.get(id)?.name ?? id),
-    views: Object.fromEntries(Object.entries(stealthViews(token.id)).map(([id, v]) => [token.parent.tokens.get(id)?.name ?? id, v])),
+  // Par nom ; deux observateurs du même nom (deux Bandits) se distinguent par leur id, sinon l'un cacherait l'autre.
+  const names = token.parent.tokens.contents.map(t => t.name);
+  const label = id => {
+    const name = token.parent.tokens.get(id)?.name;
+    if ( !name ) return id;
+    return (names.filter(n => n === name).length > 1) ? `${name}#${id}` : name;
+  };
+  return { hidden: isHidden(token), sneaking: isHidden(token), spottedBy: spottedBy(token).map(label),
+    views: Object.fromEntries(Object.entries(stealthViews(token.id)).map(([id, v]) => [label(id), v])),
     light: point?.level ?? null };
 }
 

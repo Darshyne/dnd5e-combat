@@ -28,12 +28,6 @@ export const RESTORED_KEEP = Object.freeze({
  * tout scénario qui ne demande pas `scene: "keep"` (étages, planchers, escaliers), et y remet chaque token à sa place avant chacun.
  * Trouvée par son nom ; absente (autre monde), le lanceur joue sur la scène active, comme avant.
  */
-/**
- * La scène en mètres de `dnd-6` (grille de 1,5 m) : les scénarios `scene: "metres"` y vérifient la conversion des distances. Trouvée
- * par son nom ; absente, ces scénarios se déclarent non applicables.
- */
-export const METRES = Object.freeze({ name: "metres" });
-
 export const ARENA = Object.freeze({
   name: "Arène de test",
   tokens: Object.freeze({ ...RESTORED_KEEP.tokens, "Âme-en-peine": [3640, 5460], Zombi: [2800, 4900] })

@@ -10,11 +10,12 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { areEnemies } from "./factions.mjs";
+import { settingOr } from "./settings.mjs";
 
 export const RULES_SETTING = "stealthRules";
 
 export function stealthRules() {
-  try { return game.settings.get(MODULE_ID, RULES_SETTING) === "bg3" ? "bg3" : "2024"; } catch { return "2024"; }
+  return settingOr(RULES_SETTING, "2024") === "bg3" ? "bg3" : "2024";
 }
 
 const doc = t => t?.document ?? t ?? null;

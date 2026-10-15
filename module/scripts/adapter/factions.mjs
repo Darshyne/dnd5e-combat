@@ -11,6 +11,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
+import { settingOr } from "./settings.mjs";
 import {
   PARTY, GENERIC_FACTIONS, normalizeFactions, factionByRules, useFactionTable, factionTable, hostileSides, alliedSides,
   targetRelation, factionRelation
@@ -41,10 +42,10 @@ export function factionSettings() {
 }
 
 const readSetting = () => {
-  try { return game.settings.get(MODULE_ID, FACTIONS_SETTING); } catch { return null; }
+  return settingOr(FACTIONS_SETTING, null);
 };
 const rulesOn = () => {
-  try { return game.settings.get(MODULE_ID, RULES_SETTING) !== false; } catch { return true; }
+  return settingOr(RULES_SETTING, true) !== false;
 };
 
 /** Recharger la table du cœur : réglage + rancunes de la scène affichée. */

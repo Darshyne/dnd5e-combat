@@ -8,6 +8,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { parseConeAngles, coneAngleFor, inCone, formatConeAngles } from "../core/cone.mjs";
 import { committedPosition, tokenCenter } from "./turn.mjs";
+import { settingOr } from "./settings.mjs";
 
 export const CONES_SETTING = "visionCones";
 export const ANGLES_SETTING = "coneAngles";
@@ -26,7 +27,7 @@ function angles() {
 }
 
 function enabled() {
-  try { return game.settings.get(MODULE_ID, CONES_SETTING) === true; } catch { return false; }
+  return settingOr(CONES_SETTING, false) === true;
 }
 
 /** Un PJ, ou une créature qu'un joueur possède : jamais de cône (le joueur voit ce qu'il voit). */

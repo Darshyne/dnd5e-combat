@@ -21,11 +21,12 @@ import { canSee } from "./vision.mjs";
 import { currentTurnKey } from "./turn.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { areAllies } from "./factions.mjs";
+import { settingOr } from "./settings.mjs";
 
 export const PORTENT_QUERY = `${MODULE_ID}.portent`;
 /** §38.4 : réglage de monde « Présage du Devin » — le moteur le propose-t-il ? (actif par défaut) */
 export const PORTENT_SETTING = "portent";
-const portentOffered = () => { try { return game.settings.get(MODULE_ID, PORTENT_SETTING) !== false; } catch { return true; } };
+const portentOffered = () => settingOr(PORTENT_SETTING, true) !== false;
 const PORTENT_TIMEOUT = 20000;   // au-delà du délai de la fenêtre (adapter/dialogs.mjs)
 
 /** Combien de d20 le devin note à chaque Repos long (0 : pas de Présage). Présage supérieur l'emporte sur Présage. */

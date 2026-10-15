@@ -188,26 +188,35 @@ export async function askDamageGuardians(targetUuid, sourceUuid, activity, { aut
  *   types de dégâts ; `auto` : l'outil de scénario `autoReact` de l'utilisation, comme pour la fenêtre « touché ».
  */
 export function windowIsDamaged(tokenUuids, sourceToken, sourceName, { activity=null, damageTypes=[], auto=null }={}) {
+  fireTargetWindow("isDamaged", tokenUuids, sourceToken, sourceName,
+    { activity, auto, extra: { damageTypes }, promptKey: "ReactionBlesse", what: "damaged" });
+}
+
+/**
+ * Une fenêtre ouverte à chaque cible d'un coup (« blessé », « raté ») : sans attente, chacune de son côté ; une créature à 0 PV ne
+ * réagit pas. `extra` : ce que la fenêtre ajoute aux faits (les types de dégâts) ; `what` : le mot du journal.
+ */
+function fireTargetWindow(window, tokenUuids, sourceToken, sourceName, { activity=null, auto=null, extra={}, promptKey, what }) {
   if ( auto === "none" ) return;
   for ( const uuid of tokenUuids ) (async () => {
     const tokenDocument = await fromUuid(uuid);
     const actor = tokenDocument?.actor;
     if ( !actor || ((actor.system.attributes?.hp?.value ?? 0) <= 0) ) return;
     const attackerToken = await fromUuid(sourceToken ?? "");
-    const source = attackerToken?.actor ?? null;
     const used = activity ? await fromUuid(activity) : null;
-    const options = reactionsOf(actor, "isDamaged",
-      { source, target: actor, activity: used, sourceToken: attackerToken, targetToken: tokenDocument, damageTypes }, { publish: true });
+    const options = reactionsOf(actor, window,
+      { source: attackerToken?.actor ?? null, target: actor, activity: used, sourceToken: attackerToken, targetToken: tokenDocument, ...extra },
+      { publish: true });
     if ( !options.length ) return;
-    log(`${actor.name} is damaged: reaction window (${options.map(o => o.name).join(", ")})`);
+    log(`${actor.name} is ${what}: reaction window (${options.map(o => o.name).join(", ")})`);
     await askReaction(actor, {
       actor: actor.uuid,
-      prompt: { key: "ReactionBlesse", data: { attacker: sourceName } },
+      prompt: { key: promptKey, data: { attacker: sourceName } },
       options,
       target: options.some(o => o.targetSource) ? sourceToken : null,
       auto: auto === "first"
     });
-  })().catch(err => console.error(`${MODULE_ID} | "damaged" window interrupted`, err));
+  })().catch(err => console.error(`${MODULE_ID} | "${what}" window interrupted`, err));
 }
 
 /**
@@ -349,25 +358,7 @@ export function windowDisengaged(tokenDocument) {
 }
 
 export function windowIsMissed(tokenUuids, sourceToken, sourceName, { activity=null, auto=null }={}) {
-  if ( auto === "none" ) return;
-  for ( const uuid of tokenUuids ) (async () => {
-    const tokenDocument = await fromUuid(uuid);
-    const actor = tokenDocument?.actor;
-    if ( !actor || ((actor.system.attributes?.hp?.value ?? 0) <= 0) ) return;
-    const attackerToken = await fromUuid(sourceToken ?? "");
-    const used = activity ? await fromUuid(activity) : null;
-    const options = reactionsOf(actor, "isMissed",
-      { source: attackerToken?.actor ?? null, target: actor, activity: used, sourceToken: attackerToken, targetToken: tokenDocument }, { publish: true });
-    if ( !options.length ) return;
-    log(`${actor.name} is missed: reaction window (${options.map(o => o.name).join(", ")})`);
-    await askReaction(actor, {
-      actor: actor.uuid,
-      prompt: { key: "ReactionRate", data: { attacker: sourceName } },
-      options,
-      target: options.some(o => o.targetSource) ? sourceToken : null,
-      auto: auto === "first"
-    });
-  })().catch(err => console.error(`${MODULE_ID} | "missed" window interrupted`, err));
+  fireTargetWindow("isMissed", tokenUuids, sourceToken, sourceName, { activity, auto, promptKey: "ReactionRate", what: "missed" });
 }
 
 /**

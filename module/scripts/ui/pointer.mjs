@@ -237,6 +237,23 @@ function markTargeting() {
   announceTargeting();
 }
 
+/**
+ * Ouvre la visée d'une activité : la cible de `token` se choisit d'un clic, puis `activity.use(...usage)`. `prompt` : la consigne du
+ * bandeau ; `notice` : un retour flottant au-dessus de `noticeOn` (le token qui agit, d'ordinaire) ; `reticle` : le texte qui suit la
+ * souris. `fresh` (par défaut) : la visée en cours se ferme d'abord.
+ */
+function openTargeting(token, activity, usage, { prompt, notice=null, noticeOn=token, reticle=null, fresh=true }) {
+  if ( fresh ) stopTargeting();
+  targeting = { token, activity, usage };
+  markTargeting();
+  promptTargeting(prompt);
+  if ( notice ) floatNotice(noticeOn, notice);
+  if ( reticle ) showReticle(reticle);
+}
+
+/** Les options de fenêtre d'une utilisation, sans la fenêtre de dnd5e (le choix est déjà fait). */
+const noDialog = dialogConfig => ({ ...(dialogConfig ?? {}), configure: false });
+
 /** Qui l'activité vise d'un clic (core/targeting.mjs), ou null si elle ne se vise pas ainsi. */
 function ruleOf(activity) {
   // §16.41 : l'arme d'une créature, soi compris (Arme élémentaire : dnd5e vise un « objet »).
@@ -324,9 +341,8 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     if ( !token?.object ) return true;
     configureFirst(activity, usageConfig, dialogConfig).then(chosen => {
       if ( !chosen ) return;
-      targeting = { token, activity, usage: [chosen.config, { ...(dialogConfig ?? {}), configure: false }, messageConfig] };
-      markTargeting();
-      promptTargeting(loc("Enchant.ChoisirCreature", { name: activity.item.name }));
+      openTargeting(token, activity, [chosen.config, noDialog(dialogConfig), messageConfig],
+        { prompt: loc("Enchant.ChoisirCreature", { name: activity.item.name }), fresh: false });
     }).catch(err => console.error(`${MODULE_ID} | enchantment`, err));
     return false;
   }
@@ -364,7 +380,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     configureFirst(activity, usageConfig, dialogConfig).then(chosen => {
       if ( !chosen ) return;
       return aimWall(activity, wall, points => exclusive(() => castAimed(activity,
-        [chosen.config, { ...(dialogConfig ?? {}), configure: false }, messageConfig], { type: "wall", points })));
+        [chosen.config, noDialog(dialogConfig), messageConfig], { type: "wall", points })));
     }).catch(err => console.error(`${MODULE_ID} | wall placement`, err));
     return false;
   }
@@ -383,7 +399,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     configureFirst(activity, usageConfig, dialogConfig).then(chosen => {
       if ( !chosen ) return;
       return aimArea(activity, aim, shape => exclusive(() => castAimed(activity,
-        [chosen.config, { ...(dialogConfig ?? {}), configure: false }, messageConfig], shape)));
+        [chosen.config, noDialog(dialogConfig), messageConfig], shape)));
     }).catch(err => console.error(`${MODULE_ID} | area targeting`, err));
     return false;
   }
@@ -411,9 +427,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     startGroup(token, activity, usageConfig, dialogConfig, messageConfig).catch(err => console.error(`${MODULE_ID} | group targeting`, err));
     return false;
   }
-  targeting = { token, activity, usage: [usageConfig, dialogConfig, messageConfig] };
-  markTargeting();
-  promptTargeting(loc("Visee.Choisir", { name: activity.item.name }));
+  openTargeting(token, activity, [usageConfig, dialogConfig, messageConfig], { prompt: loc("Visee.Choisir", { name: activity.item.name }), fresh: false });
   return false;
 }
 
@@ -682,9 +696,9 @@ function maySeveral(activity) {
 async function startGroup(token, activity, usageConfig, dialogConfig, messageConfig) {
   const chosen = await configureFirst(activity, usageConfig, dialogConfig);
   if ( !chosen ) return;
-  const usage = [chosen.config, { ...(dialogConfig ?? {}), configure: false }, messageConfig];
+  const usage = [chosen.config, noDialog(dialogConfig), messageConfig];
   const count = targetCount(activity, { level: chosen.level });
-  for ( const t of Array.from(game.user.targets) ) t.setTarget(false, { releaseOthers: false });
+  clearTargets();
   markTargeting();
   if ( count <= 1 ) {
     targeting = { token, activity, usage };
@@ -709,8 +723,8 @@ async function startPicking(token, activity, usageConfig, dialogConfig, messageC
   if ( !chosen ) return;
   const { config, level } = chosen;
   const count = projectileCount(activity, { level });
-  for ( const t of Array.from(game.user.targets) ) t.setTarget(false, { releaseOthers: false });
-  picking = { token, activity, count, picks: [], usage: [config, { ...(dialogConfig ?? {}), configure: false }, messageConfig] };
+  clearTargets();
+  picking = { token, activity, count, picks: [], usage: [config, noDialog(dialogConfig), messageConfig] };
   markTargeting();
   showReticle(counterText());
   promptTargeting(loc("Projectiles.Choisir", { item: activity.item.name, count }));
@@ -770,10 +784,6 @@ function stopPicking() {
  * Une visée multiple abandonnée (clic droit, Échap) relâche les créatures déjà choisies : sinon l'attaque suivante partait
  * aussitôt sur elles, sans visée (vu en jeu le 2026-10-10, §119 — Échap les laissait ciblées, le clic droit non).
  */
-function releasePicks() {
-  for ( const t of Array.from(game.user.targets) ) t.setTarget(false, { releaseOthers: false });
-}
-
 /** Un clic sur une créature pendant la visée multiple : un projectile de plus pour elle ; au dernier, le sort part. */
 function pickTarget(hover) {
   if ( !picking || !hover?.object ) return;
@@ -842,11 +852,7 @@ function offerTurnStart(combat, prior, current) {
     const bound = (tetherOfActivity(activity)?.role === "follow") ? tetheredToken(item) : undefined;
     if ( bound === null ) continue;
     if ( bound ) floatNotice(bound, item.name, "prompt");
-    stopTargeting();
-    targeting = { token, activity, usage: [{}, { configure: false }, {}] };
-    markTargeting();
-    promptTargeting(loc("Visee.DebutTour", { item: item.name }));
-    showReticle(item.name);
+    openTargeting(token, activity, [{}, { configure: false }, {}], { prompt: loc("Visee.DebutTour", { item: item.name }), reticle: item.name });
     return;
   }
 }
@@ -1307,7 +1313,7 @@ function onPointerUp(event) {
     return recallTo(scenePoint(event));
   }
   if ( picking ) {
-    if ( !left ) { releasePicks(); stopTargeting(); return ui.notifications.info(loc("Visee.Annulee")); }
+    if ( !left ) { clearTargets(); stopTargeting(); return ui.notifications.info(loc("Visee.Annulee")); }
     return pickTarget(hover);
   }
   if ( targeting ) {
@@ -1601,7 +1607,7 @@ function onKeyDown(event) {
   if ( event.key !== "Escape" ) return;
   if ( menu ) { closeMenu(); swallow(event); }
   else if ( targeting || picking || dashing || recalling ) {   // une zone en cours de pose : Échap est au cœur
-    if ( picking ) releasePicks();
+    if ( picking ) clearTargets();
     stopTargeting();
     swallow(event);
   }
@@ -1670,12 +1676,9 @@ function offerCleave(message, resolution) {
   const { scene, token: tokenId } = attackMessage.speaker ?? {};
   const token = game.scenes.get(scene)?.tokens.get(tokenId) ?? null;
   if ( !first || !token?.object || !cleaveCandidates(token, first, activity).length ) return;
-  stopTargeting();
-  targeting = { token, activity, usage: [{ [MODULE_ID]: { cost: "free", cleave: first.uuid } }, { configure: false }, {}] };
-  markTargeting();
-  promptTargeting(loc("Botte.Enchainement.Visee", { item: activity.item.name, name: first.name }));
-  floatNotice(token, loc("Botte.Retour.cleave"));
-  showReticle(loc("Botte.Retour.cleave"));
+  openTargeting(token, activity, [{ [MODULE_ID]: { cost: "free", cleave: first.uuid } }, { configure: false }, {}],
+    { prompt: loc("Botte.Enchainement.Visee", { item: activity.item.name, name: first.name }),
+      notice: loc("Botte.Retour.cleave"), reticle: loc("Botte.Retour.cleave") });
 }
 
 /**
@@ -1692,13 +1695,9 @@ function offerFlurry(actor) {
   const activity = strike?.system.activities?.find(a => a.type === "attack");
   const token = combatant.token;
   if ( !activity || !token?.object ) return;
-  stopTargeting();
-  targeting = { token, activity, usage: [{}, { configure: false }, {}] };
-  markTargeting();
   const label = weapon ? "Clerc.PretreGuerre" : "Moine.Deluge";
-  promptTargeting(loc(`${label}.Visee`, { n: readBudget(combatant).flurry }));
-  floatNotice(token, loc(`${label}.Retour`));
-  showReticle(loc(`${label}.Retour`));
+  openTargeting(token, activity, [{}, { configure: false }, {}],
+    { prompt: loc(`${label}.Visee`, { n: readBudget(combatant).flurry }), notice: loc(`${label}.Retour`), reticle: loc(`${label}.Retour`) });
 }
 
 /** §24 : l'activation du Déluge de coups (carte d'utilisation de l'auteur) : la première frappe se vise aussitôt, budget écrit. */
@@ -1725,12 +1724,8 @@ function offerEnchantedAttack(effect) {
   const activity = weapon.system.activities?.find(a => a.type === "attack");
   const token = actor.getActiveTokens(true, true)?.[0] ?? null;
   if ( !activity || !token?.object ) return;
-  stopTargeting();
-  targeting = { token, activity, usage: [{ [MODULE_ID]: { cost: "free" } }, { configure: false }, {}] };
-  markTargeting();
-  promptTargeting(loc("Visee.AttaqueEnchantee", { item: weapon.name }));
-  floatNotice(token, weapon.name);
-  showReticle(weapon.name);
+  openTargeting(token, activity, [{ [MODULE_ID]: { cost: "free" } }, { configure: false }, {}],
+    { prompt: loc("Visee.AttaqueEnchantee", { item: weapon.name }), notice: weapon.name, reticle: weapon.name });
 }
 
 /**
@@ -1762,13 +1757,10 @@ function offerLeap(message, resolution) {
   };
   const damageType = usage.getFlag(MODULE_ID, "damageType");
   const flags = { leap, ...(damageType ? { damageType } : {}) };
-  stopTargeting();
-  targeting = { token, activity, usage: [config, { configure: false }, { data: { flags: { [MODULE_ID]: flags } } }] };
-  markTargeting();
   log(`${activity.item.name}: doubles on the dice, leap offered (${left} left)`);
-  floatNotice(hit.token, loc("Retour.Rebond"));
-  showReticle(loc("Retour.Rebond"));
-  promptTargeting(loc("Rebond.Visee", { item: activity.item.name, left }));
+  openTargeting(token, activity, [config, { configure: false }, { data: { flags: { [MODULE_ID]: flags } } }],
+    { prompt: loc("Rebond.Visee", { item: activity.item.name, left }), notice: loc("Retour.Rebond"), noticeOn: hit.token,
+      reticle: loc("Retour.Rebond") });
 }
 
 /**
@@ -1793,12 +1785,9 @@ function offerBonusAttack(message, resolution) {
   if ( !combatant || !isOwnTurn(combatant) || !(readBudget(combatant)?.bonus > 0) ) return;
   const token = combatant.token;
   if ( !token?.object ) return;
-  stopTargeting();
-  targeting = { token, activity, usage: [{ [MODULE_ID]: { cost: "bonus" } }, { configure: false }, {}] };
-  markTargeting();
-  promptTargeting(loc("Visee.AttaqueBonus", { item: activity.item.name, why: loc(critical ? "Visee.Critique" : "Visee.Abattu") }));
-  floatNotice(token, loc("Retour.Taille"));
-  showReticle(loc("Retour.Taille"));
+  openTargeting(token, activity, [{ [MODULE_ID]: { cost: "bonus" } }, { configure: false }, {}],
+    { prompt: loc("Visee.AttaqueBonus", { item: activity.item.name, why: loc(critical ? "Visee.Critique" : "Visee.Abattu") }),
+      notice: loc("Retour.Taille"), reticle: loc("Retour.Taille") });
 }
 
 /** Fin de tour : celui qui jouait ce combattant relâche ses cibles. */

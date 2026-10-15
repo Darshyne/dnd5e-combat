@@ -7,7 +7,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { parseConeAngles, coneAngleFor, inCone, formatConeAngles } from "../core/cone.mjs";
-import { committedPosition } from "./turn.mjs";
+import { committedPosition, tokenCenter } from "./turn.mjs";
 
 export const CONES_SETTING = "visionCones";
 export const ANGLES_SETTING = "coneAngles";
@@ -55,13 +55,6 @@ export function coneOf(doc) {
   return { angle, rotation: Number(doc.rotation) || 0 };
 }
 
-/** Le centre d'un token à sa position validée. */
-function centerOf(doc) {
-  const pos = committedPosition(doc);
-  const grid = doc.parent.grid;
-  return { x: pos.x + ((doc.width ?? 1) * grid.sizeX) / 2, y: pos.y + ((doc.height ?? 1) * grid.sizeY) / 2 };
-}
-
 /** La portée (unités de la grille) d'un sens qui perçoit tout autour, la plus grande ; 0 sans. */
 function allAroundRange(doc) {
   let best = 0;
@@ -81,7 +74,7 @@ function allAroundRange(doc) {
 export function outsideCone(observer, target) {
   const cone = coneOf(observer);
   if ( !cone || !target?.parent ) return false;
-  const eye = centerOf(observer);
+  const eye = tokenCenter(observer);
   const pos = committedPosition(target);
   const grid = target.parent.grid;
   const w = (target.width ?? 1) * grid.sizeX, h = (target.height ?? 1) * grid.sizeY;

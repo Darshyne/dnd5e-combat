@@ -222,6 +222,18 @@ export function committedPosition(token) {
 }
 
 /**
+ * Le centre d'un token en pixels, à hauteur de ses pieds : à sa position validée, ou à `pos` (point de passage, position d'arrivée) ;
+ * une taille ou une élévation absente de `pos` est celle du token.
+ */
+export function tokenCenter(token, pos=committedPosition(token)) {
+  const grid = token.parent.grid;
+  const width = pos.width ?? token._source?.width ?? 1;
+  const height = pos.height ?? token._source?.height ?? 1;
+  return { x: pos.x + ((width * grid.sizeX) / 2), y: pos.y + ((height * grid.sizeY) / 2),
+    elevation: pos.elevation ?? token._source?.elevation ?? 0 };
+}
+
+/**
  * Ce qui fait une position de token, extrait de n'importe quel objet qui la porte (source, point de
  * passage). `depth` (hauteur en cases, champ du cœur V14) passe par la règle du moteur : dnd5e ne le
  * renseigne pas, une créature est tenue pour aussi haute que large (core/space.mjs, P2).

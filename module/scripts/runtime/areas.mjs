@@ -5,7 +5,7 @@ import { readAreaState, writeAreaState, lastingRegions, isInside, replayAgainst,
 import { payWithoutUse } from "../adapter/reactions.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
 import { placeAreaAt } from "../adapter/self-area.mjs";
-import { positionOf as position, committedPosition } from "../adapter/turn.mjs";
+import { positionOf as position, committedPosition, tokenCenter } from "../adapter/turn.mjs";
 import { noteSummonExpiry, expiredSummons } from "../adapter/summons.mjs";
 import { holdZoneEffects, holdDifficultTerrain } from "../adapter/zone-effects.mjs";
 import { wallSideRuleOf, isThinWall, crossesWallRegion } from "../adapter/wall-side.mjs";
@@ -123,8 +123,7 @@ async function driftAway(region, caster, { distance, units }) {
   const center = zoneCenter(region);
   if ( !center ) return;
   const scene = region.parent;
-  const pos = committedPosition(caster);
-  const from = { x: pos.x + ((pos.width * scene.grid.sizeX) / 2), y: pos.y + ((pos.height * scene.grid.sizeY) / 2) };
+  const from = tokenCenter(caster);
   const dx = center.x - from.x, dy = center.y - from.y;
   const length = Math.hypot(dx, dy);
   if ( !(length > 0) ) return;

@@ -21,7 +21,7 @@
  */
 
 import { regionElevationFor, originPointOfShapes, withinSphere } from "../core/space.mjs";
-import { committedPosition } from "./turn.mjs";
+import { committedPosition, tokenCenter } from "./turn.mjs";
 import { readUnitFactors, lengthIn } from "./units.mjs";
 import { eyeElevation } from "./cover.mjs";
 import { templateOf } from "./template.mjs";
@@ -112,13 +112,6 @@ export async function ensureRegionElevation(region) {
   return slice;
 }
 
-/** Le centre d'un token à sa position validée, en pixels. */
-function centerOf(token) {
-  const pos = committedPosition(token);
-  const grid = token.parent.grid;
-  return { x: pos.x + (((pos.width ?? 1) * grid.sizeX) / 2), y: pos.y + (((pos.height ?? 1) * grid.sizeY) / 2) };
-}
-
 /**
  * Le point d'origine d'une zone, élevé : le centre de sa forme (le lanceur pour une émanation ou
  * un cône sans origine propre), à mi-hauteur de sa tranche — à défaut de tranche, aux yeux du lanceur.
@@ -129,7 +122,7 @@ function centerOf(token) {
 export function areaOriginOf(region, originToken=null) {
   const attached = region.attachment?.token ? region.parent.tokens.get(region.attachment.token) : null;
   const anchor = attached ?? originToken;
-  const fallback = anchor ? centerOf(anchor) : null;
+  const fallback = anchor ? tokenCenter(anchor) : null;
   const point = originPointOfShapes(region.shapes.map(s => s.toObject?.() ?? s), fallback);
   if ( !point ) return null;
   const { bottom, top } = region.elevation;
@@ -182,7 +175,7 @@ export function insideSphere(sphere, token) {
 export function reachesFromPoint(origin, token) {
   if ( !available || !origin || !token?.parent || (typeof token.parent.testSurfaceCollision !== "function") ) return null;
   const pos = committedPosition(token);
-  const c = centerOf(token);
+  const c = tokenCenter(token);
   const eyes = { x: c.x, y: c.y, elevation: eyeElevation(token, pos) };
   return token.parent.testSurfaceCollision(origin, eyes, { type: "move", mode: "any" }) !== true;
 }

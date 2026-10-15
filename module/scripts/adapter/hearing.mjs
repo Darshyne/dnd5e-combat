@@ -5,15 +5,8 @@
  */
 
 import { hears } from "../core/hearing.mjs";
-import { committedPosition } from "./turn.mjs";
+import { tokenCenter } from "./turn.mjs";
 import { hiddenDcOf } from "./search.mjs";
-
-/** Le centre d'un token à sa position validée, à hauteur de ses pieds. */
-function centerOf(doc) {
-  const grid = doc.parent.grid;
-  const p = committedPosition(doc);
-  return { x: p.x + ((p.width ?? 1) * grid.sizeX) / 2, y: p.y + ((p.height ?? 1) * grid.sizeY) / 2, elevation: p.elevation ?? 0 };
-}
 
 /**
  * Un mur ou un plancher qui arrête le son sépare-t-il les deux tokens ? Comme la vue du cœur (detection-mode.mjs:211-259), les
@@ -27,8 +20,8 @@ function soundBlocked(observer, target) {
   const levels = scene.levels;
   const own = levels?.get?.(observer.level);
   if ( own && (target.level !== observer.level) && !target.includedInLevel?.(own) ) return true;
-  const a = centerOf(observer);
-  const b = centerOf(target);
+  const a = tokenCenter(observer);
+  const b = tokenCenter(target);
   if ( scene.testSurfaceCollision?.(a, b, { type: "sound", mode: "any" }) === true ) return true;
   const backend = CONFIG.Canvas.polygonBackends?.sound;
   if ( !backend ) return false;

@@ -17,7 +17,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { placementOf, modeRefusal, speedFor } from "../core/altitude.mjs";
 import { convertLength } from "../core/units.mjs";
 import { readUnitFactors } from "./units.mjs";
-import { committedPosition, positionOf } from "./turn.mjs";
+import { committedPosition, positionOf, tokenCenter } from "./turn.mjs";
 
 const rangeOf = level => ({ bottom: level?.elevation?.bottom ?? -Infinity, top: level?.elevation?.top ?? Infinity });
 
@@ -69,10 +69,10 @@ export function levelAt(scene, elevation, currentId) {
   return (homes.length === 1) ? homes[0].id : currentId;
 }
 
-/** Le centre d'un token à une position (source ou point de passage). */
+/** Le centre d'un token à une position (source ou point de passage), en 2D. */
 function centerAt(token, pos) {
-  const grid = token.parent.grid;
-  return { x: pos.x + (((pos.width ?? token._source.width ?? 1) * grid.sizeX) / 2), y: pos.y + (((pos.height ?? token._source.height ?? 1) * grid.sizeY) / 2) };
+  const { x, y } = tokenCenter(token, pos);
+  return { x, y };
 }
 
 /** Le sol sous un token, à sa position validée ou à `pos`. */

@@ -16,7 +16,7 @@
  * Les points sont des positions VALIDÉES (`_source`), jamais la position animée.
  */
 
-import { committedPosition } from "./turn.mjs";
+import { tokenCenter } from "./turn.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { globalLightLevel, lightLevel, perceivedLight, obscurement } from "../core/illumination.mjs";
 import { devilsSightRange } from "./vision.mjs";
@@ -85,12 +85,8 @@ function inBright(source, p) {
   return Math.hypot(p.x - source.data.x, p.y - source.data.y) <= r;
 }
 
-/** Le centre d'un token à sa position validée, à hauteur de ses pieds. */
-export function tokenPoint(doc) {
-  const grid = doc.parent.grid;
-  const p = committedPosition(doc);
-  return { x: p.x + ((p.width ?? 1) * grid.sizeX) / 2, y: p.y + ((p.height ?? 1) * grid.sizeY) / 2, elevation: p.elevation ?? 0 };
-}
+/** Le centre d'un token à sa position validée, à hauteur de ses pieds (`tokenCenter`). */
+export const tokenPoint = doc => tokenCenter(doc);
 
 /** Le niveau de lumière là où se tient ce token. */
 export function lightOnToken(doc) {

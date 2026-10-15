@@ -10,7 +10,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
-import { committedPosition } from "./turn.mjs";
+import { committedPosition, tokenCenter } from "./turn.mjs";
 import { wallGeometry, touchesWall, crossesWall } from "../core/wall.mjs";
 import { lengthIn } from "./units.mjs";
 
@@ -74,10 +74,10 @@ function spaceOf(token, pos=committedPosition(token)) {
   return { x: pos.x, y: pos.y, width: (pos.width ?? 1) * grid.sizeX, height: (pos.height ?? 1) * grid.sizeY };
 }
 
-/** Le centre d'un token à une position donnée (point de passage), en pixels. */
-export function centerAt(token, pos) {
-  const r = spaceOf(token, pos);
-  return { x: r.x + (r.width / 2), y: r.y + (r.height / 2) };
+/** Le centre d'un token à une position donnée (point de passage), en pixels, en 2D. */
+function centerAt(token, pos) {
+  const { x, y } = tokenCenter(token, pos);
+  return { x, y };
 }
 
 /** L'espace de ce token touche-t-il le mur ? (« dans la zone » à l'apparition.) */

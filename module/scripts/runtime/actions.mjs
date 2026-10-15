@@ -12,7 +12,7 @@ import { barrierCrossed } from "../adapter/barriers.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { movementAllowance } from "../core/turn.mjs";
 import { footprintGap, chooseBasicAttack, dragMultiplier, dragAllowance } from "../core/movement.mjs";
-import { combatantFor, readBudget, movementOf, speedOf, rangeOf, committedPosition, historyCosts, distanceBetween, positionOf, usageTokenOf } from "../adapter/turn.mjs";
+import { combatantFor, readBudget, movementOf, speedOf, rangeOf, committedPosition, historyCosts, distanceBetween, positionOf, usageTokenOf, tokenCenter } from "../adapter/turn.mjs";
 import { straightCells } from "../core/dash.mjs";
 import { describeTarget } from "../adapter/areas.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
@@ -34,13 +34,6 @@ import { route } from "./router.mjs";
 import { afterTeleportOptions } from "./teleport-options.mjs";
 import { loc, notice, log } from "./shared.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
-
-/** Le centre d'un token à sa position validée. */
-function centerOf(token) {
-  const pos = committedPosition(token);
-  const grid = token.parent.grid;
-  return { x: pos.x + ((pos.width ?? 1) * grid.sizeX) / 2, y: pos.y + ((pos.height ?? 1) * grid.sizeY) / 2, elevation: pos.elevation };
-}
 
 /* -------------------------------------------- */
 /*  Ce que le tour permet                       */
@@ -654,7 +647,7 @@ function doorSideCells(token, wall) {
   if ( !length ) return [];
   const dir = { x: (x2 - x1) / length, y: (y2 - y1) / length };
   const normal = { x: -dir.y, y: dir.x };
-  const center = centerOf(token);
+  const center = tokenCenter(token);
   const side = Math.sign((normal.x * (center.x - x1)) + (normal.y * (center.y - y1)));
   const { w, h } = sizeOf(token);
   const offset = (Math.max(w, h) * grid.size) / 2;
@@ -832,7 +825,7 @@ export function rangeStatus(token, target, activity, mode=null) {
   if ( !reach ) return null;
   const gap = footprintGap(footprintOf(token), footprintOf(target));
   const out = gap > reach.long;
-  const blind = !out && (reach.normal > 1) && !hasLineOfSight(centerOf(token), target);
+  const blind = !out && (reach.normal > 1) && !hasLineOfSight(tokenCenter(token), target);
   return { out, blind, gap, reach };
 }
 
@@ -898,7 +891,7 @@ export async function engage(token, target, activity, { mode=null, fast=false, u
     // déjà à portée sans la voir, on cherche une telle case.
     const ranged = reach.normal > 1;
     const seeing = ranged;
-    const blind = ranged && (gap <= reach.normal) && !hasLineOfSight(centerOf(token), target);
+    const blind = ranged && (gap <= reach.normal) && !hasLineOfSight(tokenCenter(token), target);
     if ( (gap > reach.normal) || blind ) {
       const plan = planPath(token, { target, reachCells: reach.normal, seeing }, { maxCost: movementCap(token) });
       const withinLong = !blind && (gap <= reach.long);

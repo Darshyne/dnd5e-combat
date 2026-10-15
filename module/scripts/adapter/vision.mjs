@@ -25,7 +25,7 @@
  * (runtime/vision.mjs), et détruit au démontage du canevas.
  */
 
-import { committedPosition, distanceBetween } from "./turn.mjs";
+import { committedPosition, distanceBetween, tokenCenter } from "./turn.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
 import { sensesThrough, DEVILS_SIGHT } from "../core/light.mjs";
 import { revealedInvisible, seesInvisible } from "./facts.mjs";
@@ -209,13 +209,6 @@ export function blockingRegions(scene) {
   return out;
 }
 
-/** Le centre d'un token à sa position validée, à hauteur de ses pieds. */
-function centerOf(doc) {
-  const grid = doc.parent.grid;
-  const p = committedPosition(doc);
-  return { x: p.x + ((p.width ?? 1) * grid.sizeX) / 2, y: p.y + ((p.height ?? 1) * grid.sizeY) / 2, elevation: p.elevation ?? 0 };
-}
-
 /**
  * Ce qui bloque la vue le long d'un trait (échantillonné tous les demi-carreaux), extrémités comprises : une brume, des
  * ténèbres, les deux ou rien.
@@ -242,7 +235,7 @@ function blockedAlong(scene, from, to) {
  * traversant ? Positions validées. `{ fog, darkness }`.
  */
 export function blockedBetween(a, b) {
-  return blockedAlong(a.parent, centerOf(a), centerOf(b));
+  return blockedAlong(a.parent, tokenCenter(a), tokenCenter(b));
 }
 
 /** Un rayon lu dans l'unité d'une règle, ramené à celle de la grille (la valeur telle quelle si l'unité est inconnue). */
@@ -267,7 +260,7 @@ export function devilsSightRange(observer) {
 function seesThroughBlock(observer, target, source, config, blocked) {
   const own = detectionModesOf(observer);
   const distance = distanceBetween(observer, target).value;
-  const eye = observer.getVisionOrigin?.(committedPosition(observer)) ?? centerOf(observer);
+  const eye = observer.getVisionOrigin?.(committedPosition(observer)) ?? tokenCenter(observer);
   const inSight = () => hasLineOfSight(eye, target, canvas.scene.levels?.get?.(observer.level));
   for ( const id of sensesThrough(blocked) ) {
     const mode = own[id];
@@ -301,11 +294,11 @@ export function canSeePoint(observer, point) {
   const level = canvas.scene.levels?.get?.(observer.level) ?? canvas.level;
   const config = { object: null, level, tests: [{ point: { x: point.x, y: point.y, elevation: point.elevation ?? 0 }, level, los: new Map() }] };
   // §16.31 : un point dans une brume ou des ténèbres, ou vu à travers, ne se voit pas — sauf par les sens qui les percent.
-  const blocked = blockedAlong(observer.parent, centerOf(observer), point);
+  const blocked = blockedAlong(observer.parent, tokenCenter(observer), point);
   if ( blocked.fog || blocked.darkness ) {
     const own = detectionModesOf(observer);
     const grid = observer.parent.grid;
-    const from = centerOf(observer);
+    const from = tokenCenter(observer);
     const distance = grid.measurePath([from, { x: point.x, y: point.y, elevation: point.elevation ?? from.elevation }]).distance;
     const ranges = sensesThrough(blocked).filter(id => (id !== "feelTremor") && own[id] && (own[id].enabled !== false))
       .map(id => own[id].range);

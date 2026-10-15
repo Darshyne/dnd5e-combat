@@ -55,9 +55,14 @@ import { isHidden, spottedBy } from "../adapter/stealth.mjs";
 import { lightAt as lightAtPoint, tokenPoint as stealthPoint } from "../adapter/illumination.mjs";
 import { sleep } from "./shared.mjs";
 
+/** Ces outils agissent en MJ : un client joueur qui les appellerait est refusé. */
+function gmOnly() {
+  if ( !game.user.isGM ) throw new Error("GM only");
+}
+
 /** Le token désigné, sur la scène affichée par le MJ. */
 function viewedToken({ tokenId }) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   const scene = canvas.scene;
   if ( !scene || !canvas.ready ) throw new Error("no scene displayed");
   const token = scene.tokens.get(tokenId);
@@ -224,13 +229,13 @@ async function actionEnd({ tokenId, targetId=null }) {
 
 /** Les fenêtres ouvertes chez le MJ (ApplicationV2) : pour retrouver un dialogue qu'un déplacement bloqué attend. */
 function windows() {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   return [...foundry.applications.instances.entries()].map(([id, app]) => ({ id, title: app.title ?? null, className: app.constructor?.name ?? null }));
 }
 
 /** Ferme une fenêtre (un dialogue fermé vaut « non » : le déplacement mis en pause par le cœur se termine). */
 async function closeWindow({ id }) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   const app = foundry.applications.instances.get(id);
   if ( !app ) return { closed: false };
   await app.close();
@@ -239,7 +244,7 @@ async function closeWindow({ id }) {
 
 /** Affiche un niveau de la scène chez le MJ (un déplacement du moteur fait suivre la vue : le scénario la rend). */
 async function view({ levelId }) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   if ( !canvas.scene?.levels?.get?.(levelId) ) throw new Error(`level ${levelId} missing from the viewed scene`);
   if ( canvas.level?.id !== levelId ) await canvas.scene.view({ level: levelId });
   return { viewedLevel: canvas.level?.id ?? null };
@@ -251,7 +256,7 @@ async function view({ levelId }) {
  * contrôle d'avant est rendu.
  */
 async function perceived({ observerId, targetIds=[] }) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   const observer = canvas.tokens.get(observerId);
   if ( !observer ) throw new Error(`token ${observerId} missing from the viewed scene`);
   const before = canvas.tokens.controlled.map(t => t.id);
@@ -283,7 +288,7 @@ function reports() {
  * (adapter/messages.mjs, `rollDamageFor`) : le jet est rattaché à la carte, sur les cibles de la résolution.
  */
 async function rollCard({ messageId }) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   const carrier = game.messages.get(messageId);
   if ( !carrier ) throw new Error(`message ${messageId} not found`);
   const resolution = carrier.getFlag(MODULE_ID, "resolution");
@@ -297,7 +302,7 @@ async function rollCard({ messageId }) {
  * utilisée avec les points (`aimed: { type: "wall", points }`), la région et ses murs suivent `postUseActivity`. Rend l'id de la région.
  */
 async function wall({ tokenId, itemId, activityId=null, points }) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   const token = canvas.scene?.tokens.get(tokenId);
   const item = token?.actor?.items.get(itemId);
   const activity = activityId ? item?.system.activities.get(activityId) : item?.system.activities.find(a => a.target?.template?.type === "wall");
@@ -318,7 +323,7 @@ async function wall({ tokenId, itemId, activityId=null, points }) {
  * (comme l'entrée du menu du lanceur).
  */
 async function wallSide({ regionId, flip=false }) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   const region = canvas.scene?.regions.get(regionId);
   if ( !region ) throw new Error(`region ${regionId} not found`);
   if ( flip ) await flipWallSide(region);
@@ -354,7 +359,7 @@ function cover({ attackerId, targetId, itemId=null }) {
  * Outil de test seulement : le moteur, lui, laisse le placement au système.
  */
 async function summonAt({ tokenId, itemId, activityId=null, profile=null, actorUuid=null, x, y }) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   const token = canvas.scene?.tokens.get(tokenId);
   const item = token?.actor?.items.get(itemId);
   const activity = activityId ? item?.system.activities.get(activityId) : item?.system.activities.find(a => a.type === "summon");
@@ -495,7 +500,7 @@ async function teleport({ tokenId, itemId, x, y }) {
  * rend le résultat et l'état de la source. `on` absent : l'inverse.
  */
 async function toggleLight({ actorId, itemId, on=null }) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   const item = game.actors.get(actorId)?.items.get(itemId);
   if ( !item ) throw new Error("item not found");
   const result = await toggleCarriedLight(item, on);
@@ -510,7 +515,7 @@ function lightState({ actorId, itemId }) {
 
 /** §121 : faire passer le temps du monde (secondes, négatif pour revenir en arrière) ; rend le temps du monde. */
 async function advanceTime({ seconds }) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   await game.time.advance(Number(seconds) || 0);
   return { worldTime: game.time.worldTime };
 }
@@ -521,7 +526,7 @@ async function advanceTime({ seconds }) {
  * retire les items qu'il ne connaissait pas.
  */
 async function restoreItem({ actorId, itemData }) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   const actor = game.actors.get(actorId);
   if ( !actor ) throw new Error(`actor ${actorId} not found`);
   if ( actor.items.has(itemData?._id) ) return { restored: false, id: itemData._id };
@@ -560,7 +565,7 @@ function attackReasons({ attackerId, targetId, itemId, attackMode=null }) {
  * pour qu'un scénario la remette (Incantation puissante à la place d'Impact divin).
  */
 async function overrideContent({ identifier, entry=null }) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   const before = worldOverrides()[identifier] ?? null;
   await setWorldOverride(identifier, entry);
   return { before };
@@ -681,7 +686,7 @@ function status() {
  * répondent ensuite par `list-dialogs` / `answer-dialog` du connecteur. Réservé au MJ.
  */
 async function runMacro({ uuid }={}) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   const macro = await fromUuid(uuid);
   if ( !(macro instanceof Macro) ) throw new Error(`not a macro: ${uuid}`);
   Promise.resolve(macro.execute()).catch(err => console.error(`${MODULE_ID} | macro "${macro.name}"`, err));
@@ -693,7 +698,7 @@ async function runMacro({ uuid }={}) {
  * Réservé au MJ ; `call-module-api` n'existe que dans un monde où le réglage « Outils de test » du connecteur est activé.
  */
 function reload() {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   setTimeout(() => window.location.reload(), 300);
   return { reloading: true, bootedAt: BOOTED_AT };
 }
@@ -767,7 +772,7 @@ async function transpose({ tokenId }) {
  * Réservé au MJ (§38.4 : le scénario `presage` désactive le Présage le temps d'une partie).
  */
 async function setting({ key, value }) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   if ( !game.settings.settings.has(`${MODULE_ID}.${key}`) ) throw new Error(`unknown setting: ${key}`);
   const before = game.settings.get(MODULE_ID, key);
   if ( value !== undefined ) await game.settings.set(MODULE_ID, key, value);
@@ -799,7 +804,7 @@ async function sequencer({ end=null }={}) {
  * d'utilisation et les régions nées de cette activité dans les 3 s (une pose interactive, elle, attendrait un clic : rien).
  */
 async function use({ tokenId, itemId, activityType=null, extra=null, consume=false }) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   const token = canvas.scene?.tokens.get(tokenId);
   const item = token?.actor?.items.get(itemId);
   const activity = item?.system.activities.find(a => !activityType || (a.type === activityType));
@@ -831,7 +836,7 @@ async function use({ tokenId, itemId, activityType=null, extra=null, consume=fal
  * (`problem`, clé de traduction ou null), rien de lancé.
  */
 async function dash({ tokenId, itemId, x, y, preview=false }) {
-  if ( !game.user.isGM ) throw new Error("GM only");
+  gmOnly();
   const token = viewedToken({ tokenId });
   const activity = token.actor?.items.get(itemId)?.system.activities?.find(a => lineDashOf(a)) ?? null;
   if ( !activity ) throw new Error("no straight-line charge on this item");

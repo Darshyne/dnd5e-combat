@@ -22,7 +22,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { connect } from "./lib/connector.mjs";
-import { ARENA, RESTORED_KEEP } from "./lib/stages.mjs";
+import { ARENA, RESTORED_KEEP, METRES } from "./lib/stages.mjs";
 
 const MODULE_ID = "dnd5e-combat";
 const TERMINAL = new Set(["done", "missed", "undone"]);
@@ -587,6 +587,7 @@ const sceneList = Array.isArray(scenes) ? scenes : (scenes.scenes ?? []);
 // `ARENE=0` : sans l'arène (la scène active), pour comparer.
 const arenaScene = (process.env.ARENE === "0") ? null : (sceneList.find(s => s.name === ARENA.name) ?? null);
 const keepScene = sceneList.find(s => s.id === RESTORED_KEEP.scene) ?? null;
+const metresScene = sceneList.find(s => s.name === METRES.name) ?? null;
 const activeAtStart = sceneList.find(s => s.active)?.id ?? null;
 let activeNow = activeAtStart;
 
@@ -640,7 +641,13 @@ for ( const file of files ) {
     continue;
   }
   console.log(`\n▶ ${scenario.name ?? basename(file)}`);
-  if ( arenaScene ) {
+  // `scene: "metres"` : la scène en mètres, où qu'elle soit ; absente, le scénario n'est pas applicable.
+  if ( (scenario.scene === "metres") && !metresScene ) { console.log(`    scène « ${METRES.name} » absente : non applicable`); skipped++; continue; }
+  if ( scenario.scene === "metres" ) {
+    if ( metresScene.id !== activeNow ) previous = null;
+    await useScene(metresScene.id);
+  }
+  else if ( arenaScene ) {
     const target = (scenario.scene === "keep") ? keepScene : arenaScene;
     if ( target ) {
       if ( target.id !== activeNow ) previous = null;   // l'état laissé dans l'autre scène ne se compare pas

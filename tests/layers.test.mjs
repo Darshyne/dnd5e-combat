@@ -8,23 +8,35 @@
  * Et core/ ne touche à aucun global de Foundry.
  */
 import { describe, it, expect } from "vitest";
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = join(import.meta.dirname, "../module/scripts");
 const LAYERS = ["core", "content", "adapter", "runtime", "ui"];
 
-const files = layer => readdirSync(join(ROOT, layer)).filter(f => f.endsWith(".mjs")).map(f => `${layer}/${f}`);
+/** Les fichiers d'une couche, sous-dossiers compris (`runtime/diagnostic/…`). */
+const files = dir => readdirSync(join(ROOT, dir)).flatMap(f => statSync(join(ROOT, dir, f)).isDirectory() ? files(`${dir}/${f}`)
+  : (f.endsWith(".mjs") ? [`${dir}/${f}`] : []));
 const source = file => readFileSync(join(ROOT, file), "utf8");
 
-/** Les couches qu'un fichier importe (`../core/x.mjs` → core ; `./x.mjs` → sa propre couche). */
+/** Le chemin (depuis module/scripts) d'un import relatif d'un fichier. */
+function resolve(file, spec) {
+  const parts = file.split("/").slice(0, -1);
+  for ( const seg of spec.split("/") ) {
+    if ( seg === "." ) continue;
+    if ( seg === ".." ) parts.pop();
+    else parts.push(seg);
+  }
+  return parts.join("/");
+}
+
+/** Les couches qu'un fichier importe : le premier dossier du chemin résolu (`../../runtime/x.mjs` d'un sous-dossier compris). */
 function importedLayers(file) {
-  const own = file.split("/")[0];
   const out = new Set();
   for ( const [, spec] of source(file).matchAll(/from\s+"([^"]+)"/g) ) {
-    const m = spec.match(/^\.\.\/([a-z]+)\//);
-    if ( m ) out.add(m[1]);
-    else if ( spec.startsWith("./") ) out.add(own);
+    if ( !spec.startsWith(".") ) continue;
+    const layer = resolve(file, spec).split("/")[0];
+    if ( LAYERS.includes(layer) ) out.add(layer);
   }
   return out;
 }
@@ -82,9 +94,15 @@ describe("un seul chemin pour toute action", () => {
  * par ui/pointer.mjs avant d'exister, tests verts).
  */
 describe("imports et exports du module", () => {
-  const exportsOf = file => {
+  const exportsOf = (file, seen=new Set()) => {
     const code = source(file);
     const names = new Set();
+    if ( seen.has(file) ) return names;
+    seen.add(file);
+    // `export * from "./x.mjs"` : tout ce que l'autre fichier exporte (un fichier-façade après découpage).
+    for ( const [, spec] of code.matchAll(/export\s*\*\s*from\s*"(\.[^"]+)"/g) ) {
+      for ( const name of exportsOf(resolve(file, spec), seen) ) names.add(name);
+    }
     for ( const [, name] of code.matchAll(/export\s+(?:async\s+)?(?:function\*?|const|let|class)\s+([A-Za-z_$][\w$]*)/g) ) names.add(name);
     for ( const [, list] of code.matchAll(/export\s*\{([^}]*)\}/g) ) {
       for ( const part of list.split(",") ) {
@@ -93,15 +111,6 @@ describe("imports et exports du module", () => {
       }
     }
     return names;
-  };
-  const resolve = (file, spec) => {
-    const parts = file.split("/").slice(0, -1);
-    for ( const seg of spec.split("/") ) {
-      if ( seg === "." ) continue;
-      if ( seg === ".." ) parts.pop();
-      else parts.push(seg);
-    }
-    return parts.join("/");
   };
   const allFiles = LAYERS.flatMap(files);
 

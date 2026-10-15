@@ -11,9 +11,8 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
-import { convertLength } from "../core/units.mjs";
-import { readUnitFactors } from "./units.mjs";
 import { shapeCenter } from "../core/area.mjs";
+import { lengthIn } from "./units.mjs";
 
 /** La règle d'orage d'un item (`{ bonus }`), ou null. */
 export const stormOf = item => (item ? contentOf(item).entry?.storm ?? null : null);
@@ -39,8 +38,7 @@ export function cloudCircle(cloud) {
 /** Le rayon de l'éclair, en pixels de la scène (règle `bolt` : 5 ft), plus une demi-case comme à la pose calée sur la grille. */
 export function boltRadiusPx(item, scene) {
   const rule = contentOf(item).entry?.bolt ?? { radius: 5, units: "ft" };
-  let radius = rule.radius;
-  try { radius = convertLength(radius, rule.units, scene.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  let radius = lengthIn(rule.radius, rule.units, scene.grid.units);
   return ((radius / scene.grid.distance) * scene.grid.size) + (scene.grid.size / 2);
 }
 

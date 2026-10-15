@@ -15,10 +15,9 @@ import { MODULE_ID } from "../constants.mjs";
 import { allocateDarts } from "../core/action.mjs";
 import { projectilesOf, projectileCount, handleAllocationQuery, leapOf } from "../adapter/projectiles.mjs";
 import { distanceBetween } from "../adapter/turn.mjs";
-import { readUnitFactors } from "../adapter/units.mjs";
-import { convertLength } from "../core/units.mjs";
 import { route } from "./router.mjs";
 import { log, loc, notice } from "./shared.mjs";
+import { lengthIn } from "../adapter/units.mjs";
 
 const started = new Set();
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -36,8 +35,7 @@ function leapRefused(activity, leap, target=[...game.user.targets][0]?.document)
   const from = leap.from ? fromUuidSync(leap.from, { strict: false }) : null;
   if ( !rule || !target || !from ) return false;
   if ( (leap.chain ?? []).includes(target.uuid) ) return loc("Rebond.DejaVise", { name: target.name });
-  let limit = rule.radius;
-  try { limit = convertLength(rule.radius, rule.units, from.parent.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  let limit = lengthIn(rule.radius, rule.units, from.parent.grid.units);
   if ( distanceBetween(from, target).value > limit + 1e-6 ) return loc("Rebond.TropLoin", { name: target.name, distance: limit, units: from.parent.grid.units });
   return false;
 }

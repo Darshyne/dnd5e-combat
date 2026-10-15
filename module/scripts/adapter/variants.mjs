@@ -5,11 +5,10 @@
  */
 
 import { variantsOf, chooseVariant, advantageVariant, straightChargeFeet } from "../core/variants.mjs";
-import { convertLength } from "../core/units.mjs";
 import { englishDescription } from "./multiattack.mjs";
 import { originItemOf } from "./facts.mjs";
-import { readUnitFactors } from "./units.mjs";
 import { committedPosition } from "./turn.mjs";
+import { lengthIn } from "./units.mjs";
 
 /** Le nom anglais d'une activité : celui d'avant Babele, sinon le sien. */
 function englishName(item, activity) {
@@ -45,8 +44,7 @@ function chargedFeet(attacker, target) {
   const here = committedPosition(attacker);
   const history = (attacker.movementHistory ?? []).map(w => ({ ...w, width: w.width ?? here.width, height: w.height ?? here.height }));
   const path = [...history, here].map(p => centerCells(p, grid.size));
-  let cellFeet = grid.distance;
-  try { cellFeet = convertLength(grid.distance, grid.units, "ft", readUnitFactors()); } catch { /* grille déjà en pieds */ }
+  let cellFeet = lengthIn(grid.distance, grid.units, "ft");
   return straightChargeFeet(path, centerCells(committedPosition(target), grid.size), cellFeet);
 }
 

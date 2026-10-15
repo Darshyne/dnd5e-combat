@@ -13,10 +13,9 @@ import { contentOf } from "../adapter/content.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { usesLeftFor } from "../adapter/inspiration.mjs";
 import { combatantFor, distanceBetween, isOwnTurn } from "../adapter/turn.mjs";
-import { convertLength } from "../core/units.mjs";
-import { readUnitFactors } from "../adapter/units.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
+import { lengthIn } from "../adapter/units.mjs";
 
 async function onResolution(resolution) {
   if ( (resolution?.step !== STEPS.DONE) || !resolution.damageRoll?.messageId ) return;
@@ -32,8 +31,7 @@ async function onResolution(resolution) {
     const rule = contentOf(item).entry?.afterSneak;
     const activity = rule ? item.system.activities?.get(rule.activity) : null;
     if ( !activity || !(usesLeftFor(activity) > 0) ) continue;
-    let reach = rule.radius;
-    try { reach = convertLength(rule.radius, rule.units, first.parent.grid.units, readUnitFactors()); } catch { /* grille */ }
+    let reach = lengthIn(rule.radius, rule.units, first.parent.grid.units);
     const candidates = first.parent.tokens.filter(t => t.actor && (t !== first) && (t !== source) && !t.hidden
       && ((t.actor.system.attributes?.hp?.value ?? 0) > 0) && (distanceBetween(first, t).value <= (reach + 1e-6)));
     if ( !candidates.length ) return;

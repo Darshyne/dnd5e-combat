@@ -11,8 +11,8 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { convertLength, isWithinRange } from "../core/units.mjs";
-import { readUnitFactors } from "./units.mjs";
+import { isWithinRange } from "../core/units.mjs";
+import { readUnitFactors, lengthIn } from "./units.mjs";
 import { distanceBetween, reachOf, combatantFor, currentTurnKey } from "./turn.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { isDeadActor } from "./death.mjs";
@@ -51,8 +51,7 @@ export function markData(kind, { source, target, weapon, turnKey }) {
   if ( kind === "slow" ) {
     // « Réduire sa Vitesse de 3 m » : 10 ft, dans l'unité de vitesse de la créature ralentie.
     const units = target.actor?.system?.attributes?.movement?.units ?? "ft";
-    let value = 10;
-    try { value = convertLength(10, "ft", units, readUnitFactors()); } catch { /* unité inconnue : pieds */ }
+    let value = lengthIn(10, "ft", units);
     changes.push({ key: "system.attributes.movement.bonus", value: String(-value), type: "add" });
   }
   return {

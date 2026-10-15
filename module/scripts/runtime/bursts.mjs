@@ -6,20 +6,18 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
-import { convertLength } from "../core/units.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { distanceBetween } from "../adapter/turn.mjs";
-import { readUnitFactors } from "../adapter/units.mjs";
 import { burstAround } from "../adapter/areas.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log } from "./shared.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
+import { lengthIn } from "../adapter/units.mjs";
 
 /** Les créatures touchées par l'éclat : la cible, et toute créature à `radius` d'elle (ni cachée, ni objet piloté). */
 function caughtAround(center, { radius, units }) {
-  let limit = radius;
-  try { limit = convertLength(radius, units, center.parent.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  let limit = lengthIn(radius, units, center.parent.grid.units);
   return center.parent.tokens.filter(t => (t === center) || (t.actor && !t.hidden && !isObjectToken(t)
     && (t._source.level === center._source.level) && (distanceBetween(center, t).value <= limit + 1e-6)));
 }

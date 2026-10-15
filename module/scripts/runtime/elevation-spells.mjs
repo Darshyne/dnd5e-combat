@@ -10,13 +10,12 @@
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { originItemOf, comesFromItemEffect } from "../adapter/facts.mjs";
-import { convertLength } from "../core/units.mjs";
-import { readUnitFactors } from "../adapter/units.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
+import { lengthIn } from "../adapter/units.mjs";
 
 /** Une hauteur dans l'unité de la grille de la scène. */
-const toGrid = (scene, value, units) => { try { return convertLength(value, units, scene.grid.units, readUnitFactors()); } catch { return value; } };
+const toGrid = (scene, value, units) => lengthIn(value, units, scene.grid.units);
 
 /** Déplace le token à cette élévation, sur place. */
 async function setElevation(token, elevation) {

@@ -11,8 +11,7 @@ import { holds } from "../core/triggers.mjs";
 import { contentOf } from "./content.mjs";
 import { factsFor, creatureTypeOf, conditionImmunitiesOf, originItemOf } from "./facts.mjs";
 import { distanceBetween } from "./turn.mjs";
-import { readUnitFactors } from "./units.mjs";
-import { convertLength } from "../core/units.mjs";
+import { readUnitFactors, lengthIn } from "./units.mjs";
 import { isSpellCast } from "./scrolls.mjs";
 
 /**
@@ -30,8 +29,7 @@ function globeAgainst(activity, token, castLevel) {
       const item = originItemOf(effect);
       const rule = item ? contentOf(item).entry?.globe : null;
       if ( !rule || (castLevel > rule.maxLevel) ) continue;
-      let radius = rule.radius;
-      try { radius = convertLength(rule.radius, rule.units, token.parent.grid.units, factors); } catch { /* unité de la grille */ }
+      let radius = lengthIn(rule.radius, rule.units, token.parent.grid.units, factors);
       const inside = t => !!t && (distanceBetween(holder, t).value <= radius + 1e-6);
       // §163 : `everywhere` (Champ antimagie) — d'où que vienne le sort.
       if ( inside(token) && (rule.everywhere || !inside(caster)) ) return item;

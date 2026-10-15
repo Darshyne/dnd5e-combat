@@ -16,10 +16,10 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { planCommand, currentCommand, canTranspose } from "../core/pilot.mjs";
-import { convertLength } from "../core/units.mjs";
 import { summonItemOf } from "./summons.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
 import { combatantFor, isOwnTurn } from "./turn.mjs";
+import { lengthIn } from "./units.mjs";
 
 /**
  * L'objet piloté que ce token représente, ou null.
@@ -100,8 +100,7 @@ export function commandPlan(pilot, gesture) {
 /** Distance d'une commande, dans l'unité de la grille. */
 export function commandDistance(pilot, factors) {
   const units = pilot.token.parent?.grid.units ?? pilot.rule.units;
-  try { return convertLength(pilot.rule.distance, pilot.rule.units, units, factors); }
-  catch { return pilot.rule.distance; }
+  return lengthIn(pilot.rule.distance, pilot.rule.units, units, factors);
 }
 
 /**

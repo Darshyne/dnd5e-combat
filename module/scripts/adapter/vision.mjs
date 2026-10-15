@@ -27,12 +27,11 @@
 
 import { committedPosition, distanceBetween } from "./turn.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
-import { readUnitFactors } from "./units.mjs";
-import { convertLength } from "../core/units.mjs";
 import { sensesThrough, DEVILS_SIGHT } from "../core/light.mjs";
 import { revealedInvisible, seesInvisible } from "./facts.mjs";
 import { outsideCone } from "./cone.mjs";
 import { hiddenFrom } from "./stealth.mjs";
+import { lengthIn } from "./units.mjs";
 
 const SOURCE_PREFIX = "dnd5e-combat";
 
@@ -248,8 +247,7 @@ export function blockedBetween(a, b) {
 
 /** Un rayon lu dans l'unité d'une règle, ramené à celle de la grille (la valeur telle quelle si l'unité est inconnue). */
 function toGridUnits(value, units, grid) {
-  try { return convertLength(value, units, grid.units, readUnitFactors()); }
-  catch { return value; }
+  return lengthIn(value, units, grid.units);
 }
 
 /** La portée de la Vision du diable de l'observateur, unité de la grille, ou 0. */

@@ -4,8 +4,6 @@ import { contentOf } from "../adapter/content.mjs";
 import { readAreaState, writeAreaState, lastingRegions, isInside, replayAgainst, noteExpiry, expiredRegions, pulseAll, zoneCenter, moveZoneTo, conditionalReplay } from "../adapter/areas.mjs";
 import { payWithoutUse } from "../adapter/reactions.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
-import { convertLength } from "../core/units.mjs";
-import { readUnitFactors } from "../adapter/units.mjs";
 import { placeAreaAt } from "../adapter/self-area.mjs";
 import { positionOf as position, committedPosition } from "../adapter/turn.mjs";
 import { noteSummonExpiry, expiredSummons } from "../adapter/summons.mjs";
@@ -18,6 +16,7 @@ import { log } from "./shared.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { sideOf } from "../adapter/factions.mjs";
 import { alliedSides } from "../core/factions.mjs";
+import { lengthIn } from "../adapter/units.mjs";
 const currentTurnKey = () => turnKeyOf(game.combat?.started ? game.combat.round : null, game.combat?.turn);
 
 /** Le token peut-il subir la zone ? Pas celui qui l'a posée depuis lui-même, pas un mort. */
@@ -129,8 +128,7 @@ async function driftAway(region, caster, { distance, units }) {
   const dx = center.x - from.x, dy = center.y - from.y;
   const length = Math.hypot(dx, dy);
   if ( !(length > 0) ) return;
-  let gridDistance = distance;
-  try { gridDistance = convertLength(distance, units, scene.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  let gridDistance = lengthIn(distance, units, scene.grid.units);
   const px = gridDistance * (scene.grid.size / scene.grid.distance);
   await moveZoneTo(region, { x: center.x + (dx / length) * px, y: center.y + (dy / length) * px });
   log(`${region.name}: moves away by ${distance} ${units}`);

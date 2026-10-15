@@ -1,12 +1,11 @@
 import { MODULE_ID } from "../constants.mjs";
 import { auraRecipients, wantedAuraEffects, planAuraChanges } from "../core/aura.mjs";
-import { convertLength } from "../core/units.mjs";
 import {
   aurasOf, auraValue, auraCopiesOn, createAuraCopy, updateAuraCopy, removeAuraCopy, showAuraIcon, carriesOriginal
 } from "../adapter/auras.mjs";
 import { distanceBetween } from "../adapter/turn.mjs";
 import { hasLineOfEffect } from "../adapter/cover.mjs";
-import { readUnitFactors } from "../adapter/units.mjs";
+import { readUnitFactors, lengthIn } from "../adapter/units.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { log, isExecutor } from "./shared.mjs";
@@ -42,8 +41,7 @@ async function refreshScene(scene) {
 
   const auras = [];
   for ( const sourceToken of (active ? tokens : []) ) for ( const aura of aurasOf(sourceToken.actor) ) {
-    let radius = aura.radius;
-    try { radius = convertLength(aura.radius, aura.units, gridUnits, factors); } catch { /* unité inconnue : valeur brute */ }
+    let radius = lengthIn(aura.radius, aura.units, gridUnits, factors);
     const source = {
       ...sideOf(sourceToken), token: sourceToken.uuid, key: aura.key,
       inactive: isInactive(sourceToken.actor), radius, affects: aura.affects,

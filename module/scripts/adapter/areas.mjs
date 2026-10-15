@@ -13,13 +13,12 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
-import { convertLength } from "../core/units.mjs";
-import { readUnitFactors } from "./units.mjs";
 import { translateShapes, shapeCenter, expiryTime, siblingsByMoment } from "../core/area.mjs";
 import { stepsOf, holds } from "../core/triggers.mjs";
 import { factsFor } from "./facts.mjs";
 import { committedPosition } from "./turn.mjs";
 import { declarationsOfItem } from "./triggers.mjs";
+import { lengthIn } from "./units.mjs";
 
 /**
  * Ce qu'une activité déclare pour sa zone (moments où elle rejoue son activité, core/area.mjs), ou
@@ -287,8 +286,7 @@ export async function shrinkToBolt(region) {
   const center = rule ? shapeCenter(region.shapes?.[0]?.toObject?.() ?? region._source.shapes?.[0]) : null;
   if ( !center ) return false;
   const grid = region.parent.grid;
-  let radius = rule.radius;
-  try { radius = convertLength(radius, rule.units, grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  let radius = lengthIn(rule.radius, rule.units, grid.units);
   const px = (radius / grid.distance) * grid.size;
   // Le cœur V14 cale un cercle sur la grille comme à la pose (gridBased) : un vrai cercle suffit ici.
   await region.update({ shapes: [{ type: "circle", x: center.x, y: center.y, radius: px + (grid.size / 2) }] });

@@ -12,12 +12,11 @@
  */
 
 import { selfAreaShape, aimedAreaShape, aimFrom, cubeBeside } from "../core/self-area.mjs";
-import { convertLength } from "../core/units.mjs";
 import { committedPosition, usageTokenOf } from "./turn.mjs";
-import { readUnitFactors } from "./units.mjs";
 import { templateOf } from "./template.mjs";
 import { contentOf } from "./content.mjs";
 import { clampPolyline, wallLineShapes, orthogonalize, cellWallShapes } from "../core/wall.mjs";
+import { lengthIn } from "./units.mjs";
 
 /**
  * La forme et le token d'une zone à poser d'office, ou null (dnd5e pose comme d'habitude) : portée personnelle, zone
@@ -39,8 +38,7 @@ export function selfAreaOf(activity) {
 function toGrid(value, units, scene) {
   const n = Number(value);
   if ( !(n > 0) ) return undefined;
-  try { return convertLength(n, units, scene.grid.units, readUnitFactors()); }
-  catch { return n; }
+  return lengthIn(n, units, scene.grid.units);
 }
 
 /** Les dimensions de la zone de l'activité, dans l'unité de la grille. */

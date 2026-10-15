@@ -21,9 +21,8 @@
  */
 
 import { regionElevationFor, originPointOfShapes, withinSphere } from "../core/space.mjs";
-import { convertLength } from "../core/units.mjs";
 import { committedPosition } from "./turn.mjs";
-import { readUnitFactors } from "./units.mjs";
+import { readUnitFactors, lengthIn } from "./units.mjs";
 import { eyeElevation } from "./cover.mjs";
 import { templateOf } from "./template.mjs";
 
@@ -60,7 +59,7 @@ export function areaOf(activity, scene, dimensions=null) {
     const n = Number(v);
     if ( !Number.isFinite(n) ) return undefined;
     if ( !template.units ) return n;
-    try { return convertLength(n, template.units, units, factors); } catch { return n; }
+    return lengthIn(n, template.units, units, factors);
   };
   return { type, size: to(template.size), width: to(template.width), height: to(template.height) };
 }

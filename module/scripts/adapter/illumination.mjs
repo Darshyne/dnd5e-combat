@@ -17,11 +17,10 @@
  */
 
 import { committedPosition } from "./turn.mjs";
-import { readUnitFactors } from "./units.mjs";
-import { convertLength } from "../core/units.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { globalLightLevel, lightLevel, perceivedLight, obscurement } from "../core/illumination.mjs";
 import { devilsSightRange } from "./vision.mjs";
+import { lengthIn } from "./units.mjs";
 
 /**
  * Le niveau de lumière en un point de la scène affichée.
@@ -103,8 +102,7 @@ function senseRange(actor, key, grid) {
   const senses = actor?.system?.attributes?.senses;
   const value = Number(senses?.ranges?.[key]);
   if ( !(value > 0) ) return 0;
-  try { return convertLength(value, senses.units ?? "ft", grid.units, readUnitFactors()); }
-  catch { return value; }
+  return lengthIn(value, senses.units ?? "ft", grid.units);
 }
 
 /**

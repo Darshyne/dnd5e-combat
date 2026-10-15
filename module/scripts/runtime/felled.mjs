@@ -7,16 +7,15 @@
  */
 
 import { STEPS } from "../core/action.mjs";
-import { convertLength } from "../core/units.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { distanceBetween } from "../adapter/turn.mjs";
-import { readUnitFactors } from "../adapter/units.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log } from "./shared.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
+import { lengthIn } from "../adapter/units.mjs";
 
 const seen = new Set();
 
@@ -42,8 +41,7 @@ async function onResolution(resolution) {
       const found = fellRuleOf(token.actor);
       if ( !found || !areEnemies(token, victim) ) continue;
       const mine = !!resolution.source && (token.actor.uuid === resolution.source);
-      let limit = found.rule.radius;
-      try { limit = convertLength(found.rule.radius, found.rule.units, victim.parent.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+      let limit = lengthIn(found.rule.radius, found.rule.units, victim.parent.grid.units);
       if ( !mine && !(distanceBetween(token, victim).value <= limit + 1e-6) ) continue;
       const activities = found.item.system.activities;
       const activity = activities?.get(found.rule.activity ?? "") ?? activities?.find(a => a.type === "heal");

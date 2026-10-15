@@ -10,15 +10,14 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { RECALL_RANGE, recallProblem } from "../core/familiar.mjs";
-import { convertLength } from "../core/units.mjs";
 import { contentOf } from "./content.mjs";
 import { summonItemOf } from "./summons.mjs";
 import { distanceBetween } from "./turn.mjs";
 import { cellUnder, footprintOf } from "./movement.mjs";
-import { readUnitFactors } from "./units.mjs";
 import { isIntangible } from "./pilot.mjs";
 import { sharesSpaceWith } from "./space-sharing.mjs";
 import { footprintGap } from "../core/movement.mjs";
+import { lengthIn } from "./units.mjs";
 
 const POCKET = "pocket";
 
@@ -89,8 +88,7 @@ export function recallSpot(masterToken, point) {
   const probe = probeToken(pocket, scene, { level, elevation });
   const at = scene.grid.getTopLeftPoint(cellUnder(probe, point));
   probe.updateSource({ x: at.x, y: at.y });
-  let limit = RECALL_RANGE.value;
-  try { limit = convertLength(RECALL_RANGE.value, RECALL_RANGE.units, scene.grid.units, readUnitFactors()); } catch {}
+  let limit = lengthIn(RECALL_RANGE.value, RECALL_RANGE.units, scene.grid.units);
   const distance = distanceBetween(masterToken, probe).value;
   const mine = footprintOf(probe);
   const defeated = CONFIG.specialStatusEffects.DEFEATED;

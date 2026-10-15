@@ -12,13 +12,12 @@ import { barrierCrossed } from "../adapter/barriers.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { movementAllowance } from "../core/turn.mjs";
 import { footprintGap, chooseBasicAttack, dragMultiplier, dragAllowance } from "../core/movement.mjs";
-import { convertLength } from "../core/units.mjs";
 import { combatantFor, readBudget, movementOf, speedOf, rangeOf, committedPosition, historyCosts, distanceBetween, positionOf, usageTokenOf } from "../adapter/turn.mjs";
 import { straightCells } from "../core/dash.mjs";
 import { describeTarget } from "../adapter/areas.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { pilotOf, pilotOfActor, commandPlan, commandDistance, commandActivities, summonerToken, isIntangible, groupTokens, transposeOf } from "../adapter/pilot.mjs";
-import { readUnitFactors } from "../adapter/units.mjs";
+import { readUnitFactors, lengthIn } from "../adapter/units.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { sharesSpaceWith } from "../adapter/space-sharing.mjs";
 import { planPath, previewPath, walk, stopAllWalks, continuedFlags, cellUnder, footprintOf, sizeOf, cellOf, stairsEntry, rulerShown } from "../adapter/movement.mjs";
@@ -112,8 +111,7 @@ function teleportLimit(activity, scene) {
   const rule = (activity?.type === "teleport") ? { distance: activity.teleport?.value, units: activity.teleport?.units }
     : (activity?.item ? contentOf(activity.item).entry?.teleport : null);
   if ( !rule || !Number.isFinite(Number(rule.distance)) ) return null;
-  try { return convertLength(Number(rule.distance), rule.units, scene.grid.units, readUnitFactors()); }
-  catch { return Number(rule.distance); }
+  return lengthIn(Number(rule.distance), rule.units, scene.grid.units);
 }
 
 /**
@@ -179,8 +177,7 @@ export async function afterTeleport(activity, rule) {
 
 /** Planifie une téléportation déclarée, comme le fait l'activité native (dnd5e teleport.mjs, `planTeleport`). */
 async function planDeclaredTeleport(activity, object, { distance, units }) {
-  let maxDistance = distance;
-  try { maxDistance = convertLength(distance, units, canvas.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  let maxDistance = lengthIn(distance, units, canvas.grid.units);
   const plan = await object.planMovement({ allowedActions: ["blink"], direct: true, maxDistance, preventDrop: true });
   if ( !plan ) return null;
   const plans = [{ token: object, plan }];
@@ -271,8 +268,7 @@ export function dashLimit(token) {
   const movement = token.actor?.system.attributes?.movement;
   const walk = Number(movement?.speeds?.walk ?? movement?.walk);
   if ( !Number.isFinite(walk) ) return null;
-  try { return convertLength(walk, movement.units ?? token.parent.grid.units, token.parent.grid.units, readUnitFactors()); }
-  catch { return walk; }
+  return lengthIn(walk, movement.units ?? token.parent.grid.units, token.parent.grid.units);
 }
 
 /**
@@ -298,8 +294,7 @@ export function dashProblem(token, to, limit) {
  */
 export function dashTargets(token, to, rule) {
   const grid = token.parent.grid;
-  let reach = rule.reach;
-  try { reach = convertLength(rule.reach, rule.units, grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  let reach = lengthIn(rule.reach, rule.units, grid.units);
   const path = straightCells(cellOf(token), cellOf(token, to)).map(c => grid.getTopLeftPoint(c));
   const defeated = CONFIG.specialStatusEffects.DEFEATED;
   const level = token._source.level ?? null;
@@ -408,8 +403,7 @@ export function reachCells(activity, mode=null) {
   const range = rangeOf(activity, mode ?? "melee");
   const grid = canvas.scene.grid;
   const toCells = value => {
-    let v = value;
-    try { v = convertLength(value, range.units, grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+    let v = lengthIn(value, range.units, grid.units);
     return Math.max(1, Math.floor((v / grid.distance) + 1e-6));
   };
   if ( ["self", "spec", "any"].includes(range.units) ) return null;
@@ -644,8 +638,7 @@ export async function jumpTo(token, point) {
   const cell = cellUnder(token, point);
   const dest = { ...grid.getTopLeftPoint(cell), snapped: true, action: "jump" };
   const distance = grid.measurePath([grid.getCenterPoint(grid.getTopLeftPoint(cellOf(token))), grid.getCenterPoint(dest)]).distance;
-  let max = token.actor?.system.abilities?.str?.value ?? 10;
-  try { max = convertLength(max, "ft", grid.units, readUnitFactors()); } catch { /* pieds */ }
+  let max = lengthIn(token.actor?.system.abilities?.str?.value ?? 10, "ft", grid.units);
   if ( distance > max + 1e-6 ) return ui.notifications.warn(loc("Deplacement.SautTropLong", { max: Math.floor(max), units: grid.units }));
   await walkSafely(token, { waypoints: [dest], beyond: [], arrives: true });
 }
@@ -1070,8 +1063,7 @@ function pilotMayMove(token, movement, pilot) {
 function withinTether(token, pilot, destination) {
   const caster = summonerToken(pilot);
   if ( !pilot.rule.tether || !caster || (caster.parent !== token.parent) || !destination ) return true;
-  let limit = pilot.rule.tether.distance;
-  try { limit = convertLength(limit, pilot.rule.tether.units, token.parent.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  let limit = lengthIn(pilot.rule.tether.distance, pilot.rule.tether.units, token.parent.grid.units);
   return distanceBetween(caster, token, { posB: positionOf(destination) }).value <= limit + 1e-6;
 }
 
@@ -1079,8 +1071,7 @@ function withinTether(token, pilot, destination) {
 function nearAnother(token, pilot, destination) {
   const others = groupTokens(pilot).filter(t => t !== token);
   if ( !others.length || !destination ) return true;
-  let limit = pilot.rule.cluster.distance;
-  try { limit = convertLength(limit, pilot.rule.cluster.units, token.parent.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  let limit = lengthIn(pilot.rule.cluster.distance, pilot.rule.cluster.units, token.parent.grid.units);
   const at = positionOf(destination);
   return others.some(other => distanceBetween(other, token, { posB: at }).value <= limit + 1e-6);
 }

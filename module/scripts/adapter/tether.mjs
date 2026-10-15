@@ -7,13 +7,12 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { tetherBreak } from "../core/tether.mjs";
-import { convertLength } from "../core/units.mjs";
 import { contentOf } from "./content.mjs";
 import { concentrationOn } from "./summons.mjs";
 import { distanceBetween } from "./turn.mjs";
-import { readUnitFactors } from "./units.mjs";
 import { coverFor, hasLineOfEffect } from "./cover.mjs";
 import { tokenOnViewedScene } from "./vision.mjs";
+import { lengthIn } from "./units.mjs";
 
 /** La règle de lien d'un item, ou null. */
 export function tetherRuleOf(item) {
@@ -62,8 +61,7 @@ export function tetherBroken(item) {
   const target = tetheredToken(item);
   const caster = tokenOnViewedScene(item?.actor);
   if ( !rule || !target || !caster || (caster.parent !== target.parent) ) return null;
-  let maxRange = rule.range.value;
-  try { maxRange = convertLength(rule.range.value, rule.range.units, caster.parent.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  let maxRange = lengthIn(rule.range.value, rule.range.units, caster.parent.grid.units);
   const distance = distanceBetween(caster, target).value;
   const totalCover = (hasLineOfEffect(caster, target) === false) || (coverFor(caster, target, { quiet: true })?.degree === "total");
   return tetherBreak({ distance, maxRange, totalCover });

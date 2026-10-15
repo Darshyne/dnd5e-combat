@@ -9,13 +9,12 @@
 import { MODULE_ID } from "../constants.mjs";
 import { canMoveArea, turnKeyOf } from "../core/area.mjs";
 import { checkUse, spendUse, costOf } from "../core/turn.mjs";
-import { convertLength } from "../core/units.mjs";
 import { activeZoneOf, zoneCenter, moveZoneTo, readAreaState } from "../adapter/areas.mjs";
 import { combatantFor, isOwnTurn, readBudget, writeBudget } from "../adapter/turn.mjs";
-import { readUnitFactors } from "../adapter/units.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { askAnyway } from "./turn.mjs";
 import { log, loc } from "./shared.mjs";
+import { lengthIn } from "../adapter/units.mjs";
 
 export const MOVE_ZONE_QUERY = `${MODULE_ID}.moveZone`;
 
@@ -29,8 +28,7 @@ export function movableZoneOf(activity) {
 
 /** La distance dont la zone peut bouger, dans l'unité de la grille. */
 export function maxMoveOf(rule) {
-  try { return convertLength(rule.distance, rule.units, canvas.grid.units, readUnitFactors()); }
-  catch { return rule.distance; }   // unité de la grille
+  return lengthIn(rule.distance, rule.units, canvas.grid.units);
 }
 
 /** Ce point est-il trop loin du centre actuel de la zone ? */

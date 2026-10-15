@@ -11,9 +11,8 @@
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
 import { committedPosition } from "./turn.mjs";
-import { readUnitFactors } from "./units.mjs";
-import { convertLength } from "../core/units.mjs";
 import { wallGeometry, touchesWall, crossesWall } from "../core/wall.mjs";
+import { lengthIn } from "./units.mjs";
 
 /** La règle `wallSide` du sort qui a posé cette région (le mur lui-même, pas sa face brûlante), ou null. */
 export function wallSideRuleOf(region) {
@@ -65,8 +64,7 @@ export function wallGeometryOf(region) {
 
 /** La profondeur de la face brûlante, en pixels de la scène. */
 export function sideDepthOf(scene, rule) {
-  let distance = rule.distance;
-  try { distance = convertLength(rule.distance, rule.units, scene.grid.units, readUnitFactors()); } catch {}
+  let distance = lengthIn(rule.distance, rule.units, scene.grid.units);
   return distance * (scene.grid.size / scene.grid.distance);
 }
 

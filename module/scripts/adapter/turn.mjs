@@ -17,7 +17,7 @@ import { basicActionOf } from "./basics.mjs";
 import { originItemOf, comesFromItemEffect } from "./facts.mjs";
 import { freshBudget, costOf } from "../core/turn.mjs";
 import { convertLength } from "../core/units.mjs";
-import { readUnitFactors } from "./units.mjs";
+import { readUnitFactors, lengthIn } from "./units.mjs";
 import { depthOf, verticalExtent, verticalGap } from "../core/space.mjs";
 import { multiattackOf, useKeysOf, isMultiattackItem } from "./multiattack.mjs";
 import { pendingMetamagic, distantRange } from "./metamagic.mjs";
@@ -310,7 +310,6 @@ export function speedOf(actor, factors) {
   if ( !movement ) return null;
   const gridUnits = canvas.scene?.grid.units ?? movement.units;
   const walk = movement.speeds?.walk ?? movement.walk ?? 0;
-  let speed = walk;
-  try { speed = convertLength(walk, movement.units, gridUnits, factors); } catch { /* unité inconnue : valeur brute */ }
+  let speed = lengthIn(walk, movement.units, gridUnits, factors);
   return { speed, units: gridUnits };
 }

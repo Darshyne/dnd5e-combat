@@ -1,11 +1,10 @@
 import { MODULE_ID } from "../constants.mjs";
 import { opportunityAttackers, entersAt, reachStrikers } from "../core/reaction.mjs";
-import { convertLength } from "../core/units.mjs";
 import {
   REACTION_QUERY, handleReactionQuery, setReactionApproach, reactionOptions, reactionState, meleeAttacksOf, reactiveStrikesOf, reactiveSpellsOf, askReaction, currentAc, opportunityBlocked
 } from "../adapter/reactions.mjs";
 import { combatantFor, readBudget, distanceBetween, positionOf as position } from "../adapter/turn.mjs";
-import { readUnitFactors } from "../adapter/units.mjs";
+import { readUnitFactors, lengthIn } from "../adapter/units.mjs";
 import { hasLineOfEffect } from "../adapter/cover.mjs";
 import { canSee } from "../adapter/vision.mjs";
 import { victimsOf } from "../adapter/grapple.mjs";
@@ -434,15 +433,13 @@ export function opportunityThreats(token, waypoints) {
     // §136 : Attaque réactive — l'allonge de l'arme d'hast tenue, pas celle de l'attaque d'opportunité.
     const strike = reactiveStrikesOf(other.actor);
     if ( strike.options.length ) {
-      let strikeReach = strike.reach;
-      try { strikeReach = convertLength(strike.reach, strike.units, gridUnits, factors); } catch { /* valeur brute */ }
+      let strikeReach = lengthIn(strike.reach, strike.units, gridUnits, factors);
       const enters = entersAt(path.map(pos => distanceBetween(other, token, { posB: pos }).value), strikeReach);
       strikers.push({ ...sideOf(other), token: other.uuid, enters,
         hasLineOfEffect: (enters >= 0) ? hasLineOfEffect(other, token, { posB: path[enters] }) : null, ...reactionState(other.actor) });
     }
     const melee = meleeAttacksOf(other.actor);
-    let reach = melee.reach;
-    try { reach = convertLength(melee.reach, melee.units, gridUnits, factors); } catch { /* unité inconnue : valeur brute */ }
+    let reach = lengthIn(melee.reach, melee.units, gridUnits, factors);
     const distances = path.map(pos => distanceBetween(other, token, { posB: pos }).value);
     let leaves = -1;
     for ( let n = 0; n < distances.length - 1; n++ ) {

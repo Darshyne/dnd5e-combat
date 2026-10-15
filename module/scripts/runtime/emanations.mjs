@@ -9,19 +9,18 @@ import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
 import { INCAPACITATING } from "../core/conditions.mjs";
 import { emanationTargets } from "../core/emanation.mjs";
-import { convertLength } from "../core/units.mjs";
 import { emanationAgainst } from "../adapter/areas.mjs";
 import { hasLineOfEffect } from "../adapter/cover.mjs";
 import { emanationsOf, carriesEmanation, isImmuneTo, grantImmunity } from "../adapter/emanations.mjs";
 import { regenerationOf } from "../adapter/regeneration.mjs";
 import { actorOfEffect } from "../adapter/grapple.mjs";
 import { distanceBetween } from "../adapter/turn.mjs";
-import { readUnitFactors } from "../adapter/units.mjs";
 import { canSee } from "../adapter/vision.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { sideOf } from "../adapter/factions.mjs";
+import { lengthIn } from "../adapter/units.mjs";
 
 const defeated = actor => actor.statuses.has("dead") || actor.statuses.has(CONFIG.specialStatusEffects.DEFEATED);
 
@@ -30,8 +29,7 @@ const outOfPlay = token => !token.actor || token.hidden || defeated(token.actor)
 
 /** Qui l'émanation `emanation` de `source` atteint parmi `tokens`. `dying` : le porteur vient de mourir (`death`). */
 function reached(source, emanation, tokens, { dying=false }={}) {
-  let radius = emanation.radius;
-  try { radius = convertLength(radius, emanation.units, source.parent.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  let radius = lengthIn(emanation.radius, emanation.units, source.parent.grid.units);
   const statuses = source.actor.statuses;
   const inactive = !dying && (outOfPlay(source) || (emanation.active && INCAPACITATING.some(s => statuses.has(s))));
   const candidates = tokens.filter(t => t.parent === source.parent).map(t => {

@@ -19,8 +19,7 @@ import { strikeAgainst } from "../adapter/areas.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
 import { combatantFor, readBudget, writeBudget, distanceBetween } from "../adapter/turn.mjs";
 import { pushAway } from "../adapter/movement.mjs";
-import { readUnitFactors } from "../adapter/units.mjs";
-import { convertLength } from "../core/units.mjs";
+import { readUnitFactors, lengthIn } from "../adapter/units.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
@@ -80,8 +79,7 @@ async function onResolution(resolution) {
   }
   // §164 : « la cible et chaque créature à 1,50 m d'elle » (Grêle d'épines).
   if ( !burst ) return;
-  let radius = burst.radius;
-  try { radius = convertLength(burst.radius, burst.units, target.parent.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  let radius = lengthIn(burst.radius, burst.units, target.parent.grid.units);
   for ( const other of target.parent.tokens ) {
     if ( (other === target) || !other.actor || other.hidden || ((other.actor.system.attributes?.hp?.value ?? 0) <= 0) ) continue;
     if ( distanceBetween(target, other).value > radius + 1e-6 ) continue;

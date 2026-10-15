@@ -11,8 +11,7 @@
 import { contentOf } from "./content.mjs";
 import { originItemOf, creatureTypeOf } from "./facts.mjs";
 import { distanceBetween } from "./turn.mjs";
-import { readUnitFactors } from "./units.mjs";
-import { convertLength } from "../core/units.mjs";
+import { lengthIn } from "./units.mjs";
 
 /** Les émanations `key` de la scène : `{ holder, item, rule }`, une par lanceur et par item. */
 export function zonesOf(scene, key) {
@@ -33,7 +32,7 @@ export function zonesOf(scene, key) {
 
 /** Le rayon d'une émanation, dans l'unité de la grille. */
 function radiusOf(scene, rule) {
-  try { return convertLength(rule.radius, rule.units, scene.grid.units, readUnitFactors()); } catch { return rule.radius; }
+  return lengthIn(rule.radius, rule.units, scene.grid.units);
 }
 
 /** Le token (à sa position, ou à `pos`) est-il dans l'émanation de `holder` ? */

@@ -17,12 +17,11 @@ import { MODULE_ID } from "../constants.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
 import { originItemOf } from "./facts.mjs";
 import { summonItemOf } from "./summons.mjs";
-import { readUnitFactors } from "./units.mjs";
-import { convertLength } from "../core/units.mjs";
 import { shapeCenter } from "../core/area.mjs";
 import { areaLightRadii, tokenLightChanges, dispelledBy, burnSeconds, lightPlan, burnoutPlan, handsOf } from "../core/light.mjs";
 import { wallLightPoints } from "../core/wall.mjs";
 import { wallGeometryOf } from "./wall-side.mjs";
+import { lengthIn } from "./units.mjs";
 
 /** La règle de lumière d'un item, ou null. */
 export function lightRuleOf(item) {
@@ -39,8 +38,7 @@ function areaRuleOf(region, on="area") {
 
 function toGridUnits(value, units, grid) {
   if ( !units ) return value;
-  try { return convertLength(value, units, grid.units, readUnitFactors()); }
-  catch { return value; }
+  return lengthIn(value, units, grid.units);
 }
 
 /** Le centre d'une région, en pixels : l'origine de sa première forme (cercle, émanation d'un token…). */

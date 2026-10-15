@@ -36,13 +36,13 @@
 import { MODULE_ID } from "../constants.mjs";
 import { findPath, turningPoints, cellDistance } from "../core/pathfind.mjs";
 import { approach, pushDirection, footprintGap } from "../core/movement.mjs";
-import { convertLength } from "../core/units.mjs";
 import { committedPosition, combatantFor, readBudget, writeBudget } from "./turn.mjs";
 import { isIntangible } from "./pilot.mjs";
 import { sharesSpaceWith } from "./space-sharing.mjs";
 import { hasLineOfSight } from "./vision.mjs";
 import { placementOf, coherentElevation, groundStepAllowed } from "../core/altitude.mjs";
 import { groundAt, ceilingAt, clearanceOf, effectiveMode } from "./altitude.mjs";
+import { lengthIn } from "./units.mjs";
 
 const key = c => `${c.i},${c.j}`;
 
@@ -803,8 +803,7 @@ async function walkMoves(token, plan, options, state) {
  */
 export async function pushAway(source, target, { distance, units }, factors, { towards=false, follow=false }={}) {
   const grid = target.parent.grid;
-  let value = distance;
-  try { value = convertLength(distance, units, grid.units, factors); } catch { /* unité de la grille */ }
+  let value = lengthIn(distance, units, grid.units, factors);
   const wanted = Math.max(1, Math.round((value / grid.distance) + 1e-6));
   if ( !target.object || grid.isGridless || !grid.isSquare ) return { cells: 0, wanted };
 

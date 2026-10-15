@@ -10,9 +10,8 @@ import { MODULE_ID } from "../constants.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { distanceBetween } from "../adapter/turn.mjs";
-import { convertLength } from "../core/units.mjs";
-import { readUnitFactors } from "../adapter/units.mjs";
 import { loc, log } from "./shared.mjs";
+import { lengthIn } from "../adapter/units.mjs";
 
 /** Les options que les traits de l'acteur ajoutent à cette téléportation. */
 function optionsFor(actor, spell) {
@@ -31,8 +30,7 @@ function optionsFor(actor, spell) {
 /** Les créatures à 1,50 m d'une case (le token y étant posé par hypothèse), lui excepté. */
 function around(token, at) {
   const scene = token.parent;
-  let reach = 5;
-  try { reach = convertLength(5, "ft", scene.grid.units, readUnitFactors()); } catch { /* grille en pieds */ }
+  let reach = lengthIn(5, "ft", scene.grid.units);
   return scene.tokens.filter(t => t.actor && (t !== token) && (distanceBetween(t, token, { posB: at }).value <= (reach + 1e-6)));
 }
 

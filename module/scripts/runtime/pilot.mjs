@@ -22,14 +22,13 @@ import {
   pilotOf, commandPlan, summonerCombatant, writeCommand, readCommand, turnKey, isPilotedCombatant, pulseOf, commandKey,
   summonerToken, summonsOfWith
 } from "../adapter/pilot.mjs";
-import { readUnitFactors } from "../adapter/units.mjs";
 import { pulseAgainst } from "../adapter/areas.mjs";
 import { summonItemOf } from "../adapter/summons.mjs";
-import { convertLength } from "../core/units.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
+import { lengthIn } from "../adapter/units.mjs";
 
 /** Une écriture à la fois par objet. */
 const queues = new Map();
@@ -169,8 +168,7 @@ function beyondSpellRange(pilot) {
   const caster = summonerToken(pilot);
   const range = pilot.item.system.range ?? {};
   if ( !caster || (caster.parent !== pilot.token.parent) || !Number.isFinite(Number(range.value)) ) return false;
-  let limit = Number(range.value);
-  try { limit = convertLength(limit, range.units, pilot.token.parent.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  let limit = lengthIn(Number(range.value), range.units, pilot.token.parent.grid.units);
   return distanceBetween(caster, pilot.token).value > limit + 1e-6;
 }
 
@@ -273,8 +271,7 @@ function pulseCanHit(source, pulse, token) {
 /** La créature est-elle à portée de l'objet — à une position donnée de l'un ou de l'autre ? */
 function pulseReaches(source, pulse, token, { posSource, posToken }={}) {
   if ( !pulseCanHit(source, pulse, token) || (source.parent !== token.parent) ) return false;
-  let radius = pulse.rule.radius;
-  try { radius = convertLength(radius, pulse.rule.units, token.parent.grid.units, readUnitFactors()); } catch { /* unité de la grille */ }
+  let radius = lengthIn(pulse.rule.radius, pulse.rule.units, token.parent.grid.units);
   return distanceBetween(source, token, { posA: posSource, posB: posToken }).value <= radius + 1e-6;
 }
 

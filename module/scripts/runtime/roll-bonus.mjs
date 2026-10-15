@@ -23,7 +23,7 @@ import { initiativeReroll, rerolledInitiative } from "../core/initiative.mjs";
 import { swapPartners } from "../core/feats.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
-import { log } from "./shared.mjs";
+import { log, say, locEsc } from "./shared.mjs";
 import { sideOf } from "../adapter/factions.mjs";
 
 /** Le nom du test : la compétence, l'outil ou la caractéristique. */
@@ -130,9 +130,8 @@ async function alertSwap(combatant) {
   const mine = combatant.initiative;
   const theirs = other.initiative;
   await combat.updateEmbeddedDocuments("Combatant", [{ _id: combatant.id, initiative: theirs }, { _id: other.id, initiative: mine }]);
-  await ChatMessage.create({ speaker: ChatMessage.implementation.getSpeaker({ actor }),
-    content: `<p>${game.i18n.format("DND5ECOMBAT.Vigilant.Carte", { item: item.name, name: combatant.name, other: other.name, mine: Math.floor(theirs), theirs: Math.floor(mine) })}</p>`,
-    flags: { [MODULE_ID]: { initiativeSwap: { item: item.uuid, with: other.id } } } });
+  await say({ actor }, locEsc("Vigilant.Carte", { item: item.name, name: combatant.name, other: other.name, mine: Math.floor(theirs), theirs: Math.floor(mine) }),
+    { initiativeSwap: { item: item.uuid, with: other.id } });
   log(`${combatant.name}: ${item.name} — Initiative swapped with ${other.name} (${mine} <-> ${theirs})`);
 }
 

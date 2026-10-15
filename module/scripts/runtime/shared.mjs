@@ -17,6 +17,25 @@ export function notice(token, text, kind="refused") {
 /** Un texte échappé pour du HTML (noms d'acteurs, d'objets…). */
 export const esc = s => foundry.utils.escapeHTML(String(s ?? ""));
 
+/** Une traduction dont les textes insérés (noms d'acteurs, d'objets…) sont échappés : pour une carte de chat. */
+export const locEsc = (key, data={}) =>
+  loc(key, Object.fromEntries(Object.entries(data).map(([k, v]) => [k, (typeof v === "string") ? esc(v) : v])));
+
+/**
+ * Une carte de chat du moteur : une ligne par paragraphe (`lines`, du HTML déjà sûr — `locEsc` pour y mettre des noms), dite par
+ * `speaker` (`{ actor }` ou `{ token }` pour `getSpeaker`, ou `{ alias }`), avec ses `flags` du moteur et, s'il le faut, en aparté
+ * (`whisper` : ids d'utilisateurs).
+ */
+export function say(speaker, lines, flags=null, { whisper=null }={}) {
+  const data = {
+    speaker: ("alias" in speaker) ? speaker : ChatMessage.implementation.getSpeaker(speaker),
+    content: [lines].flat().map(line => `<p>${line}</p>`).join("")
+  };
+  if ( flags ) data.flags = { [MODULE_ID]: flags };
+  if ( whisper ) data.whisper = whisper;
+  return ChatMessage.implementation.create(data);
+}
+
 /** Attendre `ms` millisecondes. */
 export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 

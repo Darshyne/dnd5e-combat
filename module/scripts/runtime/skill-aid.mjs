@@ -15,7 +15,7 @@ import { timedWait, combatWindowSeconds } from "../adapter/dialogs.mjs";
 import { guidanceSpellOf, guidanceEffectFor } from "../adapter/skill-aid.mjs";
 import { inspirationSourceOf, usesLeftFor } from "../adapter/inspiration.mjs";
 import { castOnTargets } from "./actions.mjs";
-import { log, loc } from "./shared.mjs";
+import { log, loc, say, locEsc } from "./shared.mjs";
 
 export const SKILL_AID_QUERY = `${MODULE_ID}.skillAid`;
 
@@ -35,10 +35,7 @@ async function perform({ kind, helper, tester, skill, tool }) {
   if ( !actor || !target?.actor ) return false;
   const what = testLabel({ skill, tool });
   if ( kind === "help" ) {
-    await ChatMessage.implementation.create({
-      speaker: ChatMessage.implementation.getSpeaker({ actor }),
-      content: `<p>${loc("AideTest.CarteSoutien", { helper: actor.name, name: target.name, test: what })}</p>`
-    });
+    await say({ actor }, locEsc("AideTest.CarteSoutien", { helper: actor.name, name: target.name, test: what }));
     log(`help: ${actor.name} helps ${target.name} with their ${what} check (Advantage)`);
     return true;
   }

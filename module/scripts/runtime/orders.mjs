@@ -21,7 +21,7 @@ import { readUnitFactors } from "../adapter/units.mjs";
 import { movementCap, walkToGap, gapBetween } from "./actions.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
-import { log, loc, notice, sleep } from "./shared.mjs";
+import { log, loc, notice, sleep, say, esc } from "./shared.mjs";
 
 const handled = new Set();
 
@@ -92,10 +92,7 @@ async function obey(combatant) {
   }
   log(`${token.name} obeys (${held.order}): ${lines.slice(1).join(" ") || "—"}`);
   notice(token, loc(`Ordre.${held.order}.Nom`), "reaction");
-  await ChatMessage.implementation.create({
-    speaker: ChatMessage.implementation.getSpeaker({ token }),
-    content: lines.map(l => `<p>${foundry.utils.escapeHTML(l)}</p>`).join("")
-  });
+  await say({ token }, lines.map(esc));
 }
 
 export function registerOrders() {

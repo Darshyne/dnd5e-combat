@@ -21,7 +21,7 @@ import { contentOf } from "../adapter/content.mjs";
 import { combatantFor, readBudget, writeBudget } from "../adapter/turn.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { route } from "./router.mjs";
-import { log, loc } from "./shared.mjs";
+import { log, loc, say, locEsc } from "./shared.mjs";
 
 const hasRule = (actor, key) => Array.from(actor?.items ?? []).some(i => contentOf(i).entry?.[key] === true);
 
@@ -147,7 +147,7 @@ export async function offerPeerlessAim(actor, { total, needed }) {
     options: [{ id: "no", label: loc("BonusJet.Non") }, { id: "yes", label: loc("Prouesse.Oui") }] });
   if ( answer?.id !== "yes" ) return false;
   if ( combat?.started ) await actor.setFlag(MODULE_ID, "peerlessAim", true);
-  await ChatMessage.create({ speaker: ChatMessage.implementation.getSpeaker({ actor }), content: `<p>${loc("Prouesse.Carte", { item: item.name, name: actor.name })}</p>` });
+  await say({ actor }, locEsc("Prouesse.Carte", { item: item.name, name: actor.name }));
   log(`${item.name}: ${actor.name}'s missed attack hits instead`);
   return true;
 }

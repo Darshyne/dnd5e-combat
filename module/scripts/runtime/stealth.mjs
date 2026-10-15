@@ -17,7 +17,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { route } from "./router.mjs";
-import { log, loc, isExecutor } from "./shared.mjs";
+import { log, loc, isExecutor, say, esc } from "./shared.mjs";
 import { isHidden, spottedBy, stealthRules, RULES_SETTING } from "../adapter/stealth.mjs";
 import { canSee } from "../adapter/vision.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
@@ -112,8 +112,7 @@ async function spot(obs, target, point, reason) {
 async function whisper(content, toOwner, target) {
   const gms = game.users.filter(u => u.isGM).map(u => u.id);
   const owners = toOwner ? game.users.filter(u => !u.isGM && target.actor?.testUserPermission?.(u, "OWNER")).map(u => u.id) : [];
-  await ChatMessage.create({ content: `<p>${foundry.utils.escapeHTML(content)}</p>`, whisper: [...gms, ...owners],
-    speaker: { alias: loc("Furtif.Titre") } });
+  await say({ alias: loc("Furtif.Titre") }, esc(content), null, { whisper: [...gms, ...owners] });
 }
 
 /** BG3 : caché, l'animation du déplacement va à demi-vitesse. */

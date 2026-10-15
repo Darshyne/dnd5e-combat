@@ -11,7 +11,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { route } from "./router.mjs";
-import { log, loc } from "./shared.mjs";
+import { log, say, locEsc } from "./shared.mjs";
 
 const OILED = "oiled";
 const lastFire = new WeakMap();   // acteur → des dégâts de feu viennent d'être calculés pour lui
@@ -29,11 +29,7 @@ async function onApplied(actor, amount) {
   if ( !marks.length || !actor.isOwner ) return;
   await actor.deleteEmbeddedDocuments("ActiveEffect", marks.map(e => e.id));
   log(`${actor.name}: the oil ignites (5 Fire damage)`);
-  await ChatMessage.implementation.create({
-    speaker: ChatMessage.implementation.getSpeaker({ actor }),
-    content: `<p>${loc("Huile.Enflammee", { name: actor.name })}</p>`,
-    flags: { [MODULE_ID]: { oilBurns: { actor: actor.uuid } } }
-  });
+  await say({ actor }, locEsc("Huile.Enflammee", { name: actor.name }), { oilBurns: { actor: actor.uuid } });
   await actor.applyDamage([{ value: 5, type: "fire" }]);
 }
 

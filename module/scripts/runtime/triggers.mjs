@@ -18,7 +18,7 @@ import { foreignDamageShare, disarmForeignDamageShare } from "../adapter/interop
 import { inflict } from "../adapter/retaliation.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
-import { log, loc } from "./shared.mjs";
+import { log, loc, say, locEsc } from "./shared.mjs";
 import { sideOf } from "../adapter/factions.mjs";
 
 /**
@@ -279,11 +279,8 @@ function onDamaged(actor, changes) {
       if ( stepsOf(d, "remove").length ) {
         await effect.delete();
         log(`${d.name}: ends on ${actor.name}, who just took damage`);
-        await ChatMessage.implementation.create({
-          speaker: ChatMessage.implementation.getSpeaker({ actor }),
-          content: `<p>${loc("FinSurDegats", { name: actor.name, item: d.name })}</p>`,
-          flags: { [MODULE_ID]: { ended: { effect: d.effect, item: d.identifier, actor: actor.uuid, moment: "isDamaged" } } }
-        });
+        await say({ actor }, locEsc("FinSurDegats", { name: actor.name, item: d.name }),
+          { ended: { effect: d.effect, item: d.identifier, actor: actor.uuid, moment: "isDamaged" } });
         continue;
       }
       // Lien protecteur (§16.11) : le lanceur de l'effet subit le même montant (ou la formule déclarée).
@@ -297,11 +294,8 @@ function onDamaged(actor, changes) {
         if ( !(amount > 0) ) continue;
         await origin.applyDamage(step.formula ? [{ value: amount, type: step.damageType }] : amount);
         log(`${d.name}: ${origin.name} takes ${amount} damage along with ${actor.name}`);
-        await ChatMessage.implementation.create({
-          speaker: ChatMessage.implementation.getSpeaker({ actor: origin }),
-          content: `<p>${loc("PartageDegats", { name: origin.name, item: d.name, n: amount, bearer: actor.name })}</p>`,
-          flags: { [MODULE_ID]: { shared: { item: d.identifier, from: actor.uuid, to: origin.uuid, amount } } }
-        });
+        await say({ actor: origin }, locEsc("PartageDegats", { name: origin.name, item: d.name, n: amount, bearer: actor.name }),
+          { shared: { item: d.identifier, from: actor.uuid, to: origin.uuid, amount } });
       }
       if ( !stepsOf(d, "resave").length ) continue;
       const activity = saveActivityOf(await fromUuid(d.activity ?? ""));

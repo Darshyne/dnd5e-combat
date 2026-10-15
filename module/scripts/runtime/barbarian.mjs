@@ -22,7 +22,7 @@ import { tokenOf } from "../adapter/facts.mjs";
 import { timedWait } from "../adapter/dialogs.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
-import { log, loc, notice, sleep } from "./shared.mjs";
+import { log, loc, notice, sleep, say, locEsc } from "./shared.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { spendItemUses } from "../adapter/uses.mjs";
 
@@ -38,11 +38,7 @@ async function stopRage(actor, why) {
   if ( !(await endRage(actor)) ) return;
   const token = tokenOf(actor);
   if ( token ) notice(token, loc("Rage.Retour"), "ended");
-  await ChatMessage.implementation.create({
-    speaker: ChatMessage.implementation.getSpeaker({ actor }),
-    content: `<p>${loc("Rage.Fin", { name: actor.name, why: loc(`Rage.Pourquoi.${why}`) })}</p>`,
-    flags: { [MODULE_ID]: { rageEnded: { actor: actor.uuid, why } } }
-  });
+  await say({ actor }, locEsc("Rage.Fin", { name: actor.name, why: loc(`Rage.Pourquoi.${why}`) }), { rageEnded: { actor: actor.uuid, why } });
   log(`${actor.name}: Rage ends (${why})`);
 }
 

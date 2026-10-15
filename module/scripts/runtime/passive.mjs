@@ -17,7 +17,7 @@ import { hiddenDcOf, passiveObservers } from "../adapter/search.mjs";
 import { passiveNotice } from "../core/search.mjs";
 import { stealthRules } from "../adapter/stealth.mjs";
 import { route } from "./router.mjs";
-import { log, loc, notice } from "./shared.mjs";
+import { log, loc, notice, say, locEsc } from "./shared.mjs";
 
 const SETTING = "passivePerception";
 /** Mode "gm" : les paires (effet de Furtivité, observateur) déjà signalées, pour ne pas répéter le message à chaque pas. */
@@ -46,12 +46,8 @@ async function judge(hidden) {
     await actor.deleteEmbeddedDocuments("ActiveEffect", effects.map(e => e.id));
     notice(hidden, loc("PerceptionPassive.Court"), "ended");
   } else for ( const o of spotted ) told.add(`${effects[0]?.uuid}|${o.token.uuid}`);
-  await ChatMessage.implementation.create({
-    speaker: ChatMessage.implementation.getSpeaker({ token: hidden }),
-    whisper: recipients(actor, mode === "auto"),
-    content: `<p>${loc(`PerceptionPassive.${mode === "auto" ? "Repere" : "RepereMJ"}`, { name: hidden.name, observers, dc })}</p>`,
-    flags: { [MODULE_ID]: { passivePerception: { hidden: hidden.uuid, dc, mode, by: spotted.map(o => o.token.uuid) } } }
-  });
+  await say({ token: hidden }, locEsc(`PerceptionPassive.${mode === "auto" ? "Repere" : "RepereMJ"}`, { name: hidden.name, observers, dc }),
+    { passivePerception: { hidden: hidden.uuid, dc, mode, by: spotted.map(o => o.token.uuid) } }, { whisper: recipients(actor, mode === "auto") });
   return spotted;
 }
 

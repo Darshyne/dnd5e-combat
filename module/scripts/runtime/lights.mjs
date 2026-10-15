@@ -14,7 +14,7 @@ import { invalidateVision } from "../adapter/vision.mjs";
 import { veilOnCreate, veilExisting, unveil, isRevealEffect } from "../adapter/reveal.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
-import { log, loc, notice, viaActiveGM } from "./shared.mjs";
+import { log, loc, notice, viaActiveGM, say, locEsc } from "./shared.mjs";
 
 export const EXTINGUISH_QUERY = `${MODULE_ID}.extinguish`;
 
@@ -111,8 +111,8 @@ async function onBurnOut(effect) {
   const text = loc(done.empty ? "Lumiere.Vide" : "Lumiere.Consumee", { item: done.item, name: actor?.name ?? "" });
   notice(tokenOf(actor), text, "ended");
   const owners = game.users.filter(u => u.isGM || (actor && actor.testUserPermission(u, "OWNER"))).map(u => u.id);
-  await ChatMessage.implementation.create({ content: `<p>${text}</p>`, whisper: owners,
-    speaker: ChatMessage.implementation.getSpeaker({ actor }), flags: { [MODULE_ID]: { burnOut: { item: done.item, consumed: done.consumed } } } });
+  await say({ actor }, locEsc(done.empty ? "Lumiere.Vide" : "Lumiere.Consumee", { item: done.item, name: actor?.name ?? "" }),
+    { burnOut: { item: done.item, consumed: done.consumed } }, { whisper: owners });
   log(`${actor?.name}: ${done.item} burnt out${done.consumed ? (done.gone ? " (last one, removed)" : " (one fewer)") : " (empty)"}`);
 }
 

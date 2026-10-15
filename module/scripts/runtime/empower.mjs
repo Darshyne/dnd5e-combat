@@ -16,7 +16,7 @@ import { tokenOf } from "../adapter/facts.mjs";
 import { empowerOf, feedsOn, usesLeft, boostsOf, boostData } from "../adapter/empower.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
-import { log, loc, notice } from "./shared.mjs";
+import { log, loc, notice, say, locEsc } from "./shared.mjs";
 import { spendItemUses } from "../adapter/uses.mjs";
 
 /** Sur le client qui applique les dégâts : le montant de la morsure, gardé pour après l'écriture des PV. */
@@ -64,11 +64,8 @@ async function empower(victim, { n, item: itemUuid }) {
     if ( token ) notice(token, loc("Morsure.RetourRenfort", { n }), "gain");
     log(`${item.name}: ${biter.name} is empowered (+${n} to the next attack roll or ability check)`);
   }
-  await ChatMessage.implementation.create({
-    speaker: ChatMessage.implementation.getSpeaker({ actor: biter }),
-    content: `<p>${loc(answer.id === "heal" ? "Morsure.CarteDrain" : "Morsure.CarteRenfort", { item: item.name, name: biter.name, n, victim: victim.name })}</p>`,
-    flags: { [MODULE_ID]: { empower: { item: item.uuid, mode: answer.id, amount: n, victim: victim.uuid } } }
-  });
+  await say({ actor: biter }, locEsc(answer.id === "heal" ? "Morsure.CarteDrain" : "Morsure.CarteRenfort", { item: item.name, name: biter.name, n, victim: victim.name }),
+    { empower: { item: item.uuid, mode: answer.id, amount: n, victim: victim.uuid } });
 }
 
 function onApplyDamage(actor, amount, options) {

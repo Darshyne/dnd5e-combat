@@ -27,7 +27,7 @@ import { attackReactors, askAttackReactions, rememberAttackMods } from "./reacti
 import { keepPendingAttack } from "./actions.mjs";
 import { seersOf, foretellFor } from "../adapter/portent.mjs";
 import { route } from "./router.mjs";
-import { log, loc } from "./shared.mjs";
+import { log, loc, say, locEsc } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { castLevelFor } from "../adapter/counter.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
@@ -36,11 +36,7 @@ import { settledResolution } from "../adapter/messages.mjs";
 
 /** Une carte de chat qui dit ce que la porte a décidé (lue par les scénarios : flag `gate`) ; `details` : lignes de plus. */
 function tell(actor, key, data, gate, details=[]) {
-  return ChatMessage.implementation.create({
-    speaker: ChatMessage.implementation.getSpeaker({ actor }),
-    content: [loc(key, data), ...details].map(line => `<p>${line}</p>`).join(""),
-    flags: { [MODULE_ID]: { gate } }
-  });
+  return say({ actor }, [locEsc(key, data), ...details], { gate });
 }
 
 /** Un sort qui « nuit » : attaque, ou activité qui inflige des dégâts. */

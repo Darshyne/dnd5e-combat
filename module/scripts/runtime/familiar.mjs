@@ -25,7 +25,7 @@ import { droppedByNeighbour } from "../adapter/orders.mjs";
 import { budgetIssues, spendBudget } from "./neighbours.mjs";
 import { askAnyway } from "./turn.mjs";
 import { route } from "./router.mjs";
-import { log, loc, notice, viaActiveGM } from "./shared.mjs";
+import { log, loc, notice, viaActiveGM, say, locEsc } from "./shared.mjs";
 
 export const POCKET_QUERY = `${MODULE_ID}.familiarPocket`;
 export const RECALL_QUERY = `${MODULE_ID}.familiarRecall`;
@@ -93,12 +93,8 @@ export async function recallFamiliar(masterToken, point) {
   return (await askGM(RECALL_QUERY, { token: masterToken.uuid, point: { x: point.x, y: point.y } }, handleRecall)) === true;
 }
 
-async function say(actor, key, data, flag) {
-  await ChatMessage.implementation.create({
-    speaker: ChatMessage.implementation.getSpeaker({ actor }),
-    content: `<p>${loc(key, data)}</p>`,
-    flags: { [MODULE_ID]: { familiar: flag } }
-  });
+async function tell(actor, key, data, flag) {
+  await say({ actor }, locEsc(key, data), { familiar: flag });
 }
 
 /** Côté MJ actif : le familier part dans la poche de son maître. */
@@ -118,7 +114,7 @@ export async function handlePocket({ token: tokenUuid }, { user }={}) {
   await storeInPocket(master, token);
   await token.delete();
   await spendBudget(master, POCKET_COST);
-  await say(master, "Familier.Renvoye", { name: master.name, familiar: token.name }, { pocket: token.name });
+  await tell(master, "Familier.Renvoye", { name: master.name, familiar: token.name }, { pocket: token.name });
   log(`${token.name}: in ${master.name}'s pocket dimension`);
   return true;
 }
@@ -146,7 +142,7 @@ export async function handleRecall({ token: tokenUuid, point }, { user }={}) {
   }
   if ( !created ) { await master.setFlag(MODULE_ID, "pocket", pocket); return false; }
   await spendBudget(master, POCKET_COST);
-  await say(master, "Familier.Rappele", { name: master.name, familiar: created.name }, { recall: created.name });
+  await tell(master, "Familier.Rappele", { name: master.name, familiar: created.name }, { recall: created.name });
   log(`${created.name}: back from ${master.name}'s pocket dimension`);
   return true;
 }

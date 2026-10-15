@@ -34,7 +34,7 @@ import { askChoice } from "../adapter/choices.mjs";
 import { tokenOf } from "../adapter/facts.mjs";
 import { movementCap } from "./actions.mjs";
 import { route } from "./router.mjs";
-import { log, loc, notice, sleep } from "./shared.mjs";
+import { log, loc, notice, sleep, say, locEsc } from "./shared.mjs";
 
 const FLAG = "pendingDie";
 
@@ -195,9 +195,8 @@ async function commandStrike(activity, actor, ally) {
   const combatant = combatantFor(ally.actor);
   if ( combatant ) await writeBudget(combatant, { ...readBudget(combatant), commanded: { turn, by: actor.uuid } });
   if ( formula ) await ally.actor.setFlag(MODULE_ID, FLAG, { item: activity.item.uuid, name: activity.item.name, formula, against: "any", target: null, turn });
-  await ChatMessage.implementation.create({ speaker: ChatMessage.implementation.getSpeaker({ actor }),
-    content: `<p>${loc("FrappeCommandee.Carte", { item: activity.item.name, name: ally.name, formula: formula ?? "" })}</p>`,
-    flags: { [MODULE_ID]: { commandStrike: { item: activity.item.uuid, ally: ally.uuid } } } });
+  await say({ actor }, locEsc("FrappeCommandee.Carte", { item: activity.item.name, name: ally.name, formula: formula ?? "" }),
+    { commandStrike: { item: activity.item.uuid, ally: ally.uuid } });
   notice(ally, loc("FrappeCommandee.Ordre", { item: activity.item.name }), "gain");
   log(`${activity.item.name}: ${ally.name} can attack with its Reaction (+${formula})`);
 }

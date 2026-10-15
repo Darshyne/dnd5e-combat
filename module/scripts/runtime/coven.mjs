@@ -6,7 +6,7 @@
 import { sharedHpItemOf, shareHp, isSharedWrite, transformsAtZero, enterSecondPhase, covenMembers, standsAtZero, standAtOne,
   purgeEffects, formChangeOf, changeForm } from "../adapter/coven.mjs";
 import { contentOf } from "../adapter/content.mjs";
-import { log, loc, sleep } from "./shared.mjs";
+import { log, sleep, say, locEsc } from "./shared.mjs";
 import { burstAtZero } from "./emanations.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
@@ -53,10 +53,7 @@ async function onLastStandUsed(activity) {
   if ( !actor || !contentOf(activity.item).entry?.lastStand ) return;
   const n = await purgeEffects(actor);
   log(`${activity.item.name}: ${n} effect(s) removed from ${actor.name}`);
-  await ChatMessage.implementation.create({
-    speaker: ChatMessage.implementation.getSpeaker({ actor }),
-    content: `<p>${loc("EffetsPurges", { item: activity.item.name, name: actor.name })}</p>`
-  });
+  await say({ actor }, locEsc("EffetsPurges", { item: activity.item.name, name: actor.name }));
 }
 
 /** §76 : une forme révélée à volonté (`changesForm`) — l'échange de token de la seconde phase, après l'utilisation. */

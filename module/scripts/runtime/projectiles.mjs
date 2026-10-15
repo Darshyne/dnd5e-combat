@@ -16,8 +16,9 @@ import { allocateDarts } from "../core/action.mjs";
 import { projectilesOf, projectileCount, handleAllocationQuery, leapOf } from "../adapter/projectiles.mjs";
 import { distanceBetween } from "../adapter/turn.mjs";
 import { route } from "./router.mjs";
-import { log, loc, notice, sleep } from "./shared.mjs";
+import { log, loc, notice } from "./shared.mjs";
 import { lengthIn } from "../adapter/units.mjs";
+import { settledResolution } from "../adapter/messages.mjs";
 
 const started = new Set();
 
@@ -76,14 +77,6 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   return true;
 }
 
-/** Attend qu'une résolution soit tranchée (ou 30 s). */
-async function settled(messageId) {
-  for ( const until = Date.now() + 30000; Date.now() < until; await sleep(300) ) {
-    const step = game.messages.get(messageId)?.getFlag(MODULE_ID, "resolution")?.step;
-    if ( ["done", "missed", "undone"].includes(step) ) return step;
-  }
-  return null;
-}
 
 /** Les rayons restants, dans l'ordre : répartis par l'auteur, moins celui qui est déjà parti vers la première cible. */
 async function remainingShots(activity, usage, resolution, count) {
@@ -130,7 +123,7 @@ async function chain(usage, resolution) {
     const used = await base.use(config, { configure: false }, { data: { flags: { [MODULE_ID]: { projectileOf: usage.id } } } });
     if ( !used?.message ) break;
     if ( projectilesOf(base.item)?.attack ) await base.rollAttack({}, { configure: false }, { data: { system: { origin: used.message.id } } });
-    await settled(used.message.id);
+    await settledResolution(used.message.id, { timeout: 30000, every: 300 });
   }
 }
 

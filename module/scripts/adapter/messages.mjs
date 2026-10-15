@@ -16,6 +16,22 @@ import { applyDamageShields } from "./defenses.mjs";
 import { damageVariant } from "./variants.mjs";
 import { sneakAttackFor, askStrikes } from "./sneak.mjs";
 import { chooseSmite } from "./smite.mjs";
+import { current, STEPS } from "../core/action.mjs";
+
+const SETTLED_STEPS = new Set([STEPS.DONE, STEPS.MISSED, STEPS.UNDONE]);
+
+/**
+ * Attend que la résolution d'un message soit tranchée (faite, ratée ou défaite), depuis n'importe quel client : le flag est relu
+ * toutes les `every` ms. Rend la résolution (au schéma courant, `current`), ou null au-delà de `timeout`.
+ */
+export async function settledResolution(messageId, { timeout=60000, every=400 }={}) {
+  for ( const until = Date.now() + timeout; Date.now() < until; ) {
+    const resolution = current(game.messages.get(messageId)?.getFlag(MODULE_ID, "resolution"));
+    if ( resolution && SETTLED_STEPS.has(resolution.step) ) return resolution;
+    await new Promise(resolve => setTimeout(resolve, every));
+  }
+  return null;
+}
 
 /** Id du message d'utilisation à l'origine d'un jet, ou null. */
 function originOf(message) {

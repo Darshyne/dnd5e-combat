@@ -16,7 +16,6 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { current, STEPS } from "../core/action.mjs";
 import { stepsOf } from "../core/triggers.mjs";
 import { rangeIssue } from "../core/range.mjs";
 import { usageTokenOf as usageToken, distanceBetween, rangeOf } from "../adapter/turn.mjs";
@@ -28,23 +27,12 @@ import { attackReactors, askAttackReactions, rememberAttackMods } from "./reacti
 import { keepPendingAttack } from "./actions.mjs";
 import { seersOf, foretellFor } from "../adapter/portent.mjs";
 import { route } from "./router.mjs";
-import { log, loc, sleep } from "./shared.mjs";
+import { log, loc } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { castLevelFor } from "../adapter/counter.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
+import { settledResolution } from "../adapter/messages.mjs";
 
-const TERMINAL = new Set([STEPS.DONE, STEPS.MISSED, STEPS.UNDONE]);
-const RESOLUTION_WAIT_MS = 60000;
-
-/** Attend qu'une résolution soit tranchée, depuis n'importe quel client (on lit le flag). null au-delà du délai. */
-async function settled(messageId) {
-  for ( const until = Date.now() + RESOLUTION_WAIT_MS; Date.now() < until; ) {
-    const resolution = current(game.messages.get(messageId)?.getFlag(MODULE_ID, "resolution"));
-    if ( resolution && TERMINAL.has(resolution.step) ) return resolution;
-    await sleep(400);
-  }
-  return null;
-}
 
 /** Une carte de chat qui dit ce que la porte a décidé (lue par les scénarios : flag `gate`) ; `details` : lignes de plus. */
 function tell(actor, key, data, gate, details=[]) {
@@ -129,7 +117,7 @@ async function passTargeted(activity, origin, candidates, { auto }) {
       actor: actor.uuid, options, target: origin.uuid, auto,
       prompt: { key: "ReactionCible", data: { caster: origin.name, spell: activity.item.name } }
     });
-    if ( answer?.message ) await settled(answer.message);
+    if ( answer?.message ) await settledResolution(answer.message);
   }
 }
 
@@ -180,7 +168,7 @@ async function passCounters(activity, origin, candidates, { auto, castLevel }) {
       if ( failed ) return false;
       continue;
     }
-    const resolution = await settled(answer.message);
+    const resolution = await settledResolution(answer.message);
     const target = resolution?.targets.find(t => t.token === origin.uuid) ?? resolution?.targets[0] ?? null;
     const failed = target?.save?.success === false;
     log(`${token.name} reacts (${answer.name}): saving throw ${target?.save?.total ?? "?"} -> ${failed ? "spell countered" : "the spell goes through"}`);

@@ -10,73 +10,53 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { current, undoPlan, wantsDamageRoll, isCriticalHit, pendingChoice, pendingAllocation, STEPS } from "../core/action.mjs";
-import { selectAreaTargets, openArea, turnKeyOf, actsOnPose } from "../core/area.mjs";
 import { isAutoCritical, autoFailSave } from "../core/conditions.mjs";
 import { unaffectedBy } from "../adapter/eligibility.mjs";
-import { retaliationsFor, retaliate, inflict, saveRetaliation } from "../adapter/retaliation.mjs";
-import { readAttackMessage, readDamageMessage, applyDamageToToken, restoreHp, maximizedHealing, rollDamageFor } from "../adapter/messages.mjs";
-import {
-  readSaveMessage, readActivityRegion, requestSaves, applyEffectsToToken, applyStatusToToken, applyMarkToToken, splitPushes, removeEffects,
-  repairSaveAbility, showTargetsTo, TARGETS_QUERY, handleTargetsQuery, SAVE_QUERY, handleSaveQuery
-} from "../adapter/saves.mjs";
-import { holds } from "../core/triggers.mjs";
-import { resolveAttack } from "../core/attack.mjs";
-import { offerInspiration, offerRollBonus, keptD20 } from "../adapter/inspiration.mjs";
-import { factsFor } from "../adapter/facts.mjs";
-import { readUsage } from "../adapter/usage.mjs";
-import { canResistSave, askLegendary, resistSave, legendaryLeft } from "../adapter/legendary.mjs";
-import { concentrationEffectOf, tieRegionToConcentration } from "../adapter/concentration.mjs";
-import { areaRulesOf, isInstantaneous, writeAreaState, markTransient, shrinkToBolt, removeTransientRegions } from "../adapter/areas.mjs";
+import { restoreHp, rollDamageFor } from "../adapter/messages.mjs";
+import { removeEffects, TARGETS_QUERY, handleTargetsQuery, SAVE_QUERY, handleSaveQuery } from "../adapter/saves.mjs";
 import { statusesOf, areAdjacent, evades, coverAgainst } from "../adapter/conditions.mjs";
 import { currentAc } from "../adapter/reactions.mjs";
-import { askChoice, CHOICE_QUERY, handleChoiceQuery } from "../adapter/choices.mjs";
-import { askAllocation, ALLOCATION_QUERY, handleAllocationQuery } from "../adapter/projectiles.mjs";
+import { CHOICE_QUERY, handleChoiceQuery } from "../adapter/choices.mjs";
+import { ALLOCATION_QUERY, handleAllocationQuery } from "../adapter/projectiles.mjs";
 import { canJudgeCover, isCoverAvailable } from "../adapter/cover.mjs";
-import { ensureRegionElevation } from "../adapter/space.mjs";
-import { pushAway } from "../adapter/movement.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
-import { combatantFor, readBudget, writeBudget } from "../adapter/turn.mjs";
-import { dodge as takeDodge } from "../core/turn.mjs";
-import { tallyAfter } from "../core/tally.mjs";
 import { createDispatcher } from "./dispatcher.mjs";
-import { askHitReactions, canReactToHit, windowIsDamaged, windowIsMissed, askDamageGuardians } from "./reactions.mjs";
-import { offerInterpose, markConcentrationBreaker, resistanceIgnoredBy, offerPeerlessAim, fortifiedExtra } from "./feats.mjs";
+import { canReactToHit } from "./reactions.mjs";
 import { enqueue } from "./queue.mjs";
-import { liftToken } from "./elevation-spells.mjs";
 import { route } from "./router.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
-import { stormOf, isBoltRegion } from "../adapter/storm.mjs";
-import { concentrationOn } from "../adapter/summons.mjs";
-import { duplicatesAgainst, duplicateEffectsOf } from "../adapter/duplicates.mjs";
-import { log, loc, isExecutor, waitForDice, whenCanvasReady, notice } from "./shared.mjs";
-import { waitForAnimations } from "./animations.mjs";
+import { duplicatesAgainst } from "../adapter/duplicates.mjs";
+import { log, loc, isExecutor, whenCanvasReady } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { areAllies } from "../adapter/factions.mjs";
+import { COMMANDS } from "./engine-commands.mjs";
+import { onAttackMessage, onDamageMessage, onSaveMessage, onUsageMessage } from "./engine-messages.mjs";
+import { onRegionCreated } from "./engine-areas.mjs";
 
 /** Combien de messages récents on remonte quand un jet ne dit pas à quelle action il se rapporte. */
-const LOOKBACK = 50;
+export const LOOKBACK = 50;
 
 /** La résolution d'un porteur, y compris celle pas encore écrite (écritures regroupées, runtime/dispatcher.mjs). */
-const resolutionOn = message => message ? current(dispatcher.peek(message.id)) : null;
+export const resolutionOn = message => message ? current(dispatcher.peek(message.id)) : null;
 
 /** Réglage « journal de chat allégé » : écritures de la résolution regroupées (ici) et cartes hors écran non dessinées (ui/chat.mjs). */
 export const CHAT_LIGHT_SETTING = "chatLight";
 
 /** Le token qui parle dans un message, ou null. */
-function speakerTokenUuid(message) {
+export function speakerTokenUuid(message) {
   const { scene, token } = message?.speaker ?? {};
   return scene && token ? `Scene.${scene}.Token.${token}` : null;
 }
 
 /** Les propriétés de dégâts sont un Set côté système, un tableau dans un flag. */
-const serializeDamages = damages => damages.map(d => ({ ...d, properties: Array.from(d.properties ?? []) }));
+export const serializeDamages = damages => damages.map(d => ({ ...d, properties: Array.from(d.properties ?? []) }));
 /** La créature porte-t-elle un effet d'un item `healMax` (Lueur d'espoir) — effet posé ou transféré ? */
 /**
  * §160 : le palier de PV (`hpTiers` du contenu) qui vaut pour cette cible, lu sur ses PV actuels (avant les dégâts) : l'entrée du plan
  * réécrite (dégâts retirés si `damage: false`, effets réduits à `effects`) et les états à poser. Null sans paliers.
  */
-function hpTierFor(item, actor, entry, plan=null) {
+export function hpTierFor(item, actor, entry, plan=null) {
   const tiers = item ? contentOf(item).entry?.hpTiers : null;
   if ( !tiers?.length || !actor ) return null;
   const hp = Number(actor.system?.attributes?.hp?.value ?? 0);
@@ -92,7 +72,7 @@ function hpTierFor(item, actor, entry, plan=null) {
 }
 
 /** §161 : le niveau auquel le sort du message est lancé — celui de l'item, plus la montée d'emplacement que dnd5e note (`scaling`). */
-function castLevelOfMessage(message) {
+export function castLevelOfMessage(message) {
   const item = message?.getAssociatedActivity?.()?.item ?? message?.getAssociatedItem?.() ?? null;
   if ( item?.type !== "spell" ) return null;
   return Number(item.system?.level ?? 0) + (Number(message.getFlag?.("dnd5e", "scaling")) || 0);
@@ -105,7 +85,7 @@ const PRISM_TYPES = Object.freeze({ 1: "fire", 2: "acid", 3: "lightning", 4: "po
  * §164 : Embruns prismatiques (`prismatic`) — un d8 par cible ; sur un 8, deux rayons (les 8 relancés). Rend les couleurs tirées,
  * l'entrée du plan réduite à leurs effets (sans dégâts s'il n'y a que de l'indigo ou du violet) et les types de dégâts. Null sans la règle.
  */
-async function prismaticFor(item, entry, activity=null, plan=null) {
+export async function prismaticFor(item, entry, activity=null, plan=null) {
   const rule = item ? contentOf(item).entry?.prismatic : null;
   if ( !rule ) return null;
   // L'activité qui a fait le jet : un rejeu de zone par une sœur garde, dans ses drapeaux, l'activité de la pose — celle de la
@@ -124,7 +104,7 @@ async function prismaticFor(item, entry, activity=null, plan=null) {
   return { colors, types, entry: { ...entry, multiplier: types.length ? entry.multiplier : 0, effects: (entry.effects ?? []).filter(e => keep.includes(e.id)) } };
 }
 
-function healsMax(actor) {
+export function healsMax(actor) {
   for ( const effect of actor?.appliedEffects ?? [] ) {
     const item = originItemOf(effect);
     if ( item && (contentOf(item).entry?.healMax === true) ) return true;
@@ -136,7 +116,7 @@ function healsMax(actor) {
  * §19.9 : Retour à la vie (Domaine de la Tombe) — les dés de soin d'un sort ou d'une Conduit divin valent leur maximum quand la
  * créature soignée est à 0 PV. Le soigneur porte un item `healsDownedMax`, la cible est à 0 PV.
  */
-function healsDownedToMax(healer, activity, target) {
+export function healsDownedToMax(healer, activity, target) {
   if ( !healer || !activity?.item ) return false;
   const kind = isSpellCast(activity.item) || identifierOf(activity.item).id?.startsWith("channel-divinity");
   if ( !kind ) return false;
@@ -150,7 +130,7 @@ function healsDownedToMax(healer, activity, target) {
  * niveau de l'emplacement (l'activité est celle du sort au niveau lancé). Rend { disciple, healer } (0 si le soigneur n'a pas
  * l'aptitude), ou null hors de ce cas.
  */
-function slotHealBonus(healer, activity) {
+export function slotHealBonus(healer, activity) {
   const item = activity?.item;
   const level = Number(item?.system?.level) || 0;
   if ( !healer || (item?.type !== "spell") || (level < 1) || !["spell", "pact", undefined, ""].includes(item.system.method) ) return null;
@@ -159,359 +139,12 @@ function slotHealBonus(healer, activity) {
   return (bonus.disciple || bonus.healer) ? bonus : null;
 }
 
-const deserializeDamages = damages => damages.map(d => ({ ...d, properties: new Set(d.properties ?? []) }));
-
-/* -------------------------------------------- */
-/*  Commandes de la machine d'action            */
-/* -------------------------------------------- */
-
-/**
- * §37 : la créature prend l'action Esquiver (Malédiction, « Cursed Actions » : « doit réussir un jet de sauvegarde de Sagesse au
- * début de chacun de ses tours, ou être forcée de prendre l'action Esquiver ») — son action du tour dépensée, l'état Esquive
- * posé (runtime/conditions.mjs le montre sur le token). Hors combat, rien.
- */
-async function forceDodge(tokenUuid) {
-  const token = await fromUuid(tokenUuid);
-  const combatant = token?.actor ? combatantFor(token.actor) : null;
-  if ( !combatant ) return;
-  const before = readBudget(combatant);
-  const after = takeDodge(before);
-  if ( after === before ) { log(`${token.name}: Dodge forced, but the turn's action is already used`); return; }
-  await writeBudget(combatant, after);
-  log(`${token.name}: saving throw failed, Dodge action forced`);
-}
-
-/** L'outil de scénario `autoReact` de l'utilisation (« none » : personne ne réagit ; « first » : la première, sans fenêtre). */
-const autoReactOf = (carrier, resolution) =>
-  game.messages.get(resolution?.origin ?? carrier.id)?.getFlag(MODULE_ID, "autoReact") ?? carrier.getFlag(MODULE_ID, "autoReact") ?? null;
-
-const COMMANDS = {
-  askReactions: (command, carrier, resolution) => askHitReactions(resolution, command.tokens, id => dispatcher.drained(id), {
-    auto: autoReactOf(carrier, resolution)
-  }),
-
-  /**
-   * Image miroir (§16.25) : un d6 par réplique, lancé par le moteur, visible de tous ; une réplique touchée est détruite
-   * (son effet retiré — la dernière retirée met fin au sort).
-   */
-  async rollDuplicates(command, carrier, resolution) {
-    const events = [];
-    for ( const tokenUuid of command.tokens ) {
-      const token = await fromUuid(tokenUuid);
-      const effects = duplicateEffectsOf(token?.actor);
-      if ( !effects.length ) { events.push({ type: "duplicatesRolled", token: tokenUuid, dice: [] }); continue; }
-      const roll = await new Roll(`${effects.length}d6`).evaluate();
-      const dice = roll.dice.flatMap(d => d.results.map(r => r.result));
-      const taken = dice.some(d => d >= 3);
-      const message = await roll.toMessage({
-        speaker: ChatMessage.getSpeaker({ token }),
-        flavor: loc(taken ? "Repliques.Touchee" : "Repliques.Ratee", { name: token.name, count: effects.length })
-      });
-      await waitForDice(message);
-      if ( taken ) await effects.at(-1).delete();
-      log(`${token.name}: duplicates ${dice.join(", ")} → ${taken ? `a duplicate takes the hit (${effects.length - 1} left)` : "the hit lands"}`);
-      events.push({ type: "duplicatesRolled", token: tokenUuid, dice, messageId: message?.id ?? null });
-    }
-    return events;
-  },
-
-  /** §16.27 : l'auteur répartit ses projectiles (Projectile magique) ; sans réponse, le cœur répartit au mieux. */
-  async askAllocation(command, carrier, resolution) {
-    const actor = await fromUuid(resolution.source ?? "");
-    const activity = carrier.getAssociatedActivity?.();
-    log(`${activity?.item?.name ?? "projectiles"}: ${command.count} projectile(s) to split among ${command.targets.map(t => t.name).join(", ")}`);
-    const answer = actor ? await askAllocation(actor, { item: activity?.item?.name ?? "", count: command.count, targets: command.targets }) : null;
-    return [{ type: "allocated", counts: answer?.counts ?? {} }];
-  },
-
-  async requestSaves(command, carrier, resolution) {
-    const { save } = resolution.plan;
-    log(`${(save.abilities ?? [save.ability]).join("/")} saving throw DC ${save.dc} requested from`, command.targets.map(t => t.name).join(", "));
-    // Plusieurs caractéristiques au choix de la cible : le joueur choisit ; pour le MJ, selon le réglage.
-    // Une intention peut l'imposer (`saveChoice: "best"` sur la carte : scénarios, sans clic).
-    const forced = game.messages.get(resolution.origin ?? carrier.id)?.getFlag(MODULE_ID, "saveChoice") ?? carrier.getFlag(MODULE_ID, "saveChoice");
-    const ask = forced !== "best";
-    await requestSaves(carrier, save, command.targets,
-      { askPlayers: ask, askGM: ask && (game.settings.get(MODULE_ID, "npcSaveChoice") === "ask"), auto: autoReactOf(carrier, resolution) });
-  },
-
-  async apply(command, carrier, resolution) {
-    const damageMessage = game.messages.get(resolution.damageRoll?.messageId);
-    const activity = carrier.getAssociatedActivity?.({ scaled: true }) ?? null;
-    const source = await fromUuid(speakerTokenUuid(carrier) ?? "");
-    // §112 : les PV tombent quand l'animation (BLFX, par Sequencer) arrive, pas à son départ.
-    await waitForAnimations([source?.uuid, ...command.entries.map(e => e.token)]);
-    const resave = carrier.getFlag(MODULE_ID, "resave");
-    const attackMode = game.messages.get(resolution.attack?.messageId ?? "")?.rolls?.[0]?.options?.attackMode ?? null;
-    const entries = [];
-    const extra = [];
-    const slotHeal = resolution.plan.heal ? slotHealBonus(source?.actor ?? activity?.actor, activity) : null;
-    let healedOther = false;
-    for ( let entry of command.entries ) {
-      // Riposte (§16.9) : jugée au moment du coup, avant ses dégâts (« tant que vous avez ces PV temporaires »).
-      const struck = resolution.plan.attack ? await fromUuid(entry.token) : null;
-      const retaliations = struck ? retaliationsFor({ bearerToken: struck, attackerToken: source, activity, attackMode }) : [];
-      // §16.24 : une cible sous Lueur d'espoir (`healMax`) regagne le maximum du soin.
-      const patient = (await fromUuid(entry.token))?.actor;
-      // §160 : paliers de PV (`hpTiers`) — l'issue se choisit d'après les PV de la cible AVANT les dégâts (Mot de pouvoir mortel, Mot de
-      // pouvoir étourdissant, Parole divine) : le premier palier qui tient ; aucun, aucun effet.
-      const tier = hpTierFor(activity?.item, patient, entry, resolution.plan);
-      if ( tier ) entry = tier.entry;
-      const prism = await prismaticFor(activity?.item, entry, activity, resolution.plan);
-      if ( prism ) {
-        entry = prism.entry;
-        const names = prism.colors.map(c => loc(`Prisme.${c}`)).join(", ");
-        log(`${activity.item.name}: ${(await fromUuid(entry.token))?.name} — ${prism.colors.join(" + ")} (${names})`);
-        const struckToken = await fromUuid(entry.token);
-        if ( struckToken ) notice(struckToken, loc("Prisme.Rayons", { colors: names }), "gain");
-      }
-      const healed = (resolution.plan.heal && (entry.multiplier > 0)
-        && (healsMax(patient) || healsDownedToMax(source?.actor ?? activity?.actor, activity, patient)))
-        ? await maximizedHealing(damageMessage) : null;
-      if ( healed ) log(`maximum healing for ${entry.token} (${healed.map(d => d.value).join(" + ")})`);
-      // Rien à lire sans jet (sauvegarde ou effet seuls : `multiplier` 0, pas de `damageRoll`).
-      let rolled = (entry.multiplier > 0) ? (healed ?? deserializeDamages(resolution.damageRoll?.damages ?? [])) : [];
-      // §164 : le type de chaque rayon d'Embruns prismatiques ; deux rayons de dégâts, deux fois les dégâts.
-      if ( prism?.types.length ) rolled = prism.types.flatMap(type => rolled.map(d => ({ ...d, type })));
-      // §27 : Disciple de la Vie — des PV de plus au soin d'un sort lancé par un emplacement.
-      if ( slotHeal?.disciple && (entry.multiplier > 0) && rolled.some(d => d.type === "healing") ) {
-        rolled = [...rolled, { type: "healing", value: slotHeal.disciple, properties: new Set() }];
-        log(`Disciple of Life: +${slotHeal.disciple} HP for ${entry.token}`);
-      }
-      // §135 : Faveur de vigueur — « quand vous regagnez des PV, vous pouvez en regagner autant que votre modificateur de Constitution en
-      // plus », une fois par tour.
-      if ( (entry.multiplier > 0) && rolled.some(d => d.type === "healing") ) {
-        const extra = await fortifiedExtra(patient);
-        if ( extra ) rolled = [...rolled, { type: "healing", value: extra, properties: new Set() }];
-      }
-      if ( resolution.plan.heal && (entry.multiplier > 0) && patient && (patient !== (source?.actor ?? activity?.actor)) ) healedOther = true;
-      // §38 : Égide projetée — avant l'application, un allié peut faire absorber ces dégâts par sa réserve.
-      const hurting = (entry.multiplier > 0) && !resolution.plan.heal && rolled.some(d => !["healing", "temphp"].includes(d.type) && (d.value > 0));
-      const ward = hurting ? await askDamageGuardians(entry.token, source?.uuid ?? null, activity, { auto: autoReactOf(carrier, resolution) }) : null;
-      if ( ward?.item ) log(`${ward.reactor}: Projected Ward, their Arcane Ward takes ${entry.token}'s damage`);
-      // §78 : Interposition — les dégâts passent sur le réacteur ; les effets restent à la cible.
-      if ( ward?.interpose ) log(`${ward.reactor} interposes: takes ${entry.token}'s damage`);
-      const hp = (entry.multiplier > 0)
-        ? await applyDamageToToken(ward?.interpose ?? entry.token, rolled, damageMessage, { multiplier: entry.multiplier, reduction: entry.reduction ?? 0, absorbInto: ward?.item ?? null,
-          ignoreResistance: resistanceIgnoredBy(source?.actor ?? activity?.actor, activity) })   // §134
-        : null;
-      // §133 : Tueur de mages — la créature concentrée que l'auteur vient de blesser aura le Désavantage à son jet de concentration.
-      if ( hp && hurting ) await markConcentrationBreaker(source?.actor ?? activity?.actor, hp.actor);
-      const target = await fromUuid(entry.token);
-      // §16.46 : ce qu'une défense (Résistance) a retiré aux dégâts.
-      for ( const s of hp?.shields ?? [] ) {
-        log(`${target?.name ?? entry.token}: ${s.name} reduces the damage by ${s.reduced} (${s.formula ?? "1d4"} = ${s.rolled})`);
-        if ( target ) notice(target, loc("Retour.Reduit", { item: s.name, n: s.reduced }), "gain");
-      }
-      // Un effet sous condition (M3, §18.4 : « si la cible est de taille G ou inférieure ») ne passe que si elle tient.
-      const facts = factsFor({ source: source?.actor ?? null, target: target?.actor ?? null, activity, sourceToken: source, targetToken: target });
-      const allowed = (entry.effects ?? []).filter(e => {
-        if ( !e.if ) return true;
-        const ok = holds((typeof e.if === "string") ? JSON.parse(e.if) : e.if, facts);
-        if ( !ok ) log(`effect ${e.id}: condition not met for ${target?.name ?? entry.token}, not applied`);
-        return ok;
-      });
-      // « Repoussé » (Bousculade) n'est pas un effet : c'est un déplacement subi, loin de l'auteur.
-      const { effects: toApply, pushes } = await splitPushes(carrier, allowed);
-      for ( const push of pushes ) await forcedMove(source, target, { mode: "push", ...push });
-      const effects = await applyEffectsToToken(carrier, entry.token, toApply);
-      if ( toApply.length > effects.length ) log(`${target?.name ?? entry.token}: ${toApply.length - effects.length} planned effect(s) not applied (${toApply.map(e => e.id).join(", ")})`);
-      else if ( (entry.effects ?? []).length && !toApply.length && !pushes.length ) log(`${target?.name ?? entry.token}: no effect to apply (${(entry.effects ?? []).length} planned)`);
-      // Étapes d'issue du contenu (SPEC §16) : poussée, traction, état — si leur condition tient pour cette cible.
-      for ( const step of entry.steps ?? [] ) {
-        const condition = (typeof step.if === "string") ? JSON.parse(step.if) : step.if;   // JSON dans le plan (adapter/usage.mjs)
-        if ( !holds(condition, facts) ) {
-          log(`${step.name ?? step.type}: condition not met for ${target?.name ?? entry.token}, step "${step.type}" skipped`);
-          continue;
-        }
-        if ( step.type === "move" ) await forcedMove(source, target, step);
-        else if ( step.type === "disarm" ) {
-          // §19.6 : « l'ennemi lâche l'objet » — son arme de corps à corps équipée (la première), dés-équipée.
-          const weapon = target?.actor?.items.find(i => (i.type === "weapon") && i.system.equipped
-            && Array.from(i.system.activities ?? []).some(a => (a.type === "attack") && (a.attack?.type?.value === "melee")));
-          if ( weapon ) {
-            await weapon.update({ "system.equipped": false });
-            notice(target, loc("Retour.Desarme", { item: weapon.name }), "ended");
-            log(`${step.name ?? "disarm"}: ${target.name} drops ${weapon.name}`);
-          }
-        }
-        else if ( step.type === "damage" ) {
-          // §19 : dégâts d'issue (« si elle échoue au jet de sauvegarde, ou la moitié en cas de réussite »).
-          const part = step.saved ? ((step.onSave === "half") ? 0.5 : 0) : 1;
-          const logged = await inflict({
-            step, item: activity?.item ?? null, multiplier: part, targetUuid: entry.token,
-            speaker: ChatMessage.implementation.getSpeaker({ token: source ?? undefined }),
-            flavor: loc("DegatsIssue", { item: step.name ?? activity?.item?.name ?? "", name: target?.name ?? "" }),
-            flags: { outcomeDamage: { item: step.name ?? null, target: entry.token } }
-          });
-          if ( logged ) { extra.push({ ...logged, name: step.name }); log(`${step.name}: ${target?.name} takes ${step.formula} ${step.damageType}${part < 1 ? " (half)" : ""}`); }
-        }
-        else if ( step.type === "mark" ) {
-          const uuid = await applyMarkToToken(carrier, entry.token, step, loc(step.label));
-          if ( uuid ) { effects.push(uuid); log(`${step.name ?? "mark"}: ${target?.name} receives "${step.mark}"`); }
-        }
-        else if ( step.type === "breakConcentration" ) {
-          // §91 : « sa Concentration est rompue » (Tremblement de terre).
-          if ( target?.actor?.concentration?.effects?.size ) {
-            await target.actor.endConcentration();
-            log(`${step.name ?? "concentration"}: ${target.name}'s is broken`);
-          }
-        }
-        else if ( step.type === "lift" ) {
-          // §164 : Inversion de la gravité — la zone de cette utilisation (la plus récente de l'activité) chute avec elle.
-          const region = target?.parent?.regions?.filter(r => r.getFlag("dnd5e", "activity") === activity?.uuid).at(-1) ?? null;
-          await liftToken(target, step, region);
-        }
-        else if ( step.type === "status" ) {
-          const uuid = await applyStatusToToken(carrier, entry.token, step.status);
-          if ( uuid ) { effects.push(uuid); log(`${step.name ?? "condition"}: ${target?.name} receives "${step.status}"`); }
-        }
-      }
-      for ( const status of tier?.statuses ?? [] ) {
-        // L'état d'abord, les PV ensuite : à 0 PV, dnd5e et le moteur posent eux-mêmes Mort (même id, `dnd5edead0000000`) — deux
-        // créations croisées faisaient échouer la résolution (vu le 2026-10-12, Parole divine).
-        const uuid = await applyStatusToToken(carrier, entry.token, status);
-        if ( uuid ) { effects.push(uuid); log(`${activity?.item?.name}: ${target?.name} at ${tier.hp} HP receives "${status}"`); }
-        if ( status === "dead" ) await target?.actor?.update({ "system.attributes.hp.value": 0 });
-      }
-      entries.push({ token: entry.token, actor: entry.actor, before: hp?.before ?? null, after: hp?.after ?? null, effects });
-      for ( const r of retaliations ) {
-        // §86 : une riposte par une sauvegarde de l'attaquant (Aura sacrée) — sa propre résolution, à part.
-        if ( r.step.type === "save" ) {
-          const asked = await saveRetaliation(r, { bearerToken: struck, attackerToken: source });
-          if ( asked ) log(`${r.declaration.name}: ${source?.name} makes its saving throw for hitting ${struck.name}`);
-          continue;
-        }
-        const logged = await retaliate(r, { bearerToken: struck, attackerToken: source });
-        if ( logged ) { extra.push(logged); log(`${r.declaration.name}: ${source?.name} takes ${(logged.before.value + logged.before.temp) - (logged.after.value + logged.after.temp)} damage for hitting ${struck.name}`); }
-      }
-    }
-    // §27 : Guérisseur béni — « aussitôt après avoir lancé par un emplacement un sort qui restitue des PV à une autre créature ».
-    if ( slotHeal?.healer && healedOther && source?.uuid ) {
-      const logged = await applyDamageToToken(source.uuid, [{ type: "healing", value: slotHeal.healer, properties: new Set() }], damageMessage);
-      if ( logged ) { extra.push({ ...logged, name: "blessed-healer" }); log(`Blessed Healer: ${source.name} regains ${slotHeal.healer} HP`); }
-    }
-    // Sauvegarde répétée (brique « resave ») : réussie, l'effet tombe ; ratée, rien ne change — sauf les dégâts qu'elle
-    // porte (§19.6, `onFail` : le saignement d'Épine).
-    if ( resave?.effect ) {
-      for ( const t of resolution.targets ) {
-        // §43.1 : compteur — l'effet ne tombe qu'au seuil de réussites ; au seuil d'échecs, il reste et plus rien n'est rejoué.
-        if ( resave.tally && t.save ) {
-          const effect = await fromUuid(resave.effect);
-          if ( !effect ) continue;
-          const after = tallyAfter(effect.getFlag(MODULE_ID, "tally"), t.save.success === true, resave.tally);
-          const said = loc("Compteur.Etat", { successes: after.successes, successesMax: resave.tally.successes, failures: after.failures, failuresMax: resave.tally.failures });
-          if ( after.outcome === "ended" ) {
-            log(`tally: ${t.name} reaches ${after.successes} success(es), "${effect.name}" removed`);
-            notice(t.token, loc("Retour.FinEffet", { item: effect.name }), "ended");
-            await effect.delete();
-            continue;
-          }
-          const update = { [`flags.${MODULE_ID}.tally`]: { successes: after.successes, failures: after.failures, settled: after.settled } };
-          if ( (after.outcome === "settled") && resave.tally.status ) update.statuses = [...new Set([...(effect.statuses ?? []), resave.tally.status])];
-          await effect.update(update);
-          log(`tally: ${t.name} — ${said}${after.settled ? `; settled, "${effect.name}" remains${resave.tally.status ? ` (${resave.tally.status})` : ""}` : ""}`);
-          notice(t.token, after.settled ? loc("Compteur.Clos", { item: effect.name }) : said, after.settled ? "refused" : "prompt");
-          continue;
-        }
-        if ( t.save?.success !== true ) {
-          // §37 : Malédiction, « Cursed Actions » — ratée, la créature prend l'action Esquiver ce tour.
-          if ( resave.dodge && t.save ) await forceDodge(t.token);
-          if ( !resave.onFail || !t.save ) continue;
-          const item = await fromUuid(resave.onFail.item ?? "");
-          for ( const step of resave.onFail.steps ?? [] ) {
-            const logged = await inflict({ step, item, scaling: resave.onFail.scaling ?? 0, targetUuid: t.token,
-              speaker: ChatMessage.implementation.getSpeaker({ token: (await fromUuid(t.token)) ?? undefined }),
-              flavor: loc("DegatsPorteur", { item: resave.onFail.name ?? item?.name ?? "", name: t.name }),
-              flags: { bearerDamage: { item: resave.onFail.identifier ?? null, effect: resave.effect, moment: resave.moment } } });
-            if ( logged ) { extra.push({ ...logged, name: resave.onFail.name }); log(`${resave.onFail.name}: saving throw failed, ${t.name} takes its damage`); }
-          }
-          continue;
-        }
-        if ( resave.keep ) { log(`repeated saving throw succeeded: ${t.name} keeps the effect (it does not end on a success)`); continue; }
-        const effect = await fromUuid(resave.effect);
-        if ( effect ) { await effect.delete(); log(`repeated saving throw succeeded: "${effect.name}" removed from ${t.name}`); }
-      }
-    }
-    return [{ type: "applied", entries, extra }];
-  },
-
-  /** Effets exclusifs : l'auteur choisit (adapter/choices.mjs). Sans réponse, la résolution reste en attente et la question est reposée à `ready`. */
-  async askChoice(command, carrier, resolution) {
-    const actor = await fromUuid(resolution.source ?? "");
-    const activity = await fromUuid(resolution.activity ?? "");
-    const item = activity?.item?.name ?? "";
-    if ( !actor ) return [];
-    log(`${item}: ${actor.name} must choose an effect (${command.options.map(o => o.label).join(", ")})`);
-    const answer = await askChoice(actor, { actor: actor.uuid, item, prompt: command.prompt, options: command.options });
-    if ( !answer ) { log(`${item}: no effect chosen, waiting`); return []; }
-    log(`${item}: ${actor.name} chooses ${command.options.find(o => o.id === answer.id)?.label ?? answer.id}`);
-    return [{ type: "choiceMade", id: answer.id }];
-  },
-
-  /** L'essentiel redit là où on le lit : le verdict sous le jet d'attaque, les PV sous le jet de dégâts. */
-  async echo(command, carrier, resolution) {
-    if ( command.on === "attack" ) {
-      log(`attack ${resolution.attack.roll.total} →`, resolution.targets.map(t =>
-        `${t.name}: ${t.hit ? (t.critical ? "critical" : "hit") : "miss"}${t.reaction ? ` (${t.reaction})` : ""}`).join(", "));
-      const attackMessage = game.messages.get(resolution.attack.messageId);
-      if ( attackMessage && (attackMessage.id !== carrier.id) ) await attackMessage.setFlag(MODULE_ID, "verdict", { carrier: carrier.id });
-      // §19.6 : fenêtre « raté » (Riposte, Désarmement) — pour chaque cible que l'attaque n'a pas touchée.
-      const missed = resolution.targets.filter(t => (t.hit === false) && !t.unaffected).map(t => t.token);
-      if ( missed.length ) windowIsMissed(missed, speakerTokenUuid(carrier), carrier.speaker?.alias ?? "",
-        { activity: resolution.activity, auto: autoReactOf(carrier, resolution) });
-      return;
-    }
-    const damageMessage = game.messages.get(resolution.damageRoll?.messageId);
-    if ( !damageMessage || (damageMessage.id === carrier.id) ) return;
-    await damageMessage.setFlag(MODULE_ID, "applied", {
-      carrier: carrier.id,
-      lines: resolution.targets.filter(t => t.damage).map(t => ({ name: t.name, applied: t.damage.applied })),
-      undone: resolution.step === STEPS.UNDONE
-    });
-  },
-
-  /** Fenêtre « blessé » : sans incidence sur cette résolution, donc sans attente. */
-  window(command, carrier, resolution) {
-    // §19 : ce qui a blessé — l'activité (Défenses : « une attaque de mêlée ») et les types de dégâts (Absorption des éléments).
-    const damageTypes = [...new Set((resolution?.damageRoll?.damages ?? []).map(d => d.type).filter(Boolean))];
-    if ( command.window === "isDamaged" ) windowIsDamaged(command.tokens, speakerTokenUuid(carrier), carrier.speaker?.alias ?? "",
-      { activity: resolution?.activity ?? null, damageTypes, auto: autoReactOf(carrier, resolution) });
-  },
-
-  /**
-   * Zone instantanée retirée un peu après la résolution, pas tout de suite : un module d'animation
-   * (BLFX, `boss-loot-assets-premium`) joue son effet sur la région, y écrit, puis la supprime
-   * lui-même (`BlfxMacroExecutor.deleteTemplate`, 1 s après l'animation). La retirer en même temps
-   * faisait écrire ce module sur une région disparue (« id … does not exist », vu le 2026-09-23).
-   * S'il l'a déjà fait, il n'y a plus rien à retirer.
-   */
-  cleanup(command, carrier) {
-    setTimeout(() => removeTransientRegions(carrier.id)
-      .then(removed => { if ( removed ) log(`${removed} instantaneous area(s) removed`); })
-      .catch(err => log("instantaneous area: removal failed", err?.message)), TRANSIENT_LINGER_MS);
-  }
-};
-
-/** Déplacement forcé d'une cible par rapport à l'auteur (étape `move`, et « repoussé » de la Bousculade). */
-async function forcedMove(source, target, { mode, distance, units, follow=false }) {
-  if ( !source || !target ) return;
-  const towards = mode === "pull";
-  // Une distance en formule se lit sur la source (Main puissante : « 5 + 5 * @flags.dnd5e.summon.mod », §16.15).
-  let value = distance;
-  if ( typeof distance === "string" ) {
-    try { value = new Roll(distance, source.actor?.getRollData() ?? {}).evaluateSync({ strict: false }).total; }
-    catch(err) { return log(`push: distance "${distance}" unreadable (${err.message})`); }
-    if ( !(value > 0) ) return log(`push: distance "${distance}" = ${value}, nothing`);
-  }
-  const { cells, wanted } = await pushAway(source, target, { distance: value, units }, readUnitFactors(), { towards, follow });
-  log(`${towards ? "pull" : "push"}: ${target.name} ${towards ? "pulled" : "pushed"} ${cells} square(s) out of ${wanted}${cells < wanted ? " (stopped)" : ""}`);
-}
+export const deserializeDamages = damages => damages.map(d => ({ ...d, properties: new Set(d.properties ?? []) }));
 
 /** Le temps qu'une zone instantanée reste visible après sa résolution (animations d'autres modules comprises). */
-const TRANSIENT_LINGER_MS = 4000;
+export const TRANSIENT_LINGER_MS = 4000;
 
-const dispatcher = createDispatcher({
+export const dispatcher = createDispatcher({
   read: id => game.messages.get(id)?.getFlag(MODULE_ID, "resolution") ?? null,
   write: (id, resolution) => game.messages.get(id)?.setFlag(MODULE_ID, "resolution", resolution),
   execute: (command, id, resolution) => COMMANDS[command.type]?.(command, game.messages.get(id), resolution),
@@ -534,7 +167,7 @@ const dispatcher = createDispatcher({
  * Complète des cibles avec ce qui dépend des états et de la situation (core/conditions.mjs) :
  * échec d'office à la sauvegarde du plan, coup critique d'office, réaction possible si touchée.
  */
-async function enrich(targets, plan, originUuid, activityUuid=null, attackMode=null, castLevel=null) {
+export async function enrich(targets, plan, originUuid, activityUuid=null, attackMode=null, castLevel=null) {
   const activity = activityUuid ? await fromUuid(activityUuid) : null;
   const origin = plan.attack && originUuid ? await fromUuid(originUuid) : null;
   const factors = origin ? readUnitFactors() : null;
@@ -582,7 +215,7 @@ async function enrich(targets, plan, originUuid, activityUuid=null, attackMode=n
 }
 
 /** Données d'`open()` du cœur pour un message, ou null s'il n'y a rien à résoudre. */
-async function openingFor(message, usage, extra={}) {
+export async function openingFor(message, usage, extra={}) {
   if ( !usage.plan.attack && !usage.targets.length ) {
     log(usage.area ? "area placed on nobody: nothing to resolve" : "no target designated: left to the card buttons");
     return null;
@@ -597,260 +230,6 @@ async function openingFor(message, usage, extra={}) {
   // §169 : un rejeu sans sauvegarde (Mur de feu traversé, fin de tour du côté brûlant) — les dégâts pleins, d'office.
   if ( usage.plan.save && message.getFlag(MODULE_ID, "areaTick")?.noSave ) targets = targets.map(t => ({ ...t, autoFail: "noSave" }));
   return { id: foundry.utils.randomID(), ...data, choice, allocation, targets, ...extra };
-}
-
-/* -------------------------------------------- */
-/*  Messages du système → évènements            */
-/* -------------------------------------------- */
-
-function onUsageMessage(message) {
-  // L'ouverture entre dans la file du porteur AVANT toute attente : un jet que le système enchaîne
-  // aussitôt (dégâts d'une activité `damage`, soin) arrive après elle, dans l'ordre.
-  return dispatcher.open(message.id, async () => {
-    await repairSaveAbility(message);
-    const usage = readUsage(message);
-    if ( !usage ) return null;
-    if ( usage.plan.variant ) log(`attack variant: ${usage.plan.variant.name || usage.plan.variant.kind} (${usage.plan.variant.kind})`);
-    // §104 : un module qui fournit lui-même les cibles d'une activité à zone (Darsh Loot : la zone d'effet d'un piège) le dit
-    // par `flags.dnd5e-combat.givenTargets` sur le message d'utilisation : pas de gabarit à attendre, les cibles du message.
-    if ( usage.area && !message.getFlag(MODULE_ID, "areaTick") && !message.getFlag(MODULE_ID, "givenTargets") ) {
-      log("area of effect: waiting for the template to be placed");
-      return null;
-    }
-    return openingFor(message, usage);
-  });
-}
-
-/**
- * §33 : Inspiration bardique — un jet d'attaque qui rate une cible (ni 1 naturel, ni abri total) : l'attaquant inspiré peut ajouter
- * son dé au total, avant le verdict. Rend le jet, éventuellement augmenté.
- */
-async function inspiredAttack(message, roll, targets) {
-  if ( roll.isFumble || roll.isCritical ) return roll;
-  const missed = resolveAttack(roll, targets.filter(t => !t.unaffected)).filter(t => t.reason === "miss");
-  if ( !missed.length ) return roll;
-  const actor = (await fromUuid(speakerTokenUuid(message) ?? ""))?.actor ?? message.getAssociatedActor?.() ?? null;
-  if ( !actor ) return roll;
-  const needed = Math.min(...missed.map(t => t.ac));
-  const bonus = await offerInspiration(actor, { what: loc("Inspiration.Attaque"), total: roll.total, needed });
-  if ( bonus ) log(`${actor.name}: Bardic Inspiration, attack ${roll.total} + ${bonus} = ${roll.total + bonus}`);
-  // §90 : Attaque précise — encore ratée, l'attaquant peut ajouter son propre dé (`rollBonus` sur "attack").
-  const total = roll.total + bonus;
-  const rules = actor.items.some(i => contentOf(i).entry?.rollBonus?.on?.includes("attack"));
-  const precise = (rules && (total < needed)) ? await offerRollBonus(actor, { kind: "attack", what: loc("Inspiration.Attaque"), total, needed, d20: keptD20(message.rolls?.[0]) }) : 0;
-  if ( precise ) log(`${actor.name}: die added to their attack, ${total} + ${precise} = ${total + precise}`);
-  // §135 : Faveur de prouesse martiale, Visée sans pareille — encore ratée : « vous pouvez toucher à la place ».
-  const peerless = ((total + precise) < needed) && await offerPeerlessAim(actor, { total: total + precise, needed }) ? needed - (total + precise) : 0;
-  if ( !bonus && !precise && !peerless ) return roll;
-  return { ...roll, total: total + precise + peerless, inspired: bonus + precise + peerless };
-}
-
-async function onAttackMessage(message) {
-  const attack = readAttackMessage(message);
-  if ( !attack?.targets.length ) {   // sans cible désignée, le jet reste un jet simple
-    log("attack without a designated target: plain roll, nothing to resolve");
-    return;
-  }
-  await waitForDice(message);
-  const rolled = async plan => {
-    const targets = await enrich(attack.targets, plan, speakerTokenUuid(message), attack.activity, message.rolls?.[0]?.options?.attackMode ?? message.system?.mode ?? null,
-      castLevelOfMessage(game.messages.get(message.system?.origin ?? "") ?? message));
-    return { type: "attackRolled", roll: await inspiredAttack(message, attack.roll, targets), messageId: message.id, targets };
-  };
-  // Le message d'utilisation attend ce jet : c'est lui le porteur.
-  const awaited = attack.origin && await dispatcher.send(attack.origin, resolution =>
-    ((resolution.step === STEPS.AWAITING_ATTACK) && (resolution.activity === attack.activity)) ? rolled(resolution.plan) : null);
-  if ( awaited ) return;
-  // Jet lancé hors carte, ou relancé depuis une carte déjà résolue : il se porte lui-même.
-  await dispatcher.open(message.id, async () => {
-    const usage = readUsage(message);
-    if ( !usage?.plan.attack ) return null;
-    return openingFor(message, { ...usage, origin: attack.origin, targets: [] }, { attack: await rolled(usage.plan) });
-  });
-}
-
-/** Ces dégâts sont-ils ceux de la résolution : son activité, ou une variante que son plan admet (M5, §18.8) ? */
-const damageFits = (resolution, damage) => (resolution.activity === damage.activity)
-  || (resolution.plan?.damageFrom ?? []).includes(damage.activity);
-
-/** Le porteur le plus récent qui attend encore les dégâts de cette activité. */
-function findAwaitingDamage(damage) {
-  const messages = game.messages.contents;
-  for ( let i = messages.length - 1; i >= Math.max(0, messages.length - LOOKBACK); i-- ) {
-    const resolution = resolutionOn(messages[i]);
-    if ( (resolution?.step !== STEPS.AWAITING_ROLLS) || !resolution.plan.damage || resolution.damageRoll ) continue;
-    if ( !damageFits(resolution, damage) ) continue;
-    if ( resolution.origin && damage.origin && (resolution.origin !== damage.origin) ) continue;
-    return messages[i];
-  }
-  return null;
-}
-
-/** Jet de dégâts ou de soin (même forme). */
-async function onDamageMessage(message) {
-  const damage = readDamageMessage(message);
-  if ( !damage ) return;
-  await waitForDice(message);
-  const event = { type: "damageRolled", messageId: message.id, damages: serializeDamages(damage.damages) };
-  const accepts = resolution => damageFits(resolution, damage) ? event : null;
-  if ( damage.origin && await dispatcher.send(damage.origin, accepts) ) return;
-  const carrier = findAwaitingDamage(damage);
-  if ( carrier && await dispatcher.send(carrier.id, accepts) ) return;
-  log("damage with no pending resolution: left to the system's tray");
-}
-
-/** Le porteur auquel se rapporte un jet de sauvegarde. */
-function carrierOfSave(save) {
-  if ( save.request ) return game.messages.get(save.request)?.getFlag(MODULE_ID, "requestFor") ?? null;
-  return save.origin;
-}
-
-async function onSaveMessage(message) {
-  const save = readSaveMessage(message);
-  const carrierId = save?.actor ? carrierOfSave(save) : null;
-  const carrier = game.messages.get(carrierId);
-  const resolution = resolutionOn(carrier);
-  if ( !resolution ) return;   // sauvegarde libre, hors de toute résolution
-  await waitForDice(message);
-  const dc = resolution.plan?.save?.dc;
-  const failed = Number.isFinite(dc) && (save.total < dc);
-  // Une intention peut imposer le choix (`legendary: "always" | "never"` sur l'utilisation : scénarios, macros), comme `saveChoice`.
-  const forced = game.messages.get(resolution.origin ?? carrierId)?.getFlag(MODULE_ID, "legendary") ?? carrier.getFlag(MODULE_ID, "legendary");
-  const resisted = failed ? await legendaryResistance(message, { dc, item: carrier.getAssociatedActivity?.()?.item?.name, forced }) : false;
-  // §33 : Inspiration bardique — une sauvegarde ratée : la créature inspirée peut ajouter son dé.
-  let total = save.total;
-  if ( failed && !resisted ) {
-    const actor = await fromUuid(save.actor);
-    const bonus = actor ? await offerInspiration(actor, { what: loc("Inspiration.Sauvegarde"), total, needed: dc }) : 0;
-    if ( bonus ) { log(`${actor.name}: Bardic Inspiration, saving throw ${total} + ${bonus} = ${total + bonus}`); total += bonus; }
-    // §38 : Chance du ténébreux — encore ratée, la créature peut ajouter son propre dé (`rollBonus`).
-    const luck = (actor && (total < dc)) ? await offerRollBonus(actor, { kind: "save", what: loc("Inspiration.Sauvegarde"), total, needed: dc, statuses: saveStatuses(carrier, resolution), d20: keptD20(message.rolls?.[0]), ability: resolution.plan?.save?.ability ?? null }) : 0;
-    if ( luck ) { log(`${actor.name}: die added to their saving throw, ${total} + ${luck} = ${total + luck}`); total += luck; }
-  }
-  // §133 : Maître des boucliers, Interposer le bouclier — une sauvegarde de Dextérité réussie contre des dégâts réduits de moitié : la
-  // Réaction pour n'en subir aucun.
-  const plan = resolution.plan ?? {};
-  const halfDex = !!plan.damage && !!plan.save && !plan.save.chained && (plan.save.ability === "dex") && ((plan.save.onSave ?? "half") === "half");
-  const interposed = (halfDex && Number.isFinite(dc) && (total >= dc)) ? await offerInterpose(await fromUuid(save.actor)) : false;
-  await dispatcher.send(carrierId, { type: "saveRolled", actor: save.actor, total, messageId: message.id, ...(resisted ? { resisted: true } : {}),
-    ...(interposed ? { interposed: true } : {}) });
-}
-
-/**
- * §94 : les états qu'une sauvegarde évite (ceux des effets de l'activité) ou fait finir (l'effet d'une sauvegarde répétée) — Survivant,
- * « pour éviter ou mettre fin à l'état Charmé ou Effrayé ».
- */
-function saveStatuses(carrier, resolution) {
-  const out = new Set();
-  const item = carrier?.getAssociatedActivity?.()?.item;
-  for ( const e of resolution?.plan?.effects ?? [] ) for ( const s of item?.effects?.get(e?.id ?? e)?.statuses ?? [] ) out.add(s);
-  const resave = carrier?.getFlag?.(MODULE_ID, "resave")?.effect;
-  for ( const s of (resave ? fromUuidSync(resave, { strict: false })?.statuses : null) ?? [] ) out.add(s);
-  return Array.from(out);
-}
-
-/**
- * §18.9 : un PNJ qui rate une sauvegarde peut dépenser une Résistance légendaire (réglage : demander, toujours, jamais).
- * La dépense passe par le système (`resistSave`) ; la résolution compte la sauvegarde réussie.
- */
-async function legendaryResistance(message, { dc, item, forced=null }) {
-  const mode = forced ?? game.settings.get(MODULE_ID, "legendaryResistance");
-  if ( (mode === "never") || !canResistSave(message) ) return false;
-  const actor = message.getAssociatedActor();
-  const total = message.rolls?.[0]?.total;
-  if ( (mode !== "always") && !(await askLegendary(actor, { total, dc, item })) ) {
-    log(`${actor.name}: Legendary Resistance not used (${total} vs DC ${dc})`);
-    return false;
-  }
-  await resistSave(message);
-  log(`${actor.name}: Legendary Resistance — failed saving throw (${total} vs DC ${dc}) turned into a success, ${legendaryLeft(actor)} left`);
-  return true;
-}
-
-/* -------------------------------------------- */
-/*  Zones d'effet                               */
-/* -------------------------------------------- */
-
-/** Le dernier message d'utilisation de cette activité ; `unresolved` : qui n'a pas encore de résolution. */
-function findUsage(activityUuid, { unresolved=false }={}) {
-  const messages = game.messages.contents;
-  for ( let i = messages.length - 1; i >= Math.max(0, messages.length - LOOKBACK); i-- ) {
-    const message = messages[i];
-    if ( (message.type !== "usage") || (unresolved && dispatcher.peek(message.id)) ) continue;
-    if ( message.getAssociatedActivity?.()?.uuid === activityUuid ) return message;
-  }
-  return null;
-}
-
-/** §70 : la région posée par un sort à orage qui n'est pas un éclair — le nuage. */
-function isCloudRegion(region) {
-  const item = fromUuidSync(region.getFlag("dnd5e", "item") ?? "", { strict: false });
-  return !!stormOf(item) && !isBoltRegion(region);
-}
-
-/** Une zone vient d'être posée : ceux qu'elle recouvre sont les cibles de l'activité. */
-async function onRegionCreated(region) {
-  // P2 : une région créée sans tranche d'élévation (connecteur, macro) la reçoit avant qu'on lise qui est dedans.
-  const slice = await ensureRegionElevation(region);
-  if ( slice ) log(`area: elevation slice ${slice.bottom} → ${slice.top} ${region.parent.grid.units}`);
-  // §16.21 : Appel de la foudre — la zone posée est le nuage de l'item ; la foudre frappe à 5 ft du point choisi.
-  const bolt = await shrinkToBolt(region);
-  if ( bolt ) log("area moved to the struck point (lightning)");
-  const area = await readActivityRegion(region);
-  if ( !area ) return;
-
-  // Zone d'un sort à concentration : elle tombera avec elle (runtime/concentration.mjs).
-  // §70 : le nuage — à défaut du message, la concentration en cours de son sort.
-  const effect = concentrationEffectOf(findUsage(area.activity))
-    ?? (isCloudRegion(region) ? concentrationOn(fromUuidSync(region.getFlag("dnd5e", "item") ?? "", { strict: false })) : null);
-  if ( effect ) {
-    await tieRegionToConcentration(region, effect);
-    log(`area attached to concentration "${effect.name}"`);
-  }
-
-  // §70 : le nuage d'un sort à orage ne résout rien — c'est l'éclair, visé dessous, qui le fera.
-  if ( isCloudRegion(region) ) { log("storm: cloud placed, waiting for the lightning"); return; }
-
-  const message = findUsage(area.activity, { unresolved: true });
-  if ( !message ) return;
-  await dispatcher.open(message.id, async () => {
-    await repairSaveAbility(message);
-    const usage = readUsage(message);
-    const activity = message.getAssociatedActivity?.({ scaled: true });
-    const rules = areaRulesOf(activity);
-    // Une activité qui ne fait que POSER la zone (utilitaire sans effet) n'a rien à résoudre elle-même ;
-    // si une sœur doit rejouer (Nuage nauséabond), la zone est quand même retenue comme zone qui dure.
-    if ( !usage?.area && !rules?.activity && !rules?.casterPulse ) return null;
-    const targets = selectAreaTargets(area.candidates, area).map(({ token, actor, name }) => ({ token, actor, name }));
-    log(`area placed: ${area.candidates.length} token(s) covered, ${targets.length} affected`);
-    if ( usage?.area ) showTargetsTo(message.author, targets.map(t => t.token));
-
-    if ( rules && !isInstantaneous(activity) ) {
-      // Zone qui dure : elle rejouera son activité (runtime/areas.mjs). Ceux qu'elle touche à la
-      // pose l'ont été pour ce tour de jeu — sauf si c'est une sœur qui agit et que la pose ne fait rien.
-      const key = turnKeyOf(game.combat?.started ? game.combat.round : null, game.combat?.turn);
-      await writeAreaState(region, {
-        ...openArea(rules.on, key, (usage?.area && actsOnPose(rules.on)) ? targets.map(t => t.token) : []),
-        usage: message.id,
-        activity: rules.activity ?? null,
-        ...(rules.activities ? { activities: rules.activities } : {}),
-        exclude: area.excludeOrigin ? area.origin : null,
-        // §91 : le lanceur, dont le tour fait agir la zone (`casterPulse`).
-        source: area.origin ?? null,
-        // §16.23 : les rejeux de la zone respectent qui elle affecte (Esprits gardiens épargnent les alliés).
-        affects: area.affects ?? "", originDisposition: area.originDisposition ?? null, originSide: area.originSide ?? null
-      });
-      log(`lasting area: acts on ${rules.on.join(", ")}, once per turn${rules.activity ? ` (replays activity ${rules.activity})` : ""}`);
-      // Une zone qui n'agit qu'au déplacement (Croissance d'épines) ne fait rien à sa pose.
-      // §91 : une zone qui n'agit qu'au tour de son lanceur (`casterPulse`, aucun moment) résout sa pose comme une autre.
-      if ( !usage?.area || (rules.on.length && !actsOnPose(rules.on)) ) return null;
-    } else if ( isInstantaneous(activity) || bolt ) {
-      await markTransient(region, message.id);
-      // Personne dedans : aucune résolution ne viendra la retirer. On la laisse voir un instant.
-      if ( !targets.length ) setTimeout(() => removeTransientRegions(message.id).catch(() => {}), TRANSIENT_LINGER_MS);
-    }
-    return openingFor(message, { ...usage, targets });
-  });
 }
 
 /* -------------------------------------------- */

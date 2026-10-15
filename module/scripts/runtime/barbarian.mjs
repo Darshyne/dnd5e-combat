@@ -15,7 +15,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { isRaging, barbarianRule, statusEndsRage, endRage, keepRage, rageKeptOn, relentlessAtZero, recklessChoice } from "../adapter/rage.mjs";
 import { markData, marksOn } from "../adapter/mastery.mjs";
-import { combatantFor, isOwnTurn, readBudget, currentTurnKey, usageTokenOf, speakerTokenOf } from "../adapter/turn.mjs";
+import { combatantFor, isOwnTurn, readBudget, currentTurnKey, usageTokenOf, speakerTokenOf, turnKeyAt } from "../adapter/turn.mjs";
 import { ensureDowned } from "../adapter/death.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { tokenOf } from "../adapter/facts.mjs";
@@ -74,7 +74,7 @@ function onTurnEnd(combat, prior) {
   const combatant = combat.combatants.get(prior?.combatantId);
   const actor = combatant?.actor;
   if ( !actor || !isRaging(actor) || barbarianRule(actor, "persistentRage") ) return;
-  const priorKey = `${combat.id}.${prior.round}.${prior.turn}`;
+  const priorKey = turnKeyAt(combat, prior);
   // « Prendre une action Bonus pour entretenir la Rage » : l'action Bonus dépensée à ce tour.
   const bonusSpent = (readBudget(combatant)?.bonus ?? 1) < 1;
   if ( (rageKeptOn(actor) === priorKey) || bonusSpent ) return;

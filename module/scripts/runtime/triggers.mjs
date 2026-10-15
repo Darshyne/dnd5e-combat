@@ -9,7 +9,7 @@ import { select, stepsOf, BEARER_MOMENTS, damagedByOriginSide } from "../core/tr
 import { declarationsOf, declarationsOfEffects, factsFor, tokenOf, consumedMarks } from "../adapter/triggers.mjs";
 import { identifierOf } from "../adapter/content.mjs";
 import { comesFromItemEffect, originItemOf } from "../adapter/facts.mjs";
-import { usageTokenOf, speakerTokenOf } from "../adapter/turn.mjs";
+import { usageTokenOf, speakerTokenOf, turnKeyAt } from "../adapter/turn.mjs";
 import { resaveAgainst } from "../adapter/areas.mjs";
 import { seesBetween } from "../adapter/vision.mjs";
 import { tallySettled } from "../core/tally.mjs";
@@ -181,7 +181,7 @@ function turnMoment(moment, combatant, turnKey=null) {
 }
 
 function onTurnChange(combat, prior, current) {
-  turnMoment("endOfTurn", combat.combatants.get(prior?.combatantId), prior ? `${combat.id}.${prior.round}.${prior.turn}` : null);
+  turnMoment("endOfTurn", combat.combatants.get(prior?.combatantId), turnKeyAt(combat, prior));
   turnMoment("startOfTurn", combat.combatants.get(current?.combatantId));
 }
 

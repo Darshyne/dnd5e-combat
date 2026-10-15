@@ -23,7 +23,7 @@ import {
   swallowedBy, swallowedIn, swallowerOf, swallowedTokenOf, swallowItemOf, swallowOf, placeInside, carrySwallowed, release,
   releasing, moveOut, footprint, englishNameOf, swallowerTokenFor
 } from "../adapter/swallow.mjs";
-import { committedPosition } from "../adapter/turn.mjs";
+import { committedPosition, turnKeyAt } from "../adapter/turn.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
@@ -216,7 +216,7 @@ function onApplyDamage(actor, amount, options) {
 
 /** Fin d'un tour : chaque avaleur qui a subi assez de dégâts de l'intérieur sauvegarde, ou régurgite tout. */
 async function regurgitateChecks(combat, prior) {
-  const priorKey = `${combat.id}.${prior?.round}.${prior?.turn}`;
+  const priorKey = turnKeyAt(combat, prior);
   for ( const [key, total] of Array.from(fromInside) ) {
     if ( !key.startsWith(`${priorKey}|`) ) continue;
     fromInside.delete(key);
@@ -242,7 +242,7 @@ async function regurgitateChecks(combat, prior) {
 async function damageAt(combat, prior, current) {
   const ended = combat.combatants.get(prior?.combatantId)?.token ?? null;
   const started = combat.combatants.get(current?.combatantId)?.token ?? null;
-  const priorKey = `${combat.id}.${prior?.round}.${prior?.turn}`;
+  const priorKey = turnKeyAt(combat, prior);
   // Le tour de l'avaleur s'achève ou commence.
   for ( const [owner, which] of [[ended, "ended"], [started, "started"]] ) {
     if ( !owner?.actor ) continue;

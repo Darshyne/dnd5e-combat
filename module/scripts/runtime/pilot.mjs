@@ -17,7 +17,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { spendUse } from "../core/turn.mjs";
 import { castCommand, nextPlayableTurn } from "../core/pilot.mjs";
 import { INCAPACITATING } from "../core/conditions.mjs";
-import { readBudget, writeBudget, isOwnTurn, distanceBetween, positionOf } from "../adapter/turn.mjs";
+import { readBudget, writeBudget, isOwnTurn, distanceBetween, positionOf, turnKeyAt } from "../adapter/turn.mjs";
 import {
   pilotOf, commandPlan, summonerCombatant, writeCommand, readCommand, turnKey, isPilotedCombatant, pulseOf, commandKey,
   summonerToken, summonsOfWith
@@ -220,7 +220,7 @@ async function onDeleteToken(tokenDoc) {
 async function pulseAtTurnEnd(combat, prior) {
   const ended = combat.combatants.get(prior?.combatantId)?.token;
   if ( !ended?.actor || isPilotedCombatant(combat.combatants.get(prior.combatantId)) ) return;
-  const key = `${combat.id}.${prior.round}.${prior.turn}`;   // la fin d'un tour appartient au tour qui s'achève
+  const key = turnKeyAt(combat, prior);   // la fin d'un tour appartient au tour qui s'achève
   for ( const source of ended.parent.tokens ) {
     const pulse = pulseOf(source);
     if ( !pulse || !(pulse.rule.on ?? ["turnEnd"]).includes("turnEnd") ) continue;

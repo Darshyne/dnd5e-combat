@@ -40,6 +40,11 @@ export function currentTurnKey() {
   return c?.started ? `${c.id}.${c.round}.${c.turn}` : null;
 }
 
+/** La clé d'un tour donné du combat (`{ round, turn }`, le `prior` de `combatTurnChange`), au format de `currentTurnKey`, ou null. */
+export function turnKeyAt(combat, entry) {
+  return entry ? `${combat.id}.${entry.round}.${entry.turn}` : null;
+}
+
 /** Réactions par round d'un acteur (contenu `reactions.perRound`, par exemple trois), une sinon. */
 export function reactionsPerRound(actor) {
   let n = 1;

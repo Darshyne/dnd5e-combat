@@ -17,7 +17,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
 import { masteryEffect, grazeDamage, toppleDC, cleaveModifier, markExpires } from "../core/mastery.mjs";
 import { masteryOf, attackModOf, marksOn, markData, markModifiers } from "../adapter/mastery.mjs";
-import { currentTurnKey, combatSceneActors, speakerTokenOf } from "../adapter/turn.mjs";
+import { currentTurnKey, combatSceneActors, speakerTokenOf, turnKeyAt } from "../adapter/turn.mjs";
 import { pushAway } from "../adapter/movement.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { askChoice } from "../adapter/choices.mjs";
@@ -170,7 +170,7 @@ async function expire(combat, combatantId, moment, key) {
 
 function onTurnChange(combat, prior, current) {
   // `prior` : le tour qui s'achève (sa clé : combat, round, tour d'alors) ; `current` : celui qui commence.
-  const priorKey = prior ? `${combat.id}.${prior.round}.${prior.turn}` : null;
+  const priorKey = turnKeyAt(combat, prior);
   return enqueue(MARKS, async () => {
     await expire(combat, prior?.combatantId, "turnEnd", priorKey);
     await expire(combat, current?.combatantId, "turnStart", null);

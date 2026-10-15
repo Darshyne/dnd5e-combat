@@ -14,7 +14,7 @@ import { hasLineOfEffect } from "../adapter/cover.mjs";
 import { emanationsOf, carriesEmanation, isImmuneTo, grantImmunity } from "../adapter/emanations.mjs";
 import { regenerationOf } from "../adapter/regeneration.mjs";
 import { actorOfEffect } from "../adapter/grapple.mjs";
-import { distanceBetween } from "../adapter/turn.mjs";
+import { distanceBetween, turnKeyAt } from "../adapter/turn.mjs";
 import { canSee } from "../adapter/vision.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
@@ -62,7 +62,7 @@ async function onTurnChange(combat, prior, current) {
   const ended = combat.combatants.get(prior?.combatantId)?.token;
   const started = combat.combatants.get(current?.combatantId)?.token;
   if ( ended?.actor ) {
-    const turn = `${combat.id}.${prior.round}.${prior.turn}`;
+    const turn = turnKeyAt(combat, prior);
     for ( const emanation of emanationsOf(ended.actor).filter(e => e.on === "ownTurnEnd") ) {
       const targets = reached(ended, emanation, ended.parent.tokens.contents);
       if ( !targets.length || !once(`${turn}|${ended.uuid}|${emanation.key}|end`) ) continue;

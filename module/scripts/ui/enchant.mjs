@@ -4,9 +4,7 @@
  */
 
 import { enchantableWeapons } from "../adapter/enchant.mjs";
-import { loc } from "../runtime/shared.mjs";
-
-const esc = s => foundry.utils.escapeHTML(String(s ?? ""));
+import { loc, esc } from "../runtime/shared.mjs";
 
 /** Rend l'uuid de l'arme choisie, ou null. */
 export async function askEnchantWeapon(activity, actor) {

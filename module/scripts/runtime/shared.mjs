@@ -14,6 +14,9 @@ export function notice(token, text, kind="refused") {
   if ( uuid ) Hooks.callAll(`${MODULE_ID}.notice`, { token: uuid, text, kind });
 }
 
+/** Un texte échappé pour du HTML (noms d'acteurs, d'objets…). */
+export const esc = s => foundry.utils.escapeHTML(String(s ?? ""));
+
 /** Attendre `ms` millisecondes. */
 export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 

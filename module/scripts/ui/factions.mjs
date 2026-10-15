@@ -11,12 +11,11 @@
  */
 import { MODULE_ID } from "../constants.mjs";
 import { route } from "../runtime/router.mjs";
-import { loc } from "../runtime/shared.mjs";
+import { loc, esc } from "../runtime/shared.mjs";
 import { PARTY, pairKey, RELATIONS } from "../core/factions.mjs";
 import { factionSettings, factionName, factionOf, explicitFaction, NONE } from "../adapter/factions.mjs";
 import { assignFaction, setRelation, addFaction, removeFaction, saveFactions, applySuggested } from "../runtime/factions.mjs";
 
-const esc = s => foundry.utils.escapeHTML(String(s ?? ""));
 const DRAG_TYPE = "DASFaction";
 const CYCLE = [null, ...RELATIONS];
 const ICON = { hostile: "fa-solid fa-swords", neutral: "fa-solid fa-minus", allied: "fa-solid fa-handshake" };

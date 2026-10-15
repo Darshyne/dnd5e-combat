@@ -6,12 +6,11 @@
  * une tâche sans `apply` est seulement signalée. Les textes sont ceux des macros (clés DND5ECOMBAT.Macro.*).
  */
 import { MODULE_ID } from "../../constants.mjs";
-import { loc } from "../shared.mjs";
+import { loc, esc } from "../shared.mjs";
 import { rootOf } from "./backup.mjs";
 import { basicActionData } from "../../adapter/basics.mjs";
 import { scrollSpellOf } from "../../adapter/scrolls.mjs";
 
-const esc = s => foundry.utils.escapeHTML(String(s ?? ""));
 /**
  * Le document tel qu'il est au moment de réparer. Une tâche garde le document de l'analyse ; entre-temps, une autre réparation a pu
  * faire recréer par le cœur l'acteur propre d'un token (vu : réparer l'acteur de base, puis son token non lié, échouait).

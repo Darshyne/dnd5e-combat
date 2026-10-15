@@ -5,9 +5,8 @@
  */
 
 import { ownPactWeapons, pickConjuredWeapon } from "../adapter/enchant.mjs";
-import { loc } from "../runtime/shared.mjs";
+import { loc, esc } from "../runtime/shared.mjs";
 
-const esc = s => foundry.utils.escapeHTML(String(s ?? ""));
 const CONJURE = "conjure";
 
 /** Rend `{ itemUuid | conjureUuid }`, ou null si l'on renonce. */

@@ -17,11 +17,10 @@ import { MODULE_ID } from "../constants.mjs";
 import { reportsByActor, reportsText } from "../core/automation.mjs";
 import { automationOfItem, reports, reportOf, setReport, clearReport, REPORTS_SETTING } from "../adapter/automation.mjs";
 import { route } from "../runtime/router.mjs";
-import { loc } from "../runtime/shared.mjs";
+import { loc, esc } from "../runtime/shared.mjs";
 
 const SETTING = "automationBadges";
 const CSS = "dnd5e-combat-auto";
-const esc = s => foundry.utils.escapeHTML(String(s ?? ""));
 const shown = () => game.user.isGM && game.settings.get(MODULE_ID, SETTING);
 
 const ICONS = { rule: "fa-solid fa-gears", auto: "fa-solid fa-dice-d20", passive: "fa-solid fa-feather", manual: "fa-solid fa-hand" };

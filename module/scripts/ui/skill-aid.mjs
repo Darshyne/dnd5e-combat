@@ -13,9 +13,7 @@ import { aidsFor, isGuided } from "../adapter/skill-aid.mjs";
 import { inspirationOf } from "../adapter/inspiration.mjs";
 import { requestSkillAid } from "../runtime/skill-aid.mjs";
 import { route } from "../runtime/router.mjs";
-import { loc, sleep } from "../runtime/shared.mjs";
-
-const esc = s => foundry.utils.escapeHTML(String(s ?? ""));
+import { loc, sleep, esc } from "../runtime/shared.mjs";
 
 /** Les demandes de chaque fenêtre (`{status: "pending"|"granted"|"refused", aid}`), gardées d'un rendu à l'autre. */
 const states = new WeakMap();

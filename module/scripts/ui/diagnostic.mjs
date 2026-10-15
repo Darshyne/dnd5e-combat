@@ -5,9 +5,8 @@
 import { MODULE_ID } from "../constants.mjs";
 import { CHECKS, listBackups, repairTasks, restore, scanWorld } from "../runtime/diagnostic/index.mjs";
 import { uniqueRoots } from "../core/backup.mjs";
-import { loc } from "../runtime/shared.mjs";
+import { loc, esc } from "../runtime/shared.mjs";
 
-const esc = s => foundry.utils.escapeHTML(String(s ?? ""));
 /** La classe de la fenêtre, créée au premier usage (le module se charge aussi hors de Foundry : tests/load.test.mjs). */
 let DiagnosticClass = null;
 export const DiagnosticApp = () => DiagnosticClass ??= class DiagnosticApp extends foundry.applications.api.ApplicationV2 {

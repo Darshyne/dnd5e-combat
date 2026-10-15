@@ -5,9 +5,8 @@
  */
 
 import { knownForms, setKnownForms, formInfo, formRefusedBy } from "../adapter/wildshape.mjs";
-import { loc } from "../runtime/shared.mjs";
+import { loc, esc } from "../runtime/shared.mjs";
 
-const esc = s => foundry.utils.escapeHTML(String(s ?? ""));
 const crText = cr => (cr === 0.125) ? "1/8" : (cr === 0.25) ? "1/4" : (cr === 0.5) ? "1/2" : String(cr ?? "?");
 
 function cardsHtml(activity, infos) {

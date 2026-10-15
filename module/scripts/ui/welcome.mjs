@@ -11,7 +11,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { LEVELS } from "../core/levels.mjs";
 import { LEVEL_SETTING } from "../runtime/levels.mjs";
 import { route } from "../runtime/router.mjs";
-import { loc } from "../runtime/shared.mjs";
+import { loc, esc } from "../runtime/shared.mjs";
 import { LOGO } from "../runtime/diagnostic/backup.mjs";
 import { openDiagnostic } from "./diagnostic.mjs";
 
@@ -20,7 +20,6 @@ const LINKS = Object.freeze({
   site: "https://darshyne.github.io", discord: "https://discord.gg/PDSq8dYdTP", github: "https://github.com/Darshyne/dnd5e-combat"
 });
 const ICONS = Object.freeze({ essentials: "fa-solid fa-person-walking", assisted: "fa-solid fa-dice-d20", full: "fa-solid fa-wand-sparkles" });
-const esc = s => foundry.utils.escapeHTML(String(s ?? ""));
 
 /** La classe de la fenêtre, créée au premier usage (le module se charge aussi hors de Foundry : tests/load.test.mjs). */
 let WelcomeClass = null;

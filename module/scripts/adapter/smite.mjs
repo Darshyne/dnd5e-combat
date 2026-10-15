@@ -13,6 +13,7 @@ import { combatantFor, readBudget } from "./turn.mjs";
 import { creatureTypeOf, originItemOf, carriesEffectFrom } from "./facts.mjs";
 import { timedWait } from "./dialogs.mjs";
 import { isSpellCast } from "./scrolls.mjs";
+import { spendItemUses } from "./uses.mjs";
 
 const t = (key, data) => game.i18n.format(`DND5ECOMBAT.Chatiment.${key}`, data ?? {});
 
@@ -217,11 +218,11 @@ export async function spendSmite(actor, option) {
   }
   if ( option.unlimited ) return;
   if ( option.payer ) {   // §87
-    await option.payer.update({ "system.uses.spent": (Number(option.payer.system.uses.spent) || 0) + 1 });
+    await spendItemUses(option.payer);
     return;
   }
   if ( option.free || option.rider ) {
-    await option.item.update({ "system.uses.spent": (Number(option.item.system.uses.spent) || 0) + 1 });
+    await spendItemUses(option.item);
     return;
   }
   const value = Number(actor.system.spells[option.slot]?.value) || 0;

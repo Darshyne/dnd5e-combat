@@ -14,6 +14,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { sharedValue } from "../core/coven.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
 import { tokenOf } from "./facts.mjs";
+import { spendItemUses } from "./uses.mjs";
 
 /** Le flag que porte une écriture de PV reportée : elle ne se reporte pas à son tour. */
 const SYNC = "hpSync";
@@ -226,7 +227,7 @@ export async function standAtOne(actor) {
   const item = lastStandOf(actor);
   if ( !item ) return null;
   const uses = item.system.uses ?? {};
-  if ( (uses.max ?? "") !== "" ) await item.update({ "system.uses.spent": (uses.spent ?? 0) + 1 });
+  if ( (uses.max ?? "") !== "" ) await spendItemUses(item);
   await purgeEffects(actor);
   await actor.update({ "system.attributes.hp.value": 1, [`flags.${MODULE_ID}.${SYNC}`]: foundry.utils.randomID() },
     { dnd5e: { concentrationCheck: false } });

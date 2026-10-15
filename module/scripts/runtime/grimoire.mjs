@@ -14,6 +14,7 @@ import { ritualModeOf, slotRecoveryOf } from "../adapter/grimoire.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { route } from "./router.mjs";
 import { log, loc, notice } from "./shared.mjs";
+import { spendItemUses } from "../adapter/uses.mjs";
 
 const tokenOfActor = actor => actor?.getActiveTokens?.(false, true)?.[0] ?? null;
 
@@ -78,7 +79,7 @@ async function onRestCompleted(actor, result, config) {
   if ( !taken.length ) return;
   const updates = Object.fromEntries([...new Set(taken)].map(level => [`system.spells.spell${level}.value`, slots[level].value]));
   await actor.update(updates);
-  if ( item.system.uses?.max > 0 ) await item.update({ "system.uses.spent": (Number(item.system.uses.spent) || 0) + 1 });
+  if ( item.system.uses?.max > 0 ) await spendItemUses(item);
   const text = loc("Restauration.Faite", { item: item.name, levels: taken.sort((a, b) => a - b).join(", ") });
   notice(tokenOfActor(actor), text, "gain");
   log(`${actor.name}: ${item.name}, spell slots recovered (levels ${taken.join(", ")})`);

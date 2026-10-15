@@ -13,10 +13,11 @@ import { drainedAmount } from "../core/drain.mjs";
 import { damageSourceItem } from "../adapter/drain.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { tokenOf } from "../adapter/facts.mjs";
-import { empowerOf, feedsOn, usesLeft, spendUse, boostsOf, boostData } from "../adapter/empower.mjs";
+import { empowerOf, feedsOn, usesLeft, boostsOf, boostData } from "../adapter/empower.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { log, loc, notice } from "./shared.mjs";
+import { spendItemUses } from "../adapter/uses.mjs";
 
 /** Sur le client qui applique les dégâts : le montant de la morsure, gardé pour après l'écriture des PV. */
 function onCalculateDamage(actor, damages, options) {
@@ -47,7 +48,7 @@ async function empower(victim, { n, item: itemUuid }) {
   if ( !["heal", "boost"].includes(answer?.id) ) { log(`${item.name}: ${biter.name} does not empower`); return; }
   const token = tokenOf(biter);
   if ( answer.id === "heal" ) {
-    await spendUse(item);
+    await spendItemUses(item);
     await biter.applyDamage([{ value: n, type: "healing" }]);
     if ( token ) notice(token, loc("Morsure.RetourDrain", { n }), "gain");
     log(`${item.name}: ${biter.name} drains ${victim.name} and regains ${n} HP`);
@@ -55,7 +56,7 @@ async function empower(victim, { n, item: itemUuid }) {
   else {
     const data = boostData(item, rule, n);
     if ( !data ) { log(`${item.name}: empowerment effect ${rule.effect} not found`); return; }
-    await spendUse(item);
+    await spendItemUses(item);
     // Un seul renforcement à la fois : le nouveau remplace celui qui n'a pas encore servi.
     const old = boostsOf(biter).filter(e => e.getFlag(MODULE_ID, "boost")?.item === item.uuid).map(e => e.id);
     if ( old.length ) await biter.deleteEmbeddedDocuments("ActiveEffect", old);

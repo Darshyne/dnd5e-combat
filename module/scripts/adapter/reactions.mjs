@@ -25,6 +25,7 @@ import { combatantFor, readBudget, currentTurnKey } from "./turn.mjs";
 import { originItemOf } from "./facts.mjs";
 import { resolveCounter } from "./counter.mjs";
 import { polearmFits } from "../core/feats.mjs";
+import { spendItemUses } from "./uses.mjs";
 
 export const REACTION_QUERY = `${MODULE_ID}.reaction`;
 
@@ -356,7 +357,7 @@ export async function payWithoutUse(activity) {
     const item = t.target ? activity.actor?.items.get(t.target) : activity.item;
     if ( !item?.system.uses?.max ) continue;
     const cost = Number(t.value) || 1;
-    await item.update({ "system.uses.spent": (Number(item.system.uses.spent) || 0) + cost });
+    await spendItemUses(item, cost);
   }
 }
 

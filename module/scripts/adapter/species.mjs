@@ -6,6 +6,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
+import { spendItemUses } from "./uses.mjs";
 
 /**
  * §135 : Faveur de récupération, Dernier carré — « quand vous devriez tomber à 0 PV, vous pouvez tomber à 1 PV à la place et regagner
@@ -50,7 +51,7 @@ export function endureAtZero(actor, through, updates) {
   const item = enduranceOf(actor);
   if ( !item ) return lastStandAtZero(actor, updates);
   updates["system.attributes.hp.value"] = 1;
-  item.update({ "system.uses.spent": (Number(item.system.uses.spent) || 0) + 1 })
+  spendItemUses(item)
     .catch(err => console.warn(`${MODULE_ID} | ${item.name}: use not spent`, err));
   return item;
 }

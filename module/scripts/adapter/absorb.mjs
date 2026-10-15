@@ -11,6 +11,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
+import { spendItemUses } from "./uses.mjs";
 
 /** Les réserves actives d'un acteur : `{ item, rule, pool }`. */
 export function poolsOf(actor) {
@@ -73,7 +74,7 @@ export async function spendPools(actor, options) {
   for ( const { item: uuid, name, take, before } of pools ) {
     const item = fromUuidSync(uuid, { strict: false });
     if ( !item ) continue;
-    await item.update({ "system.uses.spent": (Number(item.system.uses?.spent) || 0) + take });
+    await spendItemUses(item, take);
     await ChatMessage.implementation.create({
       speaker: ChatMessage.implementation.getSpeaker({ actor: item.actor ?? actor }),   // §38 : l'égide projetée parle pour son magicien
       content: `<p>${game.i18n.format("DND5ECOMBAT.Absorbe", { item: name, n: take, rest: Math.max(0, before - take) })}</p>`,

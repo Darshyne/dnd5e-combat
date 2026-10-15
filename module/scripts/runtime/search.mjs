@@ -17,6 +17,7 @@ import { searchRollMode, searchVerdicts } from "../core/search.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { route } from "./router.mjs";
 import { log, loc, notice, viaOwnerOrGM } from "./shared.mjs";
+import { spendItemUses } from "../adapter/uses.mjs";
 
 export const SEARCH_QUERY = `${MODULE_ID}.search`;
 
@@ -52,7 +53,7 @@ async function onPostUse(activity) {
     + (verdicts.map(v => `${byId.get(v.id)?.name} DC ${v.dc}: ${v.found ? "found" : "no"} (${v.reason}${v.total !== undefined ? ` ${v.total}` : ""})`).join("; ") || "no hidden creature"));
   const found = verdicts.filter(v => v.found).map(v => byId.get(v.id)).filter(Boolean);
   // Œil vif : « si le test échoue, l'utilisation n'est pas dépensée ».
-  if ( keen && found.length && Number(keen.item.system.uses?.max) ) await keen.item.update({ "system.uses.spent": (Number(keen.item.system.uses.spent) || 0) + 1 });
+  if ( keen && found.length && Number(keen.item.system.uses?.max) ) await spendItemUses(keen.item);
   if ( parts.length || keen ) log(`search: ${[...parts, ...(keen ? [`Advantage (${keen.item.name})`] : [])].join(", ")}`);
   for ( const token of found ) {
     await reveal(token);

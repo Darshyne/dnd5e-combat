@@ -21,6 +21,7 @@ import { currentTurnKey, speakerTokenOf } from "../adapter/turn.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log, loc } from "./shared.mjs";
+import { spendItemUses } from "../adapter/uses.mjs";
 
 /** La règle d'un item de l'acteur (et l'item), ou null. */
 function ruleOf(actor, key) {
@@ -104,7 +105,7 @@ async function stunningStrike(source, target, activity) {
   });
   if ( answer?.id !== "yes" ) return log(`${found.item.name}: ${source.name} does not attempt to stun ${target.name}`);
   if ( key ) await source.actor.setFlag(MODULE_ID, "stunTurn", key);
-  await focus.item.update({ "system.uses.spent": (Number(focus.item.system.uses.spent) || 0) + 1 });
+  await spendItemUses(focus.item);
   log(`${found.item.name}: ${source.name} spends a point, ${target.name} makes a Constitution saving throw`);
   await strikeAgainst(save, source, target, { flavor: "DND5ECOMBAT.Moine.Carte" });
 }

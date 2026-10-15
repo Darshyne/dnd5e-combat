@@ -25,10 +25,6 @@ export function feedsOn(rule, actor) {
 
 export const usesLeft = item => Math.max(0, item?.system?.uses?.value ?? 0);
 
-export async function spendUse(item) {
-  await item.update({ "system.uses.spent": (item.system.uses.spent ?? 0) + 1 });
-}
-
 /** Les effets de renforcement en cours d'un acteur (ceux que le moteur a posés). */
 export const boostsOf = actor => (actor?.effects ?? []).filter(e => e.getFlag(MODULE_ID, "consumeOn"));
 

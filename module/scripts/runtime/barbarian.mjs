@@ -24,6 +24,7 @@ import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log, loc, notice } from "./shared.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
+import { spendItemUses } from "../adapter/uses.mjs";
 
 /** Une des cibles du message est-elle hostile à ce token ? */
 function hostileTarget(message, token) {
@@ -105,8 +106,7 @@ function onZero(actor) {
     const total = rolls?.[0]?.total;
     if ( Number.isFinite(total) && (total >= dc) ) {
       const hp = 2 * (actor.classes?.barbarian?.system?.levels ?? 1);
-      const uses = found.item.system.uses ?? {};
-      await found.item.update({ "system.uses.spent": (Number(uses.spent) || 0) + 1 });
+      await spendItemUses(found.item);
       await actor.update({ "system.attributes.hp.value": hp });   // PV > 0 : Inconscient, échecs et Stabilisé retirés (runtime/death.mjs)
       const token = tokenOf(actor);
       if ( token ) notice(token, loc("Rage.Implacable", { name: actor.name, hp }), "gain");

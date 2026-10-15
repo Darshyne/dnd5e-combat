@@ -2,7 +2,7 @@
   "id": "dnd5e-combat",
   "title": "DAS · Core",
   "description": "Core of Darshyne's Automation Suite (DAS) for dnd5e 6.x: a D&D 2024 rules and combat engine — combat loop, resolution, reactions, BG3-style movement and context menu, vision and light rules. Public API for neighbour modules. Not compatible with Midi-QOL.",
-  "version": "0.239.0",
+  "version": "0.239.1",
   "authors": [
     {
       "name": "Darshyne"
@@ -22,7 +22,8 @@
         "id": "dnd5e",
         "type": "system",
         "compatibility": {
-          "minimum": "6.0.0"
+          "minimum": "6.0.0",
+          "verified": "6.0.6"
         }
       }
     ],
@@ -30,7 +31,27 @@
       {
         "id": "midi-qol",
         "type": "module",
-        "reason": "Un seul propriétaire de la boucle de combat."
+        "reason": "Only one module can own the combat loop: DAS · Core replaces Midi-QOL."
+      },
+      {
+        "id": "automated-conditions-5e",
+        "type": "module",
+        "reason": "DAS · Core already applies Advantage and Disadvantage from conditions, cover and range; with both active, their verdicts can contradict each other."
+      },
+      {
+        "id": "enhancedcombathud",
+        "type": "module",
+        "reason": "Argon is a second action HUD: use the DAS · Combat UI bar, or Argon without it, not both."
+      },
+      {
+        "id": "enhancedcombathud-dnd5e",
+        "type": "module",
+        "reason": "Argon's dnd5e add-on: see Argon - Combat HUD (CORE)."
+      },
+      {
+        "id": "combat-tracker-dock",
+        "type": "module",
+        "reason": "Carousel shows a second turn order next to the DAS · Combat UI strip."
       }
     ]
   },

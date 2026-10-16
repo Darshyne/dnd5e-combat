@@ -31,7 +31,8 @@ export default {
     const used = await ctx.use({ tokenId: clerc.id, itemId, activityType: "utility" });
     ctx.expect(used.used, "Aura sacrée lancée");
     await sleep(3000);
-    const aura = (await ctx.effects(clerc)).find(e => /Holy|sacrée/i.test(e.name ?? "") && (e.system?.changes ?? e.changes ?? []).some(c => /save\.roll\.mode/.test(c.key)));   // V14 : `system.changes`
+    const auraOn = async () => (await ctx.effects(clerc)).find(e => /Holy|sacrée/i.test(e.name ?? "") && (e.system?.changes ?? e.changes ?? []).some(c => /save\.roll\.mode/.test(c.key)));   // V14 : `system.changes`
+    const aura = await auraOn();
     ctx.expect(!!aura, `l'aura est sur le Clerc, avec l'avantage aux sauvegardes (${(await ctx.effects(clerc)).map(e => e.name).join(", ")})`);
 
     const slam = await ctx.itemId(zombi.id, "slam");
@@ -42,6 +43,14 @@ export default {
     for ( let i = 0; (i < 30) && !(checked && failedSeen); i++ ) {
       await ctx.setHp(clerc, hp);
       await ctx.removeEffectsNamed(zombi, /Blind|Aveugl/i);
+      // Un coup peut faire rater au Clerc son jet de concentration : l'aura prend fin, et à bon droit plus aucune sauvegarde n'est
+      // imposée (vu le 2026-10-16, l'échec « aléatoire » du scénario). On la relance avant le coup suivant.
+      if ( !(await auraOn()) ) {
+        ctx.log("concentration perdue : Aura sacrée relancée");
+        await ctx.use({ tokenId: clerc.id, itemId, activityType: "utility" });
+        await sleep(3000);
+        if ( !(await auraOn()) ) { ctx.expect(false, "Aura sacrée relancée après la concentration perdue"); return; }
+      }
       const since = await ctx.lastMessageId();
       const u = await ctx.use({ tokenId: zombi.id, itemId: slam, activityType: "attack", targetTokenIds: [clerc.id] });
       const r = await ctx.settle(u.usageMessageId).catch(() => null);

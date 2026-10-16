@@ -30,17 +30,18 @@ async function onCreateEffect(effect) {
   log(`${effect.parent.name}: Blink, the d6 decides at the end of each turn`);
 }
 
+/**
+ * Dans l'ordre de la règle : la fin du tour qui s'achève (le d6), puis le début de celui qui commence (le retour). Le même acteur
+ * peut être les deux — seul à combattre, ou les autres sautés : il part sur 4–6 et revient aussitôt, au lieu de passer tout son
+ * nouveau tour dans le plan Éthéré (vu le 2026-10-16 : l'échec intermittent de `releve-sorts-6`, le Zombi sauté).
+ */
 async function onTurnChange(combat, prior, current) {
-  // Début du tour : le retour du plan Éthéré.
-  const back = combat.combatants.get(current?.combatantId)?.actor;
-  const marked = Array.from(back?.effects ?? []).filter(e => e.getFlag(MODULE_ID, "blink"));
-  if ( marked.length ) {
-    await back.deleteEmbeddedDocuments("ActiveEffect", marked.map(e => e.id));
-    log(`${back.name}: Blink, back from the Ethereal Plane`);
-  }
-  // Fin du tour : le d6.
-  const ended = combat.combatants.get(prior?.combatantId);
-  const actor = ended?.actor;
+  await endOfTurn(combat.combatants.get(prior?.combatantId)?.actor);
+  await startOfTurn(combat.combatants.get(current?.combatantId)?.actor);
+}
+
+/** Fin du tour : le d6. */
+async function endOfTurn(actor) {
   const blink = blinkOf(actor);
   if ( !blink ) return;
   const roll = await new Roll("1d6").evaluate();
@@ -49,6 +50,14 @@ async function onTurnChange(combat, prior, current) {
   const effect = await actor.toggleStatusEffect(ETHEREAL, { active: true });
   if ( effect?.update ) await effect.update({ [`flags.${MODULE_ID}.blink`]: true });
   log(`${actor.name}: Blink, ${roll.total} — to the Ethereal Plane until the start of their next turn`);
+}
+
+/** Début du tour : le retour du plan Éthéré. */
+async function startOfTurn(actor) {
+  const marked = Array.from(actor?.effects ?? []).filter(e => e.getFlag(MODULE_ID, "blink"));
+  if ( !marked.length ) return;
+  await actor.deleteEmbeddedDocuments("ActiveEffect", marked.map(e => e.id));
+  log(`${actor.name}: Blink, back from the Ethereal Plane`);
 }
 
 export function registerBlink() {

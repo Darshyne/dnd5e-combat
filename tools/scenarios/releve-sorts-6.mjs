@@ -148,6 +148,13 @@ export default {
       let seen = false;
       for ( let round = 1; (round <= 8) && !seen; round++ ) {
         await next();   // fin du tour du Magicien : le d6
+        // Le Zombi doit jouer entre deux tours du Magicien ; sauté, le Magicien part et revient au même changement de tour
+        // (le moteur fait le d6 puis le retour) et l'état Éthéré ne se voit jamais (vu le 2026-10-16, cause du saut non trouvée).
+        if ( (await current()) !== zombi.id ) {
+          const c = await state();
+          ctx.expect(false, `Clignotement : le Zombi joue après le Magicien (combattants : ${(c.combatants ?? []).map(x => `${x.name}${x.defeated ? " (vaincu)" : ""}${x.hidden ? " (caché)" : ""}`).join(", ")})`);
+          return;
+        }
         if ( (await statuses(mage)).includes("ethereal") ) {
           seen = true;
           await next();   // début de son tour suivant

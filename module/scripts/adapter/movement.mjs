@@ -327,6 +327,29 @@ export function stopAllWalks() {
 }
 
 /**
+ * B12 : le canevas démonté (changement de scène), une marche en cours ne finira jamais — le `move` du cœur reste en attente.
+ * On l'arrête et on l'oublie, pour que la prochaine marche de ce token ne tente pas d'arrêter un mouvement mort.
+ */
+export function forgetAllWalks() {
+  stopAllWalks();
+  walks.clear();
+}
+
+/**
+ * B12 : les mouvements de ce client restés en attente quand le canevas est redessiné. Le cœur enchaîne un mouvement après
+ * l'animation du précédent (`#continueMovement`, documents/token.mjs:998) ; une mise à jour déjà partie au démontage en
+ * relance un, dont l'animation n'existe plus : il reste « pending » sans fin et coupe la marche suivante après une case
+ * (vu le 2026-10-16). Le canevas tout neuf n'en anime aucun : on les arrête. `movingTokens` : documents/user.mjs:64.
+ */
+export function stopDeadMovements() {
+  for ( const token of Array.from(game.user.movingTokens ?? []) ) {
+    if ( token.movement?.state !== "pending" ) continue;
+    try { token.stopMovement(); }
+    catch(err) { console.warn(`${MODULE_ID} | stopping the movement of ${token.name}`, err); }
+  }
+}
+
+/**
  * Les options du moteur d'un morceau de marche que le cœur enchaîne lui-même : sa mise à jour ne reprend que les options
  * standard (`updateOptions`, documents/token.mjs:1036), pas `[MODULE_ID]` (`cleared`, `follow`…). On les retrouve par la
  * marche en cours quand le déplacement en suit un autre (`chain` non vide). `movement` : celui de `preMoveToken`, ou

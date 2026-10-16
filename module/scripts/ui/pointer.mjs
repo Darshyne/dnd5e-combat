@@ -14,7 +14,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { stopWalking } from "../adapter/movement.mjs";
+import { stopWalking, forgetAllWalks, stopDeadMovements } from "../adapter/movement.mjs";
 import { stormOf, cloudOf, cloudCircle, boltRadiusPx } from "../adapter/storm.mjs";
 import { dressStorm, strike, setBoltAim, freshCloudOf, castStorm } from "../runtime/storm.mjs";
 import { clampToCircle } from "../core/storm.mjs";
@@ -63,18 +63,39 @@ export function actingToken() {
   return ((controlled.length === 1) && controlled[0].document.isOwner) ? controlled[0].document : null;
 }
 
-/** Une intention à la fois : un second clic pendant qu'une action se joue est ignoré. */
+/**
+ * Une intention à la fois : un second clic pendant qu'une action se joue est ignoré. `generation` : une intention libérée par
+ * `releaseMouse` (changement de scène) qui finirait plus tard ne libère pas celle qui l'a remplacée.
+ */
 export let busy = false;
 let running = null;
+let generation = 0;
 export function exclusive(fn) {
   if ( busy ) return Promise.resolve();
   busy = true;
-  running = (async () => {
+  const mine = ++generation;
+  const current = (async () => {
     try { await fn(); }
     catch(err) { console.error(`${MODULE_ID} | mouse`, err); }
-    finally { busy = false; running = null; }
+    finally { if ( generation === mine ) { busy = false; running = null; } }
   })();
-  return running;
+  running = current;
+  return current;
+}
+
+/** Le canevas a été démonté pour une autre scène (pas pour un autre niveau de la même). */
+let sceneLeft = false;
+
+/**
+ * B12 : quand le canevas est démonté pour une autre scène (le MJ change de scène), une marche en cours n'aboutit jamais —
+ * le `move` du cœur ou son animation attend un token qui n'est plus affiché — et la souris restait occupée jusqu'au F5.
+ * On arrête les marches et on libère la souris.
+ */
+function releaseMouse() {
+  forgetAllWalks();
+  generation++;
+  busy = false;
+  running = null;
 }
 
 /**
@@ -871,7 +892,14 @@ export function registerPointer() {
   route("combatTurnChange", offerTurnStart, { label: "start-of-turn activity offered" });
   route("createActiveEffect", offerEnchantedAttack, { label: "True Strike: attack not offered" });
   route("createChatMessage", onFlurryUsed, { label: "Flurry of Blows: targeting not opened" });
-  route("canvasTearDown", () => { stopTargeting(); closeMenu(); forgetHover(); }, { label: "mouse: reset" });
+  route("canvasTearDown", (board, options) => {
+    stopTargeting(); closeMenu(); forgetHover();
+    // B12 : seulement si l'on quitte la scène — un changement de niveau redessine aussi le canevas (scene.mjs:273), en pleine
+    // marche d'un escalier (`walkMoves`), et cette marche-là doit continuer.
+    sceneLeft = (options?.nextScene ?? null) !== board.scene;
+    if ( sceneLeft ) releaseMouse();
+  }, { label: "mouse: reset" });
+  route("canvasReady", () => { if ( sceneLeft ) stopDeadMovements(); sceneLeft = false; }, { label: "dead movements stopped" });
   route("controlToken", () => clearPreview(), { label: "path preview cleared" });
   route("ready", () => {
     document.addEventListener("pointerdown", onPointerDown, true);

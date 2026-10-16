@@ -678,7 +678,7 @@ const BOOTED_AT = Date.now();
  */
 function status() {
   return { version: game.modules.get(MODULE_ID)?.version ?? null, bootedAt: BOOTED_AT, ready: game.ready === true, hidden: document.hidden === true, worldTime: game.time?.worldTime ?? null,
-    user: game.user.name, activeGM: game.users.activeGM?.id === game.user.id, hidden: document.hidden === true };
+    user: game.user.name, activeGM: game.users.activeGM?.id === game.user.id };
 }
 
 /**

@@ -34,7 +34,8 @@ function onZero(actor) {
     const total = rolls?.[0]?.total;
     await clearFortitude(actor);
     if ( Number.isFinite(total) && (total >= dc) ) {
-      // PV > 0 : les états de 0 PV posés par dnd5e ou le moteur sont retirés (runtime/death.mjs, `clearDeathMarks`).
+      // PV > 0 : `clearDeathMarks` (adapter/death.mjs) retire les marques du moteur et Stabilisé ; l'état que dnd5e pose d'office à
+      // 0 PV (flag `autoDowned`) se retire ici.
       await actor.update({ "system.attributes.hp.value": 1 });
       const downed = actor.effects.filter(e => e.getFlag("dnd5e", "autoDowned")).map(e => e.id);
       if ( downed.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", downed).catch(() => {});

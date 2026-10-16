@@ -62,7 +62,12 @@ function rangeProblems(activity, attackMode=null) {
 const acknowledgedRanges = new Map();
 const ACK_LIFETIME = 60000;
 const acknowledged = key => (Date.now() - (acknowledgedRanges.get(key) ?? 0)) < ACK_LIFETIME;
-const acknowledge = key => acknowledgedRanges.set(key, Date.now());
+/** Note la portée signalée ; les signalements de plus d'une minute, qui ne servent plus, sont oubliés au passage. */
+function acknowledge(key) {
+  const now = Date.now();
+  for ( const [k, at] of acknowledgedRanges ) if ( (now - at) >= ACK_LIFETIME ) acknowledgedRanges.delete(k);
+  acknowledgedRanges.set(key, now);
+}
 
 /** Sépare les soucis de portée en bloquants (hors de portée) et simples rappels (portée longue). */
 function assessRange(activity, attackMode=null) {

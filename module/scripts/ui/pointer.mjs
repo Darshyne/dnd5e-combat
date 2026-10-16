@@ -51,7 +51,7 @@ import { castAimed, placeAimed, placeWall } from "../runtime/self-area.mjs";
 import { clampPolyline, polylineLength, orthogonalize } from "../core/wall.mjs";
 import { closeMenu, onMenuShift } from "./pointer-menu.mjs";
 import { cancellable, clearPreview, forgetHover, lastPointer, onKeyDown, onModifierKey, onPointerDown, onPointerMove, onPointerUp, refusalFor, setCursor, trackPointer } from "./pointer-mouse.mjs";
-import { clearTargets, leftoverTargets, noteInFlight, offerEnchantedAttack, onFlurryUsed, onPostUseActivity, onPreRollDamage, onResolutionSettled, onTurnChange, released } from "./pointer-offers.mjs";
+import { clearTargets, leftoverTargets, noteInFlight, offerEnchantedAttack, onFlurryUsed, onPostUseActivity, onPreRollDamage, onResolutionSettled, onTurnChange } from "./pointer-offers.mjs";
 export { menuEntriesFor } from "./pointer-menu.mjs";
 
 export const setting = key => game.settings.get(MODULE_ID, key);
@@ -679,7 +679,11 @@ async function configureFirst(activity, usageConfig, dialogConfig) {
   let config = usageConfig;
   if ( (dialogConfig?.configure !== false) && activity._requiresConfigurationDialog?.(usageConfig) && dialogConfig?.applicationClass ) {
     try { config = (await dialogConfig.applicationClass.create(activity, usageConfig, dialogConfig.options ?? {})) ?? usageConfig; }
-    catch { return null; }   // fenêtre fermée : rien n'est lancé
+    catch(err) {
+      // Fenêtre fermée : dnd5e rejette sans erreur (activity-usage-dialog.mjs:556) — rien n'est lancé. Une vraie erreur se journalise.
+      if ( err ) console.warn(`${MODULE_ID} | usage dialog of ${activity.item?.name}`, err);
+      return null;
+    }
   }
   const slot = config.spell?.slot;
   const level = slot ? (activity.actor?.system.spells?.[slot]?.level ?? activity.item.system.level ?? 0) : (activity.item.system.level ?? 0);

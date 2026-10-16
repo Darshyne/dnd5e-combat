@@ -102,7 +102,7 @@ export function showHitChance(event, attacker, target, activity, { posA, outOfRe
     const crit = (info.critical > 0) && (info.critical < 0.005) ? "< 1" : asPercent(info.critical);
     if ( info.hit > 0 ) el.append(line("detail", loc("Toucher.Critique", { percent: crit })));
     // CA et abri : la CA seulement si le MJ la révèle aux joueurs.
-    if ( info.ac === null ) el.append(line("detail", coverText(info.cover)));
+    if ( info.ac === null ) { if ( info.cover ) el.append(line("detail", coverText(info.cover))); }
     else if ( level === "full" ) el.append(line("detail", `${loc("Toucher.CA")} ${info.ac}${info.cover ? ` — ${coverText(info.cover)}` : ""}`));
     else if ( info.cover ) el.append(line("detail", coverText(info.cover)));
     const advantage = info.advantage.map(describeReason);

@@ -46,13 +46,18 @@ export function leftoverTargets(activity) {
   return (ids.length === inFlight.ids.length) && ids.every((id, i) => id === inFlight.ids[i]);
 }
 
-/** Une action jugée (attaque touchée et dégâts appliqués, ratée, sauvegardes réglées) : son auteur relâche ses cibles. */
-export const released = new Set();
+/**
+ * Une action jugée (attaque touchée et dégâts appliqués, ratée, sauvegardes réglées) : son auteur relâche ses cibles. `released` :
+ * les messages déjà traités, bornés aux plus récents (une longue session ne les garde pas tous).
+ */
+const released = new Set();
+const RELEASED_KEPT = 200;
 export function onResolutionSettled(message) {
   if ( !message.author?.isSelf || released.has(message.id) ) return;
   const resolution = message.getFlag(MODULE_ID, "resolution");
   if ( !["done", "missed"].includes(resolution?.step) ) return;
   released.add(message.id);
+  if ( released.size > RELEASED_KEPT ) released.delete(released.values().next().value);
   releaseTargets();
   if ( resolution.step === "done" ) offerBonusAttack(message, resolution);
   if ( resolution.step === "done" ) offerCleave(message, resolution);

@@ -7,6 +7,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
+import { identifierOf } from "./content.mjs";
 
 /** L'ordre qu'un acteur doit suivre : `{ effect, order, from }` (from : uuid du token du lanceur), ou null. */
 export function orderOn(actor) {
@@ -28,10 +29,14 @@ export function orderEffectData({ item, activity, order, label, fromToken, messa
   };
 }
 
-/** Ce que la créature tient : armes et bouclier équipés — pas les armes naturelles (Coup, Morsure : type « natural »). */
+/**
+ * Ce que la créature tient : armes et bouclier équipés — pas les armes naturelles (Coup, Morsure : type « natural »), ni la
+ * Frappe à mains nues, qu'une classe pose équipée (Injonction « Lâche » ne fait pas lâcher ses poings).
+ */
 export function heldItemsOf(actor) {
   return (actor?.items ?? []).filter(i => (i.system?.equipped === true)
-    && (((i.type === "weapon") && (i.system.type?.value !== "natural")) || ((i.type === "equipment") && (i.system.type?.value === "shield"))));
+    && (((i.type === "weapon") && (i.system.type?.value !== "natural") && (identifierOf(i).id !== "unarmed-strike"))
+      || ((i.type === "equipment") && (i.system.type?.value === "shield"))));
 }
 
 /**

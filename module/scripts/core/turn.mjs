@@ -59,7 +59,7 @@ export function costOf(activationType) {
 
 /**
  * @typedef {object} UseRequest
- * @property {"action"|"bonus"|"reaction"|null} cost
+ * @property {"action"|"bonus"|"reaction"|"free"|null} cost   `free` : un geste que l'intention déclare gratuit (§16.27).
  * @property {boolean} weaponAttack   Attaque d'arme ou à mains nues : relève de l'action Attaquer (attaques multiples).
  * @property {boolean} usesSpellSlot  Dépense un emplacement de sort (règle 2024 : un seul par tour).
  * @property {boolean} [lightWeapon]  Arme à la propriété Légère.
@@ -112,7 +112,7 @@ function coveredByMultiattack(budget, request) {
  * @param {object} budget
  * @param {UseRequest} request
  * @param {{isOwnTurn: boolean}} context
- * @returns {Array<"notYourTurn"|"noAction"|"noBonus"|"noReaction"|"slotAlreadyCast">}
+ * @returns {Array<"notYourTurn"|"noAction"|"noBonus"|"noReaction"|"slotAlreadyCast"|"noLightAttack">}
  */
 export function checkUse(budget, request, { isOwnTurn, turnKey=null }) {
   const issues = [];

@@ -115,7 +115,9 @@ export function menuEntriesFor(target) {
 /**
  * §39.4 : les modules voisins ajoutent leurs entrées au menu d'un token (Darsh Loot : « Échanger » sur un autre PJ) par le
  * hook `dnd5e-combat.tokenMenu` — `(entries, { token, target, aggressive })`, chaque entrée `{ icon, label, run(event) }`
- * poussée dans `entries`. Le moteur n'en connaît aucun ; sans inscrit, le menu est le sien.
+ * poussée dans `entries`. Le moteur n'en connaît aucun ; sans inscrit, le menu est le sien. Le hook peut partir plusieurs fois
+ * pour un même clic droit (le menu se construit, puis se reconstruit avec Maj, et `api.ui` lit ses entrées) : un écouteur ne fait
+ * qu'ajouter des entrées, sans autre effet — l'action va dans `run`.
  */
 function withNeighbourEntries(entries, token, target, aggressive) {
   Hooks.callAll(`${MODULE_ID}.tokenMenu`, entries, { token, target, aggressive });

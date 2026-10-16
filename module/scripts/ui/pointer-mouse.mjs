@@ -248,6 +248,22 @@ function hoveredToken() {
  * sinon le texte du refus (« Hors de portée », « Hors de vue », ou celui du rebond : « Déjà visé… », « … à plus de 30 ft »).
  */
 export function refusalFor(me, hover, activity, usageConfig=null) {
+  return refusalOf(me, hover, activity, usageConfig)?.text ?? null;
+}
+
+/** Le refus et son genre : `outOfRange` (le curseur « hors de portée ») ou `other` — sans comparer un texte traduit. */
+function refusalOf(me, hover, activity, usageConfig=null) {
+  const status = refusalBeforeRange(me, hover, activity, usageConfig);
+  if ( status ) return { text: status, kind: "other" };
+  if ( approaches(activity) ) return null;
+  const range = rangeStatus(me, hover, activity);
+  if ( range?.out ) return { text: loc("Retour.HorsDePortee"), kind: "outOfRange" };
+  if ( range?.blind ) return { text: loc("Retour.NonVue"), kind: "other" };
+  return null;
+}
+
+/** Les refus qui ne tiennent pas à la portée : type de cible, lien, Enchaînement, rebond, contact. */
+function refusalBeforeRange(me, hover, activity, usageConfig) {
   const wrongTarget = targetTypeRefusal(me, hover, activity);
   if ( wrongTarget ) return wrongTarget;
   // §16.43 : l'action suivante d'un lien (Trait ensorcelé) ne vise que la créature liée.
@@ -266,13 +282,7 @@ export function refusalFor(me, hover, activity, usageConfig=null) {
     const problem = leapProblem(activity, leap, hover);
     if ( problem ) return problem.replace(/^[^:]*:\s*/, "");
   }
-  const contact = contactRefusal(me, hover, activity);
-  if ( contact ) return contact;
-  if ( approaches(activity) ) return null;
-  const status = rangeStatus(me, hover, activity);
-  if ( status?.out ) return loc("Retour.HorsDePortee");
-  if ( status?.blind ) return loc("Retour.NonVue");
-  return null;
+  return contactRefusal(me, hover, activity) ?? null;
 }
 
 /** La case d'arrivée d'une ruée sous ce point : le coin haut-gauche d'un token de sa taille, centré sur le point. */
@@ -385,11 +395,11 @@ export const onPointerMove = foundry.utils.throttle(event => {
   if ( hover && ((hover !== me) || targeting || picking) ) {
     const activity = (picking ?? targeting)?.activity ?? (clickAttackApplies(me, hover) ? basicAttack(me.actor).activity : null);
     // §16.29 : hors du corps à corps, pas d'approche — la portée se lit telle quelle, et un refus s'annonce au curseur.
-    const refusal = activity ? refusalFor(me, hover, activity, targeting?.usage?.[0]) : null;
+    const refusal = activity ? refusalOf(me, hover, activity, targeting?.usage?.[0]) : null;
     setReticleRefused(!!refusal);
     if ( refusal ) {
-      setCursor(refusal === loc("Retour.HorsDePortee") ? "outOfRange" : "invalid");
-      showBadge(event, refusal);
+      setCursor(refusal.kind === "outOfRange" ? "outOfRange" : "invalid");
+      showBadge(event, refusal.text);
       if ( previewed ) previewPath(previewed, null);
       previewed = null;
       return;

@@ -78,7 +78,9 @@ export function outsideCone(observer, target) {
   const eye = tokenCenter(observer);
   const pos = committedPosition(target);
   const grid = target.parent.grid;
-  const w = (target.width ?? 1) * grid.sizeX, h = (target.height ?? 1) * grid.sizeY;
+  // La taille du document engagé, comme la position (`_source`) : pas celle, animée, d'un changement de taille en cours.
+  const size = target._source ?? target;
+  const w = (size.width ?? 1) * grid.sizeX, h = (size.height ?? 1) * grid.sizeY;
   const points = [{ x: pos.x + w / 2, y: pos.y + h / 2 }, { x: pos.x, y: pos.y }, { x: pos.x + w, y: pos.y },
     { x: pos.x, y: pos.y + h }, { x: pos.x + w, y: pos.y + h }];
   if ( inCone(eye, cone.rotation, cone.angle, points) ) return false;

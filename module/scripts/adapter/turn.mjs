@@ -12,7 +12,7 @@
 
 import { spentMovement } from "../core/movement.mjs";
 import { MODULE_ID } from "../constants.mjs";
-import { contentOf } from "./content.mjs";
+import { contentOf, identifierOf } from "./content.mjs";
 import { basicActionOf } from "./basics.mjs";
 import { originItemOf, comesFromItemEffect } from "./facts.mjs";
 import { freshBudget, costOf } from "../core/turn.mjs";
@@ -120,7 +120,8 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
   const replaces = contentOf(item).entry?.replacesAttack === true;
   return {
     cost: costOverride ?? costFor(activity),
-    weaponAttack: ((activity.type === "attack") && ["weapon", "unarmed"].includes(activity.attack?.type?.classification)) || replaces,
+    weaponAttack: ((activity.type === "attack") && ["weapon", "unarmed"].includes(activity.attack?.type?.classification)) || replaces
+      || isUnarmedOption(activity),
     usesSpellSlot: spellSlot,
     lightWeapon: weapon && (item.system.properties?.has("lgt") === true),
     offhand,
@@ -132,6 +133,16 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
     basic: item ? (basicActionOf(item) ?? contentOf(item).entry?.basicActions?.[activity.id] ?? null) : null,   // §157 : l'action limitée de Hâte
     utilize: isUtilize(activity)
   };
+}
+
+/**
+ * Lutte et Bousculade (PHB 2024, Frappe à mains nues) : l'activité de sauvegarde de la Frappe à mains nues remplace l'une des
+ * attaques de l'action Attaquer — comptée comme une attaque, pas comme une action entière (retour de table du 2026-10-16 :
+ * « plus d'action » après une première attaque avec Attaque supplémentaire).
+ */
+function isUnarmedOption(activity) {
+  const item = activity?.item;
+  return (activity?.type === "save") && (item?.type === "weapon") && (identifierOf(item).id === "unarmed-strike");
 }
 
 /** Les objets dont l'usage est l'action Utiliser (PHB 2024) : ni arme, ni sort, ni aptitude. */
@@ -155,7 +166,10 @@ export function isUtilize(activity) {
  * suit son plan (M1, core/multiattack.mjs) ; si son texte ne se lit pas, on ne le limite pas.
  */
 export function attacksPerAction(actor) {
-  const has = identifier => actor.items.some(i => i.system.identifier === identifier);
+  // Par `identifierOf` : un item d'un module premium traduit, ou créé sans identifiant, porte un identifiant tiré de son nom
+  // traduit (§19.9) — lu brut, « Attaque supplémentaire » n'était pas reconnue et l'action ne donnait qu'une attaque.
+  const identifiers = new Set(actor.items.map(i => identifierOf(i).id));
+  const has = identifier => identifiers.has(identifier);
   if ( actor.type === "npc" ) return (actor.items.some(isMultiattackItem) && !multiattackOf(actor)) ? 99 : 1;
   const fighter = actor.classes?.fighter?.system.levels ?? 0;
   if ( fighter >= 20 ) return 4;

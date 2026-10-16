@@ -7,7 +7,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { BASIC_ACTIONS } from "../content/actions.mjs";
-import { contentOf } from "./content.mjs";
+import { contentOf, identifierOf } from "./content.mjs";
 import { familiarBasicKinds } from "../core/familiar.mjs";
 
 /** La clé d'action de base d'un item (« dash »…), ou null. */
@@ -101,7 +101,7 @@ export function basicActionData(kind) {
  */
 export function missingBasicActions(actor, { familiar=false }={}) {
   const owned = new Set(actor.items.map(basicActionOf).filter(Boolean));
-  const identifiers = new Set(actor.items.map(i => i.system.identifier).filter(Boolean));
+  const identifiers = new Set(actor.items.map(i => identifierOf(i).id).filter(Boolean));
   const allowed = new Set(familiar ? familiarBasicKinds(BASIC_ACTIONS) : Object.keys(BASIC_ACTIONS));
   return Object.entries(BASIC_ACTIONS)
     .filter(([kind, def]) => allowed.has(kind) && !owned.has(kind) && !(def.identifier && identifiers.has(def.identifier)))
@@ -109,7 +109,7 @@ export function missingBasicActions(actor, { familiar=false }={}) {
 }
 
 /** L'item d'attaque à mains nues d'un acteur (le nôtre ou celui d'une classe), ou undefined. */
-const unarmedStrikeOf = actor => actor?.items.find(i => (i.system.identifier === "unarmed-strike") && (i.type === "weapon"));
+const unarmedStrikeOf = actor => actor?.items.find(i => (i.type === "weapon") && (identifierOf(i).id === "unarmed-strike"));
 
 /** La sauvegarde « Lutte / Bousculade » de l'attaque à mains nues d'un acteur (la nôtre ou celle d'une classe), ou null. */
 export function grappleShoveOf(actor) {

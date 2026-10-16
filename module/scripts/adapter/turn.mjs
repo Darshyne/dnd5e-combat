@@ -135,14 +135,21 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
   };
 }
 
+/** Les objets à part qui font une Lutte ou une Bousculade (« Bousculer » des exemples de Midi-QOL, gardé sur une fiche). */
+const UNARMED_OPTION_ITEMS = new Set(["shove", "grapple"]);
+
 /**
  * Lutte et Bousculade (PHB 2024, Frappe à mains nues) : l'activité de sauvegarde de la Frappe à mains nues remplace l'une des
  * attaques de l'action Attaquer — comptée comme une attaque, pas comme une action entière (retour de table du 2026-10-16 :
- * « plus d'action » après une première attaque avec Attaque supplémentaire).
+ * « plus d'action » après une première attaque avec Attaque supplémentaire). De même un objet à part de Lutte ou de
+ * Bousculade, qui coûte une action (la fiche du rôdeur de ce retour portait le « Bousculer » de Midi-QOL).
  */
 function isUnarmedOption(activity) {
   const item = activity?.item;
-  return (activity?.type === "save") && (item?.type === "weapon") && (identifierOf(item).id === "unarmed-strike");
+  if ( !item ) return false;
+  const id = identifierOf(item).id;
+  if ( UNARMED_OPTION_ITEMS.has(id) ) return activity.activation?.type === "action";
+  return (activity.type === "save") && (item.type === "weapon") && (id === "unarmed-strike");
 }
 
 /** Les objets dont l'usage est l'action Utiliser (PHB 2024) : ni arme, ni sort, ni aptitude. */

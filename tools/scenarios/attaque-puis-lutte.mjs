@@ -43,6 +43,15 @@ export default {
     const before = await ctx.engine("issues", { tokenId: paladin.id, itemId: unarmed, activityType: "save" });
     ctx.expect(!before.length, `Bousculade après une attaque : ${before.join(" ; ") || "aucun souci"}`);
 
+    // 2 bis. Un objet « Bousculer » à part (le « Bousculer » des exemples de Midi-QOL, gardé sur une fiche de joueur) : de même.
+    const shoveItem = await ctx.call("upsert-actor-item", { actorId: paladin.actorId, itemData: { name: "Bousculer (test)", type: "feat",
+      system: { identifier: "shove", activities: { dnd5eShoveTest00: { _id: "dnd5eShoveTest00", type: "utility", activation: { type: "action" } } } } },
+      match: { path: "system.identifier", value: "shove" } });
+    const shoveId = shoveItem.itemId ?? shoveItem.id ?? shoveItem.item?._id ?? await ctx.itemId(paladin.id, "shove");
+    ctx.restore(() => ctx.call("remove-embedded-item", { documentType: "Actor", id: paladin.actorId, itemId: shoveId }).catch(() => {}));
+    const midi = await ctx.engine("issues", { tokenId: paladin.id, itemId: shoveId });
+    ctx.expect(!midi.length, `objet « Bousculer » à part après une attaque : ${midi.join(" ; ") || "aucun souci"}`);
+
     // 3. Utilisée, elle prend la seconde attaque.
     const shove = await ctx.use({ tokenId: paladin.id, itemId: unarmed, activityType: "save", targetTokenIds: [zombi.id], consume: false,
       usageConfig: { [MODULE_ID]: { confirmed: true, saveChoice: "best", choice: "dnd5eCombatPush0" } } });

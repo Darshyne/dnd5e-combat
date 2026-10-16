@@ -68,6 +68,8 @@ export function costOf(activationType) {
  * @property {object} [multiattack]    M1 : plan d'Attaques multiples du monstre (core/multiattack.mjs), s'il se lit.
  * @property {string[]} [keys]         M1 : clés de cette utilisation (id, nom anglais, activité, sort d'origine).
  * @property {boolean} [opensMultiattack]  M1 : c'est l'item Attaques multiples lui-même.
+ * @property {string|null} [basic]     §157 : l'action de base que prend cette utilisation (`dash`, `hide`…).
+ * @property {boolean} [utilize]       B10 (§157) : l'action Utiliser (un objet non magique), que permet l'action limitée de Hâte.
  */
 
 /**
@@ -79,13 +81,16 @@ export function effectiveCost(budget, request) {
   return request.cost;
 }
 
-/** §157 : ce que l'action limitée de Hâte permet — « une attaque (une seule), Foncer, Se désengager, Se cacher, Utiliser ». */
+/**
+ * §157 : ce que l'action limitée de Hâte permet — « une attaque (une seule), Foncer, Se désengager, Se cacher, Utiliser ». Les
+ * actions de base par leur nom ; l'attaque se lit dans `weaponAttack`, Utiliser (un objet non magique) dans `utilize`.
+ */
 export const LIMITED_ACTION_KINDS = Object.freeze(["dash", "disengage", "hide"]);
 
 /** §157 : l'action limitée (Hâte) couvre-t-elle cette utilisation, l'action du tour étant prise ? */
 function coveredByLimitedAction(budget, request) {
   if ( !((budget.limited ?? 0) >= 1) || (budget.action >= 1) || (request.cost !== "action") ) return false;
-  return request.weaponAttack || LIMITED_ACTION_KINDS.includes(request.basic);
+  return request.weaponAttack || (request.utilize === true) || LIMITED_ACTION_KINDS.includes(request.basic);
 }
 
 /** Cette attaque d'arme est-elle couverte par une action Attaquer déjà payée ? */

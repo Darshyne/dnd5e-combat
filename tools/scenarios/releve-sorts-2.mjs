@@ -169,6 +169,19 @@ export default {
       await next();
       const b = await ctx.engine("budget", { tokenId: fighter.id });
       ctx.expect(b?.limited === 1, `Hâte : début du tour du Guerrier, action limitée (${b?.limited}), action ${b?.action}`);
+      // B10 : l'action prise (Esquiver), l'action limitée permet Utiliser un objet non magique, pas un objet magique (action Magie).
+      const dodge = await ctx.itemId(fighter.id, "dnd5e-combat-dodge");
+      if ( !ctx.expect(!!dodge, "Hâte : le Guerrier a l'action Esquiver") ) return;
+      await settled(await ctx.use({ tokenId: fighter.id, itemId: dodge, consume: false }));
+      await pause(800);
+      const spent = await ctx.engine("budget", { tokenId: fighter.id });
+      ctx.expect((spent?.action === 0) && (spent?.limited === 1), `Hâte : après Esquiver, action ${spent?.action}, action limitée ${spent?.limited}`);
+      const kit = await ctx.ensureItem(fighter, "Compendium.dnd-players-handbook.equipment.Item.phbagHealersKit0");
+      const bead = await ctx.ensureItem(fighter, "Compendium.dnd-dungeon-masters-guide.equipment.Item.dmgBeadOfForce00");
+      const kitIssues = await ctx.engine("issues", { tokenId: fighter.id, itemId: kit });
+      const beadIssues = await ctx.engine("issues", { tokenId: fighter.id, itemId: bead });
+      ctx.expect(!kitIssues.length, `Hâte : Utiliser la trousse de soins (${kitIssues.join(" ; ") || "aucun souci"})`);
+      ctx.expect(beadIssues.length > 0, `Hâte : pas la perle de force, objet magique (${beadIssues.join(" ; ") || "aucun souci"})`);
     });
 
     await part("Bouclier contre Projectile magique", async () => {

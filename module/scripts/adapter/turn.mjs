@@ -129,8 +129,24 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
     multiattack: multiattackOf(activity.actor),
     keys: useKeysOf(activity),
     opensMultiattack: !!item && isMultiattackItem(item),
-    basic: item ? (basicActionOf(item) ?? contentOf(item).entry?.basicActions?.[activity.id] ?? null) : null   // §157 : l'action limitée de Hâte
+    basic: item ? (basicActionOf(item) ?? contentOf(item).entry?.basicActions?.[activity.id] ?? null) : null,   // §157 : l'action limitée de Hâte
+    utilize: isUtilize(activity)
   };
+}
+
+/** Les objets dont l'usage est l'action Utiliser (PHB 2024) : ni arme, ni sort, ni aptitude. */
+const UTILIZE_TYPES = new Set(["consumable", "tool", "loot", "equipment", "container"]);
+
+/**
+ * B10 (§157) : cette activité est-elle l'action Utiliser — « utiliser un objet non magique » ? Un objet magique demande l'action
+ * Magie, que l'action limitée de Hâte ne permet pas ; une attaque (fiole d'acide lancée) est une attaque, pas Utiliser.
+ */
+export function isUtilize(activity) {
+  const item = activity?.item;
+  if ( !item || !UTILIZE_TYPES.has(item.type) || (activity.type === "attack") ) return false;
+  // Magique : la propriété, ou une rareté (« Activate Alchemy Jug » du DMG, rareté sans la propriété). Limite connue : « Activate
+  // Folding Boat » n'a ni l'une ni l'autre et passe pour Utiliser.
+  return (item.system.properties?.has("mgc") !== true) && !item.system.rarity;
 }
 
 /**

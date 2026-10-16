@@ -191,6 +191,13 @@ describe("§157 : action limitée de Hâte", () => {
     expect(basicAction(b, "dash")).toMatchObject({ limited: 0, dashed: true, action: 0 });
     expect(basicAction(b, "dodge")).toMatchObject({ limited: 1, dodging: true });
   });
+  it("B10 : Utiliser un objet non magique", () => {
+    const b = { ...hasted(), action: 0 };
+    const kit = { ...cantrip, utilize: true };
+    expect(checkUse(b, kit, mine)).toEqual([]);
+    expect(spendUse(b, kit, mine)).toMatchObject({ limited: 0, action: 0 });
+    expect(checkUse({ ...b, limited: 0 }, kit, mine)).toEqual(["noAction"]);
+  });
   it("l'action d'abord, la limitée ensuite ; rendue avec une annulation", () => {
     const before = hasted();
     const after = spendUse(before, cantrip, mine);

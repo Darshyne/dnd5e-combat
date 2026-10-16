@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
  * « PerceptionPassive.Repere.Court », §16.51).
  */
 describe("fichiers de langue", () => {
-  for ( const lang of ["fr", "en"] ) {
+  for ( const lang of ["fr", "en", "pt-BR"] ) {
     it(`${lang} : aucune clé n'est le préfixe d'une autre`, () => {
       const keys = Object.keys(JSON.parse(readFileSync(new URL(`../module/lang/${lang}.json`, import.meta.url), "utf8")));
       const set = new Set(keys);

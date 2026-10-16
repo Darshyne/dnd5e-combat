@@ -31,28 +31,32 @@ function usedKeys() {
 }
 
 describe("traductions", () => {
-  it("fr et en ont les mêmes clés", () => {
-    const fr = Object.keys(lang("fr")).sort();
+  it("fr et pt-BR ont les mêmes clés que en", () => {
     const en = Object.keys(lang("en")).sort();
-    expect(fr.filter(k => !en.includes(k)), "absentes de en.json").toEqual([]);
-    expect(en.filter(k => !fr.includes(k)), "absentes de fr.json").toEqual([]);
+    for ( const l of ["fr", "pt-BR"] ) {
+      const translation = Object.keys(lang(l)).sort();
+      expect(translation.filter(k => !en.includes(k)), `extra keys in ${l}`).toEqual([]);
+      expect(en.filter(k => !translation.includes(k)), `missing keys in ${l}`).toEqual([]);
+    }
   });
 
   it("aucune valeur vide", () => {
-    for ( const l of ["fr", "en"] ) expect(Object.entries(lang(l)).filter(([, v]) => !String(v).trim()).map(([k]) => k), l).toEqual([]);
+    for ( const l of ["fr", "en", "pt-BR"] ) expect(Object.entries(lang(l)).filter(([, v]) => !String(v).trim()).map(([k]) => k), l).toEqual([]);
   });
 
-  it("les mêmes {variables} dans les deux langues", () => {
-    const fr = lang("fr");
+  it("les mêmes {variables} dans toutes les langues", () => {
     const en = lang("en");
     const vars = s => Array.from(new Set(Array.from(String(s).matchAll(/\{(\w+)\}/g), m => m[1]))).sort().join(",");
-    expect(Object.keys(fr).filter(k => (k in en) && (vars(fr[k]) !== vars(en[k])))).toEqual([]);
+    for ( const l of ["fr", "pt-BR"] ) {
+      const translation = lang(l);
+      expect(Object.keys(translation).filter(k => (k in en) && (vars(translation[k]) !== vars(en[k]))), l).toEqual([]);
+    }
   });
 
-  it("chaque clé écrite dans le code existe en fr et en en", () => {
+  it("chaque clé écrite dans le code existe dans toutes les langues", () => {
     const used = usedKeys();
     expect(Object.keys(used).length).toBeGreaterThan(300);
-    for ( const l of ["fr", "en"] ) {
+    for ( const l of ["fr", "en", "pt-BR"] ) {
       const keys = lang(l);
       const missing = Object.entries(used).filter(([k]) => !(k in keys)).map(([k, files]) => `${k} (${files[0]})`);
       expect(missing, l).toEqual([]);

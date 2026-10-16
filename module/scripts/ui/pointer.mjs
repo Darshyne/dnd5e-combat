@@ -19,7 +19,7 @@ import { stormOf, cloudOf, cloudCircle, boltRadiusPx } from "../adapter/storm.mj
 import { dressStorm, strike, setBoltAim, freshCloudOf, castStorm } from "../runtime/storm.mjs";
 import { clampToCircle } from "../core/storm.mjs";
 import { askStorm } from "./storm.mjs";
-import { contentOf, rangeUnitsOf } from "../adapter/content.mjs";
+import { contentOf, rangeUnitsOf, identifierOf } from "../adapter/content.mjs";
 import { projectilesOf, projectileCount, targetCount } from "../adapter/projectiles.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
 import { engage, castOnTargets, lineDashOf } from "../runtime/actions.mjs";
@@ -177,7 +177,7 @@ export function pendingTargeting() {
   const open = picking ?? targeting ?? dashing ?? recalling ?? placing;
   if ( !open ) return null;
   return { token: open.token?.uuid ?? null, activity: open.activity?.uuid ?? null,
-    identifier: open.activity?.item?.system?.identifier ?? null,
+    identifier: open.activity?.item ? identifierOf(open.activity.item).id : null,
     kind: targetingKind(), item: open.activity?.item?.name ?? null, prompt: promptText,
     picked: picking ? picking.picks.length : null, total: picking ? picking.count : null };
 }

@@ -10,6 +10,7 @@
 
 import { originItemOf } from "./facts.mjs";
 import { isSpellCast, spellLevelOf } from "./scrolls.mjs";
+import { identifierOf } from "./content.mjs";
 
 const isConcentration = effect => effect.statuses?.has?.("concentrating") || (effect.getFlag?.("dnd5e", "type") === "concentration");
 
@@ -25,7 +26,7 @@ export function spellsOn(actor, { except=null }={}) {
   for ( const effect of actor?.effects ?? [] ) {
     if ( effect.disabled || isConcentration(effect) ) continue;
     const item = originItemOf(effect);
-    if ( !isSpellCast(item) || (except && (item.system?.identifier === except.system?.identifier) && (item.actor === except.actor)) ) continue;
+    if ( !isSpellCast(item) || (except && (identifierOf(item).id === identifierOf(except).id) && (item.actor === except.actor)) ) continue;
     const concentration = effect.getFlag?.("dnd5e", "dependentOn") ?? null;
     const key = concentration ?? effect.system?.origin?.message ?? effect.uuid;
     const level = Number(effect.getFlag?.("dnd5e", "spellLevel")) || spellLevelOf(item);

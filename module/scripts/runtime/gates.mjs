@@ -32,6 +32,7 @@ import { isSpellCast } from "../adapter/scrolls.mjs";
 import { castLevelFor } from "../adapter/counter.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { settledResolution } from "../adapter/messages.mjs";
+import { identifierOf } from "../adapter/content.mjs";
 
 
 /** Une carte de chat qui dit ce que la porte a décidé (lue par les scénarios : flag `gate`) ; `details` : lignes de plus. */
@@ -159,7 +160,7 @@ async function passCounters(activity, origin, candidates, { auto, castLevel }) {
         ? loc("PorteContreAuto", { spell: activity.item.name, castLevel: c.castLevel, item: answer.name, level: c.level })
         : loc("PorteContreTest", { reactor: token.name, total: c.total ?? "—", dc: c.dc, spell: activity.item.name, castLevel: c.castLevel })];
       await tell(origin.actor, failed ? "PorteSortDissipe" : "PorteSortTenu", { name: origin.name, spell: activity.item.name, reactor: token.name, item: answer.name },
-        { kind: "counterspell", spell: activity.item.system?.identifier ?? null, caster: origin.uuid, reactor: token.uuid, message: answer.message, dissipated: failed,
+        { kind: "counterspell", spell: identifierOf(activity.item).id, caster: origin.uuid, reactor: token.uuid, message: answer.message, dissipated: failed,
           counter: { castLevel: c.castLevel, level: c.level, auto: c.auto, dc: c.dc, total: c.total ?? null } }, details);
       if ( failed ) return false;
       continue;
@@ -169,7 +170,7 @@ async function passCounters(activity, origin, candidates, { auto, castLevel }) {
     const failed = target?.save?.success === false;
     log(`${token.name} reacts (${answer.name}): saving throw ${target?.save?.total ?? "?"} -> ${failed ? "spell countered" : "the spell goes through"}`);
     await tell(origin.actor, failed ? "PorteSortDissipe" : "PorteSortTenu", { name: origin.name, spell: activity.item.name, reactor: token.name, item: answer.name },
-      { kind: "counterspell", spell: activity.item.system?.identifier ?? null, caster: origin.uuid, reactor: token.uuid, message: answer.message, dissipated: failed });
+      { kind: "counterspell", spell: identifierOf(activity.item).id, caster: origin.uuid, reactor: token.uuid, message: answer.message, dissipated: failed });
     if ( failed ) return false;
   }
   return true;

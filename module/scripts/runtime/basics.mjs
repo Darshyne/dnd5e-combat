@@ -19,6 +19,7 @@ import { rangedFeatsOf } from "../adapter/conditions.mjs";
 import { isFamiliarActor, isFamiliarToken } from "../adapter/familiar.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
+import { identifierOf } from "../adapter/content.mjs";
 
 const SETTING = "provideBasicActions";
 
@@ -52,7 +53,7 @@ function onPreRollDamage(config) {
   if ( !config.attackMode?.endsWith?.("offhand") || !roll || !actor ) return true;
   // §131 : Expert des arbalètes — « l'attaque supplémentaire de la propriété Légère avec une arbalète Légère ».
   const crossbow = rangedFeatsOf(actor, config.subject, config.attackMode).offhandModifier;
-  if ( !crossbow && !actor.items.some(i => i.system.identifier === "two-weapon-fighting") ) return true;
+  if ( !crossbow && !actor.items.some(i => identifierOf(i).id === "two-weapon-fighting") ) return true;
   if ( !((roll.data?.mod ?? 0) > 0) || roll.parts?.includes("@mod") ) return true;
   roll.parts = [...(roll.parts ?? []), "@mod"];
   log("off hand: Two-Weapon Fighting, modifier restored to damage");

@@ -136,7 +136,7 @@ export function pulseOf(tokenDoc) {
   const rule = item ? contentOf(item).entry?.summon?.pulse : null;
   if ( !rule ) return null;
   // §164 : plusieurs identifiants possibles (Invocation d'élémentaire : un item par élément).
-  const own = tokenDoc.actor?.items.find(i => [rule.item].flat().includes(i.system.identifier));
+  const own = tokenDoc.actor?.items.find(i => [rule.item].flat().includes(identifierOf(i).id));
   const activity = own?.system.activities?.find(a => ["save", "attack", "damage"].includes(a.type)) ?? null;
   return activity ? { rule, activity } : null;
 }

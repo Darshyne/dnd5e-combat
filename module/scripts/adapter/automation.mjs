@@ -29,7 +29,7 @@ const GEAR = new Set(["equipment", "loot", "container", "consumable", "tool", "w
 export function automationOfItem(item) {
   const { identifier, entry, layers } = contentOf(item);
   const rules = entry ? Object.keys(entry) : [];
-  const own = item?.system?.identifier ?? "";
+  const own = identifier ?? "";
   if ( KNOWN.has(own) || own.startsWith(`${MODULE_ID}-`) ) rules.push(own);
   if ( (item?.actor?.type === "npc") && variantPlanOf(item) ) rules.push("variants");
   if ( restrainsWith(item) && escapeCheckOf(item) ) rules.push("escape");   // §16.54 : S'échapper par le test du texte

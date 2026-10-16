@@ -19,6 +19,7 @@ import { movableZoneOf } from "../runtime/zones.mjs";
 import { carriedLightsOf, carriedLightState } from "../adapter/lights.mjs";
 import { toggleCarriedLight } from "../runtime/lights.mjs";
 import { ritualModeOf } from "../adapter/grimoire.mjs";
+import { identifierOf } from "../adapter/content.mjs";
 
 /**
  * Le budget du tour d'un combattant, tel que le moteur le juge : une action reste disponible tant que l'action Attaquer a
@@ -117,7 +118,7 @@ function multiattack(actor) {
  * @returns {Array<{name: string, img: string, identifier: string, value: number, max: number}>}
  */
 function wards(actor) {
-  return poolsOf(actor).map(({ item, pool }) => ({ name: item.name, img: item.img, identifier: item.system.identifier ?? "",
+  return poolsOf(actor).map(({ item, pool }) => ({ name: item.name, img: item.img, identifier: identifierOf(item).id ?? "",
     value: pool, max: Number(item.system.uses?.max) || pool }));
 }
 

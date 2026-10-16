@@ -153,7 +153,7 @@ function summonNear(source, targetToken, { item, distance, units }={}) {
     const origin = token.actor?.getFlag("dnd5e", "summon.origin");
     if ( !origin || token.hidden ) continue;
     const from = fromUuidSync(origin, { strict: false });
-    if ( (from?.actor?.uuid !== source.uuid) || (item && (from.system?.identifier !== item)) ) continue;
+    if ( (from?.actor?.uuid !== source.uuid) || (item && (identifierOf(from).id !== item)) ) continue;
     if ( within(token, targetToken, { distance, units }) !== true ) continue;
     if ( canSee(targetToken, token) === false ) continue;
     return true;

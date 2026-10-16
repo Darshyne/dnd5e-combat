@@ -12,7 +12,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { contentOf } from "./content.mjs";
+import { contentOf, identifierOf } from "./content.mjs";
 import { originItemOf, comesFromItemEffect } from "./facts.mjs";
 
 /** Est-ce une potion ? */
@@ -30,7 +30,7 @@ const pending = new Map();
 /** L'activité « cast » d'une potion va être utilisée : on retient la potion, la copie du sort naîtra après sa destruction. */
 export function notePotionCast(activity) {
   if ( (activity?.type !== "cast") || !isPotion(activity.item) ) return false;
-  pending.set(`${activity.item.id}.${activity.id}`, { identifier: activity.item.system.identifier ?? null, name: activity.item.name });
+  pending.set(`${activity.item.id}.${activity.id}`, { identifier: identifierOf(activity.item).id, name: activity.item.name });
   return true;
 }
 
@@ -51,7 +51,7 @@ export function potionOfCast(item) {
   const key = castKey(item?.flags?.dnd5e?.cachedFor);
   if ( !key ) return null;
   const source = item.actor?.items?.get(key.split(".")[0]) ?? null;
-  if ( isPotion(source) ) return { identifier: source.system.identifier ?? null, name: source.name };
+  if ( isPotion(source) ) return { identifier: identifierOf(source).id, name: source.name };
   return pending.get(key) ?? null;
 }
 

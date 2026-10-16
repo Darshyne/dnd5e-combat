@@ -7,7 +7,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { combatantFor, isOwnTurn, readBudget } from "../adapter/turn.mjs";
 import { stormOf } from "../adapter/storm.mjs";
 import { strike } from "../runtime/storm.mjs";
-import { contentOf } from "../adapter/content.mjs";
+import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { leapOf, rolledDouble, evalRuleFormula } from "../adapter/projectiles.mjs";
 import { teleportSelf, selfTeleportOf } from "../runtime/actions.mjs";
 import { masteryOf, cleaveCandidates, cleaveSpent } from "../adapter/mastery.mjs";
@@ -93,8 +93,8 @@ function offerFlurry(actor) {
   if ( !combatant || !isOwnTurn(combatant) || !((readBudget(combatant)?.flurry ?? 0) > 0) ) return;
   // §27 : Prêtre de guerre — l'attaque ouverte se fait avec l'arme de corps à corps équipée, sinon à mains nues.
   const weapon = readBudget(combatant).flurryAny
-    ? actor.items.find(i => (i.type === "weapon") && i.system.equipped && (i.system.identifier !== "unarmed-strike")) : null;
-  const strike = weapon ?? actor.items.find(i => i.system?.identifier === "unarmed-strike");
+    ? actor.items.find(i => (i.type === "weapon") && i.system.equipped && (identifierOf(i).id !== "unarmed-strike")) : null;
+  const strike = weapon ?? actor.items.find(i => (i.type === "weapon") && (identifierOf(i).id === "unarmed-strike"));
   const activity = strike?.system.activities?.find(a => a.type === "attack");
   const token = combatant.token;
   if ( !activity || !token?.object ) return;

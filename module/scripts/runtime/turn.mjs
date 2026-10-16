@@ -283,7 +283,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
 function otherHandBusy(item) {
   return Array.from(item?.actor?.items ?? []).some(i => (i !== item) && i.system?.equipped && (
     ((i.type === "equipment") && (i.system.type?.value === "shield"))
-    || ((i.type === "weapon") && (i.system.type?.value !== "natural") && (i.system.identifier !== "unarmed-strike"))));
+    || ((i.type === "weapon") && (i.system.type?.value !== "natural") && (identifierOf(i).id !== "unarmed-strike"))));
 }
 
 /** §149 : arme Polyvalente — à deux mains quand l'autre main est libre (core/attack.mjs, `versatileGrip`). */

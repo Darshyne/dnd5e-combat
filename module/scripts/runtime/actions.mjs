@@ -28,6 +28,7 @@ import { areEnemies } from "../adapter/factions.mjs";
 import { onTeleport } from "./teleport.mjs";
 import { onDashTemplate, onDashUsed } from "./dash.mjs";
 import { onPreMoveToken } from "./move-gate.mjs";
+import { identifierOf } from "../adapter/content.mjs";
 export { afterTeleport, currentTeleport, selfTeleportOf, teleportClick, teleportSelf, teleportTo } from "./teleport.mjs";
 export { dashLimit, dashPreview, dashProblem, dashRefusal, dashStrike, dashTargets, lineDashOf, transpose } from "./dash.mjs";
 
@@ -498,7 +499,7 @@ export function approaches(activity, mode=null) {
  */
 export function contactAction(activity) {
   const item = activity?.item;
-  return (item?.system?.identifier === "unarmed-strike") || (basicActionOf(item) === "help");
+  return (!!item && (identifierOf(item).id === "unarmed-strike")) || (basicActionOf(item) === "help");
 }
 
 /**

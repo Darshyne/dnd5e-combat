@@ -152,15 +152,30 @@ export async function createAuraCopy(targetToken, aura, sourceToken, value) {
   await targetToken.actor.createEmbeddedDocuments("ActiveEffect", [copyData(aura, sourceToken, value)]);
 }
 
+/**
+ * Une copie d'aura peut disparaître entre la lecture et l'écriture du recalcul : invocation retirée, sort terminé, remise en
+ * état d'un scénario (le serveur répond « ActiveEffect … does not exist! », vu le 2026-10-16 dans `releve-sorts-4`). Une copie
+ * déjà partie n'a plus besoin de rien : on continue le recalcul. Toute autre erreur remonte.
+ */
+async function unlessGone(targetToken, effectId, write) {
+  if ( !targetToken?.actor?.effects.has(effectId) ) return;
+  try { await write(); }
+  catch(err) {
+    if ( targetToken.actor?.effects.has(effectId) && !/does not exist/i.test(err?.message ?? "") ) throw err;
+  }
+}
+
 export async function updateAuraCopy(targetToken, effectId, aura, sourceToken, value) {
-  await targetToken.actor.updateEmbeddedDocuments("ActiveEffect", [{ _id: effectId, ...copyData(aura, sourceToken, value) }]);
+  await unlessGone(targetToken, effectId,
+    () => targetToken.actor.updateEmbeddedDocuments("ActiveEffect", [{ _id: effectId, ...copyData(aura, sourceToken, value) }]));
 }
 
 /** Remet l'icône sur une copie posée avant que le moteur ne l'affiche. */
 export async function showAuraIcon(targetToken, effectId) {
-  await targetToken.actor.updateEmbeddedDocuments("ActiveEffect", [{ _id: effectId, showIcon: CONST.ACTIVE_EFFECT_SHOW_ICON.ALWAYS }]);
+  await unlessGone(targetToken, effectId,
+    () => targetToken.actor.updateEmbeddedDocuments("ActiveEffect", [{ _id: effectId, showIcon: CONST.ACTIVE_EFFECT_SHOW_ICON.ALWAYS }]));
 }
 
 export async function removeAuraCopy(targetToken, effectId) {
-  if ( targetToken.actor?.effects.has(effectId) ) await targetToken.actor.deleteEmbeddedDocuments("ActiveEffect", [effectId]);
+  await unlessGone(targetToken, effectId, () => targetToken.actor.deleteEmbeddedDocuments("ActiveEffect", [effectId]));
 }

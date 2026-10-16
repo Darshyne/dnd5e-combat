@@ -47,7 +47,7 @@ export default {
     const reset = async () => {
       for ( const t of all ) {
         const target = await targetOf(t);
-        for ( const e of (await ctx.effects(t)).filter(e => !effects0.get(t.id).has(e._id ?? e.id)) ) {
+        for ( const e of (await ctx.effects(t)).filter(e => !effects0.get(t.id).has(e._id ?? e.id) && !e.flags?.["dnd5e-combat"]?.aura) ) {
           await ctx.call("remove-embedded-effect", { ...target, effectId: e._id ?? e.id }).catch(() => {});
         }
         await ctx.setHp(t, hp0.get(t.id));

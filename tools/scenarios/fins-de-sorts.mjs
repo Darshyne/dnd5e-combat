@@ -38,7 +38,7 @@ export default {
     const laughter = await ctx.ensureItem(mage, `${SPELLS}.phbsplTashasHide`);
     const slow = await ctx.ensureItem(mage, `${SPELLS}.phbsplSlow000000`);
     const sanctuary = await ctx.ensureItem(clerc, `${SPELLS}.phbSanctuary0000`);
-    const newEffects = async t => (await ctx.effects(t)).filter(e => !effects0.get(t.id).has(e._id ?? e.id));
+    const newEffects = async t => (await ctx.effects(t)).filter(e => !effects0.get(t.id).has(e._id ?? e.id) && !e.flags?.["dnd5e-combat"]?.aura);
 
     /** Lance le sort sur le Zombi jusqu'à ce qu'il rate sa sauvegarde ; rend la résolution, ou null. */
     const until = async (itemId, extra={}) => {

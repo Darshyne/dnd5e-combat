@@ -192,8 +192,9 @@ export function onPointerUp(event) {
     }
     const door = (!hover && plain(event) && clickMoveAllowed()) ? hoveredDoor() : null;
     if ( door ) return exclusive(() => setDoorOpen(me, door, doorState(door) !== "open"));
-    // §41.2 : un escalier — on le prend d'un clic (un seul niveau au bout), ou l'on choisit le niveau (ascenseur).
-    const steps = (!hover && plain(event)) ? stairsEntries(me, scenePoint(event)) : [];
+    // §41.2 : un escalier — on le prend d'un clic (un seul niveau au bout), ou l'on choisit le niveau (ascenseur). Comme tout
+    // clic au sol, seulement si le clic-déplacement est actif (décision du 2026-10-16) ; le clic droit l'offre toujours.
+    const steps = (!hover && plain(event) && clickMoveAllowed()) ? stairsEntries(me, scenePoint(event)) : [];
     if ( steps.length === 1 ) { lastHoverKey = null; return exclusive(() => steps[0].run(event)); }
     if ( steps.length > 1 ) return openMenu(event, steps);
     if ( !hover && plain(event) && clickMoveAllowed() ) { lastHoverKey = null; return exclusive(() => moveTo(me, scenePoint(event))); }
@@ -381,7 +382,7 @@ export const onPointerMove = foundry.utils.throttle(event => {
   const cell = cellUnder(me, point);
   const keys = heldKeys(event);
   // §41.2 : le bord d'un escalier peut couper une case — le curseur suit le point, pas la case.
-  const onStairs = !hover && !targeting && !picking && (stairsDestinations(me, point).length > 0);
+  const onStairs = !hover && !targeting && !picking && clickMoveAllowed() && (stairsDestinations(me, point).length > 0);
   const id = `${me.id}|${hover?.id ?? ""}|${cell.i},${cell.j}|${(picking ?? targeting)?.activity.uuid ?? ""}|${picking?.picks.length ?? ""}|${keys.advantage}${keys.disadvantage}|${onStairs}`;
   if ( id === lastHoverKey ) return;
   lastHoverKey = id;
@@ -424,7 +425,7 @@ export const onPointerMove = foundry.utils.throttle(event => {
     }
   }
   else if ( !hover && !targeting && hoveredDoor() ) cursor = null;   // §18.25 : l'icône de porte garde le curseur du cœur
-  // §41.2 : un escalier que le token peut prendre — le clic l'y mène, que le clic-déplacement soit actif ou non.
+  // §41.2 : un escalier que le token peut prendre — le clic l'y mène (clic-déplacement actif).
   else if ( onStairs ) {
     cursor = "stairs";
     if ( preview ) {

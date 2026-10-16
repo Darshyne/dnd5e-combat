@@ -17,11 +17,19 @@ export const DiagnosticApp = () => DiagnosticClass ??= class DiagnosticApp exten
     position: { width: 820, height: 680 }
   };
 
-  /** Ouvrir sur une seule vérification (macros « Outils du MJ »). */
+  /**
+   * Ouvrir sur une seule vérification (macros « Outils du MJ »). B6 : un seul exemplaire — le menu des réglages crée la fenêtre
+   * par `new` : il reçoit celle qui est déjà ouverte (`openDiagnostic` referme d'abord celle d'une autre vérification).
+   */
   constructor({ check=null, ...options }={}) {
+    const existing = foundry.applications.instances.get("das-diagnostic");
+    if ( existing instanceof DiagnosticApp ) return existing;
     super(options);
     this.#only = check;
   }
+
+  /** La vérification seule sur laquelle la fenêtre est ouverte, ou null (toutes). */
+  get only() { return this.#only; }
 
   #only = null;
   #tab = "scan";
@@ -189,4 +197,8 @@ export const DiagnosticApp = () => DiagnosticClass ??= class DiagnosticApp exten
 };
 
 /** Pour l'API et les macros : ouvrir le diagnostic, éventuellement sur une seule vérification. */
-export const openDiagnostic = ({ check=null }={}) => new (DiagnosticApp())({ check }).render({ force: true });
+export async function openDiagnostic({ check=null }={}) {
+  const existing = foundry.applications.instances.get("das-diagnostic");
+  if ( existing && (existing.only !== check) ) await existing.close();
+  return new (DiagnosticApp())({ check }).render({ force: true });
+}

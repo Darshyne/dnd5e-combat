@@ -21,14 +21,26 @@ const CYCLE = [null, ...RELATIONS];
 const ICON = { hostile: "fa-solid fa-swords", neutral: "fa-solid fa-minus", allied: "fa-solid fa-handshake" };
 
 let FactionsClass = null;
-let open = null;
+/**
+ * B6 : la fenêtre ouverte, quel que soit le chemin (bouton de la barre d'outils, HUD, menu des réglages) — un seul exemplaire,
+ * celui que le cœur tient pour cet id (`foundry.applications.instances`).
+ */
+const WINDOW_ID = "das-factions";
+const openWindow = () => foundry.applications.instances.get(WINDOW_ID) ?? null;
 
 /** Les tokens contrôlés sur le canevas, en documents. */
 const selected = () => (canvas?.tokens?.controlled ?? []).map(t => t.document);
 
 export const FactionsApp = () => FactionsClass ??= class FactionsApp extends foundry.applications.api.ApplicationV2 {
+  /** B6 : un seul exemplaire — le menu des réglages crée la fenêtre par `new` : il reçoit celle qui est déjà ouverte. */
+  constructor(options={}) {
+    const existing = openWindow();
+    if ( existing instanceof FactionsApp ) return existing;
+    super(options);
+  }
+
   static DEFAULT_OPTIONS = {
-    id: "das-factions",
+    id: WINDOW_ID,
     classes: ["das-screen", "das-factions"],
     window: { title: "DND5ECOMBAT.Factions.Titre", icon: "fa-solid fa-flag", resizable: true },
     position: { width: 780, height: "auto" }
@@ -170,16 +182,11 @@ export const FactionsApp = () => FactionsClass ??= class FactionsApp extends fou
     });
   }
 
-  _onClose(options) {
-    super._onClose?.(options);
-    if ( open === this ) open = null;
-  }
 };
 
 /** Ouvrir (ou ramener devant) la fenêtre. */
 export function openFactions() {
-  open ??= new (FactionsApp())();
-  return open.render({ force: true });
+  return new (FactionsApp())().render({ force: true });
 }
 
 /** Une pastille déposée sur la scène : le token sous le curseur rejoint la faction. */
@@ -188,7 +195,7 @@ function onDropCanvas(canvasRef, data) {
   const token = canvas.tokens.placeables.filter(t => t.visible && t.bounds.contains(data.x, data.y))
     .sort((a, b) => b.document.sort - a.document.sort)[0];
   if ( !token ) return false;
-  assignFaction([token.document], data.faction).then(() => open?.render());
+  assignFaction([token.document], data.faction).then(() => openWindow()?.render());
   return false;
 }
 
@@ -224,7 +231,7 @@ function onTokenHUD(hud, html) {
     const target = (value.actor && token.baseActor) ? token.baseActor : token;
     await assignFaction([target], value.faction || null);
     hud.render();
-    open?.render();
+    openWindow()?.render();
   });
   column.append(button);
 }
@@ -243,5 +250,5 @@ export function registerFactionsUI() {
   }, { label: "factions: tool" });
   route("renderTokenHUD", onTokenHUD, { label: "factions: token HUD" });
   route("dropCanvasData", onDropCanvas, { label: "factions: token drop", cancellable: true });
-  route(`${MODULE_ID}.factionsChanged`, () => open?.render(), { label: "factions: window refresh" });
+  route(`${MODULE_ID}.factionsChanged`, () => openWindow()?.render(), { label: "factions: window refresh" });
 }

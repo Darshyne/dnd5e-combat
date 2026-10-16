@@ -24,6 +24,13 @@ const ICONS = Object.freeze({ essentials: "fa-solid fa-person-walking", assisted
 /** La classe de la fenêtre, créée au premier usage (le module se charge aussi hors de Foundry : tests/load.test.mjs). */
 let WelcomeClass = null;
 export const WelcomeApp = () => WelcomeClass ??= class WelcomeApp extends foundry.applications.api.ApplicationV2 {
+  /** B6 : un seul exemplaire — le menu des réglages crée la fenêtre par `new` : il reçoit celle qui est déjà ouverte. */
+  constructor(options={}) {
+    const existing = foundry.applications.instances.get("das-welcome");
+    if ( existing instanceof WelcomeApp ) return existing;
+    super(options);
+  }
+
   static DEFAULT_OPTIONS = {
     id: "das-welcome",
     classes: ["das-screen", "das-welcome"],

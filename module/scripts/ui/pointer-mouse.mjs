@@ -201,6 +201,10 @@ export function onPointerUp(event) {
     return;
   }
   if ( !plain(event) ) return;
+  if ( doubleRightOnToken(hover, me) ) {
+    closeMenu();
+    return hover.sheet?.render(true);
+  }
   if ( hover && (hover === me) && hasSelfMenu(me) ) return openMenu(event, selfEntries(me));
   if ( hover && (hover !== me) ) return openTokenMenu(event, me, hover);
   const door = hover ? null : hoveredDoor();
@@ -240,6 +244,22 @@ export function setCursor(kind) {
 }
 
 /** Le token sous la souris. */
+/**
+ * MJ : un double clic droit sur un token ouvre sa configuration — le geste du cœur (Token#_onClickRight2), que le menu du moteur
+ * interceptait dès qu'un token était en main (demande de l'utilisateur, 2026-10-18). Le premier clic ouvre le menu comme avant ;
+ * le second, sur le même token dans le délai, le ferme et ouvre la configuration. Les cas que le moteur ne prend pas (son propre
+ * token sans menu à lui, aucun token en main) restent au cœur, qui fait déjà de même.
+ */
+const DOUBLE_RIGHT_MS = 400;
+let lastRight = null;
+function doubleRightOnToken(hover, me) {
+  if ( !game.user.isGM || !hover || ((hover === me) && !hasSelfMenu(me)) ) { lastRight = null; return false; }
+  const now = Date.now();
+  const double = !!lastRight && (lastRight.id === hover.id) && ((now - lastRight.at) <= DOUBLE_RIGHT_MS);
+  lastRight = double ? null : { id: hover.id, at: now };
+  return double;
+}
+
 function hoveredToken() {
   return canvas.tokens.hover?.document ?? null;
 }

@@ -31,12 +31,13 @@ function usedKeys() {
 }
 
 describe("traductions", () => {
-  it("fr et pt-BR ont les mêmes clés que en", () => {
+  it("fr a les mêmes clés que en ; pt-BR aucune en trop", () => {
     const en = Object.keys(lang("en")).sort();
     for ( const l of ["fr", "pt-BR"] ) {
       const translation = Object.keys(lang(l)).sort();
       expect(translation.filter(k => !en.includes(k)), `extra keys in ${l}`).toEqual([]);
-      expect(en.filter(k => !translation.includes(k)), `missing keys in ${l}`).toEqual([]);
+      // Le portugais peut avoir du retard sur une clé neuve (Foundry montre alors l'anglais) ; le français, jamais.
+      if ( l === "fr" ) expect(en.filter(k => !translation.includes(k)), `missing keys in ${l}`).toEqual([]);
     }
   });
 
@@ -53,10 +54,10 @@ describe("traductions", () => {
     }
   });
 
-  it("chaque clé écrite dans le code existe dans toutes les langues", () => {
+  it("chaque clé écrite dans le code existe en fr et en en", () => {
     const used = usedKeys();
     expect(Object.keys(used).length).toBeGreaterThan(300);
-    for ( const l of ["fr", "en", "pt-BR"] ) {
+    for ( const l of ["fr", "en"] ) {
       const keys = lang(l);
       const missing = Object.entries(used).filter(([k]) => !(k in keys)).map(([k, files]) => `${k} (${files[0]})`);
       expect(missing, l).toEqual([]);

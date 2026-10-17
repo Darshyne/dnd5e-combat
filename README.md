@@ -100,7 +100,7 @@ Status: under active development, used at the author's table.
 
 ## Translations
 
-The module ships English and French. To add a language, copy `module/lang/en.json` to `module/lang/<code>.json`,
+The module ships English, French and Brazilian Portuguese (pt-BR translation by Henrique, [@henriquebot](https://github.com/henriquebot)). To add a language, copy `module/lang/en.json` to `module/lang/<code>.json`,
 translate the values (keep the `{placeholders}`), and add an entry to `languages` in `module/module.json`; missing keys
 fall back to English. `tests/i18n.test.mjs` checks that every key used in the code exists.
 

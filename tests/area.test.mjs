@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  selectAreaTargets, turnKeyOf, openArea, shouldTrigger, markHit, entersArea, firstEntry
+  selectAreaTargets, turnKeyOf, openArea, shouldTrigger, markHit, entersArea, firstEntry, burnedOut
 } from "../module/scripts/core/area.mjs";
 
 const c = (name, disposition, extra = {}) => ({ token: `T.${name}`, actor: `A.${name}`, name, disposition, ...extra });
@@ -107,5 +107,22 @@ describe("objets répandus (§187) : la première case du trajet qui entre dans 
   it("plusieurs zones : la première entrée, quelle que soit la zone ; quitter l'une pour l'autre compte", () => {
     expect(firstEntry([[false, false], [false, false], [false, true], [true, true]])).toBe(2);
     expect(firstEntry([[true, false], [false, true]])).toBe(1);
+  });
+});
+
+describe("zones inflammables (§188) : la fin du feu", () => {
+  const until = { round: 5, turn: 2 };   // embrasée au round 3, tour 2, pour 2 rounds
+  it("s'éteint à la fin du même tour, rounds plus tard — pas avant", () => {
+    expect(burnedOut(until, { round: 5, turn: 1 })).toBe(false);
+    expect(burnedOut(until, { round: 4, turn: 3 })).toBe(false);
+    expect(burnedOut(until, { round: 5, turn: 2 })).toBe(true);
+  });
+  it("un tour sauté (combattant retiré) ou un round passé l'éteint aussi", () => {
+    expect(burnedOut(until, { round: 5, turn: 3 })).toBe(true);
+    expect(burnedOut(until, { round: 6, turn: 0 })).toBe(true);
+  });
+  it("sans terme (hors combat) ou sans tour fini : rien", () => {
+    expect(burnedOut(null, { round: 9, turn: 0 })).toBe(false);
+    expect(burnedOut(until, null)).toBe(false);
   });
 });

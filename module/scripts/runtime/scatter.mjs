@@ -54,20 +54,24 @@ function boundsOf(region) {
   return { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
 }
 
+/** §187, §188 : l'image d'un objet posé au sol (chausse-trapes, flaque d'huile), une tuile sur la zone, retirée avec elle. MJ actif. */
+export async function groundTile(region, img) {
+  const box = boundsOf(region);
+  if ( !box || !img ) return null;
+  const [tile] = await region.parent.createEmbeddedDocuments("Tile", [{
+    ...box, texture: { src: img }, alpha: 0.9, elevation: Number.isFinite(region.elevation?.bottom) ? region.elevation.bottom : 0,
+    flags: { [MODULE_ID]: { ground: region.id } }
+  }]).catch(err => { console.warn(`${MODULE_ID} | ground item: no tile`, err); return []; });
+  return tile ?? null;
+}
+
 /**
  * Ce que la zone garde de l'objet répandu : sa copie (l'objet a pu disparaître, chausse-trapes « autoDestroy »), prise au moment de
  * l'utilisation sur le message, et la tuile qui le montre au sol. MJ actif (pose de la zone).
  */
 export async function scatterState(region, message, activity) {
   const item = message?.getFlag(MODULE_ID, "scatterItem") ?? activity?.item?.toObject?.() ?? null;
-  const box = boundsOf(region);
-  let tile = null;
-  if ( box && item?.img ) {
-    [tile] = await region.parent.createEmbeddedDocuments("Tile", [{
-      ...box, texture: { src: item.img }, alpha: 0.9, elevation: Number.isFinite(region.elevation?.bottom) ? region.elevation.bottom : 0,
-      flags: { [MODULE_ID]: { scatter: region.id } }
-    }]).catch(err => { console.warn(`${MODULE_ID} | scattered item: no tile`, err); return []; });
-  }
+  const tile = await groundTile(region, item?.img);
   log(`${item?.name ?? region.name}: scattered on the ground, stays until picked up`);
   return { item, tile: tile?.id ?? null };
 }
@@ -197,10 +201,10 @@ export function registerScatter() {
     if ( !scatterOf(activity) || !messageConfig ) return;
     foundry.utils.setProperty(messageConfig, `data.flags.${MODULE_ID}.scatterItem`, activity.item.toObject());
   }, { label: "scattered item: copy not kept" });
-  // La tuile part avec sa zone (ramassée, ou retirée à la main par le MJ).
+  // La tuile part avec sa zone (ramassée, brûlée, ou retirée à la main par le MJ).
   route("deleteRegion", async region => {
-    const tile = readAreaState(region)?.scatter?.tile;
-    if ( tile ) await region.parent?.tiles.get(tile)?.delete();
-  }, { executor: true, label: "scattered item: tile not removed" });
+    const tile = region.parent?.tiles.find(t => t.getFlag(MODULE_ID, "ground") === region.id);
+    if ( tile ) await tile.delete();
+  }, { executor: true, label: "ground item: tile not removed" });
   CONFIG.queries[PICKUP_QUERY] = handlePickUp;
 }

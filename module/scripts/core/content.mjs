@@ -476,7 +476,8 @@
  *                                               l'ensorceleur (`METAMAGIC_KINDS`)
  *     endurance?: true                          Acharnement (§31) : tombé à 0 PV sans être tué sur le coup, le porteur reste à 1 PV,
  *                                               une utilisation de l'item dépensée
- *     replacesAttack?: true                     l'activité remplace une attaque de l'action Attaquer (Souffle, §31)
+ *     replacesAttack?: true | string[]          l'activité remplace une attaque de l'action Attaquer (Souffle, §31) ; une liste : ces
+ *                                               activités seulement (§188, Huile : le lancer, pas l'étalage au sol)
  *     hitRider?: { damage?, effect?, status?, sizeAtMost?, slot?, weapon?, oncePerTurn?, save?, item?, whileActive? }
  *                                               faveur proposée au jet de dégâts d'une attaque qui touche, contre une
  *                                               utilisation de l'item (Ascendance gigante, §31) : les dés de l'activité
@@ -558,6 +559,12 @@
  *     kindles?: true                            l'item allume ou éteint une source portée, au choix (boîte à amadou, §52)
  *     scatter?: true                            §187 : un objet qu'on répand au sol (chausse-trapes, billes) — sa zone dure sans durée,
  *                                               n'agit pas à la pose, arrête qui y entre sur sa première case et se ramasse hors combat
+ *     flammable?: { damage, type, rounds, seconds, on, ground?, frees? }
+ *                                               §188 : la zone de l'item s'embrase (dégâts de feu reçus dedans, zone de feu posée dessus,
+ *                                               flamme portée au contact) et brûle `rounds` rounds — jusqu'à la fin du même tour — ou
+ *                                               `seconds` hors combat : `damage` de `type` aux moments `on`, une fois par tour, puis elle
+ *                                               disparaît ; `ground` : la zone reste au sol jusque-là (Huile, sans durée) ; `frees` : l'état
+ *                                               qu'elle posait tombe avec elle (Toile d'araignée)
  *     discipleOfLife?: true                     un sort de soin lancé par un emplacement rend 2 + le niveau de l'emplacement de plus à
  *                                               chaque créature soignée (§27)
  *     blessedHealer?: true                      le même sort, s'il soigne une autre créature, rend 2 + le niveau au lanceur (§27)

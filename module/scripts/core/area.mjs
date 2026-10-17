@@ -207,6 +207,15 @@ export function firstEntry(rows) {
   return -1;
 }
 
+/**
+ * §188 : une zone embrasée au tour `until` (round, tour) s'éteint à la fin de ce tour-là — « jusqu'à la fin du tour 2 rounds après son
+ * allumage ». Vrai quand le tour qui vient de finir (`ended`) l'atteint ou le dépasse.
+ */
+export function burnedOut(until, ended) {
+  if ( !until || !ended || !Number.isFinite(ended.round) ) return false;
+  return (ended.round > until.round) || ((ended.round === until.round) && ((ended.turn ?? 0) >= (until.turn ?? 0)));
+}
+
 /** La zone agit-elle à sa pose ? Non si elle n'agit qu'au déplacement (`moves`). */
 export function actsOnPose(on) {
   return !on || on.some(m => m !== "moves");

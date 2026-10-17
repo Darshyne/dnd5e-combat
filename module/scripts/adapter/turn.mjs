@@ -84,6 +84,12 @@ export async function writeBudget(combatant, budget) {
   await combatant.setFlag(MODULE_ID, "turn", budget);
 }
 
+/** §31, §188 : l'activité remplace-t-elle une attaque de l'action Attaquer ? Tout l'item (`true`), ou ces activités-là. */
+function replacesAttack(item, activity) {
+  const r = contentOf(item).entry?.replacesAttack;
+  return (r === true) || (Array.isArray(r) && r.includes(activity?.id));
+}
+
 /**
  * Le coût d'une activité au budget du tour (§137 : aussi lu par l'interface, `api.ui.cost`) : l'activation de la donnée, sauf règle.
  */
@@ -91,7 +97,7 @@ export function costFor(activity) {
   const item = activity.item;
   // §31 : une activité qui « remplace une de vos attaques » (Souffle) se décompte comme une attaque de l'action Attaquer — §90 : même
   // sans activation dans la donnée (Frappe commandée : « lorsque vous entreprenez l'action Attaque »).
-  const replaces = contentOf(item).entry?.replacesAttack === true;
+  const replaces = replacesAttack(item, activity);
   // §134 : Observateur, Fouille rapide — « vous pouvez prendre l'action Chercher par une action Bonus » : l'action Bonus si elle est
   // libre, sinon l'action.
   const quickSearch = (item?.system?.identifier === "dnd5e-combat-search")
@@ -117,7 +123,7 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
     // ne lui fait jamais dépenser d'emplacement (activity/mixin.mjs : `consume.spellSlot = !linked && …`) — ni la règle « un sort à
     // emplacement par tour ».
     && !item.getFlag?.("dnd5e", "cachedFor");
-  const replaces = contentOf(item).entry?.replacesAttack === true;
+  const replaces = replacesAttack(item, activity);
   return {
     cost: costOverride ?? costFor(activity),
     weaponAttack: ((activity.type === "attack") && ["weapon", "unarmed"].includes(activity.attack?.type?.classification)) || replaces

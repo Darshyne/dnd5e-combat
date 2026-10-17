@@ -42,7 +42,15 @@ export const GEAR = Object.freeze({
   // §54 : Huile — une sauvegarde de Dextérité ratée laisse la cible huilée pendant 1 minute ; tant qu'elle l'est, des dégâts de
   // feu lui en infligent 5 de plus (runtime/oil.mjs). L'activité « Lancer »
   // ne pose aucun effet : la marque « oiled » le porte.
-  "oil": { triggers: [{ on: "failedSave", do: [{ type: "mark", mark: "oiled", label: "Marque.Huile", seconds: 60 }] }] },
+  // §188 : « lorsque vous effectuez l'action Attaque, vous pouvez remplacer l'une de vos attaques par le jet d'une flasque » (le lancer,
+  // pas l'étalage) ; « étaler […] une zone de 1,50 m de côté » qui, « embrasée, brûle jusqu'à la fin du tour 2 rounds après son
+  // allumage (12 secondes) et inflige 5 dégâts de feu à toute créature qui pénètre dans la zone ou y termine son tour, une fois par
+  // tour » (runtime/flammable.mjs).
+  "oil": {
+    triggers: [{ on: "failedSave", do: [{ type: "mark", mark: "oiled", label: "Marque.Huile", seconds: 60 }] }],
+    replacesAttack: ["FoeoumkYcnAsGCRo"],
+    flammable: { ground: true, damage: "5", type: "fire", rounds: 2, seconds: 12, on: ["enter", "turnEnd"] }
+  },
   // §53 : Élixir de santé — « les états suivants prennent fin : Aveuglé, Assourdi, Paralysé et Empoisonné » ; Potion de vitalité —
   // « supprime tout niveau d'Épuisement et met fin à l'état Empoisonné » (les dés de vie au maximum pendant 24 h : au MJ).
   "elixir-of-health": { curesAll: ["blinded", "deafened", "paralyzed", "poisoned"] },

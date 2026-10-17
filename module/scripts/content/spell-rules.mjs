@@ -143,7 +143,10 @@ export const SPELL_RULES = Object.freeze({
     difficultTerrain: { types: ["webs"] },
     noDamage: ["dnd5eactivity000"],
     triggers: [{ on: ["enter", "turnStart"], do: [{ type: "replay" }] }, { on: "failedSave", do: [{ type: "status", status: "restrained" }] }],
-    actionEnds: { "status:restrained": { by: "bearer", roll: "check" } }
+    actionEnds: { "status:restrained": { by: "bearer", roll: "check" } },
+    // §188 : « Inflammable. Toute portion de toile exposée au feu brûle en 1 round, infligeant 2d4 dégâts de feu à toute créature
+    // qui commence son tour dans le feu. » Toute la toile brûle d'un coup (simplification) ; Entravé tombe avec elle.
+    flammable: { damage: "2d4", type: "fire", rounds: 1, seconds: 6, on: ["turnStart"], frees: "restrained" }
   },
   // Graisse : « … qui y entre ou y termine son tour fait un JS de Dextérité ou a l'état À terre ».
   "grease": {

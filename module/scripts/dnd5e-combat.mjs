@@ -115,6 +115,7 @@ import { registerStabilize } from "./runtime/stabilize.mjs";
 import { registerPotions } from "./runtime/potions.mjs";
 import { registerOil } from "./runtime/oil.mjs";
 import { registerScatter } from "./runtime/scatter.mjs";
+import { registerFlammable } from "./runtime/flammable.mjs";
 import { registerWelcome, openWelcome } from "./ui/welcome.mjs";
 import { registerFactions, factionsApi } from "./runtime/factions.mjs";
 import { coneOf } from "./adapter/cone.mjs";
@@ -289,6 +290,7 @@ Hooks.once("init", () => {
   gated(registerPotions);   // §53 : sort d'une potion sans concentration
   gated(registerOil);   // §54 : l'huile s'enflamme
   gated(registerScatter);   // §187 : chausse-trapes et billes répandues au sol
+  gated(registerFlammable);   // §188 : huile au sol, toile — zones qui s'embrasent
   gated(registerHelp);
   gated(registerSkillAid);   // §113 : Assistance et Soutien demandés pour un test de compétence (requête à l'aidant)
   gated(registerHide);

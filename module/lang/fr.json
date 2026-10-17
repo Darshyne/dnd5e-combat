@@ -1244,5 +1244,9 @@
   "DND5ECOMBAT.Dispersion.Ramasser": "Ramasser : {item}",
   "DND5ECOMBAT.Dispersion.Ramasse": "{name} ramasse {item} (10 minutes).",
   "DND5ECOMBAT.Dispersion.EnCombat": "On ne ramasse rien en combat : il faut 10 minutes.",
-  "DND5ECOMBAT.Dispersion.SansMJ": "Il faut un MJ connecté pour ramasser."
+  "DND5ECOMBAT.Dispersion.SansMJ": "Il faut un MJ connecté pour ramasser.",
+  "DND5ECOMBAT.Embrase.Prend": "{item} s'embrase !",
+  "DND5ECOMBAT.Embrase.Brule": "{name} brûle ({item}) : {amount} dégâts de feu.",
+  "DND5ECOMBAT.Embrase.Allumer": "Allumer : {item}",
+  "DND5ECOMBAT.Embrase.SansMJ": "Il faut un MJ connecté pour allumer."
 }

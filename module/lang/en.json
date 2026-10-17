@@ -1244,5 +1244,9 @@
   "DND5ECOMBAT.Dispersion.Ramasser": "Pick up: {item}",
   "DND5ECOMBAT.Dispersion.Ramasse": "{name} picks up {item} (10 minutes).",
   "DND5ECOMBAT.Dispersion.EnCombat": "Nothing can be picked up in combat: it takes 10 minutes.",
-  "DND5ECOMBAT.Dispersion.SansMJ": "A GM must be connected to pick this up."
+  "DND5ECOMBAT.Dispersion.SansMJ": "A GM must be connected to pick this up.",
+  "DND5ECOMBAT.Embrase.Prend": "{item} catches fire!",
+  "DND5ECOMBAT.Embrase.Brule": "{name} burns ({item}): {amount} Fire damage.",
+  "DND5ECOMBAT.Embrase.Allumer": "Ignite: {item}",
+  "DND5ECOMBAT.Embrase.SansMJ": "A GM must be connected to ignite this."
 }

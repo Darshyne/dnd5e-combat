@@ -10,6 +10,27 @@ import { isId, isObject } from "./shared.mjs";
  * rusées), puis toutes celles ajoutées depuis (murs, globes, paliers de PV, rappel de sort…).
  */
 export function validateExtras(entry, at, errors) {
+  // §188 : une activité qui remplace une attaque — tout l'item (`true`) ou certaines activités (l'Huile : le lancer, pas l'étalage).
+  if ( ("replacesAttack" in entry) && (entry.replacesAttack !== true)
+    && !(Array.isArray(entry.replacesAttack) && entry.replacesAttack.length && entry.replacesAttack.every(isId)) ) {
+    errors.push(`${at}replacesAttack: true, or a list of activity ids`);
+  }
+  // §188 : une zone inflammable — elle s'embrase (feu, flamme) et brûle `rounds` rounds (`seconds` hors combat).
+  if ( "flammable" in entry ) {
+    const f = entry.flammable;
+    const KEYS = ["ground", "damage", "type", "rounds", "seconds", "on", "frees"];
+    if ( !isObject(f) ) errors.push(`${at}flammable: { damage, type, rounds, seconds, on, ground?, frees? }`);
+    else {
+      if ( ("ground" in f) && (f.ground !== true) ) errors.push(`${at}flammable.ground: true or absent`);
+      if ( (typeof f.damage !== "string") || !/^(\d+|\d*d\d+)( ?\+ ?\d+)?$/.test(f.damage) ) errors.push(`${at}flammable.damage: a formula ("5", "2d4")`);
+      if ( (typeof f.type !== "string") || !f.type ) errors.push(`${at}flammable.type: damage type`);
+      if ( !(Number.isInteger(f.rounds) && (f.rounds > 0)) ) errors.push(`${at}flammable.rounds: positive integer`);
+      if ( !(Number.isFinite(f.seconds) && (f.seconds > 0)) ) errors.push(`${at}flammable.seconds: positive number`);
+      if ( !Array.isArray(f.on) || !f.on.length || !f.on.every(m => ["enter", "turnStart", "turnEnd"].includes(m)) ) errors.push(`${at}flammable.on: enter, turnStart, turnEnd`);
+      if ( ("frees" in f) && ((typeof f.frees !== "string") || !f.frees) ) errors.push(`${at}flammable.frees: a condition id`);
+      for ( const key of Object.keys(f) ) if ( !KEYS.includes(key) ) errors.push(`${at}flammable.${key}: unknown key`);
+    }
+  }
   if ( "sneakAttack" in entry ) {
     const s = entry.sneakAttack;
     if ( (s !== true) && !isObject(s) ) errors.push(`${at}sneakAttack: true, or { dice?, anyWeapon?, alwaysVs? }`);

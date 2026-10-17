@@ -17,6 +17,7 @@ import { isObjectToken } from "../adapter/bodies.mjs";
 import { sideOf } from "../adapter/factions.mjs";
 import { alliedSides } from "../core/factions.mjs";
 import { lengthIn } from "../adapter/units.mjs";
+import { burnTick } from "./flammable.mjs";
 const currentTurnKey = () => turnKeyOf(game.combat?.started ? game.combat.round : null, game.combat?.turn);
 
 /** Le token peut-il subir la zone ? Pas celui qui l'a posée depuis lui-même, pas un mort. */
@@ -39,7 +40,8 @@ function tick(region, token, event, turnKey=currentTurnKey(), { times=1 }={}) {
     const state = readAreaState(region);
     if ( !state?.usage || !isAffectable(token, state) ) return;
     // §187 : hors combat, chaque entrée sur des chausse-trapes compte (pas de « tour » qui remettrait la mémoire à zéro).
-    if ( state.scatter && !game.combat?.started ) turnKey = `free:${Date.now()}`;
+    // §188 : de même pour une zone en feu.
+    if ( (state.scatter || state.burning) && !game.combat?.started ) turnKey = `free:${Date.now()}`;
     const context = { event, token: hitKey(state, event, token.uuid), turnKey };
     if ( !shouldTrigger(state, context) ) return;
     const usageMessage = game.messages.get(state.usage);
@@ -47,6 +49,8 @@ function tick(region, token, event, turnKey=currentTurnKey(), { times=1 }={}) {
     await writeAreaState(region, { ...state, ...markHit(state, context) });
     log(`${region.name}: ${token.name} (${event})`);
     announce(event, { actor: token.actor, target: token.actor, region: region.uuid, usage: state.usage });
+    // §188 : une zone en feu brûle (ses dégâts de feu) au lieu de rejouer son activité.
+    if ( state.burning ) return burnTick(region, token, state.burning);
     const chosen = conditionalReplay(usageMessage, event, token) ?? siblingFor(state, event);   // §164
     // §169 : après son apparition, le mur à face brûlante blesse sans sauvegarde (traversée, fin de tour du côté brûlant).
     const noSave = !!(wallSideRuleOf(region) || region.getFlag(MODULE_ID, "sideOf"));

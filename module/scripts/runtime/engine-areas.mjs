@@ -12,6 +12,7 @@ import { ensureRegionElevation } from "../adapter/space.mjs";
 import { stormOf, isBoltRegion } from "../adapter/storm.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
 import { scatterOf, scatterState } from "./scatter.mjs";
+import { flammableOf, groundFlammableState, igniteUnder } from "./flammable.mjs";
 import { log } from "./shared.mjs";
 import { LOOKBACK, TRANSIENT_LINGER_MS, dispatcher, openingFor } from "./engine.mjs";
 
@@ -46,6 +47,9 @@ export async function onRegionCreated(region) {
   if ( bolt ) log("area moved to the struck point (lightning)");
   const area = await readActivityRegion(region);
   if ( !area ) return;
+  // §188 b : une zone de feu posée sur une zone inflammable (flaque d'huile, toile) l'embrase.
+  const lit = await igniteUnder(region, fromUuidSync(area.activity ?? "", { strict: false }));
+  if ( lit ) log(`area: ${lit} flammable area(s) ignited`);
 
   // Zone d'un sort à concentration : elle tombera avec elle (runtime/concentration.mjs).
   // §70 : le nuage — à défaut du message, la concentration en cours de son sort.
@@ -75,7 +79,11 @@ export async function onRegionCreated(region) {
 
     // §187 : un objet répandu au sol (chausse-trapes, billes) n'a pas de durée, mais sa zone reste — jusqu'à ce qu'on le ramasse.
     const scatter = scatterOf(activity);
-    if ( rules && (!isInstantaneous(activity) || scatter) ) {
+    // §188 : l'huile étalée au sol reste aussi (sans rejeu : elle n'agit qu'une fois embrasée, runtime/flammable.mjs).
+    const ground = flammableOf(activity)?.ground === true;
+    const lasting = rules ?? (ground ? { on: [], activity: null } : null);
+    if ( lasting && (!isInstantaneous(activity) || scatter || ground) ) {
+      const rules = lasting;
       // Zone qui dure : elle rejouera son activité (runtime/areas.mjs). Ceux qu'elle touche à la
       // pose l'ont été pour ce tour de jeu — sauf si c'est une sœur qui agit et que la pose ne fait rien.
       const key = turnKeyOf(game.combat?.started ? game.combat.round : null, game.combat?.turn);
@@ -89,13 +97,14 @@ export async function onRegionCreated(region) {
         source: area.origin ?? null,
         // §16.23 : les rejeux de la zone respectent qui elle affecte (Esprits gardiens épargnent les alliés).
         affects: area.affects ?? "", originDisposition: area.originDisposition ?? null, originSide: area.originSide ?? null,
-        ...(scatter ? { scatter: await scatterState(region, message, activity) } : {})
+        ...(scatter ? { scatter: await scatterState(region, message, activity) } : {}),
+        ...(ground ? await groundFlammableState(region, activity) : {})
       });
       log(`lasting area: acts on ${rules.on.join(", ")}, once per turn${rules.activity ? ` (replays activity ${rules.activity})` : ""}`);
       // Une zone qui n'agit qu'au déplacement (Croissance d'épines) ne fait rien à sa pose.
       // §91 : une zone qui n'agit qu'au tour de son lanceur (`casterPulse`, aucun moment) résout sa pose comme une autre.
       // §187 : un objet répandu n'agit pas sur ceux qui sont déjà là — seulement sur qui y entre.
-      if ( !usage?.area || scatter || (rules.on.length && !actsOnPose(rules.on)) ) return null;
+      if ( !usage?.area || scatter || ground || (rules.on.length && !actsOnPose(rules.on)) ) return null;
     } else if ( isInstantaneous(activity) || bolt ) {
       await markTransient(region, message.id);
       // Personne dedans : aucune résolution ne viendra la retirer. On la laisse voir un instant.

@@ -123,7 +123,9 @@ export function onPointerDown(event) {
   lastHoverKey = null;
   down = null;
   if ( !onBoard(event) || ![0, 2].includes(event.button) ) return;
-  down = { x: event.clientX, y: event.clientY, button: event.button, at: Date.now() };
+  // `me` : le token en main à l'appui. Sans token en main, le cœur prend le clic droit sur un token (il le sélectionne et ouvre son
+  // HUD) ; au relâchement, ce token est en main, mais le moteur n'ouvre pas son menu par-dessus (retour du 2026-10-18).
+  down = { x: event.clientX, y: event.clientY, button: event.button, at: Date.now(), me: actingToken()?.id ?? null };
   if ( aimingByClick() || ((event.button === 2) && cancellable()) ) return swallow(event);
   // §39.3 : un module voisin peut réclamer un clic gauche (fouiller un coffre, un cadavre, un tas au sol — Darsh Loot) en
   // répondant `false` au hook `dnd5e-combat.claimClick` (appelé par Hooks.call) : le moteur l'ignore alors entièrement (ni
@@ -205,7 +207,10 @@ export function onPointerUp(event) {
     closeMenu();
     return hover.sheet?.render(true);
   }
-  if ( hover && (hover === me) && hasSelfMenu(me) ) return openMenu(event, selfEntries(me));
+  if ( hover && (hover === me) && hasSelfMenu(me) ) {
+    if ( start.me !== me.id ) return;   // le cœur a pris ce clic : sélection et HUD
+    return openMenu(event, selfEntries(me));
+  }
   if ( hover && (hover !== me) ) return openTokenMenu(event, me, hover);
   const door = hover ? null : hoveredDoor();
   if ( door ) return openMenu(event, doorEntries(me, door));

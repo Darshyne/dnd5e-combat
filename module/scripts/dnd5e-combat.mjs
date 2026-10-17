@@ -121,6 +121,7 @@ import { canHear as hearingCanHear } from "./adapter/hearing.mjs";
 import { registerStealthMode, stealthApi } from "./runtime/stealth.mjs";
 import { registerStealthUI } from "./ui/stealth.mjs";
 import { registerFactionsUI, openFactions } from "./ui/factions.mjs";
+import { registerSettingsWindow, openSettings } from "./ui/settings.mjs";
 import { openDiagnostic } from "./ui/diagnostic.mjs";
 
 /**
@@ -163,7 +164,7 @@ const state = {
   flee: fleeFrom, save: requestSave, drop: dropHeldBy,
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
   level: automationLevel, levelAtLeast, skippedRoutes,
-  welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic },
+  welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic }, settings: { open: openSettings },
   vision: { canSee: publicCanSee, cone: publicCone, canHear: publicCanHear },
   factions: { ...factionsApi, open: () => openFactions() },
   sneak: stealthApi
@@ -199,7 +200,7 @@ Hooks.once("init", () => {
   game.modules.get(MODULE_ID).api = state;
   state.reason = standbyReason();
   // §177 : l'accueil et le diagnostic, même en veille (le diagnostic nettoie justement les traces de Midi-QOL). Hors niveaux.
-  registerWelcome();
+  registerWelcome({ menu: !!state.reason });
   if ( state.reason ) return;
   // L'ordre de ces appels est l'ordre d'appel des inscrits d'un même hook (runtime/router.mjs).
   // Le moteur d'abord ; la souris (ui/pointer) avant la légalité (turn) : une activité sans cible
@@ -315,6 +316,7 @@ Hooks.once("init", () => {
   gated(registerAutomation);
   gated(registerFactionsUI);   // §181 : fenêtre, outil de la barre, HUD du token
   gated(registerStealthUI);   // §183 : raccourci du mode furtif, cônes dessinés chez le joueur
+  gated(registerSettingsWindow);   // la fenêtre de réglages : en dernier, elle range au `setup` ce que les autres ont déclaré
   state.active = true;
 });
 

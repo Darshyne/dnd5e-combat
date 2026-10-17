@@ -249,10 +249,7 @@ export function registerFactionsUI() {
     scope: "world", config: true, type: Boolean, default: false,
     onChange: () => ui.controls?.render({ reset: true })
   });
-  if ( game.settings.registerMenu ) game.settings.registerMenu(MODULE_ID, "factionsMenu", {
-    name: "DND5ECOMBAT.Factions.Menu.Nom", label: "DND5ECOMBAT.Factions.Menu.Bouton", hint: "DND5ECOMBAT.Factions.Menu.Aide",
-    icon: "fa-solid fa-flag", type: FactionsApp(), restricted: true
-  });
+  // La fenêtre des factions s'ouvre depuis la fenêtre de réglages (onglet Vision et furtivité, ui/settings.mjs).
   route("getSceneControlButtons", controls => {
     const tokens = controls.tokens;
     if ( !tokens?.tools || !game.user.isGM || !iconsShown() ) return;

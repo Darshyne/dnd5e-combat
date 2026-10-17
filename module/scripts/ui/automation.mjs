@@ -185,7 +185,6 @@ export function registerAutomation() {
   game.settings.register(MODULE_ID, SETTING, { scope: "client", config: true, type: Boolean, default: true,
     name: "DND5ECOMBAT.Reglage.automationBadges.Nom", hint: "DND5ECOMBAT.Reglage.automationBadges.Aide",
     onChange: () => refresh() });
-  if ( game.settings.registerMenu ) game.settings.registerMenu(MODULE_ID, "reportsPanel", { name: "DND5ECOMBAT.Bilan.Titre",
-    label: "DND5ECOMBAT.Bilan.Ouvrir", hint: "DND5ECOMBAT.Bilan.Aide", icon: "fa-solid fa-flag", type: Panel(), restricted: true });
+  // Le bilan s'ouvre depuis la fenêtre de réglages (onglet Général, ui/settings.mjs), plus depuis la liste de Foundry.
   route("renderBaseActorSheet", (app, element) => decorate(app, element), { label: "automation badges", level: "warn" });
 }

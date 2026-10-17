@@ -302,3 +302,50 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-factions__edit input[type=text] { width: 100%; }
 .das-factions__edit input[type=color] { width: 2.4em; height: 1.8em; padding: 0; border: none; background: none; }
 #token-hud .das-faction-hud i { color: var(--faction, inherit); }
+
+/* ---------- Fenêtre de réglages DAS · Core (maquette validée le 2026-10-18, prive/maquettes/) ---------- */
+.das-settings { --das-world: var(--das-accent); --das-client: #5fb0e0; }
+.das-settings .window-content { display: flex; flex-direction: column; }
+.das-settings__body { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.das-settings__bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--das-line); }
+.das-settings__search { flex: 1; display: flex; align-items: center; gap: 8px; background: var(--das-surface); border: 1px solid var(--das-line);
+  border-radius: 6px; padding: 4px 10px; color: var(--das-muted); }
+.das-settings__search input { flex: 1; background: none; border: none; color: var(--das-ink); height: 28px; box-shadow: none; }
+.das-settings__legend { display: flex; gap: 14px; font-size: 0.85em; color: var(--das-muted); }
+.das-settings__legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+.das-settings__legend .world::before { background: var(--das-world); } .das-settings__legend .client::before { background: var(--das-client); }
+.das-settings__main { flex: 1; display: grid; grid-template-columns: 210px 1fr; min-height: 0; }
+.das-settings__main nav { border-right: 1px solid var(--das-line); padding: 8px; overflow: auto; }
+.das-settings__tab { display: flex; width: 100%; align-items: center; gap: 10px; background: none; border: none; color: var(--das-muted);
+  text-align: left; padding: 8px 10px; border-radius: 6px; cursor: pointer; margin-bottom: 2px; }
+.das-settings__tab i { width: 18px; text-align: center; }
+.das-settings__tab:hover { background: rgba(255, 255, 255, 0.04); color: var(--das-ink); }
+.das-settings__tab.on { background: var(--das-accent-soft); color: var(--das-ink); box-shadow: inset 3px 0 0 var(--das-accent); }
+.das-settings__tab .count { margin-left: auto; font-size: 0.8em; opacity: 0.8; }
+.das-settings__content { overflow: auto; padding: 4px 18px 18px; }
+.das-screen .das-settings__section { display: flex; align-items: center; gap: 8px; font-family: inherit; font-size: 0.85em; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--das-muted); margin: 16px 0 6px; }
+.das-settings__section span { text-transform: none; letter-spacing: 0; padding: 1px 8px; border-radius: 10px; font-size: 0.95em; }
+.das-settings__section.world span { background: var(--das-accent-soft); color: var(--das-world); }
+.das-settings__section.client span { background: rgba(95, 176, 224, 0.15); color: var(--das-client); }
+.das-screen .das-settings__group { font-family: inherit; font-size: 1em; margin: 16px 0 6px; }
+.das-settings__row, .das-settings__tool { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; padding: 9px 12px;
+  border: 1px solid var(--das-line); border-radius: 6px; background: var(--das-surface); margin-bottom: 7px; }
+.das-settings__row.world { border-left: 3px solid var(--das-world); } .das-settings__row.client { border-left: 3px solid var(--das-client); }
+.das-settings__tool { border-style: dashed; background: transparent; }
+.das-settings__row .name, .das-settings__tool .name { font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.das-settings__row .hint, .das-settings__tool .hint { color: var(--das-muted); font-size: 0.9em; margin: 4px 0 0; }
+.das-settings__help { width: 18px; height: 18px; flex: 0 0 18px; padding: 0; border-radius: 50%; border: 1px solid var(--das-line); background: var(--das-bg);
+  color: var(--das-muted); font-size: 11px; line-height: 16px; cursor: pointer; }
+.das-settings__help:hover, .das-settings__help.on { color: var(--das-ink); border-color: var(--das-accent); background: var(--das-accent-soft); }
+.das-settings__badge { font-size: 0.75em; font-weight: 500; padding: 0 6px; border-radius: 8px; border: 1px solid var(--das-line); color: var(--das-muted); }
+.das-settings__badge.reload { color: var(--das-ko); border-color: var(--das-ko); }
+.das-settings__badge.changed { color: var(--das-accent); border-color: var(--das-accent); }
+.das-settings__row .ctl select, .das-settings__row .ctl input[type=text] { min-width: 220px; max-width: 320px; }
+.das-settings__row .ctl input[type=number] { width: 80px; }
+.das-settings__row .ctl .range { display: flex; align-items: center; gap: 8px; }
+.das-settings__row .ctl input[type=range] { width: 140px; accent-color: var(--das-accent); }
+.das-settings__row .ctl input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--das-accent); }
+.das-settings__empty { color: var(--das-muted); text-align: center; padding: 30px 0; }
+.das-settings__footer { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--das-line); background: var(--das-surface); }
+.das-settings__footer .spacer { flex: 1; }

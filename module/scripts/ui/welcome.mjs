@@ -136,9 +136,11 @@ export const openWelcome = () => new (WelcomeApp())().render({ force: true });
  * Déclaré même en veille (Midi-QOL actif : le diagnostic sert justement à nettoyer ses traces). Le réglage `welcomeSeen` garde la
  * version du moteur vue par le MJ ; vide = jamais vu : l'accueil s'ouvre au premier `ready` chez le MJ actif.
  */
-export function registerWelcome() {
+export function registerWelcome({ menu=false }={}) {
   game.settings.register(MODULE_ID, SEEN_SETTING, { scope: "world", config: false, type: String, default: "" });
-  if ( game.settings.registerMenu ) game.settings.registerMenu(MODULE_ID, "welcome", {
+  // Moteur actif : l'accueil s'ouvre depuis la fenêtre de réglages (ui/settings.mjs). En veille, la fenêtre n'existe pas : le bouton
+  // reste dans la liste de Foundry, pour que le diagnostic nettoie les traces de Midi-QOL.
+  if ( menu && game.settings.registerMenu ) game.settings.registerMenu(MODULE_ID, "welcome", {
     name: "DND5ECOMBAT.Accueil.Menu.Nom", label: "DND5ECOMBAT.Accueil.Menu.Bouton", hint: "DND5ECOMBAT.Accueil.Menu.Aide",
     icon: "fa-solid fa-dragon", type: WelcomeApp(), restricted: true
   });

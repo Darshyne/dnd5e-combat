@@ -11,6 +11,7 @@ import { areaRulesOf, isInstantaneous, writeAreaState, markTransient, shrinkToBo
 import { ensureRegionElevation } from "../adapter/space.mjs";
 import { stormOf, isBoltRegion } from "../adapter/storm.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
+import { scatterOf, scatterState } from "./scatter.mjs";
 import { log } from "./shared.mjs";
 import { LOOKBACK, TRANSIENT_LINGER_MS, dispatcher, openingFor } from "./engine.mjs";
 
@@ -72,12 +73,14 @@ export async function onRegionCreated(region) {
     log(`area placed: ${area.candidates.length} token(s) covered, ${targets.length} affected`);
     if ( usage?.area ) showTargetsTo(message.author, targets.map(t => t.token));
 
-    if ( rules && !isInstantaneous(activity) ) {
+    // §187 : un objet répandu au sol (chausse-trapes, billes) n'a pas de durée, mais sa zone reste — jusqu'à ce qu'on le ramasse.
+    const scatter = scatterOf(activity);
+    if ( rules && (!isInstantaneous(activity) || scatter) ) {
       // Zone qui dure : elle rejouera son activité (runtime/areas.mjs). Ceux qu'elle touche à la
       // pose l'ont été pour ce tour de jeu — sauf si c'est une sœur qui agit et que la pose ne fait rien.
       const key = turnKeyOf(game.combat?.started ? game.combat.round : null, game.combat?.turn);
       await writeAreaState(region, {
-        ...openArea(rules.on, key, (usage?.area && actsOnPose(rules.on)) ? targets.map(t => t.token) : []),
+        ...openArea(rules.on, key, (usage?.area && actsOnPose(rules.on) && !scatter) ? targets.map(t => t.token) : []),
         usage: message.id,
         activity: rules.activity ?? null,
         ...(rules.activities ? { activities: rules.activities } : {}),
@@ -85,12 +88,14 @@ export async function onRegionCreated(region) {
         // §91 : le lanceur, dont le tour fait agir la zone (`casterPulse`).
         source: area.origin ?? null,
         // §16.23 : les rejeux de la zone respectent qui elle affecte (Esprits gardiens épargnent les alliés).
-        affects: area.affects ?? "", originDisposition: area.originDisposition ?? null, originSide: area.originSide ?? null
+        affects: area.affects ?? "", originDisposition: area.originDisposition ?? null, originSide: area.originSide ?? null,
+        ...(scatter ? { scatter: await scatterState(region, message, activity) } : {})
       });
       log(`lasting area: acts on ${rules.on.join(", ")}, once per turn${rules.activity ? ` (replays activity ${rules.activity})` : ""}`);
       // Une zone qui n'agit qu'au déplacement (Croissance d'épines) ne fait rien à sa pose.
       // §91 : une zone qui n'agit qu'au tour de son lanceur (`casterPulse`, aucun moment) résout sa pose comme une autre.
-      if ( !usage?.area || (rules.on.length && !actsOnPose(rules.on)) ) return null;
+      // §187 : un objet répandu n'agit pas sur ceux qui sont déjà là — seulement sur qui y entre.
+      if ( !usage?.area || scatter || (rules.on.length && !actsOnPose(rules.on)) ) return null;
     } else if ( isInstantaneous(activity) || bolt ) {
       await markTransient(region, message.id);
       // Personne dedans : aucune résolution ne viendra la retirer. On la laisse voir un instant.

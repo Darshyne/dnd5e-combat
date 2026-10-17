@@ -556,6 +556,8 @@
  *                                               une source de lumière que l'on porte (§52 : lampe, lanternes, torche, bougie) —
  *                                               son activité utilitaire l'allume ou l'éteint ; `angle` : un cône (lanterne sourde)
  *     kindles?: true                            l'item allume ou éteint une source portée, au choix (boîte à amadou, §52)
+ *     scatter?: true                            §187 : un objet qu'on répand au sol (chausse-trapes, billes) — sa zone dure sans durée,
+ *                                               n'agit pas à la pose, arrête qui y entre sur sa première case et se ramasse hors combat
  *     discipleOfLife?: true                     un sort de soin lancé par un emplacement rend 2 + le niveau de l'emplacement de plus à
  *                                               chaque créature soignée (§27)
  *     blessedHealer?: true                      le même sort, s'il soigne une autre créature, rend 2 + le niveau au lanceur (§27)

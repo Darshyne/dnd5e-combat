@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  selectAreaTargets, turnKeyOf, openArea, shouldTrigger, markHit, entersArea
+  selectAreaTargets, turnKeyOf, openArea, shouldTrigger, markHit, entersArea, firstEntry
 } from "../module/scripts/core/area.mjs";
 
 const c = (name, disposition, extra = {}) => ({ token: `T.${name}`, actor: `A.${name}`, name, disposition, ...extra });
@@ -91,5 +91,21 @@ describe("selectAreaTargets — vraie sphère (P2)", () => {
     const inside = c("Rat", -1, { inVolume: true });
     const out = selectAreaTargets([zombi, corner, inside], { origin: mage.token, originDisposition: 1, excludeOrigin: false, affects: "creature" });
     expect(names(out)).toEqual(["Zombi", "Rat"]);
+  });
+});
+
+describe("objets répandus (§187) : la première case du trajet qui entre dans une zone", () => {
+  it("rend la case où l'on entre, pas celles d'avant ni d'après", () => {
+    // départ, puis trois cases ; une zone, où l'on entre à la deuxième case
+    expect(firstEntry([[false], [false], [true], [true]])).toBe(2);
+  });
+  it("partir de la zone, ou ne jamais y entrer : -1", () => {
+    expect(firstEntry([[true], [true], [false]])).toBe(-1);
+    expect(firstEntry([[false], [false]])).toBe(-1);
+    expect(firstEntry([])).toBe(-1);
+  });
+  it("plusieurs zones : la première entrée, quelle que soit la zone ; quitter l'une pour l'autre compte", () => {
+    expect(firstEntry([[false, false], [false, false], [false, true], [true, true]])).toBe(2);
+    expect(firstEntry([[true, false], [false, true]])).toBe(1);
   });
 });

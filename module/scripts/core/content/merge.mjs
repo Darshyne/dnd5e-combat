@@ -51,7 +51,7 @@ export const MERGE = Object.freeze({
   smite: "replace", supremeHealing: "replace", discipleOfLife: "replace", blessedHealer: "replace",
   potentCantrip: "replace", sculptSpells: "replace", endurance: "replace", replacesAttack: "replace", hitRider: "replace",
   metamagic: "replace", portent: "replace", dispel: "replace", zoneEffects: "replace", rollBonus: "replace",
-  transpose: "replace", stabilizes: "replace", carriedLight: "replace", kindles: "replace", savageAttacker: "replace",
+  transpose: "replace", stabilizes: "replace", carriedLight: "replace", kindles: "replace", scatter: "replace", savageAttacker: "replace",
   initiativeSwap: "replace", healingRerolls: "replace", effectWhile: "replace", rangedFeat: "replace", piercer: "replace",
   critMark: "replace", grappleDamage: "replace", haltOnReaction: "replace", concentrationBreaker: "replace",
   interposeShield: "replace", elementalAdept: "replace", ignoresResistance: "replace", quickStand: "replace",

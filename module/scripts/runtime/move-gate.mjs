@@ -12,6 +12,7 @@ import { continuedFlags, rulerShown } from "../adapter/movement.mjs";
 import { fearSources } from "../adapter/conditions.mjs";
 import { movesCloser } from "../core/conditions.mjs";
 import { opportunityThreats, resolveOpportunity } from "./reactions.mjs";
+import { scatterStop } from "./scatter.mjs";
 import { levelAtLeast } from "./levels.mjs";
 import { loc } from "./shared.mjs";
 import { isGrappled, movementCap, occupiedAt, pilotMove } from "./actions.mjs";
@@ -35,6 +36,8 @@ export function onPreMoveToken(token, movement, operation) {
     return false;
   }
   if ( !game.user.isGM && !playerMayMove(token, movement) ) return false;
+  // §187 : chausse-trapes, billes — qui y entre s'arrête sur leur première case (le reste du trajet n'est pas joué).
+  if ( !scatterStop(token, movement, operation) ) return false;
   // §117 : les attaques d'opportunité sont une règle générale — niveau Assisté et au-dessus ; au niveau Essentiel, on marche.
   return levelAtLeast("assisted") ? opportunityFirst(token, movement, operation) : true;
 }

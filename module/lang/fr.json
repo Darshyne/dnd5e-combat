@@ -1240,5 +1240,9 @@
   "DND5ECOMBAT.Reglages.Enregistrer": "Enregistrer",
   "DND5ECOMBAT.Reglages.DefautsRemis": "Valeurs par défaut remises dans l'onglet : enregistrez pour les appliquer.",
   "DND5ECOMBAT.Reglages.Enregistre": "Réglages enregistrés.",
-  "DND5ECOMBAT.Reglages.RechargerQuestion": "Un réglage enregistré demande de recharger le monde (tous les joueurs). Recharger maintenant ?"
+  "DND5ECOMBAT.Reglages.RechargerQuestion": "Un réglage enregistré demande de recharger le monde (tous les joueurs). Recharger maintenant ?",
+  "DND5ECOMBAT.Dispersion.Ramasser": "Ramasser : {item}",
+  "DND5ECOMBAT.Dispersion.Ramasse": "{name} ramasse {item} (10 minutes).",
+  "DND5ECOMBAT.Dispersion.EnCombat": "On ne ramasse rien en combat : il faut 10 minutes.",
+  "DND5ECOMBAT.Dispersion.SansMJ": "Il faut un MJ connecté pour ramasser."
 }

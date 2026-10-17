@@ -1240,5 +1240,9 @@
   "DND5ECOMBAT.Reglages.Enregistrer": "Save",
   "DND5ECOMBAT.Reglages.DefautsRemis": "Tab reset to its defaults: save to apply them.",
   "DND5ECOMBAT.Reglages.Enregistre": "Settings saved.",
-  "DND5ECOMBAT.Reglages.RechargerQuestion": "A saved setting needs the world to reload (every player). Reload now?"
+  "DND5ECOMBAT.Reglages.RechargerQuestion": "A saved setting needs the world to reload (every player). Reload now?",
+  "DND5ECOMBAT.Dispersion.Ramasser": "Pick up: {item}",
+  "DND5ECOMBAT.Dispersion.Ramasse": "{name} picks up {item} (10 minutes).",
+  "DND5ECOMBAT.Dispersion.EnCombat": "Nothing can be picked up in combat: it takes 10 minutes.",
+  "DND5ECOMBAT.Dispersion.SansMJ": "A GM must be connected to pick this up."
 }

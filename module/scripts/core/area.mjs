@@ -196,6 +196,17 @@ export function stepsInside(insideAtSteps) {
   return (insideAtSteps ?? []).filter(Boolean).length;
 }
 
+/**
+ * §187 : la première case d'un trajet qui fait entrer dans l'une des zones (dedans à cette case, pas à la précédente), ou -1.
+ * @param {boolean[][]} rows  Pour le départ puis chaque case du trajet, dans l'ordre : dedans ou non, zone par zone.
+ */
+export function firstEntry(rows) {
+  for ( let k = 1; k < (rows?.length ?? 0); k++ ) {
+    if ( rows[k].some((inside, z) => inside && !rows[k - 1][z]) ) return k;
+  }
+  return -1;
+}
+
 /** La zone agit-elle à sa pose ? Non si elle n'agit qu'au déplacement (`moves`). */
 export function actsOnPose(on) {
   return !on || on.some(m => m !== "moves");

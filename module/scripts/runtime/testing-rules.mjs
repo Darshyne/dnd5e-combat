@@ -26,6 +26,8 @@ import { coneOf } from "../adapter/cone.mjs";
 import { canSee as canSeeToken } from "../adapter/vision.mjs";
 import { sightingOf } from "../adapter/search.mjs";
 import { setHidden, check as stealthCheck, stealthViews } from "./stealth.mjs";
+import { pickableNear, pickUp, scatterZones } from "./scatter.mjs";
+import { readAreaState } from "../adapter/areas.mjs";
 import { isHidden, spottedBy } from "../adapter/stealth.mjs";
 import { lightAt as lightAtPoint, tokenPoint as stealthPoint } from "../adapter/illumination.mjs";
 import { sleep } from "./shared.mjs";
@@ -348,4 +350,17 @@ export async function stealth({ op="state", tokenId, on=true }={}) {
   return { hidden: isHidden(token), sneaking: isHidden(token), spottedBy: spottedBy(token).map(label),
     views: Object.fromEntries(Object.entries(stealthViews(token.id)).map(([id, v]) => [label(id), v])),
     light: point?.level ?? null };
+}
+
+/**
+ * §187 : les objets répandus de la scène (chausse-trapes, billes) et ceux que ce token peut ramasser ; `pickUp` : ramasse le premier,
+ * comme l'entrée « Ramasser » du menu.
+ */
+export async function scatter({ tokenId, pickUp: take=false }) {
+  const token = viewedToken({ tokenId });
+  const tell = r => ({ id: r.id, item: readAreaState(r).scatter.item?.name ?? null, tile: readAreaState(r).scatter.tile ?? null });
+  const near = pickableNear(token);
+  const out = { zones: scatterZones(token.parent).map(tell), near: near.map(tell) };
+  if ( take && near.length ) out.picked = await pickUp(token, near[0]);
+  return out;
 }

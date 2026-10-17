@@ -33,6 +33,12 @@ export const GEAR = Object.freeze({
   "torch": { carriedLight: { bright: 20, dim: 40, units: "ft", animation: FLAME, burn: HOUR } },
   // Boîte à amadou : « l'utiliser pour allumer une Bougie, une Lampe, une Lanterne ou une Torche […] prend une action Bonus ».
   "tinderbox": { kindles: true },
+  // §187 : Chausse-trapes — « couvrir une case de 1,50 m à 1,50 m de soi ; une créature qui entre dans la zone pour la première fois
+  // d'un tour fait un JS de Dextérité DD 15 ou subit 1 dégât perforant et sa Vitesse tombe à 0 jusqu'au début de son prochain tour ;
+  // il faut 10 minutes pour les récupérer ». Billes — « une zone de 3 m de côté à 3 m de soi ; […] DD 10 ou À terre ; 10 minutes pour
+  // les récupérer ». La zone reste au sol (runtime/scatter.mjs) : qui y entre s'arrête sur sa première case, puis la sauvegarde.
+  "caltrops": { scatter: true, triggers: [{ on: "enter", do: [{ type: "replay" }] }] },
+  "ball-bearings": { scatter: true, triggers: [{ on: "enter", do: [{ type: "replay" }] }] },
   // §54 : Huile — une sauvegarde de Dextérité ratée laisse la cible huilée pendant 1 minute ; tant qu'elle l'est, des dégâts de
   // feu lui en infligent 5 de plus (runtime/oil.mjs). L'activité « Lancer »
   // ne pose aucun effet : la marque « oiled » le porte.

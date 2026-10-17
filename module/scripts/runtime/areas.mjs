@@ -38,6 +38,8 @@ function tick(region, token, event, turnKey=currentTurnKey(), { times=1 }={}) {
   return enqueue(`area:${region.id}`, async () => {
     const state = readAreaState(region);
     if ( !state?.usage || !isAffectable(token, state) ) return;
+    // §187 : hors combat, chaque entrée sur des chausse-trapes compte (pas de « tour » qui remettrait la mémoire à zéro).
+    if ( state.scatter && !game.combat?.started ) turnKey = `free:${Date.now()}`;
     const context = { event, token: hitKey(state, event, token.uuid), turnKey };
     if ( !shouldTrigger(state, context) ) return;
     const usageMessage = game.messages.get(state.usage);

@@ -27,6 +27,7 @@ import { loc } from "../runtime/shared.mjs";
 import { effectOfProfile } from "../adapter/usage.mjs";
 import { wallsOfCaster } from "../adapter/wall-side.mjs";
 import { flipWallSide } from "../runtime/wall-side.mjs";
+import { pickUpEntries } from "../runtime/scatter.mjs";
 import { actingToken, engageWith, exclusive, inCombat, observe } from "./pointer.mjs";
 import { down, startRecall } from "./pointer-mouse.mjs";
 
@@ -214,6 +215,8 @@ export function selfEntries(token) {
     const item = fromUuidSync(wall.getFlag("dnd5e", "item") ?? "", { strict: false });
     entries.push({ icon: "fa-solid fa-fire", label: loc("MurFace.Retourner", { item: item?.name ?? wall.name }), run: () => flipWallSide(wall) });
   }
+  // §187 : ramasser des chausse-trapes, des billes répandues sur sa case ou au contact (hors combat).
+  entries.push(...pickUpEntries(token));
   // §38.2 : Troc du filou — depuis l'illusion ou depuis son lanceur.
   const swap = transposeOf(token);
   if ( swap ) entries.push({ icon: "fa-solid fa-arrows-rotate", label: loc("Menu.Echanger", { name: (swap.illusion === token ? swap.caster : swap.illusion).name }), run: () => transpose(token) });

@@ -1202,6 +1202,8 @@
   "DND5ECOMBAT.Reglages.Menu.Nom": "DAS · Core settings",
   "DND5ECOMBAT.Reglages.Menu.Bouton": "Open settings",
   "DND5ECOMBAT.Reglages.Menu.Aide": "Every engine setting, sorted into tabs: the table's (GM) and your own. The Welcome, Diagnostic, Session report and Factions windows open from there too.",
+  "DND5ECOMBAT.Reglages.Menu.NomVoisin": "Settings",
+  "DND5ECOMBAT.Reglages.Menu.AideVoisin": "Every setting of this module, sorted into tabs: the table's (GM) and your own.",
   "DND5ECOMBAT.Reglages.Recherche": "Search a setting (name or help)…",
   "DND5ECOMBAT.Reglages.Legende.world": "For the whole table",
   "DND5ECOMBAT.Reglages.Legende.client": "For this computer",

@@ -1202,6 +1202,8 @@
   "DND5ECOMBAT.Reglages.Menu.Nom": "Réglages de DAS · Core",
   "DND5ECOMBAT.Reglages.Menu.Bouton": "Ouvrir les réglages",
   "DND5ECOMBAT.Reglages.Menu.Aide": "Tous les réglages du moteur, rangés par onglets : ceux de la table (MJ) et ceux de votre poste. Les fenêtres d'accueil, de diagnostic, du bilan et des factions s'ouvrent aussi depuis là.",
+  "DND5ECOMBAT.Reglages.Menu.NomVoisin": "Réglages",
+  "DND5ECOMBAT.Reglages.Menu.AideVoisin": "Tous les réglages du module, rangés par onglets : ceux de la table (MJ) et ceux de votre poste.",
   "DND5ECOMBAT.Reglages.Recherche": "Rechercher un réglage (nom ou aide)…",
   "DND5ECOMBAT.Reglages.Legende.world": "Pour toute la table",
   "DND5ECOMBAT.Reglages.Legende.client": "Pour ce poste",

@@ -121,7 +121,7 @@ import { canHear as hearingCanHear } from "./adapter/hearing.mjs";
 import { registerStealthMode, stealthApi } from "./runtime/stealth.mjs";
 import { registerStealthUI } from "./ui/stealth.mjs";
 import { registerFactionsUI, openFactions } from "./ui/factions.mjs";
-import { registerSettingsWindow, openSettings } from "./ui/settings.mjs";
+import { registerSettingsWindow, openSettings, registerWindow } from "./ui/settings.mjs";
 import { openDiagnostic } from "./ui/diagnostic.mjs";
 
 /**
@@ -164,7 +164,7 @@ const state = {
   flee: fleeFrom, save: requestSave, drop: dropHeldBy,
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
   level: automationLevel, levelAtLeast, skippedRoutes,
-  welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic }, settings: { open: openSettings },
+  welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic }, settings: { open: openSettings, registerWindow },
   vision: { canSee: publicCanSee, cone: publicCone, canHear: publicCanHear },
   factions: { ...factionsApi, open: () => openFactions() },
   sneak: stealthApi

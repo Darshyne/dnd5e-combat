@@ -29,18 +29,41 @@ export const SETTINGS_TABS = Object.freeze([
 
 /**
  * Range les réglages visibles dans les onglets : ceux du plan à leur place (dans l'ordre du plan), les autres à la fin du dernier
- * onglet — un réglage ajouté plus tard sans être rangé reste ainsi accessible.
+ * onglet — un réglage ajouté plus tard sans être rangé reste ainsi accessible. Le plan est celui du moteur par défaut, ou celui
+ * qu'un module voisin déclare (`api.settings.registerWindow`) ; chaque onglet garde ses autres champs (libellé, outils).
  * @param {string[]} visibleKeys   Les clés des réglages du module déclarés visibles.
- * @returns {Array<{id: string, icon: string, keys: string[], tools: object[]}>}
+ * @param {Array<{id: string, keys: string[]}>} [tabs]
+ * @returns {Array<object>}  Les onglets, chacun avec `keys` restreint aux réglages présents et `tools` (vide par défaut).
  */
-export function placeSettings(visibleKeys) {
+export function placeSettings(visibleKeys, tabs=SETTINGS_TABS) {
   const present = new Set(visibleKeys);
-  const placed = new Set(SETTINGS_TABS.flatMap(t => t.keys));
+  const placed = new Set(tabs.flatMap(t => t.keys ?? []));
   const orphans = visibleKeys.filter(k => !placed.has(k));
-  return SETTINGS_TABS.map((t, i) => ({
-    id: t.id, icon: t.icon, tools: t.tools ?? [],
-    keys: [...t.keys.filter(k => present.has(k)), ...((i === SETTINGS_TABS.length - 1) ? orphans : [])]
+  return tabs.map((t, i) => ({
+    ...t, tools: t.tools ?? [],
+    keys: [...(t.keys ?? []).filter(k => present.has(k)), ...((i === tabs.length - 1) ? orphans : [])]
   }));
+}
+
+/**
+ * Ce qu'un module voisin déclare pour sa fenêtre (`api.settings.registerWindow`) : rend la liste des problèmes (vide = valable).
+ * `namespace` : l'id du module ; `tabs` : au moins un onglet, chacun avec un `id` unique et des `keys` (tableau de chaînes) ; chaque
+ * outil a un `id` et une fonction `open`.
+ */
+export function validateWindow(def) {
+  const problems = [];
+  if ( !def || (typeof def.namespace !== "string") || !def.namespace ) problems.push("namespace: module id expected");
+  if ( !Array.isArray(def?.tabs) || !def.tabs.length ) problems.push("tabs: at least one tab expected");
+  const ids = new Set();
+  for ( const [i, t] of (Array.isArray(def?.tabs) ? def.tabs : []).entries() ) {
+    if ( !t?.id || ids.has(t.id) ) problems.push(`tabs[${i}]: unique id expected`);
+    ids.add(t?.id);
+    if ( !Array.isArray(t?.keys) || t.keys.some(k => typeof k !== "string") ) problems.push(`tabs[${i}].keys: array of setting keys expected`);
+    for ( const [j, tool] of (t?.tools ?? []).entries() ) {
+      if ( !tool?.id || (typeof tool.open !== "function") ) problems.push(`tabs[${i}].tools[${j}]: id and open() expected`);
+    }
+  }
+  return problems;
 }
 
 /** Un réglage correspond-il à la recherche ? Nom et aide, sans casse ni accents. */

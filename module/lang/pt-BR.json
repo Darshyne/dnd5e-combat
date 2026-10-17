@@ -1202,6 +1202,8 @@
   "DND5ECOMBAT.Reglages.Menu.Nom": "Ajustes do DAS · Core",
   "DND5ECOMBAT.Reglages.Menu.Bouton": "Abrir ajustes",
   "DND5ECOMBAT.Reglages.Menu.Aide": "Todos os ajustes do motor, organizados em abas: os da mesa (mestre) e os do seu computador. As janelas de Boas-vindas, Diagnóstico, Relatório da sessão e Facções também se abrem por lá.",
+  "DND5ECOMBAT.Reglages.Menu.NomVoisin": "Ajustes",
+  "DND5ECOMBAT.Reglages.Menu.AideVoisin": "Todos os ajustes do módulo, organizados em abas: os da mesa (mestre) e os do seu computador.",
   "DND5ECOMBAT.Reglages.Recherche": "Buscar um ajuste (nome ou ajuda)…",
   "DND5ECOMBAT.Reglages.Legende.world": "Para toda a mesa",
   "DND5ECOMBAT.Reglages.Legende.client": "Para este computador",

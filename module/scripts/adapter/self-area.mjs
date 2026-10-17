@@ -12,7 +12,7 @@
  */
 
 import { selfAreaShape, aimedAreaShape, aimFrom, cubeBeside } from "../core/self-area.mjs";
-import { committedPosition, usageTokenOf } from "./turn.mjs";
+import { committedPosition, usageTokenOf, tokenCenter } from "./turn.mjs";
 import { templateOf } from "./template.mjs";
 import { contentOf } from "./content.mjs";
 import { clampPolyline, wallLineShapes, orthogonalize, cellWallShapes } from "../core/wall.mjs";
@@ -133,6 +133,72 @@ export function placeAreaAt(activity, token, point) {
  */
 export function placeSelfArea(activity, { shape, token }) {
   return createAreaRegions(activity, token, [selfAreaRegionData(activity, token, shape)]);
+}
+
+/* -------------------------------------------- */
+/*  Zones lancées à distance (§190)             */
+/* -------------------------------------------- */
+
+/** Les unités de portée qui sont des longueurs (pas « personnelle », « contact », « illimitée »…). */
+const LENGTH_UNITS = new Set(["ft", "m", "km", "mi"]);
+
+/**
+ * §190 : une sphère, un cylindre, un cube ou un carré lancé « en un point à portée » (Aspersion d'acide, Boule de feu) — ce qu'il faut
+ * pour le poser à la souris avec sa portée : `{ token, shape: "circle"|"rectangle", side (px : rayon ou côté), range (unités de la
+ * grille), max, units }`, ou null (pose de dnd5e : plusieurs formes, portée personnelle ou au contact, lanceur absent de la scène
+ * affichée). Formes et dimensions comme `TemplatePlacement#createShapeData` (template-placement.mjs:52-71).
+ * @param {Activity} activity
+ */
+export function rangedAreaOf(activity) {
+  const template = activity?.target?.template;
+  const kind = CONFIG.DND5E?.areaTargetTypes?.[template?.type]?.template;
+  if ( !["circle", "rect", "rectangle"].includes(kind) ) return null;
+  if ( (Number(template.count) || 1) > 1 ) return null;
+  const value = Number(activity.range?.value);
+  if ( !(value > 0) || !LENGTH_UNITS.has(activity.range?.units) ) return null;
+  const token = usageTokenOf(activity);
+  if ( !token?.parent || (token.parent !== canvas?.scene) ) return null;
+  if ( !game.user.can("REGION_CREATE") ) return null;
+  const scene = token.parent;
+  const { size } = dimensionsOf(activity, scene);
+  if ( !(size > 0) ) return null;
+  return { token, shape: (kind === "circle") ? "circle" : "rectangle", side: size * (scene.grid.size / scene.grid.distance),
+    range: lengthIn(value, activity.range.units, scene.grid.units), max: value, units: activity.range.units };
+}
+
+/** §190 : la forme centrée sur ce point (pixels). */
+export function rangedShapeData(area, point) {
+  if ( area.shape === "circle" ) return { type: "circle", x: point.x, y: point.y, radius: area.side };
+  return { type: "rectangle", x: point.x - (area.side / 2), y: point.y - (area.side / 2), width: area.side, height: area.side, rotation: 0 };
+}
+
+/** §190 : le centre d'une forme posée. */
+function rangedCenter(shapeData) {
+  if ( shapeData.type === "rectangle" ) return { x: shapeData.x + (shapeData.width / 2), y: shapeData.y + (shapeData.height / 2) };
+  return { x: shapeData.x, y: shapeData.y };
+}
+
+/**
+ * §190 : la forme est-elle hors de portée ? Distance du bord de l'espace du lanceur (son centre, moins sa demi-largeur) au point
+ * d'origine — le centre d'une sphère, d'un cylindre ; pour un cube, une face (le centre, moins la moitié du côté).
+ */
+export function rangedTooFar(area, shapeData) {
+  const grid = area.token.parent.grid;
+  const from = tokenCenter(area.token);
+  const distance = grid.measurePath([{ x: from.x, y: from.y }, rangedCenter(shapeData)]).distance;
+  const body = ((committedPosition(area.token).width || 1) * grid.distance) / 2;
+  const slack = (shapeData.type === "rectangle") ? (area.side / 2) * (grid.distance / grid.size) : 0;
+  return (distance - body) > (area.range + slack + 1e-6);
+}
+
+/** §190 : les données de la région (aperçu de la pose, puis création), comme dnd5e. */
+export function rangedRegionData(activity, area, shapeData) {
+  return regionData(activity, area.token, shapeData, false);
+}
+
+/** §190 : pose la zone, en émettant les hooks de dnd5e autour de la création. */
+export function placeRangedArea(activity, area, shapeData) {
+  return createAreaRegions(activity, area.token, [rangedRegionData(activity, area, shapeData)]);
 }
 
 /* -------------------------------------------- */

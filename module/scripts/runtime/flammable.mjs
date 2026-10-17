@@ -269,9 +269,10 @@ export function fireTargetAt(token, activity, point) {
     const center = centerOf(zone);
     const from = tokenCenter(token);
     const distance = center ? grid.measurePath([{ x: from.x, y: from.y }, center]).distance : 0;
-    // La case de la zone la plus proche compte : sa demi-largeur est retirée de la distance au centre.
+    // Du bord de l'espace du lanceur à la case de la zone la plus proche : leurs demi-largeurs sont retirées de la distance des centres.
     const half = (grid.distance ?? 5) / 2;
-    if ( (distance - half) > limit + 1e-6 ) return { zone, refused: "outOfRange" };
+    const body = ((committedPosition(token).width || 1) * (grid.distance ?? 5)) / 2;
+    if ( (distance - half - body) > limit + 1e-6 ) return { zone, refused: "outOfRange" };
   }
   return { zone };
 }

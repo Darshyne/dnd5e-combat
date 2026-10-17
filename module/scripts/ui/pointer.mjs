@@ -46,8 +46,8 @@ import { floatNotice } from "./feedback.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { potionCastsOnDrinker } from "../adapter/usage.mjs";
 import { isPotion } from "../adapter/potions.mjs";
-import { aimedAreaOf, aimedShapeData, aimedRegionData, wallAreaOf } from "../adapter/self-area.mjs";
-import { castAimed, placeAimed, placeWall } from "../runtime/self-area.mjs";
+import { aimedAreaOf, aimedShapeData, aimedRegionData, wallAreaOf, rangedAreaOf, rangedShapeData, rangedRegionData, rangedTooFar } from "../adapter/self-area.mjs";
+import { castAimed, placeAimed, placeWall, placeRanged } from "../runtime/self-area.mjs";
 import { clampPolyline, polylineLength, orthogonalize } from "../core/wall.mjs";
 import { closeMenu, onMenuShift } from "./pointer-menu.mjs";
 import { cancellable, clearPreview, forgetHover, lastPointer, onKeyDown, onModifierKey, onPointerDown, onPointerMove, onPointerUp, refusalFor, setCursor, trackPointer } from "./pointer-mouse.mjs";
@@ -667,9 +667,56 @@ function onPreTemplate(activity) {
     return false;
   }
   const aim = aimedAreaOf(activity);
-  if ( !aim?.token.object || !aim.token.isOwner ) return;
-  aimArea(activity, aim, shape => placeAimed(activity, shape)).catch(err => console.error(`${MODULE_ID} | area targeting`, err));
+  if ( aim?.token.object && aim.token.isOwner ) {
+    aimArea(activity, aim, shape => placeAimed(activity, shape)).catch(err => console.error(`${MODULE_ID} | area targeting`, err));
+    return false;
+  }
+  // §190 : une sphère, un cube lancé en un point à portée — la pose de dnd5e n'a pas de portée : la nôtre, si.
+  const ranged = rangedAreaOf(activity);
+  if ( !ranged?.token.object || !ranged.token.isOwner ) return;
+  aimRanged(activity, ranged).catch(err => console.error(`${MODULE_ID} | ranged area placement`, err));
   return false;
+}
+
+/**
+ * §190 : poser une zone lancée à distance, par la pose de région du cœur (`RegionLayer#placeRegion`, comme dnd5e et `placeZone`) :
+ * l'aperçu est la zone sous la souris, rouge au-delà de la portée, où le clic est refusé. Clic droit ou Échap : rien n'est posé.
+ */
+async function aimRanged(activity, area) {
+  if ( !canvas.ready ) return;
+  stopTargeting();
+  const mine = placing = { activity };
+  announceTargeting();
+  promptTargeting(loc("Zone.Poser", { item: activity.item.name, max: area.max, units: area.units }));
+  const center = area.token.object.center;
+  const base = rangedRegionData(activity, area, rangedShapeData(area, center));
+  // Le rouge « trop loin » peut ressembler à la couleur du joueur : le bandeau le dit aussi, au changement seulement.
+  let wasFar = false;
+  try {
+    const placed = await canvas.regions.placeRegion({ _id: foundry.utils.randomID(), ...base, displayMeasurements: true }, {
+      create: false, allowRotation: false,
+      onChange: ({ preview, document: doc, shape: s }) => {
+        const far = rangedTooFar(area, s.toObject());
+        doc.updateSource({ color: far ? TOO_FAR_COLOR : base.color });
+        preview.renderFlags.set({ refreshState: true });
+        if ( (far !== wasFar) && setting("targetingBanner") ) {
+          promptTargeting(loc(far ? "Zone.HorsPortee" : "Zone.Poser", { item: activity.item.name, max: area.max, units: area.units }));
+        }
+        wasFar = far;
+      },
+      preConfirm: ({ shape: s }) => {
+        if ( !rangedTooFar(area, s.toObject()) ) return true;
+        ui.notifications.warn(loc("Zone.HorsPortee", { item: activity.item.name, max: area.max, units: area.units }));
+        return false;
+      }
+    });
+    const shape = placed?.shapes?.length ? placed.shapes[0].toObject() : null;
+    if ( !shape ) return ui.notifications.info(loc("Visee.Annulee"));
+    endPlacing(mine);
+    announceTargeting();
+    await exclusive(() => placeRanged(activity, shape));
+  } catch(err) { console.error(`${MODULE_ID} | ranged area placement`, err); }
+  finally { endPlacing(mine); announceTargeting(); }
 }
 
 /**

@@ -20,7 +20,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { selfAreaOf, placeSelfArea, aimedAreaOf, placeAimedArea, wallAreaOf, placeWallArea } from "../adapter/self-area.mjs";
+import { selfAreaOf, placeSelfArea, aimedAreaOf, placeAimedArea, wallAreaOf, placeWallArea, rangedAreaOf, placeRangedArea } from "../adapter/self-area.mjs";
 import { suppliesTemplate, withTemplate } from "../adapter/template.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
@@ -82,6 +82,19 @@ function placeAimedShape(activity, area, shapeData) {
   }, err => {
     console.error(`${MODULE_ID} | aimed area not placed`, err);
     ui.notifications.warn("DND5ECOMBAT.ZoneSurSoiNonPosee", { localize: true });
+  });
+}
+
+/** §190 : pose la zone lancée à distance, là où elle a été posée à la souris (intention de la pose, ui/pointer.mjs). */
+export function placeRanged(activity, shapeData) {
+  const area = rangedAreaOf(activity);
+  if ( !area ) return Promise.resolve(null);
+  return placeRangedArea(activity, area, shapeData).then(created => {
+    if ( created?.length ) log(`${activity.item?.name ?? activity.name}: area placed within range (${area.max} ${area.units})`);
+    return created;
+  }, err => {
+    console.error(`${MODULE_ID} | ranged area not placed`, err);
+    return null;
   });
 }
 

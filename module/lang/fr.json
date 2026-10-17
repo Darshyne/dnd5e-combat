@@ -160,6 +160,8 @@
   "DND5ECOMBAT.PorteContreTest": "{reactor} : test de caractéristique d'incantation {total} contre DD {dc} ({spell}, niveau {castLevel}).",
   "DND5ECOMBAT.Reglage.aurasOnlyInCombat.nom": "Auras : seulement en combat",
   "DND5ECOMBAT.Reglage.aurasOnlyInCombat.aide": "Hors combat, les auras passives (Aura de protection…) ne sont plus calculées et leurs effets sont retirés des alliés. Allège les scènes d'exploration ; le bonus d'une sauvegarde hors combat est alors à compter à la main.",
+  "DND5ECOMBAT.Reglage.factionIcons.nom": "Factions : icônes sur les tokens et la barre d'outils",
+  "DND5ECOMBAT.Reglage.factionIcons.aide": "Montre au MJ l'outil « Factions » de la barre des tokens et le bouton de faction du HUD de token (décochée par défaut). La fenêtre des factions reste toujours accessible depuis les réglages du module (« Factions »), et les factions s'appliquent dans tous les cas.",
   "DND5ECOMBAT.Deplacement.AucunChemin": "Aucun chemin jusque-là.",
   "DND5ECOMBAT.Deplacement.Epuise": "Déplacement du tour épuisé. L'action Pointe en redonne.",
   "DND5ECOMBAT.Deplacement.Effraye": "{name} est effrayé par {source} : impossible de s'en rapprocher volontairement.",

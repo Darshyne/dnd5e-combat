@@ -160,6 +160,8 @@
   "DND5ECOMBAT.PorteContreTest": "{reactor}: spellcasting ability check {total} vs DC {dc} ({spell}, level {castLevel}).",
   "DND5ECOMBAT.Reglage.aurasOnlyInCombat.nom": "Auras: only in combat",
   "DND5ECOMBAT.Reglage.aurasOnlyInCombat.aide": "Out of combat, passive auras (Aura of Protection…) are no longer computed and their effects are removed from allies. Lightens exploration scenes; a save's bonus out of combat must then be added by hand.",
+  "DND5ECOMBAT.Reglage.factionIcons.nom": "Factions: icons on tokens and the toolbar",
+  "DND5ECOMBAT.Reglage.factionIcons.aide": "Shows the GM the \"Factions\" tool in the token toolbar and the faction button in the token HUD (off by default). The Factions window is always available from the module settings (\"Factions\"), and factions apply either way.",
   "DND5ECOMBAT.Deplacement.AucunChemin": "No path to that spot.",
   "DND5ECOMBAT.Deplacement.Epuise": "Movement spent for this turn. The Dash action grants more.",
   "DND5ECOMBAT.Deplacement.Effraye": "{name} is Frightened of {source}: can't willingly move closer.",

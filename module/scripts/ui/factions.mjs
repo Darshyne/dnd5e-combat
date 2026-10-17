@@ -201,7 +201,7 @@ function onDropCanvas(canvasRef, data) {
 
 /** Le HUD du token (MJ) : un bouton à la couleur de sa faction, qui ouvre la liste. */
 function onTokenHUD(hud, html) {
-  if ( !game.user.isGM ) return;
+  if ( !game.user.isGM || !iconsShown() ) return;
   const token = hud.document;
   const root = html instanceof HTMLElement ? html : html?.[0];
   const column = root?.querySelector(".col.left");
@@ -236,14 +236,26 @@ function onTokenHUD(hud, html) {
   column.append(button);
 }
 
+/**
+ * Les icônes de faction (outil de la barre des tokens, bouton du HUD de token) : un réglage de monde, décoché par défaut — le MJ
+ * les affiche s'il s'en sert (décision de l'utilisateur, 2026-10-18).
+ */
+const ICONS_SETTING = "factionIcons";
+const iconsShown = () => game.settings.get(MODULE_ID, ICONS_SETTING) === true;
+
 export function registerFactionsUI() {
+  game.settings.register(MODULE_ID, ICONS_SETTING, {
+    name: "DND5ECOMBAT.Reglage.factionIcons.nom", hint: "DND5ECOMBAT.Reglage.factionIcons.aide",
+    scope: "world", config: true, type: Boolean, default: false,
+    onChange: () => ui.controls?.render({ reset: true })
+  });
   if ( game.settings.registerMenu ) game.settings.registerMenu(MODULE_ID, "factionsMenu", {
     name: "DND5ECOMBAT.Factions.Menu.Nom", label: "DND5ECOMBAT.Factions.Menu.Bouton", hint: "DND5ECOMBAT.Factions.Menu.Aide",
     icon: "fa-solid fa-flag", type: FactionsApp(), restricted: true
   });
   route("getSceneControlButtons", controls => {
     const tokens = controls.tokens;
-    if ( !tokens?.tools || !game.user.isGM ) return;
+    if ( !tokens?.tools || !game.user.isGM || !iconsShown() ) return;
     const last = Math.max(0, ...Object.values(tokens.tools).map(t => t.order ?? 0));
     tokens.tools["das-factions"] = { name: "das-factions", order: last + 1, icon: "fa-solid fa-flag", title: "DND5ECOMBAT.Factions.Titre",
       button: true, visible: true, onChange: () => openFactions() };

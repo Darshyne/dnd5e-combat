@@ -81,9 +81,11 @@ export function occupiedAt(token, position) {
   if ( isIntangible(token) ) return false;
   const mine = { ...cellOf(token, position), ...sizeOf(token) };
   const defeated = CONFIG.specialStatusEffects.DEFEATED;
+  // L'emprise d'abord (un calcul de cases) : les tests qui lisent le contenu des objets (intangible, espace partagé) ne visent que
+  // les tokens qui touchent la case. Dans l'ordre inverse, chaque pas d'une marche coûtait ~16 ms sur l'Arène (mesuré le 2026-10-17).
   return token.parent.tokens.some(other => (other !== token) && !other.hidden
-    && !other.actor?.statuses?.has(defeated) && (other.object?.visible !== false) && !isIntangible(other) && !sharesSpaceWith(token, other)
-    && (footprintGap(mine, footprintOf(other)) === 0));
+    && (footprintGap(mine, footprintOf(other)) === 0)
+    && !other.actor?.statuses?.has(defeated) && (other.object?.visible !== false) && !isIntangible(other) && !sharesSpaceWith(token, other));
 }
 
 /** Agrippé : Vitesse 0 (dnd5e la pose déjà) — le moteur le dit au lieu de « déplacement épuisé ». */

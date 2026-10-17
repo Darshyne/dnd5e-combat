@@ -361,5 +361,7 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-settings__row .ctl select option { background: var(--das-surface); color: var(--das-ink); }
 .das-settings__row .ctl select:focus, .das-settings__row .ctl input:focus { border-color: var(--das-accent); outline: none; box-shadow: none; }
 .das-settings__search input::placeholder { color: var(--das-muted); opacity: 1; }
-/* Case vide : un contour visible sur le fond sombre (la case du cœur s'y fondait). */
-.das-settings__row .ctl input[type=checkbox]:not(:checked) { box-shadow: 0 0 0 1px var(--das-muted); border-radius: 3px; }
+/* Cases à cocher : la case native du navigateur, teintée DAS. Celle du cœur dessine sa coche par des pseudo-éléments Font Awesome
+   qui se perdaient dans nos couleurs et notre taille (plus de coche visible — vu par l'utilisateur le 2026-10-18). */
+.das-settings__row .ctl input[type=checkbox] { appearance: auto; -webkit-appearance: checkbox; margin: 0; background: none; border: none; }
+.das-settings__row .ctl input[type=checkbox]::before, .das-settings__row .ctl input[type=checkbox]::after { content: none; display: none; }

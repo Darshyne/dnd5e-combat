@@ -191,7 +191,9 @@ function appClass(win) {
           again?.setSelectionRange(again.value.length, again.value.length);
         });
       });
-      for ( const input of el.querySelectorAll("[data-key]") ) {
+      // Les champs seulement : la ligne porte aussi `data-key`, et le `change` d'un champ remonte jusqu'à elle (une ligne n'a ni
+      // `checked` ni `value` : une case revenait décochée, un curseur à sa valeur par défaut — vu par l'utilisateur le 2026-10-18).
+      for ( const input of el.querySelectorAll(".ctl [data-key]") ) {
         // Le curseur d'un nombre suit en direct son champ ; le redessin (badge « modifié ») attend la fin du geste.
         if ( input.type === "range" ) input.addEventListener("input", () => {
           el.querySelector(`input[type=number][data-key="${input.dataset.key}"]`).value = input.value;

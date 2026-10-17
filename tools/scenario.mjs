@@ -246,7 +246,8 @@ function makeContext(mcp) {
       if ( identifier ) params.itemId = await ctx.itemId(params.tokenId, identifier);
       // Le drapeau du moteur se fusionne (confirmé d'office) ; sans autre consigne, aucune fenêtre de réaction ne
       // s'ouvre (`autoReact: "none"`) : un Mage hostile qui voit toute la salle contrerait chaque sort des scénarios.
-      const ours = { confirmed: true, autoReact: "none", ...(params.usageConfig?.[MODULE_ID] ?? {}) };
+      // `areaPlaced` : la zone est posée par le connecteur (`area`) — le moteur n'ouvre pas sa propre pose (§188).
+      const ours = { confirmed: true, autoReact: "none", ...(params.area ? { areaPlaced: true } : {}), ...(params.usageConfig?.[MODULE_ID] ?? {}) };
       return mcp.call("use-activity", {
         configure: false,
         ...params,

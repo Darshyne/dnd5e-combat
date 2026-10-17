@@ -45,6 +45,8 @@ export function unlitZones(scene) {
 
 /** Une activité inflige-t-elle du feu (zone de feu, §188 b) ? */
 function dealsFire(activity) {
+  // L'étalage d'huile porte « 5 feu » dans la donnée (la flaque en feu) : poser une flaque n'en allume pas une autre.
+  if ( contentOf(activity?.item).entry?.flammable ) return false;
   return (activity?.damage?.parts ?? []).some(p => Array.from(p.types ?? []).includes("fire"));
 }
 

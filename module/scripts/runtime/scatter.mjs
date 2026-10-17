@@ -196,11 +196,19 @@ export async function handlePickUp({ token: tokenUuid, region: regionUuid }) {
 }
 
 export function registerScatter() {
-  // La copie de l'objet, prise avant que dnd5e ne le dépense (les chausse-trapes disparaissent de l'inventaire à l'utilisation).
+  // La copie de l'objet, prise avant que dnd5e ne le dépense (les chausse-trapes disparaissent de l'inventaire à l'utilisation). §188 :
+  // la case se pose à l'utilisation — l'étalage d'huile du Manuel a `target.prompt` faux : dnd5e met alors `measuredTemplate` à faux
+  // avant le hook (documents/activity/mixin.mjs:451) et n'ouvre aucune pose, seulement un bouton sur la carte. Un appelant qui pose
+  // lui-même la zone le dit (`areaPlaced` : outils de test) — son `false` ne se distingue pas de celui de dnd5e.
   route("dnd5e.preUseActivity", (activity, usageConfig, dialogConfig, messageConfig) => {
-    if ( !scatterOf(activity) || !messageConfig ) return;
-    foundry.utils.setProperty(messageConfig, `data.flags.${MODULE_ID}.scatterItem`, activity.item.toObject());
-  }, { label: "scattered item: copy not kept" });
+    const scatter = scatterOf(activity);
+    const ground = contentOf(activity?.item).entry?.flammable?.ground === true;
+    if ( !(scatter || ground) ) return;
+    if ( activity.target?.template?.type && !activity.target.prompt && usageConfig?.create && !usageConfig[MODULE_ID]?.areaPlaced ) {
+      usageConfig.create.measuredTemplate = true;
+    }
+    if ( scatter && messageConfig ) foundry.utils.setProperty(messageConfig, `data.flags.${MODULE_ID}.scatterItem`, activity.item.toObject());
+  }, { label: "ground item: area placed on use, copy kept" });
   // La tuile part avec sa zone (ramassée, brûlée, ou retirée à la main par le MJ).
   route("deleteRegion", async region => {
     const tile = region.parent?.tiles.find(t => t.getFlag(MODULE_ID, "ground") === region.id);

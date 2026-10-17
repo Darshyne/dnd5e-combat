@@ -8,7 +8,7 @@ import { footprintGap } from "../core/movement.mjs";
 import { positionOf, distanceBetween } from "../adapter/turn.mjs";
 import { planPath, previewPath, cellUnder, footprintOf, stairsEntry, stairsDestinations } from "../adapter/movement.mjs";
 import { strike } from "../runtime/storm.mjs";
-import { movementCap, reachCells, basicAttack, hostileTo, moveTo, approaches, contactAction, contactRefusal, rangeStatus, currentTeleport, teleportClick, dashStrike, dashRefusal, dashPreview } from "../runtime/actions.mjs";
+import { movementCap, reachCells, basicAttack, hostileTo, moveTo, approaches, contactAction, contactRefusal, rangeStatus, currentTeleport, teleportClick, dashStrike, dashRefusal, dashPreview, gapCells, tooHighFor } from "../runtime/actions.mjs";
 import { pocketedFamiliar, recallFamiliar, recallRefusal } from "../runtime/familiar.mjs";
 import { leapProblem } from "../runtime/projectiles.mjs";
 import { tetherOfActivity, tetheredToken } from "../adapter/tether.mjs";
@@ -440,12 +440,14 @@ export const onPointerMove = foundry.utils.throttle(event => {
       return;
     }
     const reach = activity ? reachCells(activity) : null;
-    const gap = reach ? footprintGap(footprintOf(me), footprintOf(hover)) : 0;
-    const far = !!reach && (gap > reach.normal) && approaches(activity);
+    // §192 : en trois dimensions — une cible au plafond est hors d'allonge depuis le sol, et l'approche n'y mène pas (`tooHigh`).
+    const gap = reach ? gapCells(me, hover) : 0;
+    const tooHigh = !!reach && approaches(activity) && tooHighFor(me, hover, reach);
+    const far = !!reach && (gap > reach.normal) && approaches(activity) && !tooHigh;
     if ( far ) plan = planPath(me, { target: hover, reachCells: reach.normal }, { maxCost: movementCap(me) });
     // Comme `engage` : hors de portée si l'approche n'arrive pas et que la cible est au-delà de la portée longue.
     // §18.22 : un geste de contact (mains nues, Lutte, Soutien) n'avance que s'il arrive.
-    const outOfReach = far && !plan?.arrives && (contactAction(activity) || (gap > reach.long));
+    const outOfReach = tooHigh || (far && !plan?.arrives && (contactAction(activity) || (gap > reach.long)));
     if ( activity?.type === "attack" ) {
       const end = (far && plan?.arrives) ? plan.waypoints.at(-1) : null;
       showHitChance(event, me, hover, activity, { posA: end ? positionOf(end) : undefined, outOfReach, keys });

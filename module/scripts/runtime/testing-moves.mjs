@@ -10,7 +10,7 @@ import { planPath, stairsOf, stairsDestinations, stopWalking } from "../adapter/
 import { combatantFor, readBudget, movementOf } from "../adapter/turn.mjs";
 import { setDoorOpen, doorState } from "./doors.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
-import { moveTo, movementCap, selfTeleportOf, teleportTo, afterTeleport, teleportClick, dashStrike, dashTargets, dashProblem, dashLimit, lineDashOf, transpose as transposeIntent, takeStairs as takeStairsIntent } from "./actions.mjs";
+import { moveTo, movementCap, selfTeleportOf, teleportTo, afterTeleport, teleportClick, dashStrike, dashTargets, dashProblem, dashLimit, lineDashOf, transpose as transposeIntent, takeStairs as takeStairsIntent, gapCells, verticalGapCells, tooHighFor, reachCells, basicAttack, rangeStatus, engage, approach } from "./actions.mjs";
 import { dismissFamiliar, recallFamiliar, recallRefusal, canPocket, canRecall } from "./familiar.mjs";
 import { pocketOf, isFamiliarToken, emptyPocket } from "../adapter/familiar.mjs";
 import { basicActionOf } from "../adapter/basics.mjs";
@@ -20,8 +20,8 @@ import { sleep } from "./shared.mjs";
 import { cellArg, finite, gmOnly, positionJson, viewedToken, waypointOf, windows } from "./testing-shared.mjs";
 import { budget } from "./testing-rules.mjs";
 import { wall } from "./testing-areas.mjs";
-import { startClimb, dropDown as dropDownIntent, canClimb, climbRoom } from "./climb.mjs";
-import { wallsNear, isClimbing, climbingOf, climbRules } from "../adapter/climb.mjs";
+import { startClimb, dropDown as dropDownIntent, canClimb, climbRoom, canClimbCeiling, climbToCeiling, ceilingRoom, canClimbDown, climbDown as climbDownIntent, descentRoom } from "./climb.mjs";
+import { wallsNear, isClimbing, isOnCeiling, climbingOf, climbRules, canWalkCeilings, ceilingPerchFor, FLIP_FLAG } from "../adapter/climb.mjs";
 import { MODE_STATUSES } from "../adapter/conditions.mjs";
 
 /** Les escaliers et échelles de la scène, avec les cases qu'ils couvrent (centre dans la région). */
@@ -242,14 +242,20 @@ export async function door({ tokenId, wallId, open=true }) {
 /*  Escalade (§192)                             */
 /* -------------------------------------------- */
 
-/** L'état d'un grimpeur (ou d'un candidat) : murs touchés, mode, statut, ce qu'il peut monter, règles du monde. */
+/** L'état d'un grimpeur (ou d'un candidat) : murs touchés, mode, statut, ce qu'il peut monter, règles du monde ; §192 lot 2 : le plafond. */
 export function climbState({ tokenId }) {
   const token = viewedToken({ tokenId });
   const walls = wallsNear(token).map(w => w.id);
   const room = canClimb(token) || isClimbing(token) ? climbRoom(token) : null;
+  const ceiling = ceilingRoom(token);
   return { walls, canClimb: canClimb(token), climbing: isClimbing(token), status: token.actor?.statuses?.has(MODE_STATUSES.climbing.id) === true,
     rules: climbRules(), speed: climbingOf(token), room: room ? { ...room, remaining: finite(room.remaining) } : null, position: positionJson(token),
-    falling: token.actor?.statuses?.has("falling") === true, checkedAt: token.getFlag(MODULE_ID, "climb")?.checkedAt ?? null };
+    falling: token.actor?.statuses?.has("falling") === true, checkedAt: token.getFlag(MODULE_ID, "climb")?.checkedAt ?? null,
+    // Lot 2 : au plafond ?, peut y aller ?, la capacité, le perchoir, le statut « Au plafond », le miroir vertical.
+    onCeiling: isOnCeiling(token), canCeiling: canClimbCeiling(token), walksCeilings: canWalkCeilings(token.actor),
+    perch: ceilingPerchFor(token), ceiling: ceiling ? { perch: ceiling.perch, cells: ceiling.cells, affordable: ceiling.affordable } : null,
+    ceilingStatus: token.actor?.statuses?.has(MODE_STATUSES.ceiling.id) === true, canDown: canClimbDown(token),
+    scaleY: token._source.texture?.scaleY ?? 1, flip: token.getFlag(MODULE_ID, FLIP_FLAG) ?? null };
 }
 
 /** Grimper de `cells` cases, comme l'entrée de menu (sans fenêtre), et attendre la montée. */
@@ -258,6 +264,52 @@ export async function climb({ tokenId, cells }) {
   const before = positionJson(token);
   const done = await startClimb(token, { cells: Number.isFinite(cells) ? cells : null });
   return { done, before, after: positionJson(token), ...climbState({ tokenId }) };
+}
+
+/** §192 lot 2 : « Grimper au plafond », comme l'entrée de menu, et attendre la montée. */
+export async function climbCeiling({ tokenId }) {
+  const token = viewedToken({ tokenId });
+  const before = positionJson(token);
+  const done = await climbToCeiling(token);
+  await sleep(300);
+  return { done, before, after: positionJson(token), ...climbState({ tokenId }) };
+}
+
+/** §192 lot 2 : « Descendre le long du mur » de `cells` cases, comme l'entrée de menu (sans fenêtre). */
+export async function climbDown({ tokenId, cells }) {
+  const token = viewedToken({ tokenId });
+  const before = positionJson(token);
+  const room = canClimbDown(token) ? descentRoom(token) : null;
+  const done = await climbDownIntent(token, { cells: Number.isFinite(cells) ? cells : null });
+  await sleep(300);
+  return { done, before, after: positionJson(token), max: room?.max ?? null, ...climbState({ tokenId }) };
+}
+
+/**
+ * §192 lot 2 : ce que l'attaque de base de `tokenId` pense de `targetId` — écart en cases (3D), vide vertical, trop haut pour une
+ * approche, et le verdict de portée ; `engage: true` lance l'attaque de base comme un clic sur l'ennemi (sans dialogue) et dit si le
+ * token a bougé et si une carte a été créée. `approach: true` : `api.approach({ target })` (la marche de l'IA, §179) et son résultat.
+ */
+export async function reachCheck({ tokenId, targetId, engage: doEngage=false, approach: doApproach=false }) {
+  const token = viewedToken({ tokenId });
+  const target = viewedToken({ tokenId: targetId });
+  const attack = basicAttack(token.actor);
+  const reach = attack ? reachCells(attack.activity) : null;
+  const out = {
+    weapon: attack?.activity?.item?.name ?? null, reach, gap: gapCells(token, target), vertical: verticalGapCells(token, target),
+    tooHigh: attack ? tooHighFor(token, target, reach) : null, status: attack ? rangeStatus(token, target, attack.activity) : null,
+    before: positionJson(token)
+  };
+  if ( doApproach ) out.approach = await approach(token, { target, reachCells: reach?.normal ?? 1 });
+  if ( doEngage && attack ) {
+    const messages = game.messages.size;
+    await engage(token, target, attack.activity, { fast: true });
+    await sleep(500);
+    out.engaged = { messages: game.messages.size - messages };
+  }
+  out.after = positionJson(token);
+  out.moved = (out.after.x !== out.before.x) || (out.after.y !== out.before.y) || (out.after.elevation !== out.before.elevation);
+  return out;
 }
 
 /** « Se laisser tomber » : chute volontaire, comme l'entrée de menu. */

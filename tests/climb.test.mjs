@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
-  segmentTouchesRect, isClimbableWall, climbSpeed, climbMultiplier, climbFallReason, climbableCells, climbCheckDue, MAX_CLIMB_CELLS
+  segmentTouchesRect, isClimbableWall, climbSpeed, climbMultiplier, climbFallReason, climbableCells, climbCheckDue, MAX_CLIMB_CELLS,
+  CEILING_DC, CEILING_IDENTIFIERS, grantsCeiling, ceilingPerch, hangsFrom, flippedScale
 } from "../module/scripts/core/climb.mjs";
-import { overlapsVertically } from "../module/scripts/core/space.mjs";
+import { overlapsVertically, verticalExtent, verticalGap } from "../module/scripts/core/space.mjs";
 
 const cell = { x: 100, y: 100, width: 100, height: 100 };
 
@@ -75,5 +76,39 @@ describe("occupation en trois dimensions", () => {
     expect(overlapsVertically({ elevation: 5, depth: 1 }, { elevation: 0, depth: 1 }, 5)).toBe(true);   // tête contre pieds : contact
     expect(overlapsVertically({ elevation: 5, depth: 1 }, { elevation: 0, depth: 2 }, 5)).toBe(true);   // un Grand de 10 ft
     expect(overlapsVertically({ elevation: 15, depth: 1 }, { elevation: 0, depth: 2 }, 5)).toBe(false);
+  });
+});
+
+describe("plafonds (§192, lot 2)", () => {
+  it("la capacité vient d'un identifiant connu ou d'une entrée de contenu `climbsCeilings`", () => {
+    expect(grantsCeiling("spider-climb")).toBe(true);
+    expect(grantsCeiling("slippers-of-spider-climbing")).toBe(true);
+    expect(grantsCeiling("cloak-of-arachnida")).toBe(true);
+    expect(grantsCeiling("athlete")).toBe(false);
+    expect(grantsCeiling("ma-creature", { climbsCeilings: true })).toBe(true);
+    expect(grantsCeiling("ma-creature", { climbsCeilings: false })).toBe(false);
+    expect(CEILING_IDENTIFIERS).toContain("spider-climb");
+    expect(CEILING_DC).toBe(20);
+  });
+  it("accroché au plafond, les pieds sont au plafond moins la hauteur", () => {
+    expect(ceilingPerch(20, 1, 5)).toBe(15);
+    expect(ceilingPerch(20, 2, 5)).toBe(10);   // un Grand de 10 ft
+    expect(ceilingPerch(Infinity, 1, 5)).toBeNull();
+    expect(hangsFrom(15, 1, 5, 20)).toBe(true);
+    expect(hangsFrom(10, 1, 5, 20)).toBe(false);
+    expect(hangsFrom(15, 1, 5, Infinity)).toBe(false);
+  });
+  it("le miroir vertical inverse l'échelle, et la rend telle qu'elle était", () => {
+    expect(flippedScale(1)).toBe(-1);
+    expect(flippedScale(-1)).toBe(1);   // un token déjà en miroir repasse à l'endroit : la tête en bas pour lui
+    expect(flippedScale(1.5)).toBe(-1.5);
+    expect(flippedScale(undefined)).toBe(-1);
+  });
+  it("une cible au plafond est hors d'allonge d'une créature au sol, un Grand de 10 ft la touche", () => {
+    // Pieds à 15 ft, tête à 20 : 10 ft de vide au-dessus d'un Moyen (0–5), 5 ft au-dessus d'un Grand (0–10).
+    const gap = (a, b) => verticalGap(verticalExtent(a, 5), verticalExtent(b, 5));
+    expect(gap({ elevation: 0, depth: 1 }, { elevation: 15, depth: 1 })).toBe(10);
+    expect(gap({ elevation: 0, depth: 2 }, { elevation: 15, depth: 1 })).toBe(5);
+    expect(gap({ elevation: 10, depth: 1 }, { elevation: 15, depth: 1 })).toBe(0);
   });
 });

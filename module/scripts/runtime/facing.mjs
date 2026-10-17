@@ -13,7 +13,8 @@ import { MODULE_ID } from "../constants.mjs";
 import { facingRotation } from "../core/movement.mjs";
 import { route } from "./router.mjs";
 
-const SETTING = "faceMovement";
+export const FACING_SETTING = "faceMovement";
+const SETTING = FACING_SETTING;
 const enabled = () => game.settings.get(MODULE_ID, SETTING) === true;
 
 /** Dernière position affichée de chaque token en mouvement. */

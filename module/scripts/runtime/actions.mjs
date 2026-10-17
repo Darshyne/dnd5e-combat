@@ -11,8 +11,8 @@
 import { MODULE_ID } from "../constants.mjs";
 import { movementAllowance } from "../core/turn.mjs";
 import { footprintGap, chooseBasicAttack, dragMultiplier, dragAllowance } from "../core/movement.mjs";
-import { combatantFor, readBudget, movementOf, speedOf, rangeOf, historyCosts, tokenCenter, positionOf } from "../adapter/turn.mjs";
-import { overlapsVertically } from "../core/space.mjs";
+import { combatantFor, readBudget, movementOf, speedOf, rangeOf, historyCosts, tokenCenter, positionOf, committedPosition, distanceBetween } from "../adapter/turn.mjs";
+import { overlapsVertically, verticalExtent, verticalGap } from "../core/space.mjs";
 import { pilotOf, pilotOfActor, commandPlan, commandDistance, commandActivities, summonerToken, isIntangible } from "../adapter/pilot.mjs";
 import { readUnitFactors, lengthIn } from "../adapter/units.mjs";
 import { sharesSpaceWith } from "../adapter/space-sharing.mjs";
@@ -109,6 +109,31 @@ export function reachCells(activity, mode=null) {
   if ( !range.value ) return (activity.type === "attack") ? { normal: 1, long: 1 } : null;
   return { normal: toCells(range.value), long: toCells(range.long ?? range.value) };
 }
+
+/**
+ * §192 (lot 2) : l'écart entre deux tokens en cases, en trois dimensions — la distance du moteur (`distanceBetween`, des pieds à la
+ * tête, règle de diagonale de la scène) ramenée en cases : 0 superposés ou au contact vertical, 1 à une case (5 ft)… Le même compte
+ * que `footprintGap` au sol, et une cible accrochée au plafond (pieds à 15 ft) compte ses 10 ft de vide. `positions` : `posA` / `posB`,
+ * une position d'arrivée ou un point de passage.
+ */
+export function gapCells(a, b, positions={}) {
+  const { value } = distanceBetween(a, b, positions);
+  return Math.max(0, Math.round((value / a.parent.grid.distance) - 1e-6));
+}
+
+/** §192 : le vide vertical entre deux tokens (de la tête de l'un aux pieds de l'autre), en cases ; 0 quand leurs tranches se chevauchent. */
+export function verticalGapCells(a, b, { posA, posB }={}) {
+  const distance = a.parent.grid.distance;
+  const pa = posA ? { ...committedPosition(a), ...posA } : committedPosition(a);
+  const pb = posB ? { ...committedPosition(b), ...posB } : committedPosition(b);
+  return verticalGap(verticalExtent(pa, distance), verticalExtent(pb, distance)) / distance;
+}
+
+/**
+ * §192 : la cible est-elle hors d'atteinte par le seul vide vertical (au plafond, en vol) ? Alors aucune approche au sol n'y mène :
+ * on ne marche pas pour se coller dessous. `reach` : l'allonge en cases (`reachCells`).
+ */
+export const tooHighFor = (token, target, reach) => !!reach && (verticalGapCells(token, target) > reach.normal + 1e-6);
 
 /** Les attaques d'arme d'un acteur, et celle qu'un clic sur un ennemi déclenche. */
 export function weaponAttacks(actor) {
@@ -231,9 +256,11 @@ async function approachTarget(token, target, { reachCells=1, seeing=false }={}) 
   if ( !token?.isOwner ) return { arrived: false, reason: "notOwner" };
   if ( isGrappled(token) ) return { arrived: false, reason: "grappled" };
   const reach = Math.max(1, Math.round(reachCells) || 1);
-  const there = () => ((token._source.level ?? null) === (target._source.level ?? null))
-    && (footprintDistance(footprintOf(token), footprintOf(target)) <= reach - 1);
+  // §192 : en trois dimensions — une cible au plafond n'est pas « à portée » depuis la case sous elle.
+  const there = () => ((token._source.level ?? null) === (target._source.level ?? null)) && (gapCells(token, target) <= reach);
   if ( there() ) return { arrived: true };
+  // §192 : hors d'atteinte par le vide vertical seul (au plafond, en vol) : aucune marche au sol n'y mène, on ne bouge pas.
+  if ( tooHighFor(token, target, { normal: reach }) ) return { arrived: false, reason: "tooHigh" };
   for ( let opened = 0; opened <= MAX_DOORS_PER_MOVE; opened++ ) {
     const plan = planPath(token, { target, reachCells: reach, seeing }, { maxCost: movementCap(token), throughDoors: opened < MAX_DOORS_PER_MOVE });
     if ( !plan ) return { arrived: false, reason: "noPath" };
@@ -411,7 +438,7 @@ export async function walkToGap(token, anchor, gap, { maxCost=null }={}) {
   return footprintDistance(footprintOf(token), footprintOf(anchor)) === gap;
 }
 
-/** Écart actuel, en cases, entre deux tokens (0 : au contact). */
+/** Écart actuel au sol, en cases, entre deux tokens (0 : au contact) — en deux dimensions : la fuite (§180) se mesure sur la carte. */
 export const gapBetween = (a, b) => Math.max(0, footprintDistance(footprintOf(a), footprintOf(b)));
 
 /**
@@ -528,7 +555,7 @@ export function contactRefusal(token, target, activity) {
 export function rangeStatus(token, target, activity, mode=null) {
   const reach = reachCells(activity, mode);
   if ( !reach ) return null;
-  const gap = footprintGap(footprintOf(token), footprintOf(target));
+  const gap = gapCells(token, target);   // §192 : en trois dimensions (une cible au plafond est hors d'allonge)
   const out = gap > reach.long;
   const blind = !out && (reach.normal > 1) && !hasLineOfSight(tokenCenter(token), target);
   return { out, blind, gap, reach };
@@ -547,7 +574,8 @@ export async function reactionApproach(actor, target, activity) {
   const token = actor?.token ?? actor?.getActiveTokens?.(false, true)?.[0] ?? null;
   const reach = reachCells(activity);
   if ( !token?.isOwner || !target || !reach ) return false;
-  if ( footprintGap(footprintOf(token), footprintOf(target)) <= reach.normal ) return true;
+  if ( gapCells(token, target) <= reach.normal ) return true;
+  if ( tooHighFor(token, target, reach) ) return false;   // §192 : au plafond, hors d'atteinte — on ne se déplace pas pour rien
   // Hors combat (pas de budget de tour), la Vitesse seule, comptée depuis l'historique du cœur tel qu'il est.
   const combatant = combatantFor(actor);
   const movement = combatant ? movementOf(combatant, readUnitFactors())
@@ -587,11 +615,17 @@ export async function engage(token, target, activity, { mode=null, fast=false, u
       return;
     }
   }
-  target.object?.setTarget(true, { releaseOthers: true });
   // §16.15 : un objet piloté agit au contact — la portée de « Roll » (9 m) est celle de son déplacement, pas de son effet.
   const reach = pilotOfActor(activity.actor) ? { normal: 1, long: 1 } : reachCells(activity, mode);
+  // §192 : une cible que le vide vertical seul met hors d'allonge (au plafond, en vol) — l'approche au sol n'y mène pas : refusé net.
+  if ( reach && approaches(activity, mode) && tooHighFor(token, target, reach) ) {
+    ui.notifications.warn(loc("Escalade.HorsDallonge", { name: target.name }));
+    notice(target, loc("Retour.HorsDePortee"));
+    return;
+  }
+  target.object?.setTarget(true, { releaseOthers: true });
   if ( reach && approaches(activity, mode) ) {
-    const gap = footprintGap(footprintOf(token), footprintOf(target));
+    const gap = gapCells(token, target);
     // P1 : à distance, on ne s'approche que jusqu'à une case d'où l'on VOIT la cible — et si l'on est
     // déjà à portée sans la voir, on cherche une telle case.
     const ranged = reach.normal > 1;

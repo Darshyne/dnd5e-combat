@@ -101,6 +101,9 @@ export const TURN_STATUSES = Object.freeze({
  */
 export const MODE_STATUSES = Object.freeze({
   climbing: { id: "climbing", name: "DND5ECOMBAT.Etat.climbing", img: "icons/svg/up.svg",
+    changes: [{ key: "system.traits.ci.value", mode: 2, value: "falling" }] },
+  // §192 lot 2 : au plafond (à la place d'« En escalade »), même immunité à « En chute ».
+  ceiling: { id: "ceiling", name: "DND5ECOMBAT.Etat.ceiling", img: "icons/svg/down.svg",
     changes: [{ key: "system.traits.ci.value", mode: 2, value: "falling" }] }
 });
 

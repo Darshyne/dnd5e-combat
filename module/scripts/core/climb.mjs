@@ -1,5 +1,5 @@
 /**
- * Escalade (SPEC §192, lot 1 : les murs). Noyau pur.
+ * Escalade (SPEC §192, lot 1 : les murs ; lot 2 : les plafonds). Noyau pur.
  *
  * Règles 2024 (Manuel des joueurs, glossaire « Climbing », « Climb Speed ») : grimper ne demande aucun jet — chaque pied coûte un
  * pied de plus sans vitesse d'escalade (le coût est celui de dnd5e, action `climb`), rien de plus avec. Le DD 15 Force
@@ -10,6 +10,8 @@
 
 /** DD du test de Force (Athlétisme) pour tenir à un mur (réglage « maison »). */
 export const CLIMB_DC = 15;
+/** DD du test pour gagner ou tenir un plafond sans la capacité (réglage « maison », §192.2 : la proposition). */
+export const CEILING_DC = 20;
 /** Hors combat, l'équivalent d'un tour : 10 s (comme la nouvelle tentative de Se cacher, §183). */
 export const CLIMB_CHECK_SECONDS = 10;
 /** Sans plafond ni budget (hors combat), on ne monte pas plus haut d'un coup. */
@@ -89,3 +91,40 @@ export function climbableCells({ remaining, gridDistance, multiplier, ceilingCel
 
 /** Le test du mode « maison » est-il dû : jamais fait, ou fait il y a plus de `intervalMs` ? */
 export const climbCheckDue = (lastAt, now, intervalMs) => !Number.isFinite(lastAt) || ((now - lastAt) >= intervalMs);
+
+/* -------------------------------------------- */
+/*  Plafonds (lot 2)                            */
+/* -------------------------------------------- */
+
+/**
+ * Les identifiants dnd5e qui donnent la marche au plafond (§192.3) : le sort Pattes d'araignée (et le trait de monstre du même
+ * identifiant), les Pantoufles d'araignée et la Cape d'arachnide du Guide du maître. Un voisin déclare les siens par le contenu
+ * (`climbsCeilings: true`, `api.content.register`).
+ */
+export const CEILING_IDENTIFIERS = Object.freeze(["spider-climb", "slippers-of-spider-climbing", "cloak-of-arachnida"]);
+
+/** Un item (son identifiant, son entrée de contenu) donne-t-il la marche au plafond ? */
+export const grantsCeiling = (identifier, entry=null) => CEILING_IDENTIFIERS.includes(identifier) || (entry?.climbsCeilings === true);
+
+/**
+ * L'élévation des pieds d'une créature accrochée à un plafond : le plafond moins sa hauteur (`depth` en cases). null sans plafond.
+ * @param {number} ceiling        Élévation du plafond (Infinity : aucun).
+ * @param {number} depth          Hauteur de la créature, en cases.
+ * @param {number} gridDistance
+ */
+export function ceilingPerch(ceiling, depth, gridDistance) {
+  if ( !Number.isFinite(ceiling) ) return null;
+  return ceiling - (depth * gridDistance);
+}
+
+/** La créature est-elle accrochée à ce plafond (sa tête contre lui) ? */
+export function hangsFrom(elevation, depth, gridDistance, ceiling) {
+  const perch = ceilingPerch(ceiling, depth, gridDistance);
+  return (perch !== null) && (Math.abs(elevation - perch) < 1e-6);
+}
+
+/**
+ * Le miroir vertical d'un token au plafond (§192.4 point 8) : l'échelle verticale inversée, l'échelle d'origine gardée pour la
+ * rendre en quittant le plafond — un token déjà en miroir repasse à l'endroit, ce qui est bien « la tête en bas » pour lui.
+ */
+export const flippedScale = scaleY => -(Number(scaleY) || 1);

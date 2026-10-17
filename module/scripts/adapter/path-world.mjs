@@ -5,7 +5,8 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { cellDistance } from "../core/pathfind.mjs";
-import { committedPosition } from "./turn.mjs";
+import { committedPosition, positionOf } from "./turn.mjs";
+import { overlapsVertically } from "../core/space.mjs";
 import { isIntangible } from "./pilot.mjs";
 import { sharesSpaceWith } from "./space-sharing.mjs";
 import { placementOf, coherentElevation, groundStepAllowed } from "../core/altitude.mjs";
@@ -174,15 +175,21 @@ export function worldFor(token, { throughDoors=false }={}) {
 
   // Cases où l'on ne peut pas finir : celles de tout autre token visible et debout, sur son niveau, sauf celles qu'on peut
   // partager (§105 : Forme d'air, Nuée — adapter/space-sharing.mjs). Un objet qui n'occupe pas son espace (Main de
-  // Bigby, §16.15) ne gêne personne et n'est gêné par personne.
+  // Bigby, §16.15) ne gêne personne et n'est gêné par personne. §192 : par case, les tranches verticales (pieds-tête) des
+  // tokens qui l'occupent — un grimpeur au-dessus d'une case occupée peut s'y arrêter.
   const intangible = isIntangible(token);
-  const taken = new Set();
+  const taken = new Map();
   for ( const other of scene.tokens ) {
     if ( intangible ) break;
     if ( (other === token) || other.hidden || isDefeated(other) || isIntangible(other) || sharesSpaceWith(token, other) ) continue;
     if ( preview && other.object && !other.object.visible ) continue;   // ne pas révéler un token invisible
     const o = footprintOf(other);
-    for ( let di = 0; di < o.h; di++ ) for ( let dj = 0; dj < o.w; dj++ ) taken.add(`${cellKey({ i: o.i + di, j: o.j + dj })}@${other._source.level}`);
+    const slice = positionOf(other._source);
+    for ( let di = 0; di < o.h; di++ ) for ( let dj = 0; dj < o.w; dj++ ) {
+      const key = `${cellKey({ i: o.i + di, j: o.j + dj })}@${other._source.level}`;
+      if ( !taken.has(key) ) taken.set(key, []);
+      taken.get(key).push(slice);
+    }
   }
 
   const layer = canvas.tokens;
@@ -276,8 +283,11 @@ export function worldFor(token, { throughDoors=false }={}) {
     catch { return [center(cell)]; }
   };
   const ceilingOf = cell => ceilingAt(scene, pointsOf(cell), groundOf(cell)) - (depth * grid.distance);
+  // §192 : en escalade, chaque point dit son élévation (celle du grimpeur) et son action — sans elles, la coupe au budget du tour
+  // (`constrainMovementPath`) mesurait le premier pas depuis le sol, et un grimpeur ne pouvait plus marcher le long du mur en combat.
   const altitude = cell => placement
-    ? { elevation: coherentElevation(mode, elevationOf(cell), groundOf(cell), clearance, (placement === "air") ? ceilingOf(cell) : Infinity), action: mode } : {};
+    ? { elevation: coherentElevation(mode, elevationOf(cell), groundOf(cell), clearance, (placement === "air") ? ceilingOf(cell) : Infinity), action: mode }
+    : ((mode === "climb") ? { elevation: elevationOf(cell), action: mode } : {});
   const difficult = difficultRegionsFor(token);
   const difficultCache = new Map();
   const difficultAt = cell => {
@@ -338,7 +348,14 @@ export function worldFor(token, { throughDoors=false }={}) {
       if ( (placement === "ground") && ((from.level ?? ownLevel) === (to.level ?? ownLevel)) && !groundStepAllowed(groundOf(from), groundOf(to), clearance) ) return false;
       return !wallBetween(from, to);
     },
-    canEnd: cell => !cellsOf(cell).some(c => taken.has(`${cellKey(c)}@${cell.level ?? ownLevel}`)),
+    canEnd: cell => {
+      if ( !taken.size ) return true;
+      const level = cell.level ?? ownLevel;
+      const occupants = cellsOf(cell).flatMap(c => taken.get(`${cellKey(c)}@${level}`) ?? []);
+      if ( !occupants.length ) return true;
+      const mine = { elevation: altitude(cell).elevation ?? elevationOf(cell), depth };
+      return !occupants.some(o => overlapsVertically(mine, o, grid.distance));
+    },
     // Terrain difficile : cases occupées (dnd5e) et régions ; les deux ne se cumulent pas (canvas/token.mjs:73).
     inStairs: cell => inStairs(cell),
     /** Un pas de `from` à sa voisine `to` sans mur entre les deux (dans le niveau de `to`). */

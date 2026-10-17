@@ -19,6 +19,7 @@ import { freshBudget, costOf } from "../core/turn.mjs";
 import { convertLength } from "../core/units.mjs";
 import { readUnitFactors, lengthIn } from "./units.mjs";
 import { depthOf, verticalExtent, verticalGap } from "../core/space.mjs";
+import { climbSpeed } from "../core/climb.mjs";
 import { multiattackOf, useKeysOf, isMultiattackItem } from "./multiattack.mjs";
 import { pendingMetamagic, distantRange } from "./metamagic.mjs";
 
@@ -364,18 +365,20 @@ export function movementOf(combatant, factors) {
   // §17.2 : plus le déplacement dépensé pour se relever.
   const budget = readBudget(combatant);
   const spent = historyCosts(token).spent + (Number(budget.climbed) || 0) + (Number(budget.stood) || 0);
-  return { spent, ...speedOf(combatant.actor, factors) };
+  return { spent, ...speedOf(combatant.actor, factors, token._source?.movementAction ?? null) };
 }
 
 /**
  * Vitesse de marche d'un acteur, dans l'unité de la grille (hors combat aussi : §67, la réaction qui rejoint l'attaquant).
+ * §192 : en escalade (`mode` = `climb`), la vitesse d'escalade si la fiche en a une, sinon la marche (le ×2 est dans le coût de dnd5e).
  * @returns {{speed: number, units: string}|null}
  */
-export function speedOf(actor, factors) {
+export function speedOf(actor, factors, mode=null) {
   const movement = actor?.system.attributes?.movement;
   if ( !movement ) return null;
   const gridUnits = canvas.scene?.grid.units ?? movement.units;
-  const walk = movement.speeds?.walk ?? movement.walk ?? 0;
-  let speed = lengthIn(walk, movement.units, gridUnits, factors);
+  const speeds = movement.speeds ?? movement;
+  const value = (mode === "climb") ? climbSpeed(speeds).speed : (speeds.walk ?? 0);
+  let speed = lengthIn(value, movement.units, gridUnits, factors);
   return { speed, units: gridUnits };
 }

@@ -70,6 +70,7 @@ import { stopAllWalks } from "./adapter/movement.mjs";
 import { budgetIssues, spendBudget, takeBasicAction, requestSave, dropHeldBy } from "./runtime/neighbours.mjs";
 import { registerGrapple } from "./runtime/grapple.mjs";
 import { registerProne } from "./runtime/prone.mjs";
+import { registerClimb } from "./runtime/climb.mjs";
 import { registerBreaks } from "./runtime/breaks.mjs";
 import { registerCure } from "./runtime/cure.mjs";
 import { registerBlink } from "./runtime/blink.mjs";
@@ -280,6 +281,7 @@ Hooks.once("init", () => {
   gated(registerFamiliars);   // §107 : vision et poche dimensionnelle des familiers (leurs actions de base : registerBasics)
   gated(registerGrapple);
   gated(registerProne);
+  gated(registerClimb);   // §192 : grimper aux murs, chute du grimpeur qui ne tient plus
   gated(registerBreaks);
   gated(registerCure);
   gated(registerBlink);

@@ -190,10 +190,13 @@ export function planPath(token, to, { maxCost=Infinity, throughDoors=false }={})
     if ( !cut && Number.isFinite(remaining) && (full.length > 1) ) {
       const terrain = object.createTerrainMovementPath(full, { preview });
       const [path] = object.constrainMovementPath(terrain, { maxCost: remaining, history: true, preview, ...(world.intangible ? { ignoreTokens: true } : {}) });
-      // Le cœur ajoute des points de terrain : on recompte NOS cases atteintes, par position.
-      const reached = new Set(path.map(p => `${Math.round(p.x)},${Math.round(p.y)}`));
+      // Le cœur ajoute des points de terrain : on recompte NOS cases atteintes, par position. À quelques pixels près : quand le budget
+      // tombe exactement sur une case (§192, vu le 2026-10-17 : 20 ft dépensés, un pas d'escalade à 10 ft, 30 de plafond), l'arrondi
+      // flottant du cœur coupe le pas un pixel avant la case (y = 201 pour 200) — la case est atteinte, à 0,05 ft près.
+      const tolerance = Math.max(2, token.parent.grid.size * 0.02);
+      const reached = point => path.some(p => (Math.abs(p.x - point.x) <= tolerance) && (Math.abs(p.y - point.y) <= tolerance));
       kept = 1;
-      while ( (kept < full.length) && reached.has(`${Math.round(full[kept].x)},${Math.round(full[kept].y)}`) ) kept++;
+      while ( (kept < full.length) && reached(full[kept]) ) kept++;
       // On ne s'arrête pas sur une case prise : reculer jusqu'à une case libre.
       while ( (kept > 1) && (kept < full.length) && !world.canEnd(leg.cells[kept - 1]) ) kept--;
       if ( kept < full.length ) cut = true;

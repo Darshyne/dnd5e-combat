@@ -34,7 +34,7 @@ const F = "full";
 /** Le niveau minimal de chaque `register…()` du point d'entrée. */
 export const FEATURE_LEVELS = Object.freeze({
   // Toujours : le socle, le déplacement, la souris, le budget du tour, la vision, l'interface.
-  registerPerf: E, registerContent: E, registerIcons: E, registerAltitude: E, registerActions: E, registerFollow: E,
+  registerPerf: E, registerContent: E, registerIcons: E, registerAltitude: E, registerClimb: E, registerActions: E, registerFollow: E,
   registerFacing: E, registerPointer: E, registerTurn: E, registerVision: E, registerSpace: E, registerBasics: E,
   registerIllumination: E, registerPerception: E, registerTracker: E, registerLightIndicator: E, registerFeedback: E,
   registerPurge: E, registerAutomation: E, registerSummonHandover: E, registerFactions: E, registerFactionsUI: E, registerSettingsWindow: E, registerStealthMode: E, registerStealthUI: E,

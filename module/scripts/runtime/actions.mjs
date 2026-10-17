@@ -11,7 +11,8 @@
 import { MODULE_ID } from "../constants.mjs";
 import { movementAllowance } from "../core/turn.mjs";
 import { footprintGap, chooseBasicAttack, dragMultiplier, dragAllowance } from "../core/movement.mjs";
-import { combatantFor, readBudget, movementOf, speedOf, rangeOf, historyCosts, tokenCenter } from "../adapter/turn.mjs";
+import { combatantFor, readBudget, movementOf, speedOf, rangeOf, historyCosts, tokenCenter, positionOf } from "../adapter/turn.mjs";
+import { overlapsVertically } from "../core/space.mjs";
 import { pilotOf, pilotOfActor, commandPlan, commandDistance, commandActivities, summonerToken, isIntangible } from "../adapter/pilot.mjs";
 import { readUnitFactors, lengthIn } from "../adapter/units.mjs";
 import { sharesSpaceWith } from "../adapter/space-sharing.mjs";
@@ -80,11 +81,15 @@ export function occupiedAt(token, position) {
   // §16.15 : la Main de Bigby « n'occupe pas son espace » — ni elle ne gêne, ni elle n'est gênée.
   if ( isIntangible(token) ) return false;
   const mine = { ...cellOf(token, position), ...sizeOf(token) };
+  // §192 : en trois dimensions — un grimpeur au-dessus d'une case occupée n'y est pas (tranche des pieds à la tête).
+  const slice = positionOf({ ...token._source, ...position });
+  const distance = token.parent.grid.distance;
   const defeated = CONFIG.specialStatusEffects.DEFEATED;
-  // L'emprise d'abord (un calcul de cases) : les tests qui lisent le contenu des objets (intangible, espace partagé) ne visent que
-  // les tokens qui touchent la case. Dans l'ordre inverse, chaque pas d'une marche coûtait ~16 ms sur l'Arène (mesuré le 2026-10-17).
+  // L'emprise d'abord (un calcul de cases), la tranche ensuite (une soustraction) : les tests qui lisent le contenu des objets
+  // (intangible, espace partagé) ne visent que les tokens qui touchent la case. Dans l'ordre inverse, chaque pas d'une marche
+  // coûtait ~16 ms sur l'Arène (mesuré le 2026-10-17).
   return token.parent.tokens.some(other => (other !== token) && !other.hidden
-    && (footprintGap(mine, footprintOf(other)) === 0)
+    && (footprintGap(mine, footprintOf(other)) === 0) && overlapsVertically(slice, positionOf(other._source), distance)
     && !other.actor?.statuses?.has(defeated) && (other.object?.visible !== false) && !isIntangible(other) && !sharesSpaceWith(token, other));
 }
 

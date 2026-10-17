@@ -12,11 +12,12 @@ import { MODULE_ID } from "../constants.mjs";
 import { RECALL_RANGE, recallProblem } from "../core/familiar.mjs";
 import { contentOf } from "./content.mjs";
 import { summonItemOf } from "./summons.mjs";
-import { distanceBetween } from "./turn.mjs";
+import { distanceBetween, positionOf } from "./turn.mjs";
 import { cellUnder, footprintOf } from "./movement.mjs";
 import { isIntangible } from "./pilot.mjs";
 import { sharesSpaceWith } from "./space-sharing.mjs";
 import { footprintGap } from "../core/movement.mjs";
+import { overlapsVertically } from "../core/space.mjs";
 import { lengthIn } from "./units.mjs";
 
 const POCKET = "pocket";
@@ -91,8 +92,10 @@ export function recallSpot(masterToken, point) {
   let limit = lengthIn(RECALL_RANGE.value, RECALL_RANGE.units, scene.grid.units);
   const distance = distanceBetween(masterToken, probe).value;
   const mine = footprintOf(probe);
+  const slice = positionOf(probe._source);   // §192 : occupation en trois dimensions
   const defeated = CONFIG.specialStatusEffects.DEFEATED;
   const occupied = scene.tokens.some(other => !other.hidden && !other.actor?.statuses?.has(defeated)
-    && !isIntangible(other) && !sharesSpaceWith(probe, other) && (footprintGap(mine, footprintOf(other)) === 0));
+    && !isIntangible(other) && !sharesSpaceWith(probe, other) && (footprintGap(mine, footprintOf(other)) === 0)
+    && overlapsVertically(slice, positionOf(other._source), scene.grid.distance));
   return { x: at.x, y: at.y, level, elevation, problem: recallProblem({ distance, limit, occupied }) };
 }

@@ -29,6 +29,7 @@ import { wallsOfCaster } from "../adapter/wall-side.mjs";
 import { flipWallSide } from "../runtime/wall-side.mjs";
 import { pickUpEntries } from "../runtime/scatter.mjs";
 import { igniteEntries } from "../runtime/flammable.mjs";
+import { climbEntries } from "../runtime/climb.mjs";
 import { actingToken, engageWith, exclusive, inCombat, observe } from "./pointer.mjs";
 import { down, startRecall } from "./pointer-mouse.mjs";
 
@@ -220,6 +221,8 @@ export function selfEntries(token) {
   entries.push(...pickUpEntries(token));
   // §188 : allumer une flaque d'huile, une toile, au contact, avec une flamme.
   entries.push(...igniteEntries(token));
+  // §192 : grimper au mur qu'on touche ; en escalade, se laisser tomber.
+  entries.push(...climbEntries(token));
   // §38.2 : Troc du filou — depuis l'illusion ou depuis son lanceur.
   const swap = transposeOf(token);
   if ( swap ) entries.push({ icon: "fa-solid fa-arrows-rotate", label: loc("Menu.Echanger", { name: (swap.illusion === token ? swap.caster : swap.illusion).name }), run: () => transpose(token) });

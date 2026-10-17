@@ -20,6 +20,9 @@ import { sleep } from "./shared.mjs";
 import { cellArg, finite, gmOnly, positionJson, viewedToken, waypointOf, windows } from "./testing-shared.mjs";
 import { budget } from "./testing-rules.mjs";
 import { wall } from "./testing-areas.mjs";
+import { startClimb, dropDown as dropDownIntent, canClimb, climbRoom } from "./climb.mjs";
+import { wallsNear, isClimbing, climbingOf, climbRules } from "../adapter/climb.mjs";
+import { MODE_STATUSES } from "../adapter/conditions.mjs";
 
 /** Les escaliers et échelles de la scène, avec les cases qu'ils couvrent (centre dans la région). */
 export function stairs({ tokenId }) {
@@ -234,3 +237,33 @@ export async function door({ tokenId, wallId, open=true }) {
 
 /* -------------------------------------------- */
 /*  §177 : diagnostic, pour les scénarios          */
+
+/* -------------------------------------------- */
+/*  Escalade (§192)                             */
+/* -------------------------------------------- */
+
+/** L'état d'un grimpeur (ou d'un candidat) : murs touchés, mode, statut, ce qu'il peut monter, règles du monde. */
+export function climbState({ tokenId }) {
+  const token = viewedToken({ tokenId });
+  const walls = wallsNear(token).map(w => w.id);
+  const room = canClimb(token) || isClimbing(token) ? climbRoom(token) : null;
+  return { walls, canClimb: canClimb(token), climbing: isClimbing(token), status: token.actor?.statuses?.has(MODE_STATUSES.climbing.id) === true,
+    rules: climbRules(), speed: climbingOf(token), room: room ? { ...room, remaining: finite(room.remaining) } : null, position: positionJson(token),
+    falling: token.actor?.statuses?.has("falling") === true, checkedAt: token.getFlag(MODULE_ID, "climb")?.checkedAt ?? null };
+}
+
+/** Grimper de `cells` cases, comme l'entrée de menu (sans fenêtre), et attendre la montée. */
+export async function climb({ tokenId, cells }) {
+  const token = viewedToken({ tokenId });
+  const before = positionJson(token);
+  const done = await startClimb(token, { cells: Number.isFinite(cells) ? cells : null });
+  return { done, before, after: positionJson(token), ...climbState({ tokenId }) };
+}
+
+/** « Se laisser tomber » : chute volontaire, comme l'entrée de menu. */
+export async function dropDown({ tokenId }) {
+  const token = viewedToken({ tokenId });
+  const before = positionJson(token);
+  const done = await dropDownIntent(token);
+  return { done, before, after: positionJson(token), hp: token.actor?.system?.attributes?.hp?.value ?? null, ...climbState({ tokenId }) };
+}

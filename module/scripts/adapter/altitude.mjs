@@ -195,8 +195,9 @@ export function effectiveMode(token, pos=committedPosition(token)) {
   return (to && !modeRefusalFor(token.actor, to)) ? to : mode;
 }
 
-/** Le token est-il en l'air (en vol, ou au-dessus de son sol) ? */
+/** Le token est-il en l'air (en vol, ou au-dessus de son sol) ? §192 : un grimpeur tient au mur, il n'est pas en l'air. */
 export function isAirborne(token) {
   if ( placementOf(token.movementAction) === "air" ) return true;
+  if ( token._source.movementAction === "climb" ) return false;
   return (token._source.elevation ?? 0) > groundUnder(token) + 1e-6;
 }

@@ -148,3 +148,14 @@ export function pointBoxDistance(point, box) {
 export function withinSphere(sphere, box) {
   return pointBoxDistance(sphere, box) <= sphere.radius + 1e-6;
 }
+
+/**
+ * Deux positions se chevauchent-elles verticalement (des pieds à la tête) ? Un grimpeur à 10 ft au-dessus d'une case occupée n'en
+ * occupe pas l'espace (§192 : occupation en trois dimensions). Tête contre pieds compte comme un contact.
+ * @param {{elevation?: number, depth?: number}} a
+ * @param {{elevation?: number, depth?: number}} b
+ * @param {number} gridDistance
+ */
+export function overlapsVertically(a, b, gridDistance) {
+  return verticalGap(verticalExtent(a, gridDistance), verticalExtent(b, gridDistance)) <= 1e-6;
+}

@@ -92,10 +92,22 @@ export const TURN_STATUSES = Object.freeze({
   readied: { id: "readied", name: "DND5ECOMBAT.Etat.readied", img: "icons/svg/clockwork.svg" }
 });
 
+/**
+ * §192 : états de mode tenus par le moteur (d'après `movementAction`, pas le budget) : en escalade. L'effet porte l'immunité à la
+ * chute (`system.traits.ci.value` + `falling`) : dnd5e réévalue « En chute » à chaque mise à jour liée de l'acteur ou de ses effets
+ * (`TokenDocument5e#_onRelatedUpdate` → `updateFalling()`, sans déplacement) et ne sait alors rien de l'escalade — un grimpeur à
+ * 10 ft se retrouvait « En chute » dès qu'un effet changeait (vu côté joueur le 2026-10-17) ; `_isFalling` s'incline devant cette
+ * immunité (documents/token.mjs). L'immunité part avec le statut, avant que le moteur ne fasse tomber le grimpeur.
+ */
+export const MODE_STATUSES = Object.freeze({
+  climbing: { id: "climbing", name: "DND5ECOMBAT.Etat.climbing", img: "icons/svg/up.svg",
+    changes: [{ key: "system.traits.ci.value", mode: 2, value: "falling" }] }
+});
+
 /** À appeler à `init`, avant que le système ne fige sa liste d'états. */
 export function registerTurnStatuses() {
-  for ( const status of Object.values(TURN_STATUSES) ) {
-    CONFIG.DND5E.statusEffects[status.id] ??= { name: status.name, img: status.img, order: 90 };
+  for ( const status of [...Object.values(TURN_STATUSES), ...Object.values(MODE_STATUSES)] ) {
+    CONFIG.DND5E.statusEffects[status.id] ??= { name: status.name, img: status.img, order: 90, ...(status.changes ? { changes: status.changes } : {}) };
   }
 }
 

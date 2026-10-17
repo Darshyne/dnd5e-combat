@@ -17,6 +17,7 @@ import { doorState, setDoorOpen } from "../runtime/doors.mjs";
 import { cleaveCandidates } from "../adapter/mastery.mjs";
 import { cancelPendingRoll, pendingRoll } from "../runtime/cancel.mjs";
 import { loc } from "../runtime/shared.mjs";
+import { fireTargetAt, igniteWithActivity } from "../runtime/flammable.mjs";
 import { showHitChance, showSaveChance, hideHitChance, showBadge } from "./hitchance.mjs";
 import { floatNotice } from "./feedback.mjs";
 import { actingToken, busy, dashing, engageWith, exclusive, finishGroup, inCombat, interruptWalk, markTargeting, openRecall, pickTarget, picking, placing, promptTargeting, recalling, setReticleRefused, setting, stopTargeting, targetTypeRefusal, targeting } from "./pointer.mjs";
@@ -165,7 +166,15 @@ export function onPointerUp(event) {
   if ( recalling ) return recallTo(scenePoint(event));
   if ( picking ) return pickTarget(hover);
   if ( targeting ) {
-    if ( !hover ) return;
+    // §189 : pas de créature sous la souris — une flaque d'huile, une toile, pour une action de feu (un token sur la zone l'emporte).
+    if ( !hover ) {
+      const aim = fireTargetAt(targeting.token, targeting.activity, scenePoint(event));
+      if ( !aim ) return;
+      if ( aim.refused ) return floatNotice(targeting.token, loc("Retour.HorsDePortee"), "refused");
+      const { token, activity, usage } = targeting;
+      stopTargeting();
+      return exclusive(() => igniteWithActivity(token, activity, usage, aim.zone));
+    }
     // §16.29 : un refus (hors de portée, rebond impossible) laisse la visée ouverte.
     const refusal = refusalFor(targeting.token, hover, targeting.activity, targeting.usage?.[0]);
     if ( refusal ) return floatNotice(hover, refusal, "refused");
@@ -448,6 +457,12 @@ export const onPointerMove = foundry.utils.throttle(event => {
         : (activity.type !== "attack") ? "spell"
         : (activity.attack?.type?.value === "ranged") ? "ranged" : "melee";
     }
+  }
+  // §189 : en visée d'une action de feu, une flaque d'huile, une toile, se vise comme une cible.
+  else if ( !hover && targeting && fireTargetAt(me, targeting.activity, point) ) {
+    const refused = !!fireTargetAt(me, targeting.activity, point).refused;
+    setReticleRefused(refused);
+    cursor = refused ? "outOfRange" : "spell";
   }
   else if ( !hover && !targeting && hoveredDoor() ) cursor = null;   // §18.25 : l'icône de porte garde le curseur du cœur
   // §41.2 : un escalier que le token peut prendre — le clic l'y mène (clic-déplacement actif).

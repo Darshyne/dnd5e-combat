@@ -11,7 +11,8 @@
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { readAreaState, writeAreaState, lastingRegions, isInside } from "../adapter/areas.mjs";
-import { committedPosition } from "../adapter/turn.mjs";
+import { committedPosition, tokenCenter } from "../adapter/turn.mjs";
+import { lengthIn } from "../adapter/units.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { carriedLightsOf, carriedLightEffect } from "../adapter/carried-lights.mjs";
 import { burnedOut } from "../core/area.mjs";
@@ -242,6 +243,52 @@ export function igniteEntries(token) {
     const item = fromUuidSync(region.getFlag("dnd5e", "item") ?? "", { strict: false });
     return { icon: "fa-solid fa-fire", label: loc("Embrase.Allumer", { item: item?.name ?? region.name }), run: () => igniteViaGM(region, `lit by ${token.name}`) };
   });
+}
+
+/* -------------------------------------------- */
+/*  Viser une zone (§189)                       */
+/* -------------------------------------------- */
+
+/**
+ * §189 : en visée d'une action de feu à cible unique (Trait de feu), la zone inflammable pas encore en feu sous ce point — `{ zone }`,
+ * `{ zone, refused: "outOfRange" }` au-delà de la portée (la longue, s'il y en a une ; « au contact » : 1,50 m), ou null. Appelée
+ * seulement quand aucune créature n'est sous la souris : un token sur la zone reste la cible.
+ */
+export function fireTargetAt(token, activity, point) {
+  if ( !token?.parent || !point || !levelAtLeast("full") || !dealsFire(activity) ) return null;
+  const zone = unlitZones(token.parent).find(r => r.testPoint({ x: point.x, y: point.y,
+    elevation: Number.isFinite(r.elevation?.bottom) ? r.elevation.bottom : 0 }));
+  if ( !zone ) return null;
+  const range = activity.range ?? {};
+  const touch = range.units === "touch";
+  const max = touch ? 5 : (Number(range.long) || Number(range.value) || 0);
+  const units = touch ? "ft" : range.units;
+  if ( max && units && (units !== "self") && (units !== "any") ) {
+    const grid = token.parent.grid;
+    const limit = lengthIn(max, units, grid.units);
+    const center = centerOf(zone);
+    const from = tokenCenter(token);
+    const distance = center ? grid.measurePath([{ x: from.x, y: from.y }, center]).distance : 0;
+    // La case de la zone la plus proche compte : sa demi-largeur est retirée de la distance au centre.
+    const half = (grid.distance ?? 5) / 2;
+    if ( (distance - half) > limit + 1e-6 ) return { zone, refused: "outOfRange" };
+  }
+  return { zone };
+}
+
+/**
+ * §189 : l'action de feu part sur la zone visée — son utilisation (coût, emplacement, carte), sans créature ciblée ni jet enchaîné, puis
+ * la zone s'embrase. `usage` : les configurations suspendues par la visée.
+ */
+export async function igniteWithActivity(token, activity, usage, zone) {
+  const [config={}, dialog={}, message={}] = usage ?? [];
+  // Aucune créature ciblée : l'action part sur la zone seule.
+  for ( const t of [...(game.user.targets ?? [])] ) t.setTarget(false, { releaseOthers: false });
+  const results = await activity.use({ ...config, subsequentActions: false, [MODULE_ID]: { ...(config[MODULE_ID] ?? {}), igniteZone: zone.uuid } },
+    { ...dialog, configure: false }, message);
+  if ( !results ) return false;
+  log(`${activity.item?.name}: aimed at ${zone.name}`);
+  return igniteViaGM(zone, activity.item?.name ?? "fire");
 }
 
 /* -------------------------------------------- */

@@ -27,7 +27,7 @@ import { canSee as canSeeToken } from "../adapter/vision.mjs";
 import { sightingOf } from "../adapter/search.mjs";
 import { setHidden, check as stealthCheck, stealthViews } from "./stealth.mjs";
 import { pickableNear, pickUp, scatterZones } from "./scatter.mjs";
-import { unlitZones, ignitableNear, ignite } from "./flammable.mjs";
+import { unlitZones, ignitableNear, ignite, fireTargetAt, igniteWithActivity } from "./flammable.mjs";
 import { lastingRegions } from "../adapter/areas.mjs";
 import { readAreaState } from "../adapter/areas.mjs";
 import { isHidden, spottedBy } from "../adapter/stealth.mjs";
@@ -371,7 +371,7 @@ export async function scatter({ tokenId, pickUp: take=false }) {
  * §188 : les zones inflammables de la scène (en feu ou non) et celles que ce token peut allumer ; `ignite` : embrase la première qu'il
  * peut allumer (ou `regionId`), comme l'entrée « Allumer » du menu.
  */
-export async function flammable({ tokenId, ignite: light=false, regionId=null }) {
+export async function flammable({ tokenId, ignite: light=false, regionId=null, fireAt=null }) {
   gmOnly();
   const token = viewedToken({ tokenId });
   const tell = r => ({ id: r.id, burning: readAreaState(r)?.burning ?? null, on: readAreaState(r)?.on ?? [] });
@@ -381,5 +381,13 @@ export async function flammable({ tokenId, ignite: light=false, regionId=null })
   const out = { zones: zones.map(tell), near: near.map(tell) };
   const target = regionId ? token.parent.regions.get(regionId) : near[0];
   if ( light && target ) out.lit = await ignite(target, "test");
+  // §189 : viser ce point avec une activité de feu, comme un clic au sol pendant la visée (`{ itemId, activityId?, x, y }`).
+  if ( fireAt ) {
+    const item = token.actor.items.get(fireAt.itemId);
+    const activity = fireAt.activityId ? item?.system.activities.get(fireAt.activityId) : item?.system.activities.find(a => a.type === "attack");
+    const aim = activity ? fireTargetAt(token, activity, { x: fireAt.x, y: fireAt.y }) : null;
+    out.aim = aim ? { zone: aim.zone.id, refused: aim.refused ?? null } : null;
+    if ( aim && !aim.refused ) out.fired = await igniteWithActivity(token, activity, [{}, {}, {}], aim.zone);
+  }
   return out;
 }

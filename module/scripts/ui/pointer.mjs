@@ -419,7 +419,8 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   if ( !usageConfig[MODULE_ID]?.engaged && !usageConfig[MODULE_ID]?.confirmed ) closeSheetFor(activity);
   // §125 : une action que le moteur lance sur les cibles qu'il a choisies (visée, projectiles, groupe) — retenues jusqu'à leur relâchement.
   if ( ours.engaged || ours.picks || ours.projectileOf ) noteInFlight(activity);
-  if ( !setting("targetingMode") || usageConfig[MODULE_ID]?.engaged || usageConfig[MODULE_ID]?.confirmed ) return true;
+  // §189 : une action de feu tirée sur une flaque d'huile, une toile — sans créature ciblée, rien à viser.
+  if ( !setting("targetingMode") || usageConfig[MODULE_ID]?.engaged || usageConfig[MODULE_ID]?.confirmed || ours.igniteZone ) return true;
   // §125 : les cibles d'une action précédente pas encore réglée (son animation, ses jets) ne servent pas à une autre — vu : un Mot
   // de guérison lancé juste après une Moquerie cruelle a soigné le Zombi encore ciblé. Relâchées, et la visée s'ouvre.
   if ( leftoverTargets(activity) ) { clearTargets(); log(`${activity.item?.name}: previous action's targets released, targeting opened`); }

@@ -105,6 +105,28 @@ export default {
       ctx.expect(!!(await zoneState(id))?.burning, "une zone de feu posée sur la flaque l'embrase");
     });
 
+    await part("Trait de feu tiré sur la flaque (§189)", async () => {
+      // La flaque sans personne dessus : le Zombi part au sud.
+      await ctx.call("move-token", { tokenId: zombi.id, x: home.x, y: home.y + g });
+      await pause(600);
+      const id = await spread();
+      if ( !id ) return;
+      const bolt = await ctx.ensureItem(mage, SPELLS + "phbsplFireBolt00");
+      const hp = await ctx.hp(zombi);
+      const since = await ctx.lastMessageId();
+      const r = await flammable({ fireAt: { itemId: bolt, x: spot.x + (g / 2), y: spot.y + (g / 2) } });
+      await pause(2000);
+      ctx.expect(r.aim?.zone === id && !r.aim.refused, `le Trait de feu vise la flaque (${JSON.stringify(r.aim)})`);
+      ctx.expect(r.fired === true, "il part, et la flaque s'embrase");
+      ctx.expect(!!(await zoneState(id))?.burning, "la flaque est en feu");
+      const usages = (await ctx.messagesSince(since)).filter(m => m.type === "usage");
+      ctx.expect(usages.length === 1, `une carte d'utilisation du sort (${usages.length})`);
+      ctx.expect((await ctx.hp(zombi)) === hp, "personne d'autre n'est touché");
+      // À côté de la flaque : rien à viser.
+      const miss = await flammable({ fireAt: { itemId: bolt, x: spot.x - (3 * g) + (g / 2), y: spot.y + (g / 2) } });
+      ctx.expect(miss.aim === null, "un point hors d'une flaque ne se vise pas");
+    });
+
     await part("Allumer au contact (c), puis en combat", async () => {
       const id = await spread();
       if ( !id ) return;

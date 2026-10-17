@@ -85,7 +85,7 @@
   "DND5ECOMBAT.Raison.target": "cible {status}",
   "DND5ECOMBAT.Raison.proneFar": "À terre (attaque hors de contact)",
   "DND5ECOMBAT.Raison.longRange": "portée longue",
-  "DND5ECOMBAT.Raison.closeCombat": "tir au corps à corps (ennemi à 5 ft)",
+  "DND5ECOMBAT.Raison.closeCombat": "tir au corps à corps (ennemi à {distance})",
   "DND5ECOMBAT.Raison.unseen.attacker": "attaquant non vu de la cible",
   "DND5ECOMBAT.Raison.unseen.target": "cible non vue de l'attaquant",
   "DND5ECOMBAT.Abri.half": "abri partiel",

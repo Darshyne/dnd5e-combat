@@ -85,7 +85,7 @@
   "DND5ECOMBAT.Raison.target": "target {status}",
   "DND5ECOMBAT.Raison.proneFar": "Prone (attacker beyond 5 ft)",
   "DND5ECOMBAT.Raison.longRange": "long range",
-  "DND5ECOMBAT.Raison.closeCombat": "ranged attack in close combat (enemy within 5 ft)",
+  "DND5ECOMBAT.Raison.closeCombat": "ranged attack in close combat (enemy within {distance})",
   "DND5ECOMBAT.Raison.unseen.attacker": "attacker unseen by the target",
   "DND5ECOMBAT.Raison.unseen.target": "target not seen by the attacker",
   "DND5ECOMBAT.Abri.half": "Half Cover",

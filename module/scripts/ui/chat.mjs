@@ -4,6 +4,8 @@ import { undo, CHAT_LIGHT_SETTING } from "../runtime/engine.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc } from "../runtime/shared.mjs";
 import { typesLabel } from "../adapter/eligibility.mjs";
+import { readUnitFactors } from "../adapter/units.mjs";
+import { convertLength } from "../core/units.mjs";
 
 function block(lines) {
   const div = document.createElement("div");
@@ -19,9 +21,19 @@ function block(lines) {
 
 const statusName = id => game.i18n.localize(CONFIG.statusEffects[id]?.name ?? id);
 
+/**
+ * Une distance de règle (« à 5 ft ») dans l'unité de la scène, formatée par dnd5e : « 1,5 m » sur une scène métrique (SPEC §5.7 ;
+ * le texte figé « 5 ft » restait en pieds sur une scène en mètres — retour de table, 2026-10-17).
+ */
+function sceneLength(feet) {
+  const units = canvas?.scene?.grid?.units ?? "ft";
+  try { return dnd5e.utils.formatLength(convertLength(feet, "ft", units, readUnitFactors()), units); }
+  catch { return dnd5e.utils.formatLength(feet, "ft"); }   // unité de scène inconnue de dnd5e : la règle en pieds
+}
+
 /** Une source d'avantage ou de désavantage (core/conditions.mjs), en clair. */
 export function describeReason(r) {
-  if ( r.who === "situation" ) return loc(`Raison.${r.key}`);
+  if ( r.who === "situation" ) return game.i18n.format(`DND5ECOMBAT.Raison.${r.key}`, { distance: sceneLength(5) });
   if ( r.who === "content" ) return r.key;   // le nom de l'item qui le déclare (§16, B6)
   if ( r.key === "unseen" ) return loc(`Raison.unseen.${r.who}`);   // vision (P1) : pas un état
   return game.i18n.format(`DND5ECOMBAT.Raison.${r.who}`, { status: r.key === "proneFar" ? loc("Raison.proneFar") : statusName(r.key) });

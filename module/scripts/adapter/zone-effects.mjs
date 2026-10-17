@@ -55,3 +55,54 @@ export async function holdZoneEffects(region) {
   }]);
   return { behavior, effects: effects.map(e => e.name) };
 }
+
+/**
+ * §191 : les effets portés par la zone, remis en accord avec la position du token. Le comportement du cœur ne les retire qu'à une
+ * sortie qu'il voit : un token téléporté (`blink`, Pas brumeux) ou déplacé de force (`displace`) hors de la Tempête radieuse de
+ * Jallarzi restait Aveuglé, et en y revenant en recevait une seconde copie (vu le 2026-10-18). Pour chaque zone `zoneEffects` du
+ * moteur : hors de la zone, ses copies (origine = le comportement) partent ; dedans, il en faut une par effet — les doublons partent,
+ * les manquantes sont recréées comme le cœur les crée (apply-active-effect.mjs, `#getEffectsToCreate`). MJ actif.
+ * @param {TokenDocument} token
+ * @returns {Promise<number>}  Le nombre de zones corrigées.
+ */
+export async function syncZoneEffects(token) {
+  const actor = token?.actor;
+  if ( !actor || !token.parent ) return 0;
+  let fixed = 0;
+  for ( const region of token.parent.regions ) {
+    if ( contentOf(activityOf(region)?.item).entry?.zoneEffects !== true ) continue;
+    for ( const behavior of region.behaviors ) {
+      if ( (behavior.type !== "applyActiveEffect") || behavior.disabled ) continue;
+      const mine = actor.effects.filter(e => e.origin === behavior.uuid);
+      const inside = token.testInsideRegion(region, { x: token._source.x, y: token._source.y, elevation: token._source.elevation,
+        width: token._source.width, height: token._source.height, shape: token._source.shape, level: token._source.level });
+      const sources = (await Promise.all(Array.from(behavior.system.effects ?? []).map(uuid => fromUuid(uuid)))).filter(Boolean);
+      if ( !inside ) {
+        if ( !mine.length ) continue;
+        await actor.deleteEmbeddedDocuments("ActiveEffect", mine.map(e => e.id));
+        fixed++;
+        continue;
+      }
+      const extra = [];
+      const missing = [];
+      for ( const source of sources ) {
+        const copies = mine.filter(e => (e._stats?.duplicateSource === source.uuid) || (e._stats?.compendiumSource === source.uuid) || (e.name === source.name));
+        extra.push(...copies.slice(1).map(e => e.id));
+        if ( !copies.length ) missing.push(source);
+      }
+      if ( extra.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", extra);
+      if ( missing.length ) {
+        await actor.createEmbeddedDocuments("ActiveEffect", missing.map(effect => {
+          const data = effect.toObject();
+          delete data._id;
+          data._stats = { ...(data._stats ?? {}), duplicateSource: effect.compendium ? null : effect.uuid,
+            compendiumSource: effect.compendium ? effect.uuid : null, exportSource: null };
+          data.origin = behavior.uuid;
+          return data;
+        }));
+      }
+      if ( extra.length || missing.length ) fixed++;
+    }
+  }
+  return fixed;
+}

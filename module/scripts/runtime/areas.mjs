@@ -7,7 +7,7 @@ import { concentrationOn } from "../adapter/summons.mjs";
 import { placeAreaAt } from "../adapter/self-area.mjs";
 import { positionOf as position, committedPosition, tokenCenter } from "../adapter/turn.mjs";
 import { noteSummonExpiry, expiredSummons } from "../adapter/summons.mjs";
-import { holdZoneEffects, holdDifficultTerrain } from "../adapter/zone-effects.mjs";
+import { holdZoneEffects, holdDifficultTerrain, syncZoneEffects } from "../adapter/zone-effects.mjs";
 import { wallSideRuleOf, isThinWall, crossesWallRegion } from "../adapter/wall-side.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
@@ -302,6 +302,15 @@ export function registerAreas() {
   }, { executor: true, label: "summon: duration not recorded" });
   route("combatTurnChange", onTurnChange, trigger);
   route("moveToken", onMoveToken, trigger);
+  // §191 : les effets portés par une zone (Silence, Tempête radieuse) suivent la position, téléportation comprise — après le
+  // comportement du cœur, qui agit à l'entrée et à la sortie qu'il voit (une seconde plus tard : sa création ou son retrait est fait).
+  route("moveToken", token => {
+    if ( !token.parent?.regions.some(r => r.behaviors.some(b => b.type === "applyActiveEffect")) ) return;
+    setTimeout(() => {
+      syncZoneEffects(token).then(n => { if ( n ) log(`${token.name}: area effects realigned with its position (${n})`); })
+        .catch(err => console.error(`${MODULE_ID} | area effects`, err));
+    }, 1000);
+  }, { executor: true, label: "area: carried effects not realigned" });
   // Un déplacement arrêté entre deux morceaux (`stopMovement`, appelé sur tous les clients, documents/token.mjs:792) : les cases
   // déjà parcourues comptent.
   route("stopToken", settleCrossings, trigger);

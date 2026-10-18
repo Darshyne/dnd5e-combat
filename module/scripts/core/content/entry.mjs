@@ -158,7 +158,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       if ( !kinds.length || !kinds.every(k => BASIC_ACTION_KINDS.includes(k)) ) errors.push(`${at}basicActions.${id}: ${BASIC_ACTION_KINDS.join(", ")} (or a list)`);
     }
   }
-  for ( const key of ["actionOrBonus", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "noOpportunityAttacks", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
+  for ( const key of ["actionOrBonus", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "noOpportunityAttacks", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
   validateExtras(entry, at, errors);
   if ( ("cures" in entry) && (!Array.isArray(entry.cures) || !entry.cures.length || !entry.cures.every(s => (typeof s === "string") && s)) ) {
     errors.push(`${at}cures: list of condition identifiers`);
@@ -169,10 +169,16 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   if ( "effectChanges" in entry ) {
     const e = entry.effectChanges;
     const okChange = c => isObject(c) && (typeof c.key === "string") && c.key && (typeof c.type === "string") && c.type
-      && ["string", "number", "boolean"].includes(typeof c.value) && Object.keys(c).every(k => ["key", "type", "value"].includes(k));
+      && ["string", "number", "boolean"].includes(typeof c.value) && (!("replace" in c) || (c.replace === true))
+      && Object.keys(c).every(k => ["key", "type", "value", "replace"].includes(k));
     if ( !isObject(e) || !Object.entries(e).every(([id, list]) => isId(id) && Array.isArray(list) && list.length && list.every(okChange)) ) {
-      errors.push(`${at}effectChanges: { <effect id>: [{ key, type, value }] }`);
+      errors.push(`${at}effectChanges: { <effect id>: [{ key, type, value, replace? }] }`);
     }
+  }
+  if ( "grantsSpeeds" in entry ) {
+    const g = entry.grantsSpeeds;
+    const okSpeed = ([type, value]) => ["burrow", "climb", "fly", "swim"].includes(type) && ((value === "walk") || (Number.isFinite(value) && (value > 0)));
+    if ( !isObject(g) || !Object.keys(g).length || !Object.entries(g).every(okSpeed) ) errors.push(`${at}grantsSpeeds: { burrow|climb|fly|swim: "walk" or a positive number }`);
   }
   if ( ("potionEffect" in entry) && !isId(entry.potionEffect) ) errors.push(`${at}potionEffect: effect id (16 characters)`);
   if ( ("enchantTarget" in entry) && !["weapon", "ownWeapon"].includes(entry.enchantTarget) ) errors.push(`${at}enchantTarget: "weapon" or "ownWeapon"`);

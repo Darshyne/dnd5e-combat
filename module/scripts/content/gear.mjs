@@ -49,8 +49,19 @@ export const GEAR = Object.freeze({
   "oil": {
     triggers: [{ on: "failedSave", do: [{ type: "mark", mark: "oiled", label: "Marque.Huile", seconds: 60 }] }],
     replacesAttack: ["FoeoumkYcnAsGCRo"],
-    flammable: { ground: true, damage: "5", type: "fire", rounds: 2, seconds: 12, on: ["enter", "turnEnd"] }
+    flammable: { ground: true, damage: "5", type: "fire", rounds: 2, seconds: 12, on: ["enter", "turnEnd"] },
+    // §195 : la flaque est une surface glissante (« couverte de glace ou d'huile », Pantoufles d'araignée).
+    slippery: true
   },
+  // §195 : Pantoufles d'araignée (Guide du maître) — « monter, descendre, traverser des surfaces verticales et marcher au plafond, les
+  // mains libres. Vous avez une vitesse d'escalade égale à votre Vitesse. Mais pas sur une surface glissante, couverte de glace ou d'huile
+  // par exemple ». Le plafond : core/climb.mjs ; la vitesse, absente des données, tenue par le MJ actif tant qu'elles sont portées et
+  // harmonisées (runtime/speed-grants.mjs). Limite : sur une surface glissante, cette vitesse d'escalade reste (seul le plafond est refusé).
+  "slippers-of-spider-climbing": { notOnSlippery: true, grantsSpeeds: { climb: "walk" } },
+  // Cape d'arachnide : « une vitesse d'escalade égale à votre Vitesse » — l'effet des données écrit 1 (`upgrade`), comme Pattes
+  // d'araignée ; l'effet est transféré par l'item (pas créé sur l'acteur) : la Vitesse lui est accordée à côté, et l'`upgrade` garde la
+  // plus grande des deux.
+  "cloak-of-arachnida": { grantsSpeeds: { climb: "walk" } },
   // §53 : Élixir de santé — « les états suivants prennent fin : Aveuglé, Assourdi, Paralysé et Empoisonné » ; Potion de vitalité —
   // « supprime tout niveau d'Épuisement et met fin à l'état Empoisonné » (les dés de vie au maximum pendant 24 h : au MJ).
   "elixir-of-health": { curesAll: ["blinded", "deafened", "paralyzed", "poisoned"] },

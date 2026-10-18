@@ -69,7 +69,7 @@ export default {
 
     // 2. Pattes d'araignée lancée sur lui-même : la capacité vient de l'effet du sort.
     const spellId = await ctx.ensureItem(hero, SPIDER_CLIMB, { system: { method: "atwill" } });
-    await ctx.use({ tokenId: hero.id, itemId: spellId, targets: [hero.id], collectMs: 1500 });
+    await ctx.use({ tokenId: hero.id, itemId: spellId, targetTokenIds: [hero.id], collectMs: 1500 });
     await pause(800);
     s = await state();
     if ( !ctx.expect(s.walksCeilings && s.canCeiling, `Pattes d'araignée en effet : capacité ${s.walksCeilings}, « Grimper au plafond » proposé ${s.canCeiling}`) ) return;

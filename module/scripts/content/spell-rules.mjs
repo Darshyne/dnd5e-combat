@@ -148,9 +148,11 @@ export const SPELL_RULES = Object.freeze({
     // qui commence son tour dans le feu. » Toute la toile brûle d'un coup (simplification) ; Entravé tombe avec elle.
     flammable: { damage: "2d4", type: "fire", rounds: 1, seconds: 6, on: ["turnStart"], frees: "restrained" }
   },
-  // Graisse : « … qui y entre ou y termine son tour fait un JS de Dextérité ou a l'état À terre ».
+  // Graisse : « … qui y entre ou y termine son tour fait un JS de Dextérité ou a l'état À terre ». §195 : une surface glissante (les
+  // Pantoufles d'araignée n'y tiennent pas).
   "grease": {
     difficultTerrain: {},
+    slippery: true,
     triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }, { on: "failedSave", do: [{ type: "status", status: "prone" }] }]
   },
   "sleet-storm": { difficultTerrain: {} },
@@ -339,9 +341,20 @@ export const SPELL_RULES = Object.freeze({
   // munitions » — deux attaques gratuites ouvertes (comme le Déluge de coups), la relance à l'action Bonus. (Seulement une arme à
   // munitions : au joueur.)
   "swift-quiver": { flurry: { activity: "DE7WqJFIWGteZ8xU", strikes: 2, weapons: true }, recast: true, recastCost: "bonus" },
-  // Lévitation : la cible s'élève de 6 m, redescend quand le sort prend fin (se déplacer par une action Magie : au MJ).
-  "levitate": { levitate: { effect: "axhLHcJQHprSpHRD", height: 20, units: "ft" } },
-  // Inversion de la gravité : sur un échec, la créature tombe vers le haut, au sommet du Cylindre (30 m) ; le sort fini, elle chute.
+  // Lévitation : la cible s'élève de 6 m ; « quand le sort prend fin, elle redescend doucement jusqu'au sol si elle est encore en l'air »
+  // (se déplacer par une action Magie : au MJ). §195 : tant qu'elle lévite, elle ne tombe pas — l'effet porte l'immunité à « En chute »
+  // de dnd5e, qui sinon la ferait chuter dès qu'elle s'élève ; l'effet fini, elle se pose sur le sol que dnd5e trouve sous elle, sans dégâts.
+  "levitate": {
+    levitate: { effect: "axhLHcJQHprSpHRD", height: 20, units: "ft" },
+    effectChanges: { axhLHcJQHprSpHRD: [{ key: "system.traits.ci.value", type: "add", value: "falling" }] }
+  },
+  // Pattes d'araignée : « une vitesse d'escalade égale à votre Vitesse » — l'effet des données écrit la formule `@attributes.movement.walk`
+  // en `upgrade`, qui donne 1 ft (§194) : remplacée par la Vitesse du porteur, lue à la pose (§195).
+  "spider-climb": {
+    effectChanges: { q2ug9SpVRCGuudoG: [{ key: "system.attributes.movement.climb", type: "upgrade", value: "@walk", replace: true }] }
+  },
+  // Inversion de la gravité : sur un échec, la créature tombe vers le haut, au sommet du Cylindre (30 m) ; le sort fini, elle chute
+  // (§195 : la chute de dnd5e, 1d6 par 3 m, À terre si elle subit des dégâts).
   "reverse-gravity": { triggers: [{ on: "failedSave", do: [{ type: "lift", height: 100, units: "ft" }] }] },
   // Embruns prismatiques : un d8 par cible pour la couleur (la sauvegarde rejouée de l'indigo, la téléportation du violet : au MJ).
   "prismatic-spray": { prismatic: { indigo: "cCQh7iXKnT8PKmc1", violet: "jFAGct9YCYvLJodW" } },

@@ -146,7 +146,7 @@ describe("contenu livré", () => {
 
   it("réunit déclencheurs et auras par identifiant", () => {
     expect(Object.keys(CONTENT).sort()).toEqual([
-      "aberrant-anatomy", "abjure-foes", "absorb-elements", "action-surge", "adrenaline-rush", "agile", "air-element", "air-form",
+      "aberrant-anatomy", "abjure-foes", "absorb-elements", "acrobatic-movement", "action-surge", "adrenaline-rush", "agile", "air-element", "air-form",
       "alchemists-fire", "alert", "ambush", "ancient-might", "animal-friendship", "animate-objects", "antilife-shell", "antimagic-field",
       "arcane-eye", "arcane-gate", "arcane-hand", "arcane-recovery", "arcane-vigor", "arcane-ward", "armor-of-agathys", "arms-of-hadar",
       "assassinate", "athlete", "aura-of-authority", "aura-of-bravery", "aura-of-courage", "aura-of-devotion", "aura-of-life",
@@ -157,7 +157,7 @@ describe("contenu livré", () => {
       "boon-of-irresistible-offense", "boon-of-recovery", "boon-of-speed", "boon-of-spell-recall", "boon-of-the-night-spirit", "brave",
       "breath-weapon", "brute-spirit", "bubble-dash", "bullseye-lantern", "call-lightning", "calm-emotions", "caltrops", "candle", "careful-spell",
       "cause-fear", "celestial-revelation", "channel-divinity", "channel-divinity-cleric", "charger", "charging-horn", "charm-monster",
-      "charm-person", "chill-touch", "chromatic-orb", "circle-of-mortality", "circle-of-power", "cloud-of-daggers", "cloudkill",
+      "charm-person", "chill-touch", "chromatic-orb", "circle-of-mortality", "circle-of-power", "cloak-of-arachnida", "cloud-of-daggers", "cloudkill",
       "clouds-jaunt", "command", "commanders-strike", "commanding-presence", "compelled-duel", "compulsion", "confusion", "conjure-animals",
       "conjure-celestial", "conjure-elemental", "conjure-fey", "conjure-minor-elementals", "conjure-woodland-beings", "contagion",
       "continual-flame", "cordon-of-arrows", "corrosive-form", "cosmic-omen", "counterspell", "coward-spirit", "crossbow-expert",
@@ -202,8 +202,8 @@ describe("contenu livré", () => {
       "scorching-ray", "sculpt-spells", "sear-undead", "searing-smite", "see-invisibility", "sentinel", "sentinel-at-deaths-door",
       "shade-spirit", "shadow-stealth", "shadow-walk", "shadowy-dodge", "sharp-eye-ravenloft", "sharpshooter", "shatter", "shield",
       "shield-master", "shillelagh", "shining-smite", "shocking-grasp", "sickening-vapors", "silence", "skulker", "slam", "slasher",
-      "sleep", "sleet-storm", "slow", "smelting-charge", "sneak-attack", "spare-the-dying", "speedy", "spell-resistance", "spell-sniper",
-      "spike-growth", "spirit-guardians", "spirit-shroud", "spiritual-weapon", "staggering-smite", "starry-wisp", "steady-aim", "stench",
+      "sleep", "sleet-storm", "slippers-of-spider-climbing", "slow", "smelting-charge", "sneak-attack", "spare-the-dying", "speedy", "spell-resistance", "spell-sniper",
+      "spider-climb", "spike-growth", "spirit-guardians", "spirit-shroud", "spiritual-weapon", "staggering-smite", "starry-wisp", "steady-aim", "stench",
       "steps-of-the-fey", "stinking-cloud", "stomp", "stones-endurance", "storm-of-vengeance", "stormborn", "storms-thunder",
       "studied-attacks", "stunning-strike", "subtle-spell", "suggestion", "summon-aberration", "summon-beast", "summon-celestial",
       "summon-construct", "summon-dragon", "summon-elemental", "summon-fey", "summon-fiend", "summon-undead", "sunburst", "supreme-healing",

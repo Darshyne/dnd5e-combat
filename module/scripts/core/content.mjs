@@ -226,9 +226,11 @@
  *                                               « agrandir » d'Agrandissement/rapetissement, Rapetissement → « rapetisser »)
  *     effectStatuses?: { <id d'effet>: string[] }  §96 : états ajoutés à cet effet de l'item quand il est posé (Esprit couard :
  *                                               l'effet « Frightened » de la donnée n'a pas l'état)
- *     effectChanges?: { <id d'effet>: [{ key, type, value }] }
+ *     effectChanges?: { <id d'effet>: [{ key, type, value, replace? }] }
  *                                               changements ajoutés à cet effet de l'item quand il est posé (§53 : Vol, Escalade —
- *                                               les données ne donnent pas la vitesse) ; `value: "@walk"` = la vitesse au sol du porteur
+ *                                               les données ne donnent pas la vitesse) ; `value: "@walk"` = la vitesse au sol du porteur ;
+ *                                               `replace` : remplace le changement de même clé que porte déjà l'effet (§195 : Pattes
+ *                                               d'araignée, dont la formule ne donne pas la Vitesse)
  *     castTargets?: true                        le sort que la potion fait lancer vise normalement (§53 : Amitié avec les animaux —
  *                                               « vous pouvez lancer le sort » sur une bête), au lieu du buveur
  *     curesAll?: string[]                       l'utilisation fait cesser TOUS ces états sur la cible (§53 : Élixir de santé,
@@ -565,7 +567,15 @@
  *                                               `seconds` hors combat : `damage` de `type` aux moments `on`, une fois par tour, puis elle
  *                                               disparaît ; `ground` : la zone reste au sol jusque-là (Huile, sans durée) ; `frees` : l'état
  *                                               qu'elle posait tombe avec elle (Toile d'araignée)
- *     discipleOfLife?: true                     un sort de soin lancé par un emplacement rend 2 + le niveau de l'emplacement de plus à
+ *     climbsCeilings?: true                     §194 : l'item (ou l'effet qu'il a posé) donne la marche au plafond
+ *     grantsSpeeds?: { <vitesse>: "walk" | number }
+ *                                               §195 : le porteur a cette vitesse (« égale à votre Vitesse » : "walk"), par un effet que
+ *                                               le MJ actif tient sur l'acteur tant que l'item y est — les données n'en ont pas (Athlète)
+ *     climbsOnTurn?: true                       §195 : « Courir sur le mur » — surfaces verticales pendant son tour, sans test, sans
+ *                                               armure ni bouclier ; il tombe s'il finit son tour au mur (Mouvement acrobatique)
+ *     slippery?: true                           §195 : la zone de l'item est une surface glissante (Graisse, Huile)
+ *     notOnSlippery?: true                      §195 : l'item ne donne pas la marche au plafond sur une surface glissante (Pantoufles)
+ *     discipleOfLife?: true                    un sort de soin lancé par un emplacement rend 2 + le niveau de l'emplacement de plus à
  *                                               chaque créature soignée (§27)
  *     blessedHealer?: true                      le même sort, s'il soigne une autre créature, rend 2 + le niveau au lanceur (§27)
  *     targets?: { types?, unaffectedIf? }       qui l'action peut affecter (§16.8) : `types` = types de créature permis

@@ -71,6 +71,7 @@ import { budgetIssues, spendBudget, takeBasicAction, requestSave, dropHeldBy } f
 import { registerGrapple } from "./runtime/grapple.mjs";
 import { registerProne } from "./runtime/prone.mjs";
 import { registerClimb } from "./runtime/climb.mjs";
+import { registerSpeedGrants } from "./runtime/speed-grants.mjs";
 import { registerBreaks } from "./runtime/breaks.mjs";
 import { registerCure } from "./runtime/cure.mjs";
 import { registerBlink } from "./runtime/blink.mjs";
@@ -282,6 +283,7 @@ Hooks.once("init", () => {
   gated(registerGrapple);
   gated(registerProne);
   gated(registerClimb);   // §192 : grimper aux murs, chute du grimpeur qui ne tient plus
+  gated(registerSpeedGrants);   // §195 : vitesses que le contenu accorde (Athlète : escalade)
   gated(registerBreaks);
   gated(registerCure);
   gated(registerBlink);

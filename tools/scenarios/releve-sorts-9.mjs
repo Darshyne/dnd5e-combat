@@ -86,9 +86,19 @@ export default {
       }
       const up = await elevation(fighter);
       ctx.expect(up === 20, `Lévitation : le Guerrier à ${up} ft`);
+      // §195 : en l'air, il lévite — dnd5e ne le met pas « En chute » (immunité portée par l'effet) ; l'effet fini, il se pose en douceur.
+      await pause(1500);
+      const aloft = (await ctx.effects(fighter)).filter(e => !e.disabled).flatMap(e => e.statuses ?? []);
+      ctx.expect(!aloft.includes("falling"), `Lévitation : en l'air sans « En chute » (${aloft.join(", ") || "aucun état"})`);
+      const hpUp = await ctx.hp(fighter);
+      const since = await ctx.lastMessageId();
       await clearNew(mage); await clearNew(fighter);
       await pause(2500);
+      const landed = (await ctx.effects(fighter)).filter(e => !e.disabled).flatMap(e => e.statuses ?? []);
+      const fallCard = (await ctx.messagesSince(since)).some(m => (m.type === "damage") && m.flags?.dnd5e?.context?.fall);
       ctx.expect((await elevation(fighter)) === 0, `Lévitation : l'effet retiré, il redescend à ${await elevation(fighter)} ft`);
+      ctx.expect(((await ctx.hp(fighter)) === hpUp) && !fallCard && !landed.includes("falling") && !landed.includes("prone"),
+        `Lévitation : posé en douceur — PV ${hpUp} → ${await ctx.hp(fighter)}, carte de chute ${fallCard ? "postée" : "aucune"}, ${landed.join(", ") || "aucun état"}`);
     });
 
     await part("Inversion de la gravité", async () => {

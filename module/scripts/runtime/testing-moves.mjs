@@ -21,7 +21,8 @@ import { cellArg, finite, gmOnly, positionJson, viewedToken, waypointOf, windows
 import { budget } from "./testing-rules.mjs";
 import { wall } from "./testing-areas.mjs";
 import { startClimb, dropDown as dropDownIntent, canClimb, climbRoom, canClimbCeiling, climbToCeiling, ceilingRoom, canClimbDown, climbDown as climbDownIntent, descentRoom } from "./climb.mjs";
-import { wallsNear, isClimbing, isOnCeiling, climbingOf, climbRules, canWalkCeilings, ceilingPerchFor, FLIP_FLAG } from "../adapter/climb.mjs";
+import { wallsNear, isClimbing, isOnCeiling, climbingOf, climbRules, canWalkCeilings, ceilingPerchFor, FLIP_FLAG, inSlipperyZone, canWalkCeilingsAt, acrobaticFor } from "../adapter/climb.mjs";
+import { speedGrantEffects } from "./speed-grants.mjs";
 import { MODE_STATUSES } from "../adapter/conditions.mjs";
 
 /** Les escaliers et échelles de la scène, avec les cases qu'ils couvrent (centre dans la région). */
@@ -255,14 +256,18 @@ export function climbState({ tokenId }) {
     onCeiling: isOnCeiling(token), canCeiling: canClimbCeiling(token), walksCeilings: canWalkCeilings(token.actor),
     perch: ceilingPerchFor(token), ceiling: ceiling ? { perch: ceiling.perch, cells: ceiling.cells, affordable: ceiling.affordable } : null,
     ceilingStatus: token.actor?.statuses?.has(MODE_STATUSES.ceiling.id) === true, canDown: canClimbDown(token),
-    scaleY: token._source.texture?.scaleY ?? 1, flip: token.getFlag(MODULE_ID, FLIP_FLAG) ?? null };
+    scaleY: token._source.texture?.scaleY ?? 1, flip: token.getFlag(MODULE_ID, FLIP_FLAG) ?? null,
+    // Lot 3 (§195) : surface glissante, capacité au plafond ici, « Courir sur le mur », vitesses accordées par le contenu.
+    slippery: inSlipperyZone(token), walksCeilingsHere: canWalkCeilingsAt(token), canRun: acrobaticFor(token),
+    acrobatic: token.getFlag(MODULE_ID, "climb")?.acrobatic === true,
+    grants: speedGrantEffects(token.actor).map(e => ({ id: e.id, name: e.name, changes: (e.system?.changes ?? e.changes ?? []).map(c => ({ key: c.key, value: c.value })) })) };
 }
 
-/** Grimper de `cells` cases, comme l'entrée de menu (sans fenêtre), et attendre la montée. */
-export async function climb({ tokenId, cells }) {
+/** Grimper de `cells` cases, comme l'entrée de menu (sans fenêtre), et attendre la montée ; `acrobatic` : « Courir sur le mur » (§195). */
+export async function climb({ tokenId, cells, acrobatic=false }) {
   const token = viewedToken({ tokenId });
   const before = positionJson(token);
-  const done = await startClimb(token, { cells: Number.isFinite(cells) ? cells : null });
+  const done = await startClimb(token, { cells: Number.isFinite(cells) ? cells : null, acrobatic: acrobatic === true });
   return { done, before, after: positionJson(token), ...climbState({ tokenId }) };
 }
 

@@ -1,6 +1,6 @@
 /**
- * Escalade (SPEC §192, lots 1 et 2), lue dans Foundry : les murs qu'un token touche, son état de grimpeur, ses vitesses, la marche
- * au plafond (sa capacité, le plafond au-dessus de lui).
+ * Escalade (SPEC §192, lots 1 à 3), lue dans Foundry : les murs qu'un token touche, son état de grimpeur, ses vitesses, la marche
+ * au plafond (sa capacité, le plafond au-dessus de lui), les surfaces glissantes et le Mouvement acrobatique du moine (§195).
  *
  * Vérifié :
  *  - les arêtes d'un niveau sont dans `Level#edges` (client/documents/level.mjs:51, un `CanvasEdges`), interrogées par rectangle
@@ -12,9 +12,12 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { segmentTouchesRect, isClimbableWall, climbSpeed, climbMultiplier, climbFallReason, grantsCeiling, ceilingPerch } from "../core/climb.mjs";
+import {
+  segmentTouchesRect, isClimbableWall, climbSpeed, climbMultiplier, climbFallReason, grantsCeiling, ceilingPerch, acrobaticAllowed
+} from "../core/climb.mjs";
 import { identifierOf, contentOf } from "./content.mjs";
 import { originItemOf } from "./facts.mjs";
+import { isConcentrationEffect } from "./concentration.mjs";
 import { settingOr } from "./settings.mjs";
 import { committedPosition, positionOf } from "./turn.mjs";
 import { groundUnder, boundsUnder, speedsOf } from "./altitude.mjs";
@@ -112,19 +115,21 @@ export function aboveGround(token) {
  * La créature peut-elle marcher au plafond (§192.3) ? Par un item qu'elle porte — identifiant `spider-climb` (trait de monstre, trait
  * du Dhampir de Ravenloft), `slippers-of-spider-climbing`, `cloak-of-arachnida` (équipés), ou toute entrée de contenu `climbsCeilings`
  * (ouvert aux voisins) — ou par un effet qu'un tel item a posé (le SORT Pattes d'araignée : le connaître ne suffit pas, comme pour
- * l'espace partagé, adapter/space-sharing.mjs).
+ * l'espace partagé, adapter/space-sharing.mjs). Sur une surface glissante (`slippery`, §195), pas par les Pantoufles d'araignée.
  * @param {Actor5e} actor
+ * @param {{slippery?: boolean}} [options]
  */
-export function canWalkCeilings(actor) {
+export function canWalkCeilings(actor, { slippery=false }={}) {
   if ( !actor ) return false;
-  const grants = item => grantsCeiling(identifierOf(item).id, contentOf(item).entry);
+  const grants = item => grantsCeiling(identifierOf(item).id, contentOf(item).entry, { slippery });
   for ( const item of actor.items ?? [] ) {
     if ( item.type === "spell" ) continue;
     if ( (item.type === "equipment") && !item.system?.equipped ) continue;
     if ( grants(item) ) return true;
   }
   for ( const effect of actor.effects ?? [] ) {
-    if ( effect.disabled || effect.isSuppressed ) continue;
+    // §195 : la concentration du lanceur a pour origine le sort aussi — elle ne donne rien (Pattes d'araignée lancée sur un allié).
+    if ( effect.disabled || effect.isSuppressed || isConcentrationEffect(effect) ) continue;
     const item = originItemOf(effect);
     if ( item && grants(item) ) return true;
   }
@@ -148,4 +153,52 @@ export function ceilingPerchFor(token, pos=committedPosition(token)) {
 export function hangsAt(token, pos=committedPosition(token)) {
   const perch = ceilingPerchFor(token, pos);
   return (perch !== null) && (Math.abs((pos.elevation ?? token._source.elevation ?? 0) - perch) < 1e-6);
+}
+
+/* -------------------------------------------- */
+/*  Contenu (lot 3, §195)                       */
+/* -------------------------------------------- */
+
+/** La zone d'une région est-elle glissante (son item déclare `slippery` : Graisse, flaque d'Huile) ? */
+function isSlipperyRegion(region) {
+  const uuid = region.getFlag?.("dnd5e", "item");
+  if ( !uuid ) return false;
+  const item = fromUuidSync(uuid, { strict: false });
+  return contentOf(item).entry?.slippery === true;
+}
+
+/**
+ * Le token se tient-il, à cette position, sur une surface glissante — dans une zone Graisse ou une flaque d'Huile (élévation comprise :
+ * la zone a sa tranche, on en sort en montant) ?
+ * @param {TokenDocument} token
+ * @param {object} [pos]
+ */
+export function inSlipperyZone(token, pos=committedPosition(token)) {
+  for ( const region of token?.parent?.regions ?? [] ) {
+    if ( !isSlipperyRegion(region) ) continue;
+    try { if ( token.testInsideRegion(region, pos) ) return true; }
+    catch { /* région sans forme */ }
+  }
+  return false;
+}
+
+/** La créature peut-elle marcher au plafond là où se tient ce token (les Pantoufles ne tiennent pas sur une surface glissante) ? */
+export const canWalkCeilingsAt = (token, pos=committedPosition(token)) => canWalkCeilings(token?.actor, { slippery: inSlipperyZone(token, pos) });
+
+/** L'item de Mouvement acrobatique de l'acteur (contenu `climbsOnTurn`), ou null. */
+export function acrobaticItemOf(actor) {
+  return (actor?.items ?? []).find(i => contentOf(i).entry?.climbsOnTurn === true) ?? null;
+}
+
+/**
+ * Le token peut-il « courir sur le mur » maintenant (Mouvement acrobatique, §195) : l'item, sans armure ni bouclier, et en combat à son
+ * tour seulement (hors combat, toujours).
+ */
+export function acrobaticFor(token) {
+  const actor = token?.actor;
+  if ( !acrobaticItemOf(actor) ) return false;
+  const ac = actor.system?.attributes?.ac ?? {};
+  const combat = game.combat?.started ? game.combat : null;
+  const inCombat = !!combat?.combatants.some(c => c.tokenId === token.id);
+  return acrobaticAllowed({ armor: !!ac.equippedArmor, shield: !!ac.equippedShield, inCombat, ownTurn: combat?.combatant?.tokenId === token.id });
 }

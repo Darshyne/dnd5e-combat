@@ -1,8 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   segmentTouchesRect, isClimbableWall, climbSpeed, climbMultiplier, climbFallReason, climbableCells, climbCheckDue, MAX_CLIMB_CELLS,
-  CEILING_DC, CEILING_IDENTIFIERS, grantsCeiling, ceilingPerch, hangsFrom, flippedScale
+  CEILING_DC, CEILING_IDENTIFIERS, grantsCeiling, ceilingPerch, hangsFrom, flippedScale,
+  grantedSpeedChanges, sameSpeedChanges, acrobaticAllowed, acrobaticFallDue
 } from "../module/scripts/core/climb.mjs";
+import { validateEntry } from "../module/scripts/core/content.mjs";
+import { SHIPPED } from "../module/scripts/content/index.mjs";
 import { overlapsVertically, verticalExtent, verticalGap } from "../module/scripts/core/space.mjs";
 
 const cell = { x: 100, y: 100, width: 100, height: 100 };
@@ -110,5 +113,64 @@ describe("plafonds (§192, lot 2)", () => {
     expect(gap({ elevation: 0, depth: 1 }, { elevation: 15, depth: 1 })).toBe(10);
     expect(gap({ elevation: 0, depth: 2 }, { elevation: 15, depth: 1 })).toBe(5);
     expect(gap({ elevation: 10, depth: 1 }, { elevation: 15, depth: 1 })).toBe(0);
+  });
+});
+
+describe("escalade, contenu (§195)", () => {
+  it("les Pantoufles ne donnent pas le plafond sur une surface glissante, les autres capacités si", () => {
+    const slippers = SHIPPED["slippers-of-spider-climbing"];
+    expect(grantsCeiling("slippers-of-spider-climbing", slippers)).toBe(true);
+    expect(grantsCeiling("slippers-of-spider-climbing", slippers, { slippery: true })).toBe(false);
+    expect(grantsCeiling("cloak-of-arachnida", null, { slippery: true })).toBe(true);
+    expect(grantsCeiling("spider-climb", SHIPPED["spider-climb"], { slippery: true })).toBe(true);
+  });
+  it("la Graisse et la flaque d'Huile sont des surfaces glissantes", () => {
+    expect(SHIPPED["grease"].slippery).toBe(true);
+    expect(SHIPPED["oil"].slippery).toBe(true);
+    expect(SHIPPED["web"].slippery).toBeUndefined();
+  });
+  it("Athlète : une vitesse d'escalade égale à la Vitesse, de la forme des capacités de dnd5e", () => {
+    expect(SHIPPED["athlete"].grantsSpeeds).toEqual({ climb: "walk" });
+    expect(grantedSpeedChanges({ climb: "walk" }, 30)).toEqual([{ key: "system.attributes.movement.climb", type: "upgrade", value: "30" }]);
+    expect(grantedSpeedChanges({ swim: 20, climb: "walk" }, 25).map(c => c.value)).toEqual(["20", "25"]);
+    expect(grantedSpeedChanges({ climb: "walk" }, 0)).toEqual([]);   // sans Vitesse, rien
+  });
+  it("un effet de vitesse accordée n'est réécrit que si ses changements diffèrent", () => {
+    const wanted = grantedSpeedChanges({ climb: "walk" }, 30);
+    expect(sameSpeedChanges([{ key: "system.attributes.movement.climb", type: "upgrade", value: "30", phase: "initial" }], wanted)).toBe(true);
+    expect(sameSpeedChanges([{ key: "system.attributes.movement.climb", type: "upgrade", value: "25" }], wanted)).toBe(false);
+    expect(sameSpeedChanges([], wanted)).toBe(false);
+  });
+  it("Mouvement acrobatique : sans armure ni bouclier, à son tour en combat, toujours hors combat", () => {
+    expect(acrobaticAllowed({})).toBe(true);
+    expect(acrobaticAllowed({ inCombat: true, ownTurn: true })).toBe(true);
+    expect(acrobaticAllowed({ inCombat: true, ownTurn: false })).toBe(false);
+    expect(acrobaticAllowed({ armor: true })).toBe(false);
+    expect(acrobaticAllowed({ shield: true, inCombat: true, ownTurn: true })).toBe(false);
+    expect(SHIPPED["acrobatic-movement"].climbsOnTurn).toBe(true);
+  });
+  it("le moine tombe s'il finit son tour encore au mur, pas redescendu ni au plafond", () => {
+    expect(acrobaticFallDue({ acrobatic: true, climbing: true, aboveGround: true })).toBe(true);
+    expect(acrobaticFallDue({ acrobatic: true, climbing: true, aboveGround: false })).toBe(false);
+    expect(acrobaticFallDue({ acrobatic: true, climbing: true, aboveGround: true, onCeiling: true })).toBe(false);
+    expect(acrobaticFallDue({ acrobatic: false, climbing: true, aboveGround: true })).toBe(false);
+  });
+  it("le schéma : grantsSpeeds, climbsOnTurn, slippery, notOnSlippery, effectChanges.replace", () => {
+    for ( const id of ["athlete", "acrobatic-movement", "slippers-of-spider-climbing", "grease", "oil", "spider-climb", "levitate"] ) {
+      expect(validateEntry(SHIPPED[id])).toEqual([]);
+    }
+    expect(validateEntry({ grantsSpeeds: { climb: 30 } })).toEqual([]);
+    expect(validateEntry({ grantsSpeeds: { walk: "walk" } }).length).toBe(1);   // la marche ne s'accorde pas ainsi
+    expect(validateEntry({ grantsSpeeds: { climb: 0 } }).length).toBe(1);
+    expect(validateEntry({ grantsSpeeds: {} }).length).toBe(1);
+    expect(validateEntry({ climbsOnTurn: "oui" }).length).toBe(1);
+    expect(validateEntry({ slippery: false }).length).toBe(1);
+    expect(validateEntry({ effectChanges: { q2ug9SpVRCGuudoG: [{ key: "k", type: "upgrade", value: "@walk", replace: false }] } }).length).toBe(1);
+  });
+  it("Pattes d'araignée : la vitesse d'escalade remplacée par la Vitesse ; Lévitation : immunisé contre la chute", () => {
+    const [change] = Object.values(SHIPPED["spider-climb"].effectChanges)[0];
+    expect(change).toEqual({ key: "system.attributes.movement.climb", type: "upgrade", value: "@walk", replace: true });
+    const [immune] = SHIPPED["levitate"].effectChanges.axhLHcJQHprSpHRD;
+    expect(immune).toEqual({ key: "system.traits.ci.value", type: "add", value: "falling" });
   });
 });

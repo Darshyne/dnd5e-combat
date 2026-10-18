@@ -128,8 +128,10 @@ export const FEATS = Object.freeze({
   // Rapide : « les attaques d'opportunité contre vous ont le Désavantage » (la Vitesse : l'effet du Manuel ; Foncer sans terrain
   // difficile : non joué).
   "speedy": { opportunityDisadvantage: true },
-  // Athlète, Bond : « à terre, vous vous relevez avec seulement 1,50 m de déplacement ». La vitesse d'escalade et les sauts : non joués.
-  "athlete": { quickStand: { value: 5, units: "ft" } },
+  // Athlète, Bond : « à terre, vous vous relevez avec seulement 1,50 m de déplacement ». Vitesse d'escalade : « une vitesse d'escalade
+  // égale à votre Vitesse » — les données n'en ont pas d'effet : le MJ actif la tient sur l'acteur (§195, runtime/speed-grants.mjs).
+  // Les sauts avec élan : non joués.
+  "athlete": { quickStand: { value: 5, units: "ft" }, grantsSpeeds: { climb: "walk" } },
   // Observateur, Fouille rapide : « l'action Chercher par une action Bonus ».
   "observant": { quickSearch: true },
 

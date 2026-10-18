@@ -1,5 +1,5 @@
 /**
- * Escalade (SPEC §192, lot 1 : les murs ; lot 2 : les plafonds). Noyau pur.
+ * Escalade (SPEC §192, lot 1 : les murs ; lot 2 : les plafonds ; lot 3 : le contenu, §195). Noyau pur.
  *
  * Règles 2024 (Manuel des joueurs, glossaire « Climbing », « Climb Speed ») : grimper ne demande aucun jet — chaque pied coûte un
  * pied de plus sans vitesse d'escalade (le coût est celui de dnd5e, action `climb`), rien de plus avec. Le DD 15 Force
@@ -103,8 +103,14 @@ export const climbCheckDue = (lastAt, now, intervalMs) => !Number.isFinite(lastA
  */
 export const CEILING_IDENTIFIERS = Object.freeze(["spider-climb", "slippers-of-spider-climbing", "cloak-of-arachnida"]);
 
-/** Un item (son identifiant, son entrée de contenu) donne-t-il la marche au plafond ? */
-export const grantsCeiling = (identifier, entry=null) => CEILING_IDENTIFIERS.includes(identifier) || (entry?.climbsCeilings === true);
+/**
+ * Un item (son identifiant, son entrée de contenu) donne-t-il la marche au plafond ? Sur une surface glissante (`slippery`, §195), pas un
+ * item qui ne tient pas sur une surface glissante (`notOnSlippery` : les Pantoufles d'araignée).
+ */
+export function grantsCeiling(identifier, entry=null, { slippery=false }={}) {
+  if ( slippery && (entry?.notOnSlippery === true) ) return false;
+  return CEILING_IDENTIFIERS.includes(identifier) || (entry?.climbsCeilings === true);
+}
 
 /**
  * L'élévation des pieds d'une créature accrochée à un plafond : le plafond moins sa hauteur (`depth` en cases). null sans plafond.
@@ -128,3 +134,48 @@ export function hangsFrom(elevation, depth, gridDistance, ceiling) {
  * rendre en quittant le plafond — un token déjà en miroir repasse à l'endroit, ce qui est bien « la tête en bas » pour lui.
  */
 export const flippedScale = scaleY => -(Number(scaleY) || 1);
+
+/* -------------------------------------------- */
+/*  Contenu (lot 3)                             */
+/* -------------------------------------------- */
+
+/**
+ * Les changements d'effet qu'une règle `grantsSpeeds` (§195 : Athlète, « une vitesse d'escalade égale à votre Vitesse ») donne au porteur :
+ * `"walk"` vaut la Vitesse lue maintenant (`walk`), un nombre vaut lui-même ; même forme que les capacités de dnd5e qui donnent une
+ * vitesse (`system.attributes.movement.<vitesse>`, `upgrade`). Une valeur nulle ne donne rien.
+ * @param {Record<string, "walk"|number>} rule
+ * @param {number} walk
+ * @returns {Array<{key: string, type: string, value: string}>}
+ */
+export function grantedSpeedChanges(rule, walk) {
+  const out = [];
+  for ( const [type, value] of Object.entries(rule ?? {}) ) {
+    const speed = (value === "walk") ? (Number(walk) || 0) : (Number(value) || 0);
+    if ( speed > 0 ) out.push({ key: `system.attributes.movement.${type}`, type: "upgrade", value: String(speed) });
+  }
+  return out;
+}
+
+/** Les changements d'un effet sont-ils ceux voulus (mêmes clés, types, valeurs ; l'ordre ne compte pas) ? */
+export function sameSpeedChanges(current, wanted) {
+  const norm = list => (list ?? []).map(c => `${c.key}|${c.type}|${String(c.value)}`).sort().join(";");
+  return norm(current) === norm(wanted);
+}
+
+/**
+ * Mouvement acrobatique (§195, Moine 9) : « sans armure ni bouclier, […] des surfaces verticales pendant votre tour ». En combat, à son tour
+ * seulement ; hors combat, toujours (il n'y a pas de tour — rien ne le fait tomber).
+ * @param {{armor?: boolean, shield?: boolean, inCombat?: boolean, ownTurn?: boolean}} state
+ */
+export function acrobaticAllowed({ armor=false, shield=false, inCombat=false, ownTurn=false }={}) {
+  if ( armor || shield ) return false;
+  return !inCombat || ownTurn;
+}
+
+/**
+ * Le moine qui finissait son tour en courant sur le mur tombe-t-il ? Oui s'il y est encore (en escalade, au-dessus du sol), pas s'il est
+ * redescendu ni s'il a gagné le plafond (il n'y monte pas ainsi).
+ * @param {{acrobatic?: boolean, climbing?: boolean, aboveGround?: boolean, onCeiling?: boolean}} state
+ */
+export const acrobaticFallDue = ({ acrobatic=false, climbing=false, aboveGround=false, onCeiling=false }={}) =>
+  acrobatic && climbing && aboveGround && !onCeiling;

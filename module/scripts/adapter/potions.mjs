@@ -81,8 +81,10 @@ export function completeEffectChanges(effect) {
   const rules = contentOf(originItemOf(effect)).entry?.effectChanges;
   const key = rules ? Object.keys(rules).find(id => comesFromItemEffect(effect, id)) : null;
   if ( !key ) return 0;
-  const current = effect._source.system?.changes ?? [];
   const walk = actor.system?.attributes?.movement?.walk ?? 0;
+  // §195 : `replace` retire d'abord le changement de même clé que l'effet porte déjà (Pattes d'araignée : sa formule ne donne pas la Vitesse).
+  const replaced = new Set(rules[key].filter(c => c.replace).map(c => c.key));
+  const current = (effect._source.system?.changes ?? []).filter(x => !replaced.has(x.key));
   const added = rules[key].filter(c => !current.some(x => x.key === c.key))
     .map(c => ({ key: c.key, type: c.type, value: String(c.value === "@walk" ? walk : c.value) }));
   if ( added.length ) effect.updateSource({ "system.changes": [...current, ...added] });

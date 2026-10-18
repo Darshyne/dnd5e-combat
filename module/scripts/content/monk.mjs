@@ -44,6 +44,10 @@ export const MONK = Object.freeze({
   // Parade (Deflect Attacks, niveau 3) : « quand un jet d'attaque vous touche et que ses dégâts comptent des dégâts contondants,
   // perforants ou tranchants, votre Réaction réduit les dégâts totaux de 1d10 + Dextérité + niveau de Moine » — l'activité « Reduce »
   // (un soin dans les données) donne le montant, qui est retiré des dégâts de l'attaque au lieu de soigner.
+  // §195 : Mouvement acrobatique (niveau 9) — « sans armure ni bouclier, vous pouvez vous déplacer sur des surfaces verticales et sur les
+  // liquides pendant votre tour sans tomber pendant ce déplacement » : « Courir sur le mur » (runtime/climb.mjs), sans test, sans
+  // vitesse d'escalade ni plafond ; le moine qui finit son tour au mur tombe. Les liquides : non joués.
+  "acrobatic-movement": { climbsOnTurn: true },
   "deflect-attacks": { triggers: [{ on: "isHit", if: { "activity.dealsType": ["bludgeoning", "piercing", "slashing"] },
     do: [{ type: "use", activity: "rQwRKkuZ7WhnB7v7" }, { type: "reduce" }] }] }
 });

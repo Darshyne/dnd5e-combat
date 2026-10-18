@@ -7,7 +7,7 @@ import { selectAreaTargets, openArea, turnKeyOf, actsOnPose } from "../core/area
 import { readActivityRegion, repairSaveAbility, showTargetsTo } from "../adapter/saves.mjs";
 import { readUsage } from "../adapter/usage.mjs";
 import { concentrationEffectOf, tieRegionToConcentration } from "../adapter/concentration.mjs";
-import { areaRulesOf, isInstantaneous, writeAreaState, markTransient, shrinkToBolt, removeTransientRegions } from "../adapter/areas.mjs";
+import { areaRulesOf, isInstantaneous, writeAreaState, markTransient, shrinkToBolt, removeTransientRegions, hideRegion } from "../adapter/areas.mjs";
 import { ensureRegionElevation } from "../adapter/space.mjs";
 import { stormOf, isBoltRegion } from "../adapter/storm.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
@@ -107,6 +107,8 @@ export async function onRegionCreated(region) {
       if ( !usage?.area || scatter || ground || (rules.on.length && !actsOnPose(rules.on)) ) return null;
     } else if ( isInstantaneous(activity) || bolt ) {
       await markTransient(region, message.id);
+      // §201 : la résolution commence — la zone ne recouvre plus l'animation du sort.
+      await hideRegion(region);
       // Personne dedans : aucune résolution ne viendra la retirer. On la laisse voir un instant.
       if ( !targets.length ) setTimeout(() => removeTransientRegions(message.id).catch(() => {}), TRANSIENT_LINGER_MS);
     }

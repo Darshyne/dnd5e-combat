@@ -329,6 +329,18 @@ export function expiredRegions(now=game.time.worldTime) {
   return out;
 }
 
+/**
+ * §201 : une zone instantanée qui a servi à viser n'est plus montrée — elle reste en jeu pour le calcul (l'appartenance d'un token
+ * ne dépend pas de l'affichage), mais ne recouvre plus l'animation du sort (Foundry dessine les régions par-dessus les effets
+ * Sequencer : retour de table du 2026-10-18, Boule de feu d'Automated Animations sous la zone). Visible seulement sur le calque des
+ * régions (`REGION_VISIBILITY.LAYER`, common/constants.mjs:2212). MJ actif.
+ */
+export async function hideRegion(region) {
+  if ( !region?.parent?.regions.has(region.id) || (region.visibility === CONST.REGION_VISIBILITY.LAYER) ) return false;
+  await region.update({ visibility: CONST.REGION_VISIBILITY.LAYER });
+  return true;
+}
+
 /** Marque une région comme passagère : elle disparaîtra avec la résolution du message donné. */
 export async function markTransient(region, usageMessageId) {
   await region.setFlag(MODULE_ID, "transient", usageMessageId);

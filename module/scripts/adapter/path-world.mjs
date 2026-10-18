@@ -11,7 +11,7 @@ import { isIntangible } from "./pilot.mjs";
 import { sharesSpaceWith } from "./space-sharing.mjs";
 import { placementOf, coherentElevation, groundStepAllowed } from "../core/altitude.mjs";
 import { groundAt, ceilingAt, clearanceOf, effectiveMode } from "./altitude.mjs";
-import { isOnCeiling } from "./climb.mjs";
+import { isOnCeiling, isClimbing, wallsNear } from "./climb.mjs";
 import { cellOf, footprintOf, isDefeated, cellKey, sizeOf } from "./movement.mjs";
 
 /* -------------------------------------------- */
@@ -287,6 +287,19 @@ export function worldFor(token, { throughDoors=false }={}) {
   // §192 lot 2 : au plafond, on ne marche que sous un plafond à la même hauteur (sa tête contre lui) — plus besoin d'un mur.
   const onCeiling = isOnCeiling(token);
   const ceilingHolds = cell => !onCeiling || (Math.abs(ceilingOf(cell) - ownElevation) < 1e-6);
+  // §196 (lot 4) : au mur, on ne marche que le long d'un mur à grimper (ou là où le sol remonte jusqu'à soi) — sans quoi un grimpeur
+  // à 10 ft s'éloignait du mur en l'air (clic, manette, `api.approach`). Mis en cache par case : `wallsNear` interroge les arêtes.
+  const onWall = !onCeiling && isClimbing(token) && (ownElevation > groundOf(start) + 1e-6);
+  const wallCache = new Map();
+  const wallHolds = cell => {
+    if ( !onWall || !isOwn(cell) ) return true;
+    const key = cellKey(cell);
+    if ( !wallCache.has(key) ) {
+      const pos = { ...grid.getTopLeftPoint(cell), elevation: ownElevation, level: ownLevel };
+      wallCache.set(key, (groundOf(cell) >= ownElevation - 1e-6) || (wallsNear(token, pos).length > 0));
+    }
+    return wallCache.get(key);
+  };
   // §192 : en escalade, chaque point dit son élévation (celle du grimpeur) et son action — sans elles, la coupe au budget du tour
   // (`constrainMovementPath`) mesurait le premier pas depuis le sol, et un grimpeur ne pouvait plus marcher le long du mur en combat.
   const altitude = cell => placement
@@ -350,7 +363,7 @@ export function worldFor(token, { throughDoors=false }={}) {
       if ( !rect.contains(c.x, c.y) || (cellDistance(start, to) > SEARCH_RADIUS) || blocked(to) ) return false;
       if ( inStairs(to) && !inStairs(from) ) return false;   // on n'entre pas dans un escalier en marchant (voir ci-dessus)
       if ( (placement === "ground") && ((from.level ?? ownLevel) === (to.level ?? ownLevel)) && !groundStepAllowed(groundOf(from), groundOf(to), clearance) ) return false;
-      if ( !ceilingHolds(to) ) return false;
+      if ( !ceilingHolds(to) || !wallHolds(to) ) return false;
       return !wallBetween(from, to);
     },
     canEnd: cell => {

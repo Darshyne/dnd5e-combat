@@ -20,6 +20,7 @@ import { carriedLightsOf, carriedLightState } from "../adapter/lights.mjs";
 import { toggleCarriedLight } from "../runtime/lights.mjs";
 import { ritualModeOf } from "../adapter/grimoire.mjs";
 import { identifierOf } from "../adapter/content.mjs";
+import { climbingOf } from "../adapter/climb.mjs";
 
 /**
  * Le budget du tour d'un combattant, tel que le moteur le juge : une action reste disponible tant que l'action Attaquer a
@@ -45,7 +46,10 @@ function budget(combatant) {
  * téléportations exclues), permis (vitesse, Foncer, déplacement ouvert par un effet), et ce qui reste **réellement** — le
  * plafond que le moteur applique à la marche (victime traînée, tour achevé par un ordre). null hors combat ou sans vitesse.
  * @param {Token|TokenDocument} token
- * @returns {{spent: number, allowance: number, left: number, speed: number, units: string, dashed: boolean}|null}
+ * §196 : plus `mode` (l'action de déplacement du token : `walk`, `climb`, `fly`…) et `multiplier` (ce que coûte un pied dans ce mode :
+ * 2 en escalade sans vitesse d'escalade, le coût de dnd5e ; 1 sinon) — l'anneau d'une interface suit ainsi le grimpeur.
+ * @returns {{spent: number, allowance: number, left: number, speed: number, units: string, dashed: boolean, mode: string|null,
+ *            multiplier: number}|null}
  */
 function movement(token) {
   const doc = token?.document ?? token;
@@ -58,7 +62,9 @@ function movement(token) {
   const history = historyCosts(doc);
   const cap = movementCap(doc);
   const left = b.stopped ? 0 : Math.max(0, Number.isFinite(cap) ? cap - history.spent - history.excluded : allowance - m.spent);
-  return { spent: m.spent, allowance, left, speed: m.speed, units: m.units, dashed: !!b.dashed };
+  const mode = doc._source?.movementAction ?? null;
+  const multiplier = (mode === "climb") ? (climbingOf(doc).multiplier ?? 1) : 1;
+  return { spent: m.spent, allowance, left, speed: m.speed, units: m.units, dashed: !!b.dashed, mode, multiplier };
 }
 
 /**

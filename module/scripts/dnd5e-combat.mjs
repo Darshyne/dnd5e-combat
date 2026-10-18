@@ -12,7 +12,7 @@ import { registerCoven } from "./runtime/coven.mjs";
 import { registerReduction } from "./runtime/reduction.mjs";
 import { registerZones } from "./runtime/zones.mjs";
 import { registerAltitude } from "./runtime/altitude.mjs";
-import { registerActions, approach, pathTo, fleeFrom } from "./runtime/actions.mjs";
+import { registerActions, approach, pathTo, fleeFrom, gapCells, verticalGapCells } from "./runtime/actions.mjs";
 import { registerFollow } from "./runtime/follow.mjs";
 import { registerFacing } from "./runtime/facing.mjs";
 import { registerTurn } from "./runtime/turn.mjs";
@@ -70,7 +70,7 @@ import { stopAllWalks } from "./adapter/movement.mjs";
 import { budgetIssues, spendBudget, takeBasicAction, requestSave, dropHeldBy } from "./runtime/neighbours.mjs";
 import { registerGrapple } from "./runtime/grapple.mjs";
 import { registerProne } from "./runtime/prone.mjs";
-import { registerClimb } from "./runtime/climb.mjs";
+import { registerClimb, climbApi } from "./runtime/climb.mjs";
 import { registerSpeedGrants } from "./runtime/speed-grants.mjs";
 import { registerBreaks } from "./runtime/breaks.mjs";
 import { registerCure } from "./runtime/cure.mjs";
@@ -159,6 +159,9 @@ import { openDiagnostic } from "./ui/diagnostic.mjs";
  * `vision.canSee(observer, target)` (§178) : l'observateur voit-il la cible, selon les règles de vision du moteur (lumière, murs,
  *   vision dans le noir, brume et ténèbres, Invisible — donc une Furtivité réussie —, Aveuglé) ? `true` / `false`, ou `null` quand on
  *   ne peut pas juger (vision simulée coupée, canevas absent, token non dessiné). Tokens ou documents ; lecture seule.
+ * §196 : `climb` — l'escalade pour les voisins (runtime/climb.mjs `climbApi` : `state`, `holds`, `entries`, `up`, `run`, `ceiling`,
+ *   `down`, `drop`, `toward`) ; `gap(a, b)` → `{ cells, vertical }` — l'écart de deux tokens en cases, en trois dimensions (la distance
+ *   du moteur, des pieds à la tête : 0 superposés, 1 au contact) et son seul vide vertical (au plafond, en vol). Lecture seule.
  * `welcome.open()` : l'écran d'accueil (§177) ; `diagnostic.open({ check })` : le diagnostic du monde (vérifications, réparation après
  *   sauvegarde, restauration), sur une seule vérification si `check` est donné (macros « Outils du MJ »).
  */
@@ -171,8 +174,18 @@ const state = {
   welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic }, settings: { open: openSettings, registerWindow },
   vision: { canSee: publicCanSee, cone: publicCone, canHear: publicCanHear },
   factions: { ...factionsApi, open: () => openFactions() },
-  sneak: stealthApi
+  sneak: stealthApi,
+  climb: climbApi,
+  gap: publicGap
 };
+
+/** §196 : l'écart de deux tokens en cases (3D, et son vide vertical), pour un voisin qui juge une allonge — null s'il ne se mesure pas. */
+function publicGap(a, b) {
+  const da = a?.document ?? a;
+  const db = b?.document ?? b;
+  if ( !da?.parent?.grid || (da.parent !== db?.parent) ) return null;
+  try { return { cells: gapCells(da, db), vertical: verticalGapCells(da, db) }; } catch { return null; }
+}
 
 /** §178 : la vision du moteur pour un voisin (lecture seule) — null quand la vision simulée est coupée ou ne peut pas juger. */
 function publicCanSee(observer, target) {

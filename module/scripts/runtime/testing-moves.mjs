@@ -20,7 +20,7 @@ import { sleep } from "./shared.mjs";
 import { cellArg, finite, gmOnly, positionJson, viewedToken, waypointOf, windows } from "./testing-shared.mjs";
 import { budget } from "./testing-rules.mjs";
 import { wall } from "./testing-areas.mjs";
-import { startClimb, dropDown as dropDownIntent, canClimb, climbRoom, canClimbCeiling, climbToCeiling, ceilingRoom, canClimbDown, climbDown as climbDownIntent, descentRoom } from "./climb.mjs";
+import { startClimb, dropDown as dropDownIntent, canClimb, climbRoom, canClimbCeiling, climbToCeiling, ceilingRoom, canClimbDown, climbDown as climbDownIntent, descentRoom, climbStateOf, climbHoldsAt, climbToward as climbTowardIntent } from "./climb.mjs";
 import { wallsNear, isClimbing, isOnCeiling, climbingOf, climbRules, canWalkCeilings, ceilingPerchFor, FLIP_FLAG, inSlipperyZone, canWalkCeilingsAt, acrobaticFor } from "../adapter/climb.mjs";
 import { speedGrantEffects } from "./speed-grants.mjs";
 import { MODE_STATUSES } from "../adapter/conditions.mjs";
@@ -260,7 +260,25 @@ export function climbState({ tokenId }) {
     // Lot 3 (§195) : surface glissante, capacité au plafond ici, « Courir sur le mur », vitesses accordées par le contenu.
     slippery: inSlipperyZone(token), walksCeilingsHere: canWalkCeilingsAt(token), canRun: acrobaticFor(token),
     acrobatic: token.getFlag(MODULE_ID, "climb")?.acrobatic === true,
-    grants: speedGrantEffects(token.actor).map(e => ({ id: e.id, name: e.name, changes: (e.system?.changes ?? e.changes ?? []).map(c => ({ key: c.key, value: c.value })) })) };
+    grants: speedGrantEffects(token.actor).map(e => ({ id: e.id, name: e.name, changes: (e.system?.changes ?? e.changes ?? []).map(c => ({ key: c.key, value: c.value })) })),
+    // §196 : ce que publie `api.climb.state`.
+    api: climbStateOf(token) };
+}
+
+/** §196 : `api.climb.holds` sur une case (`cell` : { i, j }) — le grimpeur y tiendrait-il ? */
+export function climbHolds({ tokenId, cell }) {
+  return { holds: climbHoldsAt(viewedToken({ tokenId }), cell) };
+}
+
+/** §196 : `api.climb.toward` — grimper jusqu'à l'allonge d'une cible ; rend son résultat, les positions et l'écart (3D) avant / après. */
+export async function climbToward({ tokenId, targetId, reachCells=1 }) {
+  const token = viewedToken({ tokenId });
+  const target = viewedToken({ tokenId: targetId });
+  const before = { ...positionJson(token), gap: gapCells(token, target), vertical: verticalGapCells(token, target) };
+  const result = await climbTowardIntent(token, target, { reachCells });
+  await sleep(300);
+  const after = { ...positionJson(token), gap: gapCells(token, target), vertical: verticalGapCells(token, target) };
+  return { result, before, after, ...climbState({ tokenId }) };
 }
 
 /** Grimper de `cells` cases, comme l'entrée de menu (sans fenêtre), et attendre la montée ; `acrobatic` : « Courir sur le mur » (§195). */

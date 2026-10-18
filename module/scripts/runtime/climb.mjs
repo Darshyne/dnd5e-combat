@@ -28,7 +28,7 @@ import { CLIMB_DC, CEILING_DC, CLIMB_CHECK_SECONDS, climbableCells, climbCheckDu
 import { placementOf } from "../core/altitude.mjs";
 import {
   CLIMB_RULES_SETTING, CLIMB_FLAG, FLIP_FLAG, climbRules, isClimbing, isOnCeiling, wallsNear, climbingOf, climbFallReasonFor, aboveGround,
-  canWalkCeilingsAt, ceilingPerchFor, hangsAt, acrobaticFor
+  canWalkCeilingsAt, canWalkCeilings, ceilingPerchFor, hangsAt, acrobaticFor
 } from "../adapter/climb.mjs";
 import { boundsUnder, groundUnder, groundModeOf, modeRefusalFor } from "../adapter/altitude.mjs";
 import { MODE_STATUSES, setStatus } from "../adapter/conditions.mjs";
@@ -38,11 +38,14 @@ import { actorOfEffect } from "../adapter/grapple.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { pilotOf, isIntangible } from "../adapter/pilot.mjs";
 import { rulerShown, continuedFlags } from "../adapter/movement.mjs";
-import { historyCosts, positionOf } from "../adapter/turn.mjs";
+import { historyCosts, positionOf, tokenCenter } from "../adapter/turn.mjs";
 import { settingOr } from "../adapter/settings.mjs";
 import { ALTITUDE_SETTING } from "./altitude.mjs";
 import { FACING_SETTING } from "./facing.mjs";
-import { movementCap, isGrappled } from "./actions.mjs";
+import { movementCap, isGrappled, approach, gapCells } from "./actions.mjs";
+import { footprintOf, sizeOf, cellOf } from "../adapter/movement.mjs";
+import { rayBlocker } from "../adapter/cover.mjs";
+import { cellsAtGap } from "../core/orders.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { isExecutor, loc, locEsc, log, notice, say, waitForDice } from "./shared.mjs";
@@ -306,11 +309,18 @@ const syncFlip = token => enqueue(`climb-flip:${token.uuid}`, async () => {
  * chute et le MJ passent.
  */
 function onPreMoveToken(token, movement, operation) {
-  if ( !isOnCeiling(token) || !concerned(token) ) return true;
+  if ( !isClimbing(token) || !concerned(token) ) return true;
   const flags = operation?.[MODULE_ID] ?? continuedFlags(token, movement);
   if ( flags?.altitude || flags?.forced || operation?.isUndo || game.user.isGM || (climbRules() === "house") ) return true;
   const walking = w => !CONFIG.Token.movement.actions[w.action]?.teleport && !["displace", "fall"].includes(w.action);
   const steps = movement.pending.waypoints.filter(walking);
+  // §196 : au mur, pas de pas loin du mur (en l'air) — on redescend ou on se laisse tomber, comme au plafond.
+  if ( !isOnCeiling(token) ) {
+    if ( !steps.some(w => !holdsWallAt(token, positionOf(w))) ) return true;
+    ui.notifications.warn(loc("Escalade.MurFini", { name: token.name }));
+    notice(token, loc("Retour.Escalade.MurFini"));
+    return false;
+  }
   const off = steps.find(w => !hangsAt(token, positionOf(w)));
   // §195 : celui qui ne tient au plafond que par les Pantoufles n'avance pas au-dessus d'une surface glissante.
   const slips = !off && steps.find(w => !canWalkCeilingsAt(token, positionOf(w)));
@@ -319,6 +329,16 @@ function onPreMoveToken(token, movement, operation) {
   ui.notifications.warn(loc(`Escalade.${key}`, { name: token.name }));
   notice(token, loc(`Retour.Escalade.${key}`));
   return false;
+}
+
+/**
+ * §196 : un grimpeur au mur tient-il à cette position (point de passage) : un mur à grimper le touche, ou le sol y remonte jusqu'à lui.
+ * Le même jugement que l'A* (adapter/path-world.mjs `wallHolds`).
+ */
+function holdsWallAt(token, pos) {
+  const elevation = pos.elevation ?? token._source.elevation ?? 0;
+  if ( elevation <= groundUnder(token, pos) + 1e-6 ) return true;
+  return wallsNear(token, { ...pos, elevation }).length > 0;
 }
 
 /* -------------------------------------------- */
@@ -463,7 +483,9 @@ async function onTokenUpdated(token, changes) {
     log(`${token.name}: back on the ground, climbing over`);
     return;
   }
-  if ( moved && isOnCeiling(token) && !hangsAt(token) ) await fall(token, "noCeiling");
+  // §196 : glissé loin du mur par le MJ (ou en mode « maison »), le grimpeur lâche prise.
+  if ( moved && isClimbing(token) && !isOnCeiling(token) && !holdsWallAt(token, positionOf(token._source)) ) await fall(token, "noWall");
+  else if ( moved && isOnCeiling(token) && !hangsAt(token) ) await fall(token, "noCeiling");
   // §195 : règles 2024, au plafond par les seules Pantoufles au-dessus d'une surface glissante (glissé là par le MJ) : il tombe. En mode
   // « maison », il reste — le DD 20 est alors dû, comme pour qui n'a pas la capacité (`checkWanted`).
   else if ( moved && isOnCeiling(token) && (climbRules() !== "house") && !canWalkCeilingsAt(token) ) await fall(token, "slippery");
@@ -583,6 +605,137 @@ export function climbEntries(token) {
   if ( token?.isOwner && isClimbing(token) ) entries.push({ icon: "fa-solid fa-person-falling", label: loc("Menu.SeLaisserTomber"), run: () => dropDown(token) });
   return entries;
 }
+
+/* -------------------------------------------- */
+/*  API publique (§196, lot 4 : les voisins)    */
+/* -------------------------------------------- */
+
+const docOf = token => token?.document ?? token ?? null;
+
+/**
+ * §196 : l'état d'escalade d'un token, pour une interface ou une IA — ce que le moteur tient (mode, drapeau, statut) et ce que son menu
+ * proposerait maintenant. null sans token ni acteur.
+ * @param {Token|TokenDocument} token
+ * @returns {{climbing: boolean, onCeiling: boolean, acrobatic: boolean, elevation: number, height: number, units: string, speed: number,
+ *   native: boolean, multiplier: number, walksCeilings: boolean, rules: "2024"|"house", canClimb: boolean, canRun: boolean,
+ *   canCeiling: boolean, canDown: boolean, canDrop: boolean}|null}
+ */
+export function climbStateOf(token) {
+  const doc = docOf(token);
+  if ( !doc?.actor || !doc.parent?.grid ) return null;
+  const climbing = isClimbing(doc);
+  const speeds = climbingOf(doc);
+  const elevation = doc._source.elevation ?? 0;
+  let ground = elevation;
+  try { ground = groundUnder(doc); } catch { /* scène sans niveaux ni surfaces : le sol est là où il est */ }
+  return {
+    climbing, onCeiling: isOnCeiling(doc), acrobatic: climbing && (climbFlag(doc)?.acrobatic === true),
+    elevation, height: Math.max(0, elevation - ground), units: doc.parent.grid.units,
+    speed: speeds.speed ?? 0, native: !!speeds.native, multiplier: speeds.multiplier ?? 1, walksCeilings: canWalkCeilings(doc.actor),
+    rules: climbRules(), canClimb: canClimb(doc), canRun: canClimb(doc) && !climbing && acrobaticFor(doc),
+    canCeiling: canClimbCeiling(doc), canDown: canClimbDown(doc), canDrop: !!doc.isOwner && climbing
+  };
+}
+
+/**
+ * §196 : ce grimpeur tiendrait-il sur cette case (coin haut-gauche, à sa hauteur) — au mur, un mur à grimper la touche ; au plafond, le
+ * plafond y est à sa hauteur (et ne glisse pas sous des Pantoufles) ? Toujours vrai pour qui ne grimpe pas. Pour une marche case par
+ * case (manette) : l'A* du moteur applique le même jugement.
+ * @param {Token|TokenDocument} token
+ * @param {{i: number, j: number}} cell
+ */
+export function climbHoldsAt(token, cell) {
+  const doc = docOf(token);
+  if ( !doc || !isClimbing(doc) || !cell ) return true;
+  const pos = { ...doc.parent.grid.getTopLeftPoint(cell), elevation: doc._source.elevation ?? 0, level: doc._source.level };
+  if ( isOnCeiling(doc) ) return hangsAt(doc, pos) && canWalkCeilingsAt(doc, pos);
+  return holdsWallAt(doc, pos);
+}
+
+/** Les cases d'où grimper vers une cible : à `reach` cases d'elle au plus (sur la carte), contre un mur, du même côté du mur qu'elle. */
+function climbSpotsToward(token, target, reach) {
+  const scene = token.parent;
+  const grid = scene.grid;
+  const { sceneX, sceneY, sceneWidth, sceneHeight } = scene.dimensions;
+  const top = grid.getOffset({ x: sceneX + 1, y: sceneY + 1 });
+  const bottom = grid.getOffset({ x: sceneX + sceneWidth - 1, y: sceneY + sceneHeight - 1 });
+  const bounds = { i0: top.i, j0: top.j, i1: bottom.i, j1: bottom.j };
+  const elevation = token._source.elevation ?? 0;
+  const level = token._source.level;
+  const goal = tokenCenter(target);
+  const spots = [];
+  for ( let gap = 0; gap < reach; gap++ ) {
+    for ( const cell of cellsAtGap(footprintOf(target), sizeOf(token), gap, bounds) ) {
+      const pos = { ...grid.getTopLeftPoint(cell), elevation, level };
+      if ( !wallsNear(token, pos).length ) continue;
+      if ( rayBlocker(token, target, { posA: pos })(tokenCenter(token, pos), goal) ) continue;   // derrière le mur : pas le même côté
+      spots.push(cell);
+    }
+  }
+  return spots;
+}
+
+/**
+ * §196 : rejoindre une cible hors d'allonge par le vide vertical (au mur, au plafond près d'un mur) en grimpant — le cas simple : aller
+ * au pied du mur à côté d'elle (`api.approach`, dans le budget du tour), puis monter le moins de cases qui la mettent à `reachCells`
+ * (l'escalade du menu, payée au budget : ×2 sans vitesse d'escalade ; test DD 15 en mode « maison »). Ne décide pas qui doit grimper :
+ * l'appelant (une IA) choisit. Rend `{ arrived, climbed, reason? }` — `reason` : `notOwner`, `noWall` (aucun mur à côté d'elle, de son
+ * côté), `cannotClimb`, `tooHigh` (même au plus haut, encore hors d'allonge), `refused` (montée refusée ou test raté), ou ce que rend
+ * la marche (`noPath`, `exhausted`, `stopped`…).
+ * @param {Token|TokenDocument} token
+ * @param {Token|TokenDocument} target
+ * @param {{reachCells?: number}} [options]
+ */
+export async function climbToward(token, target, { reachCells=1 }={}) {
+  token = docOf(token);
+  target = docOf(target);
+  if ( !token?.isOwner || !target ) return { arrived: false, climbed: 0, reason: "notOwner" };
+  const reach = Math.max(1, Math.round(reachCells) || 1);
+  const there = () => ((token._source.level ?? null) === (target._source.level ?? null)) && (gapCells(token, target) <= reach);
+  if ( there() ) return { arrived: true, climbed: 0 };
+  if ( isOnCeiling(token) ) return { arrived: false, climbed: 0, reason: "cannotClimb" };
+  const spots = climbSpotsToward(token, target, reach);
+  if ( !spots.length ) return { arrived: false, climbed: 0, reason: "noWall" };
+  const here = cellOf(token);
+  if ( !spots.some(c => (c.i === here.i) && (c.j === here.j)) ) {
+    const walked = await approach(token, { cells: spots });
+    if ( !walked.arrived ) return { climbed: 0, ...walked };
+    if ( there() ) return { arrived: true, climbed: 0 };
+  }
+  if ( !canClimb(token) ) return { arrived: false, climbed: 0, reason: "cannotClimb" };
+  const grid = token.parent.grid;
+  const room = climbRoom(token);
+  const from = token._source.elevation ?? 0;
+  const highest = Number.isFinite(room.ceiling) ? Math.floor(((room.ceiling - from) / grid.distance) + 1e-6) : 20;
+  let need = null;
+  for ( let n = 1; n <= Math.min(highest, 20); n++ ) {
+    if ( gapCells(token, target, { posA: { elevation: from + (n * grid.distance) } }) <= reach ) { need = n; break; }
+  }
+  if ( need === null ) return { arrived: false, climbed: 0, reason: "tooHigh" };
+  const n = Math.min(need, room.max);
+  if ( n < 1 ) return { arrived: false, climbed: 0, reason: "exhausted" };
+  if ( !(await startClimb(token, { cells: n })) ) return { arrived: false, climbed: 0, reason: "refused" };
+  const climbed = Math.round(((token._source.elevation ?? 0) - from) / grid.distance);
+  return there() ? { arrived: true, climbed } : { arrived: false, climbed, reason: "exhausted" };
+}
+
+/**
+ * §196 : `api.climb` — l'escalade pour les voisins (interface, IA, manette). Lecture : `state(token)`, `holds(token, cell)`,
+ * `entries(token)` (les entrées du menu du moteur : `{ icon, label, run }`) ; gestes, sur le client qui possède le token, sans `cells`
+ * la fenêtre « combien de cases » du moteur s'ouvre : `up(token, { cells })`, `run(token, { cells })` (Mouvement acrobatique),
+ * `ceiling(token)`, `down(token, { cells })`, `drop(token)` → booléen ; `toward(token, target, { reachCells })` (voir `climbToward`).
+ */
+export const climbApi = Object.freeze({
+  state: climbStateOf,
+  holds: climbHoldsAt,
+  entries: token => climbEntries(docOf(token)).map(({ icon, label, run }) => ({ icon, label, run })),
+  up: (token, { cells=null }={}) => startClimb(docOf(token), { cells }),
+  run: (token, { cells=null }={}) => startClimb(docOf(token), { cells, acrobatic: true }),
+  ceiling: token => climbToCeiling(docOf(token)),
+  down: (token, { cells=null }={}) => climbDown(docOf(token), { cells }),
+  drop: token => dropDown(docOf(token)),
+  toward: climbToward
+});
 
 export function registerClimb() {
   game.settings.register(MODULE_ID, CLIMB_RULES_SETTING, {

@@ -29,8 +29,17 @@ describe("chargement du module", () => {
   });
 
   it("expose ses fonctions de test au connecteur sous api.mcp (call-module-api), et elles seules", () => {
-    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "advanceTime", "animations", "attackReasons", "budget", "chatCards", "climb", "climbCeiling", "climbDown", "climbState", "closeWindow", "cover", "dash", "diagnosticBackups", "diagnosticForget", "diagnosticRepair", "diagnosticRestore", "diagnosticScan", "door", "dropDown", "effectOrigins", "enchant", "endings", "factions", "familiar", "familiarPocket", "familiarRecall", "flammable", "follow", "followState", "heal", "hurt", "identify", "inventory", "issues", "lightState", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "placeRegionAt", "plan", "planning", "portent", "reachCheck", "reload", "reports", "restoreItem", "rollCard", "rollCheck", "rollSave", "runMacro", "saveChance", "scatter", "sees", "sequencer", "setting", "skillAid", "skillAids", "stairs", "stairsAt", "stats", "status", "stealth", "storm", "stormStrike", "summonAt", "takeStairs", "teleport", "teleportPick", "threats", "toggleLight", "transpose", "unfollow", "use", "view", "wall", "wallSide", "windows"]);
+    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "advanceTime", "animations", "attackReasons", "budget", "chatCards", "climb", "climbCeiling", "climbDown", "climbHolds", "climbState", "climbToward", "closeWindow", "cover", "dash", "diagnosticBackups", "diagnosticForget", "diagnosticRepair", "diagnosticRestore", "diagnosticScan", "door", "dropDown", "effectOrigins", "enchant", "endings", "factions", "familiar", "familiarPocket", "familiarRecall", "flammable", "follow", "followState", "heal", "hurt", "identify", "inventory", "issues", "lightState", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "placeRegionAt", "plan", "planning", "portent", "reachCheck", "reload", "reports", "restoreItem", "rollCard", "rollCheck", "rollSave", "runMacro", "saveChance", "scatter", "sees", "sequencer", "setting", "skillAid", "skillAids", "stairs", "stairsAt", "stats", "status", "stealth", "storm", "stormStrike", "summonAt", "takeStairs", "teleport", "teleportPick", "threats", "toggleLight", "transpose", "unfollow", "use", "view", "wall", "wallSide", "windows"]);
     expect(Object.isFrozen(api.api.mcp)).toBe(true);
+  });
+
+  it("§196 : publie l'escalade (api.climb) et l'écart en trois dimensions (api.gap) pour les voisins", () => {
+    expect(Object.keys(api.api.climb).sort()).toEqual(["ceiling", "down", "drop", "entries", "holds", "run", "state", "toward", "up"]);
+    expect(Object.isFrozen(api.api.climb)).toBe(true);
+    expect(typeof api.api.gap).toBe("function");
+    expect(api.api.gap(null, null)).toBe(null);
+    expect(api.api.climb.state(null)).toBe(null);
+    expect(api.api.climb.holds(null, { i: 0, j: 0 })).toBe(true);
   });
 
   it("ne branche qu'un écouteur par hook de Foundry", () => {

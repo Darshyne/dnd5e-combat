@@ -11,6 +11,7 @@
  * `createRegion` comme d'habitude.
  */
 
+import { MODULE_ID } from "../constants.mjs";
 import { selfAreaShape, aimedAreaShape, aimFrom, cubeBeside } from "../core/self-area.mjs";
 import { committedPosition, usageTokenOf, tokenCenter } from "./turn.mjs";
 import { templateOf } from "./template.mjs";
@@ -78,7 +79,10 @@ function regionData(activity, token, shapeData, attached) {
         item: activity.item.uuid,
         origin: token.uuid,
         spellLevel: activity.getRollData().item?.level
-      }
+      },
+      // §190 : posée par le moteur (cône visé, zone sur soi, bille de Boule de feu à retardement), pas par la pose de dnd5e — la
+      // vérification de portée (ui/pointer.mjs) ne s'y applique pas.
+      [MODULE_ID]: { enginePlaced: true }
     }
   };
 }
@@ -166,11 +170,6 @@ export function rangedAreaOf(activity) {
     range: lengthIn(value, activity.range.units, scene.grid.units), max: value, units: activity.range.units };
 }
 
-/** §190 : la forme centrée sur ce point (pixels). */
-export function rangedShapeData(area, point) {
-  if ( area.shape === "circle" ) return { type: "circle", x: point.x, y: point.y, radius: area.side };
-  return { type: "rectangle", x: point.x - (area.side / 2), y: point.y - (area.side / 2), width: area.side, height: area.side, rotation: 0 };
-}
 
 /** §190 : le centre d'une forme posée. */
 function rangedCenter(shapeData) {
@@ -191,15 +190,7 @@ export function rangedTooFar(area, shapeData) {
   return (distance - body) > (area.range + slack + 1e-6);
 }
 
-/** §190 : les données de la région (aperçu de la pose, puis création), comme dnd5e. */
-export function rangedRegionData(activity, area, shapeData) {
-  return regionData(activity, area.token, shapeData, false);
-}
 
-/** §190 : pose la zone, en émettant les hooks de dnd5e autour de la création. */
-export function placeRangedArea(activity, area, shapeData) {
-  return createAreaRegions(activity, area.token, [rangedRegionData(activity, area, shapeData)]);
-}
 
 /* -------------------------------------------- */
 /*  Cônes et lignes visés depuis le lanceur     */

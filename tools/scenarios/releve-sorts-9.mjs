@@ -61,6 +61,12 @@ export default {
       await reset();
     };
     const lend = (t, id, system={ method: "atwill" }) => ctx.ensureItem(t, PHB + id, { system });
+    // Le journal du moteur nomme l'objet comme le client du MJ le voit (traduit par Babele) : on cherche son nom, pas le nom anglais.
+    const nameOf = async (t, itemId) => {
+      const { data } = await ctx.call("get-scene-object", { type: "Token", objectId: t.id });
+      return ((await ctx.call("get-actor", { actorId: data.actorId })).items ?? []).find(i => i._id === itemId)?.name ?? "";
+    };
+    const escape = text => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const settled = async used => { const r = used?.usageMessageId ? await ctx.settle(used.usageMessageId, { timeoutMs: 45000 }).catch(() => null) : null; await pause(2000); return r; };
     const elevation = async t => (await ctx.position(t)).elevation ?? 0;
     const state = async () => { const s = await ctx.combat(); return s.combat ?? s.combats?.[0] ?? s; };
@@ -122,7 +128,8 @@ export default {
     await part("Embruns prismatiques", async () => {
       const id = await lend(mage, "phbsplPrismaticS");
       await settled(await ctx.use({ tokenId: mage.id, itemId: id, activityType: "save", targetTokenIds: [zombi.id], consume: false, area: await tiny(zombi) }));
-      const log = (await ctx.engineLog()).filter(l => /Prismatic Spray: Zombi/.test(l));
+      const name = escape(await nameOf(mage, id));
+      const log = (await ctx.engineLog()).filter(l => new RegExp(`${name}: Zombi — \\d`).test(l));
       ctx.expect(log.length > 0, `Embruns prismatiques : ${log.at(-1) ?? "pas de couleur tirée"}`);
     });
 
@@ -160,7 +167,8 @@ export default {
     });
 
     await part("Grêle d'épines", async () => {
-      await lend(ranger, "phbsplHailofThor", {});
+      const hail = await lend(ranger, "phbsplHailofThor", {});
+      const hailName = escape(await nameOf(ranger, hail));
       const actor0 = await ctx.call("get-actor", { actorId: ranger.actorId });
       const slot0 = actor0.system?.spells?.spell1?.value ?? 0;
       await ctx.call("update-actor", { actorId: ranger.actorId, actorData: { "system.spells.spell1.value": Math.max(2, slot0) } });
@@ -193,7 +201,7 @@ export default {
         if ( r?.targets?.[0]?.hit !== true ) continue;
         await pause(4000);
         // Les sauvegardes de ce tir : depuis la dernière du Zombi (la cible d'abord, puis chaque créature à 1,50 m d'elle).
-        const saves = (await ctx.engineLog()).filter(l => /Hail of Thorns: .* makes their saving throw/.test(l));
+        const saves = (await ctx.engineLog()).filter(l => new RegExp(`${hailName}: .* makes their saving throw`).test(l));
         const log = saves.slice(Math.max(0, saves.findLastIndex(l => /Zombi makes/.test(l))));
         ctx.expect(/Zombi makes/.test(log[0] ?? "") && log.some(l => /Bandit, within/.test(l)), `Grêle d'épines : ${log.join(" / ") || "aucune sauvegarde"}`);
         return;

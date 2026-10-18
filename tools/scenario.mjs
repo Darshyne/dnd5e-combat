@@ -350,7 +350,7 @@ function makeContext(mcp) {
 
     /** Erreurs de la console du MJ depuis le dernier appel (tampon vidé). Le journal du moteur est suivi (`watch`). */
     async clientErrors() {
-      const r = await mcp.call("get-client-errors", { levels: ["error", "uncaught", "unhandledrejection"], watch: [MODULE_ID], clear: true, limit: 50 });
+      const r = await mcp.call("get-client-errors", { levels: ["error", "uncaught", "unhandledrejection"], watch: [MODULE_ID, ...(process.env.SCENARIO_WATCH ?? "").split(",").filter(Boolean)], clear: true, limit: 50 });
       // « id … does not exist in the EmbeddedCollection » : BLFX écrit sur un effet après son animation (Bouclier de feu :
       // `effect.setFlag(…, "blfxCustom")`, macros/spell/customSpells4.js:709 → utils/light.js:158), parfois après que le
       // scénario ou le moteur l'a retiré — la course déjà vue avec ses régions (SPEC §14.2). Pas le moteur (2026-09-25).

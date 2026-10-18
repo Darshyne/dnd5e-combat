@@ -15,12 +15,27 @@ import { expiryTime } from "../core/area.mjs";
 import { readTimeFactors } from "./areas.mjs";
 
 /**
+ * §198 : la durée propre d'une invocation sans concentration — celle de l'activité qui l'a posée (`flags.dnd5e.summon.activity`),
+ * sinon celle du sort (Main du mage : 1 minute, issue #8). Null avec concentration (elle tombe avec elle, runtime/concentration.mjs) ;
+ * une durée instantanée, permanente ou spéciale (Appel de destrier, Appel de familier) ne donne pas d'heure de fin (`expiryTime` ne
+ * connaît que les unités de `CONFIG.DND5E.timeUnits`).
+ */
+function ownDurationOf(tokenDoc, item) {
+  const activity = item.system?.activities?.get?.(tokenDoc?.actor?.getFlag?.("dnd5e", "summon.activity") ?? "") ?? null;
+  const duration = activity?.duration?.units ? activity.duration : item.system?.duration;
+  if ( !duration?.units ) return null;
+  if ( activity?.duration?.concentration || item.requiresConcentration || item.system?.properties?.has?.("concentration") ) return null;
+  return { value: duration.value, units: duration.units };
+}
+
+/**
  * §16.39 : une créature invoquée par un item qui déclare `summon.lasts` reçoit son heure de fin (`flags["dnd5e-combat"].expiresAt`,
- * heure du monde en secondes). MJ actif. Rend l'heure notée, ou null.
+ * heure du monde en secondes). §198 : sans `summon.lasts`, la durée propre du sort quand il n'a pas de concentration. MJ actif. Rend
+ * l'heure notée, ou null.
  */
 export async function noteSummonExpiry(tokenDoc, now=game.time.worldTime) {
   const item = summonItemOf(tokenDoc);
-  const lasts = item ? contentOf(item).entry?.summon?.lasts : null;
+  const lasts = item ? (contentOf(item).entry?.summon?.lasts ?? ownDurationOf(tokenDoc, item)) : null;
   if ( !lasts ) return null;
   // §107 : un familier rappelé de sa poche dimensionnelle garde l'heure de fin notée à son invocation.
   if ( Number.isFinite(tokenDoc.getFlag(MODULE_ID, "expiresAt")) ) return null;

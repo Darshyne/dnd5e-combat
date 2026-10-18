@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { initiativeAfter } from "../module/scripts/core/turn.mjs";
+import { summonOwnership } from "../module/scripts/core/summon.mjs";
 
 describe("initiative d'une créature invoquée (§16.13)", () => {
   it("juste sous l'invocateur, au-dessus du suivant", () => {
@@ -101,5 +102,19 @@ describe("Invocation d'animaux (§16.22) : schéma", () => {
     expect(validateEntry({ summon: { initiative: "none", pulse: { item: "x", radius: 10, units: "ft", on: ["start"], affects: "ally" } } })).toEqual([
       "summon.pulse.on: turnEnd, enter, moves, turnStart, casterTurnStart", "summon.pulse.affects: any, enemy"
     ]);
+  });
+});
+
+describe("propriétaires d'une créature invoquée par le MJ (§197)", () => {
+  const isGM = id => id === "gm";
+  it("les joueurs propriétaires du lanceur deviennent propriétaires de la créature", () => {
+    expect(summonOwnership({ default: 0, gm: 3, alice: 3, bob: 2 }, { default: 0, gm: 3 }, isGM)).toEqual({ default: 0, gm: 3, alice: 3 });
+  });
+  it("rien à changer : déjà propriétaire, ou aucun joueur propriétaire", () => {
+    expect(summonOwnership({ default: 0, gm: 3, alice: 3 }, { default: 0, alice: 3 }, isGM)).toBe(null);
+    expect(summonOwnership({ default: 3, gm: 3 }, { default: 0, gm: 3 }, isGM)).toBe(null);
+  });
+  it("un niveau inférieur à Propriétaire sur la créature est relevé", () => {
+    expect(summonOwnership({ alice: 3 }, { alice: 2 }, isGM)).toEqual({ alice: 3 });
   });
 });

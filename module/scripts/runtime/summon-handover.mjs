@@ -14,7 +14,9 @@
  * que `dropItems`, adapter/orders.mjs).
  */
 import { MODULE_ID } from "../constants.mjs";
+import { summonOwnership } from "../core/summon.mjs";
 import { route } from "./router.mjs";
+import { log } from "./shared.mjs";
 
 /**
  * Les invocations reprises en cours, par uuid d'activité (l'activité remise à l'échelle garde son id) : `{ takers, at }`. Une
@@ -66,8 +68,35 @@ async function handOver(activity, options, profile, takers) {
   if ( activity.canSummon && canvas.scene && profile ) await activity.placeSummons({ ...options, profile: profile._id });
 }
 
+/**
+ * §197 : un MJ invoque depuis la fiche d'un joueur (Appel de destrier lancé « pour tester », issue #9) — dnd5e crée l'acteur à son nom
+ * (`Actor5e.fetchExisting`, documents/actor/actor.mjs:461), et le joueur ne peut ni déplacer ni utiliser la créature. Après la pose
+ * (`dnd5e.postSummon`, documents/activity/summon.mjs:217, sur le client qui invoque), les joueurs propriétaires du lanceur deviennent
+ * propriétaires de l'acteur invoqué (l'acteur du monde : un token non lié en hérite). Un joueur qui invoque lui-même en est déjà
+ * propriétaire : rien à faire.
+ */
+async function onPostSummon(activity, profile, tokens) {
+  if ( !game.user.isGM ) return;
+  const caster = activity?.actor;
+  if ( !caster ) return;
+  const isGM = id => game.users.get(id)?.isGM === true;
+  const seen = new Set();
+  for ( const token of tokens ?? [] ) {
+    const doc = token?.document ?? token;
+    const actor = (doc?.actorLink === false) ? (doc.baseActor ?? game.actors.get(doc.actorId)) : doc?.actor;
+    if ( !actor || actor.pack || seen.has(actor) ) continue;
+    seen.add(actor);
+    const ownership = summonOwnership(caster.ownership, actor.ownership, isGM);
+    if ( !ownership ) continue;
+    await actor.update({ ownership });
+    log(`${actor.name}: summoned by the GM for ${caster.name}, now owned by its players too`);
+  }
+}
+
 export function registerSummonHandover() {
   route("dnd5e.preUseActivity", onPreUse, { label: "summon on targets: neighbours asked" });
   route("dnd5e.preSummon", onPreSummon, { cancellable: true, label: "summon on targets: handed to a neighbouring module" });
   route("dnd5e.postUseActivity", onPostUse, { label: "summon on targets: neighbour summons" });
+  route("dnd5e.postSummon", (activity, profile, tokens) => { onPostSummon(activity, profile, tokens).catch(err => console.error(`${MODULE_ID} | summon owners`, err)); },
+    { label: "summon: the caster's players not made owners" });
 }

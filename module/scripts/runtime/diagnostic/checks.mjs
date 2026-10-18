@@ -469,7 +469,8 @@ const creatures = {
  * du monde qui en viennent et dont des textes sont restés dans la langue d'origine — importés avant l'installation d'une traduction,
  * ou par un client dans une autre langue, ou par un joueur sans droit de parcourir les fichiers (Babele ne traduit rien pour lui).
  * Babele garde sur chaque document traduit ses valeurs d'origine (`flags.babele.originalPayload`) : un champ n'est repris que s'il
- * vaut encore exactement l'original — un texte modifié à la main ne bouge pas (core/localize.mjs). Les noms des tokens déjà posés
+ * vaut encore exactement l'original — un texte modifié à la main ne bouge pas (core/localize.mjs) ; les identifiants, les ids
+ * d'activités et d'effets ne changent jamais (l'automatisation suit), un identifiant tiré du nom est figé. Les noms des tokens déjà posés
  * ne changent pas (ils ne sont pas dans la sauvegarde) ; ceux posés ensuite prennent le nom du token prototype.
  */
 const retranslate = {
@@ -491,6 +492,12 @@ const retranslate = {
       if ( actor?.documentName !== "Actor" ) return null;
       return actor.isToken ? (game.actors.get(actor.token?.actorId) ?? null) : actor;
     };
+    // Un document sans identifiant enregistré tient le sien de son nom (dnd5e, documents/mixins/document.mjs:33) : le traduire
+    // changerait l'identifiant par lequel le moteur et dnd5e le reconnaissent. Celui d'avant est figé avant de renommer.
+    const pin = (doc, update) => {
+      if ( ("name" in update) && !doc._source?.system?.identifier && doc.identifier ) update["system.identifier"] = doc.identifier;
+      return update;
+    };
     const fieldsText = fields => [...new Set(fields.map(f => f.split(".")[0]))].map(f => t(`Field.${f}`)).join(", ");
     const tasks = [];
     for ( const actor of game.actors ) {
@@ -501,7 +508,7 @@ const retranslate = {
       const where = `<b>${esc(actor.name)}</b>`;
       const text = t("Line", { name: esc(update.name ?? actor.name), fields: fieldsText(fields) });
       tasks.push({ root: rootOf(actor), where, text, preselect: true,
-        apply: async () => { await fresh(actor).update(update); return text; } });
+        apply: async () => { const doc = fresh(actor); await doc.update(pin(doc, { ...update })); return text; } });
     }
     for ( const scanned of allItems() ) {
       // La référence : l'objet de même id dans la créature traduite d'où vient la fiche, sinon la source de l'objet lui-même.
@@ -515,7 +522,7 @@ const retranslate = {
       tasks.push({ root: rootOf(scanned), where: whereOf(scanned), text, preselect: true,
         apply: async () => {
           const item = fresh(scanned);
-          if ( Object.keys(update).length ) await item.update(update);
+          if ( Object.keys(update).length ) await item.update(pin(item, { ...update }));
           if ( effects.length ) await item.updateEmbeddedDocuments("ActiveEffect", effects);
           return text;
         } });

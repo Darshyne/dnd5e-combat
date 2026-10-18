@@ -10,6 +10,14 @@ import { loc, esc } from "../shared.mjs";
 import { rootOf } from "./backup.mjs";
 import { basicActionData } from "../../adapter/basics.mjs";
 import { scrollSpellOf } from "../../adapter/scrolls.mjs";
+import { localizeEffectNames } from "../../core/localize.mjs";
+
+/**
+ * §202 : les effets d'une référence du compendium, prêts à recopier — un effet au nom d'origine (anglais) de l'objet prend le nom
+ * traduit de la référence, pour une traduction qui ne traduit pas les noms d'effets (core/localize.mjs).
+ */
+const effectsOf = (reference, effects=reference.effects) =>
+  localizeEffectNames(effects.map(e => (e.toObject ? e.toObject() : e)), reference.flags?.babele?.originalName ?? null, reference.name);
 
 /**
  * Le document tel qu'il est au moment de réparer. Une tâche garde le document de l'analyse ; entre-temps, une autre réparation a pu
@@ -219,10 +227,11 @@ const phbEffects = {
       if ( !reference?.effects?.size ) continue;
       const missing = reference.effects.filter(e => !item.effects.has(e.id));
       if ( !missing.length ) continue;
-      const names = esc(missing.map(e => e.name).join(", "));
+      const copies = effectsOf(reference, missing);
+      const names = esc(copies.map(e => e.name).join(", "));
       tasks.push({ root: rootOf(item), where: whereOf(item), text: names, preselect: true,
         apply: async () => {
-          await fresh(item).createEmbeddedDocuments("ActiveEffect", missing.map(e => e.toObject()), { keepId: true });
+          await fresh(item).createEmbeddedDocuments("ActiveEffect", copies, { keepId: true });
           return names;
         } });
     }
@@ -260,7 +269,8 @@ const lostEffects = {
       const ref = await reference(identifier);
       if ( !ref?.effects?.size ) continue;
       const where = whereOf(item);
-      const names = esc(ref.effects.map(e => e.name).join(", "));
+      const copies = effectsOf(ref);
+      const names = esc(copies.map(e => e.name).join(", "));
       if ( item.effects.size ) {
         if ( ref.effects.some(e => !item.effects.has(e.id)) ) tasks.push({ root: rootOf(item), where, text: t("LineDifferent", { where, names }) });
         continue;
@@ -274,6 +284,7 @@ const lostEffects = {
             // ordre et flags des autres modules.
             const data = game.items.fromCompendium(ref);
             data.name = item.name;
+            data.effects = effectsOf(ref, data.effects ?? []);
             data.sort = item.sort;
             Object.assign(data.system, { quantity: item.system.quantity, container: item.system.container ?? null, price: item.system.price ?? data.system.price });
             for ( const [scope, value] of Object.entries(item.flags ?? {}) ) if ( !["dnd5e", "core"].includes(scope) ) data.flags[scope] = foundry.utils.deepClone(value);
@@ -282,7 +293,7 @@ const lostEffects = {
             await item.delete();
             return t("LineReplaced", { where, names });
           }
-          await item.createEmbeddedDocuments("ActiveEffect", ref.effects.map(e => e.toObject()), { keepId: true });
+          await item.createEmbeddedDocuments("ActiveEffect", copies, { keepId: true });
           const refused = ref.effects.filter(e => !item.effects.has(e.id)).map(e => e.name);
           if ( refused.length ) throw new Error(t("EffectsRefused", { names: esc(refused.join(", ")) }));
           return t("LineCopied", { where, names });

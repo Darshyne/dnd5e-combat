@@ -95,6 +95,22 @@ function cost(activity) {
 }
 
 /**
+ * §205 : les raisons (`issues`) et le coût (`cost`) d'une case d'interface en un seul calcul. Les deux passent par `useIssues` : une
+ * barre qui les demandait séparément le faisait deux fois par case (28 cases : ~14 ms chacun, mesuré le 2026-10-18 dans darsh-dnd-ui).
+ * Mêmes valeurs que `issues(activity)` et `cost(activity)` : une zone déplaçable déjà posée (Rayon de lune) garde ses raisons « en
+ * relance » et son coût de donnée, calculés à part comme avant.
+ * @param {Activity} activity
+ * @returns {{ issues: string[], cost: string|null }}
+ */
+function cell(activity) {
+  if ( !activity?.actor ) return { issues: [], cost: null };
+  if ( movableZoneOf(activity) ) return { issues: issues(activity), cost: cost(activity) };
+  let result;
+  try { result = useIssues(activity); } catch { return { issues: issues(activity), cost: null }; }
+  return { issues: result.lines, cost: result.request?.cost ?? costFor(activity) ?? null };
+}
+
+/**
  * §111 : l'activité a-t-elle une zone déplaçable déjà posée (Rayon de lune) ? L'utiliser la déplace alors (ui/pointer.mjs, §16.14) :
  * rien n'est lancé, aucun emplacement n'est dépensé — une interface ne doit ni la griser faute d'emplacement, ni demander un niveau.
  * @param {Activity} activity
@@ -139,7 +155,7 @@ function ritual(activity) {
   try { return ritualModeOf(activity); } catch { return "none"; }
 }
 
-export const uiApi = { budget, wards, movableZone, movement, issues, cost, ritual, multiattackLeft: multiattack, light: lightState, globalLight: globalLightState,
+export const uiApi = { budget, wards, movableZone, movement, issues, cost, cell, ritual, multiattackLeft: multiattack, light: lightState, globalLight: globalLightState,
   /** §41.4 : `tokenMenu(token)` — les entrées du menu contextuel de ce token pour le token en main (ui/pointer.mjs). */
   tokenMenu: menuEntriesFor,
   /**

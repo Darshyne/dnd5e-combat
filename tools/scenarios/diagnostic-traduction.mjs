@@ -25,6 +25,9 @@ export default {
     const backups = [];
     const actors = [];
     ctx.restore(() => api("diagnosticForget", { uuids: backups, dropPack: !hadPack, actors }));
+    // §204 : sans quoi la fiche serait traduite dès sa création, avant l'analyse.
+    const auto = await api("setting", { key: "autoTranslate", value: false });
+    ctx.restore(() => api("setting", { key: "autoTranslate", value: auto.before }));
 
     // L'objet remis dans sa langue d'origine, à partir des valeurs que Babele garde ; son texte de carte modifié à la main.
     const { _id, folder, ownership, _stats, ...itemData } = foundry_clone(item.data);

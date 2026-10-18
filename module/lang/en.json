@@ -1311,5 +1311,7 @@
   "DND5ECOMBAT.Macro.Retranslate.Field.activity": "activities",
   "DND5ECOMBAT.Macro.Retranslate.Field.effect": "effects",
   "DND5ECOMBAT.Macro.Retranslate.Field.biography": "biography",
-  "DND5ECOMBAT.Macro.Retranslate.Field.token": "token name"
+  "DND5ECOMBAT.Macro.Retranslate.Field.token": "token name",
+  "DND5ECOMBAT.Reglage.autoTranslate.Nom": "Translate on creation",
+  "DND5ECOMBAT.Reglage.autoTranslate.Aide": "An item, spell, feature or creature created from a translated compendium (Babele) immediately gets the translation of whatever stayed in the original language — created by a player without file-browsing permission, by a client in another language, or with a translation that leaves effect names untranslated. Done by the active GM, in their client's language; only texts still identical to the original change, automation is untouched. For what already exists: the world diagnostic."
 }

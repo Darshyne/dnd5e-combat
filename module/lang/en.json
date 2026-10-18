@@ -1299,5 +1299,17 @@
   "DND5ECOMBAT.Embrase.Allumer": "Ignite: {item}",
   "DND5ECOMBAT.Embrase.SansMJ": "A GM must be connected to ignite this.",
   "DND5ECOMBAT.Zone.HorsPortee": "{item}: out of range ({max} {units} at most).",
-  "DND5ECOMBAT.Zone.SansChemin": "{item}: no clear path to that point (a wall or floor stands between it and the caster)."
+  "DND5ECOMBAT.Zone.SansChemin": "{item}: no clear path to that point (a wall or floor stands between it and the caster).",
+  "DND5ECOMBAT.Diagnostic.Verif.retranslate.Nom": "Texts left in the original language",
+  "DND5ECOMBAT.Diagnostic.Verif.retranslate.Aide": "Items, spells, features and creatures from a translated compendium (Babele) whose texts stayed in English — imported before the translation was installed, by a client in another language or by a player. The current translation, in this client's language, is applied: only texts still identical to the original change, never a text edited by hand. Tokens already placed keep their name.",
+  "DND5ECOMBAT.Macro.Retranslate.Line": "{name}: {fields}",
+  "DND5ECOMBAT.Macro.Retranslate.Field.name": "name",
+  "DND5ECOMBAT.Macro.Retranslate.Field.description": "description",
+  "DND5ECOMBAT.Macro.Retranslate.Field.chat": "chat description",
+  "DND5ECOMBAT.Macro.Retranslate.Field.udescription": "unidentified description",
+  "DND5ECOMBAT.Macro.Retranslate.Field.condition": "condition",
+  "DND5ECOMBAT.Macro.Retranslate.Field.activity": "activities",
+  "DND5ECOMBAT.Macro.Retranslate.Field.effect": "effects",
+  "DND5ECOMBAT.Macro.Retranslate.Field.biography": "biography",
+  "DND5ECOMBAT.Macro.Retranslate.Field.token": "token name"
 }

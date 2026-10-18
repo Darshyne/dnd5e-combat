@@ -10,7 +10,7 @@ import { loc, esc } from "../shared.mjs";
 import { rootOf } from "./backup.mjs";
 import { basicActionData } from "../../adapter/basics.mjs";
 import { scrollSpellOf } from "../../adapter/scrolls.mjs";
-import { localizeEffectNames } from "../../core/localize.mjs";
+import { localizeEffectNames, retranslateItem, retranslateActor } from "../../core/localize.mjs";
 
 /**
  * §202 : les effets d'une référence du compendium, prêts à recopier — un effet au nom d'origine (anglais) de l'objet prend le nom
@@ -460,4 +460,68 @@ const creatures = {
 };
 
 /** Les vérifications, dans l'ordre où les macros les proposaient. */
-export const CHECKS = Object.freeze([cleanMidi, phbEffects, lostEffects, scrolls, pileBasics, creatures]);
+/* -------------------------------------------- */
+/*  7. Textes restés dans la langue d'origine     */
+/* -------------------------------------------- */
+
+/**
+ * §203 : reprendre la traduction actuelle des compendiums (celle de la langue de ce client, par Babele) pour les objets et acteurs
+ * du monde qui en viennent et dont des textes sont restés dans la langue d'origine — importés avant l'installation d'une traduction,
+ * ou par un client dans une autre langue, ou par un joueur sans droit de parcourir les fichiers (Babele ne traduit rien pour lui).
+ * Babele garde sur chaque document traduit ses valeurs d'origine (`flags.babele.originalPayload`) : un champ n'est repris que s'il
+ * vaut encore exactement l'original — un texte modifié à la main ne bouge pas (core/localize.mjs). Les noms des tokens déjà posés
+ * ne changent pas (ils ne sont pas dans la sauvegarde) ; ceux posés ensuite prennent le nom du token prototype.
+ */
+const retranslate = {
+  id: "retranslate", icon: "fa-solid fa-language",
+  async scan() {
+    if ( !game.babele ) return [];
+    const t = tr("Retranslate");
+    const cache = new Map();
+    const reference = async uuid => {
+      if ( !uuid?.startsWith("Compendium.") ) return null;
+      if ( !cache.has(uuid) ) cache.set(uuid, await fromUuid(uuid).catch(() => null));
+      const doc = cache.get(uuid);
+      return doc?.flags?.babele?.originalPayload ? doc : null;
+    };
+    const sourceOf = doc => doc?._stats?.compendiumSource ?? doc?.flags?.core?.sourceId ?? null;
+    // L'acteur de base d'un objet (celui d'un token non lié : son acteur du monde), et sa référence traduite.
+    const baseActor = item => {
+      const actor = item.parent;
+      if ( actor?.documentName !== "Actor" ) return null;
+      return actor.isToken ? (game.actors.get(actor.token?.actorId) ?? null) : actor;
+    };
+    const fieldsText = fields => [...new Set(fields.map(f => f.split(".")[0]))].map(f => t(`Field.${f}`)).join(", ");
+    const tasks = [];
+    for ( const actor of game.actors ) {
+      const ref = await reference(sourceOf(actor));
+      if ( !ref ) continue;
+      const { update, fields } = retranslateActor(actor.toObject(), ref.flags.babele.originalPayload, ref.toObject());
+      if ( !fields.length ) continue;
+      const where = `<b>${esc(actor.name)}</b>`;
+      const text = t("Line", { name: esc(update.name ?? actor.name), fields: fieldsText(fields) });
+      tasks.push({ root: rootOf(actor), where, text, preselect: true,
+        apply: async () => { await fresh(actor).update(update); return text; } });
+    }
+    for ( const scanned of allItems() ) {
+      // La référence : l'objet de même id dans la créature traduite d'où vient la fiche, sinon la source de l'objet lui-même.
+      const refActor = await reference(sourceOf(baseActor(scanned)));
+      let ref = refActor?.items?.get(scanned.id) ?? null;
+      if ( !ref?.flags?.babele?.originalPayload ) ref = await reference(sourceOf(scanned));
+      if ( !ref ) continue;
+      const { update, effects, fields } = retranslateItem(scanned.toObject(), ref.flags.babele.originalPayload, ref.toObject());
+      if ( !fields.length ) continue;
+      const text = t("Line", { name: esc(update.name ?? scanned.name), fields: fieldsText(fields) });
+      tasks.push({ root: rootOf(scanned), where: whereOf(scanned), text, preselect: true,
+        apply: async () => {
+          const item = fresh(scanned);
+          if ( Object.keys(update).length ) await item.update(update);
+          if ( effects.length ) await item.updateEmbeddedDocuments("ActiveEffect", effects);
+          return text;
+        } });
+    }
+    return tasks;
+  }
+};
+
+export const CHECKS = Object.freeze([cleanMidi, phbEffects, lostEffects, scrolls, pileBasics, creatures, retranslate]);

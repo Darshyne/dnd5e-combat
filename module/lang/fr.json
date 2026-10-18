@@ -1299,5 +1299,17 @@
   "DND5ECOMBAT.Embrase.Allumer": "Allumer : {item}",
   "DND5ECOMBAT.Embrase.SansMJ": "Il faut un MJ connecté pour allumer.",
   "DND5ECOMBAT.Zone.HorsPortee": "{item} : hors de portée ({max} {units} au plus).",
-  "DND5ECOMBAT.Zone.SansChemin": "{item} : aucun chemin dégagé jusqu'à ce point (un mur ou un plancher le sépare du lanceur)."
+  "DND5ECOMBAT.Zone.SansChemin": "{item} : aucun chemin dégagé jusqu'à ce point (un mur ou un plancher le sépare du lanceur).",
+  "DND5ECOMBAT.Diagnostic.Verif.retranslate.Nom": "Textes restés dans la langue d'origine",
+  "DND5ECOMBAT.Diagnostic.Verif.retranslate.Aide": "Objets, sorts, capacités et créatures venus d'un compendium traduit (Babele) dont des textes sont restés en anglais — importés avant d'installer la traduction, par un client dans une autre langue ou par un joueur. La traduction actuelle, dans la langue de ce client, est reprise : seuls les textes encore identiques à l'original changent, jamais un texte modifié à la main. Les tokens déjà posés gardent leur nom.",
+  "DND5ECOMBAT.Macro.Retranslate.Line": "{name} : {fields}",
+  "DND5ECOMBAT.Macro.Retranslate.Field.name": "nom",
+  "DND5ECOMBAT.Macro.Retranslate.Field.description": "description",
+  "DND5ECOMBAT.Macro.Retranslate.Field.chat": "description de la carte",
+  "DND5ECOMBAT.Macro.Retranslate.Field.udescription": "description non identifiée",
+  "DND5ECOMBAT.Macro.Retranslate.Field.condition": "condition",
+  "DND5ECOMBAT.Macro.Retranslate.Field.activity": "activités",
+  "DND5ECOMBAT.Macro.Retranslate.Field.effect": "effets",
+  "DND5ECOMBAT.Macro.Retranslate.Field.biography": "biographie",
+  "DND5ECOMBAT.Macro.Retranslate.Field.token": "nom du token"
 }

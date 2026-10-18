@@ -167,8 +167,14 @@ export default {
       ctx.restore(() => ctx.call("update-actor", { actorId: ranger.actorId, actorData: { "system.spells.spell1.value": slot0 } }).catch(() => {}));
       const bow = (actor0.items ?? []).find(i => (i.type === "weapon") && Object.values(i.system?.activities ?? {}).some(a => a.type === "attack" && a.attack?.type?.value === "ranged"))?._id;
       if ( !ctx.expect(!!bow, "Grêle d'épines : le Rôdeur a une arme à distance") ) return;
+      // Le Bandit sur une case libre à côté du Zombi (à l'est, l'arène de `dnd-6` a « Alara Dhampir », qui sauvegarde aussi : accepté).
       const z = await ctx.position(zombi);
-      await ctx.call("move-token", { tokenId: bandit.id, x: z.x + grid, y: z.y, elevation: 0 }); await pause(800);
+      const { tokens: all } = await ctx.scene();
+      const free = [[-1, 0], [0, 1], [0, -1], [1, 0], [-1, 1], [-1, -1], [1, 1], [1, -1]].map(([dx, dy]) => ({ x: z.x + dx * grid, y: z.y + dy * grid }))
+        .find(c => !all.some(t => (t.id !== bandit.id) && (Math.abs(t.x - c.x) < grid) && (Math.abs(t.y - c.y) < grid)));
+      await ctx.call("move-token", { tokenId: bandit.id, x: free.x, y: free.y, elevation: 0 }); await pause(800);
+      const b0 = await ctx.position(bandit);
+      if ( !ctx.expect((b0.x === free.x) && (b0.y === free.y), `Grêle d'épines : le Bandit à côté du Zombi (${b0.x}, ${b0.y})`) ) return;
       // Le Zombi (15 PV) tombait sous la flèche : il faut qu'il soit encore debout pour sauvegarder (remis par `reset`).
       for ( const t of [zombi, bandit] ) await ctx.setHp(t, 100);
       for ( let n = 1; n <= 10; n++ ) {
@@ -186,8 +192,10 @@ export default {
         const r = await ctx.settle(used.usageMessageId, { timeoutMs: 45000 }).catch(() => null);
         if ( r?.targets?.[0]?.hit !== true ) continue;
         await pause(4000);
-        const log = (await ctx.engineLog()).filter(l => /Hail of Thorns: .* makes their saving throw/.test(l)).slice(-2);
-        ctx.expect(log.some(l => /Zombi makes/.test(l)) && log.some(l => /Bandit, within/.test(l)), `Grêle d'épines : ${log.join(" / ") || "aucune sauvegarde"}`);
+        // Les sauvegardes de ce tir : depuis la dernière du Zombi (la cible d'abord, puis chaque créature à 1,50 m d'elle).
+        const saves = (await ctx.engineLog()).filter(l => /Hail of Thorns: .* makes their saving throw/.test(l));
+        const log = saves.slice(Math.max(0, saves.findLastIndex(l => /Zombi makes/.test(l))));
+        ctx.expect(/Zombi makes/.test(log[0] ?? "") && log.some(l => /Bandit, within/.test(l)), `Grêle d'épines : ${log.join(" / ") || "aucune sauvegarde"}`);
         return;
       }
       ctx.expect(false, "Grêle d'épines : aucun coup en 10 essais");

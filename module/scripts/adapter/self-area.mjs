@@ -171,8 +171,8 @@ export function rangedAreaOf(activity) {
 }
 
 
-/** §190 : le centre d'une forme posée. */
-function rangedCenter(shapeData) {
+/** §190 : le centre d'une forme posée — §200 : son point d'origine. */
+export function rangedCenter(shapeData) {
   if ( shapeData.type === "rectangle" ) return { x: shapeData.x + (shapeData.width / 2), y: shapeData.y + (shapeData.height / 2) };
   return { x: shapeData.x, y: shapeData.y };
 }

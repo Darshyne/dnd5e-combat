@@ -1298,5 +1298,6 @@
   "DND5ECOMBAT.Embrase.Brule": "{name} burns ({item}): {amount} Fire damage.",
   "DND5ECOMBAT.Embrase.Allumer": "Ignite: {item}",
   "DND5ECOMBAT.Embrase.SansMJ": "A GM must be connected to ignite this.",
-  "DND5ECOMBAT.Zone.HorsPortee": "{item}: out of range ({max} {units} at most)."
+  "DND5ECOMBAT.Zone.HorsPortee": "{item}: out of range ({max} {units} at most).",
+  "DND5ECOMBAT.Zone.SansChemin": "{item}: no clear path to that point (a wall or floor stands between it and the caster)."
 }

@@ -156,6 +156,38 @@ export function coverFor(attacker, target, { posA, quiet=false, activity=null, a
 }
 
 /**
+ * §200 : « Chemin dégagé vers la cible » (Manuel des joueurs 2024) — le point d'origine d'un sort ne peut pas être derrière un abri
+ * total. Vrai si, depuis le centre ou un coin (rentré) de l'espace du lanceur, la ligne jusqu'au point ne traverse aucun mur qui
+ * arrête le mouvement (une fenêtre fermée aussi : abri total) dans son niveau, à hauteur de ses yeux, ni plancher ou plafond (Surface).
+ * null : impossible à dire (canevas absent ou sur une autre scène).
+ * @param {TokenDocument} token
+ * @param {{x: number, y: number}} point
+ * @returns {boolean|null}
+ */
+export function clearPathTo(token, point) {
+  const scene = token?.parent;
+  if ( !point || !canJudgeCover(scene) ) return null;
+  const pos = committedPosition(token);
+  const eye = eyeElevation(token, pos);
+  const level = scene.levels?.get?.(pos.level ?? token._source.level) ?? undefined;
+  const backend = CONFIG.Canvas.polygonBackends.move;
+  const surfaces = typeof scene.testSurfaceCollision === "function";
+  const rect = rectOf(token, pos);
+  const inset = scene.grid.size * INSET_FRACTION;
+  const starts = [
+    { x: rect.x + (rect.width / 2), y: rect.y + (rect.height / 2) },
+    { x: rect.x + inset, y: rect.y + inset }, { x: rect.x + rect.width - inset, y: rect.y + inset },
+    { x: rect.x + inset, y: rect.y + rect.height - inset }, { x: rect.x + rect.width - inset, y: rect.y + rect.height - inset }
+  ];
+  const to = { x: point.x, y: point.y, elevation: eye };
+  return starts.some(a => {
+    const from = { x: a.x, y: a.y, elevation: eye };
+    if ( backend.testCollision(from, to, { type: "move", mode: "any", level }) === true ) return false;
+    return !(surfaces && (scene.testSurfaceCollision(from, to, { type: "move", mode: "any" }) === true));
+  });
+}
+
+/**
  * Ligne d'effet entre deux tokens (P2) : existe tant que l'un n'a pas un abri **total** vis-à-vis de
  * l'autre — murs et surfaces, sans les créatures (elles ne donnent jamais plus qu'un abri partiel).
  * C'est ce qui arrête une émanation (aura), une attaque d'opportunité à travers une trappe.

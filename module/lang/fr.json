@@ -1298,5 +1298,6 @@
   "DND5ECOMBAT.Embrase.Brule": "{name} brûle ({item}) : {amount} dégâts de feu.",
   "DND5ECOMBAT.Embrase.Allumer": "Allumer : {item}",
   "DND5ECOMBAT.Embrase.SansMJ": "Il faut un MJ connecté pour allumer.",
-  "DND5ECOMBAT.Zone.HorsPortee": "{item} : hors de portée ({max} {units} au plus)."
+  "DND5ECOMBAT.Zone.HorsPortee": "{item} : hors de portée ({max} {units} au plus).",
+  "DND5ECOMBAT.Zone.SansChemin": "{item} : aucun chemin dégagé jusqu'à ce point (un mur ou un plancher le sépare du lanceur)."
 }

@@ -46,8 +46,9 @@ import { floatNotice } from "./feedback.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { potionCastsOnDrinker } from "../adapter/usage.mjs";
 import { isPotion } from "../adapter/potions.mjs";
-import { aimedAreaOf, aimedShapeData, aimedRegionData, wallAreaOf, rangedAreaOf, rangedTooFar } from "../adapter/self-area.mjs";
+import { aimedAreaOf, aimedShapeData, aimedRegionData, wallAreaOf, rangedAreaOf, rangedTooFar, rangedCenter } from "../adapter/self-area.mjs";
 import { castAimed, placeAimed, placeWall } from "../runtime/self-area.mjs";
+import { clearPathTo } from "../adapter/cover.mjs";
 import { clampPolyline, polylineLength, orthogonalize } from "../core/wall.mjs";
 import { closeMenu, onMenuShift } from "./pointer-menu.mjs";
 import { cancellable, clearPreview, forgetHover, lastPointer, onKeyDown, onModifierKey, onPointerDown, onPointerMove, onPointerUp, refusalFor, setCursor, trackPointer } from "./pointer-mouse.mjs";
@@ -685,9 +686,13 @@ function onCreateTemplate(activity, regionData) {
   if ( (regionData ?? []).some(d => d?.flags?.[MODULE_ID]?.enginePlaced) ) return;
   const area = rangedAreaOf(activity);
   if ( !area ) return;
-  const far = (regionData ?? []).some(d => (d.shapes ?? []).some(shape => rangedTooFar(area, shape)));
-  if ( !far ) return;
-  ui.notifications.warn(loc("Zone.HorsPortee", { item: activity.item.name, max: area.max, units: area.units }));
+  const shapes = (regionData ?? []).flatMap(d => d.shapes ?? []);
+  const far = shapes.some(shape => rangedTooFar(area, shape));
+  // §200 : « Chemin dégagé vers la cible » — pas de point d'origine derrière un mur (Boule de feu lancée derrière un mur, retour de
+  // table du 2026-10-18).
+  const hidden = !far && shapes.some(shape => clearPathTo(area.token, rangedCenter(shape)) === false);
+  if ( !far && !hidden ) return;
+  ui.notifications.warn(loc(far ? "Zone.HorsPortee" : "Zone.SansChemin", { item: activity.item.name, max: area.max, units: area.units }));
   dnd5e.canvas.TemplatePlacement.fromActivity(activity).catch(err => console.error(`${MODULE_ID} | ranged area placement`, err));
   return false;
 }
@@ -911,7 +916,7 @@ export function registerPointer() {
   route("dnd5e.preRollAttackV2", onPreRollDamage, { cancellable: true, label: "attack roll without dialog" });
   route("dnd5e.postUseActivity", onPostUseActivity, { label: "teleportation: targeting not opened" });
   route("dnd5e.preCreateMeasuredTemplate", onPreTemplate, { cancellable: true, label: "cone or line: targeting around the caster (map)" });
-  route("dnd5e.createMeasuredTemplate", onCreateTemplate, { cancellable: true, label: "ranged area: within range" });
+  route("dnd5e.createMeasuredTemplate", onCreateTemplate, { cancellable: true, label: "ranged area: within range, clear path" });
   route("updateChatMessage", onResolutionSettled, { label: "targets released" });
   route("createChatMessage", onResolutionSettled, { label: "targets released" });
   route("combatTurnChange", onTurnChange, { label: "targets released at end of turn" });

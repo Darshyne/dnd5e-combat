@@ -23,6 +23,8 @@ const DEVIOUS_STRIKES = Object.freeze({
 export const ROGUE = Object.freeze({
   // Attaque sournoise : les dés de l'item (`@scale.rogue.sneak-attack`), une fois par tour (core/sneak.mjs).
   "sneak-attack": { sneakAttack: true },
+  // §208 : Monte-en-l'air (Voleur 3), Sauteur — « la distance de saut avec la Dextérité au lieu de la Force ».
+  "second-story-work": { jump: { useDex: true } },
 
   // Ruse (niveau 2) : « à votre tour, vous pouvez effectuer l'une des actions suivantes par une action Bonus : Foncer, Se
   // désengager ou Se cacher ». Les trois activités de l'item coûtent déjà l'action Bonus ; le moteur y pose l'état du tour (Foncer,

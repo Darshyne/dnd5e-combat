@@ -11,7 +11,10 @@
 import { MODULE_ID } from "../constants.mjs";
 import { movementAllowance } from "../core/turn.mjs";
 import { footprintGap, chooseBasicAttack, dragMultiplier, dragAllowance } from "../core/movement.mjs";
-import { combatantFor, readBudget, movementOf, speedOf, rangeOf, historyCosts, tokenCenter, positionOf, committedPosition, distanceBetween } from "../adapter/turn.mjs";
+import { combatantFor, readBudget, writeBudget, movementOf, speedOf, rangeOf, historyCosts, tokenCenter, positionOf, committedPosition, distanceBetween } from "../adapter/turn.mjs";
+import { jumpCost, LANDING_DC } from "../core/jump.mjs";
+import { jumpOptionsOf, landsOnDifficult } from "../adapter/jump.mjs";
+import { groundUnder } from "../adapter/altitude.mjs";
 import { overlapsVertically, verticalExtent, verticalGap } from "../core/space.mjs";
 import { pilotOf, pilotOfActor, commandPlan, commandDistance, commandActivities, summonerToken, isIntangible } from "../adapter/pilot.mjs";
 import { readUnitFactors, lengthIn } from "../adapter/units.mjs";
@@ -52,7 +55,8 @@ export function movementCap(token) {
   // §16.59 : un tour achevé par un ordre (Injonction : Rampe, Halte…) — plus un pas.
   if ( budget.stopped ) return movement.spent + historyCosts(token).excluded;
   // §17.2 : le cœur ne connaît que son historique ; la hauteur des escaliers et le relevé s'en retirent ici.
-  const cap = movementAllowance(budget, movement.speed) - (Number(budget.climbed) || 0) - (Number(budget.stood) || 0);
+  // §208 : un saut fixe (9 m pour 3 m) rend la différence au plafond, comparé à l'historique du cœur qui compte toute la distance.
+  const cap = movementAllowance(budget, movement.speed) - (Number(budget.climbed) || 0) - (Number(budget.stood) || 0) + (Number(budget.jumped) || 0);
   // Le plafond se compare à l'historique du CŒUR, qui compte aussi les téléportations (§16.10) : on les y rajoute.
   const excluded = historyCosts(token).excluded;
   const victims = victimsOf(token);
@@ -357,15 +361,74 @@ export async function takeStairs(token, point, level) {
 /** §18.25 : portes qu'un seul clic de déplacement ouvre en chemin. */
 const MAX_DOORS_PER_MOVE = 3;
 
-/** Saut en longueur : ligne droite, au plus la valeur de Force en pieds (avec élan), payée en déplacement. */
-export async function jumpTo(token, point) {
+/**
+ * §208 : sauter jusqu'à la case visée, en longueur (`high` faux) ou en hauteur (`high` vrai : monter sur une surface plus haute — estrade,
+ * rebord —, dans la limite du saut en hauteur). Distances des règles 2024 (core/jump.mjs) : élan lu dans l'historique en combat, Athlète,
+ * Monte-en-l'air, Pas du vent, et le saut fixe une fois par tour (sort Saut, Bottes : 9 m pour 3 m, la différence rendue au budget).
+ * Chaque pied coûte un pied (dnd5e : le mode « jump » sans multiplicateur ni terrain difficile). Arrivée en terrain difficile : test de
+ * Dextérité (Acrobaties) DD 10, sinon À terre. Un saut en longueur garde sa hauteur : s'il arrive au-dessus d'un sol plus bas, dnd5e pose
+ * « En chute » et la chute suit (runtime/falls.mjs). Sur le client de celui qui saute.
+ */
+export async function jumpTo(token, point, { high=false, configure=true }={}) {
   const grid = canvas.scene.grid;
+  const units = grid.units;
   const cell = cellUnder(token, point);
-  const dest = { ...grid.getTopLeftPoint(cell), snapped: true, action: "jump" };
-  const distance = grid.measurePath([grid.getCenterPoint(grid.getTopLeftPoint(cellOf(token))), grid.getCenterPoint(dest)]).distance;
-  let max = lengthIn(token.actor?.system.abilities?.str?.value ?? 10, "ft", grid.units);
-  if ( distance > max + 1e-6 ) return ui.notifications.warn(loc("Deplacement.SautTropLong", { max: Math.floor(max), units: grid.units }));
-  await walkSafely(token, { waypoints: [dest], beyond: [], arrives: true });
+  const top = grid.getTopLeftPoint(cell);
+  const from = committedPosition(token);
+  const ft = v => lengthIn(v, units, "ft");
+  const toGrid = v => lengthIn(v, "ft", units);
+  const horizontal = ft(grid.measurePath([grid.getCenterPoint(grid.getTopLeftPoint(cellOf(token))), grid.getCenterPoint(top)]).distance);
+  const here = from.elevation ?? 0;
+  const ground = groundUnder(token, { ...from, x: top.x, y: top.y });
+  const rise = ft(ground - here);
+  const options = jumpOptionsOf(token);
+  const fmt = n => `${Math.floor(toGrid(n) * 10) / 10} ${units}`;
+  let elevation = here;
+  let jump;
+  if ( high ) {
+    if ( rise <= 1e-6 ) return ui.notifications.warn(loc("Saut.RienAMonter"));
+    // La hauteur se saute ; le déplacement horizontal, lui, se paie à part.
+    const up = jumpCost(rise, options.high, options.fixed);
+    if ( !up.ok ) return ui.notifications.warn(loc("Saut.TropHaut", { max: fmt(up.limit), elan: loc(options.runningStart ? "Saut.AvecElan" : "Saut.SansElan") }));
+    jump = { ...up, cost: up.cost + horizontal, distance: rise + horizontal };
+    elevation = ground;
+  } else {
+    if ( rise > 1e-6 ) return ui.notifications.warn(loc("Saut.PlusHaut"));
+    jump = { ...jumpCost(horizontal, options.long, options.fixed), distance: horizontal };
+    if ( !jump.ok ) return ui.notifications.warn(loc("Saut.TropLong", { max: fmt(jump.limit), elan: loc(options.runningStart ? "Saut.AvecElan" : "Saut.SansElan") }));
+  }
+  // Le déplacement qu'il reste ce tour (le même compte que l'anneau de l'interface : plafond du moteur moins l'historique du cœur).
+  if ( options.combatant ) {
+    const { spent, excluded } = historyCosts(token);
+    const left = movementCap(token) - spent - excluded;
+    if ( toGrid(jump.cost) > left + 1e-6 ) return ui.notifications.warn(loc("Saut.PasAssez", { cost: fmt(jump.cost), left: `${Math.floor(left * 10) / 10} ${units}` }));
+  }
+  // Saut fixe : le cœur comptera toute la distance ; la différence est rendue, et le saut fixe est pris pour le tour.
+  const refund = (jump.fixed && options.combatant) ? Math.max(0, toGrid(jump.distance - jump.cost)) : 0;
+  if ( jump.fixed && options.combatant ) {
+    const b = readBudget(options.combatant);
+    await writeBudget(options.combatant, { ...b, fixedJump: true, jumped: (Number(b.jumped) || 0) + refund });
+  }
+  const dest = { ...top, elevation, snapped: true, action: "jump" };
+  const moved = await walkSafely(token, { waypoints: [dest], beyond: [], arrives: true });
+  if ( (moved === false) && jump.fixed && options.combatant ) {
+    const b = readBudget(options.combatant);
+    await writeBudget(options.combatant, { ...b, fixedJump: false, jumped: Math.max(0, (Number(b.jumped) || 0) - refund) });
+    return false;
+  }
+  log(`${token.name}: ${high ? "high" : "long"} jump, ${Math.round(jump.distance)} ft for ${Math.round(jump.cost)} ft${jump.fixed ? " (fixed jump)" : ""}${options.runningStart ? "" : ", standing"}`);
+  // Arrivée en terrain difficile : Dextérité (Acrobaties) DD 10, sinon À terre.
+  const center = { x: top.x + ((token.width ?? 1) * grid.sizeX / 2), y: top.y + ((token.height ?? 1) * grid.sizeY / 2) };
+  if ( landsOnDifficult(token, center, elevation) ) {
+    ui.notifications.info(loc("Saut.Atterrissage", { name: token.name, dc: LANDING_DC }));
+    const rolls = await token.actor.rollSkill({ skill: "acr", ability: "dex", target: LANDING_DC }, { configure });
+    const total = rolls?.[0]?.total;
+    if ( Number.isFinite(total) && (total < LANDING_DC) ) {
+      await token.actor.toggleStatusEffect("prone", { active: true });
+      notice(token, loc("Saut.ATerre"));
+    }
+  }
+  return true;
 }
 
 /**

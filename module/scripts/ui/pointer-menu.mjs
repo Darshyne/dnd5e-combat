@@ -180,7 +180,9 @@ export function groundEntries(token, point) {
   return [
     ...stairsEntries(token, point),
     { icon: "fa-solid fa-person-walking", label: loc("Menu.SeDeplacer"), run: () => moveTo(token, point) },
-    { icon: "fa-solid fa-person-running", label: loc("Menu.Sauter"), run: () => jumpTo(token, point) }
+    { icon: "fa-solid fa-person-running", label: loc("Menu.Sauter"), run: () => jumpTo(token, point) },
+    // §208 : monter d'un saut sur une surface plus haute (estrade, rebord).
+    { icon: "fa-solid fa-arrow-up-from-ground-water", label: loc("Menu.SauterHauteur"), run: () => jumpTo(token, point, { high: true }) }
   ];
 }
 

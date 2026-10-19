@@ -37,6 +37,9 @@ export function freshBudget({ reactions=1 }={}) {
     multi: null,  // M1 (§18.6) : Attaques multiples ouvertes ce tour — { plan, used: [clés de chaque utilisation] }
     climbed: 0,  // P2 : hauteur franchie par un escalier ou une échelle, en unités de la grille (le cœur ne la retient pas : « displace »)
     stood: 0,    // §17.2 : déplacement dépensé pour se relever (la moitié de la vitesse), en unités de la grille
+    jumped: 0,   // §208 : déplacement rendu par un saut fixe (sort Saut, Bottes : 9 m pour 3 m), en unités de la grille
+    fixedJump: false,   // §208 : le saut fixe de ce tour est pris (« une fois à chacun de ses tours »)
+    jumpDouble: false,  // §208 : distance de saut doublée pour le tour (Pas du vent)
     flurry: 0,      // §24 : frappes à mains nues gratuites ouvertes par le Déluge de coups
     flurryAny: false,   // §27 : … attaques d'arme comprises (Prêtre de guerre)
     bonusMove: 0,   // §20 : déplacement ouvert en plus ce tour (Repli du Roublard : la moitié de la Vitesse), unités de la grille

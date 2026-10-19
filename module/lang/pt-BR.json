@@ -182,7 +182,6 @@
   "DND5ECOMBAT.Reglage.targetingBanner.Aide": "Durante a seleção de alvos, projéteis, áreas ou destinos, a instrução e o número de alvos escolhidos permanecem no alto da tela. Desativado: a instrução aparece apenas como notificação.",
   "DND5ECOMBAT.Deplacement.CibleHorsDatteinte": "{name} está fora de alcance neste turno.",
   "DND5ECOMBAT.Deplacement.CibleHorsDeVue": "Não há espaço acessível com linha de visão para {name}.",
-  "DND5ECOMBAT.Deplacement.SautTropLong": "Salto longo demais: no máximo {max} {units}.",
   "DND5ECOMBAT.Visee.Choisir": "{name}: clique no alvo (botão direito ou Esc para cancelar).",
   "DND5ECOMBAT.Visee.Annulee": "Ação cancelada.",
   "DND5ECOMBAT.Menu.SeDeplacer": "Mover até aqui",

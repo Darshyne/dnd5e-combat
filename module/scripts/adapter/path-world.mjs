@@ -98,7 +98,7 @@ export function stairsDestinations(token, point) {
  * le comportement (data/region-behavior/difficult-terrain.mjs, `_getTerrainEffects` : dispositions ignorées, terrain
  * ignoré par l'acteur, magique ou non). Le coût réel reste mesuré par le cœur ; ceci ne sert qu'à faire contourner.
  */
-function difficultRegionsFor(token) {
+export function difficultRegionsFor(token) {
   const ignored = token.actor?.system?.attributes?.movement?.ignoredDifficultTerrain ?? new Set();
   if ( ignored.has?.("all") ) return [];
   const out = [];

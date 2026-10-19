@@ -98,6 +98,9 @@ export const SPELL_RULES = Object.freeze({
   // DD du lanceur — la cible passe par l'évasion d'une entrave (§16.54) ; ceci ouvre le test à une autre créature.
   // §81 : la sauvegarde du lancement (dnd5eactivity000) porte 1d6 perforants dans la donnée (PHB premium et SRD de dnd5e), que le
   // texte 2024 ne donne pas : les dégâts ne tombent qu'au début des tours de la cible entravée (« Start of Turn Damage », §80).
+  // §208 : Saut — « une fois à chacun de ses tours, jusqu'à la fin du sort, la créature peut sauter jusqu'à 9 m pour 3 m de
+  // déplacement » : porté par l'effet du sort (« Jump », Esyd01OZ3NCv8gtp) sur la créature touchée.
+  "jump": { jump: { fixed: { distance: 30, cost: 10, from: "effect" } } },
   // §206 : comme les châtiments — proposée après un coup d'arme, au corps à corps comme à distance (« immédiatement après avoir touché
   // une créature avec une arme ») ; la cible fait son jet de Force, avec l'Avantage si elle est de taille G ou supérieure.
   "ensnaring-strike": { actionEnds: { tFGMG3cjQTEeAhv2: { by: "other", roll: "check" } }, noDamage: ["dnd5eactivity000"],

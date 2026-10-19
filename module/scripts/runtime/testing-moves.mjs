@@ -10,7 +10,8 @@ import { planPath, stairsOf, stairsDestinations, stopWalking } from "../adapter/
 import { combatantFor, readBudget, movementOf } from "../adapter/turn.mjs";
 import { setDoorOpen, doorState } from "./doors.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
-import { moveTo, movementCap, selfTeleportOf, teleportTo, afterTeleport, teleportClick, dashStrike, dashTargets, dashProblem, dashLimit, lineDashOf, transpose as transposeIntent, takeStairs as takeStairsIntent, gapCells, verticalGapCells, tooHighFor, reachCells, basicAttack, rangeStatus, engage, approach } from "./actions.mjs";
+import { jumpOptionsOf } from "../adapter/jump.mjs";
+import { jumpTo, moveTo, movementCap, selfTeleportOf, teleportTo, afterTeleport, teleportClick, dashStrike, dashTargets, dashProblem, dashLimit, lineDashOf, transpose as transposeIntent, takeStairs as takeStairsIntent, gapCells, verticalGapCells, tooHighFor, reachCells, basicAttack, rangeStatus, engage, approach } from "./actions.mjs";
 import { dismissFamiliar, recallFamiliar, recallRefusal, canPocket, canRecall } from "./familiar.mjs";
 import { pocketOf, isFamiliarToken, emptyPocket } from "../adapter/familiar.mjs";
 import { basicActionOf } from "../adapter/basics.mjs";
@@ -333,6 +334,30 @@ export async function reachCheck({ tokenId, targetId, engage: doEngage=false, ap
   out.after = positionJson(token);
   out.moved = (out.after.x !== out.before.x) || (out.after.y !== out.before.y) || (out.after.elevation !== out.before.elevation);
   return out;
+}
+
+/**
+ * §208 : un saut comme l'entrée de menu (« Sauter ici », « Sauter en hauteur ici »), vers le centre de `cell`. Rend les positions avant et
+ * après, ce que le saut permettait (`options`, en pieds), les avertissements affichés, et le budget du tour (saut fixe, remboursement).
+ */
+export async function jump({ tokenId, cell, high=false }) {
+  const token = viewedToken({ tokenId });
+  const grid = token.parent.grid;
+  const before = positionJson(token);
+  const options = jumpOptionsOf(token);
+  const warnings = [];
+  const warn = ui.notifications.warn;
+  ui.notifications.warn = (msg, ...rest) => { warnings.push(String(msg)); return warn.call(ui.notifications, msg, ...rest); };
+  let result;
+  try { result = await jumpTo(token, grid.getCenterPoint(grid.getTopLeftPoint(cell)), { high, configure: false }); }
+  finally { ui.notifications.warn = warn; }
+  await sleep(800);
+  const combatant = token.actor ? combatantFor(token.actor) : null;
+  const budget = combatant ? readBudget(combatant) : null;
+  return { result: result ?? null, before, after: positionJson(token), warnings,
+    options: { long: options.long, high: options.high, runningStart: options.runningStart, fixed: options.fixed, runUp: options.rules.runUp, useDex: options.rules.useDex },
+    budget: budget ? { jumped: budget.jumped ?? 0, fixedJump: !!budget.fixedJump, jumpDouble: !!budget.jumpDouble } : null,
+    statuses: Array.from(token.actor?.statuses ?? []) };
 }
 
 /** « Se laisser tomber » : chute volontaire, comme l'entrée de menu. */

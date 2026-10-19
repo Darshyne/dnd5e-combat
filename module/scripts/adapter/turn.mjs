@@ -364,7 +364,7 @@ export function movementOf(combatant, factors) {
   // §16.10 : une téléportation ou un déplacement forcé ne consomme pas de déplacement.
   // §17.2 : plus le déplacement dépensé pour se relever.
   const budget = readBudget(combatant);
-  const spent = historyCosts(token).spent + (Number(budget.climbed) || 0) + (Number(budget.stood) || 0);
+  const spent = historyCosts(token).spent + (Number(budget.climbed) || 0) + (Number(budget.stood) || 0) - (Number(budget.jumped) || 0);
   return { spent, ...speedOf(combatant.actor, factors, token._source?.movementAction ?? null) };
 }
 

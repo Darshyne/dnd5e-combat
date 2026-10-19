@@ -324,6 +324,20 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   }
   if ( ("saveAdvantage" in entry) && (!Array.isArray(entry.saveAdvantage) || !entry.saveAdvantage.length
     || !entry.saveAdvantage.every(s => (typeof s === "string") && s)) ) errors.push(`${at}saveAdvantage: list of condition identifiers`);
+  // §208 : ce qui change le saut — élan plus court (Athlète), la Dextérité (Monte-en-l'air), un saut fixe une fois par tour (sort *Saut* :
+  // porté par l'effet du sort ; Bottes : objet équipé), la distance doublée après ces activités (Pas du vent). Pieds.
+  if ( "jump" in entry ) {
+    const j = entry.jump;
+    const fixedOk = f => isObject(f) && Number.isFinite(f.distance) && (f.distance > 0) && Number.isFinite(f.cost) && (f.cost >= 0)
+      && (!("from" in f) || ["effect", "equipped"].includes(f.from));
+    if ( !isObject(j) || !Object.keys(j).length || !Object.keys(j).every(k => ["runUp", "useDex", "fixed", "double"].includes(k))
+      || (("runUp" in j) && !(Number.isFinite(j.runUp) && (j.runUp >= 0)))
+      || (("useDex" in j) && (j.useDex !== true))
+      || (("fixed" in j) && !fixedOk(j.fixed))
+      || (("double" in j) && !(Array.isArray(j.double) && j.double.length && j.double.every(isId))) ) {
+      errors.push(`${at}jump: { runUp?: feet, useDex?: true, fixed?: { distance, cost, from?: "effect"|"equipped" }, double?: [activity ids] }`);
+    }
+  }
   // §206 : « une créature de taille G ou supérieure a l'Avantage à ce jet » (Frappe piégeuse).
   if ( ("saveAdvantageSize" in entry) && !SIZES.includes(entry.saveAdvantageSize) ) errors.push(`${at}saveAdvantageSize: one of ${SIZES.join(", ")}`);
   if ( "leap" in entry ) {

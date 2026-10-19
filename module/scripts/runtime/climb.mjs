@@ -365,6 +365,16 @@ async function settleAnimation(token, ms=5000) {
  * le token est tombé. Sur un client qui peut modifier le token. Sert aussi à l'Inversion de la gravité (§195).
  */
 export async function fallLikeDnd5e(token) {
+  // §208 : une seule chute à la fois par token — l'escalade et la chute automatique (runtime/falls.mjs) peuvent la demander ensemble
+  // (deux `plummet` en même temps : deux cartes de dégâts).
+  if ( plummeting.has(token.uuid) ) return false;
+  plummeting.add(token.uuid);
+  try { return await plummetOnce(token); }
+  finally { plummeting.delete(token.uuid); }
+}
+const plummeting = new Set();
+
+async function plummetOnce(token) {
   if ( typeof token.updateFalling === "function" ) await token.updateFalling();
   if ( !token.actor?.statuses?.has("falling") || (typeof token.plummet !== "function") ) return false;
   // `plummet` mesure la chute depuis l'élévation VISUELLE du token (documents/token.mjs : `this.elevation`, qui suit l'animation) :
@@ -413,6 +423,9 @@ export async function dropDown(token) {
 
 /** Les tokens en train de tomber : un même effet (À terre) passe par plusieurs hooks, la chute ne se joue qu'une fois. */
 const falling = new Set();
+
+/** §208 : l'escalade fait-elle tomber ce token en ce moment ? La chute automatique (runtime/falls.mjs) s'efface alors. */
+export const climbFallInProgress = token => falling.has(token?.id) || plummeting.has(token?.uuid);
 
 /** Un grimpeur qui ne tient plus (À terre, Neutralisé, Agrippé, sans vitesse, plus de plafond) ou qui rate son test tombe. MJ actif. */
 async function fall(token, reason) {

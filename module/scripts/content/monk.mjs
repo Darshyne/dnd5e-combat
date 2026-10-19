@@ -20,7 +20,9 @@ export const MONK = Object.freeze({
   // Pas du vent — 1 point : Se désengager et Foncer (0MuRZ0Ur95xQTKFq ; la version gratuite, Foncer seul, n'a pas d'activité).
   "monks-focus": {
     flurry: { activity: "2ghJTBhilLrFn9xT", strikes: 2 },
-    basicActions: { EFzidO6yAapw8d60: "disengage", "7xj7b6e8tDznDSrE": ["disengage", "dodge"], "0MuRZ0Ur95xQTKFq": ["dash", "disengage"] }
+    basicActions: { EFzidO6yAapw8d60: "disengage", "7xj7b6e8tDznDSrE": ["disengage", "dodge"], "0MuRZ0Ur95xQTKFq": ["dash", "disengage"] },
+    // §208 : Pas du vent par un point de focus — « et votre distance de saut est doublée pour le tour ».
+    jump: { double: ["0MuRZ0Ur95xQTKFq"] }
   },
   // Frappe étourdissante (niveau 5) : au plus une fois par tour, sur un coup d'arme de moine ou à mains nues, 1 point impose un JS
   // de Constitution ; la cible qui le rate est Étourdie jusqu'au début du prochain tour du moine, celle qui le réussit voit sa

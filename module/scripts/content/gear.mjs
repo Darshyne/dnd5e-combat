@@ -66,6 +66,8 @@ export const GEAR = Object.freeze({
   // « supprime tout niveau d'Épuisement et met fin à l'état Empoisonné » (les dés de vie au maximum pendant 24 h : au MJ).
   "elixir-of-health": { curesAll: ["blinded", "deafened", "paralyzed", "poisoned"] },
   "potion-of-vitality": { curesAll: ["exhaustion", "poisoned"] },
+  // §208 : Bottes de saut et de célérité — « une fois à chacun de vos tours, sauter jusqu'à 9 m pour seulement 3 m de déplacement ».
+  "boots-of-striding-and-springing": { jump: { fixed: { distance: 30, cost: 10, from: "equipped" } } },
   // §53 : Croissance — « l'effet "agrandir" du sort Agrandissement/rapetissement » ; Rapetissement — « l'effet "rapetisser" »
   // (effets du sort, mêmes ids dans le Manuel des joueurs et le SRD : content/spells.mjs, SIZE_CHANGES).
   "potion-of-growth": { potionEffect: "Wi2E10l7n6Ka8k6u" },

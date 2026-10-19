@@ -99,6 +99,7 @@ import { registerOrders } from "./runtime/orders.mjs";
 import { registerSummonHandover } from "./runtime/summon-handover.mjs";
 import { registerAutoTranslate } from "./runtime/auto-translate.mjs";
 import { registerCriticals } from "./runtime/criticals.mjs";
+import { registerFalls } from "./runtime/falls.mjs";
 import { describeRoutes, skippedRoutes } from "./runtime/router.mjs";
 import { testApi } from "./runtime/testing.mjs";
 import { registerPointer } from "./ui/pointer.mjs";
@@ -300,6 +301,7 @@ Hooks.once("init", () => {
   gated(registerGrapple);
   gated(registerProne);
   gated(registerClimb);   // §192 : grimper aux murs, chute du grimpeur qui ne tient plus
+  gated(registerFalls);   // §208 : chute automatique (« En chute » de dnd5e, vol à Vitesse 0), Pas du vent
   gated(registerSpeedGrants);   // §195 : vitesses que le contenu accorde (Athlète : escalade)
   gated(registerBreaks);
   gated(registerCure);

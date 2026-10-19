@@ -31,6 +31,9 @@ export default {
       await ctx.call("update-scene-object", { type: "Token", objectId: hero.id, data: { movementAction: "walk", [`flags.${MODULE_ID}.climb`]: null } }).catch(() => {});
       await ctx.call("move-token", { tokenId: hero.id, x: home.x, y: home.y, elevation: home.elevation ?? 0, levelId: home.level }).catch(() => {});
     });
+    // Règles 2024 le temps du test (en « maison », un test de DD 15 raté fait tomber le grimpeur : le résultat dépendrait du dé).
+    const rules = await ctx.engine("setting", { key: "climbRules", value: "2024" });
+    ctx.restore(() => ctx.engine("setting", { key: "climbRules", value: rules?.before ?? "2024" }));
     const state = () => ctx.engine("climbState", { tokenId: hero.id });
 
     // 1. Grimper depuis la cour.
@@ -63,6 +66,8 @@ export default {
     await pause(1500);
     up = await ctx.engine("climb", { tokenId: hero.id, cells: 3 });
     await pause(1200);
+    // Sans cette vérification, la suite passait à vide : un grimpeur resté au sol « ne se hisse pas » non plus.
+    if ( !ctx.expect(up.done && (up.after.elevation === 15), `en combat, grimpe 3 cases : pieds à ${up.after.elevation} ft`) ) return;
     const left = (await ctx.engine("movement", { tokenId: hero.id })).combat;
     const refused = await ctx.engine("hoist", { tokenId: hero.id, dir: "n" });
     ctx.expect(!refused.done && (refused.after.elevation === up.after.elevation), `en combat, déplacement dépensé ${left?.spent} sur ${left?.speed} : se hisser refusé (${refused.after.elevation} ft)`);

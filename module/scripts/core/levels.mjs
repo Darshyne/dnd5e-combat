@@ -40,7 +40,7 @@ export const FEATURE_LEVELS = Object.freeze({
   registerPurge: E, registerAutomation: E, registerSummonHandover: E, registerAutoTranslate: E, registerCriticals: A, registerFactions: E, registerFactionsUI: E, registerSettingsWindow: E, registerStealthMode: E, registerStealthUI: E,
 
   // Assisté : la résolution, et les règles générales qui valent pour toute créature.
-  registerEngine: A, registerConcentration: A, registerDeath: A, registerUsage: A, registerReactions: A, registerReady: A, registerTriggers: A,
+  registerEngine: A, registerConcentration: A, registerDeath: A, registerUsage: A, registerReactions: A, registerReady: A, registerBurning: A, registerTriggers: A,
   registerConditions: A, registerAreas: A, registerSelfAreas: A, registerZones: A, registerGrapple: A, registerProne: A,
   registerStabilize: A, registerHelp: A, registerHide: A, registerSearch: A, registerPassivePerception: A, registerEffects: A,
   registerAnimations: A, registerActivityChoice: A, registerCompact: A, registerChat: A,

@@ -1390,5 +1390,12 @@
   "DND5ECOMBAT.Pret.Si.casts": "Quand un ennemi lance un sort",
   "DND5ECOMBAT.PretDeclenche.enters": "{mover} arrive à portée : libérer votre action préparée ({action}) ?",
   "DND5ECOMBAT.PretDeclenche.attacks": "{mover} vient d'attaquer : libérer votre action préparée ({action}) ?",
-  "DND5ECOMBAT.PretDeclenche.casts": "{mover} vient de lancer un sort : libérer votre action préparée ({action}) ?"
+  "DND5ECOMBAT.PretDeclenche.casts": "{mover} vient de lancer un sort : libérer votre action préparée ({action}) ?",
+  "DND5ECOMBAT.EnFeu.Brule": "{name} est en feu : {amount} dégâts de feu.",
+  "DND5ECOMBAT.EnFeu.Eteindre": "Éteindre les flammes (action, À terre)",
+  "DND5ECOMBAT.EnFeu.Eteint": "Flammes éteintes",
+  "DND5ECOMBAT.EnFeu.EteintCarte": "{name} se roule au sol et éteint les flammes.",
+  "DND5ECOMBAT.EnFeu.PrendFeu": "Prend feu !",
+  "DND5ECOMBAT.Reglage.fireSpread.Nom": "Propagation des flammes (règle maison)",
+  "DND5ECOMBAT.Reglage.fireSpread.Aide": "À la Baldur's Gate 3 : une créature brûlée par une zone en feu (huile, toile) prend feu à son tour — 1d4 de feu au début de chacun de ses tours, jusqu'à ce qu'elle éteigne les flammes. Désactivé : seules les règles (une créature en feu embrase l'huile ou la toile où elle entre)."
 }

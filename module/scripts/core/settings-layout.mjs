@@ -15,7 +15,7 @@ export const SETTINGS_TABS = Object.freeze([
     keys: ["cover", "aurasOnlyInCombat", "npcSaveChoice", "legendaryResistance", "portent", "combatWindowSeconds",
       "critMargin", "criticalMode", "criticalTable", "criticalNpc"] },
   { id: "movement", icon: "fa-solid fa-shoe-prints",
-    keys: ["altitude", "climbRules", "autoFall", "volumes", "faceMovement", "clickToMove", "pathPreview", "teleportPlanning"] },
+    keys: ["altitude", "climbRules", "autoFall", "fireSpread", "volumes", "faceMovement", "clickToMove", "pathPreview", "teleportPlanning"] },
   { id: "vision", icon: "fa-solid fa-eye",
     keys: ["vision", "passivePerception", "twilightDarkness", "visionCones", "coneAngles", "stealthRules", "surpriseFromStealth", "factionRules", "factionIcons",
       "lightIndicator"],

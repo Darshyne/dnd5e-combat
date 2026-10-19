@@ -21,6 +21,7 @@ import { route } from "./router.mjs";
 import { levelAtLeast } from "./levels.mjs";
 import { log, loc, say, viaActiveGM, waitForDice } from "./shared.mjs";
 import { groundTile } from "./scatter.mjs";
+import { catchFireFromZone } from "./burning.mjs";
 
 export const IGNITE_QUERY = `${MODULE_ID}.ignite`;
 /** Lumière d'une flaque en feu : celle d'un feu de camp (vive 3 m, faible 6 m de plus), vacillante. */
@@ -160,6 +161,8 @@ export async function burnTick(region, token, burning) {
   await waitForDice(message);
   await token.actor?.applyDamage([{ value: roll.total, type: burning.type }]);
   log(`${name}: ${token.name} burns, ${roll.total} ${burning.type}`);
+  // §212 : propagation maison — brûlée par la zone, la créature prend feu (réglage `fireSpread`).
+  await catchFireFromZone(token, name);
 }
 
 /** Le tour vient de changer : les zones dont le feu atteint son terme s'éteignent (après les brûlures de fin de tour, même file). */

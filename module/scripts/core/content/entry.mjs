@@ -339,6 +339,8 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     }
   }
   // §206 : « une créature de taille G ou supérieure a l'Avantage à ce jet » (Frappe piégeuse).
+  // §212 : les effets de l'item qui valent « En feu » (feu grégeois) — ids d'effet, au format d'un `_id`.
+  if ( ("burns" in entry) && !(Array.isArray(entry.burns) && entry.burns.length && entry.burns.every(id => /^[A-Za-z0-9]{16}$/.test(id))) ) errors.push(`${at}burns: [effect ids]`);
   if ( ("saveAdvantageSize" in entry) && !SIZES.includes(entry.saveAdvantageSize) ) errors.push(`${at}saveAdvantageSize: one of ${SIZES.join(", ")}`);
   if ( "leap" in entry ) {
     const l = entry.leap;

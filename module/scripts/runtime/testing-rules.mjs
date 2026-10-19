@@ -34,6 +34,8 @@ import { isHidden, spottedBy } from "../adapter/stealth.mjs";
 import { lightAt as lightAtPoint, tokenPoint as stealthPoint } from "../adapter/illumination.mjs";
 import { sleep } from "./shared.mjs";
 import { setReadyPlan } from "./ready.mjs";
+import { extinguish } from "./burning.mjs";
+import { isBurning } from "../adapter/burning.mjs";
 import { readyOptionsOf, slotsFor, heldEffectOf } from "../adapter/ready.mjs";
 import { finite, gmOnly, viewedToken } from "./testing-shared.mjs";
 
@@ -361,6 +363,15 @@ export async function ready({ tokenId, name=null, trigger="enters", targetId=nul
   const target = targetId ? token.parent.tokens.get(targetId)?.uuid ?? null : null;
   const plan = await setReadyPlan(actor, { option, trigger, target, slot });
   return { set: !!plan, ...state() };
+}
+
+/** §212 : En feu, pour un scénario — l'état, et `extinguish` : éteindre ses flammes comme l'entrée du menu. */
+export async function burning({ tokenId, extinguish: put=false }={}) {
+  gmOnly();
+  const token = viewedToken({ tokenId });
+  const out = { burning: isBurning(token.actor) };
+  if ( put ) out.extinguished = await extinguish(token);
+  return { ...out, after: isBurning(token.actor), statuses: Array.from(token.actor?.statuses ?? []) };
 }
 
 /** §184 : la Furtivité BG3, pour un scénario. `op` : `state` | `set` ({ on }) | `check` | `forget`. */

@@ -74,9 +74,10 @@ export default {
     ctx.expect((await burning()).length > 0, "le feu continue tant qu'il n'est pas éteint");
 
     // 3. Il s'éteint par une action : l'effet tombe, il est À terre.
-    const offered = await ctx.engine("endings", { tokenId: zombi.id });
-    ctx.expect((offered.own ?? []).length === 1, `le Zombi peut éteindre le feu (${(offered.own ?? []).map(e => e.item).join(", ")})`);
-    await ctx.engine("actionEnd", { tokenId: zombi.id });
+    // §212 : le feu grégeois suit la règle générale « En feu » — « Éteindre les flammes » (menu du token), plus « S'échapper ».
+    const offered = await ctx.engine("burning", { tokenId: zombi.id });
+    ctx.expect(offered.burning, "le Zombi est en feu au sens de la règle générale (il peut éteindre le feu)");
+    await ctx.engine("burning", { tokenId: zombi.id, extinguish: true });
     await pause(2500);
     ctx.expect(!(await burning()).length, "éteint : l'effet tombe");
     const prone = (await ctx.effects(zombi)).some(e => (e.statuses ?? []).includes("prone"));

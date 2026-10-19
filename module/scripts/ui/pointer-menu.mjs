@@ -33,6 +33,7 @@ import { wallsOfCaster } from "../adapter/wall-side.mjs";
 import { flipWallSide } from "../runtime/wall-side.mjs";
 import { pickUpEntries } from "../runtime/scatter.mjs";
 import { igniteEntries } from "../runtime/flammable.mjs";
+import { burningEntries } from "../runtime/burning.mjs";
 import { climbEntries } from "../runtime/climb.mjs";
 import { actingToken, engageWith, exclusive, inCombat, observe } from "./pointer.mjs";
 import { down, startRecall } from "./pointer-mouse.mjs";
@@ -226,6 +227,7 @@ export function selfEntries(token) {
   // §187 : ramasser des chausse-trapes, des billes répandues sur sa case ou au contact (hors combat).
   entries.push(...pickUpEntries(token));
   // §188 : allumer une flaque d'huile, une toile, au contact, avec une flamme.
+  entries.push(...burningEntries(token));   // §212 : éteindre ses flammes
   entries.push(...igniteEntries(token));
   // §192 : grimper au mur qu'on touche ; en escalade, se laisser tomber.
   entries.push(...climbEntries(token));

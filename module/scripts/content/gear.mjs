@@ -89,13 +89,8 @@ export const GEAR = Object.freeze({
     ranges: Object.fromEntries(HEALERS_KIT_ACTIVITIES.map(id => [id, { value: 5, units: "ft" }])),
     targets: { unaffectedIf: { any: [{ "target.atZero": false }, { "target.isDead": true }] } }
   },
-  // Feu grégeois : « la cible […] subit 1d4 dégâts de feu et commence à brûler » ; En feu (glossaire du Manuel des joueurs) :
-  // 1d4 de feu au début de chacun de ses tours, jusqu'à ce qu'elle se jette À terre et se roule au sol par une action pour
-  // l'étouffer — l'effet posé n'a pas l'état `burning` de dnd5e (simple nom) :
-  // la règle est portée par l'effet de l'item. Le feu éteint par une autre créature, l'eau ou l'immersion : au MJ.
-  "alchemists-fire": {
-    triggers: [{ on: "startOfTurn", via: "effect", fromEffect: ALCHEMISTS_FIRE_BURNING,
-      do: [{ type: "damage", to: "bearer", formula: "1d4", damageType: "fire" }] }],
-    actionEnds: { [ALCHEMISTS_FIRE_BURNING]: { by: "bearer", status: "prone" } }
-  }
+  // Feu grégeois : « la cible […] subit 1d4 dégâts de feu et commence à brûler » — l'effet posé n'a pas l'état `burning` de dnd5e
+  // (simple nom) : `burns` le déclare « En feu », la règle générale fait le reste (§212, runtime/burning.mjs : 1d4 de feu au début de
+  // chacun de ses tours, « Éteindre les flammes » par une action, À terre).
+  "alchemists-fire": { burns: [ALCHEMISTS_FIRE_BURNING] }
 });

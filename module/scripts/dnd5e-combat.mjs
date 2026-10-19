@@ -102,6 +102,7 @@ import { registerCriticals } from "./runtime/criticals.mjs";
 import { registerFalls } from "./runtime/falls.mjs";
 import { registerKnockout } from "./runtime/knockout.mjs";
 import { registerReady } from "./runtime/ready.mjs";
+import { registerBurning } from "./runtime/burning.mjs";
 import { isNonLethal, setNonLethal, isKnockedOut } from "./adapter/knockout.mjs";
 import { describeRoutes, skippedRoutes } from "./runtime/router.mjs";
 import { testApi } from "./runtime/testing.mjs";
@@ -307,7 +308,8 @@ Hooks.once("init", () => {
   gated(registerClimb);   // §192 : grimper aux murs, chute du grimpeur qui ne tient plus
   gated(registerFalls);   // §208 : chute automatique (« En chute » de dnd5e, vol à Vitesse 0), Pas du vent
   gated(registerKnockout);   // §210 : coups non létaux (réveil, premiers soins), surprise à l'initiative
-  gated(registerReady);   // §211 : Se tenir prêt — l'action préparée, son déclencheur, la Réaction
+  gated(registerReady);
+  gated(registerBurning);   // §212 : En feu — brûlures au début du tour, éteindre ses flammes, propagation   // §211 : Se tenir prêt — l'action préparée, son déclencheur, la Réaction
   gated(registerSpeedGrants);   // §195 : vitesses que le contenu accorde (Athlète : escalade)
   gated(registerBreaks);
   gated(registerCure);

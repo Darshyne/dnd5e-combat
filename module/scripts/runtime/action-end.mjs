@@ -67,7 +67,7 @@ export async function endOwn(ending) {
 }
 
 /** Paie l'action de `token` en combat ; false (et la raison dite) si elle n'est pas disponible. Le MJ n'est jamais retenu. */
-async function payAction(token) {
+export async function payAction(token) {
   const combatant = combatantFor(token.actor);
   if ( !combatant ) return true;
   const request = { cost: "action", weaponAttack: false, usesSpellSlot: false };

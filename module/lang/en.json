@@ -1390,5 +1390,12 @@
   "DND5ECOMBAT.Pret.Si.casts": "When an enemy casts a spell",
   "DND5ECOMBAT.PretDeclenche.enters": "{mover} comes within range: release your readied action ({action})?",
   "DND5ECOMBAT.PretDeclenche.attacks": "{mover} just attacked: release your readied action ({action})?",
-  "DND5ECOMBAT.PretDeclenche.casts": "{mover} just cast a spell: release your readied action ({action})?"
+  "DND5ECOMBAT.PretDeclenche.casts": "{mover} just cast a spell: release your readied action ({action})?",
+  "DND5ECOMBAT.EnFeu.Brule": "{name} is burning: {amount} fire damage.",
+  "DND5ECOMBAT.EnFeu.Eteindre": "Put out the flames (action, Prone)",
+  "DND5ECOMBAT.EnFeu.Eteint": "Flames out",
+  "DND5ECOMBAT.EnFeu.EteintCarte": "{name} rolls on the ground and puts out the flames.",
+  "DND5ECOMBAT.EnFeu.PrendFeu": "Catches fire!",
+  "DND5ECOMBAT.Reglage.fireSpread.Nom": "Fire spread (house rule)",
+  "DND5ECOMBAT.Reglage.fireSpread.Aide": "Baldur's Gate 3 style: a creature burned by a burning area (oil, web) catches fire in turn — 1d4 fire at the start of each of its turns until it puts the flames out. Off: the rules only (a burning creature ignites the oil or web it enters)."
 }

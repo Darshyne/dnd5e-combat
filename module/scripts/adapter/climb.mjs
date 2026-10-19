@@ -207,6 +207,25 @@ export function acrobaticFor(token) {
 /*  Se hisser (§209)                             */
 /* -------------------------------------------- */
 
+/**
+ * §216 : un mur du niveau `level` sépare-t-il ces deux cases à cette hauteur ? (Le mur extérieur d'un étage entre le grimpeur dehors
+ * et le plancher de l'étage : on ne s'y hisse pas à travers.) Le test de mouvement du cœur, de centre à centre, sur ce niveau ; sans
+ * canevas, rien ne bloque.
+ */
+export function crossingBlocked(token, from, to, level, elevation) {
+  const scene = token?.parent;
+  const grid = scene?.grid;
+  const backend = CONFIG.Canvas?.polygonBackends?.move;
+  if ( !grid || (typeof backend?.testCollision !== "function") || !canvas?.ready || (canvas.scene !== scene) ) return false;
+  const w = (token._source.width ?? 1) * grid.sizeX / 2;
+  const h = (token._source.height ?? 1) * grid.sizeY / 2;
+  const doc = scene.levels?.get?.(level) ?? undefined;
+  try {
+    return backend.testCollision({ x: from.x + w, y: from.y + h, elevation }, { x: to.x + w, y: to.y + h, elevation },
+      { type: "move", mode: "any", level: doc }) === true;
+  } catch { return false; }
+}
+
 /** Les quatre directions d'un rebord, et leur nom (clé de traduction `Escalade.Dir.*`). */
 const LEDGE_DIRS = Object.freeze([{ di: -1, dj: 0, dir: "n" }, { di: 1, dj: 0, dir: "s" }, { di: 0, dj: 1, dir: "e" }, { di: 0, dj: -1, dir: "w" }]);
 
@@ -229,6 +248,8 @@ export function ledgesOf(token) {
   // niveau 0-20 (c'en est le plafond), mais celui du niveau qui commence à 20. On regarde donc le niveau du grimpeur et celui de sa tête.
   const own = pos.level ?? token._source.level;
   const levels = [...new Set([own, levelAt(scene, feet + height, own)])];
+  // §216 : la tête du grimpeur ne passe pas son propre plafond.
+  const ownCeiling = boundsUnder(token, pos).ceiling + height;
   for ( const { di, dj, dir } of LEDGE_DIRS ) {
     let best = null;
     for ( const level of levels ) {
@@ -236,7 +257,12 @@ export function ledgesOf(token) {
       const { ground, ceiling } = boundsUnder(token, at);
       const rise = ledgeRise({ feet, height, ground, ceiling: ceiling + height });
       if ( (rise === null) || (best && (ground <= best.ground)) ) continue;
-      best = { dir, x: at.x, y: at.y, ground, rise, level: levelAt(scene, ground, level) };
+      // §216 : ni à travers son propre plafond (un couloir couvert : la tête ne monte pas au-dessus), ni à travers le mur d'une pièce
+      // couverte au niveau d'arrivée. Un toit à ciel ouvert reste accessible malgré le mur qui borde souvent son bord (garde-fou).
+      if ( ground >= ownCeiling - 1e-6 ) continue;
+      const arrival = levelAt(scene, ground, level);
+      if ( Number.isFinite(ceiling) && crossingBlocked(token, pos, at, arrival, ground + 1) ) continue;
+      best = { dir, x: at.x, y: at.y, ground, rise, level: arrival };
     }
     if ( best ) out.push(best);
   }
@@ -259,14 +285,22 @@ export function wallTopOf(token) {
   const ceilingFeet = Number.isFinite(ceiling) ? ceiling : Infinity;
   if ( !grid?.size ) return { top: null, ceilingFeet, height };
   const own = pos.level ?? token._source.level;
-  const levels = [...new Set([own, levelAt(scene, ceilingFeet + height, own)])];
+  // Le niveau du grimpeur et tous ceux qui commencent au-dessus de ses pieds, sous son plafond (à ciel ouvert : tous) — le toit voisin
+  // peut appartenir à n'importe lequel.
+  const above = Array.from(scene.levels ?? []).filter(l => {
+    const bottom = Number(l.elevation?.bottom);
+    return Number.isFinite(bottom) && (bottom > feet + 1e-6) && (bottom < ceilingFeet + height - 1e-6);
+  }).map(l => l.id);
+  const levels = [...new Set([own, ...above])];
   let ledge = null;
   for ( const { di, dj } of LEDGE_DIRS ) {
     for ( const level of levels ) {
       const at = { ...pos, level, x: pos.x + (dj * grid.sizeX), y: pos.y + (di * grid.sizeY) };
       const { ground } = boundsUnder(token, at);
-      if ( !Number.isFinite(ground) || (ground <= feet + 1e-6) || (ground > ceilingFeet + height + 1e-6) ) continue;
-      if ( !ledge || (ground < ledge.at) ) ledge = { kind: "ledge", at: ground, level: levelAt(scene, ground, level) };
+      if ( !Number.isFinite(ground) || (ground <= feet + 1e-6) || (ground >= ceilingFeet + height - 1e-6) ) continue;
+      const arrival = levelAt(scene, ground, level);
+      if ( Number.isFinite(boundsUnder(token, at).ceiling) && crossingBlocked(token, pos, at, arrival, ground + 1) ) continue;
+      if ( !ledge || (ground < ledge.at) ) ledge = { kind: "ledge", at: ground, level: arrival };
     }
   }
   if ( ledge ) {
@@ -274,5 +308,54 @@ export function wallTopOf(token) {
     return { top: ledge, ceilingFeet, height };
   }
   return { top: Number.isFinite(ceiling) ? { kind: "ceiling", at: ceilingFeet + height } : null, ceilingFeet, height };
+}
+
+/**
+ * §216 : les niveaux de la scène qui commencent au-dessus de ces pieds (repères de la jauge d'escalade) : nom et élévation du bas, du
+ * plus bas au plus haut. Les joueurs les voient déjà dans le navigateur de niveaux du cœur.
+ * @returns {Array<{at: number, name: string}>}
+ */
+export function levelMarksAbove(token, feet) {
+  const out = [];
+  for ( const level of token?.parent?.levels ?? [] ) {
+    const bottom = Number(level.elevation?.bottom);
+    if ( Number.isFinite(bottom) && (bottom > feet + 1e-6) ) out.push({ at: bottom, name: level.name });
+  }
+  return out.sort((a, b) => a.at - b.at);
+}
+
+/**
+ * §216 : les bords d'où ce token peut se laisser pendre, pour descendre le long du mur — au sol (sur un toit, un chemin de ronde, un
+ * étage), une case voisine dont le sol est plus bas d'au moins une case, sans mur sur son propre niveau entre les deux (un parapet se
+ * franchit autrement), et un mur où s'agripper de l'autre côté. Il s'y retrouve accroché, la tête à hauteur du bord.
+ * @returns {{dir: string, x: number, y: number, elevation: number, level: string, drop: number}[]}
+ */
+export function edgesBelowOf(token) {
+  if ( !token?.parent?.grid || isClimbing(token) ) return [];
+  const scene = token.parent;
+  const grid = scene.grid;
+  const pos = committedPosition(token);
+  const feet = pos.elevation ?? 0;
+  if ( feet > groundUnder(token, pos) + 1e-6 ) return [];   // en l'air : rien sous les pieds d'où partir
+  const height = (positionOf({ ...token._source, ...pos }).depth ?? 1) * grid.distance;
+  const own = pos.level ?? token._source.level;
+  const out = [];
+  for ( const { di, dj, dir } of LEDGE_DIRS ) {
+    const at = { ...pos, x: pos.x + (dj * grid.sizeX), y: pos.y + (di * grid.sizeY) };
+    // Le sol continue sur son propre niveau (le toit, le plancher se poursuit) : pas un bord.
+    const beside = boundsUnder(token, { ...at, level: own, elevation: feet }).ground;
+    if ( Number.isFinite(beside) && (beside > feet - grid.distance + 1e-6) ) continue;
+    // Accroché : la tête au bord, les pieds une hauteur de créature plus bas, sur le niveau de cette hauteur.
+    const hang = feet - height;
+    const level = levelAt(scene, hang, own);
+    const { ground } = boundsUnder(token, { ...at, level, elevation: hang });
+    if ( !Number.isFinite(ground) || (ground > feet - grid.distance + 1e-6) ) continue;   // pas de vide d'au moins une case
+    const elevation = Math.max(hang, ground);
+    // Depuis une pièce couverte, pas à travers son mur ; depuis un toit à ciel ouvert, par-dessus le garde-fou de son bord.
+    if ( Number.isFinite(boundsUnder(token, pos).ceiling) && crossingBlocked(token, pos, at, own, feet + 1) ) continue;
+    if ( !wallsNear(token, { ...at, level, elevation }).length ) continue;   // rien où s'agripper
+    out.push({ dir, x: at.x, y: at.y, elevation, level, drop: feet - ground });
+  }
+  return out;
 }
 

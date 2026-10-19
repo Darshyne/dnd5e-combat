@@ -28,7 +28,7 @@ import { CLIMB_DC, CEILING_DC, CLIMB_CHECK_SECONDS, climbableCells, climbCheckDu
 import { placementOf } from "../core/altitude.mjs";
 import {
   CLIMB_RULES_SETTING, CLIMB_FLAG, FLIP_FLAG, climbRules, isClimbing, isOnCeiling, wallsNear, climbingOf, climbFallReasonFor, aboveGround,
-  canWalkCeilingsAt, canWalkCeilings, ceilingPerchFor, hangsAt, acrobaticFor, ledgesOf, wallTopOf
+  canWalkCeilingsAt, canWalkCeilings, ceilingPerchFor, hangsAt, acrobaticFor, ledgesOf, wallTopOf, levelMarksAbove, edgesBelowOf
 } from "../adapter/climb.mjs";
 import { perceivedAt } from "../adapter/illumination.mjs";
 import { boundsUnder, groundUnder, groundModeOf, modeRefusalFor } from "../adapter/altitude.mjs";
@@ -99,12 +99,58 @@ export function climbRoom(token) {
   return { max, multiplier, cost: multiplier * grid.distance, units: grid.units, ceiling: Number.isFinite(ceiling) ? ceiling : null, remaining };
 }
 
+/**
+ * §216 : « S'agripper au bord » — au bord d'un toit, d'un chemin de ronde, d'un étage, le token passe par-dessus et se retrouve
+ * accroché au mur côté vide, la tête à hauteur du bord (adapter/climb.mjs, `edgesBelowOf`), en escalade : il descend ensuite le long du
+ * mur. Coût en combat : la hauteur descendue au prix de l'escalade, plus la case (le pendant de « Se hisser »). Le test des règles
+ * « maison » est dû comme pour grimper.
+ */
+export async function grabEdge(token, edge) {
+  if ( !token?.isOwner || !edge ) return false;
+  const grid = token.parent.grid;
+  const feet = token._source.elevation ?? 0;
+  const { multiplier, native } = climbingOf(token);
+  const cost = ledgeCost({ rise: feet - edge.elevation, multiplier, gridDistance: grid.distance });
+  const combatant = combatantFor(token.actor);
+  if ( combatant ) {
+    const { spent, excluded } = historyCosts(token);
+    const left = movementCap(token) - spent - excluded;
+    if ( cost > left + 1e-6 ) {
+      ui.notifications.warn(loc("Escalade.HisserPasAssez", { name: token.name, cost: `${cost} ${grid.units}`, left: `${Math.max(0, Math.floor(left * 10) / 10)} ${grid.units}` }));
+      return false;
+    }
+  }
+  if ( (climbRules() === "house") && !native && !(await houseCheckPassed(token, CLIMB_DC)) ) return false;
+  const mode = token._source.movementAction ?? null;
+  const from = token._source.level;
+  await token.update({ movementAction: "climb", [`flags.${MODULE_ID}.${CLIMB_FLAG}`]: { from: mode, checkedAt: Date.now() } }, ALTITUDE_OPTIONS);
+  await statusSettled(token, true);
+  const step = { x: edge.x, y: edge.y, elevation: edge.elevation, action: "displace", ...((edge.level !== from) ? { level: edge.level } : {}) };
+  await token.move([step], { [MODULE_ID]: { altitude: true, planned: true, cleared: true }, constrainOptions: { ignoreWalls: true } });
+  if ( Math.abs((token._source.elevation ?? 0) - edge.elevation) > 1e-6 ) {
+    await token.update({ movementAction: mode, [`flags.${MODULE_ID}.${CLIMB_FLAG}`]: null }, ALTITUDE_OPTIONS);
+    ui.notifications.warn(loc("Escalade.Impossible", { name: token.name }));
+    return false;
+  }
+  if ( combatant ) {
+    const budget = readBudget(combatant);
+    await writeBudget(combatant, { ...budget, climbed: (Number(budget.climbed) || 0) + cost });
+  }
+  if ( (token._source.level !== from) && token.parent.isView && (canvas.level?.id === from) && token.object?.controlled ) {
+    await token.parent.view({ level: token._source.level, controlledTokens: [token.id] });
+  }
+  notice(token, loc("Retour.Escalade.Agrippe"), "gain");
+  await say({ token }, locEsc("Escalade.SAgrippe", { name: token.name }));
+  log(`${token.name}: grabs the edge (${edge.dir}), hangs at ${edge.elevation}, level ${from} → ${token._source.level}${combatant ? `, ${cost} of movement` : ""}`);
+  return true;
+}
+
 /* -------------------------------------------- */
 /*  La fenêtre « Combien de cases ? » (§215)     */
 /* -------------------------------------------- */
 
 const GAUGE_HEIGHT = 240;   // hauteur de la colonne de cases, en pixels
-const GAUGE_WIDTH = 190;
+const GAUGE_WIDTH = 250;   // la marge de gauche porte les noms des niveaux (§216)
 
 /** Le haut du mur est-il vu du grimpeur (lumière et sens : `perceivedAt`) ? Aveuglé, non ; sans canevas, oui. */
 function seesTop(token, top) {
@@ -122,7 +168,7 @@ function gaugeFor(token, room, { down=false }={}) {
   const { top, ceilingFeet, height } = wallTopOf(token);
   const seen = down || seesTop(token, top);
   const model = climbGauge({ feet, ground: groundUnder(token), gridDistance: grid.distance, height, remaining: room.remaining,
-    multiplier: room.multiplier, ceilingFeet, top, seen, down });
+    multiplier: room.multiplier, ceilingFeet, top, seen, down, marks: levelMarksAbove(token, feet) });
   return { ...model, feet, ground: groundUnder(token), distance: grid.distance, units: grid.units, height };
 }
 
@@ -130,7 +176,7 @@ function gaugeFor(token, room, { down=false }={}) {
 function gaugeSvg(model, chosen, { down=false }={}) {
   const n = model.cells.length;
   const step = Math.min(34, Math.floor(GAUGE_HEIGHT / Math.max(n + 1, 4)));
-  const x = 40, w = 46;
+  const x = 100, w = 46;
   const base = 20 + ((n + 1) * step);
   const yOf = i => base - (i * step);   // i : rang de la case au-dessus (montée) ou au-dessous (descente) du départ
   const parts = [];
@@ -152,9 +198,18 @@ function gaugeSvg(model, chosen, { down=false }={}) {
   const groundY = down ? 20 + step + (n * step) : base;
   parts.push(`<line class="ground" x1="${x - 18}" y1="${groundY}" x2="${x + w + 8}" y2="${groundY}"/>`);
   label(groundY + 14, loc(down ? "Escalade.Jauge.SolBas" : "Escalade.Jauge.Sol"), "muted");
-  // Le haut.
+  // §216 : les séparations de niveaux (même à ciel ouvert), à leur hauteur — un rebord vu à la même hauteur porte déjà le nom.
   if ( !down ) {
-    const topY = yOf(n) - 2;
+    for ( const m of model.marks ?? [] ) {
+      const y = base - (((m.at - model.feet) / model.distance) * step);
+      parts.push(`<line class="level" x1="${x - 18}" y1="${y}" x2="${x + w + 4}" y2="${y}"/>`);
+      parts.push(`<text x="${x - 20}" y="${y - 3}" text-anchor="end" class="level-text">${esc(m.name)}</text>`);
+    }
+  }
+  // Le haut : à sa vraie hauteur (le rebord peut être sous le haut de la colonne) ; inconnu, au-dessus de la colonne.
+  if ( !down ) {
+    // Même échelle que les repères de niveaux : une hauteur `h` au-dessus des pieds de départ est à `base - (h / case) × pas`.
+    const topY = (model.top && !model.hidden) ? (base - (((model.top.at - model.feet) / model.distance) * step) + 2) : (yOf(n) - 2);
     if ( model.hidden ) {
       parts.push(`<rect class="unknown" x="${x - 18}" y="${topY - 22}" width="${w + 36}" height="20" rx="3"/>`);
       parts.push(`<text x="${x + (w / 2)}" y="${topY - 8}" text-anchor="middle" class="unknown-text">?</text>`);
@@ -200,8 +255,8 @@ function gaugeInfo(token, model, room, chosen, { down=false }={}) {
 async function askCells(token, room, { down=false }={}) {
   const model = gaugeFor(token, room, { down });
   if ( !model.choosable ) return null;
-  // Par défaut : jusqu'au haut s'il est vu (rebord, plafond), ou jusqu'au sol en descente ; sinon (à l'aveugle, ciel ouvert) une case.
-  let chosen = (down || (!model.hidden && model.top)) ? model.choosable : 1;
+  // Par défaut : jusqu'au haut s'il est vu (sous le rebord, au plafond), jusqu'au sol en descente ; sinon (à l'aveugle, ciel ouvert) une case.
+  let chosen = down ? model.choosable : (model.topCells || 1);
   const render = root => {
     const gauge = root.querySelector(".das-climb-gauge-wrap");
     const info = root.querySelector(".das-climb-info");
@@ -213,7 +268,7 @@ async function askCells(token, room, { down=false }={}) {
   const content = `<div class="das-climb"><div class="das-climb-gauge-wrap"></div><div class="das-climb-side"><div class="das-climb-info"></div>
     <div class="form-group"><label>${loc("Escalade.Cases")}</label><input type="number" name="cells" min="1" max="${model.choosable}" step="1" value="${chosen}"></div></div></div>`;
   const answer = await foundry.applications.api.DialogV2.wait({
-    window: { title: loc(down ? "Escalade.TitreDescente" : "Escalade.Titre") }, content, rejectClose: false, position: { width: 520 },
+    window: { title: loc(down ? "Escalade.TitreDescente" : "Escalade.Titre") }, content, rejectClose: false, position: { width: 590 },
     classes: ["dnd5e-combat-climb"],
     render: (event, dialog) => {
       const root = dialog.element;
@@ -790,6 +845,14 @@ export function climbEntries(token) {
       entries.push({ icon: "fa-solid fa-person-through-window", label, run: () => hoistOnto(token, ledge) });
     }
   }
+  // §216 : s'agripper au bord pour descendre — une entrée par direction quand il y en a plusieurs.
+  if ( token?.isOwner && concerned(token) && !isGrappled(token) && !climbFallReasonFor(token) ) {
+    const edges = edgesBelowOf(token);
+    for ( const edge of edges ) {
+      const label = (edges.length > 1) ? loc("Menu.SAgripperVers", { dir: loc(`Escalade.Dir.${edge.dir}`) }) : loc("Menu.SAgripper");
+      entries.push({ icon: "fa-solid fa-person-arrow-down-to-line", label, run: () => grabEdge(token, edge) });
+    }
+  }
   if ( token?.isOwner && isClimbing(token) ) entries.push({ icon: "fa-solid fa-person-falling", label: loc("Menu.SeLaisserTomber"), run: () => dropDown(token) });
   return entries;
 }
@@ -924,6 +987,8 @@ export const climbApi = Object.freeze({
   ceiling: token => climbToCeiling(docOf(token)),
   down: (token, { cells=null }={}) => climbDown(docOf(token), { cells }),
   drop: token => dropDown(docOf(token)),
+  edges: token => edgesBelowOf(docOf(token)),
+  grab: (token, edge) => grabEdge(docOf(token), edge),
   toward: climbToward
 });
 

@@ -21,8 +21,8 @@ import { sleep } from "./shared.mjs";
 import { cellArg, finite, gmOnly, positionJson, viewedToken, waypointOf, windows } from "./testing-shared.mjs";
 import { budget } from "./testing-rules.mjs";
 import { wall } from "./testing-areas.mjs";
-import { hoistOnto, startClimb, dropDown as dropDownIntent, canClimb, climbRoom, canClimbCeiling, climbToCeiling, ceilingRoom, canClimbDown, climbDown as climbDownIntent, descentRoom, climbStateOf, climbHoldsAt, climbToward as climbTowardIntent } from "./climb.mjs";
-import { wallsNear, isClimbing, isOnCeiling, climbingOf, climbRules, canWalkCeilings, ceilingPerchFor, FLIP_FLAG, inSlipperyZone, canWalkCeilingsAt, acrobaticFor, ledgesOf } from "../adapter/climb.mjs";
+import { hoistOnto, grabEdge, startClimb, dropDown as dropDownIntent, canClimb, climbRoom, canClimbCeiling, climbToCeiling, ceilingRoom, canClimbDown, climbDown as climbDownIntent, descentRoom, climbStateOf, climbHoldsAt, climbToward as climbTowardIntent } from "./climb.mjs";
+import { wallsNear, isClimbing, isOnCeiling, climbingOf, climbRules, canWalkCeilings, ceilingPerchFor, FLIP_FLAG, inSlipperyZone, canWalkCeilingsAt, acrobaticFor, ledgesOf, edgesBelowOf } from "../adapter/climb.mjs";
 import { speedGrantEffects } from "./speed-grants.mjs";
 import { MODE_STATUSES } from "../adapter/conditions.mjs";
 
@@ -275,6 +275,18 @@ export async function hoist({ tokenId, dir=null }) {
   const done = ledge ? await hoistOnto(token, ledge) : false;
   await sleep(800);
   return { done, ledges: ledges.map(({ dir, ground, rise, level }) => ({ dir, ground, rise, level })), before, after: positionJson(token),
+    climbing: isClimbing(token) };
+}
+
+/** §216 : « S'agripper au bord » vers `dir` (ou le premier bord), comme l'entrée de menu ; rend les bords proposés et la position. */
+export async function grab({ tokenId, dir=null }) {
+  const token = viewedToken({ tokenId });
+  const before = positionJson(token);
+  const edges = edgesBelowOf(token);
+  const edge = edges.find(e => !dir || (e.dir === dir)) ?? null;
+  const done = edge ? await grabEdge(token, edge) : false;
+  await sleep(800);
+  return { done, edges: edges.map(({ dir, elevation, level, drop }) => ({ dir, elevation, level, drop })), before, after: positionJson(token),
     climbing: isClimbing(token) };
 }
 

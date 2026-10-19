@@ -223,13 +223,13 @@ export const fallDice = (height, step=10) => Math.max(0, Math.min(20, Math.floor
  *  - Descente : les cases sous les pieds jusqu'au sol (`ground`).
  * @returns {{cells: Array<{n: number, at: number, choosable: boolean}>, choosable: number, top: object|null, hidden: boolean}}
  */
-export function climbGauge({ feet, ground=0, gridDistance, height=gridDistance, remaining, multiplier, ceilingFeet=Infinity, top=null, seen=true, down=false }) {
+export function climbGauge({ feet, ground=0, gridDistance, height=gridDistance, remaining, multiplier, ceilingFeet=Infinity, top=null, seen=true, down=false, marks=[] }) {
   const affordable = climbableCells({ remaining, gridDistance, multiplier });
   if ( down ) {
     const depth = Math.max(0, Math.floor(((feet - ground) / gridDistance) + 1e-6));
     const choosable = Math.min(affordable, depth);
     const cells = Array.from({ length: depth }, (_, i) => ({ n: i + 1, at: feet - ((i + 1) * gridDistance), choosable: (i + 1) <= choosable }));
-    return { cells, choosable, top: null, hidden: false };
+    return { cells, choosable, top: null, hidden: false, marks: [], topCells: 0 };
   }
   const real = climbableCells({ remaining, gridDistance, multiplier, ceilingCells: (ceilingFeet - feet) / gridDistance });
   // À l'aveugle et sans limite de déplacement (hors combat), pas plus de `HIDDEN_CLIMB_CELLS` cases d'un coup.
@@ -238,7 +238,18 @@ export function climbGauge({ feet, ground=0, gridDistance, height=gridDistance, 
   // hauteur du rebord) ; sous un plafond, la case où la tête le touche (`ceilingFeet`).
   const below = top?.kind === "ledge" ? (top.at - height) : ceilingFeet;
   const toTop = (seen && top && Number.isFinite(below)) ? Math.max(0, Math.floor(((below - feet) / gridDistance) + 1e-6)) : 0;
-  const count = Math.min(MAX_CLIMB_CELLS, Math.max(choosable, toTop));
+  // §216 : la séparation du prochain niveau se voit même hors de portée (cases grisées jusqu'à elle) — sous un plafond vu, pas au-delà.
+  // Seul un plafond vu arrête la jauge et les repères ; un rebord non (le mur peut continuer).
+  const limit = (seen && (top?.kind === "ceiling")) ? (top.at - feet) : Infinity;
+  const ledge = seen && (top?.kind === "ledge");
+  // Le prochain repère (au-delà du rebord quand il y en a un : celui du rebord se lit déjà).
+  const nextMark = marks.find(m => (m.at > (ledge ? top.at + 1e-6 : feet)) && ((m.at - feet) <= limit + 1e-6));
+  const toMark = nextMark ? Math.ceil(((nextMark.at - feet) / gridDistance) - 1e-6) : 0;
+  // Sous un rebord vu, la jauge montre le rebord et un peu au-dessus (deux cases, ou jusqu'au prochain niveau), pas toute la hauteur
+  // qu'on pourrait grimper : le champ « Cases » permet d'aller plus haut.
+  const count = Math.min(MAX_CLIMB_CELLS, ledge ? Math.min(choosable, Math.max(toTop + 2, toMark)) : Math.max(choosable, toTop, toMark));
   const cells = Array.from({ length: count }, (_, i) => ({ n: i + 1, at: feet + ((i + 1) * gridDistance), choosable: (i + 1) <= choosable }));
-  return { cells, choosable, top: seen ? top : null, hidden: !seen };
+  const shownTop = feet + (count * gridDistance) + height;
+  return { cells, choosable, top: seen ? top : null, hidden: !seen, topCells: (seen && top) ? Math.min(choosable, toTop) : 0,
+    marks: marks.filter(m => (m.at > feet) && (m.at <= shownTop + 1e-6) && (m.at <= limit + feet + 1e-6)) };
 }

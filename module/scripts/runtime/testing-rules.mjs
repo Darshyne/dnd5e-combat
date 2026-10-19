@@ -33,6 +33,8 @@ import { readAreaState } from "../adapter/areas.mjs";
 import { isHidden, spottedBy } from "../adapter/stealth.mjs";
 import { lightAt as lightAtPoint, tokenPoint as stealthPoint } from "../adapter/illumination.mjs";
 import { sleep } from "./shared.mjs";
+import { setReadyPlan } from "./ready.mjs";
+import { readyOptionsOf, slotsFor, heldEffectOf } from "../adapter/ready.mjs";
 import { finite, gmOnly, viewedToken } from "./testing-shared.mjs";
 
 /**
@@ -334,6 +336,31 @@ export function sees({ observerId, targetId }) {
   const observer = viewedToken({ tokenId: observerId });
   const target = viewedToken({ tokenId: targetId });
   return { sees: canSeeToken(observer, target), cone: coneOf(observer), sighting: sightingOf(observer, target) };
+}
+
+/**
+ * §211 : Se tenir prêt, pour un scénario — sans `name`, ce que le token peut préparer et son plan ; avec, le plan rangé (l'option dont
+ * le nom contient `name`, le déclencheur, la créature `targetId`, l'emplacement le plus bas pour un sort), sans la fenêtre.
+ */
+export async function ready({ tokenId, name=null, trigger="enters", targetId=null }={}) {
+  gmOnly();
+  const token = viewedToken({ tokenId });
+  const actor = token.actor;
+  const options = readyOptionsOf(actor);
+  const state = () => {
+    const combatant = combatantFor(actor);
+    const held = heldEffectOf(actor);
+    return { options: options.map(o => ({ name: o.name, spell: o.spell, level: o.level, reach: o.reach })),
+      plan: combatant ? (readBudget(combatant).readied ?? null) : null, held: held ? { id: held.id, name: held.name } : null,
+      slots: Object.fromEntries(Object.entries(actor.system.spells ?? {}).map(([k, v]) => [k, v?.value ?? 0])) };
+  };
+  if ( !name ) return state();
+  const option = options.find(o => o.name.toLowerCase().includes(String(name).toLowerCase()));
+  if ( !option ) throw new Error(`nothing to ready named "${name}"`);
+  const slot = (option.spell && (option.level > 0)) ? (slotsFor(actor, option.level)[0]?.key ?? null) : null;
+  const target = targetId ? token.parent.tokens.get(targetId)?.uuid ?? null : null;
+  const plan = await setReadyPlan(actor, { option, trigger, target, slot });
+  return { set: !!plan, ...state() };
 }
 
 /** §184 : la Furtivité BG3, pour un scénario. `op` : `state` | `set` ({ on }) | `check` | `forget`. */

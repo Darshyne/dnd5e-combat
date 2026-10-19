@@ -25,7 +25,7 @@ import { victimsOf, sizeRankOf } from "../adapter/grapple.mjs";
 import { basicActionOf } from "../adapter/basics.mjs";
 import { cellsAtGap, footprintDistance } from "../core/orders.mjs";
 import { fleeGaps } from "../core/flee.mjs";
-import { opportunityThreats, resolveOpportunity } from "./reactions.mjs";
+import { opportunityThreats, resolveOpportunity, splitForReady } from "./reactions.mjs";
 import { route } from "./router.mjs";
 import { loc, notice, log } from "./shared.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
@@ -182,7 +182,17 @@ export function hostileTo(me, other) {
 async function walkSafely(token, plan, flags={}) {
   if ( plan.waypoints.length ) {
     previewPath(token, null);
-    if ( !(await resolveOpportunity(token, opportunityThreats(token, plan.waypoints))) ) return false;
+    const threats = opportunityThreats(token, plan.waypoints);
+    // §211 : une action préparée déclenchée en route — marcher jusqu'à la case où l'on arrive à portée, la laisser jouer, repartir
+    // (la suite revue comme une nouvelle marche). Pas à travers un escalier : là, elle se joue avant, comme une attaque d'opportunité.
+    const split = plan.waypoints.some(w => w.action === "displace") ? null : splitForReady(token, plan.waypoints, threats);
+    if ( split ) {
+      if ( !(await resolveOpportunity(token, split.before)) ) return false;
+      if ( split.first.length && !(await walk(token, { ...plan, waypoints: split.first }, { cleared: true, ...flags })) ) return false;
+      if ( !(await resolveOpportunity(token, [split.ready])) ) return false;
+      return split.rest.length ? walkSafely(token, { ...plan, waypoints: split.rest }, flags) : true;
+    }
+    if ( !(await resolveOpportunity(token, threats)) ) return false;
   }
   return walk(token, plan, { cleared: true, ...flags });
 }

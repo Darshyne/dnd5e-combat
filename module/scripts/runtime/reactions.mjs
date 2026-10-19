@@ -22,6 +22,8 @@ import { isObjectToken } from "../adapter/bodies.mjs";
 import { poolsOf } from "../adapter/absorb.mjs";
 import { takeReactionDamage } from "../adapter/marks.mjs";
 import { areEnemies, areSworn, sideOf } from "../adapter/factions.mjs";
+import { readyPlanOf, readyTriggered } from "../core/ready.mjs";
+import { readyOption } from "../adapter/ready.mjs";
 
 /** §134 : Rapide — le nom de l'item qui donne le Désavantage aux attaques d'opportunité contre cet acteur, ou null. */
 function hamperedBy(actor) {
@@ -413,6 +415,7 @@ export function opportunityThreats(token, waypoints) {
 
   const others = [];
   const strikers = [];
+  const readied = [];
   const dragged = victimsOf(token);
   for ( const combatant of game.combat.combatants ) {
     const other = combatant.token;
@@ -428,6 +431,14 @@ export function opportunityThreats(token, waypoints) {
       const enters = entersAt(path.map(pos => distanceBetween(other, token, { posB: pos }).value), strikeReach);
       strikers.push({ ...sideOf(other), token: other.uuid, enters,
         hasLineOfEffect: (enters >= 0) ? hasLineOfEffect(other, token, { posB: path[enters] }) : null, ...reactionState(other.actor) });
+    }
+    // §211 : une action préparée « quand un ennemi arrive à portée » — l'allonge ou la portée de l'action préparée.
+    const plan = readyPlanOf(readBudget(combatant));
+    if ( plan?.reach && (plan.trigger === "enters") && !teleported ) {
+      const enters = entersAt(path.map(pos => distanceBetween(other, token, { posB: pos }).value), lengthIn(plan.reach.value, plan.reach.units, gridUnits, factors));
+      const state = { enemies: areEnemies(other, token), sees: canSee(other, token) ?? true, ...reactionState(other.actor) };
+      if ( (enters >= 0) && readyTriggered(plan, { kind: "enters", source: token.uuid }, state)
+        && (hasLineOfEffect(other, token, { posB: path[enters] }) !== false) ) readied.push({ token: other.uuid, ready: true, at: enters });
     }
     const melee = meleeAttacksOf(other.actor);
     let reach = lengthIn(melee.reach, melee.units, gridUnits, factors);
@@ -454,8 +465,26 @@ export function opportunityThreats(token, waypoints) {
   }, others).map(uuid => ({ uuid, at: others.find(o => o.token === uuid)?.leaves ?? 0 }));
   const strikes = reachStrikers({ ...sideOf(token), teleported }, strikers)
     .map(uuid => ({ uuid, enters: true, at: strikers.find(o => o.token === uuid).enters - 1 }));
-  if ( !strikes.length ) return attacks.map(a => a.uuid);
-  return [...strikes, ...attacks].sort((a, b) => a.at - b.at).map(a => (a.enters ? { token: a.uuid, enters: true } : a.uuid));
+  if ( !strikes.length && !readied.length ) return attacks.map(a => a.uuid);
+  // §211 : une action préparée se joue quand la créature est arrivée (`at` : la première case à portée) — le déplacement est coupé là
+  // (`splitForReady`) ; elle passe après ce qui vient avant sur le chemin.
+  return [...strikes, ...attacks, ...readied.map(r => ({ ...r, uuid: r.token, at: r.at - 0.5 }))].sort((a, b) => a.at - b.at)
+    .map(a => (a.ready ? { token: a.uuid, ready: true, at: a.at + 0.5 } : a.enters ? { token: a.uuid, enters: true } : a.uuid));
+}
+
+/**
+ * §211 : la première action préparée que ce trajet déclenche, et où le couper — `first` : jusqu'à la case où la créature arrive à
+ * portée, `rest` : la suite, à rejouer à part (ses propres menaces y seront revues), `before` : les menaces d'avant sur le chemin.
+ * Les points sont ceux du chemin complet du cœur, case par case (`getCompleteMovementPath`). Null sans action préparée.
+ */
+export function splitForReady(token, waypoints, threats) {
+  const at = threats.findIndex(t => t?.ready);
+  if ( at < 0 ) return null;
+  const ready = threats[at];
+  const complete = token.getCompleteMovementPath([position(token._source), ...waypoints]);
+  const clean = ({ x, y, elevation, width, height, depth, shape, level, action, snapped }) =>
+    ({ x, y, elevation, width, height, depth, shape, level, action, snapped, explicit: true, checkpoint: true });
+  return { before: threats.slice(0, at), ready, first: complete.slice(1, ready.at + 1).map(clean), rest: complete.slice(ready.at + 1).map(clean) };
 }
 
 export const OPPORTUNITY_QUERY = `${MODULE_ID}.opportunity`;
@@ -482,6 +511,10 @@ async function handleOpportunityQuery({ token: tokenUuid, attackers }) {
     // Une seule Réaction : celle prise par une fenêtre précédente de ce déplacement n'est plus là.
     if ( asked && !reactionState(attacker.actor).reactionAvailable ) continue;
     asked = true;
+    if ( (typeof entry === "object") && entry.ready ) {
+      await releaseReady(attacker, token, "enters");
+      continue;
+    }
     if ( enters ) {
       // §136 : Maître d'hast — réglée avant le déplacement, comme l'attaque d'opportunité (le coup tombe quand la créature arrive).
       log(`${token.name} is about to enter ${attacker.name}'s reach: Reactive Strike offered before the move`);
@@ -507,6 +540,25 @@ async function handleOpportunityQuery({ token: tokenUuid, attackers }) {
     if ( answer?.message ) await attackSettled(answer.message);
   }
   return true;
+}
+
+/**
+ * §211 : propose à celui qui s'est tenu prêt de libérer son action, contre la créature qui l'a déclenchée (MJ actif ou celui qui la
+ * demande). Le plan est relu dans son budget : servi, ou expiré entre-temps, il n'y a rien à proposer.
+ */
+export async function releaseReady(readier, trigger, kind) {
+  const combatant = combatantFor(readier?.actor);
+  const plan = combatant ? readyPlanOf(readBudget(combatant)) : null;
+  if ( !plan || !trigger?.actor ) return null;
+  log(`${trigger.name} triggers ${readier.name}'s readied action (${plan.name}, ${kind})`);
+  const answer = await askReaction(readier.actor, {
+    actor: readier.actor.uuid,
+    prompt: { key: `PretDeclenche.${kind}`, data: { mover: trigger.name, action: plan.name } },
+    options: [readyOption(plan)],
+    target: trigger.uuid
+  });
+  if ( answer?.message ) await attackSettled(answer.message);
+  return answer;
 }
 
 /**

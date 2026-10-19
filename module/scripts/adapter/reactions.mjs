@@ -317,9 +317,13 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
   // qui a ouvert la fenêtre peut les avoir relâchées entre-temps, et le jet partait sans cible (rien à résoudre). Le jet est donc
   // lancé ici, sa cible écrite dans le message.
   const aimed = (activity?.type === "attack") ? targetDescriptors(target ? await fromUuid(target) : null) : null;
-  const results = await activity.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: false }, ...(option.consume === false ? { consume: false } : {}),
+  // §211 : une action préparée (Se tenir prêt) — l'effet de concentration qui retenait le sort tombe avant qu'il parte ; le sort part
+  // sans emplacement, au niveau dépensé (`usage`), et sa zone se pose (`template` : la fenêtre n'attend pas de résolution).
+  for ( const uuid of option.drop ?? [] ) await (await fromUuid(uuid))?.delete?.();
+  const results = await activity.use({ [MODULE_ID]: { confirmed: true }, ...(option.template ? {} : { create: { measuredTemplate: false } }),
+    ...(option.consume === false ? { consume: false } : {}), ...(option.usage ?? {}),
     ...(aimed ? { subsequentActions: false } : {}) }, { configure: false }, {
-    data: { flags: { [MODULE_ID]: { cost: "reaction", reaction: true, ...(option.reduce ? { reduceOnly: true } : {}) } } }
+    data: { flags: { [MODULE_ID]: { cost: "reaction", reaction: true, ...(option.reduce ? { reduceOnly: true } : {}), ...(option.flags ?? {}) } } }
   });
   if ( results && aimed ) activity.rollAttack({}, {}, { data: { system: { origin: results.message?.id, targets: aimed } } });
   // §24 : Parade — le jet de l'activité (un soin dans les données, que le moteur n'applique pas : `reduceOnly`) est le montant retiré

@@ -11,7 +11,7 @@ import { lengthIn } from "../adapter/units.mjs";
 import { continuedFlags, rulerShown } from "../adapter/movement.mjs";
 import { fearSources } from "../adapter/conditions.mjs";
 import { movesCloser } from "../core/conditions.mjs";
-import { opportunityThreats, resolveOpportunity } from "./reactions.mjs";
+import { opportunityThreats, resolveOpportunity, splitForReady } from "./reactions.mjs";
 import { scatterStop } from "./scatter.mjs";
 import { levelAtLeast } from "./levels.mjs";
 import { loc } from "./shared.mjs";
@@ -54,6 +54,20 @@ function opportunityFirst(token, movement, operation) {
   const threats = opportunityThreats(token, waypoints);
   if ( !threats.length ) return true;
   (async () => {
+    // §211 : une action préparée déclenchée en route — le token va jusqu'à la case où il arrive à portée, l'action est proposée, puis
+    // la suite repart comme un nouveau déplacement (ses menaces revues depuis là).
+    const split = splitForReady(token, waypoints, threats);
+    if ( split ) {
+      if ( !(await resolveOpportunity(token, split.before)) ) return;
+      if ( split.first.length ) {
+        await token.move(split.first, { showRuler: rulerShown(), [MODULE_ID]: { cleared: true } });
+        const animation = token.object?.movementAnimationPromise;
+        if ( animation ) await Promise.race([animation, new Promise(resolve => setTimeout(resolve, 10000))]);
+      }
+      if ( !(await resolveOpportunity(token, [split.ready])) ) return;
+      if ( split.rest.length ) await token.move(split.rest, { showRuler: rulerShown() });
+      return;
+    }
     if ( !(await resolveOpportunity(token, threats)) ) return;
     const again = waypoints.map(({ x, y, elevation, width, height, depth, shape, level, action, snapped, explicit, checkpoint }) =>
       ({ x, y, elevation, width, height, depth, shape, level, action, snapped, explicit, checkpoint }));

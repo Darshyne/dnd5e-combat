@@ -13,7 +13,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import {
-  segmentTouchesRect, isClimbableWall, climbSpeed, climbMultiplier, climbFallReason, grantsCeiling, ceilingPerch, acrobaticAllowed, ledgeRise
+  segmentTouchesRect, isClimbableWall, climbSpeed, climbMultiplier, climbFallReason, grantsCeiling, ceilingPerch, acrobaticAllowed, ledgeRise, MAX_CLIMB_CELLS
 } from "../core/climb.mjs";
 import { identifierOf, contentOf } from "./content.mjs";
 import { originItemOf } from "./facts.mjs";
@@ -305,8 +305,11 @@ export function wallTopOf(token) {
   }
   if ( ledge ) {
     ledge.name = scene.levels?.get?.(ledge.level)?.name ?? null;
-    return { top: ledge, ceilingFeet, height };
+    return { top: ledge, ceilingFeet: Math.min(ceilingFeet, wallTopFeetOf(token, pos)), height };
   }
+  // §217 : le mur s'arrête avant le plafond (ou à ciel ouvert) — c'est le haut, et la limite.
+  const wallTop = wallTopFeetOf(token, pos);
+  if ( wallTop < ceilingFeet - 1e-6 ) return { top: { kind: "wallEnd", at: wallTop + height }, ceilingFeet: wallTop, height };
   return { top: Number.isFinite(ceiling) ? { kind: "ceiling", at: ceilingFeet + height } : null, ceilingFeet, height };
 }
 
@@ -357,5 +360,26 @@ export function edgesBelowOf(token) {
     out.push({ dir, x: at.x, y: at.y, elevation, level, drop: feet - ground });
   }
   return out;
+}
+
+/**
+ * §217 : jusqu'où ce mur monte — l'élévation la plus haute des pieds où le grimpeur tient encore au mur, case par case, avec le test
+ * même de la chute (`holdsWallAt`, runtime/climb.mjs : un mur près de lui sur le niveau de cette hauteur). Au-delà, il n'aurait plus rien
+ * où s'accrocher et tomberait : la montée s'arrête là.
+ */
+export function wallTopFeetOf(token, pos=committedPosition(token)) {
+  const scene = token?.parent;
+  const grid = scene?.grid;
+  const feet = pos.elevation ?? 0;
+  if ( !grid ) return Infinity;
+  const own = pos.level ?? token._source.level;
+  let top = feet;
+  for ( let i = 1; i <= MAX_CLIMB_CELLS; i++ ) {
+    const elevation = feet + (i * grid.distance);
+    const level = levelAt(scene, elevation, own);
+    if ( !wallsNear(token, { ...pos, elevation, level }).length ) return top;
+    top = elevation;
+  }
+  return Infinity;
 }
 

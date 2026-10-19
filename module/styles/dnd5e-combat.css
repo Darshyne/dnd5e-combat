@@ -383,6 +383,7 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-climb-gauge .cell.start { fill: none; stroke: #7f77dd; stroke-dasharray: 3 3; }
 .das-climb-gauge .ground { stroke: #b4b2a9; stroke-width: 2; }
 .das-climb-gauge .ceiling { fill: #d85a30; }
+.das-climb-gauge .wall-end { stroke: #b4b2a9; stroke-width: 4; }
 .das-climb-gauge .level { stroke: #85b7eb; stroke-width: 1.5; stroke-dasharray: 2 3; }
 .das-climb-gauge .level-text { font-size: 10px; fill: #85b7eb; }
 .das-climb-gauge .ledge { stroke: #5dcaa5; stroke-width: 2; stroke-dasharray: 5 4; }

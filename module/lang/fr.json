@@ -1444,9 +1444,10 @@
   "DND5ECOMBAT.Escalade.Jauge.ChuteSansDegats": "Si vous tombez de là : aucun dégât.",
   "DND5ECOMBAT.Escalade.Jauge.Test": "Règles maison : test de Force (Athlétisme) DD {dc} pour grimper.",
   "DND5ECOMBAT.Escalade.Jauge.Grisees": "Cases grisées : au-delà de votre déplacement restant ce tour.",
-  "DND5ECOMBAT.Escalade.Bute": "Vous butez contre le plafond",
+  "DND5ECOMBAT.Escalade.Bute": "Impossible de monter plus haut",
   "DND5ECOMBAT.Menu.SAgripper": "S'agripper au bord (descendre)",
   "DND5ECOMBAT.Menu.SAgripperVers": "S'agripper au bord : {dir}",
   "DND5ECOMBAT.Retour.Escalade.Agrippe": "S'agrippe au bord",
-  "DND5ECOMBAT.Escalade.SAgrippe": "<strong>{name}</strong> passe par-dessus le bord et s'agrippe au mur."
+  "DND5ECOMBAT.Escalade.SAgrippe": "<strong>{name}</strong> passe par-dessus le bord et s'agrippe au mur.",
+  "DND5ECOMBAT.Escalade.Jauge.FinDuMur": "Le mur s'arrête à {height} {units} : rien où s'accrocher plus haut."
 }

@@ -240,7 +240,7 @@ export function climbGauge({ feet, ground=0, gridDistance, height=gridDistance, 
   const toTop = (seen && top && Number.isFinite(below)) ? Math.max(0, Math.floor(((below - feet) / gridDistance) + 1e-6)) : 0;
   // §216 : la séparation du prochain niveau se voit même hors de portée (cases grisées jusqu'à elle) — sous un plafond vu, pas au-delà.
   // Seul un plafond vu arrête la jauge et les repères ; un rebord non (le mur peut continuer).
-  const limit = (seen && (top?.kind === "ceiling")) ? (top.at - feet) : Infinity;
+  const limit = (seen && ["ceiling", "wallEnd"].includes(top?.kind)) ? (top.at - feet) : Infinity;
   const ledge = seen && (top?.kind === "ledge");
   // Le prochain repère (au-delà du rebord quand il y en a un : celui du rebord se lit déjà).
   const nextMark = marks.find(m => (m.at > (ledge ? top.at + 1e-6 : feet)) && ((m.at - feet) <= limit + 1e-6));

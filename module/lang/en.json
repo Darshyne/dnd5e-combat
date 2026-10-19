@@ -1444,9 +1444,10 @@
   "DND5ECOMBAT.Escalade.Jauge.ChuteSansDegats": "If you fall from there: no damage.",
   "DND5ECOMBAT.Escalade.Jauge.Test": "House rules: Strength (Athletics) check DC {dc} to climb.",
   "DND5ECOMBAT.Escalade.Jauge.Grisees": "Greyed squares: beyond your movement left this turn.",
-  "DND5ECOMBAT.Escalade.Bute": "You bump against the ceiling",
+  "DND5ECOMBAT.Escalade.Bute": "You can't climb any higher",
   "DND5ECOMBAT.Menu.SAgripper": "Grab the edge (climb down)",
   "DND5ECOMBAT.Menu.SAgripperVers": "Grab the edge: {dir}",
   "DND5ECOMBAT.Retour.Escalade.Agrippe": "Grabs the edge",
-  "DND5ECOMBAT.Escalade.SAgrippe": "<strong>{name}</strong> goes over the edge and hangs on to the wall."
+  "DND5ECOMBAT.Escalade.SAgrippe": "<strong>{name}</strong> goes over the edge and hangs on to the wall.",
+  "DND5ECOMBAT.Escalade.Jauge.FinDuMur": "The wall ends at {height} {units}: nothing to hold on to above."
 }

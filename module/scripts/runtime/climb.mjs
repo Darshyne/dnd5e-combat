@@ -28,7 +28,7 @@ import { CLIMB_DC, CEILING_DC, CLIMB_CHECK_SECONDS, climbableCells, climbCheckDu
 import { placementOf } from "../core/altitude.mjs";
 import {
   CLIMB_RULES_SETTING, CLIMB_FLAG, FLIP_FLAG, climbRules, isClimbing, isOnCeiling, wallsNear, climbingOf, climbFallReasonFor, aboveGround,
-  canWalkCeilingsAt, canWalkCeilings, ceilingPerchFor, hangsAt, acrobaticFor, ledgesOf, wallTopOf, levelMarksAbove, edgesBelowOf
+  canWalkCeilingsAt, canWalkCeilings, ceilingPerchFor, hangsAt, acrobaticFor, ledgesOf, wallTopOf, levelMarksAbove, edgesBelowOf, wallTopFeetOf
 } from "../adapter/climb.mjs";
 import { perceivedAt } from "../adapter/illumination.mjs";
 import { boundsUnder, groundUnder, groundModeOf, modeRefusalFor } from "../adapter/altitude.mjs";
@@ -85,6 +85,15 @@ export function canClimb(token) {
   return wallsNear(token).length > 0;
 }
 
+/**
+ * §217 : attend que l'élévation du token ait quitté `from` (au plus `ms`) — un déplacement qui change de niveau en route n'est pas
+ * encore écrit quand `token.move` rend la main.
+ */
+async function elevationSettled(token, from, ms=3000) {
+  const until = Date.now() + ms;
+  while ( (Math.abs((token._source.elevation ?? 0) - from) < 1e-6) && (Date.now() < until) ) await new Promise(resolve => setTimeout(resolve, 100));
+}
+
 /** Ce que ce grimpeur peut monter maintenant : cases au plus (budget du tour, plafond), coût d'une case. */
 export function climbRoom(token) {
   const grid = token.parent.grid;
@@ -94,7 +103,9 @@ export function climbRoom(token) {
   const remaining = Number.isFinite(cap) ? Math.max(0, cap - history.spent - history.excluded) : Infinity;
   const elevation = token._source.elevation ?? 0;
   const { ceiling } = boundsUnder(token);
-  const ceilingCells = Number.isFinite(ceiling) ? (ceiling - elevation) / grid.distance : Infinity;
+  // §217 : ni au-delà du plafond, ni au-delà du sommet du mur (le grimpeur n'aurait plus où s'accrocher et tomberait).
+  const limit = Math.min(Number.isFinite(ceiling) ? ceiling : Infinity, wallTopFeetOf(token));
+  const ceilingCells = Number.isFinite(limit) ? (limit - elevation) / grid.distance : Infinity;
   const max = climbableCells({ remaining, gridDistance: grid.distance, multiplier, ceilingCells });
   return { max, multiplier, cost: multiplier * grid.distance, units: grid.units, ceiling: Number.isFinite(ceiling) ? ceiling : null, remaining };
 }
@@ -213,6 +224,8 @@ function gaugeSvg(model, chosen, { down=false }={}) {
     if ( model.hidden ) {
       parts.push(`<rect class="unknown" x="${x - 18}" y="${topY - 22}" width="${w + 36}" height="20" rx="3"/>`);
       parts.push(`<text x="${x + (w / 2)}" y="${topY - 8}" text-anchor="middle" class="unknown-text">?</text>`);
+    } else if ( model.top?.kind === "wallEnd" ) {
+      parts.push(`<line class="wall-end" x1="${x - 18}" y1="${topY - 4}" x2="${x + w + 18}" y2="${topY - 4}"/>`);
     } else if ( model.top?.kind === "ceiling" ) {
       parts.push(`<rect class="ceiling" x="${x - 18}" y="${topY - 10}" width="${w + 36}" height="8" rx="2"/>`);
     } else if ( model.top?.kind === "ledge" ) {
@@ -237,6 +250,7 @@ function gaugeInfo(token, model, room, chosen, { down=false }={}) {
     const text = model.hidden ? loc("Escalade.Jauge.HautInconnu")
       : (top?.kind === "ledge") ? loc(top.name ? "Escalade.Jauge.Rebord" : "Escalade.Jauge.RebordSansNom", { height: top.at, units: model.units, level: top.name ?? "" })
       : (top?.kind === "ceiling") ? loc("Escalade.Jauge.Plafond", { height: top.at, units: model.units })
+      : (top?.kind === "wallEnd") ? loc("Escalade.Jauge.FinDuMur", { height: top.at, units: model.units })
       : loc("Escalade.Jauge.SansPlafond");
     lines.push(`<p><i class="fa-solid ${model.hidden ? "fa-question" : top ? (top.kind === "ledge" ? "fa-stairs" : "fa-arrow-up-from-bracket") : "fa-cloud"}"></i> ${esc(text)}</p>`);
   }
@@ -338,6 +352,9 @@ export async function startClimb(token, { cells=null, acrobatic=false }={}) {
     await statusSettled(token, true);
   }
   await token.move([{ elevation: from + (n * grid.distance), action: "climb" }], { showRuler: rulerShown() });
+  // §217 : une montée qui passe la limite d'un niveau (20 ft : First → Second Floor) se termine en deux temps chez le cœur — jugée trop
+  // tôt, elle passait pour refusée : le mode était rendu, le grimpeur restait en l'air et tombait.
+  await elevationSettled(token, from);
   if ( Math.abs((token._source.elevation ?? 0) - from) < 1e-6 ) {
     if ( !already ) await token.update({ movementAction: mode, [`flags.${MODULE_ID}.${CLIMB_FLAG}`]: null }, ALTITUDE_OPTIONS);
     ui.notifications.warn(loc("Escalade.Impossible", { name: token.name }));
@@ -454,6 +471,7 @@ export async function climbDown(token, { cells=null }={}) {
     await statusSettled(token, true);
   }
   await token.move([{ elevation: from - (n * grid.distance), action: "climb" }], { showRuler: rulerShown() });
+  await elevationSettled(token, from);
   if ( Math.abs((token._source.elevation ?? 0) - from) < 1e-6 ) {
     ui.notifications.warn(loc("Escalade.Impossible", { name: token.name }));
     return false;

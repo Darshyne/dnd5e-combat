@@ -394,7 +394,9 @@ async function walkMoves(token, plan, options, state) {
     const from = token._source.level;
     // §16.15 : un objet qui n'occupe pas son espace (Main de Bigby) traverse les créatures — option `ignoreTokens` que
     // dnd5e lit dans les options de contrainte (canvas/token.mjs:88), passées par le cœur (documents/token.mjs:1723).
-    const constrainOptions = isIntangible(token) ? { ignoreTokens: true } : undefined;
+    // §219 : `overWalls` — sauter du bord d'un toit à ciel ouvert vers plus bas, par-dessus le mur « garde-fou » qui borde ce bord.
+    const constrainOptions = (isIntangible(token) || options[MODULE_ID].overWalls)
+      ? { ...(isIntangible(token) ? { ignoreTokens: true } : {}), ...(options[MODULE_ID].overWalls ? { ignoreWalls: true } : {}) } : undefined;
     const done = await token.move(checkpointed(move, !options[MODULE_ID].follow), { showRuler: rulerShown(), ...(constrainOptions ? { constrainOptions } : {}), ...options });
     // Dans un onglet masqué l'animation ne se termine jamais : on n'attend pas indéfiniment. Un pas `displace` qui change de niveau
     // (escalier) n'a rien à attendre : téléporté sur un niveau que la vue n'affiche pas encore, le token ne finit jamais son animation

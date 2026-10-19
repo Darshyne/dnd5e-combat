@@ -14,7 +14,7 @@ import { footprintGap, chooseBasicAttack, dragMultiplier, dragAllowance } from "
 import { combatantFor, readBudget, writeBudget, movementOf, speedOf, rangeOf, historyCosts, tokenCenter, positionOf, committedPosition, distanceBetween } from "../adapter/turn.mjs";
 import { jumpCost, LANDING_DC } from "../core/jump.mjs";
 import { jumpOptionsOf, landsOnDifficult } from "../adapter/jump.mjs";
-import { groundUnder } from "../adapter/altitude.mjs";
+import { groundUnder, boundsUnder } from "../adapter/altitude.mjs";
 import { fallNow, fallingAloft } from "./altitude.mjs";
 import { overlapsVertically, verticalExtent, verticalGap } from "../core/space.mjs";
 import { pilotOf, pilotOfActor, commandPlan, commandDistance, commandActivities, summonerToken, isIntangible } from "../adapter/pilot.mjs";
@@ -408,6 +408,10 @@ export async function jumpTo(token, point, { high=false, configure=true }={}) {
     if ( !up.ok ) return refuse("Saut.TropHaut", { max: fmt(up.limit), elan: loc(options.runningStart ? "Saut.AvecElan" : "Saut.SansElan") });
     jump = { ...up, cost: up.cost + horizontal, distance: rise + horizontal };
     elevation = ground;
+  } else if ( (horizontal <= ft(grid.distance) + 1e-6) && (rise <= -ft(grid.distance) + 1e-6) ) {
+    // §219 : un pas dans le vide — la case voisine est plus basse d'au moins une case (du bord d'un toit, d'un étage vers la cour) : on
+    // s'y jette sans sauter (pas de limite de saut, pas de Bottes), au prix d'une case de déplacement, et la chute suit (dégâts compris).
+    jump = { ok: true, cost: horizontal, distance: horizontal, fixed: null, stepOff: true };
   } else {
     if ( rise > 1e-6 ) return refuse("Saut.PlusHaut");
     jump = { ...jumpCost(horizontal, options.long, options.fixed), distance: horizontal };
@@ -429,18 +433,23 @@ export async function jumpTo(token, point, { high=false, configure=true }={}) {
   // Saut en hauteur : s'élever d'abord sur place, puis avancer à cette hauteur — en ligne droite depuis le sol, la trajectoire passait
   // sous le bord de la surface visée, que le cœur tient pour pleine par en dessous (le déplacement était refusé).
   const rising = high ? [{ x: from.x, y: from.y, elevation, snapped: true, action: "jump" }] : [];
-  const moved = await walkSafely(token, { waypoints: [...rising, dest], beyond: [], arrives: true });
+  // §219 : vers plus bas d'au moins une case, depuis un toit à ciel ouvert — par-dessus le « garde-fou » que les cartes à niveaux posent au
+  // bord des toits (Restored Keep : le mur du bord est du toit de l'écurie, sur Second Floor). D'une pièce couverte, ses murs arrêtent.
+  const overWalls = !high && (rise <= -ft(grid.distance) + 1e-6) && !Number.isFinite(boundsUnder(token, from).ceiling);
+  const moved = await walkSafely(token, { waypoints: [...rising, dest], beyond: [], arrives: true }, overWalls ? { overWalls: true } : {});
   if ( (moved === false) && jump.fixed && options.combatant ) {
     const b = readBudget(options.combatant);
     await writeBudget(options.combatant, { ...b, fixedJump: false, jumped: Math.max(0, (Number(b.jumped) || 0) - refund) });
     return { done: false, reason: "moveRefused", ...info };
   }
-  log(`${token.name}: ${high ? "high" : "long"} jump, ${Math.round(jump.distance)} ft for ${Math.round(jump.cost)} ft${jump.fixed ? " (fixed jump)" : ""}${options.runningStart ? "" : ", standing"}`);
+  if ( (moved === false) && jump.stepOff ) return { done: false, reason: "moveRefused", ...info };
+  log(jump.stepOff ? `${token.name}: steps off the edge (${Math.round(-rise)} ft drop)`
+    : `${token.name}: ${high ? "high" : "long"} jump, ${Math.round(jump.distance)} ft for ${Math.round(jump.cost)} ft${jump.fixed ? " (fixed jump)" : ""}${options.runningStart ? "" : ", standing"}`);
   // §218 : retombé au-dessus du vide (sauté d'un toit, d'un étage vers la cour) — la chute suit aussitôt, en combat comme hors combat,
   // d'un niveau à l'autre, dégâts compris (la chute de dnd5e).
   if ( (token._source.elevation ?? 0) > groundUnder(token) + 1e-6 ) {
     log(`${token.name}: lands over a drop — falls`);
-    if ( await fallNow(token) ) return { done: true, reason: null, fell: true, fixed: jump.fixed, cost: jump.cost, ...info };
+    if ( await fallNow(token) ) return { done: true, reason: null, fell: true, stepOff: !!jump.stepOff, fixed: jump.fixed, cost: jump.cost, ...info };
   }
   // Arrivée en terrain difficile : Dextérité (Acrobaties) DD 10, sinon À terre.
   const center = { x: top.x + ((token.width ?? 1) * grid.sizeX / 2), y: top.y + ((token.height ?? 1) * grid.sizeY / 2) };

@@ -31,6 +31,7 @@ export default {
       await ctx.setHp(hero, hp0);
     };
     ctx.restore(async () => {
+      if ( ctx.ownCombat ) { await ctx.call("end-combat", { combatId: ctx.ownCombat }).catch(() => {}); ctx.ownCombat = null; }
       await reset();
       await ctx.call("move-token", { tokenId: hero.id, x: home.x, y: home.y, elevation: home.elevation ?? 0, levelId: home.level }).catch(() => {});
     });
@@ -56,7 +57,7 @@ export default {
     await pause(1500);
     let since = await ctx.lastMessageId();
     const j = await ctx.engine("jump", { tokenId: hero.id, cell: YARD });
-    ctx.expect(j.done !== false, `saut vers la cour (${j.reason ?? "ok"}${j.warnings?.length ? ` — ${j.warnings.join(" ; ")}` : ""})`);
+    ctx.expect(j.result?.done === true, `saut vers la cour (${JSON.stringify(j.result)}${j.warnings?.length ? ` — ${j.warnings.join(" ; ")}` : ""})`);
     await fell("après le saut", since);
 
     // 2. Bouger un token « En chute » au-dessus de la cour.
@@ -68,5 +69,22 @@ export default {
     since = await ctx.lastMessageId();
     await ctx.engine("move", { tokenId: hero.id, cell: { i: 34, j: 35 } }).catch(() => null);
     await fell("en bougeant un token en chute", since);
+
+    // 3. §219 : en combat, sans élan, Force 8 (un saut en longueur de 4 ft) — la case voisine est plus basse : un pas dans le vide, sans
+    //    limite de saut, une case de déplacement, puis la chute (le cas de l'Occultiste de l'utilisateur, refusé : « 4 ft au plus »).
+    await reset();
+    const str0 = (await ctx.call("get-actor", { actorId: hero.actorId })).system?.abilities?.str?.value ?? null;
+    ctx.restore(() => ctx.call("update-actor", { actorId: hero.actorId, actorData: { "system.abilities.str.value": str0 } }).catch(() => {}));
+    await ctx.call("update-actor", { actorId: hero.actorId, actorData: { "system.abilities.str.value": 8 } });
+    await ctx.call("move-token", { tokenId: hero.id, ...ROOF, elevation: 20, levelId: SECOND });
+    await pause(1500);
+    await ctx.startCombat([hero]);
+    await pause(1500);
+    since = await ctx.lastMessageId();
+    const step = await ctx.engine("jump", { tokenId: hero.id, cell: YARD });
+    ctx.expect(step.result?.done === true, `en combat, Force 8, sans élan : le saut vers la case plus basse passe (${JSON.stringify(step.result)}${step.warnings?.length ? ` — ${step.warnings.join(" ; ")}` : ""})`);
+    await fell("pas dans le vide en combat", since);
+    const spent = (await ctx.engine("movement", { tokenId: hero.id })).combat?.spent;
+    ctx.expect(spent === 5, `une case de déplacement dépensée (${spent})`);
   }
 };

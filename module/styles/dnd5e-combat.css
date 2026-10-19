@@ -365,3 +365,26 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
    qui se perdaient dans nos couleurs et notre taille (plus de coche visible — vu par l'utilisateur le 2026-10-18). */
 .das-settings__row .ctl input[type=checkbox] { appearance: auto; -webkit-appearance: checkbox; margin: 0; background: none; border: none; }
 .das-settings__row .ctl input[type=checkbox]::before, .das-settings__row .ctl input[type=checkbox]::after { content: none; display: none; }
+
+/* §215 : la jauge de la fenêtre d'escalade (le mur de profil) */
+.dnd5e-combat-climb .das-climb { display: flex; gap: 14px; align-items: flex-start; }
+.dnd5e-combat-climb .das-climb-side { flex: 1; font-size: 13px; line-height: 1.45; }
+.dnd5e-combat-climb .das-climb-side p { margin: 0 0 6px; }
+.dnd5e-combat-climb .das-climb-side .aim { font-size: 16px; font-weight: bold; }
+.dnd5e-combat-climb .das-climb-side .muted { opacity: 0.8; }
+.dnd5e-combat-climb .das-climb-side .warn { color: #d9a441; }
+.das-climb-gauge text { font-size: 11px; fill: currentColor; }
+.das-climb-gauge text.muted { opacity: 0.7; }
+.das-climb-gauge .cell { fill: #5f5e5a; stroke: #888780; stroke-width: 0.5; }
+.das-climb-gauge .cell.reach { cursor: pointer; fill: #6b7a8f; }
+.das-climb-gauge .cell.reach:hover { fill: #8597ad; }
+.das-climb-gauge .cell.sel { fill: #1d9e75; }
+.das-climb-gauge .cell.off { opacity: 0.35; }
+.das-climb-gauge .cell.start { fill: none; stroke: #7f77dd; stroke-dasharray: 3 3; }
+.das-climb-gauge .ground { stroke: #b4b2a9; stroke-width: 2; }
+.das-climb-gauge .ceiling { fill: #d85a30; }
+.das-climb-gauge .ledge { stroke: #5dcaa5; stroke-width: 2; stroke-dasharray: 5 4; }
+.das-climb-gauge .unknown { fill: #2c2c2a; stroke: #5f5e5a; stroke-dasharray: 3 3; }
+.das-climb-gauge .unknown-text { font-size: 13px; font-weight: bold; fill: #b4b2a9; }
+.das-climb-gauge .climber { fill: #7f77dd; stroke: #eeedfe; stroke-width: 1.5; pointer-events: none; }
+

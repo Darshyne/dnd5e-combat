@@ -1429,5 +1429,20 @@
   "DND5ECOMBAT.Raison.untrainedArmor": "Armure portée sans formation",
   "DND5ECOMBAT.Souci.untrainedArmor": "Impossible de lancer un sort en portant {item} sans formation.",
   "DND5ECOMBAT.Armure.Bouclier": "{item} sans formation",
-  "DND5ECOMBAT.Armure.BouclierTexte": "Bouclier porté sans formation : il ne donne pas son bonus à la CA (règles 2024, formation au port d'armure)."
+  "DND5ECOMBAT.Armure.BouclierTexte": "Bouclier porté sans formation : il ne donne pas son bonus à la CA (règles 2024, formation au port d'armure).",
+  "DND5ECOMBAT.Escalade.Jauge.Sol": "sol",
+  "DND5ECOMBAT.Escalade.Jauge.SolBas": "sol",
+  "DND5ECOMBAT.Escalade.Jauge.Visee": "Pieds à {height} {units} ({cells} case(s))",
+  "DND5ECOMBAT.Escalade.Jauge.HautInconnu": "Vous ne voyez pas le haut du mur.",
+  "DND5ECOMBAT.Escalade.Jauge.Rebord": "Rebord à {height} {units} ({level}) : « Se hisser » une fois la tête à sa hauteur.",
+  "DND5ECOMBAT.Escalade.Jauge.RebordSansNom": "Rebord à {height} {units} : « Se hisser » une fois la tête à sa hauteur.",
+  "DND5ECOMBAT.Escalade.Jauge.Plafond": "Plafond à {height} {units} : impossible d'aller plus haut.",
+  "DND5ECOMBAT.Escalade.Jauge.SansPlafond": "Pas de plafond au-dessus de vous.",
+  "DND5ECOMBAT.Escalade.Jauge.Cout": "Coût : {cost} {units} de déplacement (×{factor}) — il vous reste {left} {units}.",
+  "DND5ECOMBAT.Escalade.Jauge.CoutHorsCombat": "Coût : {cost} {units} de déplacement (×{factor}).",
+  "DND5ECOMBAT.Escalade.Jauge.Chute": "Si vous tombez de là : {dice} de dégâts.",
+  "DND5ECOMBAT.Escalade.Jauge.ChuteSansDegats": "Si vous tombez de là : aucun dégât.",
+  "DND5ECOMBAT.Escalade.Jauge.Test": "Règles maison : test de Force (Athlétisme) DD {dc} pour grimper.",
+  "DND5ECOMBAT.Escalade.Jauge.Grisees": "Cases grisées : au-delà de votre déplacement restant ce tour.",
+  "DND5ECOMBAT.Escalade.Bute": "Vous butez contre le plafond"
 }

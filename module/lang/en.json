@@ -1429,5 +1429,20 @@
   "DND5ECOMBAT.Raison.untrainedArmor": "Armor worn without training",
   "DND5ECOMBAT.Souci.untrainedArmor": "You can't cast spells while wearing {item} without armor training.",
   "DND5ECOMBAT.Armure.Bouclier": "{item} without training",
-  "DND5ECOMBAT.Armure.BouclierTexte": "Shield carried without training: it gives no bonus to AC (2024 rules, armor training)."
+  "DND5ECOMBAT.Armure.BouclierTexte": "Shield carried without training: it gives no bonus to AC (2024 rules, armor training).",
+  "DND5ECOMBAT.Escalade.Jauge.Sol": "ground",
+  "DND5ECOMBAT.Escalade.Jauge.SolBas": "ground",
+  "DND5ECOMBAT.Escalade.Jauge.Visee": "Feet at {height} {units} ({cells} square(s))",
+  "DND5ECOMBAT.Escalade.Jauge.HautInconnu": "You can't see the top of the wall.",
+  "DND5ECOMBAT.Escalade.Jauge.Rebord": "Ledge at {height} {units} ({level}): \"Pull up\" once your head is level with it.",
+  "DND5ECOMBAT.Escalade.Jauge.RebordSansNom": "Ledge at {height} {units}: \"Pull up\" once your head is level with it.",
+  "DND5ECOMBAT.Escalade.Jauge.Plafond": "Ceiling at {height} {units}: you can't go higher.",
+  "DND5ECOMBAT.Escalade.Jauge.SansPlafond": "No ceiling above you.",
+  "DND5ECOMBAT.Escalade.Jauge.Cout": "Cost: {cost} {units} of movement (×{factor}) — {left} {units} left.",
+  "DND5ECOMBAT.Escalade.Jauge.CoutHorsCombat": "Cost: {cost} {units} of movement (×{factor}).",
+  "DND5ECOMBAT.Escalade.Jauge.Chute": "If you fall from there: {dice} damage.",
+  "DND5ECOMBAT.Escalade.Jauge.ChuteSansDegats": "If you fall from there: no damage.",
+  "DND5ECOMBAT.Escalade.Jauge.Test": "House rules: Strength (Athletics) check DC {dc} to climb.",
+  "DND5ECOMBAT.Escalade.Jauge.Grisees": "Greyed squares: beyond your movement left this turn.",
+  "DND5ECOMBAT.Escalade.Bute": "You bump against the ceiling"
 }

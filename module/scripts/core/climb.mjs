@@ -200,3 +200,45 @@ export function ledgeRise({ feet, height, ground, ceiling=Infinity }) {
  * l'on prend pied. Unités de la grille.
  */
 export const ledgeCost = ({ rise, multiplier, gridDistance }) => (rise * multiplier) + gridDistance;
+
+/* -------------------------------------------- */
+/*  La jauge de la fenêtre d'escalade (§215)     */
+/* -------------------------------------------- */
+
+/**
+ * Les dés de chute (dnd5e, rules/falling.mjs : 1d6 par tranche de 10 ft, 20d6 au plus) pour une hauteur au-dessus du sol, dans l'unité
+ * de la grille (`step` : 10 en pieds, 3 en mètres).
+ */
+/** §215 : à l'aveugle hors combat, la montée d'un coup est bornée (on ne propose pas 100 ft dans le noir). */
+export const HIDDEN_CLIMB_CELLS = 6;
+
+export const fallDice = (height, step=10) => Math.max(0, Math.min(20, Math.floor((height + 1e-6) / step)));
+
+/**
+ * La jauge de la fenêtre « Grimper » / « Descendre » : le mur vu de profil, case par case.
+ *  - Montée : les cases au-dessus des pieds du grimpeur ; on peut choisir celles que le déplacement du tour paie et, si le haut est
+ *    vu (`seen`), que le plafond laisse (`ceilingFeet` : l'élévation la plus haute des pieds sous le plafond). Le haut (`top` : un rebord
+ *    `{ kind: "ledge", at }` où poser les pieds, ou le plafond `{ kind: "ceiling", at }`) n'est rendu que s'il est vu — sinon rien ne le
+ *    trahit, pas même le nombre de cases : on choisit d'après son seul déplacement, et la montée s'arrête au plafond.
+ *  - Descente : les cases sous les pieds jusqu'au sol (`ground`).
+ * @returns {{cells: Array<{n: number, at: number, choosable: boolean}>, choosable: number, top: object|null, hidden: boolean}}
+ */
+export function climbGauge({ feet, ground=0, gridDistance, height=gridDistance, remaining, multiplier, ceilingFeet=Infinity, top=null, seen=true, down=false }) {
+  const affordable = climbableCells({ remaining, gridDistance, multiplier });
+  if ( down ) {
+    const depth = Math.max(0, Math.floor(((feet - ground) / gridDistance) + 1e-6));
+    const choosable = Math.min(affordable, depth);
+    const cells = Array.from({ length: depth }, (_, i) => ({ n: i + 1, at: feet - ((i + 1) * gridDistance), choosable: (i + 1) <= choosable }));
+    return { cells, choosable, top: null, hidden: false };
+  }
+  const real = climbableCells({ remaining, gridDistance, multiplier, ceilingCells: (ceilingFeet - feet) / gridDistance });
+  // À l'aveugle et sans limite de déplacement (hors combat), pas plus de `HIDDEN_CLIMB_CELLS` cases d'un coup.
+  const choosable = seen ? real : (Number.isFinite(remaining) ? affordable : Math.min(affordable, HIDDEN_CLIMB_CELLS));
+  // Les cases montrées : celles qu'on peut choisir, jusqu'au haut s'il est vu — sous un rebord, la case d'où l'on s'y hisse (sa tête à
+  // hauteur du rebord) ; sous un plafond, la case où la tête le touche (`ceilingFeet`).
+  const below = top?.kind === "ledge" ? (top.at - height) : ceilingFeet;
+  const toTop = (seen && top && Number.isFinite(below)) ? Math.max(0, Math.floor(((below - feet) / gridDistance) + 1e-6)) : 0;
+  const count = Math.min(MAX_CLIMB_CELLS, Math.max(choosable, toTop));
+  const cells = Array.from({ length: count }, (_, i) => ({ n: i + 1, at: feet + ((i + 1) * gridDistance), choosable: (i + 1) <= choosable }));
+  return { cells, choosable, top: seen ? top : null, hidden: !seen };
+}

@@ -242,3 +242,37 @@ export function ledgesOf(token) {
   }
   return out;
 }
+
+/**
+ * §215 : le haut du mur que ce token regarde, pour la jauge de la fenêtre d'escalade — le rebord le plus bas où poser les pieds sur une
+ * case voisine (plus haut que ses pieds, à portée de sa tête sous le plafond ; avec le nom de son niveau), sinon le plafond (la Surface
+ * au-dessus de sa tête), sinon null ; et `ceilingFeet`, l'élévation la plus haute de ses pieds. Au sol comme au mur.
+ * @returns {{top: {kind: "ledge"|"ceiling", at: number, name?: string|null}|null, ceilingFeet: number, height: number}}
+ */
+export function wallTopOf(token) {
+  const scene = token?.parent;
+  const grid = scene?.grid;
+  const pos = committedPosition(token);
+  const feet = pos.elevation ?? 0;
+  const height = (positionOf({ ...token._source, ...pos }).depth ?? 1) * (grid?.distance ?? 5);
+  const { ceiling } = boundsUnder(token, pos);
+  const ceilingFeet = Number.isFinite(ceiling) ? ceiling : Infinity;
+  if ( !grid?.size ) return { top: null, ceilingFeet, height };
+  const own = pos.level ?? token._source.level;
+  const levels = [...new Set([own, levelAt(scene, ceilingFeet + height, own)])];
+  let ledge = null;
+  for ( const { di, dj } of LEDGE_DIRS ) {
+    for ( const level of levels ) {
+      const at = { ...pos, level, x: pos.x + (dj * grid.sizeX), y: pos.y + (di * grid.sizeY) };
+      const { ground } = boundsUnder(token, at);
+      if ( !Number.isFinite(ground) || (ground <= feet + 1e-6) || (ground > ceilingFeet + height + 1e-6) ) continue;
+      if ( !ledge || (ground < ledge.at) ) ledge = { kind: "ledge", at: ground, level: levelAt(scene, ground, level) };
+    }
+  }
+  if ( ledge ) {
+    ledge.name = scene.levels?.get?.(ledge.level)?.name ?? null;
+    return { top: ledge, ceilingFeet, height };
+  }
+  return { top: Number.isFinite(ceiling) ? { kind: "ceiling", at: ceilingFeet + height } : null, ceilingFeet, height };
+}
+

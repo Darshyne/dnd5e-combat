@@ -24,12 +24,13 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { CLIMB_DC, CEILING_DC, CLIMB_CHECK_SECONDS, climbableCells, climbCheckDue, flippedScale, acrobaticFallDue, ledgeCost } from "../core/climb.mjs";
+import { CLIMB_DC, CEILING_DC, CLIMB_CHECK_SECONDS, climbableCells, climbCheckDue, flippedScale, acrobaticFallDue, ledgeCost, climbGauge, fallDice } from "../core/climb.mjs";
 import { placementOf } from "../core/altitude.mjs";
 import {
   CLIMB_RULES_SETTING, CLIMB_FLAG, FLIP_FLAG, climbRules, isClimbing, isOnCeiling, wallsNear, climbingOf, climbFallReasonFor, aboveGround,
-  canWalkCeilingsAt, canWalkCeilings, ceilingPerchFor, hangsAt, acrobaticFor, ledgesOf
+  canWalkCeilingsAt, canWalkCeilings, ceilingPerchFor, hangsAt, acrobaticFor, ledgesOf, wallTopOf
 } from "../adapter/climb.mjs";
+import { perceivedAt } from "../adapter/illumination.mjs";
 import { boundsUnder, groundUnder, groundModeOf, modeRefusalFor } from "../adapter/altitude.mjs";
 import { MODE_STATUSES, setStatus } from "../adapter/conditions.mjs";
 import { rollerFor } from "../adapter/concentration.mjs";
@@ -48,7 +49,7 @@ import { rayBlocker } from "../adapter/cover.mjs";
 import { cellsAtGap } from "../core/orders.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
-import { isExecutor, loc, locEsc, log, notice, say, waitForDice } from "./shared.mjs";
+import { esc, isExecutor, loc, locEsc, log, notice, say, waitForDice } from "./shared.mjs";
 
 export const CLIMB_QUERY = `${MODULE_ID}.climbCheck`;
 /** Le joueur a ce temps pour son test (sa fenêtre se ferme avant, au délai des fenêtres de combat). */
@@ -98,16 +99,137 @@ export function climbRoom(token) {
   return { max, multiplier, cost: multiplier * grid.distance, units: grid.units, ceiling: Number.isFinite(ceiling) ? ceiling : null, remaining };
 }
 
-/** La fenêtre « Combien de cases ? » (`down` : descendre) ; null si elle est annulée. */
+/* -------------------------------------------- */
+/*  La fenêtre « Combien de cases ? » (§215)     */
+/* -------------------------------------------- */
+
+const GAUGE_HEIGHT = 240;   // hauteur de la colonne de cases, en pixels
+const GAUGE_WIDTH = 190;
+
+/** Le haut du mur est-il vu du grimpeur (lumière et sens : `perceivedAt`) ? Aveuglé, non ; sans canevas, oui. */
+function seesTop(token, top) {
+  if ( !top ) return true;
+  if ( token.actor?.statuses?.has("blinded") ) return false;
+  const center = tokenCenter(token);
+  const seen = perceivedAt(token, { x: center.x, y: center.y, elevation: top.at });
+  return seen ? !seen.blinded : true;
+}
+
+/** Le modèle de la jauge (core/climb.mjs, `climbGauge`) pour ce grimpeur. */
+function gaugeFor(token, room, { down=false }={}) {
+  const grid = token.parent.grid;
+  const feet = token._source.elevation ?? 0;
+  const { top, ceilingFeet, height } = wallTopOf(token);
+  const seen = down || seesTop(token, top);
+  const model = climbGauge({ feet, ground: groundUnder(token), gridDistance: grid.distance, height, remaining: room.remaining,
+    multiplier: room.multiplier, ceilingFeet, top, seen, down });
+  return { ...model, feet, ground: groundUnder(token), distance: grid.distance, units: grid.units, height };
+}
+
+/** Le mur de profil, en SVG : le sol, les cases (choisissables ou non, choisies), le grimpeur, le haut (rebord, plafond, ou inconnu). */
+function gaugeSvg(model, chosen, { down=false }={}) {
+  const n = model.cells.length;
+  const step = Math.min(34, Math.floor(GAUGE_HEIGHT / Math.max(n + 1, 4)));
+  const x = 40, w = 46;
+  const base = 20 + ((n + 1) * step);
+  const yOf = i => base - (i * step);   // i : rang de la case au-dessus (montée) ou au-dessous (descente) du départ
+  const parts = [];
+  const label = (y, text, cls="") => parts.push(`<text x="${x + w + 8}" y="${y}" class="${cls}">${esc(text)}</text>`);
+  // Départ : pour la montée, la case du grimpeur est en bas ; pour la descente, en haut.
+  const start = down ? 20 + step : base;
+  const order = down ? model.cells.map((c, i) => ({ ...c, y: start + ((i + 1) * step) - step })) : model.cells.map((c, i) => ({ ...c, y: yOf(i + 1) }));
+  // Descente : la case de départ (le grimpeur y est), en haut, non cliquable.
+  if ( down ) {
+    parts.push(`<rect class="cell start" x="${x}" y="${22}" width="${w}" height="${step - 4}" rx="3"/>`);
+    label(20 + (step / 2) + 4, `${Math.round(model.feet * 10) / 10} ${model.units}`);
+  }
+  for ( const c of order ) {
+    const cls = ["cell", c.choosable ? "reach" : "off", (c.n <= chosen) ? "sel" : ""].join(" ");
+    parts.push(`<rect class="${cls}" data-cells="${c.choosable ? c.n : ""}" x="${x}" y="${c.y + 2}" width="${w}" height="${step - 4}" rx="3"/>`);
+    label(c.y + (step / 2) + 4, `${Math.round(c.at * 10) / 10} ${model.units}`);
+  }
+  // Le sol (montée : sous la colonne ; descente : sous la dernière case).
+  const groundY = down ? 20 + step + (n * step) : base;
+  parts.push(`<line class="ground" x1="${x - 18}" y1="${groundY}" x2="${x + w + 8}" y2="${groundY}"/>`);
+  label(groundY + 14, loc(down ? "Escalade.Jauge.SolBas" : "Escalade.Jauge.Sol"), "muted");
+  // Le haut.
+  if ( !down ) {
+    const topY = yOf(n) - 2;
+    if ( model.hidden ) {
+      parts.push(`<rect class="unknown" x="${x - 18}" y="${topY - 22}" width="${w + 36}" height="20" rx="3"/>`);
+      parts.push(`<text x="${x + (w / 2)}" y="${topY - 8}" text-anchor="middle" class="unknown-text">?</text>`);
+    } else if ( model.top?.kind === "ceiling" ) {
+      parts.push(`<rect class="ceiling" x="${x - 18}" y="${topY - 10}" width="${w + 36}" height="8" rx="2"/>`);
+    } else if ( model.top?.kind === "ledge" ) {
+      parts.push(`<line class="ledge" x1="${x - 18}" y1="${topY - 6}" x2="${x + w + 18}" y2="${topY - 6}"/>`);
+    }
+  }
+  // Le grimpeur, sur la case choisie (ou à son départ).
+  const at = chosen ? order.find(c => c.n === chosen) : null;
+  const cy = at ? at.y + (step / 2) : (down ? 20 + (step / 2) : base - (step / 2));
+  parts.push(`<circle class="climber" cx="${x + (w / 2)}" cy="${cy}" r="${Math.max(6, Math.min(11, (step / 2) - 3))}"/>`);
+  const svgHeight = Math.max(base, groundY) + 22;
+  return `<svg class="das-climb-gauge" width="${GAUGE_WIDTH}" height="${svgHeight}" viewBox="0 0 ${GAUGE_WIDTH} ${svgHeight}">${parts.join("")}</svg>`;
+}
+
+/** Les lignes à droite de la jauge : hauteur visée, ce qu'il y a en haut, coût, chute, test des règles « maison ». */
+function gaugeInfo(token, model, room, chosen, { down=false }={}) {
+  const height = down ? (model.feet - (chosen * model.distance)) : (model.feet + (chosen * model.distance));
+  const lines = [];
+  lines.push(`<p class="aim">${esc(loc(down ? "Escalade.Jauge.Visee" : "Escalade.Jauge.Visee", { height: Math.round(height * 10) / 10, units: model.units, cells: chosen }))}</p>`);
+  if ( !down ) {
+    const top = model.top;
+    const text = model.hidden ? loc("Escalade.Jauge.HautInconnu")
+      : (top?.kind === "ledge") ? loc(top.name ? "Escalade.Jauge.Rebord" : "Escalade.Jauge.RebordSansNom", { height: top.at, units: model.units, level: top.name ?? "" })
+      : (top?.kind === "ceiling") ? loc("Escalade.Jauge.Plafond", { height: top.at, units: model.units })
+      : loc("Escalade.Jauge.SansPlafond");
+    lines.push(`<p><i class="fa-solid ${model.hidden ? "fa-question" : top ? (top.kind === "ledge" ? "fa-stairs" : "fa-arrow-up-from-bracket") : "fa-cloud"}"></i> ${esc(text)}</p>`);
+  }
+  const cost = chosen * room.cost;
+  lines.push(`<p class="muted">${esc(Number.isFinite(room.remaining)
+    ? loc("Escalade.Jauge.Cout", { cost, units: model.units, left: room.remaining, factor: room.multiplier })
+    : loc("Escalade.Jauge.CoutHorsCombat", { cost, units: model.units, factor: room.multiplier }))}</p>`);
+  const fall = fallDice(height - model.ground, (model.units === "m") ? 3 : 10);
+  lines.push(`<p class="muted">${esc(fall ? loc("Escalade.Jauge.Chute", { dice: `${fall}d6` }) : loc("Escalade.Jauge.ChuteSansDegats"))}</p>`);
+  if ( !down && (climbRules() === "house") && !isClimbing(token) && !climbingOf(token).native ) lines.push(`<p class="warn">${esc(loc("Escalade.Jauge.Test", { dc: CLIMB_DC }))}</p>`);
+  if ( model.cells.some(c => !c.choosable) ) lines.push(`<p class="warn">${esc(loc("Escalade.Jauge.Grisees"))}</p>`);
+  return lines.join("");
+}
+
+/** La fenêtre « Combien de cases ? » (`down` : descendre) : la jauge du mur, une case choisie par un clic ; null si elle est annulée. */
 async function askCells(token, room, { down=false }={}) {
-  const content = `<p>${loc(down ? "Escalade.QuestionDescente" : "Escalade.Question", { max: room.max, cost: room.cost, units: room.units })}</p>
-    <div class="form-group"><label>${loc("Escalade.Cases")}</label>
-    <input type="number" name="cells" min="1" max="${room.max}" step="1" value="${room.max}" autofocus></div>`;
+  const model = gaugeFor(token, room, { down });
+  if ( !model.choosable ) return null;
+  // Par défaut : jusqu'au haut s'il est vu (rebord, plafond), ou jusqu'au sol en descente ; sinon (à l'aveugle, ciel ouvert) une case.
+  let chosen = (down || (!model.hidden && model.top)) ? model.choosable : 1;
+  const render = root => {
+    const gauge = root.querySelector(".das-climb-gauge-wrap");
+    const info = root.querySelector(".das-climb-info");
+    if ( gauge ) gauge.innerHTML = gaugeSvg(model, chosen, { down });
+    if ( info ) info.innerHTML = gaugeInfo(token, model, room, chosen, { down });
+    const input = root.querySelector("input[name=cells]");
+    if ( input ) input.value = String(chosen);
+  };
+  const content = `<div class="das-climb"><div class="das-climb-gauge-wrap"></div><div class="das-climb-side"><div class="das-climb-info"></div>
+    <div class="form-group"><label>${loc("Escalade.Cases")}</label><input type="number" name="cells" min="1" max="${model.choosable}" step="1" value="${chosen}"></div></div></div>`;
   const answer = await foundry.applications.api.DialogV2.wait({
-    window: { title: loc(down ? "Escalade.TitreDescente" : "Escalade.Titre") }, content, rejectClose: false,
+    window: { title: loc(down ? "Escalade.TitreDescente" : "Escalade.Titre") }, content, rejectClose: false, position: { width: 520 },
+    classes: ["dnd5e-combat-climb"],
+    render: (event, dialog) => {
+      const root = dialog.element;
+      render(root);
+      root.querySelector(".das-climb-gauge-wrap")?.addEventListener("click", ev => {
+        const n = Number(ev.target?.dataset?.cells);
+        if ( n >= 1 ) { chosen = n; render(root); }
+      });
+      root.querySelector("input[name=cells]")?.addEventListener("change", ev => {
+        const n = Math.floor(Number(ev.target.value));
+        if ( (n >= 1) && (n <= model.choosable) ) { chosen = n; render(root); }
+      });
+    },
     buttons: [
       { action: "climb", label: loc(down ? "Escalade.Descendre" : "Escalade.Monter"), icon: down ? "fa-solid fa-arrow-down" : "fa-solid fa-mountain", default: true,
-        callback: (event, button) => Number(button.form?.elements?.cells?.value) },
+        callback: () => chosen },
       { action: "cancel", label: loc("Escalade.Annuler"), icon: "fa-solid fa-xmark" }
     ]
   });
@@ -146,6 +268,8 @@ export async function startClimb(token, { cells=null, acrobatic=false }={}) {
   const wanted = Number.isFinite(cells) ? Math.floor(cells) : await askCells(token, room);
   if ( !(wanted >= 1) ) return false;
   const n = Math.min(wanted, room.max);
+  // §215 : le haut n'était pas vu — on a pu demander plus que le plafond ne laisse : la montée s'arrête là.
+  if ( wanted > room.max ) notice(token, loc("Escalade.Bute"), "refused");
   const already = isClimbing(token);   // déjà au mur : on monte encore, sans nouveau test (il se refait à chaque tour)
   if ( !already && !acrobatic && (climbRules() === "house") && !climbingOf(token).native && !(await houseCheckPassed(token, CLIMB_DC)) ) return false;
   const grid = token.parent.grid;

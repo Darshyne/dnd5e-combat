@@ -5,6 +5,10 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { canBeThrown } from "../adapter/turn.mjs";
+import { areAdjacent } from "../adapter/conditions.mjs";
+import { readUnitFactors } from "../adapter/units.mjs";
+import { isNonLethal, isKnockedOut, setNonLethal } from "../adapter/knockout.mjs";
+import { firstAid } from "../runtime/knockout.mjs";
 import { stairsDestinations } from "../adapter/movement.mjs";
 import { grappleShoveOf, unarmedAttackOf, helpActivityOf } from "../adapter/basics.mjs";
 import { pilotOf, commandActivities, commandLabel, transposeOf } from "../adapter/pilot.mjs";
@@ -23,7 +27,7 @@ import { escapeGrapple, holdsOf, releaseGrapple } from "../runtime/grapple.mjs";
 import { ownEndingsOf, endingsOn, endFor } from "../runtime/action-end.mjs";
 import { doorState, setDoorOpen, setDoorLocked, pickLock, forceDoor } from "../runtime/doors.mjs";
 import { swallowerOf } from "../adapter/swallow.mjs";
-import { loc } from "../runtime/shared.mjs";
+import { loc, notice } from "../runtime/shared.mjs";
 import { effectOfProfile } from "../adapter/usage.mjs";
 import { wallsOfCaster } from "../adapter/wall-side.mjs";
 import { flipWallSide } from "../runtime/wall-side.mjs";
@@ -225,6 +229,12 @@ export function selfEntries(token) {
   entries.push(...igniteEntries(token));
   // §192 : grimper au mur qu'on touche ; en escalade, se laisser tomber.
   entries.push(...climbEntries(token));
+  // §210 : coups non létaux (comme l'interrupteur de BG3) — activer ou couper.
+  if ( token.isOwner && token.actor ) {
+    const on = isNonLethal(token.actor);
+    entries.push({ icon: on ? "fa-solid fa-hand-fist" : "fa-regular fa-hand-fist", label: loc(on ? "Menu.NonLetalCouper" : "Menu.NonLetalActiver"),
+      run: () => setNonLethal(token.actor, !on).then(v => notice(token, loc(v ? "Assomme.Actif" : "Assomme.Inactif"))) });
+  }
   // §38.2 : Troc du filou — depuis l'illusion ou depuis son lanceur.
   const swap = transposeOf(token);
   if ( swap ) entries.push({ icon: "fa-solid fa-arrows-rotate", label: loc("Menu.Echanger", { name: (swap.illusion === token ? swap.caster : swap.illusion).name }), run: () => transpose(token) });
@@ -301,6 +311,10 @@ function tokenEntries(token, target, { aggressive=true }={}) {
   if ( pilot ) {   // ni arme, ni mains nues, ni Lutte : un objet n'a que ses commandes
     entries.push({ icon: "fa-solid fa-eye", label: loc("Menu.Observer"), run: () => observe(target) });
     return entries;
+  }
+  // §210 : premiers soins à une créature assommée au contact (Médecine DD 10), amie ou ennemie.
+  if ( isKnockedOut(target.actor) && areAdjacent(token, target, readUnitFactors()) ) {
+    entries.push({ icon: "fa-solid fa-kit-medical", label: loc("Menu.PremiersSoins", { name: target.name }), run: () => firstAid(token, target) });
   }
   // §16.44 : sur une créature neutre ou amicale, rien d'offensif (Maj, menu ouvert, pour le montrer).
   if ( !aggressive ) {

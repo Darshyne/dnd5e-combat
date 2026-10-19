@@ -1356,5 +1356,17 @@
   "DND5ECOMBAT.Escalade.Dir.w": "ouest",
   "DND5ECOMBAT.Escalade.HisserPasAssez": "{name} : pas assez de déplacement pour se hisser (il faut {cost}, il reste {left}).",
   "DND5ECOMBAT.Escalade.SeHisse": "{name} se hisse sur le rebord.",
-  "DND5ECOMBAT.Retour.Escalade.Hisse": "Se hisse !"
+  "DND5ECOMBAT.Retour.Escalade.Hisse": "Se hisse !",
+  "DND5ECOMBAT.Menu.NonLetalActiver": "Coups non létaux : activer",
+  "DND5ECOMBAT.Menu.NonLetalCouper": "Coups non létaux : couper",
+  "DND5ECOMBAT.Menu.PremiersSoins": "Premiers soins à {name} (Médecine DD 10)",
+  "DND5ECOMBAT.Assomme.Actif": "Coups non létaux",
+  "DND5ECOMBAT.Assomme.Inactif": "Coups létaux",
+  "DND5ECOMBAT.Assomme.Reveil": "{name} reprend connaissance.",
+  "DND5ECOMBAT.Assomme.SoinsReveil": "{name} reprend connaissance grâce aux premiers soins de {by}.",
+  "DND5ECOMBAT.Assomme.SoinsRates": "Premiers soins ratés",
+  "DND5ECOMBAT.Mort.Assomme": "{name} est assommé par {by} : 1 PV, Inconscient jusqu'à ce qu'il regagne des PV ou qu'on lui donne les premiers soins (Médecine DD 10).",
+  "DND5ECOMBAT.Surprise.Raison": "surpris",
+  "DND5ECOMBAT.Reglage.surpriseFromStealth.Nom": "Surprise par un ennemi caché",
+  "DND5ECOMBAT.Reglage.surpriseFromStealth.Aide": "Au jet d'initiative, une créature qui ne perçoit pas un ennemi caché de la scène (Furtivité) est surprise : Désavantage. L'état « Surpris » de dnd5e, posé à la main, fait la même chose ; le moteur le retire une fois l'initiative lancée."
 }

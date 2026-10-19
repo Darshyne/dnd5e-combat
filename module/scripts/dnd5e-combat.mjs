@@ -100,6 +100,8 @@ import { registerSummonHandover } from "./runtime/summon-handover.mjs";
 import { registerAutoTranslate } from "./runtime/auto-translate.mjs";
 import { registerCriticals } from "./runtime/criticals.mjs";
 import { registerFalls } from "./runtime/falls.mjs";
+import { registerKnockout } from "./runtime/knockout.mjs";
+import { isNonLethal, setNonLethal, isKnockedOut } from "./adapter/knockout.mjs";
 import { describeRoutes, skippedRoutes } from "./runtime/router.mjs";
 import { testApi } from "./runtime/testing.mjs";
 import { registerPointer } from "./ui/pointer.mjs";
@@ -138,6 +140,7 @@ import { openDiagnostic } from "./ui/diagnostic.mjs";
  * `reports` : les items signalés en partie par le MJ, et le panneau du bilan (ui/automation.mjs, SPEC §9.2).
  * `perf` : le relevé des temps du moteur sur ce client (§98, runtime/perf.mjs) — `table()`, `report()`, `longTasks()`, `reset()`.
  * `mcp` : fonctions de test appelées par le connecteur (`call-module-api`), arguments et résultats en JSON (runtime/testing.mjs).
+ * `nonLethal` : `get(actor)`, `set(actor, on)` — les coups non létaux de l'acteur (§210, l'interrupteur de DAS UI) ; `knockedOut(actor)`.
  * `ui` : ce qu'une interface externe lit (§40.1, ui/api.mjs) — `budget(combatant)`, `movement(token)`, `issues(activity)`, `cost(activity)` (§137), `cell(activity)` (les deux en un calcul, §205),
  *   `ritual(activity)` (§139 : « none » / « ritual » / « ask »),
  *   `multiattackLeft(actor)`, `light(token)`, `globalLight()`. Le moteur ne connaît aucune interface.
@@ -170,7 +173,7 @@ import { openDiagnostic } from "./ui/diagnostic.mjs";
  */
 const state = {
   active: false, reason: null, unitFactors: null, routes: describeRoutes, content: contentApi, reports: reportsApi, mcp: testApi, perf: perfApi,
-  ui: uiApi, light: lightState, approach, scrolls: { spellOf: scrollSpellOf }, basics: { data: basicActionData, take: takeBasicAction }, path: pathTo,
+  ui: uiApi, light: lightState, approach, nonLethal: { get: isNonLethal, set: setNonLethal, knockedOut: isKnockedOut }, scrolls: { spellOf: scrollSpellOf }, basics: { data: basicActionData, take: takeBasicAction }, path: pathTo,
   flee: fleeFrom, save: requestSave, drop: dropHeldBy,
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
   level: automationLevel, levelAtLeast, skippedRoutes,
@@ -301,7 +304,8 @@ Hooks.once("init", () => {
   gated(registerGrapple);
   gated(registerProne);
   gated(registerClimb);   // §192 : grimper aux murs, chute du grimpeur qui ne tient plus
-  gated(registerFalls);   // §208 : chute automatique (« En chute » de dnd5e, vol à Vitesse 0), Pas du vent
+  gated(registerFalls);
+  gated(registerKnockout);   // §210 : coups non létaux (réveil, premiers soins), surprise à l'initiative   // §208 : chute automatique (« En chute » de dnd5e, vol à Vitesse 0), Pas du vent
   gated(registerSpeedGrants);   // §195 : vitesses que le contenu accorde (Athlète : escalade)
   gated(registerBreaks);
   gated(registerCure);

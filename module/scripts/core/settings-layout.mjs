@@ -17,7 +17,7 @@ export const SETTINGS_TABS = Object.freeze([
   { id: "movement", icon: "fa-solid fa-shoe-prints",
     keys: ["altitude", "climbRules", "autoFall", "volumes", "faceMovement", "clickToMove", "pathPreview", "teleportPlanning"] },
   { id: "vision", icon: "fa-solid fa-eye",
-    keys: ["vision", "passivePerception", "twilightDarkness", "visionCones", "coneAngles", "stealthRules", "factionRules", "factionIcons",
+    keys: ["vision", "passivePerception", "twilightDarkness", "visionCones", "coneAngles", "stealthRules", "surpriseFromStealth", "factionRules", "factionIcons",
       "lightIndicator"],
     tools: [{ id: "factions", icon: "fa-solid fa-flag" }] },
   { id: "mouse", icon: "fa-solid fa-crosshairs",

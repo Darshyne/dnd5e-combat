@@ -23,6 +23,7 @@ import { closeRollDialogAfter } from "./dialogs.mjs";
 import { transformsAtZero, standsAtZero } from "./coven.mjs";
 import { regenerationOf } from "./regeneration.mjs";
 import { relentlessAtZero } from "./rage.mjs";
+import { knockOutAtZero, KNOCKED_OUT_FLAG } from "./knockout.mjs";
 import { endureAtZero } from "./species.mjs";
 import { wardAtZero } from "./ward.mjs";
 import { planFortitude, pendingFortitude } from "./fortitude.mjs";
@@ -199,6 +200,12 @@ export function planDamageAtZero(actor, amount, updates, options) {
   // §16.11 : ce qu'une réserve (Égide arcanique) a absorbé, inscrit plus tôt dans ce même hook, n'atteint pas la créature.
   const incoming = Math.max(0, amount - (options?.[MODULE_ID]?.absorbed ?? 0));
   const through = incoming - Math.min(hp.temp ?? 0, incoming);
+  // §210 : un coup de mêlée non létal — à 1 PV au lieu de 0, Inconsciente (posé après, `settleDamageAtZero`).
+  const knocker = knockOutAtZero(actor, through, updates, options);
+  if ( knocker ) {
+    options[MODULE_ID] = { ...(options[MODULE_ID] ?? {}), knockedOut: knocker };
+    return;
+  }
   // §73 : Protection contre la mort — à 1 PV au lieu de 0 (même tuée sur le coup : elle n'y tombe pas), le sort prend fin.
   const warded = wardAtZero(actor, through, updates);
   if ( warded ) {
@@ -231,6 +238,14 @@ export function planDamageAtZero(actor, amount, updates, options) {
 
 /** `dnd5e.applyDamage` : pose Mort, retire Stabilisé, et le dit dans le chat. */
 export async function settleDamageAtZero(actor, amount, options) {
+  // §210 : assommée — Inconsciente à 1 PV, jusqu'à des PV regagnés ou des premiers soins (runtime/knockout.mjs).
+  const knocker = options?.[MODULE_ID]?.knockedOut;
+  if ( knocker ) {
+    await actor.setFlag(MODULE_ID, KNOCKED_OUT_FLAG, { by: knocker });
+    if ( !actor.statuses.has("unconscious") ) await actor.toggleStatusEffect("unconscious", { active: true });
+    await announce(actor, "Assomme", { by: knocker }, "knockedOut");
+    return { knockedOut: knocker };
+  }
   const outcome = options?.[MODULE_ID]?.death;
   if ( !outcome ) return null;
   if ( outcome.stable ) {

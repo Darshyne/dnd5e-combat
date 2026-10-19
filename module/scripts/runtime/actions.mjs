@@ -382,26 +382,29 @@ export async function jumpTo(token, point, { high=false, configure=true }={}) {
   const ground = groundUnder(token, { ...from, x: top.x, y: top.y });
   const rise = ft(ground - here);
   const options = jumpOptionsOf(token);
+  const info = { rise, ground, horizontal, high: options.high, long: options.long, runningStart: options.runningStart };
+  // Un refus : le message, et ce que l'appelant peut lire (raison, mesures).
+  const refuse = (key, data) => { ui.notifications.warn(loc(key, data)); return { done: false, reason: key, ...info }; };
   const fmt = n => `${Math.floor(toGrid(n) * 10) / 10} ${units}`;
   let elevation = here;
   let jump;
   if ( high ) {
-    if ( rise <= 1e-6 ) return ui.notifications.warn(loc("Saut.RienAMonter"));
+    if ( rise <= 1e-6 ) return refuse("Saut.RienAMonter");
     // La hauteur se saute ; le déplacement horizontal, lui, se paie à part.
     const up = jumpCost(rise, options.high, options.fixed);
-    if ( !up.ok ) return ui.notifications.warn(loc("Saut.TropHaut", { max: fmt(up.limit), elan: loc(options.runningStart ? "Saut.AvecElan" : "Saut.SansElan") }));
+    if ( !up.ok ) return refuse("Saut.TropHaut", { max: fmt(up.limit), elan: loc(options.runningStart ? "Saut.AvecElan" : "Saut.SansElan") });
     jump = { ...up, cost: up.cost + horizontal, distance: rise + horizontal };
     elevation = ground;
   } else {
-    if ( rise > 1e-6 ) return ui.notifications.warn(loc("Saut.PlusHaut"));
+    if ( rise > 1e-6 ) return refuse("Saut.PlusHaut");
     jump = { ...jumpCost(horizontal, options.long, options.fixed), distance: horizontal };
-    if ( !jump.ok ) return ui.notifications.warn(loc("Saut.TropLong", { max: fmt(jump.limit), elan: loc(options.runningStart ? "Saut.AvecElan" : "Saut.SansElan") }));
+    if ( !jump.ok ) return refuse("Saut.TropLong", { max: fmt(jump.limit), elan: loc(options.runningStart ? "Saut.AvecElan" : "Saut.SansElan") });
   }
   // Le déplacement qu'il reste ce tour (le même compte que l'anneau de l'interface : plafond du moteur moins l'historique du cœur).
   if ( options.combatant ) {
     const { spent, excluded } = historyCosts(token);
     const left = movementCap(token) - spent - excluded;
-    if ( toGrid(jump.cost) > left + 1e-6 ) return ui.notifications.warn(loc("Saut.PasAssez", { cost: fmt(jump.cost), left: `${Math.floor(left * 10) / 10} ${units}` }));
+    if ( toGrid(jump.cost) > left + 1e-6 ) return refuse("Saut.PasAssez", { cost: fmt(jump.cost), left: `${Math.floor(left * 10) / 10} ${units}` });
   }
   // Saut fixe : le cœur comptera toute la distance ; la différence est rendue, et le saut fixe est pris pour le tour.
   const refund = (jump.fixed && options.combatant) ? Math.max(0, toGrid(jump.distance - jump.cost)) : 0;
@@ -410,11 +413,14 @@ export async function jumpTo(token, point, { high=false, configure=true }={}) {
     await writeBudget(options.combatant, { ...b, fixedJump: true, jumped: (Number(b.jumped) || 0) + refund });
   }
   const dest = { ...top, elevation, snapped: true, action: "jump" };
-  const moved = await walkSafely(token, { waypoints: [dest], beyond: [], arrives: true });
+  // Saut en hauteur : s'élever d'abord sur place, puis avancer à cette hauteur — en ligne droite depuis le sol, la trajectoire passait
+  // sous le bord de la surface visée, que le cœur tient pour pleine par en dessous (le déplacement était refusé).
+  const rising = high ? [{ x: from.x, y: from.y, elevation, snapped: true, action: "jump" }] : [];
+  const moved = await walkSafely(token, { waypoints: [...rising, dest], beyond: [], arrives: true });
   if ( (moved === false) && jump.fixed && options.combatant ) {
     const b = readBudget(options.combatant);
     await writeBudget(options.combatant, { ...b, fixedJump: false, jumped: Math.max(0, (Number(b.jumped) || 0) - refund) });
-    return false;
+    return { done: false, reason: "moveRefused", ...info };
   }
   log(`${token.name}: ${high ? "high" : "long"} jump, ${Math.round(jump.distance)} ft for ${Math.round(jump.cost)} ft${jump.fixed ? " (fixed jump)" : ""}${options.runningStart ? "" : ", standing"}`);
   // Arrivée en terrain difficile : Dextérité (Acrobaties) DD 10, sinon À terre.
@@ -428,7 +434,7 @@ export async function jumpTo(token, point, { high=false, configure=true }={}) {
       notice(token, loc("Saut.ATerre"));
     }
   }
-  return true;
+  return { done: moved !== false, reason: null, fixed: jump.fixed, cost: jump.cost, ...info };
 }
 
 /**

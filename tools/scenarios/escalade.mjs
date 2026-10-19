@@ -145,10 +145,16 @@ export default {
         for ( let i = 0; (i < 30) && !checked; i++ ) { await pause(500); const c = await state(); if ( c.checkedAt !== before ) checked = c; }
         ctx.expect(!!checked, `au début de son tour, le test est redemandé (${checked ? "fait" : "non fait"})`);
         if ( checked ) {
-          await pause(3000);
-          const after = await state();
-          const held = after.climbing && (after.position.elevation === home.elevation + 5);
-          const fallen = !after.climbing && (after.position.elevation === home.elevation);
+          // La chute d'un échec prend du temps (statut d'escalade retiré par le MJ, fin d'animation, chute de dnd5e) : on attend l'un ou
+          // l'autre état stable, jusqu'à 12 s, plutôt qu'un délai fixe.
+          let after = null, held = false, fallen = false;
+          for ( let i = 0; i < 24; i++ ) {
+            await pause(500);
+            after = await state();
+            held = after.climbing && (after.position.elevation === home.elevation + 5);
+            fallen = !after.climbing && (after.position.elevation === home.elevation);
+            if ( (held && (i >= 5)) || fallen ) break;
+          }
           ctx.expect(held || fallen, `après le test : ${held ? "tient au mur" : fallen ? "a lâché prise et chute" : `état inattendu (élévation ${after.position.elevation}, mode ${after.position.movementAction})`}`);
           if ( held ) {
             const again = after.checkedAt;

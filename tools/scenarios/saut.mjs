@@ -67,7 +67,7 @@ export default {
 
     // 1. Hors combat : 3 cases (15 ft) passent, 4 cases (20 ft) non.
     let r = await jump(3);
-    ctx.expect((r.result === true) && ((r.after.x !== r.before.x) || (r.after.y !== r.before.y)), `hors combat, 3 cases : saute (limite ${r.options.long} ft, élan ${r.options.runningStart})`);
+    ctx.expect((r.result?.done === true) && ((r.after.x !== r.before.x) || (r.after.y !== r.before.y)), `hors combat, 3 cases : saute (limite ${r.options.long} ft, élan ${r.options.runningStart})`);
     await goHome();
     r = await jump(4);
     ctx.expect(r.after.x === r.before.x && r.after.y === r.before.y && r.warnings.some(w => /17/.test(w)), `4 cases : refusé (${r.warnings.join(" | ")})`);
@@ -80,7 +80,7 @@ export default {
     await ctx.engine("move", { tokenId: hero.id, cell: at(2) });
     const s0 = await spent();
     r = await jump(5);
-    ctx.expect(r.result === true && r.options.runningStart && r.options.long === 17, `après 2 cases de marche : élan, saut de 3 cases (limite ${r.options.long} ft)`);
+    ctx.expect(r.result?.done === true && r.options.runningStart && r.options.long === 17, `après 2 cases de marche : élan, saut de 3 cases (limite ${r.options.long} ft)`);
     const s1 = await spent();
     ctx.expect(Math.abs((s1 - s0) - 15) < 0.01, `le saut coûte 15 ft (${s0} → ${s1})`);
     await endCombat(); await goHome();
@@ -90,15 +90,18 @@ export default {
     const { _id, folder, ownership, _stats, ...bootsData } = boots;
     bootsData.system = { ...bootsData.system, equipped: true, attuned: true };
     const lent = await ctx.call("upsert-actor-item", { actorId: hero.actorId, itemData: bootsData, match: { path: "name", value: bootsData.name } });
-    ctx.restore(() => ctx.call("remove-embedded-item", { documentType: "Actor", id: hero.actorId, itemId: lent.id }).catch(() => {}));
+    const removeBoots = () => ctx.call("remove-embedded-item", { documentType: "Actor", id: hero.actorId, itemId: lent.id }).catch(() => {});
+    ctx.restore(removeBoots);
     await fight();
     r = await jump(6);
-    ctx.expect(r.result === true && r.options.fixed?.distance === 30 && r.budget?.fixedJump && Math.abs(r.budget.jumped - 20) < 0.01,
+    ctx.expect(r.result?.done === true && r.options.fixed?.distance === 30 && r.budget?.fixedJump && Math.abs(r.budget.jumped - 20) < 0.01,
       `Bottes : 6 cases sans élan, saut fixe (rendu ${r.budget?.jumped} ft)`);
     ctx.expect(Math.abs((await spent()) - 10) < 0.01, `déplacement compté : ${await spent()} ft (10 attendus)`);
     r = await jump(9);
     ctx.expect(r.after.x === r.before.x && r.after.y === r.before.y && r.options.fixed === null, `second saut fixe le même tour : refusé (${r.warnings.join(" | ")})`);
     await endCombat(); await goHome();
+    await removeBoots();   // sinon les Bottes (9 m) permettraient aussi les sauts en hauteur plus loin
+    await pause(500);
 
     // 4. Terrain difficile à l'arrivée : le test d'Acrobaties.
     const land = at(2);
@@ -112,8 +115,36 @@ export default {
       await pause(1500);
       const roll = (await ctx.messagesSince(since)).filter(m => (m.rolls ?? []).some(x => /d20/.test(x.formula ?? ""))).at(-1);
       const total = roll?.rolls?.[0]?.total;
-      ctx.expect(r.result === true && Number.isFinite(total), `atterrissage en terrain difficile : test d'Acrobaties (${total})`);
+      ctx.expect(r.result?.done === true && Number.isFinite(total), `atterrissage en terrain difficile : test d'Acrobaties (${total})`);
       ctx.expect(r.statuses.includes("prone") === (total < 10), `À terre ⇔ total < 10 (${total}, À terre ${r.statuses.includes("prone")})`);
+      await goHome();
+    }
+
+    // 4 bis. Saut en hauteur sur une estrade (Surface d'une case) : à 5 ft, la longueur est refusée, la hauteur passe (6 ft au plus) ;
+    // à 10 ft, trop haut.
+    const step = at(1);
+    const platform = async elevation => {
+      const r = await ctx.call("create-surface", { sceneId: (await ctx.scene()).sceneId, name: `DAS test estrade ${elevation} ft`, elevation,
+        shapes: [{ type: "rectangle", x: step.j * grid, y: step.i * grid, width: grid, height: grid }], blocks: ["move"] }).catch(err => ({ error: err.message }));
+      const id = r?.id ?? r?.regionId ?? r?.region?.id ?? r?.surface?.regionId;
+      if ( id ) ctx.restore(() => ctx.call("delete-scene-object", { type: "Region", objectId: id }).catch(() => {}));
+      return id ?? null;
+    };
+    const low = await platform(5);
+    if ( ctx.expect(!!low, "estrade à 5 ft posée") ) {
+      r = await jump(1);
+      ctx.expect(r.after.elevation === 0 && r.warnings.length, `saut en longueur sur l'estrade : refusé (${r.warnings.join(" | ")})`);
+      r = await jump(1, true);
+      ctx.expect(r.result?.done === true && r.after.elevation === 5, `saut en hauteur : sur l'estrade à ${r.after.elevation} ft (limite ${r.options.high} ft)`);
+      await goHome();
+      await ctx.call("delete-scene-object", { type: "Region", objectId: low }).catch(() => {});
+      await pause(500);
+    }
+    const tall = await platform(10);
+    if ( ctx.expect(!!tall, "estrade à 10 ft posée") ) {
+      r = await jump(1, true);
+      ctx.expect(r.after.elevation === 0 && r.warnings.some(w => /6/.test(w)), `estrade à 10 ft : trop haut (${r.warnings.join(" | ")})`);
+      await ctx.call("delete-scene-object", { type: "Region", objectId: tall }).catch(() => {});
       await goHome();
     }
 

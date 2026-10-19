@@ -15,6 +15,7 @@ import { combatantFor, readBudget, writeBudget, movementOf, speedOf, rangeOf, hi
 import { jumpCost, LANDING_DC } from "../core/jump.mjs";
 import { jumpOptionsOf, landsOnDifficult } from "../adapter/jump.mjs";
 import { groundUnder } from "../adapter/altitude.mjs";
+import { fallNow, fallingAloft } from "./altitude.mjs";
 import { overlapsVertically, verticalExtent, verticalGap } from "../core/space.mjs";
 import { pilotOf, pilotOfActor, commandPlan, commandDistance, commandActivities, summonerToken, isIntangible } from "../adapter/pilot.mjs";
 import { readUnitFactors, lengthIn } from "../adapter/units.mjs";
@@ -203,6 +204,8 @@ async function walkSafely(token, plan, flags={}) {
  */
 export async function moveTo(token, point, { action=null, level=null }={}) {
   if ( isGrappled(token) ) return ui.notifications.warn(loc("Empoignade.Immobile", { name: token.name }));
+  // §218 : « En chute » en l'air — il tombe d'abord (dégâts compris), le déplacement se refait une fois au sol.
+  if ( fallingAloft(token) ) { await fallNow(token); return; }
   const cell = cellUnder(token, point);
   // §18.26 : un clic sur un escalier — aller à côté, puis y entrer en marchant : le cœur demande alors monter ou descendre.
   const stairs = (!level || (level === token._source.level)) ? stairsEntry(token, cell) : null;
@@ -433,6 +436,12 @@ export async function jumpTo(token, point, { high=false, configure=true }={}) {
     return { done: false, reason: "moveRefused", ...info };
   }
   log(`${token.name}: ${high ? "high" : "long"} jump, ${Math.round(jump.distance)} ft for ${Math.round(jump.cost)} ft${jump.fixed ? " (fixed jump)" : ""}${options.runningStart ? "" : ", standing"}`);
+  // §218 : retombé au-dessus du vide (sauté d'un toit, d'un étage vers la cour) — la chute suit aussitôt, en combat comme hors combat,
+  // d'un niveau à l'autre, dégâts compris (la chute de dnd5e).
+  if ( (token._source.elevation ?? 0) > groundUnder(token) + 1e-6 ) {
+    log(`${token.name}: lands over a drop — falls`);
+    if ( await fallNow(token) ) return { done: true, reason: null, fell: true, fixed: jump.fixed, cost: jump.cost, ...info };
+  }
   // Arrivée en terrain difficile : Dextérité (Acrobaties) DD 10, sinon À terre.
   const center = { x: top.x + ((token.width ?? 1) * grid.sizeX / 2), y: top.y + ((token.height ?? 1) * grid.sizeY / 2) };
   if ( landsOnDifficult(token, center, elevation) ) {

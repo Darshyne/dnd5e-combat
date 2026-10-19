@@ -13,8 +13,9 @@ import { MODULE_ID } from "../constants.mjs";
 import { combatantFor, readBudget, writeBudget, committedPosition } from "../adapter/turn.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { actorOfEffect } from "../adapter/grapple.mjs";
-import { groundUnder } from "../adapter/altitude.mjs";
+import { groundUnder, levelAt } from "../adapter/altitude.mjs";
 import { fallLikeDnd5e, climbFallInProgress } from "./climb.mjs";
+import { setFallAction } from "./altitude.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log, loc, say } from "./shared.mjs";
@@ -89,7 +90,28 @@ async function onPostUse(activity) {
   log(`${activity.actor.name}: jump distance doubled for the turn (${activity.name})`);
 }
 
+/**
+ * §218 : la chute d'un token en l'air vers son sol, que dnd5e ne fait pas — posé à la base d'un niveau au-dessus du vide (sur l'étage,
+ * au-dessus de la cour), dnd5e le croit sur le plancher de ce niveau (documents/token.mjs : `_findSupportingSurface`, repli sur la base
+ * du niveau) ; le moteur, lui, voit le sol de la cour. Descendu sur ce sol et sur son niveau, carte de dégâts de dnd5e. MJ actif ou
+ * propriétaire.
+ */
+async function dropToGround(token) {
+  const pos = committedPosition(token);
+  const ground = groundUnder(token, pos);
+  const distance = (pos.elevation ?? 0) - ground;
+  if ( distance <= 1e-6 ) return false;
+  const level = levelAt(token.parent, ground, pos.level ?? token._source.level);
+  await token.move([{ action: "fall", elevation: ground, ...((level !== token._source.level) ? { level } : {}) }],
+    { animate: false, dnd5e: { fall: { distance } } });
+  if ( token.actor?.statuses?.has("falling") ) await token.actor.toggleStatusEffect("falling", { active: false });
+  await globalThis.dnd5e?.rules?.postFallDamage?.([token], distance);
+  log(`${token.name}: falls ${distance} to the ground below (engine, level ${level})`);
+  return true;
+}
+
 export function registerFalls() {
+  setFallAction(async token => (await fallLikeDnd5e(token)) || dropToGround(token));
   game.settings.register(MODULE_ID, AUTO_FALL_SETTING, {
     name: `DND5ECOMBAT.Reglage.${AUTO_FALL_SETTING}.Nom`, hint: `DND5ECOMBAT.Reglage.${AUTO_FALL_SETTING}.Aide`, scope: "world", config: true,
     type: String, choices: Object.fromEntries(MODES.map(m => [m, `DND5ECOMBAT.Reglage.${AUTO_FALL_SETTING}.${m}`])), default: "combat"

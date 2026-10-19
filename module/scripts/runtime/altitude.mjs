@@ -30,6 +30,23 @@ import { route } from "./router.mjs";
 import { loc, log, notice } from "./shared.mjs";
 
 export const ALTITUDE_SETTING = "altitude";
+
+/**
+ * §218 : faire tomber un token tout de suite (la chute de dnd5e, dégâts compris) — branché par runtime/falls.mjs (`setFallAction`) :
+ * ce fichier n'importe pas celui des chutes, qui dépend de l'escalade, qui dépend de celui-ci.
+ */
+let fallAction = null;
+export const setFallAction = fn => { fallAction = fn; };
+export async function fallNow(token) {
+  return fallAction ? fallAction(token) : false;
+}
+
+/** Le token est-il « En chute » de dnd5e, en l'air, dans un mode au sol (ni vol, ni escalade) ? */
+export function fallingAloft(token) {
+  if ( !token.actor?.statuses?.has("falling") ) return false;
+  if ( placementOf(token._source.movementAction) !== "ground" ) return false;
+  return (token._source.elevation ?? 0) > boundsUnder(token, token._source).ground + 1e-6;
+}
 const BETTER_LEVELS = "baileywiki-better-levels";
 
 const MOVEMENT_FIELDS = ["x", "y", "elevation", "level", "width", "height", "depth", "shape"];
@@ -229,6 +246,16 @@ function verticalMove(token, last) {
 function onPreMoveToken(token, movement, operation) {
   const flags = operation?.[MODULE_ID] ?? continuedFlags(token, movement);   // §99 : morceau enchaîné par le cœur
   if ( flags?.cleared || flags?.altitude || operation?.isUndo || !concerned(token) ) return true;
+  // §218 : la chute de dnd5e (`plummet` : un pas `fall`, d'un niveau à l'autre s'il le faut, documents/token.mjs:398) passe telle quelle
+  // — réalignée ici, elle était refusée : les dégâts tombaient mais le token restait en l'air, et chaque mouvement relançait une chute.
+  if ( [...movement.passed.waypoints, ...movement.pending.waypoints].some(w => w.action === "fall") ) return true;
+  // §218 : un token « En chute » qu'on veut bouger tombe d'abord (dégâts compris) — il était recalé au sol en silence, d'un niveau à
+  // l'autre, sans dégâts. Le déplacement demandé est abandonné : on le refait une fois au sol.
+  if ( fallingAloft(token) ) {
+    log(`${token.name}: falling — falls before moving`);
+    fallNow(token).catch(err => console.error(`${MODULE_ID} | fall before moving`, err));
+    return false;
+  }
   const waypoints = [...movement.passed.waypoints, ...movement.pending.waypoints];
   if ( !waypoints.length ) return true;
   const origin = movement.origin;

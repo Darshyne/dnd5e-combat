@@ -21,8 +21,8 @@ import { sleep } from "./shared.mjs";
 import { cellArg, finite, gmOnly, positionJson, viewedToken, waypointOf, windows } from "./testing-shared.mjs";
 import { budget } from "./testing-rules.mjs";
 import { wall } from "./testing-areas.mjs";
-import { startClimb, dropDown as dropDownIntent, canClimb, climbRoom, canClimbCeiling, climbToCeiling, ceilingRoom, canClimbDown, climbDown as climbDownIntent, descentRoom, climbStateOf, climbHoldsAt, climbToward as climbTowardIntent } from "./climb.mjs";
-import { wallsNear, isClimbing, isOnCeiling, climbingOf, climbRules, canWalkCeilings, ceilingPerchFor, FLIP_FLAG, inSlipperyZone, canWalkCeilingsAt, acrobaticFor } from "../adapter/climb.mjs";
+import { hoistOnto, startClimb, dropDown as dropDownIntent, canClimb, climbRoom, canClimbCeiling, climbToCeiling, ceilingRoom, canClimbDown, climbDown as climbDownIntent, descentRoom, climbStateOf, climbHoldsAt, climbToward as climbTowardIntent } from "./climb.mjs";
+import { wallsNear, isClimbing, isOnCeiling, climbingOf, climbRules, canWalkCeilings, ceilingPerchFor, FLIP_FLAG, inSlipperyZone, canWalkCeilingsAt, acrobaticFor, ledgesOf } from "../adapter/climb.mjs";
 import { speedGrantEffects } from "./speed-grants.mjs";
 import { MODE_STATUSES } from "../adapter/conditions.mjs";
 
@@ -264,6 +264,18 @@ export function climbState({ tokenId }) {
     grants: speedGrantEffects(token.actor).map(e => ({ id: e.id, name: e.name, changes: (e.system?.changes ?? e.changes ?? []).map(c => ({ key: c.key, value: c.value })) })),
     // §196 : ce que publie `api.climb.state`.
     api: climbStateOf(token) };
+}
+
+/** §209 : se hisser sur le rebord `dir` (« n », « s », « e », « w » ; le premier sinon), comme l'entrée de menu. */
+export async function hoist({ tokenId, dir=null }) {
+  const token = viewedToken({ tokenId });
+  const before = positionJson(token);
+  const ledges = ledgesOf(token);
+  const ledge = ledges.find(l => !dir || (l.dir === dir)) ?? null;
+  const done = ledge ? await hoistOnto(token, ledge) : false;
+  await sleep(800);
+  return { done, ledges: ledges.map(({ dir, ground, rise, level }) => ({ dir, ground, rise, level })), before, after: positionJson(token),
+    climbing: isClimbing(token) };
 }
 
 /** §196 : `api.climb.holds` sur une case (`cell` : { i, j }) — le grimpeur y tiendrait-il ? */

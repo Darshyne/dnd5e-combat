@@ -174,3 +174,18 @@ describe("escalade, contenu (§195)", () => {
     expect(immune).toEqual({ key: "system.traits.ci.value", type: "add", value: "falling" });
   });
 });
+
+describe("se hisser sur un rebord (§209)", async () => {
+  const { ledgeRise, ledgeCost } = await import("../module/scripts/core/climb.mjs");
+  it("le rebord doit être au-dessus des pieds et à portée de la tête, avec de la place au-dessus", () => {
+    expect(ledgeRise({ feet: 15, height: 5, ground: 20 })).toBe(5);          // la tête au niveau du toit
+    expect(ledgeRise({ feet: 15, height: 5, ground: 25 })).toBeNull();       // trop haut
+    expect(ledgeRise({ feet: 15, height: 5, ground: 15 })).toBeNull();       // pas plus haut que les pieds
+    expect(ledgeRise({ feet: 15, height: 5, ground: 20, ceiling: 22 })).toBeNull();   // pas la place de s'y tenir
+    expect(ledgeRise({ feet: 15, height: 5, ground: NaN })).toBeNull();
+  });
+  it("coût : la hauteur au prix de l'escalade, plus une case", () => {
+    expect(ledgeCost({ rise: 5, multiplier: 2, gridDistance: 5 })).toBe(15);
+    expect(ledgeCost({ rise: 5, multiplier: 1, gridDistance: 5 })).toBe(10);
+  });
+});

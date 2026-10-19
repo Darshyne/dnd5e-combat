@@ -13,14 +13,14 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import {
-  segmentTouchesRect, isClimbableWall, climbSpeed, climbMultiplier, climbFallReason, grantsCeiling, ceilingPerch, acrobaticAllowed
+  segmentTouchesRect, isClimbableWall, climbSpeed, climbMultiplier, climbFallReason, grantsCeiling, ceilingPerch, acrobaticAllowed, ledgeRise
 } from "../core/climb.mjs";
 import { identifierOf, contentOf } from "./content.mjs";
 import { originItemOf } from "./facts.mjs";
 import { isConcentrationEffect } from "./concentration.mjs";
 import { settingOr } from "./settings.mjs";
 import { committedPosition, positionOf } from "./turn.mjs";
-import { groundUnder, boundsUnder, speedsOf } from "./altitude.mjs";
+import { groundUnder, boundsUnder, speedsOf, levelAt } from "./altitude.mjs";
 
 export const CLIMB_RULES_SETTING = "climbRules";
 /** Un mur tracé un peu à côté du bord de la case compte encore (fraction d'une case). */
@@ -201,4 +201,44 @@ export function acrobaticFor(token) {
   const combat = game.combat?.started ? game.combat : null;
   const inCombat = !!combat?.combatants.some(c => c.tokenId === token.id);
   return acrobaticAllowed({ armor: !!ac.equippedArmor, shield: !!ac.equippedShield, inCombat, ownTurn: combat?.combatant?.tokenId === token.id });
+}
+
+/* -------------------------------------------- */
+/*  Se hisser (§209)                             */
+/* -------------------------------------------- */
+
+/** Les quatre directions d'un rebord, et leur nom (clé de traduction `Escalade.Dir.*`). */
+const LEDGE_DIRS = Object.freeze([{ di: -1, dj: 0, dir: "n" }, { di: 1, dj: 0, dir: "s" }, { di: 0, dj: 1, dir: "e" }, { di: 0, dj: -1, dir: "w" }]);
+
+/**
+ * §209 : les rebords où ce grimpeur peut se hisser maintenant — une case voisine (nord, sud, est, ouest) dont le sol est plus haut que ses
+ * pieds et à portée de sa tête, avec la place de s'y tenir (`ledgeRise`). Au mur seulement (pas au plafond). Rend pour chacun la case,
+ * le point d'arrivée, le sol, la hauteur à monter et le niveau où il prend pied (le sol à 20 ft d'un niveau 0-20 est le bas du suivant).
+ * @returns {{dir: string, x: number, y: number, ground: number, rise: number, level: string}[]}
+ */
+export function ledgesOf(token) {
+  if ( !isClimbing(token) || isOnCeiling(token) ) return [];
+  const scene = token.parent;
+  const grid = scene?.grid;
+  if ( !grid?.size ) return [];
+  const pos = committedPosition(token);
+  const feet = pos.elevation ?? 0;
+  const height = (positionOf({ ...token._source, ...pos }).depth ?? 1) * grid.distance;
+  const out = [];
+  // Le sol d'un niveau ne compte que ses Surfaces de `[bas, haut[` (adapter/altitude.mjs, `groundAt`) : un toit à 20 ft n'est pas le sol du
+  // niveau 0-20 (c'en est le plafond), mais celui du niveau qui commence à 20. On regarde donc le niveau du grimpeur et celui de sa tête.
+  const own = pos.level ?? token._source.level;
+  const levels = [...new Set([own, levelAt(scene, feet + height, own)])];
+  for ( const { di, dj, dir } of LEDGE_DIRS ) {
+    let best = null;
+    for ( const level of levels ) {
+      const at = { ...pos, level, x: pos.x + (dj * grid.sizeX), y: pos.y + (di * grid.sizeY) };
+      const { ground, ceiling } = boundsUnder(token, at);
+      const rise = ledgeRise({ feet, height, ground, ceiling: ceiling + height });
+      if ( (rise === null) || (best && (ground <= best.ground)) ) continue;
+      best = { dir, x: at.x, y: at.y, ground, rise, level: levelAt(scene, ground, level) };
+    }
+    if ( best ) out.push(best);
+  }
+  return out;
 }

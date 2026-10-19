@@ -130,6 +130,9 @@ function avoidRegionsFor(token) {
  * ne vit que le temps d'une recherche.
  */
 const SEARCH_RADIUS = 80;   // cases : au-delà, on ne cherche pas
+// §209 : au mur, le chemin reste près du départ — hors combat rien ne le bornait, et l'A* d'un grimpeur faisait le tour d'un bâtiment le
+// long de ses murs (vu à Restored Keep : une cinquantaine de cases, porte comprise, pour une case voisine de l'autre côté du mur).
+const CLIMB_RADIUS = 12;
 
 /**
  * §18.25 : une porte que le chemin peut franchir en l'ouvrant — fermée, non verrouillée, et pour un joueur ni secrète (il
@@ -290,6 +293,29 @@ export function worldFor(token, { throughDoors=false }={}) {
   // §196 (lot 4) : au mur, on ne marche que le long d'un mur à grimper (ou là où le sol remonte jusqu'à soi) — sans quoi un grimpeur
   // à 10 ft s'éloignait du mur en l'air (clic, manette, `api.approach`). Mis en cache par case : `wallsNear` interroge les arêtes.
   const onWall = !onCeiling && isClimbing(token) && (ownElevation > groundOf(start) + 1e-6);
+  // §209 : une porte n'est pas ouverte à la hauteur d'un grimpeur (un mur de niveau est plein du sol au plafond, son ouverture non) — à
+  // 5 ft ou plus au-dessus du sol, un pas qui la franchit est refusé, ouverte ou fermée.
+  const doorAbove = onWall && ((ownElevation - groundOf(start)) >= grid.distance - 1e-6);
+  const highDoorCache = new Map();
+  const doorOnStep = (from, to) => {
+    const id = `${cellKey(from)}>${cellKey(to)}`;
+    if ( !highDoorCache.has(id) ) {
+      const a = center(from);
+      const b = center(to);
+      const edges = scene.levels?.get?.(from.level ?? ownLevel)?.edges;
+      let found = false;
+      try {
+        const rect = new PIXI.Rectangle(Math.min(a.x, b.x) - 1, Math.min(a.y, b.y) - 1, Math.abs(a.x - b.x) + 2, Math.abs(a.y - b.y) + 2);
+        for ( const edge of edges?.getEdges?.(rect, { includeOuterBounds: false }) ?? [] ) {
+          const wall = edge.object?.document ?? edge.object;
+          if ( (edge.type !== "wall") || !wall || (wall.door === CONST.WALL_DOOR_TYPES.NONE) ) continue;
+          if ( foundry.utils.lineSegmentIntersects(a, b, edge.a, edge.b) ) { found = true; break; }
+        }
+      } catch { found = false; }
+      highDoorCache.set(id, found);
+    }
+    return highDoorCache.get(id);
+  };
   const wallCache = new Map();
   const wallHolds = cell => {
     if ( !onWall || !isOwn(cell) ) return true;
@@ -364,6 +390,8 @@ export function worldFor(token, { throughDoors=false }={}) {
       if ( inStairs(to) && !inStairs(from) ) return false;   // on n'entre pas dans un escalier en marchant (voir ci-dessus)
       if ( (placement === "ground") && ((from.level ?? ownLevel) === (to.level ?? ownLevel)) && !groundStepAllowed(groundOf(from), groundOf(to), clearance) ) return false;
       if ( !ceilingHolds(to) || !wallHolds(to) ) return false;
+      if ( onWall && (cellDistance(start, to) > CLIMB_RADIUS) ) return false;
+      if ( doorAbove && doorOnStep(from, to) ) return false;
       return !wallBetween(from, to);
     },
     canEnd: cell => {

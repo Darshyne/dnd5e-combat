@@ -1347,5 +1347,14 @@
   "DND5ECOMBAT.Reglage.autoFall.Aide": "Quand dnd5e pose l'état « En chute » (une créature en l'air qui ne peut plus s'y tenir : sans vol, ou volante mais À terre ou Neutralisée), la chute a lieu tout de suite au lieu d'attendre un clic du MJ sur l'icône, et ses dégâts sont appliqués. Une créature volante Agrippée ou Entravée tombe aussi (règles 2024).",
   "DND5ECOMBAT.Reglage.autoFall.off": "Non (au clic du MJ)",
   "DND5ECOMBAT.Reglage.autoFall.combat": "En combat",
-  "DND5ECOMBAT.Reglage.autoFall.always": "Toujours"
+  "DND5ECOMBAT.Reglage.autoFall.always": "Toujours",
+  "DND5ECOMBAT.Menu.SeHisser": "Se hisser sur le rebord",
+  "DND5ECOMBAT.Menu.SeHisserVers": "Se hisser sur le rebord ({dir})",
+  "DND5ECOMBAT.Escalade.Dir.n": "nord",
+  "DND5ECOMBAT.Escalade.Dir.s": "sud",
+  "DND5ECOMBAT.Escalade.Dir.e": "est",
+  "DND5ECOMBAT.Escalade.Dir.w": "ouest",
+  "DND5ECOMBAT.Escalade.HisserPasAssez": "{name} : pas assez de déplacement pour se hisser (il faut {cost}, il reste {left}).",
+  "DND5ECOMBAT.Escalade.SeHisse": "{name} se hisse sur le rebord.",
+  "DND5ECOMBAT.Retour.Escalade.Hisse": "Se hisse !"
 }

@@ -179,3 +179,24 @@ export function acrobaticAllowed({ armor=false, shield=false, inCombat=false, ow
  */
 export const acrobaticFallDue = ({ acrobatic=false, climbing=false, aboveGround=false, onCeiling=false }={}) =>
   acrobatic && climbing && aboveGround && !onCeiling;
+
+/**
+ * §209 : se hisser sur un rebord (toit, chemin de ronde, étage) depuis le mur où l'on grimpe. Le sol de la case voisine doit être plus haut
+ * que les pieds du grimpeur et pas plus haut que sa tête (il l'atteint des mains), et il faut assez de place au-dessus pour s'y tenir.
+ * Rend la hauteur qui reste à monter, ou null si le rebord n'est pas à sa portée.
+ * @param {{feet: number, height: number, ground: number, ceiling?: number}} data
+ *   `height` : la hauteur du token ; `ground` : le sol de la case voisine ; `ceiling` : le plafond au-dessus d'elle (Infinity : aucun).
+ * @returns {number|null}
+ */
+export function ledgeRise({ feet, height, ground, ceiling=Infinity }) {
+  const eps = 1e-6;
+  if ( !Number.isFinite(ground) || !(ground > feet + eps) || (ground > feet + height + eps) ) return null;
+  if ( (ceiling - ground) < height - eps ) return null;
+  return ground - feet;
+}
+
+/**
+ * §209 : ce que coûte se hisser : la hauteur qui reste, au prix de l'escalade (`multiplier` : 2 sans vitesse d'escalade), plus la case où
+ * l'on prend pied. Unités de la grille.
+ */
+export const ledgeCost = ({ rise, multiplier, gridDistance }) => (rise * multiplier) + gridDistance;

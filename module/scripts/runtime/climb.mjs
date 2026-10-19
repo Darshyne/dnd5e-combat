@@ -24,11 +24,11 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { CLIMB_DC, CEILING_DC, CLIMB_CHECK_SECONDS, climbableCells, climbCheckDue, flippedScale, acrobaticFallDue } from "../core/climb.mjs";
+import { CLIMB_DC, CEILING_DC, CLIMB_CHECK_SECONDS, climbableCells, climbCheckDue, flippedScale, acrobaticFallDue, ledgeCost } from "../core/climb.mjs";
 import { placementOf } from "../core/altitude.mjs";
 import {
   CLIMB_RULES_SETTING, CLIMB_FLAG, FLIP_FLAG, climbRules, isClimbing, isOnCeiling, wallsNear, climbingOf, climbFallReasonFor, aboveGround,
-  canWalkCeilingsAt, canWalkCeilings, ceilingPerchFor, hangsAt, acrobaticFor
+  canWalkCeilingsAt, canWalkCeilings, ceilingPerchFor, hangsAt, acrobaticFor, ledgesOf
 } from "../adapter/climb.mjs";
 import { boundsUnder, groundUnder, groundModeOf, modeRefusalFor } from "../adapter/altitude.mjs";
 import { MODE_STATUSES, setStatus } from "../adapter/conditions.mjs";
@@ -38,7 +38,7 @@ import { actorOfEffect } from "../adapter/grapple.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { pilotOf, isIntangible } from "../adapter/pilot.mjs";
 import { rulerShown, continuedFlags } from "../adapter/movement.mjs";
-import { historyCosts, positionOf, tokenCenter } from "../adapter/turn.mjs";
+import { historyCosts, positionOf, tokenCenter, combatantFor, readBudget, writeBudget } from "../adapter/turn.mjs";
 import { settingOr } from "../adapter/settings.mjs";
 import { ALTITUDE_SETTING } from "./altitude.mjs";
 import { FACING_SETTING } from "./facing.mjs";
@@ -280,6 +280,49 @@ export async function climbDown(token, { cells=null }={}) {
     return false;
   }
   log(`${token.name}: climbs down ${n} cell(s), ${from} → ${token._source.elevation}`);
+  return true;
+}
+
+/**
+ * §209 : se hisser du mur sur un rebord (toit, chemin de ronde, étage) — la case voisine dont le sol est à portée de la tête
+ * (`ledgesOf`). Le token y prend pied par un pas `displace` (par-dessus le haut du mur : ni murs ni Surfaces ne l'arrêtent), sur le
+ * niveau de ce sol (le sol à 20 ft d'un niveau 0-20 est le bas du suivant) ; en combat, la hauteur restante au prix de l'escalade plus
+ * une case (`ledgeCost`), comptée au budget (`climbed`, comme un escalier). Puis le mode au sol, le drapeau d'escalade retiré, et la vue
+ * suit le token à l'étage. Sur le client de son propriétaire.
+ * @param {TokenDocument} token
+ * @param {{dir: string, x: number, y: number, ground: number, rise: number, level: string}} ledge
+ */
+export async function hoistOnto(token, ledge) {
+  if ( !token?.isOwner || !ledge ) return false;
+  const grid = token.parent.grid;
+  const cost = ledgeCost({ rise: ledge.rise, multiplier: climbingOf(token).multiplier, gridDistance: grid.distance });
+  const combatant = combatantFor(token.actor);
+  if ( combatant ) {
+    const { spent, excluded } = historyCosts(token);
+    const left = movementCap(token) - spent - excluded;
+    if ( cost > left + 1e-6 ) {
+      ui.notifications.warn(loc("Escalade.HisserPasAssez", { name: token.name, cost: `${cost} ${grid.units}`, left: `${Math.max(0, Math.floor(left * 10) / 10)} ${grid.units}` }));
+      return false;
+    }
+  }
+  const from = token._source.level;
+  const step = { x: ledge.x, y: ledge.y, elevation: ledge.ground, action: "displace", ...((ledge.level !== from) ? { level: ledge.level } : {}) };
+  await token.move([step], { [MODULE_ID]: { altitude: true, planned: true, cleared: true }, constrainOptions: { ignoreWalls: true } });
+  if ( Math.abs((token._source.elevation ?? 0) - ledge.ground) > 1e-6 ) {
+    ui.notifications.warn(loc("Escalade.Impossible", { name: token.name }));
+    return false;
+  }
+  if ( combatant ) {
+    const budget = readBudget(combatant);
+    await writeBudget(combatant, { ...budget, climbed: (Number(budget.climbed) || 0) + cost });
+  }
+  await token.update({ movementAction: groundModeFor(token), [`flags.${MODULE_ID}.${CLIMB_FLAG}`]: null }, ALTITUDE_OPTIONS);
+  if ( (token._source.level !== from) && token.parent.isView && (canvas.level?.id === from) && token.object?.controlled ) {
+    await token.parent.view({ level: token._source.level, controlledTokens: [token.id] });
+  }
+  notice(token, loc("Retour.Escalade.Hisse"));
+  await say({ token }, locEsc("Escalade.SeHisse", { name: token.name }));
+  log(`${token.name}: hoists up onto the ledge (${ledge.dir}, ${ledge.rise} up, level ${from} → ${token._source.level}, ${combatant ? `${cost} of movement` : "out of combat"})`);
   return true;
 }
 
@@ -615,6 +658,14 @@ export function climbEntries(token) {
   }
   if ( canClimbCeiling(token) ) entries.push({ icon: "fa-solid fa-spider", label: loc("Menu.GrimperPlafond"), run: () => climbToCeiling(token) });
   if ( canClimbDown(token) ) entries.push({ icon: "fa-solid fa-arrow-down", label: loc("Menu.DescendreMur"), run: () => climbDown(token) });
+  // §209 : se hisser sur un rebord à portée — une entrée par direction quand il y en a plusieurs.
+  if ( token?.isOwner ) {
+    const ledges = ledgesOf(token);
+    for ( const ledge of ledges ) {
+      const label = (ledges.length > 1) ? loc("Menu.SeHisserVers", { dir: loc(`Escalade.Dir.${ledge.dir}`) }) : loc("Menu.SeHisser");
+      entries.push({ icon: "fa-solid fa-person-through-window", label, run: () => hoistOnto(token, ledge) });
+    }
+  }
   if ( token?.isOwner && isClimbing(token) ) entries.push({ icon: "fa-solid fa-person-falling", label: loc("Menu.SeLaisserTomber"), run: () => dropDown(token) });
   return entries;
 }
@@ -646,7 +697,9 @@ export function climbStateOf(token) {
     elevation, height: Math.max(0, elevation - ground), units: doc.parent.grid.units,
     speed: speeds.speed ?? 0, native: !!speeds.native, multiplier: speeds.multiplier ?? 1, walksCeilings: canWalkCeilings(doc.actor),
     rules: climbRules(), canClimb: canClimb(doc), canRun: canClimb(doc) && !climbing && acrobaticFor(doc),
-    canCeiling: canClimbCeiling(doc), canDown: canClimbDown(doc), canDrop: !!doc.isOwner && climbing
+    canCeiling: canClimbCeiling(doc), canDown: canClimbDown(doc), canDrop: !!doc.isOwner && climbing,
+    // §209 : les rebords où il peut se hisser (direction, sol, hauteur à monter, niveau d'arrivée).
+    ledges: ledgesOf(doc).map(({ dir, ground, rise, level }) => ({ dir, ground, rise, level }))
   };
 }
 

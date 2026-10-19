@@ -587,3 +587,22 @@ describe("§19.6 : écart de sauvegarde (« si elle rate le jet de 5 ou plus »)
     expect(c.effects).toEqual([]);
   });
 });
+
+describe("critique en dépassant la CA (§207)", () => {
+  const plan = { attack: true, damage: "author" };
+  it("22 contre CA 12 avec un écart de 10 : critique, par cible ; sans écart, un simple coup", () => {
+    const { resolution } = play(open({ ...base, plan, targets: [] }),
+      { type: "attackRolled", roll: roll(22), messageId: "Atk", targets: [T(1), T(2, { ac: 15 })], critMargin: 10 });
+    expect(resolution.targets.map(t => [t.hit, t.critical, t.reason])).toEqual([[true, true, "beatsAc"], [true, false, "ac"]]);
+    expect(isCriticalHit(resolution)).toBe(true);
+    const plain = play(open({ ...base, plan, targets: [] }),
+      { type: "attackRolled", roll: roll(22), messageId: "Atk", targets: [T(1)] }).resolution;
+    expect(plain.targets[0]).toMatchObject({ hit: true, critical: false, reason: "ac" });
+  });
+  it("un Bouclier qui fait remonter la CA annule l'écart, le coup touche encore", () => {
+    const { resolution } = play(open({ ...base, plan, targets: [] }),
+      { type: "attackRolled", roll: roll(22), messageId: "Atk", targets: [T(1, { canReact: true })], critMargin: 10 },
+      { type: "reactionResolved", token: "T1", used: "Bouclier", ac: 17 });
+    expect(resolution.targets[0]).toMatchObject({ hit: true, critical: false, reaction: "Bouclier" });
+  });
+});

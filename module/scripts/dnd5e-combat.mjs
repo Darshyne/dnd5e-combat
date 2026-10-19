@@ -98,6 +98,7 @@ import { registerSize } from "./runtime/size.mjs";
 import { registerOrders } from "./runtime/orders.mjs";
 import { registerSummonHandover } from "./runtime/summon-handover.mjs";
 import { registerAutoTranslate } from "./runtime/auto-translate.mjs";
+import { registerCriticals } from "./runtime/criticals.mjs";
 import { describeRoutes, skippedRoutes } from "./runtime/router.mjs";
 import { testApi } from "./runtime/testing.mjs";
 import { registerPointer } from "./ui/pointer.mjs";
@@ -248,7 +249,8 @@ Hooks.once("init", () => {
   gated(registerTurn);
   gated(registerGates);   // après la légalité : une porte ne s'ouvre que pour une utilisation confirmée
   gated(registerSummonHandover);   // §118 : après la légalité — une utilisation refusée ne réclame rien aux voisins
-  gated(registerAutoTranslate);   // §204 : traduction reprise à la création (objets et créatures restés dans la langue d'origine)
+  gated(registerAutoTranslate);
+  gated(registerCriticals);   // §207 : options de coup critique (écart à la CA, table de critiques), désactivées par défaut   // §204 : traduction reprise à la création (objets et créatures restés dans la langue d'origine)
   gated(registerReactions);
   gated(registerPortent);   // §36 : Présage (Repos long, requête du devin)
   gated(registerGrimoire);   // §139 : rituels sans emplacement, Restauration magique

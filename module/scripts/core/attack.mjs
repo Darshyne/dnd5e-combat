@@ -35,6 +35,17 @@ export function resolveAttack(roll, targets) {
 }
 
 /**
+ * §207 (règle maison, réglage `critMargin`, désactivé à 0) : un coup qui touche sans être critique le devient quand le total du jet
+ * dépasse la CA de la cible (abri compris) d'au moins `margin` — « CA + 10 » demandé par une table (issue GitHub #5). Jugé par cible.
+ * @param {{hit: boolean, critical: boolean, ac: number|null}} target  La cible jugée.
+ * @param {{total: number}} roll
+ * @param {number} margin
+ */
+export function beatsAcBy(target, roll, margin) {
+  return (Number(margin) > 0) && !!target?.hit && !target.critical && Number.isFinite(target.ac) && (roll.total >= target.ac + Number(margin));
+}
+
+/**
  * §39.2 : le mode d'attaque d'une arme qui se lance, avant le dialogue du jet. dnd5e reprend le DERNIER mode utilisé
  * (activity/attack.mjs:95, drapeau `last.<activité>.attackMode`) : après un lancer de dague, une attaque au contact
  * repartait en « lancer » (jugée à distance : désavantage au contact d'un ennemi, portée de lancer). Un mode repris de

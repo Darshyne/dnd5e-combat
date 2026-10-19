@@ -17,6 +17,8 @@ A D&D 5.5 (2024 rules) rules and combat engine for **Foundry VTT V14** and **dnd
   click an enemy to make a basic attack, context menus, targeting mode (a banner at the top of the screen keeps the
   instruction and the number of targets picked while the engine waits for clicks).
 - **Vision and light rules**: who sees whom, bright light / dim light / darkness, Search, passive Perception.
+- **Optional critical hit house rules** (off by default): a hit that beats the target's AC by a set margin (10, say) is a
+  critical hit, and a critical hit table the attacker can choose instead of doubled dice (or always used).
 - Every class and species of the *Player's Handbook 2024* is automated, along with many monster abilities.
   Rules are declared per dnd5e identifier, so they apply to any creature, PC or NPC.
   **[See the full list of what Core automates](https://darshyne.github.io/automated.html)** (spells, class features,
@@ -28,7 +30,7 @@ pick, `api.ui.targeting()`), walking a token up to a
 target (`api.approach`), stopping this client's walks (`api.stopWalks`), the turn budget (`api.budget.issues` /
 `api.budget.spend`), content by identifier (`api.content`), and generic hooks (`dnd5e-combat.claimClick`,
 `dnd5e-combat.tokenMenu` — on other tokens and on one's own —, `dnd5e-combat.dropItems`, `dnd5e-combat.targeting`,
-`dnd5e-combat.summonOnTargets` — take over a summon cast on targets…). It does not know any of its
+`dnd5e-combat.summonOnTargets` — take over a summon cast on targets —, `dnd5e-combat.criticalHit` — decide how a critical hit is handled…). It does not know any of its
 neighbours by name.
 
 A creature module can declare the rules for its own abilities, by dnd5e identifier, without touching the

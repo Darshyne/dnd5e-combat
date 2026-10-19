@@ -1,4 +1,5 @@
 import { MODULE_ID } from "../constants.mjs";
+import { critMargin } from "../adapter/criticals.mjs";
 import { current, pendingChoice, STEPS } from "../core/action.mjs";
 import { undo, CHAT_LIGHT_SETTING } from "../runtime/engine.mjs";
 import { route } from "../runtime/router.mjs";
@@ -81,6 +82,7 @@ function verdictText(t) {
   if ( t.reaction ) notes.push(t.reaction);
   if ( t.reason === "duplicate" ) notes.push(loc("Repliques.Note"));
   else if ( t.reason === "autoCritical" ) notes.push(loc("CritiqueDOffice"));
+  else if ( t.reason === "beatsAc" ) notes.push(loc("CritOption.Ecart", { margin: critMargin() }));   // §207
   // P1 (b) : l'abri calculé par le moteur, sans la CA.
   if ( t.cover && (t.cover.bonus !== null) ) notes.push(`${loc(`Abri.${t.cover.degree}`)} +${t.cover.bonus}`);
   return `${loc(key)}${notes.length ? ` (${notes.join(", ")})` : ""}`;

@@ -52,3 +52,23 @@ describe("§39.2 mode d'une arme qui se lance", () => {
     expect(throwableAttackMode({ ...dagger, hasTargets: false, requested: "thrown", remembered: "thrown", allBeyondReach: false })).toBeNull();
   });
 });
+
+describe("critique en dépassant la CA (§207)", async () => {
+  const { beatsAcBy } = await import("../module/scripts/core/attack.mjs");
+  const { hitChance } = await import("../module/scripts/core/hitchance.mjs");
+  it("un coup qui touche et dépasse la CA de l'écart devient critique ; désactivé à 0", () => {
+    expect(beatsAcBy({ hit: true, critical: false, ac: 12 }, { total: 22 }, 10)).toBe(true);
+    expect(beatsAcBy({ hit: true, critical: false, ac: 12 }, { total: 21 }, 10)).toBe(false);
+    expect(beatsAcBy({ hit: true, critical: false, ac: 12 }, { total: 30 }, 0)).toBe(false);
+    expect(beatsAcBy({ hit: false, critical: false, ac: 12 }, { total: 30 }, 10)).toBe(false);
+    expect(beatsAcBy({ hit: true, critical: false, ac: null }, { total: 30 }, 10)).toBe(false);
+  });
+  it("les chances de critique comptent l'écart", () => {
+    const base = hitChance({ ac: 10, bonus: 10 });
+    const withMargin = hitChance({ ac: 10, bonus: 10, margin: 10 });
+    expect(withMargin.hit).toBeCloseTo(base.hit, 6);
+    // d20 + 10 ≥ 20 : 10 à 19 (dix faces) en plus du 20 naturel.
+    expect(withMargin.critical).toBeCloseTo(11 / 20, 6);
+    expect(base.critical).toBeCloseTo(1 / 20, 6);
+  });
+});

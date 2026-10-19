@@ -16,6 +16,7 @@ import { applyDamageShields } from "./defenses.mjs";
 import { damageVariant } from "./variants.mjs";
 import { sneakAttackFor, askStrikes } from "./sneak.mjs";
 import { chooseSmite } from "./smite.mjs";
+import { criticalChoice, drawCriticalTable } from "./criticals.mjs";
 import { current, STEPS } from "../core/action.mjs";
 
 const SETTLED_STEPS = new Set([STEPS.DONE, STEPS.MISSED, STEPS.UNDONE]);
@@ -134,7 +135,19 @@ export async function rollDamageForAttack(attackMessage, { critical, variant=nul
   if ( !activity?.rollDamage ) return null;
   const { ability, ammunitionItem: ammunition, mode: attackMode } = attackMessage.system;
   // Le verdict du moteur prime : un coup qui touche une cible paralysée à 5 ft est critique sans 20 naturel.
-  const isCritical = critical ?? (attackMessage.rolls[0]?.isCritical === true);
+  let isCritical = critical ?? (attackMessage.rolls[0]?.isCritical === true);
+  // §207 : critique standard, table de critiques (dégâts normaux) ou un voisin qui s'en charge — avant les châtiments, dont les dés
+  // ne sont doublés que sur un critique standard. Le coup reste un critique (jets de mort : `criticalHit` sur les dégâts).
+  let criticalTable = null;
+  if ( isCritical ) {
+    const target = fromUuidSync(attackMessage.system?.targets?.[0]?.token ?? "", { strict: false });
+    const choice = await criticalChoice(used, target);
+    if ( choice !== "standard" ) {
+      isCritical = false;
+      criticalTable = choice;
+      if ( choice === "table" ) await drawCriticalTable({ speaker: ChatMessage.implementation.getSpeaker({ actor: used.actor }) });
+    }
+  }
   const origin = originOf(attackMessage);
   const damageType = await chosenDamageType(game.messages.get(origin ?? "") ?? attackMessage, activity);
   // §20 : Frappes rusées — choisies avant le jet, elles retirent des dés à l'Attaque sournoise (runtime/sneak.mjs).
@@ -142,7 +155,8 @@ export async function rollDamageForAttack(attackMessage, { critical, variant=nul
   const strikes = (sneak && !sneak.issue) ? await askStrikes(used.actor, sneak.target, sneak.dice) : [];
   // §25 : un châtiment — lancé « immédiatement après avoir touché », ses dés s'ajoutent à ce jet (runtime/smite.mjs).
   const smite = await chooseSmite(used, attackMessage);
-  const ours = { ...(damageType ? { damageType } : {}), ...(strikes.length ? { strikes } : {}), ...(smite ? { smite } : {}) };
+  const ours = { ...(damageType ? { damageType } : {}), ...(strikes.length ? { strikes } : {}), ...(smite ? { smite } : {}),
+    ...(criticalTable ? { criticalHit: criticalTable } : {}) };
   return activity.rollDamage(
     { ability, ammunition, attackMode, isCritical, ...(Object.keys(ours).length ? { [MODULE_ID]: ours } : {}) },
     { configure: false },

@@ -33,7 +33,7 @@
  * Fonctions pures, aucune dépendance à Foundry.
  */
 
-import { resolveAttack } from "./attack.mjs";
+import { resolveAttack, beatsAcBy } from "./attack.mjs";
 
 /** Version du schéma écrit dans les flags. Une résolution d'une autre version est ignorée. */
 export const RESOLUTION_VERSION = 2;
@@ -249,14 +249,16 @@ export function open({ id, carrier, origin=null, activity, source=null, plan, ta
 /* -------------------------------------------- */
 
 /** Le jet d'attaque est connu : verdict par cible, puis fenêtre de réaction pour ceux qui en ont une. */
-function judge(resolution, { roll, messageId, targets }) {
+function judge(resolution, { roll, messageId, targets, critMargin=0 }) {
   // Les cibles d'une attaque sont celles désignées au moment du jet, pas à l'utilisation.
   const judged = resolveAttack(roll, targets.map(blankTarget)).map(t => {
     const auto = t.hit && !t.critical && t.defenceless;
-    return auto ? { ...t, critical: true, reason: "autoCritical" } : t;
+    if ( auto ) return { ...t, critical: true, reason: "autoCritical" };
+    // §207 : « CA + 10 » (règle maison, réglage `critMargin` lu au jet).
+    return beatsAcBy(t, roll, critMargin) ? { ...t, critical: true, reason: "beatsAc" } : t;
   });
   const pending = judged.filter(t => t.hit && t.canReact).map(t => ({ kind: "reaction", window: "isHit", token: t.token }));
-  const next = { ...resolution, attack: { roll, messageId }, targets: judged, pending };
+  const next = { ...resolution, attack: { roll, messageId, ...(critMargin > 0 ? { critMargin } : {}) }, targets: judged, pending };
   if ( !pending.length ) return afterReactions(next);
   return {
     resolution: { ...next, step: STEPS.AWAITING_REACTION },
@@ -276,7 +278,9 @@ function reactionResolved(resolution, { token, used=null, ac, halve=false, uncri
     // §28 : Calque illusoire — l'attaque est changée en échec, sans autre jet.
     const [judged] = miss ? [{ ...t, hit: false, critical: false, reason: "reaction" }] : resolveAttack(resolution.attack.roll, [{ ...t, ac }]);
     // Le critique d'office (Paralysée à 5 ft) survit au rejugement, comme au premier verdict (judge).
-    const again = (judged.hit && !judged.critical && t.defenceless) ? { ...judged, critical: true, reason: "autoCritical" } : judged;
+    const auto = (judged.hit && !judged.critical && t.defenceless) ? { ...judged, critical: true, reason: "autoCritical" } : judged;
+    // §207 : l'écart à la CA se rejuge contre la nouvelle CA (un Bouclier peut le faire tomber sous 10).
+    const again = beatsAcBy(auto, resolution.attack.roll, resolution.attack.critMargin) ? { ...auto, critical: true, reason: "beatsAc" } : auto;
     // §19 : une réaction peut faire naître des répliques pour ce coup (Ombres spectrales) — leur nombre est relu après elle.
     const count = Number.isInteger(duplicates) ? { duplicates } : {};
     // §19.9 : un Coup critique perd ses effets de critique (Sentinelle au seuil de la mort).

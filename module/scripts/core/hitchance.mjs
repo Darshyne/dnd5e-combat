@@ -53,9 +53,10 @@ export function bonusLaw(flat=0, dice=[]) {
  * @param {1|0|-1} [attack.mode]                  Avantage, jet normal, désavantage.
  * @param {number} [attack.critical]              Seuil de critique (20 par défaut).
  * @param {boolean} [attack.autoCritical]         Tout coup qui touche est critique (Paralysé, Inconscient au contact).
+ * @param {number} [attack.margin]                §207 : un coup dont le total atteint CA + `margin` est critique (0 : non).
  * @returns {{hit: number, critical: number}}     Probabilités entre 0 et 1 ; `critical` est comprise dans `hit`.
  */
-export function hitChance({ ac, bonus=0, dice=[], mode=0, critical=20, autoCritical=false }) {
+export function hitChance({ ac, bonus=0, dice=[], mode=0, critical=20, autoCritical=false, margin=0 }) {
   if ( (ac === null) || (ac === undefined) ) return { hit: 0, critical: 0 };
   const d20 = d20Law(mode);
   const extra = Array.from(bonusLaw(bonus, dice));
@@ -66,7 +67,11 @@ export function hitChance({ ac, bonus=0, dice=[], mode=0, critical=20, autoCriti
     const p = d20[n];
     if ( n === 1 ) continue;
     if ( n >= threshold ) { hit += p; crit += p; continue; }
-    for ( const [value, q] of extra ) if ( n + value >= ac ) hit += p * q;
+    for ( const [value, q] of extra ) {
+      if ( n + value < ac ) continue;
+      hit += p * q;
+      if ( (margin > 0) && (n + value >= ac + margin) ) crit += p * q;
+    }
   }
   if ( autoCritical ) crit = hit;
   return { hit: clamp01(hit), critical: clamp01(crit) };

@@ -13,6 +13,7 @@ import { readUsage } from "../adapter/usage.mjs";
 import { canResistSave, askLegendary, resistSave, legendaryLeft } from "../adapter/legendary.mjs";
 import { offerInterpose, offerPeerlessAim } from "./feats.mjs";
 import { contentOf } from "../adapter/content.mjs";
+import { critMargin } from "../adapter/criticals.mjs";
 import { log, loc, waitForDice } from "./shared.mjs";
 import { LOOKBACK, castLevelOfMessage, dispatcher, enrich, openingFor, resolutionOn, serializeDamages, speakerTokenUuid } from "./engine.mjs";
 
@@ -72,7 +73,7 @@ export async function onAttackMessage(message) {
   const rolled = async plan => {
     const targets = await enrich(attack.targets, plan, speakerTokenUuid(message), attack.activity, message.rolls?.[0]?.options?.attackMode ?? message.system?.mode ?? null,
       castLevelOfMessage(game.messages.get(message.system?.origin ?? "") ?? message));
-    return { type: "attackRolled", roll: await inspiredAttack(message, attack.roll, targets), messageId: message.id, targets };
+    return { type: "attackRolled", roll: await inspiredAttack(message, attack.roll, targets), messageId: message.id, targets, critMargin: critMargin() };
   };
   // Le message d'utilisation attend ce jet : c'est lui le porteur.
   const awaited = attack.origin && await dispatcher.send(attack.origin, resolution =>

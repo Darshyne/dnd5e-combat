@@ -21,6 +21,7 @@
 import { hitChance, saveFailChance } from "../core/hitchance.mjs";
 import { attackModifiers, netMode, isAutoCritical, autoFailSave } from "../core/conditions.mjs";
 import { saveAdvantageAgainst, fightingAdvantageFor, sizeAdvantageFor, bestSaveAbility } from "./saves.mjs";
+import { critMargin } from "./criticals.mjs";
 import { conditionImmunitiesOf } from "./facts.mjs";
 import { attackContext, coverAgainst } from "./conditions.mjs";
 import { coverFor } from "./cover.mjs";
@@ -115,7 +116,8 @@ export function hitChanceOf(attacker, target, activity, { attackMode=null, posA,
   const chance = hitChance({
     ac, bonus: bonus.flat, dice: bonus.dice, mode,
     critical: activity.criticalThreshold ?? 20,
-    autoCritical: isAutoCritical(context.target, context.adjacent)
+    autoCritical: isAutoCritical(context.target, context.adjacent),
+    margin: critMargin()   // §207
   });
   return { ...chance, ac, baseAc, cover, mode, advantage: ours.advantage, disadvantage: ours.disadvantage,
     system: { advantage: !!system.advantage, disadvantage: !!system.disadvantage },

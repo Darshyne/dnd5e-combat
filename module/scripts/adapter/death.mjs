@@ -72,7 +72,8 @@ export function isDeadActor(actor) {
 /** Le message de dégâts est-il un coup critique ? */
 function isCriticalDamage(options) {
   const message = options?.originatingMessage ?? options?.origin;
-  return !!message?.rolls?.some?.(r => r.isCritical || r.options?.isCritical);
+  // §207 : un critique traité par la table (dégâts normaux) reste un coup critique.
+  return !!message?.rolls?.some?.(r => r.isCritical || r.options?.isCritical) || !!message?.getFlag?.(MODULE_ID, "criticalHit");
 }
 
 async function announce(actor, key, data, kind) {

@@ -17,6 +17,9 @@ export const BASIC_ACTIONS = Object.freeze({
   escape: { img: "icons/svg/net.svg", activityId: "dnd5eCombatEscap" },
   // Intention (Ready) : l'action est dépensée, l'état « Intention » montré ; le déclencheur reste au joueur.
   ready: { img: "icons/svg/clockwork.svg", activityId: "dnd5eCombatReady" },
+  // §213 : Arme improvisée — sans coût par elle-même : elle demande au MJ, puis l'attaque de l'arme temporaire coûte comme une attaque
+  // d'arme (runtime/improvised.mjs). `attack` : un familier ne la reçoit pas.
+  improvised: { attack: true, img: "icons/svg/hanging-sign.svg", activityId: "dnd5eCombatImpro", activity: { activation: { type: "special" } } },
   // Furtivité (Hide) : Discrétion DD 15, hors de vue de tout ennemi (runtime/hide.mjs).
   hide: { img: "icons/svg/cowled.svg", activityId: "dnd5eCombatHide0" },
   // Chercher (Search) : Sagesse (Perception) contre les créatures cachées, lumière comprise (runtime/search.mjs).

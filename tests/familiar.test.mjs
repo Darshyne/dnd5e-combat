@@ -12,7 +12,8 @@ describe("familiers (§107)", () => {
     expect(kinds).toContain("help");
     expect(kinds).toContain("dodge");
     expect(kinds).not.toContain("unarmed");
-    expect(kinds).toHaveLength(Object.keys(BASIC_ACTIONS).length - 1);
+    expect(kinds).not.toContain("improvised");   // §213 : une attaque d'arme
+    expect(kinds).toHaveLength(Object.keys(BASIC_ACTIONS).length - 2);
     expect(familiarBasicKinds({ a: {}, b: { attack: true } })).toEqual(["a"]);
   });
 

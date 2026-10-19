@@ -62,7 +62,8 @@ export function smiteOptions(actor, { ranged=false }={}) {
   const out = [];
   for ( const item of actor?.items ?? [] ) {
     const rule = isSpellCast(item) ? smiteRuleOf(item, contentOf(item).entry?.smite) : null;
-    if ( !rule || (!!rule.ranged !== ranged) ) continue;
+    // §206 : `any` — après toute attaque d'arme, au corps à corps comme à distance (Frappe piégeuse).
+    if ( !rule || (!rule.any && (!!rule.ranged !== ranged)) ) continue;
     const base = Number(item.system.level) || 1;
     const uses = item.system.uses;
     if ( Number(uses?.max) && ((uses.value ?? (Number(uses.max) - (uses.spent ?? 0))) > 0) ) {

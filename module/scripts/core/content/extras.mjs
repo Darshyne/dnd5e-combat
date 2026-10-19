@@ -152,7 +152,7 @@ export function validateExtras(entry, at, errors) {
     && ["fiends", "save", "effect"].every(k => !(k in entry.smite) || isId(entry.smite[k]))
     && (!("ranged" in entry.smite) || (entry.smite.ranged === true))
     && (!("burst" in entry.smite) || (isObject(entry.smite.burst) && Number.isFinite(entry.smite.burst.radius) && (typeof entry.smite.burst.units === "string")))
-    && Object.keys(entry.smite).every(k => ["damage", "fiends", "save", "effect", "ranged", "burst"].includes(k))) ) errors.push(`${at}smite: { damage, fiends?, save?, effect?, ranged?, burst? } (activity ids, effect id)`);
+    && Object.keys(entry.smite).every(k => ["damage", "fiends", "save", "effect", "ranged", "any", "burst"].includes(k))) ) errors.push(`${at}smite: { damage, fiends?, save?, effect?, ranged?, any?, burst? } (activity ids, effect id)`);
   if ( ("metamagic" in entry) && !(isObject(entry.metamagic) && isId(entry.metamagic.activity) && METAMAGIC_KINDS.includes(entry.metamagic.kind)
     && Object.keys(entry.metamagic).every(k => ["activity", "kind"].includes(k))) ) errors.push(`${at}metamagic: { activity, kind: ${METAMAGIC_KINDS.join(" | ")} }`);
   if ( ("rollBonus" in entry) && !(isObject(entry.rollBonus) && isId(entry.rollBonus.activity) && Array.isArray(entry.rollBonus.on)

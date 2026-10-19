@@ -6,7 +6,7 @@ import { CREATURE_TYPES } from "../eligibility.mjs";
 import { ORDERS } from "../orders.mjs";
 import { unknownFacts } from "../triggers.mjs";
 import { validateAbsorb, validateCarriedLight, validateChoice, validateEmanation, validateLight, validateSummon, validateTargets, validateTeleport } from "./annex.mjs";
-import { BASIC_ACTION_KINDS, BONUS_ATTACK_AFTER, BREAK_MOMENTS, EFFECT_EXPIRIES, ENTRY_KEYS } from "./enums.mjs";
+import { BASIC_ACTION_KINDS, BONUS_ATTACK_AFTER, BREAK_MOMENTS, EFFECT_EXPIRIES, ENTRY_KEYS, SIZES } from "./enums.mjs";
 import { validateExtras } from "./extras.mjs";
 import { isId, isObject } from "./shared.mjs";
 import { validateAura, validateTrigger } from "./steps.mjs";
@@ -324,6 +324,8 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   }
   if ( ("saveAdvantage" in entry) && (!Array.isArray(entry.saveAdvantage) || !entry.saveAdvantage.length
     || !entry.saveAdvantage.every(s => (typeof s === "string") && s)) ) errors.push(`${at}saveAdvantage: list of condition identifiers`);
+  // §206 : « une créature de taille G ou supérieure a l'Avantage à ce jet » (Frappe piégeuse).
+  if ( ("saveAdvantageSize" in entry) && !SIZES.includes(entry.saveAdvantageSize) ) errors.push(`${at}saveAdvantageSize: one of ${SIZES.join(", ")}`);
   if ( "leap" in entry ) {
     const l = entry.leap;
     if ( !isObject(l) || !(Number.isFinite(l.radius) && (l.radius > 0)) || (typeof l.units !== "string") || !l.units

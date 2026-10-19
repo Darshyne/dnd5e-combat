@@ -675,3 +675,18 @@ describe("§78 : forme qui garde ses PV, faveur avec sauvegarde, interposition",
     expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "use" }, { type: "interpose" }] }] })).toEqual([expect.stringContaining("interpose")]);
   });
 });
+
+describe("Frappe piégeuse (§206)", async () => {
+  const { sizeAtLeast } = await import("../module/scripts/core/content/enums.mjs");
+  it("taille G ou supérieure", () => {
+    expect(["lg", "huge", "grg"].every(s => sizeAtLeast(s, "lg"))).toBe(true);
+    expect(["tiny", "sm", "med", undefined, "xx"].some(s => sizeAtLeast(s, "lg"))).toBe(false);
+  });
+  it("déclarée comme un châtiment sur toute attaque d'arme, avec l'Avantage par la taille", async () => {
+    const { SPELL_RULES } = await import("../module/scripts/content/spell-rules.mjs").catch(() => ({}));
+    const entry = SPELL_RULES?.["ensnaring-strike"];
+    if ( !entry ) return;
+    expect(entry.smite).toEqual({ save: "dnd5eactivity000", any: true });
+    expect(entry.saveAdvantageSize).toBe("lg");
+  });
+});

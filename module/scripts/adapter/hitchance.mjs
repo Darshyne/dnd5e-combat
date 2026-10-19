@@ -20,7 +20,7 @@
 
 import { hitChance, saveFailChance } from "../core/hitchance.mjs";
 import { attackModifiers, netMode, isAutoCritical, autoFailSave } from "../core/conditions.mjs";
-import { saveAdvantageAgainst, fightingAdvantageFor, bestSaveAbility } from "./saves.mjs";
+import { saveAdvantageAgainst, fightingAdvantageFor, sizeAdvantageFor, bestSaveAbility } from "./saves.mjs";
 import { conditionImmunitiesOf } from "./facts.mjs";
 import { attackContext, coverAgainst } from "./conditions.mjs";
 import { coverFor } from "./cover.mjs";
@@ -165,6 +165,7 @@ export function saveChanceOf(caster, target, activity) {
   if ( options.disadvantage ) disadvantage.push("sheet");
   if ( saveAdvantageAgainst(actor, activity) ) advantage.push("saveAdvantage");
   if ( fightingAdvantageFor(activity, target) ) advantage.push("fighting");
+  if ( sizeAdvantageFor(actor, activity) ) advantage.push("size");
   const mode = netMode({ advantage, disadvantage });
 
   const statuses = Array.from(actor.statuses ?? []);

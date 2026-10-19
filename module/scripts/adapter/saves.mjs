@@ -22,6 +22,7 @@ import { timedWait, closeRollDialogAfter } from "./dialogs.mjs";
 import { originItemOf, creatureTypeOf } from "./facts.mjs";
 import { contentOf } from "./content.mjs";
 import { fightingAdvantage } from "../core/conditions.mjs";
+import { sizeAtLeast } from "../core/content/enums.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { usageMetamagic } from "./metamagic.mjs";
 import { foretellFor } from "./portent.mjs";
@@ -116,7 +117,7 @@ function saveRollArguments(activity, actor, token, usageMessage, { ability, dc, 
   const bonus = CONFIG.Dice.BasicRoll.constructParts({ activityBonus: activity.save.bonus }, activity.getRollData());
   const rollConfig = { ability, target: dc };
   // §16.25 : Ascendance féerique — l'avantage contre une activité qui pose un état que l'un de ses items désigne.
-  if ( saveAdvantageAgainst(actor, activity) || fightingAdvantageFor(activity, token) ) rollConfig.advantage = true;
+  if ( saveAdvantageAgainst(actor, activity) || fightingAdvantageFor(activity, token) || sizeAdvantageFor(actor, activity) ) rollConfig.advantage = true;
   // §32 : Sort intensifié (la cible choisie par requestSaves).
   if ( disadvantage ) rollConfig.disadvantage = true;
   // §36 : Présage — le d20 remplacé par le jet noté (bornes du dé, adapter/portent.mjs).
@@ -153,6 +154,15 @@ export function fightingAdvantageFor(activity, token) {
   const caster = usageTokenOf(activity);
   const targetInCombat = game.combats.some(c => c.started && c.combatants.some(x => x.tokenId === token.id));
   return fightingAdvantage({ targetInCombat, hostile: !!caster && areEnemies(caster, token) });
+}
+
+/**
+ * §206 : « une créature de taille G ou supérieure a l'Avantage à ce jet » (`saveAdvantageSize` sur l'item de l'activité : Frappe
+ * piégeuse). La taille est celle de la fiche (`system.traits.size`).
+ */
+export function sizeAdvantageFor(actor, activity) {
+  const min = contentOf(activity?.item).entry?.saveAdvantageSize;
+  return !!min && !!actor && sizeAtLeast(actor.system?.traits?.size, min);
 }
 
 /** Les états que posent les effets d'une activité (profils `activity.effects[]`, lus par `effectOfProfile`, §126). */

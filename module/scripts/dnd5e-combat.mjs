@@ -104,6 +104,7 @@ import { registerKnockout } from "./runtime/knockout.mjs";
 import { registerReady } from "./runtime/ready.mjs";
 import { registerBurning } from "./runtime/burning.mjs";
 import { registerImprovised } from "./runtime/improvised.mjs";
+import { registerArmorTraining } from "./runtime/armor-training.mjs";
 import { isNonLethal, setNonLethal, isKnockedOut } from "./adapter/knockout.mjs";
 import { describeRoutes, skippedRoutes } from "./runtime/router.mjs";
 import { testApi } from "./runtime/testing.mjs";
@@ -311,7 +312,8 @@ Hooks.once("init", () => {
   gated(registerKnockout);   // §210 : coups non létaux (réveil, premiers soins), surprise à l'initiative
   gated(registerReady);
   gated(registerBurning);
-  gated(registerImprovised);   // §213 : armes improvisées, demandées au MJ   // §212 : En feu — brûlures au début du tour, éteindre ses flammes, propagation   // §211 : Se tenir prêt — l'action préparée, son déclencheur, la Réaction
+  gated(registerImprovised);
+  gated(registerArmorTraining);   // §214 : formation au port d'armure   // §213 : armes improvisées, demandées au MJ   // §212 : En feu — brûlures au début du tour, éteindre ses flammes, propagation   // §211 : Se tenir prêt — l'action préparée, son déclencheur, la Réaction
   gated(registerSpeedGrants);   // §195 : vitesses que le contenu accorde (Athlète : escalade)
   gated(registerBreaks);
   gated(registerCure);

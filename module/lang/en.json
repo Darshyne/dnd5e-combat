@@ -1425,5 +1425,9 @@
   "DND5ECOMBAT.Improvise.CarteAccord": "<strong>{name}</strong> uses {object}: {weapon}.",
   "DND5ECOMBAT.Improvise.NomArme": "{object} (improvised)",
   "DND5ECOMBAT.Improvise.NomComme": "{object} (as {weapon})",
-  "DND5ECOMBAT.Improvise.TexteArme": "Improvised weapon granted by the GM; it disappears at the end of the turn."
+  "DND5ECOMBAT.Improvise.TexteArme": "Improvised weapon granted by the GM; it disappears at the end of the turn.",
+  "DND5ECOMBAT.Raison.untrainedArmor": "Armor worn without training",
+  "DND5ECOMBAT.Souci.untrainedArmor": "You can't cast spells while wearing {item} without armor training.",
+  "DND5ECOMBAT.Armure.Bouclier": "{item} without training",
+  "DND5ECOMBAT.Armure.BouclierTexte": "Shield carried without training: it gives no bonus to AC (2024 rules, armor training)."
 }

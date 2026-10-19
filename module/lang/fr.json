@@ -1425,5 +1425,9 @@
   "DND5ECOMBAT.Improvise.CarteAccord": "<strong>{name}</strong> se sert de {object} : {weapon}.",
   "DND5ECOMBAT.Improvise.NomArme": "{object} (improvisée)",
   "DND5ECOMBAT.Improvise.NomComme": "{object} (comme {weapon})",
-  "DND5ECOMBAT.Improvise.TexteArme": "Arme improvisée accordée par le MJ ; elle disparaît à la fin du tour."
+  "DND5ECOMBAT.Improvise.TexteArme": "Arme improvisée accordée par le MJ ; elle disparaît à la fin du tour.",
+  "DND5ECOMBAT.Raison.untrainedArmor": "Armure portée sans formation",
+  "DND5ECOMBAT.Souci.untrainedArmor": "Impossible de lancer un sort en portant {item} sans formation.",
+  "DND5ECOMBAT.Armure.Bouclier": "{item} sans formation",
+  "DND5ECOMBAT.Armure.BouclierTexte": "Bouclier porté sans formation : il ne donne pas son bonus à la CA (règles 2024, formation au port d'armure)."
 }

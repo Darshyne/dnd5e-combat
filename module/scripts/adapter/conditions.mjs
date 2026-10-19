@@ -9,6 +9,7 @@
  *    (dnd5e.mjs:447-467, 545) : y ajouter une entrée à `init` suffit à créer un état de token.
  */
 
+import { armorHampers } from "./armor-training.mjs";
 import { rangeIssue } from "../core/range.mjs";
 import { verbalSpellBlocked, hampersRangedAttack, forbiddenAgainstCharmer, requiresSight, INCAPACITATING } from "../core/conditions.mjs";
 import { distanceBetween, rangeOf } from "./turn.mjs";
@@ -214,7 +215,9 @@ export function attackContext(origin, target, activity, attackMode, factors, { p
     // Ce que le contenu déclare (§16, B6) : Lueurs féeriques, Tactique de meute, Protection contre le mal et le bien.
     declared: declaredAttackModifiers(origin, target, activity),
     // §20 : Insaisissable — aucun Avantage contre la cible.
-    elusive: isElusive(target)
+    elusive: isElusive(target),
+    // §214 : armure sans formation, attaque de Force ou de Dextérité.
+    untrainedArmor: !!armorHampers(origin?.actor, activity?.ability)
   };
 }
 

@@ -12,6 +12,7 @@ import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { isRaging } from "../adapter/rage.mjs";
 import { enemiesSeeing } from "../adapter/hide.mjs";
 import { verbalBlockOf, charmersOf, hostileToCharmer, sightRequired } from "../adapter/conditions.mjs";
+import { untrainedArmor } from "../adapter/armor-training.mjs";
 import { reactionsBlocked, actionOrBonusOnly } from "../adapter/reactions.mjs";
 import { conditionUseIssues } from "../core/conditions.mjs";
 import { canSee } from "../adapter/vision.mjs";
@@ -150,11 +151,14 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
   const raging = isSpellCast(activity.item) && isRaging(activity.actor);   // §48 : lire un parchemin aussi
   // §163 : Champ antimagie — on n'y lance aucun sort.
   const antimagic = (isSpellCast(activity.item) && !pilot) ? antimagicAround(usageToken(activity)) : null;
+  // §214 : armure portée sans formation — pas de sorts.
+  const unarmored = isSpellCast(activity.item) ? untrainedArmor(activity.actor) : null;
   const lines = [
     ...issues.map(i => loc(`Souci.${i}`)),
     ...(outOfAmmunition(activity, attackMode) ? [loc("Souci.noAmmunition", { item: activity.item.name })] : []),
     ...(silenced ? [loc("Souci.silenced")] : []),
     ...(raging ? [loc("Souci.rage")] : []),
+    ...(unarmored ? [loc("Souci.untrainedArmor", { item: unarmored.name })] : []),
     ...(antimagic ? [loc("Souci.antimagic", { item: antimagic.item.name })] : []),
     ...limits.issues.map(i => loc(`Souci.${i}`, { item: limits.item ?? "" })),
     ...incapacitated.map(i => loc(`Souci.${i}`))

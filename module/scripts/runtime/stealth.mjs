@@ -17,6 +17,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { route } from "./router.mjs";
+import { theaterActive } from "./theater-state.mjs";
 import { log, loc, isExecutor, say, esc } from "./shared.mjs";
 import { isHidden, spottedBy, stealthRules, RULES_SETTING } from "../adapter/stealth.mjs";
 import { canSee } from "../adapter/vision.mjs";
@@ -61,7 +62,7 @@ function schedule() {
 let busy = false;
 /** Pour chaque token caché de la scène et chaque ennemi en état : entré dans sa vue ? */
 export async function check(scene) {
-  if ( busy || !scene || (stealthRules() !== "bg3") ) return;
+  if ( theaterActive() || busy || !scene || (stealthRules() !== "bg3") ) return;
   busy = true;
   try {
     for ( const target of scene.tokens.filter(t => isHidden(t) && able(t)) ) {

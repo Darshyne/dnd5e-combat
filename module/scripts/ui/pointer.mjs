@@ -13,6 +13,7 @@
  * lorsque le moteur le prend à son compte.
  */
 
+import { theaterActive } from "../runtime/theater-state.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { stopWalking, forgetAllWalks, stopDeadMovements } from "../adapter/movement.mjs";
 import { stormOf, cloudOf, cloudCircle, boltRadiusPx } from "../adapter/storm.mjs";
@@ -933,15 +934,19 @@ export function registerPointer() {
   route("canvasReady", () => { if ( sceneLeft ) stopDeadMovements(); sceneLeft = false; }, { label: "dead movements stopped" });
   route("controlToken", () => clearPreview(), { label: "path preview cleared" });
   route("ready", () => {
-    document.addEventListener("pointerdown", onPointerDown, true);
-    document.addEventListener("pointerup", onPointerUp, true);
-    document.addEventListener("pointermove", onPointerMove, true);
-    document.addEventListener("pointermove", placeHitChance, { capture: true, passive: true });
-    document.addEventListener("pointermove", placeReticle, { capture: true, passive: true });
-    document.addEventListener("pointermove", trackPointer, { capture: true, passive: true });
-    document.addEventListener("keyup", onModifierKey, true);
-    document.addEventListener("keydown", onKeyDown, true);
-    document.addEventListener("keydown", onMenuShift, true);
-    document.addEventListener("keyup", onMenuShift, true);
+    // §220 : pendant le Théâtre de l'esprit, la souris et le clavier reviennent au cœur.
+    const live = fn => event => (theaterActive() ? undefined : fn(event));
+    document.addEventListener("pointerdown", live(onPointerDown), true);
+    document.addEventListener("pointerup", live(onPointerUp), true);
+    document.addEventListener("pointermove", live(onPointerMove), true);
+    document.addEventListener("pointermove", live(placeHitChance), { capture: true, passive: true });
+    document.addEventListener("pointermove", live(placeReticle), { capture: true, passive: true });
+    document.addEventListener("pointermove", live(trackPointer), { capture: true, passive: true });
+    document.addEventListener("keyup", live(onModifierKey), true);
+    document.addEventListener("keydown", live(onKeyDown), true);
+    document.addEventListener("keydown", live(onMenuShift), true);
+    document.addEventListener("keyup", live(onMenuShift), true);
   }, { label: "mouse: listeners not attached" });
+  // §220 : en passant en Théâtre de l'esprit, l'aperçu de chemin s'efface.
+  route(`${MODULE_ID}.theater`, active => { if ( active ) clearPreview(); }, { always: true, label: "theatre of the mind: path preview cleared" });
 }

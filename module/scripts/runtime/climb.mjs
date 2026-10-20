@@ -48,6 +48,7 @@ import { footprintOf, sizeOf, cellOf } from "../adapter/movement.mjs";
 import { rayBlocker } from "../adapter/cover.mjs";
 import { cellsAtGap } from "../core/orders.mjs";
 import { route } from "./router.mjs";
+import { theaterActive } from "./theater-state.mjs";
 import { enqueue } from "./queue.mjs";
 import { esc, isExecutor, loc, locEsc, log, notice, say, waitForDice } from "./shared.mjs";
 
@@ -833,7 +834,7 @@ async function onTurnChange(combat, prior) {
 
 /** Hors combat, toutes les 10 s. MJ actif, scène affichée. */
 function tick() {
-  if ( !isExecutor() || !canvas?.ready || game.combat?.started || (climbRules() !== "house") ) return;
+  if ( theaterActive() || !isExecutor() || !canvas?.ready || game.combat?.started || (climbRules() !== "house") ) return;
   for ( const token of canvas.scene?.tokens ?? [] ) {
     if ( !checkWanted(token) || !climbCheckDue(climbFlag(token)?.checkedAt, Date.now(), CLIMB_CHECK_SECONDS * 1000) ) continue;
     requestClimbCheck(token).catch(err => console.error(`${MODULE_ID} | climb check`, err));

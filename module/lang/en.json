@@ -1449,5 +1449,11 @@
   "DND5ECOMBAT.Menu.SAgripperVers": "Grab the edge: {dir}",
   "DND5ECOMBAT.Retour.Escalade.Agrippe": "Grabs the edge",
   "DND5ECOMBAT.Escalade.SAgrippe": "<strong>{name}</strong> goes over the edge and hangs on to the wall.",
-  "DND5ECOMBAT.Escalade.Jauge.FinDuMur": "The wall ends at {height} {units}: nothing to hold on to above."
+  "DND5ECOMBAT.Escalade.Jauge.FinDuMur": "The wall ends at {height} {units}: nothing to hold on to above.",
+  "DND5ECOMBAT.Theatre.Bouton": "Theatre of the mind: switch between DAS automation and plain dnd5e",
+  "DND5ECOMBAT.Theatre.Actif": "Theatre of the mind: dnd5e plays on its own, DAS automations are paused.",
+  "DND5ECOMBAT.Theatre.Inactif": "Theatre of the mind over: back to the chosen automation level.",
+  "DND5ECOMBAT.Theatre.Rappel": "Reminder: theatre of the mind is on, DAS automations are off.",
+  "DND5ECOMBAT.Reglage.theaterOfMind.Nom": "Theatre of the mind",
+  "DND5ECOMBAT.Reglage.theaterOfMind.Aide": "Switches between the automation level chosen above (kept) and plain dnd5e: movement, menus, turn budget, resolved rolls, reactions, areas, simulated vision… are paused, Foundry and dnd5e play on their own. Also a button (masks) in the GM's token tool bar; click it again to bring the automation back, no reload needed."
 }

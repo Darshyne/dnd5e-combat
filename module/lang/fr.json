@@ -1449,5 +1449,11 @@
   "DND5ECOMBAT.Menu.SAgripperVers": "S'agripper au bord : {dir}",
   "DND5ECOMBAT.Retour.Escalade.Agrippe": "S'agrippe au bord",
   "DND5ECOMBAT.Escalade.SAgrippe": "<strong>{name}</strong> passe par-dessus le bord et s'agrippe au mur.",
-  "DND5ECOMBAT.Escalade.Jauge.FinDuMur": "Le mur s'arrête à {height} {units} : rien où s'accrocher plus haut."
+  "DND5ECOMBAT.Escalade.Jauge.FinDuMur": "Le mur s'arrête à {height} {units} : rien où s'accrocher plus haut.",
+  "DND5ECOMBAT.Theatre.Bouton": "Théâtre de l'esprit : basculer entre l'automatisation de DAS et dnd5e seul",
+  "DND5ECOMBAT.Theatre.Actif": "Théâtre de l'esprit : dnd5e joue seul, les automatisations de DAS sont en pause.",
+  "DND5ECOMBAT.Theatre.Inactif": "Fin du théâtre de l'esprit : retour au niveau d'automatisation choisi.",
+  "DND5ECOMBAT.Theatre.Rappel": "Rappel : le théâtre de l'esprit est actif, les automatisations de DAS sont coupées.",
+  "DND5ECOMBAT.Reglage.theaterOfMind.Nom": "Théâtre de l'esprit",
+  "DND5ECOMBAT.Reglage.theaterOfMind.Aide": "Bascule entre le niveau d'automatisation choisi ci-dessus (conservé) et le fonctionnement vanilla de dnd5e : déplacements, menus, budget du tour, jets résolus, réactions, zones, vision simulée… sont en pause, Foundry et dnd5e jouent seuls. Aussi un bouton (masques) dans la barre d'outils des jetons du MJ ; un nouveau clic rétablit l'automatisation, sans recharger."
 }

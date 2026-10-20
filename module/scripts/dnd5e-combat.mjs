@@ -101,6 +101,7 @@ import { registerAutoTranslate } from "./runtime/auto-translate.mjs";
 import { registerCriticals } from "./runtime/criticals.mjs";
 import { registerFalls } from "./runtime/falls.mjs";
 import { registerKnockout } from "./runtime/knockout.mjs";
+import { registerTheater, theaterApi } from "./runtime/theater.mjs";
 import { registerReady } from "./runtime/ready.mjs";
 import { registerBurning } from "./runtime/burning.mjs";
 import { registerImprovised } from "./runtime/improvised.mjs";
@@ -186,6 +187,7 @@ const state = {
   factions: { ...factionsApi, open: () => openFactions() },
   sneak: stealthApi,
   climb: climbApi,
+  theater: theaterApi,   // §220 : Théâtre de l'esprit — `active()`, `set(on)` ; hook `dnd5e-combat.theater`
   gap: publicGap
 };
 
@@ -234,6 +236,7 @@ Hooks.once("init", () => {
   // passe en mode visée avant qu'on juge son budget ; le reste de l'interface en dernier.
   // §117 : le niveau d'automatisation d'abord (son réglage en tête de la fenêtre) ; chaque fonction s'inscrit selon lui.
   registerLevel();
+  gated(registerTheater);   // §220 : Théâtre de l'esprit — hors des niveaux d'automatisation : son bouton existe toujours
   gated(registerPerf);   // §98 : le seuil du relevé des temps, avant que les hooks ne tournent
   gated(registerContent);
   gated(registerFactions);   // §181 : la table des factions, avant toute règle qui juge ami / ennemi

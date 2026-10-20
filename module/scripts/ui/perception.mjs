@@ -18,6 +18,7 @@ import { blockedBetween, isVisionAvailable } from "../adapter/vision.mjs";
 import { canHear } from "../adapter/hearing.mjs";
 import { sensesThrough } from "../core/light.mjs";
 import { route } from "../runtime/router.mjs";
+import { theaterActive } from "../runtime/theater-state.mjs";
 
 const SIMULATED = `${MODULE_ID}.`;   // préfixe des sources de vision jetables (adapter/vision.mjs, SOURCE_PREFIX)
 const SIGHT = 0;                      // DetectionMode.DETECTION_TYPES.SIGHT
@@ -82,6 +83,8 @@ function extend(id, mode) {
   if ( !sight && !listens ) return null;
   const Extended = class extends Base {
     testVisibility(visionSource, tokenMode, config) {
+      // §220 : Théâtre de l'esprit — le test du cœur seul.
+      if ( theaterActive() ) return super.testVisibility(visionSource, tokenMode, config);
       // Ce que le moteur ajoute ne doit jamais casser l'affichage du cœur : une erreur → le test du cœur seul, et la pile une fois.
       let blocked = false;
       try { blocked = sight && blockedFor(id, visionSource, config.object); }

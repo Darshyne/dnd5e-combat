@@ -16,6 +16,10 @@
 import { MODULE_ID } from "../constants.mjs";
 import { recordTiming } from "./perf.mjs";
 import { isExecutor } from "./shared.mjs";
+import { theaterActive } from "./theater-state.mjs";
+
+/** §220 : les hooks de démarrage passent toujours — leurs écoutes doivent être posées pour qu'on puisse rallumer sans recharger. */
+export const STARTUP_HOOKS = Object.freeze(["init", "i18nInit", "setup", "ready"]);
 
 /**
  * @param {object} deps
@@ -25,15 +29,19 @@ import { isExecutor } from "./shared.mjs";
  * @param {(entry: {hook: string, label: string}) => void} [deps.refused]  Un inscrit a annulé l'opération (trace).
  * @param {{now: () => number, record: (hook: string, label: string, kind: "sync"|"async", ms: number) => void}} [deps.timing]
  *   §98 : chronomètre chaque appel — le temps synchrone, et pour une promesse, le temps jusqu'à sa fin (core/perf.mjs).
+ * @param {() => boolean} [deps.paused]  §220 : Théâtre de l'esprit — rien ne passe, sauf les hooks de démarrage et les inscriptions
+ *   `always`.
  */
-export function createRouter({ subscribe, isExecutor, report, refused=() => {}, timing=null }) {
+export function createRouter({ subscribe, isExecutor, report, refused=() => {}, timing=null, paused=() => false }) {
   const routes = new Map();
   // §117 : pendant `withoutRoutes`, une inscription est notée mais rien n'est branché (fonction au-dessus du niveau choisi).
   let suspended = null;
   const skipped = [];
 
   function dispatch(hook, args) {
+    const off = !STARTUP_HOOKS.includes(hook) && paused();
     for ( const entry of routes.get(hook) ) {
+      if ( off && !entry.always ) continue;
       if ( entry.executor && !isExecutor() ) continue;
       let result;
       const t0 = timing ? timing.now() : 0;
@@ -61,14 +69,15 @@ export function createRouter({ subscribe, isExecutor, report, refused=() => {}, 
      * @param {boolean} [options.cancellable] `false` annule l'opération et arrête la chaîne.
      * @param {string} [options.notify]       Clé de traduction d'une notification d'erreur.
      * @param {"error"|"warn"} [options.level]
+     * @param {boolean} [options.always]      §220 : passe aussi pendant le Théâtre de l'esprit (son propre bouton).
      */
-    on(hook, handler, { label=hook, executor=false, cancellable=false, notify=null, level="error" }={}) {
+    on(hook, handler, { label=hook, executor=false, cancellable=false, notify=null, level="error", always=false }={}) {
       if ( suspended ) { skipped.push({ hook, label, feature: suspended }); return; }
       if ( !routes.has(hook) ) {
         routes.set(hook, []);
         subscribe(hook, (...args) => dispatch(hook, args));
       }
-      routes.get(hook).push({ hook, handler, label, executor, cancellable, notify, level });
+      routes.get(hook).push({ hook, handler, label, executor, cancellable, notify, level, always });
     },
 
     /**
@@ -105,7 +114,9 @@ const router = createRouter({
   // Qui annule quoi : un déplacement arrêté en route se lit ainsi dans la console (get-client-errors, watch).
   refused: entry => console.log(`${MODULE_ID} | ${entry.hook} cancelled by "${entry.label}"`),
   // §98 : relevé des temps (runtime/perf.mjs).
-  timing: { now: () => performance.now(), record: recordTiming }
+  timing: { now: () => performance.now(), record: recordTiming },
+  // §220 : Théâtre de l'esprit.
+  paused: theaterActive
 });
 
 export const route = router.on;

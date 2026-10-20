@@ -86,3 +86,20 @@ describe("routeur de hooks", () => {
     ] });
   });
 });
+
+describe("§220 Théâtre de l'esprit", () => {
+  it("en pause, rien ne passe sauf le démarrage et les inscriptions « always »", async () => {
+    const { createRouter } = await import("../module/scripts/runtime/router.mjs");
+    const hooks = {};
+    let paused = false;
+    const router = createRouter({ subscribe: (h, fn) => { hooks[h] = fn; }, isExecutor: () => true, report: () => {}, paused: () => paused });
+    const seen = [];
+    router.on("updateToken", () => seen.push("normal"));
+    router.on("updateToken", () => seen.push("always"), { always: true });
+    router.on("ready", () => seen.push("ready"));
+    hooks.updateToken(); hooks.ready();
+    paused = true;
+    hooks.updateToken(); hooks.ready();
+    expect(seen).toEqual(["normal", "always", "ready", "always", "ready"]);
+  });
+});

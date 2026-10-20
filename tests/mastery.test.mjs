@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { masteryEffect, grazeDamage, toppleDC, cleaveModifier, markExpires, MASTERIES } from "../module/scripts/core/mastery.mjs";
+import { masteryEffect, grazeDamage, toppleDC, cleaveModifier, markExpires, MASTERIES, masterySources, masterySlots, restChanges, removedCount,
+  masteryVerdict } from "../module/scripts/core/mastery.mjs";
 import { RESOLUTION_BASE } from "./helpers.mjs";
 
 const hit = { hit: true, damaged: true, melee: true, size: "med", down: false };
@@ -156,5 +157,58 @@ describe("§24 Moine : Parade et schéma", () => {
     expect(CONTENT["monks-focus"].basicActions["0MuRZ0Ur95xQTKFq"]).toEqual(["dash", "disengage"]);
     expect(CONTENT["deflect-attacks"].triggers[0].do.map(s => s.type)).toEqual(["use", "reduce"]);
     expect(CONTENT["stunning-strike"].savedEffects).toEqual(["cj9HhBNKtF6iOsH4"]);
+  });
+});
+
+describe("§222 bottes choisies : places, changements au Repos long", () => {
+  const fighter = { item: "f", label: "Guerrier 4", identifier: "fighter", kind: "class", classLevel: 4,
+    advancements: [{ level: 1, count: 3 }, { level: 4, count: 1 }, { level: 10, count: 1 }, { level: 16, count: 1 }] };
+  const barbarian = { item: "b", label: "Barbare 1", identifier: "barbarian", kind: "class", classLevel: 1,
+    advancements: [{ level: 1, count: 2 }, { level: 4, count: 1 }] };
+  const feat = { item: "w", label: "Maître d'armes", identifier: "weapon-master", kind: "feat", classLevel: null, advancements: [{ level: 0, count: 1 }] };
+  const weapons = { greatsword: { melee: true, proficient: true }, flail: { melee: true, proficient: true },
+    javelin: { melee: true, proficient: true }, longbow: { melee: false, proficient: true }, shortbow: { melee: false, proficient: true },
+    whip: { melee: true, proficient: false } };
+
+  it("une classe compte ses avancements jusqu'à son niveau ; un don, toujours", () => {
+    const sources = masterySources([fighter, feat]);
+    expect(sources.map(s => s.count)).toEqual([4, 1]);
+    expect(masterySlots(sources)).toBe(5);
+    expect(masterySlots(masterySources([{ ...fighter, classLevel: 16 }]))).toBe(6);
+  });
+  it("une source sans botte est ignorée", () => {
+    expect(masterySources([{ ...feat, advancements: [{ level: 0, count: 0 }] }])).toEqual([]);
+  });
+  it("Repos long : le Guerrier en change une, le Barbare et Maître d'armes toutes les leurs", () => {
+    expect(restChanges(masterySources([fighter]))).toBe(1);
+    expect(restChanges(masterySources([barbarian, feat]))).toBe(3);
+  });
+  it("retirées : celles d'avant qui ne sont plus choisies", () => {
+    expect(removedCount(["a", "b", "c"], ["a", "d"])).toBe(2);
+    expect(removedCount(["a"], ["a", "b"])).toBe(0);
+  });
+  it("pas plus de bottes que de places", () => {
+    const sources = masterySources([fighter]);
+    expect(masteryVerdict({ before: [], after: ["greatsword", "flail", "javelin", "longbow"], weapons, sources }).ok).toBe(true);
+    expect(masteryVerdict({ before: [], after: ["greatsword", "flail", "javelin", "longbow", "shortbow"], weapons, sources }).reason).toBe("tooMany");
+  });
+  it("une arme non maîtrisée ne peut être ajoutée ; une arme inconnue n'est jugée que sur le nombre", () => {
+    const sources = masterySources([fighter]);
+    expect(masteryVerdict({ before: [], after: ["whip"], weapons, sources }).reason).toBe("notProficient");
+    expect(masteryVerdict({ before: ["whip"], after: ["whip"], weapons, sources }).ok).toBe(true);
+    expect(masteryVerdict({ before: [], after: ["homebrew-blade"], weapons, sources }).ok).toBe(true);
+  });
+  it("Barbare : armes de corps à corps seulement, sauf places d'une autre source", () => {
+    expect(masteryVerdict({ before: [], after: ["greatsword", "longbow"], weapons, sources: masterySources([barbarian]) }).reason).toBe("melee");
+    expect(masteryVerdict({ before: [], after: ["greatsword", "longbow"], weapons, sources: masterySources([barbarian, feat]) }).ok).toBe(true);
+  });
+  it("remplacer une botte demande ce que le Repos long laisse changer", () => {
+    const sources = masterySources([fighter]);
+    const before = ["greatsword", "flail", "javelin"];
+    expect(masteryVerdict({ before, after: ["greatsword", "flail", "longbow"], weapons, sources }).reason).toBe("changes");
+    expect(masteryVerdict({ before, after: ["greatsword", "flail", "longbow"], weapons, sources, allowance: 1 }).ok).toBe(true);
+    expect(masteryVerdict({ before, after: ["greatsword", "longbow", "shortbow"], weapons, sources, allowance: 1 }).reason).toBe("changes");
+    // Ajouter dans une place libre, toujours permis.
+    expect(masteryVerdict({ before, after: [...before, "longbow"], weapons, sources }).ok).toBe(true);
   });
 });

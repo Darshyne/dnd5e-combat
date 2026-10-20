@@ -3,6 +3,9 @@
  * soins et dégâts, aides aux tests, budget, présage, utilisation, factions, furtivité. Extrait de runtime/testing.mjs.
  */
 
+import { masterySlots } from "../core/mastery.mjs";
+import { baseWeapons, chosenMasteries, masterySourcesOf, restAllowanceOf } from "../adapter/mastery.mjs";
+import { judgeMasteries } from "./mastery-choices.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { naturalOneFor } from "./natural-one.mjs";
 import { combatantFor, readBudget } from "../adapter/turn.mjs";
@@ -428,4 +431,17 @@ export async function flammable({ tokenId, ignite: light=false, regionId=null, f
     if ( aim && !aim.refused ) out.fired = await igniteWithActivity(token, activity, [{}, {}, {}], aim.zone);
   }
   return out;
+}
+
+/**
+ * §222 : les bottes choisies d'un acteur — sources, places, choix enregistré, ce que le Repos long laisse changer, et le verdict
+ * de la règle pour `keys` s'il est donné.
+ */
+export async function masteries({ actorId, keys=null }) {
+  const actor = game.actors.get(actorId);
+  if ( !actor ) throw new Error(`no actor ${actorId}`);
+  await baseWeapons();
+  const sources = masterySourcesOf(actor);
+  return { sources, slots: masterySlots(sources), chosen: chosenMasteries(actor), allowance: restAllowanceOf(actor),
+    verdict: keys ? judgeMasteries(actor, keys) : null };
 }

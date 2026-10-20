@@ -10,6 +10,7 @@
  *  - Enchaînement : la visée de la seconde attaque s'ouvre chez l'auteur (ui/pointer.mjs, sans coût : `cost: "free"`, drapeau
  *    `cleave`) ; ses dégâts se lancent sans le modificateur positif ; une fois par tour de combat.
  *  - Coup double : budget du tour (core/turn.mjs).
+ *  - Renversement : la sauvegarde d'un PJ s'ouvre chez son joueur s'il est connecté (requête `toppleSave`), sinon le MJ la lance.
  * Limite : l'annulation d'une attaque ne défait pas ce que la botte a fait.
  */
 
@@ -24,9 +25,15 @@ import { askChoice } from "../adapter/choices.mjs";
 import { inflict } from "../adapter/retaliation.mjs";
 import { conditionImmunitiesOf } from "../adapter/facts.mjs";
 import { contentOf } from "../adapter/content.mjs";
+import { rollerFor } from "../adapter/concentration.mjs";
+import { closeRollDialogAfter } from "../adapter/dialogs.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log, loc, notice } from "./shared.mjs";
+
+/** §222 : la sauvegarde du Renversement demandée au joueur de la cible. */
+export const TOPPLE_QUERY = `${MODULE_ID}.toppleSave`;
+const TOPPLE_TIMEOUT_MS = 40000;
 
 /** La clé du tour de combat en cours (« combat.round.tour »), ou null hors combat. */
 const turnKey = () => currentTurnKey();
@@ -80,12 +87,34 @@ async function push(source, target, weapon) {
   log(`Push: ${target.name} pushed ${cells} square(s) out of ${wanted}`);
 }
 
+/**
+ * La sauvegarde de Constitution du Renversement, sur ce client : fenêtre du jet (`configure`, fermée au délai des fenêtres de combat,
+ * puis lancée seule) ou sans fenêtre. Rend le total, ou null sans jet.
+ */
+async function rollToppleSave({ token: uuid, dc, weapon, configure=false }) {
+  const target = await fromUuid(uuid);
+  const actor = target?.actor;
+  if ( !actor ) return null;
+  const roll = configure => actor.rollSavingThrow({ ability: "con", target: dc }, { configure },
+    { data: { flavor: loc("Botte.Carte.topple", { weapon: weapon ?? "", name: target.name, dc }),
+      flags: { [MODULE_ID]: { mastery: { kind: "topple", target: target.uuid, dc } } } } });
+  const cancel = configure ? closeRollDialogAfter(actor, () => {}) : () => {};
+  let rolls = await roll(configure);
+  cancel();
+  if ( !rolls?.length && configure ) rolls = await roll(false);
+  const total = rolls?.[0]?.total;
+  return Number.isFinite(total) ? total : null;
+}
+
 async function topple(attackMessage, source, target, weapon) {
   const dc = toppleDC(attackModOf(attackMessage), source.actor?.system?.attributes?.prof);
-  const rolls = await target.actor.rollSavingThrow({ ability: "con", target: dc }, { configure: false },
-    { data: { flavor: loc("Botte.Carte.topple", { weapon: weapon?.name ?? "", name: target.name, dc }),
-      flags: { [MODULE_ID]: { mastery: { kind: "topple", target: target.uuid, dc } } } } });
-  const total = rolls?.[0]?.total;
+  // §222 : un PJ dont le joueur est connecté lance sa sauvegarde chez lui ; sinon (PNJ, joueur absent, pas de réponse), ici.
+  const payload = { token: target.uuid, dc, weapon: weapon?.name ?? "" };
+  const userId = rollerFor(target.actor);
+  const user = userId ? game.users.get(userId) : null;
+  let total = null;
+  if ( user && !user.isSelf ) total = await user.query(TOPPLE_QUERY, { ...payload, configure: true }, { timeout: TOPPLE_TIMEOUT_MS }).catch(() => null);
+  if ( !Number.isFinite(total) ) total = await rollToppleSave(payload);
   if ( !Number.isFinite(total) ) return;
   const saved = total >= dc;
   log(`Topple: ${target.name} ${saved ? "succeeds on" : "fails"} its Constitution saving throw (${total} vs DC ${dc})`);
@@ -201,6 +230,8 @@ async function onCleaveUsed(message) {
 }
 
 export function registerMastery() {
+  // Sur tous les clients : c'est celui du joueur de la cible qui lance sa sauvegarde.
+  CONFIG.queries[TOPPLE_QUERY] = rollToppleSave;
   route(`${MODULE_ID}.resolution`, resolution => enqueue(MARKS, () => onResolution(resolution)),
     { executor: true, label: "weapon mastery not played" });
   route("createChatMessage", message => {

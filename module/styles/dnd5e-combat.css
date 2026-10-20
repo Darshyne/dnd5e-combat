@@ -391,3 +391,33 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-climb-gauge .unknown-text { font-size: 13px; font-weight: bold; fill: #b4b2a9; }
 .das-climb-gauge .climber { fill: #7f77dd; stroke: #eeedfe; stroke-width: 1.5; pointer-events: none; }
 
+
+/* §222 : bottes d'arme — pastille sur la fiche (ui/mastery.mjs) et fenêtre des bottes. */
+.das-mastery-badge {
+  display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; padding: 0 6px; border-radius: 8px; flex: none;
+  font-size: 0.65rem; line-height: 14px; font-weight: 600; white-space: nowrap; cursor: pointer;
+  border: 1px dashed #b7b0a2; color: #8a8478; background: transparent; opacity: 0.8;
+}
+.das-mastery-badge i { font-size: 0.6rem; }
+.das-mastery-badge.active { border: 1px solid #c9a227; background: #fbf1cf; color: #7a5b00; opacity: 1; }
+.das-mastery-badge:hover { filter: brightness(1.05); opacity: 1; }
+.das-mastery__body { padding: 1em 1.2em; display: flex; flex-direction: column; gap: 0.6em; }
+.das-mastery__head { display: flex; align-items: center; gap: 1em; }
+.das-mastery__count {
+  font-family: var(--das-display); font-size: 1.6em; padding: 0.15em 0.6em; border-radius: 10px; white-space: nowrap;
+  background: var(--das-surface-2); border: 1px solid var(--das-line);
+}
+.das-mastery__count strong { color: var(--das-accent); font-size: 1.3em; }
+.das-mastery__count.over strong { color: var(--das-ko); }
+.das-mastery__rest { color: var(--das-ok); }
+.das-mastery__ko { color: var(--das-ko); }
+.das-mastery__lists { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6em; max-height: 60vh; overflow-y: auto; }
+.das-mastery__group { border: 1px solid var(--das-line); border-radius: 8px; padding: 0.3em 0.5em; margin: 0; }
+.das-mastery__group legend { color: var(--das-muted); font-size: 0.85em; padding: 0 0.3em; }
+.das-mastery__weapon { display: flex; align-items: center; gap: 0.4em; padding: 0.15em 0.2em; border-radius: 5px; cursor: pointer; }
+.das-mastery__weapon.on { background: var(--das-accent-soft); }
+.das-mastery__weapon .name { flex: 1; }
+.das-mastery__weapon .name i { color: var(--das-muted); font-size: 0.8em; }
+.das-mastery__weapon .property { font-size: 0.8em; color: var(--das-muted); }
+.das-mastery__weapon.on .property { color: var(--das-accent); }
+.das-mastery__foot { display: flex; justify-content: flex-end; gap: 0.5em; padding-top: 0.4em; border-top: 1px solid var(--das-line); }

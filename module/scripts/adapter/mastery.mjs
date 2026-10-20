@@ -17,6 +17,7 @@ import { distanceBetween, reachOf, combatantFor, currentTurnKey } from "./turn.m
 import { isObjectToken } from "./bodies.mjs";
 import { isDeadActor } from "./death.mjs";
 import { areEnemies } from "./factions.mjs";
+import { masterySources } from "../core/mastery.mjs";
 
 const loc = (key, data) => game.i18n.format(`DND5ECOMBAT.Botte.${key}`, data ?? {});
 
@@ -116,3 +117,88 @@ export function cleaveCandidates(attacker, first, activity) {
 
 /** Enchaînement déjà employé à ce tour de combat par cet acteur ? (« une fois par tour » ; hors combat, jamais.) */
 export const cleaveSpent = actor => !!currentTurnKey() && (actor?.getFlag(MODULE_ID, "cleaveTurn") === currentTurnKey());
+
+/* -------------------------------------------- */
+/*  Les bottes choisies (§222)                  */
+/* -------------------------------------------- */
+
+/**
+ * Le drapeau d'acteur posé à la fin d'un Repos long : `{ allowance }`, le nombre de bottes que le joueur peut encore changer.
+ * Retiré une fois dépensé, ou quand l'acteur entre en combat.
+ */
+export const MASTERY_REST_FLAG = "masteryRest";
+
+/** Les bottes choisies, telles qu'enregistrées (pas celles qu'un effet ajoute) : `system.traits.weaponProf.mastery.value`. */
+export const chosenMasteries = actor => Array.from(actor?._source?.system?.traits?.weaponProf?.mastery?.value ?? []);
+
+/** Ce qu'un Repos long laisse encore changer. */
+export const restAllowanceOf = actor => Math.max(0, Number(actor?.getFlag?.(MODULE_ID, MASTERY_REST_FLAG)?.allowance) || 0);
+
+/**
+ * Les sources de bottes de l'acteur (core/mastery.mjs `masterySources`) : avancements « Trait » en mode « mastery » de ses items —
+ * classe (data/item/class.mjs, `system.levels`), sous-classe (niveau de sa classe, `item.class`), don ou autre (toujours).
+ * Lus dans la source de l'item (`_source.system.advancement`, objet par id en dnd5e 6).
+ */
+export function masterySourcesOf(actor) {
+  const items = [];
+  for ( const item of actor?.items ?? [] ) {
+    const advancements = Object.values(item._source?.system?.advancement ?? {})
+      .filter(a => (a?.type === "Trait") && (a.configuration?.mode === "mastery"))
+      .map(a => ({ level: Number(a.level) || 0,
+        count: (a.configuration?.grants?.length ?? 0) + (a.configuration?.choices ?? []).reduce((n, c) => n + (Number(c.count) || 0), 0) }));
+    if ( !advancements.length ) continue;
+    const classLevel = (item.type === "class") ? Number(item.system.levels)
+      : (item.type === "subclass") ? Number(item.class?.system?.levels ?? NaN) : null;
+    items.push({ item: item.id, label: (item.type === "class") ? `${item.name} ${classLevel}` : item.name,
+      identifier: (item.type === "subclass") ? (item.system.classIdentifier ?? "") : (item.system.identifier ?? ""),
+      kind: item.type, classLevel, advancements });
+  }
+  return masterySources(items);
+}
+
+/** L'aptitude ou le don qui ouvre la fenêtre des bottes : « Bottes d'arme » d'une classe, « Maître d'armes ». */
+export const MASTERY_FEATURES = Object.freeze(["weapon-mastery", "weapon-master"]);
+
+let weaponIndex = null;
+
+/**
+ * Les armes de base de dnd5e (`CONFIG.DND5E.weaponIds`) : clé, nom (`Trait.keyLabel`, traduit), corps à corps ou distance, catégorie
+ * (`weaponProficienciesMap`), botte (`system.mastery` de l'item du compendium, lu dans son index). L'index se lit une fois.
+ * @returns {Promise<Array<{key: string, label: string, melee: boolean, category: string|null, mastery: string|null}>>}
+ */
+export async function baseWeapons() {
+  if ( weaponIndex ) return weaponIndex;
+  const fields = ["system.mastery", "system.type.value"];
+  const packs = new Map();
+  const out = [];
+  for ( const [key, id] of Object.entries(CONFIG.DND5E.weaponIds ?? {}) ) {
+    const uuid = dnd5e.documents.Trait.getBaseItemUUID(id);
+    const { collection, documentId } = foundry.utils.parseUuid(uuid);
+    let entry = null;
+    if ( collection ) {
+      const pack = collection.metadata.id;
+      if ( !packs.has(pack) ) packs.set(pack, await collection.getIndex({ fields }).catch(() => null));
+      entry = packs.get(pack)?.get(documentId) ?? null;
+    }
+    const type = entry?.system?.type?.value ?? "";
+    out.push({ key, label: dnd5e.documents.Trait.keyLabel(key, { trait: "weapon" }) ?? key, melee: !type.endsWith("R"),
+      category: CONFIG.DND5E.weaponProficienciesMap?.[type] ?? null, mastery: entry?.system?.mastery || null });
+  }
+  weaponIndex = out.sort((a, b) => a.label.localeCompare(b.label, game.i18n.lang));
+  return weaponIndex;
+}
+
+/** L'acteur maîtrise-t-il cette arme de base (sa catégorie ou elle-même, `system.traits.weaponProf.value` préparé) ? */
+export function proficientWith(actor, weapon) {
+  const prof = actor?.system?.traits?.weaponProf?.value;
+  const has = k => (prof?.has?.(k) ?? Array.from(prof ?? []).includes(k));
+  return has(weapon.key) || (!!weapon.category && has(weapon.category));
+}
+
+/**
+ * Les armes de base, telles que la règle les juge pour cet acteur : `{ clé: { melee, proficient } }`. Synchrone (pour un hook `pre…`) :
+ * vide tant que `baseWeapons()` n'a pas été lu une fois (le moteur le lit à `ready`).
+ */
+export function weaponFacts(actor) {
+  return Object.fromEntries((weaponIndex ?? []).map(w => [w.key, { melee: w.melee, proficient: proficientWith(actor, w) }]));
+}

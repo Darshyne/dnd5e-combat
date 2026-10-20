@@ -46,6 +46,7 @@ import { registerLifesteal } from "./runtime/lifesteal.mjs";
 import { registerDischarge } from "./runtime/discharge.mjs";
 import { registerSneak } from "./runtime/sneak.mjs";
 import { registerMastery } from "./runtime/mastery.mjs";
+import { registerMasteryChoices } from "./runtime/mastery-choices.mjs";
 import { registerFighter } from "./runtime/fighter.mjs";
 import { registerFeats } from "./runtime/feats.mjs";
 import { registerEffectWhile } from "./runtime/effect-while.mjs";
@@ -121,6 +122,7 @@ import { registerLightIndicator, lightState } from "./ui/illumination.mjs";
 import { registerPerception } from "./ui/perception.mjs";
 import { registerVigor } from "./ui/vigor.mjs";
 import { registerAutomation, reportsApi } from "./ui/automation.mjs";
+import { registerMasteryUI, masteryApi } from "./ui/mastery.mjs";
 import { uiApi } from "./ui/api.mjs";
 import { scrollSpellOf } from "./adapter/scrolls.mjs";
 import { registerStabilize } from "./runtime/stabilize.mjs";
@@ -177,7 +179,7 @@ import { openDiagnostic } from "./ui/diagnostic.mjs";
  *   sauvegarde, restauration), sur une seule vérification si `check` est donné (macros « Outils du MJ »).
  */
 const state = {
-  active: false, reason: null, unitFactors: null, routes: describeRoutes, content: contentApi, reports: reportsApi, mcp: testApi, perf: perfApi,
+  active: false, reason: null, unitFactors: null, routes: describeRoutes, content: contentApi, reports: reportsApi, mastery: masteryApi, mcp: testApi, perf: perfApi,
   ui: uiApi, light: lightState, approach, nonLethal: { get: isNonLethal, set: setNonLethal, knockedOut: isKnockedOut }, scrolls: { spellOf: scrollSpellOf }, basics: { data: basicActionData, take: takeBasicAction }, path: pathTo,
   flee: fleeFrom, save: requestSave, drop: dropHeldBy,
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
@@ -288,6 +290,7 @@ Hooks.once("init", () => {
   gated(registerLifesteal);   // §120 : Caresse du vampire
   gated(registerDischarge);   // §19.9 : Chemin vers la tombe, fin anticipée de la malédiction
   gated(registerMastery);   // §21 : bottes d'arme (après registerTriggers : les marques consommées au même message d'attaque)
+  gated(registerMasteryChoices);   // §222 : bottes choisies — limite, changement au Repos long
   gated(registerSneak);   // §20 : Attaque sournoise (après registerAreas : le type de dégâts choisi est déjà posé), Frappes rusées
   gated(registerFighter);   // §21 : Héros du champ d'honneur, styles Armes à deux mains et Armes de jet
   gated(registerFeats);   // §129 : Sauvagerie martiale, Guérisseur
@@ -356,6 +359,7 @@ Hooks.once("init", () => {
   gated(registerKindleUi);   // §52 : boîte à amadou
   gated(registerSkillAidUi);   // §113 : section « Aides » de la fenêtre de jet d'un test
   gated(registerAutomation);
+  gated(registerMasteryUI);   // §222 : pastille de botte sur la fiche, fenêtre des bottes
   gated(registerFactionsUI);   // §181 : fenêtre, outil de la barre, HUD du token
   gated(registerStealthUI);   // §183 : raccourci du mode furtif, cônes dessinés chez le joueur
   gated(registerSettingsWindow);   // la fenêtre de réglages : en dernier, elle range au `setup` ce que les autres ont déclaré

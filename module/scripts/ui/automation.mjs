@@ -3,7 +3,7 @@
  *
  * Chaque ligne d'item (`[data-item-id] > .item-row .item-name`, templates/inventory/inventory.hbs:88-106 de dnd5e 6.0.3,
  * rendu commun à l'inventaire, aux sorts et aux capacités) reçoit :
- *   - une pastille : moteur / auto / passif / manuel (adapter/automation.mjs), l'infobulle dit pourquoi ; aucune
+ *   - une pastille : DAS (rose) / auto / passif / manuel (adapter/automation.mjs), l'infobulle dit pourquoi ; aucune
  *     sur du matériel sans rien à jouer (butin, focaliseur) ;
  *   - un drapeau : coché quand l'item a posé problème en partie, avec une note facultative.
  * Les signalements se relisent en fin de partie dans le panneau « Bilan de la partie » (réglages du module, ou

@@ -154,14 +154,14 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
   border: 1px solid transparent;
 }
 .dnd5e-combat-auto .badge i { font-size: 0.6rem; }
-.dnd5e-combat-auto .badge.rule { background: #ece1fb; color: #5b2f9a; border-color: #b494e0; }
+.dnd5e-combat-auto .badge.rule { background: #fbeaf0; color: #993556; border-color: #ed93b1; }   /* « DAS », rose */
 .dnd5e-combat-auto .badge.auto { background: #dff1e3; color: #23683a; border-color: #8cc79c; }
 .dnd5e-combat-auto .badge.passive { background: #e3edf7; color: #2d5a86; border-color: #9dbbd9; }
 .dnd5e-combat-auto .badge.manual { background: #f6e3dc; color: #8a3b22; border-color: #d9a591; }
 .dnd5e-combat-auto .flag { font-size: 0.75rem; color: #9a9384; opacity: 0.55; cursor: pointer; }
 .dnd5e-combat-auto .flag:hover { opacity: 1; color: #c0392b; }
 .dnd5e-combat-auto .flag.on { opacity: 1; color: #c0392b; }
-.theme-dark .dnd5e-combat-auto .badge.rule { background: #3b2a55; color: #d6c0f5; border-color: #6d4ea0; }
+.theme-dark .dnd5e-combat-auto .badge.rule { background: #4b1528; color: #f4c0d1; border-color: #993556; }
 .theme-dark .dnd5e-combat-auto .badge.auto { background: #1f3a28; color: #a9e0b8; border-color: #3f7a52; }
 .theme-dark .dnd5e-combat-auto .badge.passive { background: #1f3246; color: #aecbe8; border-color: #3f6386; }
 .theme-dark .dnd5e-combat-auto .badge.manual { background: #452a20; color: #efbca8; border-color: #8a4f39; }

@@ -78,7 +78,14 @@ export default {
     await pause(2000);
     ctx.expect(!(await statuses(bramo)).includes("poisoned"), "Restauration partielle : Empoisonné cesse");
 
-    // 5. Passage sans trace (en combat : le réglage « auras en combat seulement » peut être actif).
+    // 5. Passage sans trace (en combat : le réglage « auras en combat seulement » peut être actif). Bramo près d'Alara (deux cases) : ces
+    //    deux-là ne sont pas replacés par le lanceur (hors de la distribution de l'arène), Bramo a pu être laissé à 50 ft (vu le 2026-10-20).
+    const bramoHome = await ctx.position(bramo);
+    const alaraAt = await ctx.position(alara);
+    const g = await ctx.gridSize();
+    ctx.restore(() => ctx.call("move-token", { tokenId: bramo.id, x: bramoHome.x, y: bramoHome.y, elevation: bramoHome.elevation ?? 0 }).catch(() => {}));
+    await ctx.call("move-token", { tokenId: bramo.id, x: alaraAt.x + (2 * g), y: alaraAt.y, elevation: 0 });
+    await pause(800);
     await ctx.startCombat([alara, bramo]);
     await ctx.use({ tokenId: alara.id, identifier: "pass-without-trace", targetTokenIds: [alara.id] });
     await pause(2500);

@@ -3,7 +3,7 @@
  *
  * - Lumière globale : `canvas.environment.globalLightSource`, active, et seulement si l'obscurité au point est dans sa plage
  *   `data.darkness` (même test que `EffectsCanvasGroup#testInsideLight`, client/canvas/groups/effects.mjs:331-337 ; l'obscurité
- *   d'une région « Ajuster l'obscurité » comprise, `getDarknessLevel`, effects.mjs:383). Vive si `data.bright > 0` : une
+ *   d'une région « Ajuster l'obscurité » comprise, lue comme `getDarknessLevel`, effects.mjs:383, mais sans dépendre du rendu : `darknessLevelAt`). Vive si `data.bright > 0` : une
  *   lumière globale « faible » a `bright: 0, dim: maxR` (client/canvas/groups/environment.mjs:320-331). Crépuscule (§16.52) :
  *   une lumière globale vive compte comme faible au-delà du seuil d'obscurité `twilightDarkness` du monde.
  * - Lumières : `canvas.effects.lightSources`, actives (ni éteintes ni supprimées par des ténèbres dont elles partent,
@@ -36,7 +36,7 @@ export function lightAt(point) {
   // Lumière globale, crépuscule compris (§16.52, réglage `twilightDarkness` : au-delà de ce seuil d'obscurité, vive → faible).
   const global = globalSource ? globalLightLevel(
     { active: globalSource.active, bright: globalSource.data.bright, darkness: globalSource.data.darkness },
-    effects.getDarknessLevel(p), twilightThreshold()) : null;
+    darknessLevelAt(p), twilightThreshold()) : null;
 
   const lights = [];
   for ( const source of effects.lightSources ) {
@@ -52,6 +52,24 @@ export function lightAt(point) {
   }
 
   return lightLevel({ global, lights, darkness });
+}
+
+/**
+ * L'obscurité en un point, régions « Ajuster l'obscurité » comprises (§221). Même parcours que `getDarknessLevel` du cœur
+ * (client/canvas/groups/effects.mjs:383-398), mais la valeur se lit sur le getter `darknessLevel` du shader (mode, modificateur,
+ * obscurité de la scène : client/canvas/rendering/shaders/region/adjust-darkness-level.mjs) et non sur son uniform, qui n'est
+ * rempli qu'au rendu (`_preRender`) : une région qui n'a pas encore été dessinée — fenêtre en arrière-plan, région hors de
+ * l'écran — y vaut 0, et le cœur la lit ainsi.
+ */
+function darknessLevelAt(p) {
+  const meshes = canvas.effects.illumination?.darknessLevelMeshes?.children ?? [];
+  for ( let i = meshes.length - 1; i >= 0; i-- ) {
+    const mesh = meshes[i];
+    if ( !mesh.region?.document?.testPoint(p) ) continue;
+    const level = mesh.shader?.darknessLevel;
+    return Number.isFinite(level) ? level : mesh.shader.uniforms.darknessLevel;
+  }
+  return canvas.environment.darknessLevel;
 }
 
 /**

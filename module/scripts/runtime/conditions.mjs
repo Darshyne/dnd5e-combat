@@ -9,6 +9,7 @@ import { route } from "./router.mjs";
 import { takeAttackMods } from "./reactions.mjs";
 import { foretoldRange } from "../core/portent.mjs";
 import { log } from "./shared.mjs";
+import { enqueue } from "./queue.mjs";
 
 /**
  * Avant le dialogue du jet d'attaque, sur le client de l'attaquant : les états des deux créatures
@@ -112,8 +113,17 @@ function wantedStatuses(budget) {
   };
 }
 
-async function syncTurnStatuses(combatant, budget) {
-  for ( const [id, active] of Object.entries(wantedStatuses(budget)) ) await setStatus(combatant.actor, id, active);
+/**
+ * En file par acteur, le budget relu au moment d'agir : deux mises à jour du combattant presque ensemble (Pas du vent : Foncer puis le
+ * budget du Déluge) lançaient deux synchronisations, qui voyaient toutes deux l'état manquer et le créaient deux fois (« _id
+ * dnd5edashing0000 already exists », scénario `moine`, 2026-10-20). `budgetOf` : le budget à montrer, ou null (plus rien).
+ */
+function syncTurnStatuses(combatant, budgetOf) {
+  const actor = combatant.actor;
+  if ( !actor ) return Promise.resolve();
+  return enqueue(`turn-statuses:${actor.uuid}`, async () => {
+    for ( const [id, active] of Object.entries(wantedStatuses(budgetOf())) ) await setStatus(actor, id, active);
+  });
 }
 
 /* -------------------------------------------- */
@@ -126,10 +136,10 @@ export function registerConditions() {
   const statuses = { executor: true, label: "turn statuses not synchronized" };
   route("updateCombatant", (combatant, changes) => {
     if ( !changes.flags?.[MODULE_ID] ) return;
-    return syncTurnStatuses(combatant, combatant.combat?.started ? readBudget(combatant) : null);
+    return syncTurnStatuses(combatant, () => (combatant.combat?.started ? readBudget(combatant) : null));
   }, statuses);
   // Fin du combat, ou combattant retiré : plus rien à montrer.
-  route("deleteCombat", combat => Promise.all(combat.combatants.map(c => syncTurnStatuses(c, null))), statuses);
-  route("deleteCombatant", combatant => syncTurnStatuses(combatant, null), statuses);
+  route("deleteCombat", combat => Promise.all(combat.combatants.map(c => syncTurnStatuses(c, () => null))), statuses);
+  route("deleteCombatant", combatant => syncTurnStatuses(combatant, () => null), statuses);
 }
 

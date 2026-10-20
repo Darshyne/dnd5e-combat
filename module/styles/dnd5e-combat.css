@@ -421,3 +421,10 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-mastery__weapon .property { font-size: 0.8em; color: var(--das-muted); }
 .das-mastery__weapon.on .property { color: var(--das-accent); }
 .das-mastery__foot { display: flex; justify-content: flex-end; gap: 0.5em; padding-top: 0.4em; border-top: 1px solid var(--das-line); }
+
+/* §223 : la fenêtre « Au toucher » (Attaque sournoise, Frappes rusées, dégâts au choix) — une ligne par case. */
+.das-hit-options { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 10px; }
+.das-hit-option { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.das-hit-option input[type=checkbox] { flex: 0 0 auto; margin: 0; }
+.das-hit-option__label { flex: 1 1 auto; }
+.das-hit-option__hint { flex: 0 0 auto; white-space: nowrap; font-weight: bold; opacity: 0.8; }

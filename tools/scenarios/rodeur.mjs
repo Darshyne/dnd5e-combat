@@ -3,7 +3,8 @@
  * joueurs, la classe de Rôdeur au niveau 5, la sous-classe Traqueur des ténèbres, Embuscade effrayante, Proie du chasseur et la
  * Marque du chasseur ; le Bandit reçoit 300 PV. Vérifie :
  *  - Marque du chasseur posée sur le Bandit : +1d6 force à chaque coup ;
- *  - Frappe effroyable : +2d6 psychiques au premier coup du tour, pas au second ;
+ *  - Frappe effroyable (§223, #12) : proposée avant les dégâts ; refusée, rien ; acceptée, +2d6 psychiques et une utilisation dépensée,
+ *    plus proposée au coup suivant du même tour ;
  *  - Tueur de colosses : +1d8 une fois par tour, seulement contre une cible blessée (pas au premier coup, le Bandit est indemne) ;
  *  - Tueur implacable (prêté ensuite) : la Marque passe à 1d10, sans le 1d6 ;
  *  - Chasseur précis (prêté ensuite) : l'attaque contre la créature marquée a l'Avantage.
@@ -93,13 +94,41 @@ export default {
       const { data } = await ctx.call("get-scene-object", { type: "Token", objectId: bandit.id });
       return (data.delta?.effects ?? []).some(e => /Marque du chasseur|Hunter's Mark/i.test(e.name));
     };
-    /** Attaque jusqu'à toucher (10 essais) ; rend le jet d'attaque, le jet de dégâts et ses dégâts bonus. */
-    const hit = async ({ fresh=false }={}) => {
+    // §223 (#12) : la Frappe effroyable se propose dans la fenêtre « Au toucher » avant les dégâts ; `dread` y répond (true : cochée,
+    // false : « Rien de tout cela », null : aucune fenêtre attendue).
+    const known = async () => (await ctx.call("list-dialogs", {})).windows.map(w => w.id);
+    const hitDialog = async (ids, waitMs=8000) => {
+      for ( const until = Date.now() + waitMs; Date.now() < until; ) {
+        const r = await ctx.call("list-dialogs", { dialogsOnly: true, excludeIds: ids, waitMs: 2000 }).catch(() => null);
+        const d = (r?.windows ?? []).find(w => /Au toucher|On hit/i.test(w.title ?? ""));
+        if ( d ) return d;
+      }
+      return null;
+    };
+    const dreadUses = async () => {
+      const actor = await ctx.call("get-actor", { actorId: hero.actorId });
+      const item = (actor.items ?? []).find(i => i.system?.identifier === "dread-ambusher");
+      return item?.system?.activities?.DMVf7FTyTC2HCAf9?.uses?.spent ?? null;
+    };
+    /** Attaque jusqu'à toucher (10 essais) ; rend le jet d'attaque, le jet de dégâts, ses dégâts bonus et la fenêtre vue. */
+    const hit = async ({ fresh=false, dread=null }={}) => {
       for ( let n = 0; n < 10; n++ ) {
         // Un raté de l'épée à deux mains blesse quand même (botte Écorchure) : le Bandit est remis indemne avant chaque essai.
         if ( fresh ) await tough();
         const since = await ctx.lastMessageId();
+        const ids = await known();
         const u = await ctx.use({ tokenId: hero.id, itemId: sword, activityType: "attack", targetTokenIds: [bandit.id], usageConfig: { [MODULE_ID]: { confirmed: true } } });
+        let dialog = null;
+        for ( const until = Date.now() + 20000; Date.now() < until; await pause(400) ) {
+          const res = await ctx.resolution(u.usageMessageId);
+          const t = res?.targets?.find(x => x.name === bandit.name);
+          if ( t?.hit === false || ["done", "missed", "undone"].includes(res?.step) ) break;
+          if ( t?.hit === true ) {
+            dialog = await hitDialog(ids, (dread === null) ? 3000 : 8000);
+            if ( dialog ) await ctx.call("answer-dialog", { id: dialog.id, ...(dread ? { fields: { "bonus-dread-ambusher": true }, button: "strike" } : { button: "none" }) });
+            break;
+          }
+        }
         const r = await ctx.settle(u.usageMessageId, { timeoutMs: 45000 }).catch(() => null);
         const msgs = await ctx.messagesSince(since);
         const attack = msgs.find(m => m.type === "attack")?.rolls?.[0]?.formula ?? "";
@@ -108,7 +137,7 @@ export default {
         const damage = (await ctx.messagesSince(since)).find(m => m.type === "damage");
         const bonuses = (damage?.flags?.[MODULE_ID]?.bonuses ?? []).map(b => `${b.formula} ${b.damageType}`);
         const rolls = (damage?.rolls ?? []).map(r => r.formula);
-        return { attack, bonuses, rolls };
+        return { attack, bonuses, rolls, dialog };
       }
       return null;
     };
@@ -117,14 +146,24 @@ export default {
       await tough(); await place(bandit, g.x + grid, g.y);
       if ( !ctx.expect(await fight(), "combat : au tour du Guerrier") ) return;
       ctx.expect(await markBandit(), "le Bandit porte la Marque du chasseur");
-      const first = await hit({ fresh: true });
+      const spent0 = await dreadUses();
+      // Refusée au premier coup : ni dégâts psychiques ni utilisation dépensée.
+      const declined = await hit({ fresh: true, dread: false });
+      if ( !ctx.expect(!!declined, "coup refusé (10 essais au plus)") ) return;
+      ctx.expect(!!declined.dialog && !declined.bonuses.some(b => /dreadful-strike/.test(b)) && declined.bonuses.includes("1d6 force"),
+        `Frappe effroyable proposée (${declined.dialog?.title ?? "aucune fenêtre"}) et refusée : ${declined.bonuses.join(", ")}`);
+      ctx.expect((await dreadUses()) === spent0, `refusée : aucune utilisation dépensée (${spent0})`);
+      // Acceptée au coup suivant du même tour : +2d6 psychiques, une utilisation dépensée.
+      const first = await hit({ fresh: true, dread: true });
       if ( !ctx.expect(!!first, "premier coup (10 essais au plus)") ) return;
       ctx.expect(first.bonuses.includes("1d6 force") && first.bonuses.some(b => /dreadful-strike psychic/.test(b)) && first.rolls.includes("2d6") && !first.bonuses.includes("1d8 slashing"),
-        `premier coup, Bandit indemne : ${first.bonuses.join(", ")} ; jets ${first.rolls.join(" + ")}`);
+        `Frappe effroyable acceptée, Bandit indemne : ${first.bonuses.join(", ")} ; jets ${first.rolls.join(" + ")}`);
+      await pause(1000);
+      ctx.expect((await dreadUses()) === (spent0 ?? 0) + 1, `une utilisation dépensée (${spent0} → ${await dreadUses()})`);
       const second = await hit();
       if ( !ctx.expect(!!second, "second coup (10 essais au plus)") ) return;
-      ctx.expect(second.bonuses.includes("1d6 force") && !second.bonuses.some(b => /dreadful-strike/.test(b)) && second.bonuses.includes("1d8 slashing"),
-        `second coup du tour, Bandit blessé : ${second.bonuses.join(", ")}`);
+      ctx.expect(!second.dialog && second.bonuses.includes("1d6 force") && !second.bonuses.some(b => /dreadful-strike/.test(b)) && second.bonuses.includes("1d8 slashing"),
+        `second coup du tour, sans question, Bandit blessé : ${second.bonuses.join(", ")}`);
     });
 
     await part("Tueur implacable, Chasseur précis", async () => {
@@ -132,7 +171,7 @@ export default {
       await lend(CLASSES, "phbrgrPreciseHun");
       await tough(); await place(bandit, g.x + grid, g.y);
       ctx.expect(await markBandit(), "le Bandit porte la Marque du chasseur");
-      const res = await hit();
+      const res = await hit({ dread: false });
       if ( !ctx.expect(!!res, "un coup (10 essais au plus)") ) return;
       ctx.expect(res.bonuses.includes("1d10 force") && !res.bonuses.includes("1d6 force"), `Tueur implacable : ${res.bonuses.join(", ")}`);
       ctx.expect(/adv|kh/.test(res.attack), `Chasseur précis : ${res.attack}`);

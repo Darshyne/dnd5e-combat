@@ -14,7 +14,9 @@ import { MODULE_ID } from "../constants.mjs";
 import { timedWait } from "./dialogs.mjs";
 import { applyDamageShields } from "./defenses.mjs";
 import { damageVariant } from "./variants.mjs";
-import { sneakAttackFor, askStrikes } from "./sneak.mjs";
+import { sneakAttackFor, askHitOptions } from "./sneak.mjs";
+import { optionalBonusesFor } from "./triggers.mjs";
+import { speakerTokenOf } from "./turn.mjs";
 import { chooseSmite } from "./smite.mjs";
 import { criticalChoice, drawCriticalTable } from "./criticals.mjs";
 import { current, STEPS } from "../core/action.mjs";
@@ -150,12 +152,18 @@ export async function rollDamageForAttack(attackMessage, { critical, variant=nul
   }
   const origin = originOf(attackMessage);
   const damageType = await chosenDamageType(game.messages.get(origin ?? "") ?? attackMessage, activity);
-  // §20 : Frappes rusées — choisies avant le jet, elles retirent des dés à l'Attaque sournoise (runtime/sneak.mjs).
+  // §20 : Frappes rusées — choisies avant le jet, elles retirent des dés à l'Attaque sournoise (runtime/sneak.mjs). §223 : dans la même
+  // fenêtre, l'Attaque sournoise elle-même (réglage « demander ») et les dégâts bonus au choix (Frappe effroyable, runtime/triggers.mjs).
   const sneak = sneakAttackFor(used, attackMessage);
-  const strikes = (sneak && !sneak.issue) ? await askStrikes(used.actor, sneak.target, sneak.dice) : [];
+  const target = sneak?.target ?? fromUuidSync(attackMessage.system?.targets?.[0]?.token ?? "", { strict: false });
+  const optional = ((attackMessage.system?.targets ?? []).length === 1)
+    ? optionalBonusesFor({ actor: used.actor, activity, sourceToken: sneak?.source ?? speakerTokenOf(attackMessage), targetToken: target }) : [];
+  const hitOptions = await askHitOptions(used.actor, target, sneak, optional);
+  const strikes = hitOptions.strikes;
   // §25 : un châtiment — lancé « immédiatement après avoir touché », ses dés s'ajoutent à ce jet (runtime/smite.mjs).
   const smite = await chooseSmite(used, attackMessage);
   const ours = { ...(damageType ? { damageType } : {}), ...(strikes.length ? { strikes } : {}), ...(smite ? { smite } : {}),
+    ...(typeof hitOptions.sneak === "boolean" ? { sneak: hitOptions.sneak } : {}), ...(hitOptions.bonuses.length ? { acceptedBonuses: hitOptions.bonuses } : {}),
     ...(criticalTable ? { criticalHit: criticalTable } : {}) };
   return activity.rollDamage(
     { ability, ammunition, attackMode, isCritical, ...(Object.keys(ours).length ? { [MODULE_ID]: ours } : {}) },

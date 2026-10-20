@@ -137,3 +137,46 @@ export function declaredAttackModifiers(sourceToken, targetToken, activity) {
   for ( const type of ["advantage", "disadvantage"] ) for ( const name of marks[type] ) if ( !out[type].includes(name) ) out[type].push(name);
   return out;
 }
+
+/* -------------------------------------------- */
+/*  Dégâts bonus : une fois par tour, au choix   */
+/* -------------------------------------------- */
+
+/** Le tour de combat d'une part « une fois par tour » (§19.9 : n'importe quel tour, en combat), ou null hors combat. */
+export function bonusTurnKey() {
+  return game.combat?.started ? `${game.combat.id}:${game.combat.round}:${game.combat.turn}` : null;
+}
+
+/** Cette part « une fois par tour » (`once` : identifiant de la déclaration) a-t-elle déjà servi à ce tour ? */
+export function bonusSpent(actor, once) {
+  const turn = bonusTurnKey();
+  return !!once && !!turn && (actor?.getFlag(MODULE_ID, `oncePerTurn.${once}`) === turn);
+}
+
+/** La clé d'une déclaration de dégâts bonus : ce qui la marque « une fois par tour » et ce que l'auteur accepte (`ask`). */
+export const bonusKeyOf = d => d.identifier ?? d.name;
+
+/**
+ * §223 (#12) : les dégâts bonus `preDamageRoll` que l'auteur choisit de mettre ou non sur ce coup (`ask`, Frappe effroyable) — ceux
+ * dont la condition tient contre cette cible, pas encore pris à ce tour, et dont l'activité qui en tient le compte a encore une
+ * utilisation. Sans cible, aucun.
+ * @returns {Array<{key: string, name: string, formula: string, damageType: string|null, uses: Activity|null, left: number}>}
+ */
+export function optionalBonusesFor({ actor, activity, sourceToken, targetToken }) {
+  if ( !actor || !targetToken?.actor ) return [];
+  const facts = factsFor({ actor, source: actor, target: targetToken.actor, activity, sourceToken, targetToken });
+  const out = [];
+  for ( const d of select(declarationsOf(actor), "preDamageRoll", facts) ) {
+    if ( !d.ask || ((d.oncePerTurn === true) && bonusSpent(actor, bonusKeyOf(d))) ) continue;
+    const item = fromUuidSync(d.item ?? "", { strict: false });
+    const uses = (d.ask.uses && item) ? (item.system.activities?.get(d.ask.uses) ?? null) : null;
+    const left = uses ? Math.max(0, Number(uses.uses?.value) || 0) : Infinity;
+    if ( d.ask.uses && (!uses || !(left > 0)) ) continue;
+    const formula = stepsOf(d, "damage").map(s => {
+      try { return Roll.replaceFormulaData(s.formula, (item ?? activity.item)?.getRollData?.() ?? {}, { missing: "0" }); } catch { return s.formula; }
+    }).join(" + ");
+    const damageType = [stepsOf(d, "damage")[0]?.damageType].flat()[0] ?? null;
+    out.push({ key: bonusKeyOf(d), name: d.name, formula, damageType, uses, left });
+  }
+  return out;
+}

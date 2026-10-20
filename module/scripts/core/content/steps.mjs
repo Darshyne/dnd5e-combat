@@ -96,6 +96,14 @@ export function validateTrigger(declaration, at, facts, errors) {
   if ( ("oncePerTurn" in declaration) && ((declaration.oncePerTurn !== true) || (d.on.length !== 1) || (d.on[0] !== "preDamageRoll")) ) {
     errors.push(`${at}.oncePerTurn: true, with preDamageRoll as the only moment`);
   }
+  // §223 (#12) : `ask` — une part de dégâts bonus que l'auteur choisit de mettre ou non avant le jet (Frappe effroyable) ; `uses` :
+  // l'activité de l'item dont elle dépense une utilisation, et sans laquelle elle n'est pas proposée.
+  if ( "ask" in declaration ) {
+    const a = declaration.ask;
+    const ok = (a === true) || (isObject(a) && Object.keys(a).every(k => k === "uses") && (!("uses" in a) || isId(a.uses)));
+    if ( !ok ) errors.push(`${at}.ask: true or { uses?: activity id (16 characters) }`);
+    if ( (d.on.length !== 1) || (d.on[0] !== "preDamageRoll") ) errors.push(`${at}.ask: preDamageRoll as the only moment`);
+  }
   // §129 : `free` — une fenêtre de réaction qui ne coûte pas la Réaction (Chanceux : un point de chance), proposée même si elle est prise.
   if ( ("free" in declaration) && (declaration.free !== true) ) errors.push(`${at}.free: true or absent`);
   if ( !Array.isArray(d.do) || !d.do.length ) errors.push(`${at}.do: at least one step`);

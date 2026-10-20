@@ -81,7 +81,8 @@ export default {
           await ctx.removeStatusEffects(t, s);
           await ctx.call("set-status", { tokenId: id, statusId: s, active: false }).catch(() => {});
         }
-        await ctx.removeEffectsNamed(t, /Visée|Steady|Frappe malicieuse|Cunning Strike|Caché|Hidden|Furtiv/i);
+        // Les marques de botte (Ouverture de l'épée courte) d'un coup donnent l'Avantage au suivant : retirées entre les parties.
+        await ctx.removeEffectsNamed(t, /Visée|Steady|Frappe malicieuse|Cunning Strike|Caché|Hidden|Furtiv|Ouverture|Vex/i);
         if ( id !== bandit.id ) await ctx.setHp(t, h.hp);
       }
     };

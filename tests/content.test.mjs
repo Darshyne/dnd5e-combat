@@ -544,6 +544,18 @@ describe("§19.9 : Dhampir et Domaine de la Tombe", () => {
       .toEqual(["triggers[0].do: \"uncrit\" requires the isHit or allyIsHit moment and a \"use\" reaction"]);
   });
 
+  it("§223 ask : dégâts bonus au choix, seulement sur preDamageRoll, avec l'activité dont une utilisation est dépensée", () => {
+    const part = [{ type: "damage", formula: "2d6", damageType: "psychic" }];
+    expect(validateEntry({ triggers: [{ on: "preDamageRoll", ask: true, do: part }] }, { facts })).toEqual([]);
+    expect(validateEntry({ triggers: [{ on: "preDamageRoll", oncePerTurn: true, ask: { uses: "DMVf7FTyTC2HCAf9" }, do: part }] }, { facts })).toEqual([]);
+    expect(validateEntry({ triggers: [{ on: "preDamageRoll", ask: { uses: "court" }, do: part }] }, { facts }))
+      .toEqual(["triggers[0].ask: true or { uses?: activity id (16 characters) }"]);
+    expect(validateEntry({ triggers: [{ on: "hit", ask: true, do: [{ type: "status", status: "prone" }] }] }, { facts }))
+      .toEqual(["triggers[0].ask: preDamageRoll as the only moment"]);
+    expect(CONTENT["dread-ambusher"].triggers[0].ask).toEqual({ uses: "DMVf7FTyTC2HCAf9" });
+    expect(CONTENT["dreadful-strikes"].triggers[0].ask).toBeUndefined();
+  });
+
   it("le contenu livré porte les quatre capacités", () => {
     expect(CONTENT["vampiric-bite"].empower.effect).toBe("j3fPDd7Xi1nx6Xk4");
     expect(CONTENT["circle-of-mortality"].triggers).toHaveLength(2);

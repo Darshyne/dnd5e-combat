@@ -147,29 +147,91 @@ export function strikeMaxOf(actor) {
   return Math.max(1, ...Array.from(actor?.items ?? []).map(i => Number(contentOf(i).entry?.cunningStrikeMax) || 1));
 }
 
+/* -------------------------------------------- */
+/*  §223 : automatique ou au choix              */
+/* -------------------------------------------- */
+
+/** Réglage de monde : l'Attaque sournoise se met d'elle-même au premier coup éligible du tour (« auto ») ou l'auteur choisit (« ask »). */
+export const SNEAK_MODE_SETTING = "sneakAttackMode";
+export const SNEAK_MODES = Object.freeze(["auto", "ask"]);
+
+/** Le mode du monde (« auto » si le réglage n'est pas lisible). */
+export function sneakMode() {
+  try {
+    const mode = game.settings.get(MODULE_ID, SNEAK_MODE_SETTING);
+    return SNEAK_MODES.includes(mode) ? mode : "auto";
+  } catch { return "auto"; }
+}
+
+/** La clé qui arme l'Attaque sournoise pour le prochain coup éligible : le tour en cours, ou « free » hors combat. */
+const armKey = () => currentTurnKey() ?? "free";
+
+/** L'auteur a-t-il réservé son Attaque sournoise (l'activité de l'item, en mode « ask ») pour le prochain coup éligible de ce tour ? */
+export function sneakArmed(actor) {
+  return actor?.getFlag(MODULE_ID, "sneakArmed") === armKey();
+}
+
+/** Réserve (ou libère) l'Attaque sournoise pour le prochain coup éligible de ce tour. */
+export async function armSneak(actor, armed=true) {
+  if ( !actor?.isOwner ) return;
+  if ( armed ) await actor.setFlag(MODULE_ID, "sneakArmed", armKey());
+  else if ( actor.getFlag(MODULE_ID, "sneakArmed") !== undefined ) await actor.unsetFlag(MODULE_ID, "sneakArmed");
+}
+
 /**
- * Sur le client de l'auteur, avant ses dégâts : quelles Frappes rusées ? Une case par effet qu'il peut payer ; sans réponse dans
- * le délai, aucune (tous les dés). Rend les clés cochées, dans l'ordre de la liste.
+ * §223 : sur le client de l'auteur, avant ses dégâts, une seule fenêtre pour ce qui se décide « au toucher » :
+ *  - l'Attaque sournoise elle-même, en mode « ask » (case cochée d'avance), sauf si l'auteur l'a réservée par l'activité de l'item ;
+ *  - les Frappes rusées qu'il peut payer (elles retirent des dés à l'Attaque sournoise ; sans elle, ignorées) ;
+ *  - les dégâts bonus au choix (`ask` : Frappe effroyable), décochés d'avance.
+ * Sans réponse dans le délai : ce que la fenêtre propose par défaut (l'Attaque sournoise, rien d'autre). Sans rien à demander, pas de
+ * fenêtre.
  * @param {Actor} actor
  * @param {TokenDocument} target
- * @param {{number: number, faces: number}} dice
- * @returns {Promise<string[]>}
+ * @param {{dice: {number: number, faces: number}, issue: string|null}|null} sneak   sneakAttackFor (null : pas d'Attaque sournoise).
+ * @param {Array<{key: string, name: string, formula: string, damageType: string|null, left: number}>} bonuses   optionalBonusesFor.
+ * @returns {Promise<{sneak: boolean|null, strikes: string[], bonuses: string[]}>}  `sneak` : null sans Attaque sournoise possible.
  */
-export async function askStrikes(actor, target, dice) {
-  const options = affordableStrikes(strikeOptionsOf(actor, target), dice.number);
-  if ( !options.length ) return [];
-  const max = strikeMaxOf(actor);
+export async function askHitOptions(actor, target, sneak, bonuses=[]) {
+  const eligible = !!sneak && !sneak.issue;
+  const ask = eligible && (sneakMode() === "ask") && !sneakArmed(actor);
+  const options = eligible ? affordableStrikes(strikeOptionsOf(actor, target), sneak.dice.number) : [];
+  const fallback = { sneak: eligible ? true : null, strikes: [], bonuses: [] };
+  if ( !ask && !options.length && !bonuses.length ) return fallback;
   const t = (key, data={}) => game.i18n.format(`DND5ECOMBAT.Sournoise.${key}`, data);
-  const rows = options.map(o => `<label class="checkbox"><input type="checkbox" name="${o.key}"> ${o.label}
-    <span class="hint">(−${o.cost}d${dice.faces})</span></label>`).join("");
+  // Une ligne par case : la case, le libellé, puis les dés à droite (sans `.form-group`, qui empilait le libellé mot à mot).
+  const box = (name, label, hint, checked=false) => `<label class="das-hit-option"><input type="checkbox" name="${name}"${checked ? " checked" : ""}>
+    <span class="das-hit-option__label">${label}</span>${hint ? `<span class="das-hit-option__hint">${hint}</span>` : ""}</label>`;
+  const list = rows => `<div class="das-hit-options">${rows.join("")}</div>`;
+  const parts = [];
+  if ( ask ) parts.push(list([box("sneak", t("Utiliser", { name: target.name }), `+${sneak.dice.number}d${sneak.dice.faces}`, true)]));
+  if ( options.length ) {
+    const max = strikeMaxOf(actor);
+    parts.push(`<p>${ask ? t("QuestionFrappes", { max }) : t("Question", { n: sneak.dice.number, faces: sneak.dice.faces, name: target.name, max })}</p>`,
+      list(options.map(o => box(o.key, o.label, `−${o.cost}d${sneak.dice.faces}`))));
+  }
+  if ( bonuses.length ) {
+    const type = d => (d ? game.i18n.localize(CONFIG.DND5E.damageTypes[d]?.label ?? d) : "");
+    parts.push(`<p>${t("QuestionBonus", { name: target.name })}</p>`, list(bonuses.map(b => box(`bonus-${b.key}`, b.name,
+      [`+${b.formula} ${type(b.damageType)}`.trim(), Number.isFinite(b.left) ? t("Restantes", { n: b.left }) : ""].filter(Boolean).join(", ")))));
+  }
+  const checked = (dialog, button, name) => !!(dialog.element ?? button.form)?.querySelector(`input[name="${name}"]`)?.checked;
   const picked = await timedWait({
-    window: { title: t("Titre", { name: actor.name }) },
-    content: `<p>${t("Question", { n: dice.number, faces: dice.faces, name: target.name, max })}</p><div class="form-group stacked">${rows}</div>`,
+    window: { title: t(options.length && !ask && !bonuses.length ? "Titre" : "TitreCoup", { name: actor.name }) },
+    position: { width: 400 },
+    content: parts.join(""),
     buttons: [
       { action: "strike", label: t("Frapper"), icon: "fa-solid fa-bolt", default: true,
-        callback: (event, button, dialog) => options.filter(o => (dialog.element ?? button.form)?.querySelector(`input[name="${o.key}"]`)?.checked).map(o => o.key) },
-      { action: "none", label: t("Aucune"), callback: () => [] }
+        callback: (event, button, dialog) => {
+          const sneakOn = eligible && (!ask || checked(dialog, button, "sneak"));
+          return {
+            sneak: eligible ? sneakOn : null,
+            strikes: sneakOn ? options.filter(o => checked(dialog, button, o.key)).map(o => o.key) : [],
+            bonuses: bonuses.filter(b => checked(dialog, button, `bonus-${b.key}`)).map(b => b.key)
+          };
+        } },
+      // « Rien » : ni Frappe ni dégâts au choix ; l'Attaque sournoise reste si elle est automatique, et se garde si on la demandait.
+      { action: "none", label: t((ask || bonuses.length) ? "Rien" : "Aucune"), callback: () => ({ sneak: eligible ? !ask : null, strikes: [], bonuses: [] }) }
     ]
-  }, { fallback: [] });
-  return Array.isArray(picked) ? picked : [];
+  }, { fallback });
+  return (picked && (typeof picked === "object")) ? picked : fallback;
 }

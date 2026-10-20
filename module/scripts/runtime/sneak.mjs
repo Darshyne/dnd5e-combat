@@ -10,13 +10,19 @@
  *    « a lieu aussitôt après que les dégâts de l'attaque ont été infligés » — sa sauvegarde joue sur la cible (Poison,
  *    Croc-en-jambe, Hébétement, Assommer, Aveugler : adapter/areas.mjs, `strikeAgainst`), ou Repli ouvre à l'auteur un
  *    déplacement de la moitié de sa Vitesse sans attaque d'opportunité.
+ *  - §223 (#16) : réglage de monde « Attaque sournoise : automatique / demander ». En mode « demander », l'auteur décide sur ce coup
+ *    dans la fenêtre des Frappes rusées (adapter/sneak.mjs, `askHitOptions`) ; refusée, elle reste disponible pour un autre coup du tour.
+ *    L'activité de dégâts de l'item (« Soi-même » dans les données du Manuel des joueurs : elle frappait le roublard) ne se lance plus :
+ *    elle dit que l'Attaque sournoise viendra au prochain coup éligible et, en mode « demander », la réserve pour ce coup (sans question).
  * Limite : un jet de dégâts lancé hors du moteur (bouton de la carte) a l'Attaque sournoise, sans question de Frappe rusée.
  */
 
 import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
 import { settleStrikes, affordableStrikes } from "../core/sneak.mjs";
-import { sneakAttackFor, attackMessageFor, markSneakSpent, sneakBonusesOf, strikeOptionsOf, strikeMaxOf } from "../adapter/sneak.mjs";
+import { sneakAttackFor, attackMessageFor, markSneakSpent, sneakBonusesOf, strikeOptionsOf, strikeMaxOf, sneakItemOf, sneakSpent, sneakMode,
+  armSneak, sneakArmed, SNEAK_MODE_SETTING, SNEAK_MODES } from "../adapter/sneak.mjs";
+import { contentOf } from "../adapter/content.mjs";
 import { strikeAgainst } from "../adapter/areas.mjs";
 import { combatantFor, readBudget, writeBudget, movementOf } from "../adapter/turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
@@ -42,6 +48,8 @@ function onPreRollDamage(config, dialog, message) {
   const sneak = attack ? sneakAttackFor(attack, attackMessage) : null;
   if ( !sneak ) return true;
   if ( sneak.issue ) { log(`Sneak Attack: no (${WHY[sneak.issue] ?? sneak.issue})`); return true; }
+  // §223 : l'auteur l'a gardée pour un autre coup (réglage « demander »).
+  if ( config[MODULE_ID]?.sneak === false ) { log("Sneak Attack: kept for another hit"); return true; }
 
   const options = affordableStrikes(strikeOptionsOf(actor, sneak.target), sneak.dice.number);
   const { strikes, dice } = settleStrikes(config[MODULE_ID]?.strikes ?? [], options, { dice: sneak.dice.number, max: strikeMaxOf(actor) });
@@ -53,6 +61,7 @@ function onPreRollDamage(config, dialog, message) {
   const bonuses = sneakBonusesOf(actor);
   for ( const b of bonuses ) push(b.formula, b.data);
   markSneakSpent(actor).catch(err => console.warn(`${MODULE_ID} | Sneak Attack: turn not marked`, err));
+  if ( sneakArmed(actor) ) armSneak(actor, false).catch(() => {});
   foundry.utils.setProperty(message, `data.flags.${MODULE_ID}.sneak`, {
     item: sneak.item.uuid, dice, faces: sneak.dice.faces, strikes, target: sneak.target.uuid, source: sneak.source.uuid,
     bonuses: bonuses.map(b => b.name)
@@ -103,7 +112,39 @@ async function onResolution(resolution) {
   }
 }
 
+/* -------------------------------------------- */
+/*  §223 : l'activité de l'item                 */
+/* -------------------------------------------- */
+
+/**
+ * L'activité de dégâts de l'Attaque sournoise (`dnd5e.preUseActivity`, sur le client de celui qui l'utilise) : jamais lancée — ses
+ * données la font viser le roublard. Elle dit à la place quand l'Attaque sournoise viendra, et en mode « demander » la réserve pour le
+ * prochain coup éligible de ce tour.
+ */
+function onPreUseActivity(activity) {
+  const actor = activity?.actor;
+  if ( (activity?.type !== "damage") || !actor || !contentOf(activity.item).entry?.sneakAttack ) return true;
+  // L'activité du hook est celle d'un clone de l'item (dnd5e, documents/activity/mixin.mjs:229) : comparée par id.
+  if ( sneakItemOf(actor)?.id !== activity.item?.id ) return true;
+  let text;
+  if ( sneakSpent(actor) ) text = loc("Sournoise.ActiviteDejaUtilisee");
+  else if ( sneakMode() !== "ask" ) text = loc("Sournoise.ActiviteAuto");
+  else {
+    const armed = !sneakArmed(actor);
+    armSneak(actor, armed).catch(err => console.warn(`${MODULE_ID} | Sneak Attack: not reserved`, err));
+    text = loc(armed ? "Sournoise.ActiviteReservee" : "Sournoise.ActiviteLiberee");
+    log(`Sneak Attack: ${armed ? "reserved for the next eligible hit" : "reservation released"} (${actor.name})`);
+  }
+  ui.notifications.info(text);
+  return false;
+}
+
 export function registerSneak() {
+  game.settings.register(MODULE_ID, SNEAK_MODE_SETTING, {
+    name: `DND5ECOMBAT.Reglage.${SNEAK_MODE_SETTING}.Nom`, hint: `DND5ECOMBAT.Reglage.${SNEAK_MODE_SETTING}.Aide`, scope: "world", config: true,
+    type: String, choices: Object.fromEntries(SNEAK_MODES.map(m => [m, `DND5ECOMBAT.Reglage.${SNEAK_MODE_SETTING}.${m}`])), default: "auto"
+  });
+  route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "Sneak Attack: item activity not redirected" });
   route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "Sneak Attack" });
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`sneak:${resolution?.id}`, () => onResolution(resolution)),
     { executor: true, label: "Cunning Strikes not played" });

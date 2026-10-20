@@ -36,7 +36,8 @@ const STYLES = {
   refused: { fill: 0xff7070, fontSize: 22 },    // un refus (Déjà visé, Trop loin)
   ended: { fill: 0x9ecbff, fontSize: 20 },      // un effet qui cesse (Renvoi, Sommeil sur dégâts)
   gain: { fill: 0x8fd18f, fontSize: 22 },       // une ressource rendue (Regain sauvage : +1 Forme sauvage)
-  spend: { fill: 0xffb347, fontSize: 20 }       // la ressource dépensée pour cela (−1 emplacement niv. 2)
+  spend: { fill: 0xffb347, fontSize: 20 },      // la ressource dépensée pour cela (−1 emplacement niv. 2)
+  strike: { fill: 0xe0453a, fontSize: 26 }      // §223 : un coup qui porte l'Attaque sournoise ou des dégâts au choix (Frappe effroyable)
 };
 
 function textOf(f) {
@@ -49,7 +50,7 @@ function textOf(f) {
     case "saveFail": return loc(f.auto ? "Retour.SauvegardeRateeOffice" : "Retour.SauvegardeRatee");
     case "duplicate": return loc("Retour.Replique");
     case "unaffected": return loc("Retour.NonAffecte");
-    case "prompt": case "refused": case "ended": case "gain": case "spend": return f.text;
+    case "prompt": case "refused": case "ended": case "gain": case "spend": case "strike": return f.text;
   }
   return null;
 }
@@ -107,12 +108,31 @@ function onCreateMessage(message) {
     const token = actor?.token ?? actor?.getActiveTokens?.(false, true)?.[0];
     if ( token ) show(changes.map(c => ({ token: token.uuid, kind: c.kind, text: resourceText(c) })));
   }
+  if ( message.type === "damage" ) showStrikes(message);
   const ended = message.getFlag?.(MODULE_ID, "ended");
   if ( !ended?.actor || !game.settings.get(MODULE_ID, "feedbackText") || !canvas?.ready ) return;
   if ( (Date.now() - (message.timestamp ?? 0)) > FRESH_MS ) return;
   const actor = fromUuidSync(ended.actor, { strict: false });
   const token = actor?.getActiveTokens?.(false, true)?.[0];
   if ( token ) show([{ token: token.uuid, kind: "ended", text: loc("Retour.FinEffet", { item: fromUuidSync(ended.effect, { strict: false })?.name ?? ended.item ?? "" }) }]);
+}
+
+/**
+ * §223 : chez tout le monde, au jet de dégâts d'un coup qui porte l'Attaque sournoise (runtime/sneak.mjs, drapeau `sneak`) ou des
+ * dégâts bonus choisis par l'auteur (runtime/triggers.mjs, drapeau `bonuses`, parts `ask` : Frappe effroyable) : leur nom, en rouge,
+ * au-dessus de la cible — comme une sauvegarde ratée.
+ */
+function showStrikes(message) {
+  if ( !game.settings.get(MODULE_ID, "feedbackText") || !canvas?.ready || ((Date.now() - (message.timestamp ?? 0)) > FRESH_MS) ) return;
+  const sneak = message.getFlag(MODULE_ID, "sneak");
+  const chosen = (message.getFlag(MODULE_ID, "bonuses") ?? []).filter(b => b.ask);
+  if ( !sneak && !chosen.length ) return;
+  const target = sneak?.target ?? message.system?.targets?.[0]?.token ?? null;
+  if ( !target ) return;
+  const texts = [];
+  if ( sneak ) texts.push(loc("Retour.AttaqueSournoise", { n: sneak.dice, faces: sneak.faces }));
+  for ( const b of chosen ) texts.push(loc("Retour.DegatsChoisis", { name: b.name }));
+  show(texts.map(text => ({ token: target, kind: "strike", text })));
 }
 
 function onUpdateMessage(message, changes) {

@@ -6,7 +6,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { select, stepsOf, BEARER_MOMENTS, damagedByOriginSide } from "../core/triggers.mjs";
-import { declarationsOf, declarationsOfEffects, factsFor, tokenOf, consumedMarks } from "../adapter/triggers.mjs";
+import { declarationsOf, declarationsOfEffects, factsFor, tokenOf, consumedMarks, bonusTurnKey, bonusSpent, bonusKeyOf } from "../adapter/triggers.mjs";
 import { identifierOf } from "../adapter/content.mjs";
 import { comesFromItemEffect, originItemOf } from "../adapter/facts.mjs";
 import { usageTokenOf, speakerTokenOf, turnKeyAt } from "../adapter/turn.mjs";
@@ -79,12 +79,21 @@ function onPreRollDamage(config, dialog, message) {
   const typeOf = s => (s.damageType === "weapon") ? weaponType : s.damageType;
   const perTarget = targets.map(target => fire("preDamageRoll", { actor: source, source, target: target.actor, activity, sourceToken: origin, targetToken: target })
     .flatMap(d => stepsOf(d, "damage").filter(s => typeOf(s)).map(s => ({ name: d.name, formula: s.formula, damageType: typeOf(s),
-      once: (d.oncePerTurn === true) ? (d.identifier ?? d.name) : null, spends: s.spends ?? null, identifier: d.identifier ?? null }))));
+      once: (d.oncePerTurn === true) ? bonusKeyOf(d) : null, spends: s.spends ?? null, identifier: d.identifier ?? null,
+      key: bonusKeyOf(d), ask: d.ask ?? null, item: d.item ?? null }))));
   const candidates = new Map(perTarget.flat().map(s => [partKey(s), s]));
   if ( !candidates.size ) return true;
+  // §223 (#12) : une part au choix (`ask`, Frappe effroyable) n'est mise que si l'auteur l'a acceptée avant le jet
+  // (adapter/messages.mjs, `rollDamageForAttack`) ; un jet lancé hors du moteur n'en a pas.
+  const accepted = config[MODULE_ID]?.acceptedBonuses ?? [];
+  for ( const s of Array.from(candidates.values()).filter(x => x.ask && !accepted.includes(x.key)) ) {
+    candidates.delete(partKey(s));
+    log(`bonus damage: ${s.name} not chosen`);
+  }
+  if ( !candidates.size ) return true;
   // §19.9 : « une fois par tour » (Attraction de la mort) — n'importe quel tour, en combat ; marqué sur l'acteur de l'auteur.
-  const turn = game.combat?.started ? `${game.combat.id}:${game.combat.round}:${game.combat.turn}` : null;
-  const spent = s => !!s.once && !!turn && (source.getFlag(MODULE_ID, `oncePerTurn.${s.once}`) === turn);
+  const turn = bonusTurnKey();
+  const spent = s => bonusSpent(source, s.once);
   const agreed = Array.from(candidates.values()).filter(s => !spent(s) && perTarget.every(list => list.some(o => partKey(o) === partKey(s))));
   for ( const s of agreed ) {
     if ( s.once && turn ) source.setFlag(MODULE_ID, `oncePerTurn.${s.once}`, turn).catch(err => console.warn(`${MODULE_ID} | ${s.name}: turn not marked`, err));
@@ -98,6 +107,12 @@ function onPreRollDamage(config, dialog, message) {
     const spent = (source.appliedEffects ?? source.effects ?? []).filter(e => comesFromItemEffect(e, s.spends)
       && (!s.identifier || (identifierOf(originItemOf(e) ?? {}).id === s.identifier)));
     for ( const e of spent ) e.delete().then(() => log(`${s.name}: "${e.name}" spent`), err => console.warn(`${MODULE_ID} | ${e.name}: not removed`, err));
+  }
+  // §223 : une part au choix dépense une utilisation de l'activité qui en tient le compte (Frappe effroyable : Sagesse par repos long).
+  for ( const s of agreed.filter(x => x.ask?.uses) ) {
+    const uses = fromUuidSync(s.item ?? "", { strict: false })?.system?.activities?.get(s.ask.uses);
+    if ( uses ) uses.update({ "uses.spent": (Number(uses.uses?.spent) || 0) + 1 })
+      .then(() => log(`${s.name}: one use spent`), err => console.warn(`${MODULE_ID} | ${s.name}: use not spent`, err));
   }
   const data = activity.getRollData();
   for ( const s of agreed ) {

@@ -21,6 +21,7 @@ import { log } from "./shared.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { sideOf } from "../adapter/factions.mjs";
 import { lengthIn } from "../adapter/units.mjs";
+import { samePlane } from "../adapter/plane.mjs";
 
 const defeated = actor => actor.statuses.has("dead") || actor.statuses.has(CONFIG.specialStatusEffects.DEFEATED);
 
@@ -33,7 +34,7 @@ function reached(source, emanation, tokens, { dying=false }={}) {
   const statuses = source.actor.statuses;
   const inactive = !dying && (outOfPlay(source) || (emanation.active && INCAPACITATING.some(s => statuses.has(s))));
   const candidates = tokens.filter(t => t.parent === source.parent).map(t => {
-    const out = (t === source) || outOfPlay(t);
+    const out = (t === source) || outOfPlay(t) || !samePlane(source, t);   // §225 : ni d'un plan à l'autre
     const distance = out ? Infinity : distanceBetween(source, t).value;
     const near = distance <= radius + 1e-6;
     return {

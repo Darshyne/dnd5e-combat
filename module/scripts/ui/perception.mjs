@@ -19,6 +19,7 @@ import { canHear } from "../adapter/hearing.mjs";
 import { sensesThrough } from "../core/light.mjs";
 import { route } from "../runtime/router.mjs";
 import { theaterActive } from "../runtime/theater-state.mjs";
+import { perceivesPlane } from "../adapter/plane.mjs";
 
 const SIMULATED = `${MODULE_ID}.`;   // préfixe des sources de vision jetables (adapter/vision.mjs, SOURCE_PREFIX)
 const SIGHT = 0;                      // DetectionMode.DETECTION_TYPES.SIGHT
@@ -72,19 +73,30 @@ function reportOnce(err) {
   const key = String(err?.message ?? err);
   if ( reported.has(key) ) return;
   reported.add(key);
-  console.error(`${MODULE_ID} | perception (mist, hearing): ${key}\n${err?.stack ?? ""}`);
+  console.error(`${MODULE_ID} | perception (mist, hearing, plane): ${key}\n${err?.stack ?? ""}`);
 }
 
-/** La sous-classe d'un mode de détection : la vue s'arrête à la brume ; la perception de la lumière entend en dernier recours. */
+/** §225 : la cible est-elle hors de portée de perception de l'observateur, d'un plan à l'autre (Éthéré) ? */
+function offPlane(visionSource, object) {
+  const p = pair(visionSource, object);
+  return !!p && !perceivesPlane(p.observer, p.target);
+}
+
+/**
+ * La sous-classe d'un mode de détection : aucun ne perçoit d'un plan à l'autre sans vue de l'Éthéré (§225) ; la vue s'arrête à la
+ * brume ; la perception de la lumière entend en dernier recours.
+ */
 function extend(id, mode) {
   const Base = mode.constructor;
   const sight = mode.type === SIGHT;
   const listens = id === "lightPerception";
-  if ( !sight && !listens ) return null;
   const Extended = class extends Base {
     testVisibility(visionSource, tokenMode, config) {
       // §220 : Théâtre de l'esprit — le test du cœur seul.
       if ( theaterActive() ) return super.testVisibility(visionSource, tokenMode, config);
+      try { if ( offPlane(visionSource, config.object) ) return false; }
+      catch(err) { reportOnce(err); }
+      if ( !sight && !listens ) return super.testVisibility(visionSource, tokenMode, config);
       // Ce que le moteur ajoute ne doit jamais casser l'affichage du cœur : une erreur → le test du cœur seul, et la pile une fois.
       let blocked = false;
       try { blocked = sight && blockedFor(id, visionSource, config.object); }

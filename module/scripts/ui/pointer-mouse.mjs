@@ -8,7 +8,7 @@ import { footprintGap } from "../core/movement.mjs";
 import { positionOf, distanceBetween } from "../adapter/turn.mjs";
 import { planPath, previewPath, cellUnder, footprintOf, stairsEntry, stairsDestinations } from "../adapter/movement.mjs";
 import { strike } from "../runtime/storm.mjs";
-import { movementCap, reachCells, basicAttack, hostileTo, moveTo, approaches, contactAction, contactRefusal, rangeStatus, currentTeleport, teleportClick, dashStrike, dashRefusal, dashPreview, gapCells, tooHighFor } from "../runtime/actions.mjs";
+import { movementCap, reachCells, basicAttack, hostileTo, moveTo, approaches, contactAction, contactRefusal, planeRefusal, rangeStatus, currentTeleport, teleportClick, dashStrike, dashRefusal, dashPreview, gapCells, tooHighFor } from "../runtime/actions.mjs";
 import { pocketedFamiliar, recallFamiliar, recallRefusal } from "../runtime/familiar.mjs";
 import { leapProblem } from "../runtime/projectiles.mjs";
 import { tetherOfActivity, tetheredToken } from "../adapter/tether.mjs";
@@ -74,7 +74,7 @@ function clickAttackAllowed() {
 function clickAttackApplies(me, other) {
   // §110 : chez le MJ, le clic gauche sur un token reste celui du cœur (sélection) ; ses actions passent par le clic droit.
   if ( game.user.isGM ) return false;
-  return clickAttackAllowed() && hostileTo(me, other) && !!basicAttack(me.actor);
+  return clickAttackAllowed() && hostileTo(me, other) && !planeRefusal(me, other) && !!basicAttack(me.actor);
 }
 
 export let down = null;
@@ -299,6 +299,8 @@ function refusalOf(me, hover, activity, usageConfig=null) {
 
 /** Les refus qui ne tiennent pas à la portée : type de cible, lien, Enchaînement, rebond, contact. */
 function refusalBeforeRange(me, hover, activity, usageConfig) {
+  const otherPlane = planeRefusal(me, hover);   // §225
+  if ( otherPlane ) return otherPlane;
   const wrongTarget = targetTypeRefusal(me, hover, activity);
   if ( wrongTarget ) return wrongTarget;
   // §16.43 : l'action suivante d'un lien (Trait ensorcelé) ne vise que la créature liée.

@@ -18,6 +18,7 @@ import { sideOf } from "../adapter/factions.mjs";
 import { alliedSides } from "../core/factions.mjs";
 import { lengthIn } from "../adapter/units.mjs";
 import { burnTick } from "./flammable.mjs";
+import { samePlane } from "../adapter/plane.mjs";
 const currentTurnKey = () => turnKeyOf(game.combat?.started ? game.combat.round : null, game.combat?.turn);
 
 /** Le token peut-il subir la zone ? Pas celui qui l'a posée depuis lui-même, pas un mort. */
@@ -25,6 +26,9 @@ function isAffectable(token, state) {
   if ( !token?.actor || (token.uuid === state.exclude) ) return false;
   if ( isObjectToken(token) ) return false;   // un objet piloté ou un tas au sol n'est pas une créature (§16.15, §16.60)
   if ( token.actor.statuses.has(CONFIG.specialStatusEffects.DEFEATED) ) return false;
+  // §225 : une zone n'agit que sur son plan, celui de son lanceur.
+  const caster = state.source ? fromUuidSync(state.source, { strict: false }) : null;
+  if ( caster && !samePlane(caster, token) ) return false;
   // §16.23 : même règle qu'à la pose (core/area.mjs, selectAreaTargets) — alliés ou ennemis du lanceur seulement.
   if ( !["ally", "enemy"].includes(state.affects) || (state.originDisposition === null) || (state.originDisposition === undefined) ) return true;
   const sameSide = alliedSides(sideOf(token), state.originSide ?? { disposition: state.originDisposition });   // §181

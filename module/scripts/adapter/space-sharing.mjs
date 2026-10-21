@@ -7,6 +7,7 @@
 import { contentOf } from "./content.mjs";
 import { originItemOf } from "./facts.mjs";
 import { mayShareSpace, widerShare } from "../core/space-sharing.mjs";
+import { samePlane } from "./plane.mjs";
 
 /** @returns {"enter"|"mutual"|null} */
 export function shareKindOf(actor) {
@@ -27,5 +28,6 @@ export function shareKindOf(actor) {
 /** Le token qui bouge peut-il traverser la case de l'autre et s'y arrêter ? Documents de token. */
 export function sharesSpaceWith(mover, occupant) {
   if ( !mover?.actor || !occupant?.actor ) return false;
+  if ( !samePlane(mover, occupant) ) return true;   // §225 : d'un plan à l'autre, on ne se gêne pas
   return mayShareSpace(shareKindOf(mover.actor), shareKindOf(occupant.actor));
 }

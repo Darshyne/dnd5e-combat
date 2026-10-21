@@ -30,7 +30,7 @@ import { alliedSides } from "./factions.mjs";
  */
 export function selectAreaTargets(candidates, { origin, originDisposition, originSide=null, excludeOrigin, affects }) {
   return candidates.filter(c => {
-    if ( c.defeated || (c.lineOfEffect === false) || (c.inVolume === false) ) return false;
+    if ( c.defeated || (c.lineOfEffect === false) || (c.inVolume === false) || (c.offPlane === true) ) return false;   // §225
     if ( c.token === origin ) return !excludeOrigin && (affects !== "enemy");
     if ( (affects !== "ally") && (affects !== "enemy") ) return true;
     // Sans camp connu pour le lanceur, on ne devine pas : tout le monde est affecté, le MJ annulera au besoin.

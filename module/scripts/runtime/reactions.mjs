@@ -24,6 +24,7 @@ import { takeReactionDamage } from "../adapter/marks.mjs";
 import { areEnemies, areSworn, sideOf } from "../adapter/factions.mjs";
 import { readyPlanOf, readyTriggered } from "../core/ready.mjs";
 import { readyOption } from "../adapter/ready.mjs";
+import { samePlane } from "../adapter/plane.mjs";
 
 /** §134 : Rapide — le nom de l'item qui donne le Désavantage aux attaques d'opportunité contre cet acteur, ou null. */
 function hamperedBy(actor) {
@@ -423,6 +424,7 @@ export function opportunityThreats(token, waypoints) {
     // Une victime traînée par cet agrippeur le suit : elle ne voit pas « partir » celui qui l'emporte.
     if ( dragged.includes(other) ) continue;
     if ( pilotOf(other) ) continue;   // ni ne menace d'attaque d'opportunité
+    if ( !samePlane(other, token) ) continue;   // §225 : ni attaque d'opportunité ni action préparée d'un plan à l'autre
     if ( opportunityBlocked(other.actor) ) continue;   // §23 : Poigne électrique
     // §136 : Attaque réactive — l'allonge de l'arme d'hast tenue, pas celle de l'attaque d'opportunité.
     const strike = reactiveStrikesOf(other.actor);

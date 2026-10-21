@@ -15,5 +15,7 @@ export const MACROS = [
   { file: "nettoyage-tas-item-piles.js", name: "5. Remove basic actions from Item Piles piles",
     img: "icons/containers/bags/case-leather-tan.webp" },
   { file: "reparer-creatures.js", name: "6. Repair creature sheets (identifiers, CPR basic actions)",
-    img: "icons/creatures/abilities/paw-print-pair-purple.webp" }
+    img: "icons/creatures/abilities/paw-print-pair-purple.webp" },
+  { file: "basculer-ethere.js", name: "Toggle Ethereal Plane (selected tokens)",
+    img: "systems/dnd5e/icons/svg/statuses/ethereal.svg" }
 ];

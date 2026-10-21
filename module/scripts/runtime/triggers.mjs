@@ -20,6 +20,7 @@ import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { log, loc, say, locEsc } from "./shared.mjs";
 import { sideOf } from "../adapter/factions.mjs";
+import { samePlane } from "../adapter/plane.mjs";
 
 /**
  * L'activité de sauvegarde à rejouer : celle d'où vient l'effet, ou, pour un effet posé par une attaque dont la sauvegarde est
@@ -42,6 +43,9 @@ export function announce(moment, context) {
  */
 export function matching(moment, context) {
   if ( !context.actor ) return [];
+  // §225 : rien ne s'accroche d'un plan à l'autre (réaction, dégâts bonus, protection d'un allié) — l'Éthéré ne touche que l'Éthéré.
+  const others = [context.source ?? context.sourceToken, context.target ?? context.targetToken].filter(Boolean);
+  if ( others.some(other => !samePlane(context.actor, other)) ) return [];
   const declarations = BEARER_MOMENTS.includes(moment)
     ? [...declarationsOf(context.actor), ...declarationsOfEffects(context.actor)]
     : declarationsOf(context.actor);

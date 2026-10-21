@@ -34,6 +34,7 @@ import { onTeleport } from "./teleport.mjs";
 import { onDashTemplate, onDashUsed } from "./dash.mjs";
 import { onPreMoveToken } from "./move-gate.mjs";
 import { identifierOf } from "../adapter/content.mjs";
+import { samePlane } from "../adapter/plane.mjs";
 export { afterTeleport, currentTeleport, selfTeleportOf, teleportClick, teleportSelf, teleportTo } from "./teleport.mjs";
 export { dashLimit, dashPreview, dashProblem, dashRefusal, dashStrike, dashTargets, lineDashOf, transpose } from "./dash.mjs";
 
@@ -170,6 +171,11 @@ export function basicAttack(actor) {
 export function hostileTo(me, other) {
   const pilot = pilotOf(me);
   return areEnemies(pilot ? (summonerToken(pilot) ?? me) : me, other);
+}
+
+/** §225 : une créature d'un autre plan (Éthéré) ne peut être ni visée ni touchée — le refus en clair, ou null. */
+export function planeRefusal(token, target) {
+  return (target && (target !== token) && !samePlane(token, target)) ? loc("Retour.AutrePlan") : null;
 }
 
 /* -------------------------------------------- */
@@ -692,8 +698,8 @@ export async function engage(token, target, activity, { mode=null, fast=false, u
   // §150 : le mode qu'un voisin a mis dans la configuration d'utilisation (`{ "dnd5e-combat": { attackMode } }` : la main secondaire de la
   // Barre) — sans lui, il se perdait entre la visée et le jet.
   mode ??= usage?.[0]?.[MODULE_ID]?.attackMode ?? null;
-  // §18.22 : un geste de contact sur une cible qui ne s'y prête pas est refusé avant tout déplacement.
-  const refusal = contactRefusal(token, target, activity);
+  // §18.22 : un geste de contact sur une cible qui ne s'y prête pas est refusé avant tout déplacement ; §225 : de même d'un plan à l'autre.
+  const refusal = planeRefusal(token, target) ?? contactRefusal(token, target, activity);
   if ( refusal ) {
     ui.notifications.warn(loc("LabelValue", { label: target.name, value: refusal }));
     notice(target, refusal);

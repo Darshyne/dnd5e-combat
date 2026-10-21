@@ -72,6 +72,7 @@ function unaffectedText({ reason, detail }) {
   if ( reason === "type" ) return loc("NonAffecte.type", { types: typesLabel((detail ?? "").split(",").filter(Boolean)) });
   if ( reason === "immune" ) return loc("NonAffecte.immune", { status: statusName(detail) });
   if ( reason === "globe" ) return loc("NonAffecte.globe", { item: detail ?? "" });
+  if ( reason === "plane" ) return loc("NonAffecte.plane");
   return loc("NonAffecte.content");
 }
 

@@ -11,6 +11,7 @@ import { route } from "./router.mjs";
 import { log, isExecutor } from "./shared.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { sideOf } from "../adapter/factions.mjs";
+import { samePlane } from "../adapter/plane.mjs";
 
 const isInactive = actor => actor.statuses.has("incapacitated") || actor.statuses.has("dead")
   || actor.statuses.has(CONFIG.specialStatusEffects.DEFEATED);
@@ -51,7 +52,9 @@ async function refreshScene(scene) {
     // seulement pour qui est à portée, la ligne d'effet coûte des rayons.
     const candidates = tokens.map(t => {
       // §16.47 : qui porte déjà l'effet d'origine du sort n'en reçoit pas de copie.
-      const distance = carriesOriginal(t.actor, aura) ? Infinity : (t === sourceToken ? 0 : distanceBetween(sourceToken, t).value);
+      // §225 : ni d'un plan à l'autre.
+      const distance = (carriesOriginal(t.actor, aura) || !samePlane(sourceToken, t)) ? Infinity
+        : (t === sourceToken ? 0 : distanceBetween(sourceToken, t).value);
       const lineOfEffect = ((t === sourceToken) || (distance > radius + 1e-6)) ? null : hasLineOfEffect(sourceToken, t);
       return { ...sideOf(t), token: t.uuid, distance, lineOfEffect, type: t.actor.system.details?.type?.value ?? null };
     });

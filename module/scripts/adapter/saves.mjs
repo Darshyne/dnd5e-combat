@@ -29,6 +29,7 @@ import { foretellFor } from "./portent.mjs";
 import { foretoldRange } from "../core/portent.mjs";
 import { isSpellCast } from "./scrolls.mjs";
 import { areEnemies, sideOf, factionOf } from "./factions.mjs";
+import { samePlane } from "./plane.mjs";
 export { applyEffectsToToken, applyMarkToToken, applyStatusToToken, removeEffects, splitPushes } from "./apply-effects.mjs";
 export { TARGETS_QUERY, handleTargetsQuery, showTargetsTo } from "./show-targets.mjs";
 
@@ -89,7 +90,8 @@ export async function readActivityRegion(region) {
       faction: factionOf(t), stance: t.getFlag(MODULE_ID, "stance") ?? null,   // §181
       defeated: t.actor.statuses?.has(CONFIG.specialStatusEffects.DEFEATED) === true,
       lineOfEffect: reachesFromPoint(areaOrigin, t),
-      inVolume: insideSphere(sphere, t)
+      inVolume: insideSphere(sphere, t),
+      offPlane: originToken ? !samePlane(originToken, t) : false   // §225 : la zone est sur le plan de son lanceur
     }))
   };
 }

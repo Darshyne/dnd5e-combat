@@ -13,6 +13,7 @@ import { factsFor, creatureTypeOf, conditionImmunitiesOf, originItemOf } from ".
 import { distanceBetween } from "./turn.mjs";
 import { readUnitFactors, lengthIn } from "./units.mjs";
 import { isSpellCast } from "./scrolls.mjs";
+import { samePlane } from "./plane.mjs";
 
 /**
  * §161 : Globe d'invulnérabilité — « un sort de niveau 5 ou moins lancé de l'extérieur ne peut affecter quoi que ce soit dans
@@ -68,11 +69,13 @@ async function statusesOfRef(ref) {
 /**
  * Pourquoi l'action ne peut pas affecter la créature de ce token, ou null : type interdit, règle du contenu, ou
  * immunité à chacun de ses effets quand elle ne fait rien d'autre (core/eligibility.mjs, `immuneToAll`).
- * @returns {Promise<{reason: "type"|"content"|"immune", detail?: string}|null>}
+ * §225 : d'abord le plan — une créature dans l'Éthéré n'est affectée que par ce qui vient de l'Éthéré, et inversement.
+ * @returns {Promise<{reason: "plane"|"globe"|"type"|"content"|"immune", detail?: string}|null>}
  */
 export async function unaffectedBy(activity, plan, token, { castLevel=null }={}) {
   const actor = token?.actor;
   if ( !actor || !activity ) return null;
+  if ( activity.actor && !samePlane(activity.actor, actor) ) return { reason: "plane" };
   const globe = globeAgainst(activity, token, castLevel ?? Number(activity.item?.system?.level ?? 0));
   if ( globe ) return { reason: "globe", detail: globe.name };
   const rule = targetRuleOf(activity);

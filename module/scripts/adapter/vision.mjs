@@ -32,6 +32,7 @@ import { revealedInvisible, seesInvisible } from "./facts.mjs";
 import { outsideCone } from "./cone.mjs";
 import { hiddenFrom } from "./stealth.mjs";
 import { lengthIn } from "./units.mjs";
+import { perceivesPlane } from "./plane.mjs";
 
 const SOURCE_PREFIX = "dnd5e-combat";
 
@@ -160,6 +161,7 @@ export function canSee(observer, target, { ignoreHidden=false }={}) {
   if ( !target.object || target.hidden ) return false;   // un token caché par le MJ est hors jeu pour tout le monde
   if ( outsideCone(observer, target) ) return false;   // §182 : hors combat, une créature du MJ ne voit que devant elle
   if ( !ignoreHidden && hiddenFrom(observer, target) ) return false;   // §185 : caché, pour un ennemi qui ne l'a pas repéré
+  if ( !perceivesPlane(observer, target) ) return false;   // §225 : d'un plan à l'autre, seulement avec une vue de l'Éthéré
   const source = sourceFor(observer);
   if ( !source ) return null;
   const config = testsFor(target, observer);

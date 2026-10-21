@@ -121,6 +121,8 @@ import { registerFeedback } from "./ui/feedback.mjs";
 import { registerTracker } from "./ui/tracker.mjs";
 import { registerLightIndicator, lightState } from "./ui/illumination.mjs";
 import { registerPerception } from "./ui/perception.mjs";
+import { registerEtherealUI } from "./ui/ethereal.mjs";
+import { etherealApi } from "./runtime/ethereal.mjs";
 import { registerVigor } from "./ui/vigor.mjs";
 import { registerAutomation, reportsApi } from "./ui/automation.mjs";
 import { registerMasteryUI, masteryApi } from "./ui/mastery.mjs";
@@ -191,6 +193,7 @@ const state = {
   factions: { ...factionsApi, open: () => openFactions() },
   sneak: stealthApi,
   climb: climbApi,
+  ethereal: etherealApi,   // §225 : `is(token)`, `perceives(observer, target)`, `toggle(tokens?, active?)`
   theater: theaterApi,   // §220 : Théâtre de l'esprit — `active()`, `set(on)` ; hook `dnd5e-combat.theater`
   gap: publicGap
 };
@@ -356,6 +359,7 @@ Hooks.once("init", () => {
   gated(registerTracker);
   gated(registerLightIndicator);
   gated(registerPerception);   // §62 : la brume cache à l'écran, l'ouïe montre ce qu'on entend
+  gated(registerEtherealUI);   // §225 : le token Éthéré en fantôme, la scène grise vue de l'Éthéré
   gated(registerVigor);
   gated(registerCureUi);
   gated(registerWallSideUi);   // §171 : anneau de feu — vers l'intérieur ou vers l'extérieur

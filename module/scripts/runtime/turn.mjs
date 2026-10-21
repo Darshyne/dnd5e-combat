@@ -28,6 +28,7 @@ import { log, loc, sleep } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { antimagicAround, barrierBetween } from "../adapter/barriers.mjs";
 import { windowDisengaged } from "./reactions.mjs";
+import { samePlane } from "../adapter/plane.mjs";
 
 /* -------------------------------------------- */
 /*  Légalité, sur le client de celui qui agit   */
@@ -252,13 +253,14 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const aimed = Array.from(game.user.targets).filter(t => (t.document !== origin) && t.actor);
   const charmers = hostileToCharmer(activity) ? charmersOf(activity.actor) : new Set();
   const charmed = aimed.filter(t => charmers.has(t.actor.uuid));
+  const offPlane = origin ? aimed.filter(t => !samePlane(origin, t.document)) : [];   // §225 : pas d'un plan à l'autre
   const unseen = (origin && sightRequired(activity)) ? aimed.filter(t => canSee(origin, t.document) === false) : [];
   // §62 : une créature cachée, ni vue ni perçue autrement, n'a pas de position connue — pas de cible (une zone, si).
   // §163 : Coquille antivie — pas de coup au corps à corps à travers la barrière.
   const fenced = origin ? aimed.map(t => ({ name: t.name, zone: barrierBetween(origin, t.document, activity) })).filter(t => t.zone) : [];
   const lost = (origin && !activity.target?.template?.type) ? aimed.filter(t => !unseen.includes(t)
     && locationUnknown({ hidden: hiddenDcOf(t.actor) !== null, sees: canSee(origin, t.document) })) : [];
-  if ( !use.lines.length && !range.blocking.length && !seenBy.length && !wrongType.length && !charmed.length && !unseen.length && !lost.length && !fenced.length ) return true;
+  if ( !use.lines.length && !range.blocking.length && !seenBy.length && !wrongType.length && !charmed.length && !unseen.length && !lost.length && !fenced.length && !offPlane.length ) return true;
 
   const lines = [
     ...use.lines,
@@ -266,6 +268,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     ...(seenBy.length ? [loc("Souci.hideSeen", { names: seenBy.map(t => t.name).join(", ") })] : []),
     ...wrongType.map(t => loc("Souci.wrongType", { name: t.name, types: typesLabel(t.types), item: activity.item.name })),
     ...charmed.map(t => loc("Souci.charmed", { name: t.name })),
+    ...offPlane.map(t => loc("Souci.otherPlane", { name: t.name })),
     ...unseen.map(t => loc("Souci.notSeen", { name: t.name })),
     ...lost.map(t => loc("Souci.hiddenTarget", { name: t.name })),
     ...fenced.map(t => loc("Souci.barrier", { name: t.name, item: t.zone.item.name }))

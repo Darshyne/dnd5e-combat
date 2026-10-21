@@ -8,7 +8,7 @@
 
 /** Les onglets, dans l'ordre. `tools` : les fenêtres qu'un bouton de l'onglet ouvre (MJ seulement). */
 export const SETTINGS_TABS = Object.freeze([
-  { id: "general", icon: "fa-solid fa-dragon", keys: ["automationLevel", "theaterOfMind", "provideBasicActions", "autoUsage", "autoTranslate"],
+  { id: "general", icon: "fa-solid fa-dragon", keys: ["automationLevel", "theaterOfMind", "etherealPlane", "provideBasicActions", "autoUsage", "autoTranslate"],
     tools: [{ id: "welcome", icon: "fa-solid fa-dragon" }, { id: "diagnostic", icon: "fa-solid fa-stethoscope" },
       { id: "reports", icon: "fa-solid fa-flag" }] },
   { id: "combat", icon: "fa-solid fa-shield-halved",

@@ -284,6 +284,10 @@ export const SPELL_RULES = Object.freeze({
   // §161 (relevé des sorts, lot 5a). Détection de l'invisibilité : « vous voyez les créatures et objets Invisibles comme s'ils étaient
   // visibles » (le plan Éthéré : non repris).
   "see-invisibility": { seesInvisible: true },
+  // §225, lot 4 : traits du Bestiaire 2024 — « se téléporte du plan matériel au plan Éthéré ou inversement » (araignée de phase) ;
+  // Foulée éthérée emmène aussi les créatures désignées.
+  "ethereal-jaunt": { etherealShift: true },
+  "ethereal-stride": { etherealShift: { others: true } },
   // Injonction (Compulsion) : « à la fin de chacun de ses tours, la cible refait le JS de Sagesse » (le déplacement dans la direction
   // choisie par une action Bonus : au MJ).
   "compulsion": { triggers: [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }] }] },

@@ -84,7 +84,7 @@ export function registerEtherealUI() {
     updateView();
     for ( const token of canvas?.tokens?.placeables ?? [] ) token.renderFlags.set({ refreshState: true });
   };
-  for ( const hook of ["canvasReady", "controlToken"] ) route(hook, viewChanged, label);
+  for ( const hook of ["canvasReady", "controlToken", `${MODULE_ID}.etherealPlane`] ) route(hook, viewChanged, label);
   for ( const hook of ["createActiveEffect", "updateActiveEffect", "deleteActiveEffect"] ) route(hook, refreshAll, label);
   route("canvasTearDown", () => { if ( canvas?.stage?.filters ) canvas.stage.filters = canvas.stage.filters.filter(f => f !== gray); },
     { label: "ethereal: gray filter removed" });

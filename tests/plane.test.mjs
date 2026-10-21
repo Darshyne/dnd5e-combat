@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { planeOf, samePlane, perceivesAcross, crossesEtherealWall, etherealStepCost, ETHEREAL } from "../module/scripts/core/plane.mjs";
+import { planeOf, samePlane, perceivesAcross, crossesEtherealWall, etherealStepCost, nearestFreeCell, shuntDamage, etherealPlaneOn, setEtherealPlaneState, ETHEREAL } from "../module/scripts/core/plane.mjs";
 import { selectAreaTargets } from "../module/scripts/core/area.mjs";
 
 describe("§225 : plan Éthéré (statut `ethereal`)", () => {
@@ -53,5 +53,28 @@ describe("§225 : plan Éthéré (statut `ethereal`)", () => {
     expect(crossesEtherealWall({ x: 50, y: 50 }, { x: 150, y: 50 }, [])).toBe(false);
     expect(etherealStepCost(5, 0)).toBe(5);
     expect(etherealStepCost(5, -5)).toBe(10);
+  });
+
+  it("lot 4 : la case libre la plus proche, anneau par anneau, orthogonale d'abord ; dégâts 2 × pieds", () => {
+    const taken = new Set(["5,5", "5,6", "4,5"]);
+    const free = c => !taken.has(`${c.i},${c.j}`);
+    expect(nearestFreeCell({ i: 5, j: 5 }, free)).toEqual({ i: 5, j: 4, rings: 1 });
+    expect(nearestFreeCell({ i: 1, j: 1 }, free)).toEqual({ i: 1, j: 1, rings: 0 });
+    expect(nearestFreeCell({ i: 0, j: 0 }, () => false, 3)).toBe(null);
+    const ring2 = c => (Math.max(Math.abs(c.i), Math.abs(c.j)) >= 2);
+    expect(nearestFreeCell({ i: 0, j: 0 }, ring2)?.rings).toBe(2);
+    expect(shuntDamage(5)).toBe(10);
+    expect(shuntDamage(0)).toBe(0);
+  });
+
+  it("l'interrupteur du MJ : coupé, tout le monde est sur le plan matériel", () => {
+    expect(etherealPlaneOn()).toBe(true);
+    setEtherealPlaneState(false);
+    try {
+      expect(planeOf(ethereal)).toBe("material");
+      expect(samePlane(ethereal, material)).toBe(true);
+    }
+    finally { setEtherealPlaneState(true); }
+    expect(planeOf(ethereal)).toBe("ethereal");
   });
 });

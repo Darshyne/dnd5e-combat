@@ -170,7 +170,7 @@ describe("contenu livré", () => {
       "dread-ambusher", "dreadful-strikes", "dueling", "dwarven-resilience", "earth-element", "earthquake", "echoing-soul",
       "elder-champion", "eldritch-blast", "eldritch-smite", "elemental-adept", "elemental-affinity", "elemental-fury", "elemental-weapon",
       "elixir-of-health", "elusive", "empowered-channeling", "empowered-evocation", "energy-drain", "engulf", "enhance-ability",
-      "enlarge-reduce", "ensnaring-strike", "entangle", "entangling-trail", "evards-black-tentacles", "evasion", "evasive-footwork",
+      "enlarge-reduce", "ensnaring-strike", "entangle", "entangling-trail", "ethereal-jaunt", "ethereal-stride", "evards-black-tentacles", "evasion", "evasive-footwork",
       "expeditious-retreat", "eyebite", "faerie-fire", "fear", "fear-aura", "feign-death", "feinting-attack", "fell-word", "feral-pounce",
       "feral-strike", "fetid-aura", "fetid-cloud", "fey-ancestry", "find-familiar", "find-steed", "fire-aura", "fire-element", "fire-form",
       "fire-shield", "fires-burn", "flame-aura", "flame-blade", "flaming-sphere", "flask-of-holy-water", "flesh-to-stone", "flyby",

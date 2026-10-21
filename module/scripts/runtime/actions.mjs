@@ -382,7 +382,7 @@ const MAX_DOORS_PER_MOVE = 3;
  * Dextérité (Acrobaties) DD 10, sinon À terre. Un saut en longueur garde sa hauteur : s'il arrive au-dessus d'un sol plus bas, dnd5e pose
  * « En chute » et la chute suit (runtime/falls.mjs). Sur le client de celui qui saute.
  */
-export async function jumpTo(token, point, { high=false, configure=true }={}) {
+export async function jumpTo(token, point, { high=false, configure=true, highOffered=false }={}) {
   const grid = canvas.scene.grid;
   const units = grid.units;
   const cell = cellUnder(token, point);
@@ -413,7 +413,8 @@ export async function jumpTo(token, point, { high=false, configure=true }={}) {
     // s'y jette sans sauter (pas de limite de saut, pas de Bottes), au prix d'une case de déplacement, et la chute suit (dégâts compris).
     jump = { ok: true, cost: horizontal, distance: horizontal, fixed: null, stepOff: true };
   } else {
-    if ( rise > 1e-6 ) return refuse("Saut.PlusHaut");
+    // L'entrée « Sauter en hauteur ici » n'est proposée que si le réglage de monde l'affiche (bêta) : le refus n'y renvoie qu'alors.
+    if ( rise > 1e-6 ) return refuse(highOffered ? "Saut.PlusHaut" : "Saut.PlusHautSansMenu");
     jump = { ...jumpCost(horizontal, options.long, options.fixed), distance: horizontal };
     if ( !jump.ok ) return refuse("Saut.TropLong", { max: fmt(jump.limit), elan: loc(options.runningStart ? "Saut.AvecElan" : "Saut.SansElan") });
   }

@@ -51,7 +51,7 @@ import { aimedAreaOf, aimedShapeData, aimedRegionData, wallAreaOf, rangedAreaOf,
 import { castAimed, placeAimed, placeWall } from "../runtime/self-area.mjs";
 import { clearPathTo } from "../adapter/cover.mjs";
 import { clampPolyline, polylineLength, orthogonalize } from "../core/wall.mjs";
-import { closeMenu, onMenuShift } from "./pointer-menu.mjs";
+import { closeMenu, onMenuShift, HIGH_JUMP_MENU_SETTING, NONLETHAL_MENU_SETTING } from "./pointer-menu.mjs";
 import { cancellable, clearPreview, forgetHover, lastPointer, onKeyDown, onModifierKey, onPointerDown, onPointerMove, onPointerUp, refusalFor, setCursor, trackPointer } from "./pointer-mouse.mjs";
 import { clearTargets, leftoverTargets, noteInFlight, offerEnchantedAttack, onFlurryUsed, onPostUseActivity, onPreRollDamage, onResolutionSettled, onTurnChange } from "./pointer-offers.mjs";
 export { menuEntriesFor } from "./pointer-menu.mjs";
@@ -911,6 +911,12 @@ export function registerPointer() {
   client("closeSheetOnUse", { type: Boolean, default: true });
   client("teleportPlanning", { type: Boolean, default: true });
   client("targetingBanner", { type: Boolean, default: true, onChange: () => announceTargeting() });
+  // §208 : « Sauter en hauteur ici » dans le menu contextuel — bêta, décidé par le MJ pour la table, désactivé par défaut.
+  game.settings.register(MODULE_ID, HIGH_JUMP_MENU_SETTING, { scope: "world", config: true, type: Boolean, default: false,
+    name: `DND5ECOMBAT.Reglage.${HIGH_JUMP_MENU_SETTING}.Nom`, hint: `DND5ECOMBAT.Reglage.${HIGH_JUMP_MENU_SETTING}.Aide` });
+  // §210 : l'interrupteur des coups non létaux dans le menu contextuel de son token — masqué par défaut.
+  game.settings.register(MODULE_ID, NONLETHAL_MENU_SETTING, { scope: "world", config: true, type: Boolean, default: false,
+    name: `DND5ECOMBAT.Reglage.${NONLETHAL_MENU_SETTING}.Nom`, hint: `DND5ECOMBAT.Reglage.${NONLETHAL_MENU_SETTING}.Aide` });
 
   route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "targeting: target expected" });
   route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "damage and healing without dialog" });

@@ -181,13 +181,28 @@ export function stairsEntries(token, point) {
     run: () => takeStairs(token, point, d.id) }));
 }
 
+/**
+ * §208 : l'entrée « Sauter en hauteur ici » (monter d'un saut sur une surface plus haute : estrade, rebord) — en bêta, derrière un
+ * réglage de monde désactivé par défaut (décision de l'utilisateur, 2026-10-21 : peu utile pour l'instant, elle encombrait le menu).
+ */
+export const HIGH_JUMP_MENU_SETTING = "highJumpMenu";
+const highJumpOffered = () => { try { return game.settings.get(MODULE_ID, HIGH_JUMP_MENU_SETTING) === true; } catch { return false; } };
+
+/**
+ * §210 : l'interrupteur des coups non létaux dans le menu contextuel de son token — masqué par défaut (décision de l'utilisateur,
+ * 2026-10-21) ; il reste au bouton poing de la barre de Combat UI. Réglage de monde.
+ */
+export const NONLETHAL_MENU_SETTING = "nonLethalMenu";
+const nonLethalOffered = () => { try { return game.settings.get(MODULE_ID, NONLETHAL_MENU_SETTING) === true; } catch { return false; } };
+
 export function groundEntries(token, point) {
+  const high = highJumpOffered();
   return [
     ...stairsEntries(token, point),
     { icon: "fa-solid fa-person-walking", label: loc("Menu.SeDeplacer"), run: () => moveTo(token, point) },
-    { icon: "fa-solid fa-person-running", label: loc("Menu.Sauter"), run: () => jumpTo(token, point) },
-    // §208 : monter d'un saut sur une surface plus haute (estrade, rebord).
-    { icon: "fa-solid fa-arrow-up-from-ground-water", label: loc("Menu.SauterHauteur"), run: () => jumpTo(token, point, { high: true }) }
+    { icon: "fa-solid fa-person-running", label: loc("Menu.Sauter"), run: () => jumpTo(token, point, { highOffered: high }) },
+    ...(high ? [{ icon: "fa-solid fa-arrow-up-from-ground-water", label: loc("Menu.SauterHauteur"),
+      run: () => jumpTo(token, point, { high: true, highOffered: true }) }] : [])
   ];
 }
 
@@ -231,8 +246,8 @@ export function selfEntries(token) {
   entries.push(...igniteEntries(token));
   // §192 : grimper au mur qu'on touche ; en escalade, se laisser tomber.
   entries.push(...climbEntries(token));
-  // §210 : coups non létaux (comme l'interrupteur de BG3) — activer ou couper.
-  if ( token.isOwner && token.actor ) {
+  // §210 : coups non létaux (comme l'interrupteur de BG3) — activer ou couper, si le réglage de monde l'affiche dans ce menu.
+  if ( token.isOwner && token.actor && nonLethalOffered() ) {
     const on = isNonLethal(token.actor);
     entries.push({ icon: on ? "fa-solid fa-hand-fist" : "fa-regular fa-hand-fist", label: loc(on ? "Menu.NonLetalCouper" : "Menu.NonLetalActiver"),
       run: () => setNonLethal(token.actor, !on).then(v => notice(token, loc(v ? "Assomme.Actif" : "Assomme.Inactif"))) });

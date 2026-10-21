@@ -103,6 +103,7 @@ import { registerCriticals } from "./runtime/criticals.mjs";
 import { registerFalls } from "./runtime/falls.mjs";
 import { registerKnockout } from "./runtime/knockout.mjs";
 import { registerTheater, theaterApi } from "./runtime/theater.mjs";
+import { registerClimbSystem } from "./runtime/climb-system.mjs";
 import { registerReady } from "./runtime/ready.mjs";
 import { registerBurning } from "./runtime/burning.mjs";
 import { registerImprovised } from "./runtime/improvised.mjs";
@@ -173,7 +174,8 @@ import { openDiagnostic } from "./ui/diagnostic.mjs";
  *   vision dans le noir, brume et ténèbres, Invisible — donc une Furtivité réussie —, Aveuglé) ? `true` / `false`, ou `null` quand on
  *   ne peut pas juger (vision simulée coupée, canevas absent, token non dessiné). Tokens ou documents ; lecture seule.
  * §196 : `climb` — l'escalade pour les voisins (runtime/climb.mjs `climbApi` : `state`, `holds`, `entries`, `up`, `run`, `ceiling`,
- *   `down`, `drop`, `toward`) ; `gap(a, b)` → `{ cells, vertical }` — l'écart de deux tokens en cases, en trois dimensions (la distance
+ *   `down`, `drop`, `toward` ; §224 : `enabled()`, `setEnabled(on)` — l'interrupteur du MJ, hook `dnd5e-combat.climbSystem`) ;
+ *   `gap(a, b)` → `{ cells, vertical }` — l'écart de deux tokens en cases, en trois dimensions (la distance
  *   du moteur, des pieds à la tête : 0 superposés, 1 au contact) et son seul vide vertical (au plafond, en vol). Lecture seule.
  * `welcome.open()` : l'écran d'accueil (§177) ; `diagnostic.open({ check })` : le diagnostic du monde (vérifications, réparation après
  *   sauvegarde, restauration), sur une seule vérification si `check` est donné (macros « Outils du MJ »).
@@ -239,6 +241,7 @@ Hooks.once("init", () => {
   // §117 : le niveau d'automatisation d'abord (son réglage en tête de la fenêtre) ; chaque fonction s'inscrit selon lui.
   registerLevel();
   gated(registerTheater);   // §220 : Théâtre de l'esprit — hors des niveaux d'automatisation : son bouton existe toujours
+  gated(registerClimbSystem);   // §224 : l'interrupteur de l'escalade et des chutes — avant l'altitude et l'escalade, qui le lisent
   gated(registerPerf);   // §98 : le seuil du relevé des temps, avant que les hooks ne tournent
   gated(registerContent);
   gated(registerFactions);   // §181 : la table des factions, avant toute règle qui juge ami / ennemi

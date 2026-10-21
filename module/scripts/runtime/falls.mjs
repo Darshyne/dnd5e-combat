@@ -14,6 +14,7 @@ import { combatantFor, readBudget, writeBudget, committedPosition } from "../ada
 import { contentOf } from "../adapter/content.mjs";
 import { actorOfEffect } from "../adapter/grapple.mjs";
 import { groundUnder, levelAt } from "../adapter/altitude.mjs";
+import { climbSystemOn } from "../core/climb-system.mjs";
 import { fallLikeDnd5e, climbFallInProgress } from "./climb.mjs";
 import { setFallAction } from "./altitude.mjs";
 import { route } from "./router.mjs";
@@ -62,7 +63,7 @@ async function dropFlier(token) {
 /** MJ actif, à chaque changement d'effet : « En chute » posé par dnd5e → la chute ; créature volante immobilisée → la chute. */
 function onEffectChange(effect) {
   const actor = actorOfEffect(effect);
-  if ( !actor || !wanted(actor) ) return;
+  if ( !actor || !climbSystemOn() || !wanted(actor) ) return;   // §224 : système d'escalade et de chute coupé, aucune chute
   // Sans attendre : le routeur passe les écouteurs d'un hook l'un après l'autre, et l'attente ci-dessous retarderait l'escalade (§192),
   // qui écoute les mêmes changements d'effet (vu : un grimpeur qui rate son test restait suspendu, son statut retiré trop tard).
   void enqueue(`fall:${actor.uuid}`, async () => {

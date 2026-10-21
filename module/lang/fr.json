@@ -1499,5 +1499,12 @@
   "DND5ECOMBAT.Theatre.Inactif": "Fin du théâtre de l'esprit : retour au niveau d'automatisation choisi.",
   "DND5ECOMBAT.Theatre.Rappel": "Rappel : le théâtre de l'esprit est actif, les automatisations de DAS sont coupées.",
   "DND5ECOMBAT.Reglage.theaterOfMind.Nom": "Théâtre de l'esprit",
-  "DND5ECOMBAT.Reglage.theaterOfMind.Aide": "Bascule entre le niveau d'automatisation choisi ci-dessus (conservé) et le fonctionnement vanilla de dnd5e : déplacements, menus, budget du tour, jets résolus, réactions, zones, vision simulée… sont en pause, Foundry et dnd5e jouent seuls. Aussi un bouton (masques) dans la barre d'outils des jetons du MJ ; un nouveau clic rétablit l'automatisation, sans recharger."
+  "DND5ECOMBAT.Reglage.theaterOfMind.Aide": "Bascule entre le niveau d'automatisation choisi ci-dessus (conservé) et le fonctionnement vanilla de dnd5e : déplacements, menus, budget du tour, jets résolus, réactions, zones, vision simulée… sont en pause, Foundry et dnd5e jouent seuls. Aussi un bouton (masques) dans la barre d'outils des jetons du MJ ; un nouveau clic rétablit l'automatisation, sans recharger.",
+  "DND5ECOMBAT.EscaladeSysteme.Bouton": "Escalade et chutes : activer ou couper (couper : déplacement libre en hauteur)",
+  "DND5ECOMBAT.EscaladeSysteme.Actif": "Escalade et chutes activées : chaque déplacement suit de nouveau le sol.",
+  "DND5ECOMBAT.EscaladeSysteme.Inactif": "Escalade et chutes coupées : déplacement libre en hauteur, chacun garde son élévation.",
+  "DND5ECOMBAT.Reglage.climbSystem.Nom": "Système d'escalade et de chute",
+  "DND5ECOMBAT.Reglage.climbSystem.Aide": "Activé : chaque déplacement suit le sol (on grimpe pour monter, on tombe dans le vide), l'escalade, les chutes et le réglage « Modes de déplacement et élévation » s'appliquent. Coupé : le MJ et les joueurs se déplacent librement en hauteur (glisser, champ d'élévation du HUD, clic au sol gardent l'élévation demandée) ; plus d'entrées d'escalade, de jets d'escalade ni de chutes, et dnd5e ne pose plus l'état « En chute ». Couper ou rallumer ne déplace aucun token : chacun garde son élévation, et c'est son prochain déplacement, système rallumé, qui suit de nouveau le sol (ou le fait tomber). Aussi un bouton dans la barre d'outils des jetons du MJ.",
+  "DND5ECOMBAT.Reglage.climbSystemButton.Nom": "Bouton « Escalade et chutes » dans la barre du MJ",
+  "DND5ECOMBAT.Reglage.climbSystemButton.Aide": "Affiche dans la barre d'outils des jetons du MJ le bouton qui active ou coupe le système d'escalade et de chute. Masqué, le réglage ci-dessus reste le seul moyen de le basculer."
 }

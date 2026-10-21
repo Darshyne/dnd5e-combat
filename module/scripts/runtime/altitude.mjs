@@ -23,6 +23,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { placementOf, alignPath, modeShift, coherentElevation, speedFor } from "../core/altitude.mjs";
+import { climbSystemOn } from "../core/climb-system.mjs";
 import { rulerShown, continuedFlags } from "../adapter/movement.mjs";
 import { boundsUnder, levelAt, clearanceOf, modeRefusalFor, groundModeOf, effectiveMode, grantSpeedFor, revokeSpeedsBut, grantedSpeedEffects } from "../adapter/altitude.mjs";
 import { pilotOf, isIntangible } from "../adapter/pilot.mjs";
@@ -38,12 +39,13 @@ export const ALTITUDE_SETTING = "altitude";
 let fallAction = null;
 export const setFallAction = fn => { fallAction = fn; };
 export async function fallNow(token) {
+  if ( !climbSystemOn() ) return false;   // §224 : système d'escalade et de chute coupé — le token reste où il est
   return fallAction ? fallAction(token) : false;
 }
 
 /** Le token est-il « En chute » de dnd5e, en l'air, dans un mode au sol (ni vol, ni escalade) ? */
 export function fallingAloft(token) {
-  if ( !token.actor?.statuses?.has("falling") ) return false;
+  if ( !climbSystemOn() || !token.actor?.statuses?.has("falling") ) return false;
   if ( placementOf(token._source.movementAction) !== "ground" ) return false;
   return (token._source.elevation ?? 0) > boundsUnder(token, token._source).ground + 1e-6;
 }
@@ -51,8 +53,10 @@ const BETTER_LEVELS = "baileywiki-better-levels";
 
 const MOVEMENT_FIELDS = ["x", "y", "elevation", "level", "width", "height", "depth", "shape"];
 
-function concerned(token) {
-  if ( !game.settings.get(MODULE_ID, ALTITUDE_SETTING) ) return false;
+function concerned(token, { switchedOff=false }={}) {
+  // §224 : l'interrupteur du MJ domine le réglage « Modes de déplacement et élévation » — coupé, aucun alignement, aucun mode imposé
+  // (`switchedOff` : la question posée quand même, pour le seul changement de niveau du HUD).
+  if ( (!switchedOff && !climbSystemOn()) || !game.settings.get(MODULE_ID, ALTITUDE_SETTING) ) return false;
   const actor = token.actor;
   if ( !actor || (actor.system?.isCreature === false) ) return false;
   return !pilotOf(token) && !isIntangible(token);
@@ -245,7 +249,15 @@ function verticalMove(token, last) {
 
 function onPreMoveToken(token, movement, operation) {
   const flags = operation?.[MODULE_ID] ?? continuedFlags(token, movement);   // §99 : morceau enchaîné par le cœur
-  if ( flags?.cleared || flags?.altitude || operation?.isUndo || !concerned(token) ) return true;
+  if ( flags?.cleared || flags?.altitude || operation?.isUndo ) return true;
+  // §224 : système d'escalade et de chute coupé — le déplacement garde l'élévation demandée ; seul le bouton « niveau » du HUD pose
+  // encore le token au sol du niveau choisi (sans quoi il y arrivait à son ancienne élévation, sous le plancher de ce niveau).
+  if ( !climbSystemOn() ) {
+    const all = [...movement.passed.waypoints, ...movement.pending.waypoints];
+    if ( !all.length || !concerned(token, { switchedOff: true }) ) return true;
+    return (isLevelOnly(movement.origin, all) && !isStairsLevelChange(token, movement.origin, all)) ? levelOnlyMove(token, all.at(-1)) : true;
+  }
+  if ( !concerned(token) ) return true;
   // §218 : la chute de dnd5e (`plummet` : un pas `fall`, d'un niveau à l'autre s'il le faut, documents/token.mjs:398) passe telle quelle
   // — réalignée ici, elle était refusée : les dégâts tombaient mais le token restait en l'air, et chaque mouvement relançait une chute.
   if ( [...movement.passed.waypoints, ...movement.pending.waypoints].some(w => w.action === "fall") ) return true;

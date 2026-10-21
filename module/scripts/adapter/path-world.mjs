@@ -12,6 +12,7 @@ import { sharesSpaceWith } from "./space-sharing.mjs";
 import { placementOf, coherentElevation, groundStepAllowed } from "../core/altitude.mjs";
 import { groundAt, ceilingAt, clearanceOf, effectiveMode } from "./altitude.mjs";
 import { isOnCeiling, isClimbing, wallsNear } from "./climb.mjs";
+import { climbSystemOn } from "../core/climb-system.mjs";
 import { cellOf, footprintOf, isDefeated, cellKey, sizeOf } from "./movement.mjs";
 
 /* -------------------------------------------- */
@@ -272,8 +273,10 @@ export function worldFor(token, { throughDoors=false }={}) {
 
   // §17.4 : le mode dit l'élévation de chaque point — au sol, le sol de la case ; en vol, 5 ft au-dessus au moins ; en
   // fouissement, 5 ft dessous au moins. Au sol, une marche de 5 ft au plus : l'A* ne fait ni grimper ni sauter dans le vide.
+  // §224 : système d'escalade et de chute coupé — le chemin garde l'élévation du token (ni sol suivi, ni marche limitée, ni mur à tenir).
+  const free = !climbSystemOn();
   const mode = effectiveMode(token);
-  const placement = placementOf(mode);
+  const placement = free ? null : placementOf(mode);
   const clearance = clearanceOf(scene);
   const groundCache = new Map();
   const groundOf = cell => {
@@ -288,11 +291,11 @@ export function worldFor(token, { throughDoors=false }={}) {
   };
   const ceilingOf = cell => ceilingAt(scene, pointsOf(cell), groundOf(cell)) - (depth * grid.distance);
   // §192 lot 2 : au plafond, on ne marche que sous un plafond à la même hauteur (sa tête contre lui) — plus besoin d'un mur.
-  const onCeiling = isOnCeiling(token);
+  const onCeiling = !free && isOnCeiling(token);
   const ceilingHolds = cell => !onCeiling || (Math.abs(ceilingOf(cell) - ownElevation) < 1e-6);
   // §196 (lot 4) : au mur, on ne marche que le long d'un mur à grimper (ou là où le sol remonte jusqu'à soi) — sans quoi un grimpeur
   // à 10 ft s'éloignait du mur en l'air (clic, manette, `api.approach`). Mis en cache par case : `wallsNear` interroge les arêtes.
-  const onWall = !onCeiling && isClimbing(token) && (ownElevation > groundOf(start) + 1e-6);
+  const onWall = !free && !onCeiling && isClimbing(token) && (ownElevation > groundOf(start) + 1e-6);
   // §209 : une porte n'est pas ouverte à la hauteur d'un grimpeur (un mur de niveau est plein du sol au plafond, son ouverture non) — à
   // 5 ft ou plus au-dessus du sol, un pas qui la franchit est refusé, ouverte ou fermée.
   const doorAbove = onWall && ((ownElevation - groundOf(start)) >= grid.distance - 1e-6);
@@ -330,7 +333,7 @@ export function worldFor(token, { throughDoors=false }={}) {
   // (`constrainMovementPath`) mesurait le premier pas depuis le sol, et un grimpeur ne pouvait plus marcher le long du mur en combat.
   const altitude = cell => placement
     ? { elevation: coherentElevation(mode, elevationOf(cell), groundOf(cell), clearance, (placement === "air") ? ceilingOf(cell) : Infinity), action: mode }
-    : ((mode === "climb") ? { elevation: elevationOf(cell), action: mode } : {});
+    : (((mode === "climb") || free) ? { elevation: elevationOf(cell), ...((mode === "climb") ? { action: mode } : {}) } : {});
   const difficult = difficultRegionsFor(token);
   const difficultCache = new Map();
   const difficultAt = cell => {

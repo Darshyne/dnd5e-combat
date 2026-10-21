@@ -1499,5 +1499,12 @@
   "DND5ECOMBAT.Theatre.Inactif": "Theatre of the mind over: back to the chosen automation level.",
   "DND5ECOMBAT.Theatre.Rappel": "Reminder: theatre of the mind is on, DAS automations are off.",
   "DND5ECOMBAT.Reglage.theaterOfMind.Nom": "Theatre of the mind",
-  "DND5ECOMBAT.Reglage.theaterOfMind.Aide": "Switches between the automation level chosen above (kept) and plain dnd5e: movement, menus, turn budget, resolved rolls, reactions, areas, simulated vision… are paused, Foundry and dnd5e play on their own. Also a button (masks) in the GM's token tool bar; click it again to bring the automation back, no reload needed."
+  "DND5ECOMBAT.Reglage.theaterOfMind.Aide": "Switches between the automation level chosen above (kept) and plain dnd5e: movement, menus, turn budget, resolved rolls, reactions, areas, simulated vision… are paused, Foundry and dnd5e play on their own. Also a button (masks) in the GM's token tool bar; click it again to bring the automation back, no reload needed.",
+  "DND5ECOMBAT.EscaladeSysteme.Bouton": "Climbing and falling: turn on or off (off: free elevation)",
+  "DND5ECOMBAT.EscaladeSysteme.Actif": "Climbing and falling on: every move follows the ground again.",
+  "DND5ECOMBAT.EscaladeSysteme.Inactif": "Climbing and falling off: free elevation, every token keeps its own.",
+  "DND5ECOMBAT.Reglage.climbSystem.Nom": "Climbing and falling system",
+  "DND5ECOMBAT.Reglage.climbSystem.Aide": "On: every move follows the ground (climb to go up, fall into a drop), climbing, falls and the “Movement modes and elevation” setting apply. Off: the GM and players move freely in elevation (dragging, the HUD elevation field and click-to-move keep the elevation asked for); no climbing entries, climbing checks or falls, and dnd5e no longer applies the Falling status. Turning it off or back on moves no token: each keeps its elevation, and its next move, with the system back on, follows the ground again (or makes it fall). Also a button in the GM's token tool bar.",
+  "DND5ECOMBAT.Reglage.climbSystemButton.Nom": "“Climbing and falling” button in the GM tool bar",
+  "DND5ECOMBAT.Reglage.climbSystemButton.Aide": "Shows the button that turns the climbing and falling system on or off in the GM's token tool bar. Hidden, the setting above is the only way to switch it."
 }

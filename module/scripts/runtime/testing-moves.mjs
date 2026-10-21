@@ -96,6 +96,22 @@ export async function move({ tokenId, cell, point, levelId, action, stopAfterMs,
   return { before, after, elapsedMs: Date.now() - started, viewedLevel: canvas.level?.id ?? null, newWindows };
 }
 
+/**
+ * §224 : un déplacement « à la main », comme le glisser ou le champ d'élévation du HUD — `token.move` d'un seul point (case `cell`, sinon
+ * sur place) à `elevation` (sinon la sienne), dans le mode `action` (sinon le sien), sans l'A* du moteur ; rend les positions et les
+ * états « En chute » / À terre après coup (on attend un peu : la chute de dnd5e se pose après le déplacement).
+ */
+export async function rawMove({ tokenId, cell=null, elevation=null, action=null, settleMs=1500 }) {
+  const token = viewedToken({ tokenId });
+  const before = positionJson(token);
+  const at = cell ? token.parent.grid.getTopLeftPoint(cell) : { x: token._source.x, y: token._source.y };
+  const waypoint = { ...at, elevation: Number.isFinite(elevation) ? elevation : (token._source.elevation ?? 0), action: action ?? token._source.movementAction };
+  const result = await token.move([waypoint]).catch(err => ({ error: err.message }));
+  await new Promise(resolve => setTimeout(resolve, settleMs));
+  return { result, before, after: positionJson(token),
+    falling: token.actor?.statuses?.has("falling") === true, prone: token.actor?.statuses?.has("prone") === true };
+}
+
 /** §41.2 : où mène l'escalier sous ce point pour ce token (ce que lit le curseur et le menu). */
 export function stairsAt({ tokenId, point }) {
   return stairsDestinations(viewedToken({ tokenId }), point);

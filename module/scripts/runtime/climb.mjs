@@ -49,6 +49,8 @@ import { rayBlocker } from "../adapter/cover.mjs";
 import { cellsAtGap } from "../core/orders.mjs";
 import { route } from "./router.mjs";
 import { theaterActive } from "./theater-state.mjs";
+import { climbSystemOn, whileClimbSystem } from "../core/climb-system.mjs";
+import { setClimbSystem } from "./climb-system.mjs";
 import { enqueue } from "./queue.mjs";
 import { esc, isExecutor, loc, locEsc, log, notice, say, waitForDice } from "./shared.mjs";
 
@@ -60,9 +62,12 @@ const TICK_MS = 2500;
 
 const ALTITUDE_OPTIONS = { [MODULE_ID]: { altitude: true } };
 
-/** Une créature que l'escalade concerne : le réglage « Modes de déplacement et élévation » actif, pas un objet ni un objet piloté. */
+/**
+ * Une créature que l'escalade concerne : le système d'escalade et de chute allumé (§224), le réglage « Modes de déplacement et élévation »
+ * actif, pas un objet ni un objet piloté.
+ */
 function concerned(token) {
-  if ( !settingOr(ALTITUDE_SETTING, true) || !token?.actor || (token.actor.system?.isCreature === false) ) return false;
+  if ( !climbSystemOn() || !settingOr(ALTITUDE_SETTING, true) || !token?.actor || (token.actor.system?.isCreature === false) ) return false;
   return !pilotOf(token) && !isIntangible(token) && !isObjectToken(token);
 }
 
@@ -118,7 +123,7 @@ export function climbRoom(token) {
  * « maison » est dû comme pour grimper.
  */
 export async function grabEdge(token, edge) {
-  if ( !token?.isOwner || !edge ) return false;
+  if ( !token?.isOwner || !edge || !climbSystemOn() ) return false;
   const grid = token.parent.grid;
   const feet = token._source.elevation ?? 0;
   const { multiplier, native } = climbingOf(token);
@@ -491,7 +496,7 @@ export async function climbDown(token, { cells=null }={}) {
  * @param {{dir: string, x: number, y: number, ground: number, rise: number, level: string}} ledge
  */
 export async function hoistOnto(token, ledge) {
-  if ( !token?.isOwner || !ledge ) return false;
+  if ( !token?.isOwner || !ledge || !climbSystemOn() ) return false;
   const grid = token.parent.grid;
   const cost = ledgeCost({ rise: ledge.rise, multiplier: climbingOf(token).multiplier, gridDistance: grid.distance });
   const combatant = combatantFor(token.actor);
@@ -606,6 +611,7 @@ async function settleAnimation(token, ms=5000) {
  * le token est tombé. Sur un client qui peut modifier le token. Sert aussi à l'Inversion de la gravité (§195).
  */
 export async function fallLikeDnd5e(token) {
+  if ( !climbSystemOn() ) return false;   // §224 : système coupé — aucune chute du moteur (Lévitation finie, Inversion de la gravité…)
   // §208 : une seule chute à la fois par token — l'escalade et la chute automatique (runtime/falls.mjs) peuvent la demander ensemble
   // (deux `plummet` en même temps : deux cartes de dégâts).
   if ( plummeting.has(token.uuid) ) return false;
@@ -654,7 +660,7 @@ async function letGo(token) {
 
 /** « Se laisser tomber » (menu) : chute volontaire. */
 export async function dropDown(token) {
-  if ( !token?.isOwner || !isClimbing(token) ) return false;
+  if ( !token?.isOwner || !isClimbing(token) || !climbSystemOn() ) return false;
   const ceiling = isOnCeiling(token);
   const outcome = await letGo(token);
   if ( outcome === "fell" ) await say({ token }, locEsc(ceiling ? "Escalade.SeLaisseTomberPlafond" : "Escalade.SeLaisseTomber", { name: token.name }));
@@ -849,6 +855,10 @@ function tick() {
  * escalade.
  */
 export function climbEntries(token) {
+  return whileClimbSystem(() => entriesOf(token));   // §224 : rien quand le système est coupé
+}
+
+function entriesOf(token) {
   const entries = [];
   if ( canClimb(token) ) entries.push({ icon: "fa-solid fa-mountain", label: loc("Menu.Grimper"), run: () => startClimb(token) });
   if ( canClimb(token) && !isClimbing(token) && acrobaticFor(token) ) {
@@ -887,7 +897,7 @@ const docOf = token => token?.document ?? token ?? null;
  * proposerait maintenant. null sans token ni acteur.
  * @param {Token|TokenDocument} token
  * @returns {{climbing: boolean, onCeiling: boolean, acrobatic: boolean, elevation: number, height: number, units: string, speed: number,
- *   native: boolean, multiplier: number, walksCeilings: boolean, rules: "2024"|"house", canClimb: boolean, canRun: boolean,
+ *   native: boolean, multiplier: number, walksCeilings: boolean, enabled: boolean, rules: "2024"|"house", canClimb: boolean, canRun: boolean,
  *   canCeiling: boolean, canDown: boolean, canDrop: boolean}|null}
  */
 export function climbStateOf(token) {
@@ -902,10 +912,11 @@ export function climbStateOf(token) {
     climbing, onCeiling: isOnCeiling(doc), acrobatic: climbing && (climbFlag(doc)?.acrobatic === true),
     elevation, height: Math.max(0, elevation - ground), units: doc.parent.grid.units,
     speed: speeds.speed ?? 0, native: !!speeds.native, multiplier: speeds.multiplier ?? 1, walksCeilings: canWalkCeilings(doc.actor),
+    enabled: climbSystemOn(),   // §224 : l'interrupteur du MJ ; coupé, tous les `can…` sont faux et `ledges` est vide
     rules: climbRules(), canClimb: canClimb(doc), canRun: canClimb(doc) && !climbing && acrobaticFor(doc),
-    canCeiling: canClimbCeiling(doc), canDown: canClimbDown(doc), canDrop: !!doc.isOwner && climbing,
+    canCeiling: canClimbCeiling(doc), canDown: canClimbDown(doc), canDrop: !!doc.isOwner && climbing && climbSystemOn(),
     // §209 : les rebords où il peut se hisser (direction, sol, hauteur à monter, niveau d'arrivée).
-    ledges: ledgesOf(doc).map(({ dir, ground, rise, level }) => ({ dir, ground, rise, level }))
+    ledges: whileClimbSystem(() => ledgesOf(doc)).map(({ dir, ground, rise, level }) => ({ dir, ground, rise, level }))
   };
 }
 
@@ -962,6 +973,7 @@ export async function climbToward(token, target, { reachCells=1 }={}) {
   token = docOf(token);
   target = docOf(target);
   if ( !token?.isOwner || !target ) return { arrived: false, climbed: 0, reason: "notOwner" };
+  if ( !climbSystemOn() ) return { arrived: false, climbed: 0, reason: "disabled" };   // §224
   const reach = Math.max(1, Math.round(reachCells) || 1);
   const there = () => ((token._source.level ?? null) === (target._source.level ?? null)) && (gapCells(token, target) <= reach);
   if ( there() ) return { arrived: true, climbed: 0 };
@@ -996,6 +1008,7 @@ export async function climbToward(token, target, { reachCells=1 }={}) {
  * `entries(token)` (les entrées du menu du moteur : `{ icon, label, run }`) ; gestes, sur le client qui possède le token, sans `cells`
  * la fenêtre « combien de cases » du moteur s'ouvre : `up(token, { cells })`, `run(token, { cells })` (Mouvement acrobatique),
  * `ceiling(token)`, `down(token, { cells })`, `drop(token)` → booléen ; `toward(token, target, { reachCells })` (voir `climbToward`).
+ * §224 : `enabled()` / `setEnabled(on)` — l'interrupteur du MJ ; coupé, `entries` est vide, les gestes rendent faux, `toward` « disabled ».
  */
 export const climbApi = Object.freeze({
   state: climbStateOf,
@@ -1008,7 +1021,9 @@ export const climbApi = Object.freeze({
   drop: token => dropDown(docOf(token)),
   edges: token => edgesBelowOf(docOf(token)),
   grab: (token, edge) => grabEdge(docOf(token), edge),
-  toward: climbToward
+  toward: climbToward,
+  enabled: climbSystemOn,   // §224 : le système d'escalade et de chute est-il allumé ? Hook `dnd5e-combat.climbSystem` (`enabled`)
+  setEnabled: setClimbSystem   // §224 : MJ seulement → booléen (faux pour un joueur)
 });
 
 export function registerClimb() {

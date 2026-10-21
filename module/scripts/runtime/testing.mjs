@@ -18,8 +18,10 @@ import { animationState } from "./animations.mjs";
 import { carriedLightState } from "../adapter/lights.mjs";
 import { toggleCarriedLight } from "./lights.mjs";
 import { listBackups as diagBackups, repairTasks, restore as diagRestore, scanWorld } from "./diagnostic/index.mjs";
-import { gmOnly, windows } from "./testing-shared.mjs";
-import { hoist, grab, jump, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, dash, door, familiar, familiarPocket, familiarRecall, follow, followState, move, movement, plan, stairs, stairsAt, takeStairs, teleport, teleportPick, threats, transpose, unfollow, view } from "./testing-moves.mjs";
+import { gmOnly, windows, viewedToken } from "./testing-shared.mjs";
+import { climbEntries } from "./climb.mjs";
+import { climbSystemOn } from "../core/climb-system.mjs";
+import { hoist, grab, jump, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, dash, door, familiar, familiarPocket, familiarRecall, follow, followState, move, movement, plan, stairs, stairsAt, takeStairs, teleport, teleportPick, threats, transpose, unfollow, view } from "./testing-moves.mjs";
 import { ready, burning, actionEnd, attackReasons, budget, cover, effectOrigins, enchant, endings, factions, heal, hurt, identify, issues, naturalOne, overrideContent, perceived, portent, rollCheck, rollSave, saveChance, flammable, scatter, sees, skillAid, skillAids, stats, stealth, use, masteries } from "./testing-rules.mjs";
 import { placeRegionAt, planning, storm, stormStrike, summonAt, wall, wallSide } from "./testing-areas.mjs";
 
@@ -163,6 +165,18 @@ function inventory({ types=null, textLength=700 }={}) {
 }
 
 /**
+ * §220, §224 : les boutons du moteur dans la barre d'outils des jetons (`present`, `active`) et, pour un token, ce que l'escalade propose
+ * dans son menu (libellés) — l'interrupteur de l'escalade lu par le scénario `escalade-interrupteur`.
+ */
+function controls({ tokenId=null }={}) {
+  const tools = ui.controls?.controls?.tokens?.tools ?? {};
+  const tool = name => ({ present: name in tools, active: tools[name]?.active === true });
+  const token = tokenId ? viewedToken({ tokenId }) : null;
+  return { theater: tool("das-theater"), climb: tool("das-climb"), climbSystem: climbSystemOn(),
+    climbEntries: token ? climbEntries(token).map(e => e.label) : null };
+}
+
+/**
  * Un réglage du moteur (et de lui seul) : rend la valeur d'avant, pour qu'un scénario la remette ; `value` absent : lecture seule.
  * Réservé au MJ (§38.4 : le scénario `presage` désactive le Présage le temps d'une partie).
  */
@@ -243,4 +257,4 @@ const diagnosticRestore = ({ uuid }) => diagRestore(uuid);
 
 
 /** Ce que `api.mcp` expose. */
-export const testApi = Object.freeze({ wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, jump, hoist, grab, ready, burning, masteries });
+export const testApi = Object.freeze({ controls, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries });

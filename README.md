@@ -17,6 +17,9 @@ A D&D 5.5 (2024 rules) rules and combat engine for **Foundry VTT V14** and **dnd
   click an enemy to make a basic attack, context menus, targeting mode (a banner at the top of the screen keeps the
   instruction and the number of targets picked while the engine waits for clicks).
 - **Vision and light rules**: who sees whom, bright light / dim light / darkness, Search, passive Perception.
+- **The Ethereal Plane** (dnd5e's Ethereal condition, on the same map; a GM switch turns it off): an Ethereal creature affects
+  and is affected only by what is Ethereal too, is unseen from the Material Plane without a way to see into the Ethereal
+  Plane, passes through walls (not walls of force) and floats; back on an occupied space, it is shunted and takes force damage.
 - **Optional critical hit house rules** (off by default): a hit that beats the target's AC by a set margin (10, say) is a
   critical hit, and a critical hit table the attacker can choose instead of doubled dice (or always used).
 - Every class and species of the *Player's Handbook 2024* is automated, along with many monster abilities.

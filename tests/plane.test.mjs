@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { planeOf, samePlane, perceivesAcross, ETHEREAL } from "../module/scripts/core/plane.mjs";
+import { planeOf, samePlane, perceivesAcross, crossesEtherealWall, etherealStepCost, ETHEREAL } from "../module/scripts/core/plane.mjs";
 import { selectAreaTargets } from "../module/scripts/core/area.mjs";
 
 describe("§225 : plan Éthéré (statut `ethereal`)", () => {
@@ -42,5 +42,16 @@ describe("§225 : plan Éthéré (statut `ethereal`)", () => {
     const fromEthereal = { observerPlane: ETHEREAL, targetPlane: "material", limit: 60 };
     expect(perceivesAcross({ ...fromEthereal, distance: 60 })).toBe(true);
     expect(perceivesAcross({ ...fromEthereal, distance: 65 })).toBe(false);
+  });
+
+  it("lot 3 : un pas franchit un mur de force, extrémités comprises ; le vertical coûte double", () => {
+    const wall = [[100, 0, 100, 100]];
+    expect(crossesEtherealWall({ x: 50, y: 50 }, { x: 150, y: 50 }, wall)).toBe(true);
+    expect(crossesEtherealWall({ x: 50, y: 50 }, { x: 90, y: 50 }, wall)).toBe(false);
+    expect(crossesEtherealWall({ x: 50, y: 50 }, { x: 150, y: 150 }, wall)).toBe(true);
+    expect(crossesEtherealWall({ x: 50, y: 150 }, { x: 150, y: 150 }, wall)).toBe(false);
+    expect(crossesEtherealWall({ x: 50, y: 50 }, { x: 150, y: 50 }, [])).toBe(false);
+    expect(etherealStepCost(5, 0)).toBe(5);
+    expect(etherealStepCost(5, -5)).toBe(10);
   });
 });

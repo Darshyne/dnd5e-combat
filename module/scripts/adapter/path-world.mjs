@@ -14,6 +14,7 @@ import { groundAt, ceilingAt, clearanceOf, effectiveMode } from "./altitude.mjs"
 import { isOnCeiling, isClimbing, wallsNear } from "./climb.mjs";
 import { climbSystemOn } from "../core/climb-system.mjs";
 import { cellOf, footprintOf, isDefeated, cellKey, sizeOf } from "./movement.mjs";
+import { isEthereal, etherealWallBetween } from "./plane.mjs";
 
 /* -------------------------------------------- */
 /*  Niveaux                                     */
@@ -214,9 +215,12 @@ export function worldFor(token, { throughDoors=false }={}) {
   // resté en bas quand la vue du MJ a suivi le meneur à l'étage — est donc jugé sur les murs de son niveau à lui, par le
   // polygone de ce niveau, comme une case d'un autre niveau ; sans ouvrir de porte (le test de porte est celui du token).
   const ownViewed = (canvas.level?.id ?? ownLevel) === ownLevel;
+  // §225, lot 3 : dans le plan Éthéré, seuls les murs qui arrêtent le voyage éthéré (Mur de force, Cage de force) comptent.
+  const ethereal = isEthereal(token);
   /** Un mur entre deux cases voisines ? Dans le niveau du token par le test du token ; ailleurs par le polygone du niveau. */
   const wallBetween = (from, to) => {
     const c = center(to);
+    if ( ethereal ) return etherealWallBetween(scene, center(from), c, to.level ?? ownLevel);
     if ( isOwn(to) && ownViewed ) {
       if ( !object.checkCollision(c, { origin: center(from), type: "move", mode: "any" }) ) return false;
       return !(throughDoors && doorBetween(from, to));
@@ -274,7 +278,8 @@ export function worldFor(token, { throughDoors=false }={}) {
   // §17.4 : le mode dit l'élévation de chaque point — au sol, le sol de la case ; en vol, 5 ft au-dessus au moins ; en
   // fouissement, 5 ft dessous au moins. Au sol, une marche de 5 ft au plus : l'A* ne fait ni grimper ni sauter dans le vide.
   // §224 : système d'escalade et de chute coupé — le chemin garde l'élévation du token (ni sol suivi, ni marche limitée, ni mur à tenir).
-  const free = !climbSystemOn();
+  // §225, lot 3 : l'Éthéré « n'obéit pas aux lois de la gravité » — comme le système coupé, le chemin garde l'élévation.
+  const free = !climbSystemOn() || ethereal;
   const mode = effectiveMode(token);
   const placement = free ? null : placementOf(mode);
   const clearance = clearanceOf(scene);

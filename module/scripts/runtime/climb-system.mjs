@@ -64,8 +64,11 @@ export function registerClimbSystem() {
   route("setup", () => setClimbSystemState(game.settings.get(MODULE_ID, CLIMB_SYSTEM_SETTING)), { always: true, label: "climbing switch: state not read" });
   // Système coupé : dnd5e ne pose plus « En chute » (après un déplacement en l'air, ou à la main) — sur le client qui le crée.
   route("preCreateActiveEffect", (effect, data) => {
-    if ( climbSystemOn() || !isFallingEffect(effect, data) ) return true;
-    log(`${effect.parent?.name ?? "?"}: Falling not applied (climbing and falling off)`);
+    if ( !isFallingEffect(effect, data) ) return true;
+    // §225 : dans l'Éthéré, pas de gravité — dnd5e poserait « En chute » à un token en l'air sans vol.
+    const ethereal = effect.parent?.statuses?.has?.("ethereal") === true;
+    if ( climbSystemOn() && !ethereal ) return true;
+    log(`${effect.parent?.name ?? "?"}: Falling not applied (${ethereal ? "Ethereal Plane" : "climbing and falling off"})`);
     return false;
   }, { cancellable: true, label: "climbing switch: Falling status" });
   route("getSceneControlButtons", controls => {

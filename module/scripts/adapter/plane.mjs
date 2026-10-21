@@ -10,7 +10,8 @@
  *  - Vision éthérée (trait du MM, identifiant `ethereal-sight`) : 60 ft.
  */
 
-import { samePlane as samePlaneOf, planeOf, perceivesAcross, ETHEREAL } from "../core/plane.mjs";
+import { MODULE_ID } from "../constants.mjs";
+import { samePlane as samePlaneOf, planeOf, perceivesAcross, crossesEtherealWall, ETHEREAL } from "../core/plane.mjs";
 import { identifierOf } from "./content.mjs";
 import { distanceBetween } from "./turn.mjs";
 import { readUnitFactors, lengthIn } from "./units.mjs";
@@ -73,4 +74,16 @@ export function perceivesPlane(observer, target) {
     limit: lengthIn(BORDER_VIEW_FT, "ft", units, factors),
     visibleAcross: visibleAcross(target.actor)
   });
+}
+
+/** §225, lot 3 : les murs de la scène qui arrêtent le voyage éthéré (`flags.dnd5e-combat.ethereal`), sur ce niveau. Segments `c`. */
+export function etherealWallsOf(scene, level=null) {
+  return (scene?.walls ?? []).filter(w => (w.flags?.[MODULE_ID]?.ethereal === true)
+    && (!level || !w.levels?.size || w.levels.has(level))).map(w => w.c);
+}
+
+/** §225, lot 3 : un pas d'un point à l'autre (centres) franchit-il un mur qui arrête le voyage éthéré ? */
+export function etherealWallBetween(scene, from, to, level=null) {
+  const walls = etherealWallsOf(scene, level);
+  return walls.length > 0 && crossesEtherealWall(from, to, walls);
 }

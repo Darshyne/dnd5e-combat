@@ -36,7 +36,7 @@ export const FEATURE_LEVELS = Object.freeze({
   // Toujours : le socle, le déplacement, la souris, le budget du tour, la vision, l'interface.
   registerPerf: E, registerContent: E, registerIcons: E, registerAltitude: E, registerClimb: E, registerFalls: E, registerKnockout: E, registerTheater: E, registerClimbSystem: E, registerActions: E, registerFollow: E,
   registerFacing: E, registerPointer: E, registerTurn: E, registerVision: E, registerSpace: E, registerBasics: E,
-  registerIllumination: E, registerPerception: E, registerEtherealUI: E, registerTracker: E, registerLightIndicator: E, registerFeedback: E,
+  registerIllumination: E, registerPerception: E, registerEtherealUI: E, registerEtherealMovement: E, registerTracker: E, registerLightIndicator: E, registerFeedback: E,
   registerPurge: E, registerAutomation: E, registerSummonHandover: E, registerAutoTranslate: E, registerCriticals: A, registerFactions: E, registerFactionsUI: E, registerSettingsWindow: E, registerStealthMode: E, registerStealthUI: E,
 
   // Assisté : la résolution, et les règles générales qui valent pour toute créature.

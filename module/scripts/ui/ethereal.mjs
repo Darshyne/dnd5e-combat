@@ -3,9 +3,12 @@
  *  - un token Éthéré s'affiche en fantôme (transparent) pour qui le perçoit — « les créatures qui s'y trouvent paraissent
  *    fantomatiques » (Détection de l'invisibilité) ; pour les autres, les modes de détection le cachent (ui/perception.mjs) ;
  *  - quand le point de vue du client est Éthéré (ses tokens contrôlés, sinon, pour un joueur, son personnage), la scène passe en
- *    gris — « le plan que vous avez quitté … en nuances de gris » (Clignotement, Forme éthérée).
+ *    gris — « le plan que vous avez quitté … en nuances de gris » (Clignotement, Forme éthérée) — et les tokens Éthérés ne sont plus
+ *    des fantômes : c'est le plan matériel qui l'est. Un voisin qui dessine une vue plus riche la prend en répondant false au hook
+ *    `dnd5e-combat.etherealView` (`{ active }`) : le moteur retire alors son gris.
  */
 
+import { MODULE_ID } from "../constants.mjs";
 import { route } from "../runtime/router.mjs";
 import { theaterActive } from "../runtime/theater-state.mjs";
 import { isEthereal } from "../adapter/plane.mjs";
@@ -30,7 +33,7 @@ let ghost = null;
 function onRefresh(token) {
   const mesh = token?.mesh;
   if ( !mesh || mesh.destroyed ) return;
-  const want = !theaterActive() && isEthereal(token.document);
+  const want = !theaterActive() && isEthereal(token.document) && !viewpointEthereal();
   const has = !!mesh.filters?.includes(ghost);
   if ( want === has ) return;
   ghost ??= new PIXI.AlphaFilter(GHOST_ALPHA);
@@ -39,12 +42,16 @@ function onRefresh(token) {
   mesh.filters = filters.length ? filters : null;
 }
 
-/** La scène en gris quand le point de vue est Éthéré. */
+/** Le point de vue de ce client est-il dans l'Éthéré ? */
+const viewpointEthereal = () => viewpoint().some(t => isEthereal(t.document));
+
+/** La scène en gris quand le point de vue est Éthéré — sauf si un voisin prend la vue à son compte. */
 function updateView() {
   if ( !canvas?.ready || !canvas.stage ) return;
-  const on = !theaterActive() && viewpoint().some(t => isEthereal(t.document));
+  const on = !theaterActive() && viewpointEthereal();
+  const claimed = Hooks.call(`${MODULE_ID}.etherealView`, { active: on }) === false;
   const filters = (canvas.stage.filters ?? []).filter(f => f !== gray);
-  if ( on ) {
+  if ( on && !claimed ) {
     if ( !gray ) {
       gray = new PIXI.ColorMatrixFilter();
       gray.desaturate();
@@ -72,7 +79,12 @@ function refreshAll(effect) {
 export function registerEtherealUI() {
   route("refreshToken", onRefresh, { label: "ethereal: ghost not drawn" });
   const label = { label: "ethereal: view not updated" };
-  for ( const hook of ["canvasReady", "controlToken"] ) route(hook, updateView, label);
+  // Changer de point de vue change aussi qui est un fantôme.
+  const viewChanged = () => {
+    updateView();
+    for ( const token of canvas?.tokens?.placeables ?? [] ) token.renderFlags.set({ refreshState: true });
+  };
+  for ( const hook of ["canvasReady", "controlToken"] ) route(hook, viewChanged, label);
   for ( const hook of ["createActiveEffect", "updateActiveEffect", "deleteActiveEffect"] ) route(hook, refreshAll, label);
   route("canvasTearDown", () => { if ( canvas?.stage?.filters ) canvas.stage.filters = canvas.stage.filters.filter(f => f !== gray); },
     { label: "ethereal: gray filter removed" });

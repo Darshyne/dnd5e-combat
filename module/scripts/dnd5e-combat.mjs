@@ -122,7 +122,7 @@ import { registerTracker } from "./ui/tracker.mjs";
 import { registerLightIndicator, lightState } from "./ui/illumination.mjs";
 import { registerPerception } from "./ui/perception.mjs";
 import { registerEtherealUI } from "./ui/ethereal.mjs";
-import { etherealApi } from "./runtime/ethereal.mjs";
+import { etherealApi, registerEtherealMovement } from "./runtime/ethereal.mjs";
 import { registerVigor } from "./ui/vigor.mjs";
 import { registerAutomation, reportsApi } from "./ui/automation.mjs";
 import { registerMasteryUI, masteryApi } from "./ui/mastery.mjs";
@@ -360,6 +360,7 @@ Hooks.once("init", () => {
   gated(registerLightIndicator);
   gated(registerPerception);   // §62 : la brume cache à l'écran, l'ouïe montre ce qu'on entend
   gated(registerEtherealUI);   // §225 : le token Éthéré en fantôme, la scène grise vue de l'Éthéré
+  gated(registerEtherealMovement);   // §225, lot 3 : l'action de déplacement « Éthéré » (murs traversés)
   gated(registerVigor);
   gated(registerCureUi);
   gated(registerWallSideUi);   // §171 : anneau de feu — vers l'intérieur ou vers l'extérieur

@@ -41,6 +41,7 @@ import { extinguish } from "./burning.mjs";
 import { isBurning } from "../adapter/burning.mjs";
 import { readyOptionsOf, slotsFor, heldEffectOf } from "../adapter/ready.mjs";
 import { finite, gmOnly, viewedToken } from "./testing-shared.mjs";
+import { etherealWallsOf, etherealWallBetween } from "../adapter/plane.mjs";
 
 /**
  * §43.2 : les effets auxquels une action met fin — ceux du token (`own`), ceux qu'un autre lui retire (`byOther`) ; et le
@@ -445,3 +446,13 @@ export async function masteries({ actorId, keys=null }) {
   return { sources, slots: masterySlots(sources), chosen: chosenMasteries(actor), allowance: restAllowanceOf(actor),
     verdict: keys ? judgeMasteries(actor, keys) : null };
 }
+
+/** §225, lot 3 : les murs qui arrêtent le voyage éthéré, vus du token, et si un pas de son centre à `point` en franchit un. */
+export function etherealWalls({ tokenId, point }) {
+  const token = viewedToken({ tokenId });
+  const scene = token.parent;
+  const marked = scene.walls.filter(w => w.flags?.[MODULE_ID]?.ethereal === true);
+  return { marked: marked.map(w => ({ id: w.id, c: w.c, levels: Array.from(w.levels ?? []) })), level: token._source.level,
+    walls: etherealWallsOf(scene, token._source.level).length, crosses: etherealWallBetween(scene, token.object.center, point, token._source.level) };
+}
+

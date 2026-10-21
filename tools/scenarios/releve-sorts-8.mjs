@@ -90,6 +90,13 @@ export default {
       const bAfter = await ctx.position(bandit);
       const inside = Math.hypot((bAfter.x - c.x) / grid, (bAfter.y - c.y) / grid) <= 2;
       ctx.expect(!inside, `Coquille antivie : le Bandit (Humanoïde) n'entre pas (${b.before?.x},${b.before?.y} → ${bAfter.x},${bAfter.y})`);
+      // §225 : pas davantage par un déplacement du cœur d'un seul tenant (un glisser) — seul `pending` était contrôlé.
+      await place(bandit, c.x, c.y - 4 * grid);
+      const cell = { i: Math.round((c.y - grid) / grid), j: Math.round(c.x / grid) };
+      const dragged = await ctx.engine("rawMove", { tokenId: bandit.id, cell });
+      const dAfter = dragged.after ?? await ctx.position(bandit);
+      const draggedIn = Math.hypot((dAfter.x - c.x) / grid, (dAfter.y - c.y) / grid) <= 2;
+      ctx.expect(!draggedIn, `Coquille antivie : le Bandit n'entre pas non plus d'un glisser (${dragged.before?.x},${dragged.before?.y} → ${dAfter.x},${dAfter.y})`);
       // Le Guerrier dedans, au bord ; le Bandit dehors, à son contact.
       await place(fighter, c.x + 2 * grid, c.y);
       await place(bandit, c.x + 3 * grid, c.y);

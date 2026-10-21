@@ -328,6 +328,8 @@
   "DND5ECOMBAT.Souci.notSeen": "{name} n'est pas en vue : ce sort vise une créature que vous voyez.",
   "DND5ECOMBAT.Souci.hiddenTarget": "{name} est caché : vous ne savez pas où il est (il faut d'abord le trouver).",
   "DND5ECOMBAT.Souci.wrongType": "{name} n'est pas {types} : {item} ne l'affectera pas.",
+  "DND5ECOMBAT.Ethere.Action": "Éthéré",
+  "DND5ECOMBAT.Ethere.MurDeForce": "{name} : un mur de force arrête le voyage éthéré.",
   "DND5ECOMBAT.Ethere.AucunToken": "Sélectionnez les tokens à faire passer dans le plan Éthéré, ou à en faire revenir.",
   "DND5ECOMBAT.Ethere.Entre": "Plan Éthéré : {names}.",
   "DND5ECOMBAT.Ethere.Sort": "De retour du plan Éthéré : {names}.",

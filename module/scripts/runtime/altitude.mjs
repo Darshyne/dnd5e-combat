@@ -29,6 +29,7 @@ import { boundsUnder, levelAt, clearanceOf, modeRefusalFor, groundModeOf, effect
 import { pilotOf, isIntangible } from "../adapter/pilot.mjs";
 import { route } from "./router.mjs";
 import { loc, log, notice } from "./shared.mjs";
+import { isEthereal } from "../adapter/plane.mjs";
 
 export const ALTITUDE_SETTING = "altitude";
 
@@ -39,7 +40,7 @@ export const ALTITUDE_SETTING = "altitude";
 let fallAction = null;
 export const setFallAction = fn => { fallAction = fn; };
 export async function fallNow(token) {
-  if ( !climbSystemOn() ) return false;   // §224 : système d'escalade et de chute coupé — le token reste où il est
+  if ( !climbSystemOn() || isEthereal(token) ) return false;   // §224 : système coupé ; §225 : pas de chute dans l'Éthéré
   return fallAction ? fallAction(token) : false;
 }
 
@@ -59,6 +60,7 @@ function concerned(token, { switchedOff=false }={}) {
   if ( (!switchedOff && !climbSystemOn()) || !game.settings.get(MODULE_ID, ALTITUDE_SETTING) ) return false;
   const actor = token.actor;
   if ( !actor || (actor.system?.isCreature === false) ) return false;
+  if ( isEthereal(token) ) return false;   // §225 : l'Éthéré n'obéit pas à la gravité — élévation libre
   return !pilotOf(token) && !isIntangible(token);
 }
 

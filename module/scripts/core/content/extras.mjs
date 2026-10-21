@@ -105,7 +105,8 @@ export function validateExtras(entry, at, errors) {
     && (typeof entry.wallSide.units === "string") && Object.keys(entry.wallSide).every(k => ["distance", "units"].includes(k))) ) errors.push(`${at}wallSide: { distance: number > 0, units }`);
   if ( ("walls" in entry) && !(isObject(entry.walls) && (!("move" in entry.walls) || (entry.walls.move === false)) && (!("sight" in entry.walls) || (entry.walls.sight === true))
     && (!("activities" in entry.walls) || (Array.isArray(entry.walls.activities) && entry.walls.activities.every(isId)))
-    && Object.keys(entry.walls).every(k => ["move", "sight", "activities"].includes(k))) ) errors.push(`${at}walls: { move?: false, sight?: true, activities?: [activity ids] }`);
+    && (!("ethereal" in entry.walls) || (entry.walls.ethereal === true))
+    && Object.keys(entry.walls).every(k => ["move", "sight", "activities", "ethereal"].includes(k))) ) errors.push(`${at}walls: { move?: false, sight?: true, activities?: [activity ids], ethereal?: true }`);
   if ( ("globe" in entry) && !(isObject(entry.globe) && Number.isFinite(entry.globe.radius) && (entry.globe.radius > 0) && (typeof entry.globe.units === "string")
     && Number.isInteger(entry.globe.maxLevel) && (!("everywhere" in entry.globe) || (entry.globe.everywhere === true))
     && Object.keys(entry.globe).every(k => ["radius", "units", "maxLevel", "everywhere"].includes(k))) ) errors.push(`${at}globe: { radius > 0, units, maxLevel, everywhere? }`);

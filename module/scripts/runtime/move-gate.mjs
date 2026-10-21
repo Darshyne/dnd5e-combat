@@ -4,6 +4,7 @@
  */
 
 import { barrierCrossed } from "../adapter/barriers.mjs";
+import { isEthereal, etherealWallBetween } from "../adapter/plane.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { combatantFor, distanceBetween, positionOf } from "../adapter/turn.mjs";
 import { pilotOf, summonerToken, groupTokens } from "../adapter/pilot.mjs";
@@ -28,12 +29,24 @@ import { isGrappled, movementCap, occupiedAt, pilotMove } from "./actions.mjs";
 export function onPreMoveToken(token, movement, operation) {
   if ( !token.actor ) return true;
   // §163 : Coquille antivie — on n'y entre pas en marchant, MJ compris (ce sont ses créatures qu'elle repousse). Téléportation et
-  // déplacement forcé (`displace`) : pas une marche.
-  const steps = movement.pending.waypoints.filter(w => !CONFIG.Token.movement.actions[w.action]?.teleport && (w.action !== "displace"));
+  // déplacement forcé (`displace`) : pas une marche. §225 : tout le trajet — un déplacement d'un seul tenant (glisser, clavier) n'a rien
+  // dans `pending`, tout est dans `passed` (vu en jeu) ; seul `pending` était lu, si bien qu'un glisser entrait dans la Coquille.
+  const steps = [...movement.passed.waypoints, ...movement.pending.waypoints]
+    .filter(w => !CONFIG.Token.movement.actions[w.action]?.teleport && (w.action !== "displace"));
   const fence = steps.length ? barrierCrossed(token, steps.map(w => positionOf(w))) : null;
   if ( fence ) {
     ui.notifications.warn(loc("Deplacement.Barriere", { name: token.name, item: fence.item.name }));
     return false;
+  }
+  // §225, lot 3 : dans l'Éthéré, les murs se traversent (action « ethereal », `walls: null`), sauf ceux qui arrêtent le voyage éthéré
+  // (Mur de force, Cage de force) — MJ compris.
+  if ( steps.length && isEthereal(token) ) {
+    const origin = movement.origin ?? token._source;
+    const centers = [origin, ...steps].map(p => token.getCenterPoint({ ...token._source, ...p }));
+    if ( centers.some((c, i) => (i > 0) && etherealWallBetween(token.parent, centers[i - 1], c, token._source.level)) ) {
+      ui.notifications.warn(loc("Ethere.MurDeForce", { name: token.name }));
+      return false;
+    }
   }
   if ( !game.user.isGM && !playerMayMove(token, movement) ) return false;
   // §187 : chausse-trapes, billes — qui y entre s'arrête sur leur première case (le reste du trajet n'est pas joué).

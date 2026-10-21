@@ -40,6 +40,7 @@ function grounded(token) {
   const actor = token.actor;
   const movement = actor?.system?.attributes?.movement;
   if ( !movement || movement.hover || actor.system?.traits?.ci?.value?.has?.("falling") ) return false;
+  if ( actor.statuses?.has?.("ethereal") ) return false;   // §225 : pas de gravité dans l'Éthéré
   // Sans vol (ou un vol ramené à 0 par un effet) : c'est la règle ordinaire de dnd5e, qui fait déjà tomber.
   if ( !((movement.speeds?.fly ?? movement.fly ?? 0) > 0) ) return false;
   if ( ["climb"].includes(token._source.movementAction) ) return false;      // l'escalade a ses propres chutes (runtime/climb.mjs)

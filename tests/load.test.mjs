@@ -32,7 +32,7 @@ describe("chargement du module", () => {
     expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "advanceTime", "animations", "attackReasons", "budget", "burning",
       "chatCards", "climb", "climbCeiling", "climbDown", "climbHolds", "climbState", "climbToward", "closeWindow", "controls",
       "cover", "dash", "diagnosticBackups", "diagnosticForget", "diagnosticRepair", "diagnosticRestore", "diagnosticScan",
-      "door", "dropDown", "effectOrigins", "enchant", "endings", "factions", "familiar", "familiarPocket", "familiarRecall",
+      "door", "dropDown", "effectOrigins", "enchant", "endings", "etherealWalls", "factions", "familiar", "familiarPocket", "familiarRecall",
       "flammable", "follow", "followState", "grab", "heal", "hoist", "hurt", "identify", "inventory", "issues", "jump",
       "lightState", "masteries", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "placeRegionAt",
       "plan", "planning", "portent", "rawMove", "reachCheck", "ready", "reload", "reports", "restoreItem", "rollCard",

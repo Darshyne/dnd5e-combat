@@ -2,7 +2,8 @@
  * §162 : les murs du cœur qu'une zone de sort pose (contenu `walls: { move?, sight?, activities? }`) — le long de l'axe de chaque forme
  * « line » (un mur posé par points), sinon sur le pourtour de la région (globe, sphère, cube). Ils portent la région qui les a posés
  * (`flags.dnd5e-combat.zone`) et ses niveaux. Mur de force : arrête le déplacement, pas la vue ; Mur prismatique : arrête la vue, pas
- * le déplacement. MJ actif.
+ * le déplacement. MJ actif. §225 : `ethereal: true` (Mur de force, Cage de force) — le mur arrête aussi qui est dans le plan Éthéré
+ * (`flags.dnd5e-combat.ethereal`, que le MJ peut aussi poser à la main sur un mur de la carte).
  */
 
 import { MODULE_ID } from "../constants.mjs";
@@ -37,7 +38,7 @@ export function wallDataFor(region, rule) {
     light: rule.sight ? sense : none,
     sound: none,
     levels: Array.from(region.levels ?? []),
-    flags: { [MODULE_ID]: { zone: region.id } }
+    flags: { [MODULE_ID]: { zone: region.id, ...(rule.ethereal ? { ethereal: true } : {}) } }
   }));
 }
 

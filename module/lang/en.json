@@ -328,6 +328,8 @@
   "DND5ECOMBAT.Souci.notSeen": "{name} can't be seen: this spell targets a creature you can see.",
   "DND5ECOMBAT.Souci.hiddenTarget": "{name} is hidden: you don't know where it is (find it first).",
   "DND5ECOMBAT.Souci.wrongType": "{name} is not {types}: {item} won't affect it.",
+  "DND5ECOMBAT.Ethere.Action": "Ethereal",
+  "DND5ECOMBAT.Ethere.MurDeForce": "{name}: a wall of force blocks ethereal travel.",
   "DND5ECOMBAT.Ethere.AucunToken": "Select the tokens to send to the Ethereal Plane, or to bring back.",
   "DND5ECOMBAT.Ethere.Entre": "Ethereal Plane: {names}.",
   "DND5ECOMBAT.Ethere.Sort": "Back from the Ethereal Plane: {names}.",

@@ -53,6 +53,7 @@ import { climbSystemOn, whileClimbSystem } from "../core/climb-system.mjs";
 import { setClimbSystem } from "./climb-system.mjs";
 import { enqueue } from "./queue.mjs";
 import { esc, isExecutor, loc, locEsc, log, notice, say, waitForDice } from "./shared.mjs";
+import { isEthereal } from "../adapter/plane.mjs";
 
 export const CLIMB_QUERY = `${MODULE_ID}.climbCheck`;
 /** Le joueur a ce temps pour son test (sa fenêtre se ferme avant, au délai des fenêtres de combat). */
@@ -68,6 +69,7 @@ const ALTITUDE_OPTIONS = { [MODULE_ID]: { altitude: true } };
  */
 function concerned(token) {
   if ( !climbSystemOn() || !settingOr(ALTITUDE_SETTING, true) || !token?.actor || (token.actor.system?.isCreature === false) ) return false;
+  if ( isEthereal(token) ) return false;   // §225 : dans l'Éthéré, on se déplace librement en hauteur — rien à grimper
   return !pilotOf(token) && !isIntangible(token) && !isObjectToken(token);
 }
 
@@ -611,7 +613,7 @@ async function settleAnimation(token, ms=5000) {
  * le token est tombé. Sur un client qui peut modifier le token. Sert aussi à l'Inversion de la gravité (§195).
  */
 export async function fallLikeDnd5e(token) {
-  if ( !climbSystemOn() ) return false;   // §224 : système coupé — aucune chute du moteur (Lévitation finie, Inversion de la gravité…)
+  if ( !climbSystemOn() || isEthereal(token) ) return false;   // §224 : système coupé — aucune chute du moteur ; §225 : ni dans l'Éthéré
   // §208 : une seule chute à la fois par token — l'escalade et la chute automatique (runtime/falls.mjs) peuvent la demander ensemble
   // (deux `plummet` en même temps : deux cartes de dégâts).
   if ( plummeting.has(token.uuid) ) return false;

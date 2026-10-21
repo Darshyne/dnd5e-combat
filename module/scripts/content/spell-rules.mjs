@@ -314,9 +314,9 @@ export const SPELL_RULES = Object.freeze({
   // §169 : « opaque » — des murs du cœur qui arrêtent la vue, pas le déplacement ; face brûlante à 3 m.
   "wall-of-fire": { walls: { move: false, sight: true }, wallSide: { distance: 10, units: "ft" } },
   // §173 : murs fins — posés sans diagonale, les créatures qui touchent le mur à l'apparition, un globe en anneau fin.
-  "wall-of-force": { walls: {}, thinWall: true },
+  "wall-of-force": { walls: { ethereal: true }, thinWall: true },   // §225 : « s'étend aussi dans le plan Éthéré »
   "wall-of-ice": { walls: { activities: ["c4ttlpiIpyf3dFdf", "zjpb29Tww0iuv1P3"] }, thinWall: true },
-  "forcecage": { walls: {} },
+  "forcecage": { walls: { ethereal: true } },   // §225 : « bloque le voyage éthéré »
   "wall-of-stone": { walls: { sight: true }, thinWall: true },
   // §173 : la traversée — les sept couches d'un coup (une sauvegarde : simplification), l'aveuglement à 6 m, rien ne passe au travers ;
   // « vous et les créatures que vous désignez » : le lanceur et ses alliés épargnés.

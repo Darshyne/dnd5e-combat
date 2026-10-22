@@ -900,7 +900,8 @@ export function registerPointer() {
     name: `DND5ECOMBAT.Reglage.${key}.Nom`, hint: `DND5ECOMBAT.Reglage.${key}.Aide`, ...data });
   client("clickToMove", { type: String, default: "off",
     choices: { always: "DND5ECOMBAT.Reglage.clickToMove.always", combat: "DND5ECOMBAT.Reglage.clickToMove.combat", off: "DND5ECOMBAT.Reglage.clickToMove.off" } });
-  client("clickToAttack", { type: String, default: "combat",
+  // 2026-10-22 (retour de table) : « jamais » par défaut, comme le clic-déplacement — le clic droit propose toujours l'attaque.
+  client("clickToAttack", { type: String, default: "off",
     choices: { always: "DND5ECOMBAT.Reglage.clickToAttack.always", combat: "DND5ECOMBAT.Reglage.clickToAttack.combat", off: "DND5ECOMBAT.Reglage.clickToAttack.off" } });
   client("targetingMode", { type: Boolean, default: true });
   client("fastAttack", { type: Boolean, default: true });

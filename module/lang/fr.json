@@ -200,7 +200,7 @@
   "DND5ECOMBAT.Reglage.clickToMove.combat": "En combat seulement",
   "DND5ECOMBAT.Reglage.clickToMove.off": "Jamais",
   "DND5ECOMBAT.Reglage.clickToAttack.Nom": "Attaque de base au clic sur un ennemi",
-  "DND5ECOMBAT.Reglage.clickToAttack.Aide": "Un clic gauche sur un ennemi porte l'attaque de base, en s'approchant d'abord s'il le faut. Pour le MJ, ce clic ne sélectionne alors plus le token visé.",
+  "DND5ECOMBAT.Reglage.clickToAttack.Aide": "Un clic gauche sur un ennemi porte l'attaque de base, en s'approchant d'abord s'il le faut. Le clic droit propose toujours l'attaque ; chez le MJ, le clic gauche reste la sélection.",
   "DND5ECOMBAT.Reglage.clickToAttack.always": "Toujours",
   "DND5ECOMBAT.Reglage.clickToAttack.combat": "En combat seulement",
   "DND5ECOMBAT.Reglage.clickToAttack.off": "Jamais",

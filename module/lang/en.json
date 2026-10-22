@@ -200,7 +200,7 @@
   "DND5ECOMBAT.Reglage.clickToMove.combat": "In combat only",
   "DND5ECOMBAT.Reglage.clickToMove.off": "Never",
   "DND5ECOMBAT.Reglage.clickToAttack.Nom": "Basic attack on enemy click",
-  "DND5ECOMBAT.Reglage.clickToAttack.Aide": "A left click on an enemy makes the basic attack, moving into reach first if needed. For the GM this click no longer selects that token.",
+  "DND5ECOMBAT.Reglage.clickToAttack.Aide": "A left click on an enemy makes the basic attack, moving into reach first if needed. Right-click still offers the attack; for the GM a left click stays core selection.",
   "DND5ECOMBAT.Reglage.clickToAttack.always": "Always",
   "DND5ECOMBAT.Reglage.clickToAttack.combat": "In combat only",
   "DND5ECOMBAT.Reglage.clickToAttack.off": "Never",

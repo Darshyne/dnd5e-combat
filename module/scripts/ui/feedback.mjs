@@ -18,7 +18,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { feedbackBetween } from "../core/feedback.mjs";
-import { FLOAT_CATEGORY_DEFAULTS, FLOAT_DEFAULTS, floatLine, floatFrame, floatDelays } from "../core/float-text.mjs";
+import { FLOAT_CATEGORY_DEFAULTS, FLOAT_DEFAULTS, floatLine, floatLabel, floatFrame, floatDelays } from "../core/float-text.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc } from "../runtime/shared.mjs";
 import { resourceChangesOf } from "../adapter/limits.mjs";
@@ -76,6 +76,7 @@ function floatOptions() {
   const show = Object.fromEntries(Object.entries(FLOAT_CATEGORY_DEFAULTS).map(([key, value]) => [key, !!option(key, value)]));
   return {
     show, dice: !!option("floatDice", true), icons: !!option("floatIcons", true), hitText: loc("Retour.Touche"),
+    modeText: { advantage: loc("Retour.Avantage"), disadvantage: loc("Retour.Desavantage") }, modeJoiner: loc("Retour.AvecMode"),
     duration: Number(option("floatDuration", FLOAT_DEFAULTS.duration)) || FLOAT_DEFAULTS.duration,
     spacing: Number(option("floatSpacing", FLOAT_DEFAULTS.spacing)),
     distance: Number(option("floatDistance", FLOAT_DEFAULTS.distance)) || FLOAT_DEFAULTS.distance,
@@ -114,7 +115,7 @@ async function drawLine(token, line, kind, options) {
     const sprite = src ? await iconSprite(src, fontSize * 1.15, base.fill) : null;
     if ( sprite ) parts.push(sprite);
   }
-  const label = [Number.isFinite(line.roll) ? String(line.roll) : null, line.text || null].filter(Boolean).join(" · ");
+  const label = floatLabel(line, options.modeText, options.modeJoiner);
   if ( label ) parts.push(new PreciseText(label, style));
   if ( !parts.length || !canvas?.ready || !token.visible ) return;
   // Côte à côte, centrés verticalement, la ligne entière centrée sur le token.

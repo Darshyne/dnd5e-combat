@@ -29,7 +29,7 @@ export const SETTINGS_TABS = Object.freeze([
   // §228 : les textes qui défilent sur les tokens — rythme, puis ce qui s'affiche.
   { id: "float", icon: "fa-solid fa-comment-dots",
     keys: ["feedbackText", "floatDuration", "floatSpacing", "floatDistance", "floatDirection", "floatScale", "floatDice", "floatIcons",
-      "floatAttacks", "floatHits", "floatSaves", "floatCover", "floatReactions", "floatStrikes", "floatEffects", "floatResources", "floatPrompts"] },
+      "floatAttacks", "floatHits", "floatAdvantage", "floatSaves", "floatCover", "floatReactions", "floatStrikes", "floatEffects", "floatResources", "floatPrompts"] },
   { id: "advanced", icon: "fa-solid fa-gears", keys: ["perfWarnMs", "automationBadges"] }
 ]);
 

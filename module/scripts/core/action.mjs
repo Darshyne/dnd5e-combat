@@ -382,13 +382,14 @@ function settle(resolution, commands=[]) {
 }
 
 /** Le premier jet fait foi : un second jet du même acteur est ignoré, au MJ d'annuler et de corriger. */
-function saveRolled(resolution, { actor, total, messageId, resisted=false, interposed=false }) {
+function saveRolled(resolution, { actor, total, messageId, mode=null, resisted=false, interposed=false }) {
   if ( (resolution.step !== STEPS.AWAITING_ROLLS) || !resolution.plan.save ) return same(resolution);
   const waiting = pendingSaves(resolution).find(t => t.actor === actor);
   if ( !waiting ) return same(resolution);
   // §18.9 : une Résistance légendaire change l'échec en réussite (le total reste celui du jet).
   // §133 : `interposed` — Interposer le bouclier, réaction prise sur une réussite : aucun dégât.
-  const save = { total, success: resisted || (total >= resolution.plan.save.dc), messageId, ...(resisted ? { resisted: true } : {}),
+  // §231 : `mode` — le d20 lancé avec Avantage ou Désavantage, pour le retour visuel.
+  const save = { total, success: resisted || (total >= resolution.plan.save.dc), messageId, ...(mode ? { mode } : {}), ...(resisted ? { resisted: true } : {}),
     ...(interposed ? { interposed: true } : {}) };
   return settle({ ...resolution, targets: resolution.targets.map(t => t === waiting ? { ...t, save } : t) });
 }

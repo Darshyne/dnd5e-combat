@@ -21,6 +21,8 @@ describe("retour visuel : faits nouveaux d'une résolution", () => {
     expect(feedbackBetween(null, state([target({ hit: true })])).map(f => f.kind)).toEqual(["hit"]);
     const rolled = { ...state([target({ hit: false })]), attack: { roll: { total: 9 } } };
     expect(feedbackBetween(null, rolled)).toEqual([{ token: "Scene.s.Token.z", kind: "miss", roll: 9 }]);
+    const adv = { ...state([target({ hit: false })]), attack: { roll: { total: 9, mode: "advantage" } } };
+    expect(feedbackBetween(null, adv)).toEqual([{ token: "Scene.s.Token.z", kind: "miss", roll: 9, mode: "advantage" }]);
   });
 
   it("réaction qui change le verdict : son nom, puis le raté", () => {

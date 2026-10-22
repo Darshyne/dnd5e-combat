@@ -150,7 +150,7 @@ export async function onSaveMessage(message) {
   const plan = resolution.plan ?? {};
   const halfDex = !!plan.damage && !!plan.save && !plan.save.chained && (plan.save.ability === "dex") && ((plan.save.onSave ?? "half") === "half");
   const interposed = (halfDex && Number.isFinite(dc) && (total >= dc)) ? await offerInterpose(await fromUuid(save.actor)) : false;
-  await dispatcher.send(carrierId, { type: "saveRolled", actor: save.actor, total, messageId: message.id, ...(resisted ? { resisted: true } : {}),
+  await dispatcher.send(carrierId, { type: "saveRolled", actor: save.actor, total, messageId: message.id, ...(save.mode ? { mode: save.mode } : {}), ...(resisted ? { resisted: true } : {}),
     ...(interposed ? { interposed: true } : {}) });
 }
 

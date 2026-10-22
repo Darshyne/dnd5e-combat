@@ -107,7 +107,9 @@ export function readSaveMessage(message) {
     origin: message._source.system?.origin ?? null,
     request: message.getFlag("dnd5e", "requestResult")?.requestId ?? null,
     actor: message.getAssociatedActor?.()?.uuid ?? null,
-    total: roll.total
+    total: roll.total,
+    // §231 : le mode du d20, pour le retour visuel (Avantage / Désavantage).
+    mode: (roll.hasAdvantage === true) ? "advantage" : (roll.hasDisadvantage === true) ? "disadvantage" : null
   };
 }
 

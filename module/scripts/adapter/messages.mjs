@@ -41,6 +41,13 @@ function originOf(message) {
   return message._source.system?.origin ?? null;
 }
 
+/** §231 : « advantage », « disadvantage » ou null — le mode du d20 (dnd5e dice/d20-roll.mjs:137-147). */
+export function d20Mode(roll) {
+  if ( roll?.hasAdvantage === true ) return "advantage";
+  if ( roll?.hasDisadvantage === true ) return "disadvantage";
+  return null;
+}
+
 /**
  * @param {ChatMessage} message  Message de type "attack".
  * @returns {object|null}        Entrées du cœur, ou null si le message n'est pas exploitable.
@@ -53,7 +60,7 @@ export function readAttackMessage(message) {
     origin: originOf(message),
     activity,
     source: message.getAssociatedActor?.()?.uuid ?? null,
-    roll: { total: roll.total, isCritical: roll.isCritical === true, isFumble: roll.isFumble === true },
+    roll: { total: roll.total, isCritical: roll.isCritical === true, isFumble: roll.isFumble === true, ...(d20Mode(roll) ? { mode: d20Mode(roll) } : {}) },
     targets: (message.system.targets ?? []).map(t => ({ token: t.token, actor: t.actor, name: t.name, ac: t.ac ?? null }))
   };
 }

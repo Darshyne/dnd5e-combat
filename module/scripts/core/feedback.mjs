@@ -15,6 +15,7 @@
  * @property {string} [name]    Réaction : son nom.
  * @property {boolean} [auto]   Sauvegarde ratée d'office (état).
  * @property {number} [roll]    §228 : le total du jet d'attaque (verdict) ou de sauvegarde, quand il est connu.
+ * @property {"advantage"|"disadvantage"} [mode]  §231 : le d20 de ce jet, lancé avec Avantage ou Désavantage.
  */
 
 const blank = { hit: null, critical: false, cover: null, reaction: null, save: null, duplicate: null, unaffected: null };
@@ -29,7 +30,10 @@ export function feedbackBetween(before, after) {
   if ( !after?.targets?.length || (after.step === "undone") ) return [];
   const previous = new Map((before?.targets ?? []).map(t => [t.token, t]));
   const out = [];
-  const attackTotal = Number.isFinite(after.attack?.roll?.total) ? { roll: after.attack.roll.total } : {};
+  const attackTotal = {
+    ...(Number.isFinite(after.attack?.roll?.total) ? { roll: after.attack.roll.total } : {}),
+    ...(after.attack?.roll?.mode ? { mode: after.attack.roll.mode } : {})
+  };
   for ( const t of after.targets ) {
     const b = previous.get(t.token) ?? blank;
     const judged = (t.hit !== null) && (t.hit !== undefined);
@@ -46,7 +50,7 @@ export function feedbackBetween(before, after) {
     // §169 : un rejeu sans sauvegarde (`noSave`) n'en annonce aucune.
     if ( t.save && !b.save && (t.save.auto !== "noSave") ) {
       out.push({ token: t.token, kind: t.save.success ? "saveSuccess" : "saveFail", auto: !!t.save.auto,
-        ...(Number.isFinite(t.save.total) ? { roll: t.save.total } : {}) });
+        ...(Number.isFinite(t.save.total) ? { roll: t.save.total } : {}), ...(t.save.mode ? { mode: t.save.mode } : {}) });
     }
   }
   return out;

@@ -20,7 +20,7 @@ export const FLOAT_CATEGORIES = Object.freeze({
 
 /** Les réglages de catégorie, dans l'ordre de la fenêtre, avec leur valeur par défaut. */
 export const FLOAT_CATEGORY_DEFAULTS = Object.freeze({
-  floatAttacks: true, floatHits: false, floatSaves: true, floatCover: true, floatReactions: true, floatStrikes: true,
+  floatAttacks: true, floatHits: false, floatAdvantage: true, floatSaves: true, floatCover: true, floatReactions: true, floatStrikes: true,
   floatEffects: true, floatResources: true, floatPrompts: true
 });
 
@@ -35,20 +35,36 @@ const ROLLED = new Set(["hit", "critical", "miss", "saveSuccess", "saveFail"]);
  * sans critique n'a pas de texte propre : il ne s'affiche que par son jet (`floatDice`) ou par « Touché » (`floatHits`).
  * @param {{kind: string, roll?: number|null}} fact
  * @param {string|null} text        Le texte localisé du fait (« Raté »), ou null.
- * @param {object} options          `show` (catégorie → booléen), `dice`, `icons`, `hitText` (« Touché »).
- * @returns {{text: string, roll: number|null, dieIcon: boolean, icon: string|null}|null}
+ * §231 : le mode du d20 (`fact.mode`), « Avantage » / « Désavantage » (`modeText`), s'ajoute au jet quand `floatAdvantage` le veut —
+ * sans le total (`floatDice` coupé), il précède le verdict. `mode` dans la ligne : pour la couleur du mot.
+ * @param {object} options          `show` (catégorie → booléen), `dice`, `icons`, `hitText` (« Touché »), `modeText` (mode → mot).
+ * @returns {{text: string, roll: number|null, dieIcon: boolean, icon: string|null, mode: string|null}|null}
  */
-export function floatLine(fact, text, { show={}, dice=true, icons=true, hitText=null }={}) {
+export function floatLine(fact, text, { show={}, dice=true, icons=true, hitText=null, modeText={} }={}) {
   const category = FLOAT_CATEGORIES[fact.kind];
-  if ( !category ) return text ? { text, roll: null, dieIcon: false, icon: null } : null;
+  if ( !category ) return text ? { text, roll: null, dieIcon: false, icon: null, mode: null } : null;
   const roll = (dice && ROLLED.has(fact.kind) && Number.isFinite(fact.roll)) ? fact.roll : null;
+  const showMode = show.floatAdvantage ?? FLOAT_CATEGORY_DEFAULTS.floatAdvantage;
+  const mode = (showMode && ROLLED.has(fact.kind) && modeText[fact.mode]) ? fact.mode : null;
   const on = show[category] ?? FLOAT_CATEGORY_DEFAULTS[category];
   if ( fact.kind === "hit" ) {
-    if ( !on && (roll === null) ) return null;
-    return { text: on ? (hitText ?? "") : "", roll, dieIcon: (roll !== null) && icons, icon: null };
+    if ( !on && (roll === null) && !mode ) return null;
+    return { text: on ? (hitText ?? "") : "", roll, dieIcon: ((roll !== null) || !!mode) && icons, icon: null, mode };
   }
   if ( !on || !text ) return null;
-  return { text, roll, dieIcon: (roll !== null) && icons, icon: icons ? (ICONS[fact.kind] ?? null) : null };
+  return { text, roll, dieIcon: ((roll !== null) || !!mode) && icons, icon: icons ? (ICONS[fact.kind] ?? null) : null, mode };
+}
+
+/**
+ * §231 : le libellé d'une ligne — total du jet et mode (« 17 avec Avantage »), puis le texte : « 17 avec Avantage · Raté ».
+ * @param {{text: string, roll: number|null, mode: string|null}} line
+ * @param {Record<string, string>} modeText  mode → « Avantage » / « Désavantage ».
+ * @param {string} [joiner]  Le mot entre le total et le mode (« avec »).
+ */
+export function floatLabel(line, modeText={}, joiner="") {
+  const mode = line.mode ? modeText[line.mode] : null;
+  const head = Number.isFinite(line.roll) ? (mode ? `${line.roll} ${joiner ? `${joiner} ` : ""}${mode}` : String(line.roll)) : mode;
+  return [head || null, line.text || null].filter(Boolean).join(" · ");
 }
 
 /** Pictogrammes propres à une sorte (icônes du cœur : public/icons/svg). */

@@ -1558,5 +1558,10 @@
   "DND5ECOMBAT.Reglage.floatResources.Nom": "Afficher : ressources",
   "DND5ECOMBAT.Reglage.floatResources.Aide": "Ce qu'une capacité rend ou dépense (+1 Forme sauvage, −1 emplacement).",
   "DND5ECOMBAT.Reglage.floatPrompts.Nom": "Afficher : invites et refus",
-  "DND5ECOMBAT.Reglage.floatPrompts.Aide": "Pendant une visée, chez celui qui agit : « Rebond ! », « Trop loin », « Déjà visé »…"
+  "DND5ECOMBAT.Reglage.floatPrompts.Aide": "Pendant une visée, chez celui qui agit : « Rebond ! », « Trop loin », « Déjà visé »…",
+  "DND5ECOMBAT.Retour.Avantage": "Avantage",
+  "DND5ECOMBAT.Retour.Desavantage": "Désavantage",
+  "DND5ECOMBAT.Retour.AvecMode": "avec",
+  "DND5ECOMBAT.Reglage.floatAdvantage.Nom": "Afficher : Avantage et Désavantage",
+  "DND5ECOMBAT.Reglage.floatAdvantage.Aide": "Un jet d'attaque ou de sauvegarde lancé avec Avantage ou Désavantage le dit, après son total (« 17 avec Avantage · Raté »)."
 }

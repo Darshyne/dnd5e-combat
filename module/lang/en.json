@@ -1558,5 +1558,10 @@
   "DND5ECOMBAT.Reglage.floatResources.Nom": "Show: resources",
   "DND5ECOMBAT.Reglage.floatResources.Aide": "What an ability gives back or spends (+1 Wild Shape, −1 slot).",
   "DND5ECOMBAT.Reglage.floatPrompts.Nom": "Show: prompts and refusals",
-  "DND5ECOMBAT.Reglage.floatPrompts.Aide": "While targeting, for the acting player: “Bounce!”, “Too far”, “Already targeted”…"
+  "DND5ECOMBAT.Reglage.floatPrompts.Aide": "While targeting, for the acting player: “Bounce!”, “Too far”, “Already targeted”…",
+  "DND5ECOMBAT.Retour.Avantage": "Advantage",
+  "DND5ECOMBAT.Retour.Desavantage": "Disadvantage",
+  "DND5ECOMBAT.Retour.AvecMode": "with",
+  "DND5ECOMBAT.Reglage.floatAdvantage.Nom": "Show: Advantage and Disadvantage",
+  "DND5ECOMBAT.Reglage.floatAdvantage.Aide": "An attack roll or saving throw made with Advantage or Disadvantage says so, after its total (“17 with Advantage · Miss”)."
 }

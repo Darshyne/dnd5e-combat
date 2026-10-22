@@ -59,7 +59,7 @@ export const MERGE = Object.freeze({
   overwhelmingStrike: "replace", spellRecall: "replace", lastStandHeal: "replace", reactiveStrike: "replace",
   ritualAdept: "replace", slotRecovery: "replace", fleeOnFailedSave: "replace", halfOnMiss: "replace",
   saveDisadvantageFor: "replace", limitedAction: "replace", noActions: "replace", hpTiers: "replace",
-  endsCurses: "replace", tempHpPool: "replace", revivesFull: "replace", seesInvisible: "replace", etherealShift: "replace", globe: "replace",
+  endsCurses: "replace", tempHpPool: "replace", revivesFull: "replace", seesInvisible: "replace", etherealShift: "replace", encloses: "replace", willingFails: "replace", globe: "replace",
   blink: "replace", walls: "replace", pointWall: "replace", barrier: "replace", recastCost: "replace", levitate: "replace",
   prismatic: "replace", wallSide: "replace", cellWall: "replace", coverThrough: "replace", thinWall: "replace",
   wallAura: "replace", effectEnds: "shallow", effectThen: "shallow", actionEnds: "shallow", sneakBonus: "shallow",

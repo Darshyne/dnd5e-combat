@@ -35,6 +35,7 @@ import { onDashTemplate, onDashUsed } from "./dash.mjs";
 import { onPreMoveToken } from "./move-gate.mjs";
 import { identifierOf } from "../adapter/content.mjs";
 import { samePlane } from "../adapter/plane.mjs";
+import { enclosureBetween } from "../adapter/facts.mjs";
 export { afterTeleport, currentTeleport, selfTeleportOf, teleportClick, teleportSelf, teleportTo } from "./teleport.mjs";
 export { dashLimit, dashPreview, dashProblem, dashRefusal, dashStrike, dashTargets, lineDashOf, transpose } from "./dash.mjs";
 
@@ -175,7 +176,11 @@ export function hostileTo(me, other) {
 
 /** §225 : une créature d'un autre plan (Éthéré) ne peut être ni visée ni touchée — le refus en clair, ou null. */
 export function planeRefusal(token, target) {
-  return (target && (target !== token) && !samePlane(token, target)) ? loc("Retour.AutrePlan") : null;
+  if ( !target || (target === token) ) return null;
+  if ( !samePlane(token, target) ) return loc("Retour.AutrePlan");
+  // §232 : une sphère d'Otiluke entre les deux (l'un est dedans).
+  const sphere = enclosureBetween(token.actor, target.actor);
+  return sphere ? loc("Retour.Enferme", { item: sphere.name }) : null;
 }
 
 /* -------------------------------------------- */

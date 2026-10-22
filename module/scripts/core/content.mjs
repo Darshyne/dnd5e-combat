@@ -464,6 +464,10 @@
  *                                               déplacement » du cœur V14 à la place de celui de dnd5e ; sinon comportement
  *                                               `dnd5e.difficultTerrain` posé sur la région si les données ne l'ont pas
  *                                               (Manuel des joueurs premium : Enchevêtrement, Croissance d'épines…) ; magique
+ *     encloses?: true                           §232 : un effet de cet item enferme sa cible (Sphère résiliente d'Otiluke) — rien ne
+ *                                               l'atteint du dehors, elle n'atteint rien dehors (résolutions « non affecté », clics refusés).
+ *     willingFails?: true                       §232 : une créature consentante peut rater la sauvegarde d'office — le lanceur dit, à
+ *                                               l'ouverture, si chaque cible non ennemie consent (pas de jet).
  *     zoneEffects?: true                        les effets de l'activité sont portés tant qu'on est dans sa zone (§37.4,
  *                                               Silence) : comportement `applyActiveEffect` du cœur (adapter/zone-effects.mjs)
  *     rollBonus?: { activity, on, skills? }     un dé que la créature ajoute à SON jet, après l'avoir vu (§38, Chance du

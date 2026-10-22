@@ -16,7 +16,7 @@ import { restoreHp, rollDamageFor } from "../adapter/messages.mjs";
 import { removeEffects, TARGETS_QUERY, handleTargetsQuery, SAVE_QUERY, handleSaveQuery } from "../adapter/saves.mjs";
 import { statusesOf, areAdjacent, evades, coverAgainst } from "../adapter/conditions.mjs";
 import { currentAc } from "../adapter/reactions.mjs";
-import { CHOICE_QUERY, handleChoiceQuery } from "../adapter/choices.mjs";
+import { CHOICE_QUERY, handleChoiceQuery, askChoice } from "../adapter/choices.mjs";
 import { ALLOCATION_QUERY, handleAllocationQuery } from "../adapter/projectiles.mjs";
 import { canJudgeCover, isCoverAvailable } from "../adapter/cover.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
@@ -29,7 +29,7 @@ import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { duplicatesAgainst } from "../adapter/duplicates.mjs";
 import { log, loc, isExecutor, whenCanvasReady } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
-import { areAllies } from "../adapter/factions.mjs";
+import { areAllies, areEnemies } from "../adapter/factions.mjs";
 import { COMMANDS } from "./engine-commands.mjs";
 import { onAttackMessage, onDamageMessage, onSaveMessage, onUsageMessage } from "./engine-messages.mjs";
 import { onRegionCreated } from "./engine-areas.mjs";
@@ -214,6 +214,29 @@ export async function enrich(targets, plan, originUuid, activityUuid=null, attac
   return out;
 }
 
+/**
+ * §232 : une sauvegarde qu'une créature consentante peut rater d'office (contenu `willingFails` : Sphère résiliente d'Otiluke, « une
+ * créature non consentante doit réussir… »). Pour chaque cible qui n'est pas ennemie du lanceur, le lanceur (son joueur, sinon le MJ)
+ * dit si elle consent ; consentante, sa sauvegarde est ratée d'office (`autoFail: "willing"`, sans jet). Sans réponse : non consentante.
+ */
+async function askWilling(activity, targets, casterToken) {
+  const item = activity?.item;
+  const caster = activity?.actor;
+  if ( !caster || (contentOf(item).entry?.willingFails !== true) ) return targets;
+  const out = [];
+  for ( const target of targets ) {
+    const token = await fromUuid(target.token);
+    const ask = token?.actor && !target.autoFail && !target.unaffected && !(casterToken && areEnemies(casterToken, token));
+    if ( !ask ) { out.push(target); continue; }
+    const answer = await askChoice(caster, { actor: caster.uuid, item: item.name, prompt: loc("Consentant.Question", { name: target.name }),
+      options: [{ id: "unwilling", label: loc("Consentant.Non") }, { id: "willing", label: loc("Consentant.Oui") }] });
+    const willing = answer?.id === "willing";
+    if ( willing ) log(`${target.name}: willing — fails the ${item.name} saving throw without a roll`);
+    out.push(willing ? { ...target, autoFail: "willing" } : target);
+  }
+  return out;
+}
+
 /** Données d'`open()` du cœur pour un message, ou null s'il n'y a rien à résoudre. */
 export async function openingFor(message, usage, extra={}) {
   if ( !usage.plan.attack && !usage.targets.length ) {
@@ -229,6 +252,10 @@ export async function openingFor(message, usage, extra={}) {
   let targets = await enrich(usage.targets, usage.plan, speakerTokenUuid(message), usage.activity, null, castLevelOfMessage(message));
   // §169 : un rejeu sans sauvegarde (Mur de feu traversé, fin de tour du côté brûlant) — les dégâts pleins, d'office.
   if ( usage.plan.save && message.getFlag(MODULE_ID, "areaTick")?.noSave ) targets = targets.map(t => ({ ...t, autoFail: "noSave" }));
+  if ( usage.plan.save ) {
+    const activity = fromUuidSync(usage.activity, { strict: false });
+    targets = await askWilling(activity, targets, activity?.actor?.getActiveTokens?.(false, true)?.[0]?.document ?? null);
+  }
   return { id: foundry.utils.randomID(), ...data, choice, allocation, targets, ...extra };
 }
 

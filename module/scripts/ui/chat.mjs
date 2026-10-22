@@ -73,6 +73,7 @@ function unaffectedText({ reason, detail }) {
   if ( reason === "immune" ) return loc("NonAffecte.immune", { status: statusName(detail) });
   if ( reason === "globe" ) return loc("NonAffecte.globe", { item: detail ?? "" });
   if ( reason === "plane" ) return loc("NonAffecte.plane");
+  if ( reason === "enclosed" ) return loc("NonAffecte.enclosed", { item: detail ?? "" });
   return loc("NonAffecte.content");
 }
 
@@ -149,7 +150,9 @@ function renderResolution(message, html, resolution) {
     if ( plan.save && reached ) {
       if ( !t.save ) { parts.push(loc("SauvegardeAttendue")); css = "pending"; }
       else {
-        parts.push((t.save.auto === "noSave") ? loc("SansSauvegarde") : t.save.auto ? loc("SauvegardeDOffice", { status: statusName(t.save.auto) })
+        // §232 : `willing` — une créature consentante (Sphère résiliente d'Otiluke).
+        parts.push((t.save.auto === "noSave") ? loc("SansSauvegarde") : (t.save.auto === "willing") ? loc("Consentant.Carte")
+          : t.save.auto ? loc("SauvegardeDOffice", { status: statusName(t.save.auto) })
           : loc(t.save.success ? "SauvegardeReussie" : "SauvegardeRatee", { n: t.save.total }));
         if ( t.save.success && !plan.attack ) css = "miss";
       }

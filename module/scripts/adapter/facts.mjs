@@ -34,6 +34,31 @@ export function tokenOf(actor, given=null) {
   return actor.getActiveTokens?.(true, true)?.[0] ?? null;
 }
 
+/**
+ * §232 : l'item qui enferme cet acteur (Sphère résiliente d'Otiluke, contenu `encloses`) — un de ses effets actifs en vient — ou null.
+ * @param {Actor|null} actor
+ * @returns {Item|null}
+ */
+export function enclosingItem(actor) {
+  for ( const effect of actor?.effects ?? [] ) {
+    // La concentration du lanceur vient aussi de l'item : elle ne l'enferme pas.
+    if ( effect.disabled || effect.isSuppressed || effect.statuses?.has?.("concentrating") ) continue;
+    const item = originItemOf(effect);
+    if ( item && (contentOf(item).entry?.encloses === true) ) return item;
+  }
+  return null;
+}
+
+/**
+ * §232 : la sphère qui sépare deux acteurs — celle de l'un d'eux quand ce ne sont pas les mêmes (« rien ne la traverse, dans un sens ou
+ * dans l'autre »), ou null.
+ * @returns {Item|null}
+ */
+export function enclosureBetween(a, b) {
+  if ( !a || !b || (a === b) ) return null;
+  return enclosingItem(a) ?? enclosingItem(b);
+}
+
 /** L'item d'où vient un effet posé sur un acteur, ou null. */
 export function originItemOf(effect) {
   const origin = effect.system?.origin ?? {};

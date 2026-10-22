@@ -299,8 +299,10 @@ export const SPELL_RULES = Object.freeze({
     effectEnds: { "status:restrained": "casterTurnEnd" }
   },
   // Sphère résiliente d'Otiluke : « rien — objets physiques, énergie ou effets de sorts — ne la traverse » : la cible enfermée est
-  // immunisée contre tous les dégâts (l'effet « Enclosed in Sphere » est vide). Qu'elle ne puisse rien atteindre dehors : au MJ.
-  "otilukes-resilient-sphere": { effectChanges: { U5UciD171a5jcc7s: ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"].map(t => ({ key: "system.traits.di.value", type: "add", value: t })) } },
+  // immunisée contre tous les dégâts (l'effet « Enclosed in Sphere » est vide). §232 : « une créature dans la sphère ne peut rien
+  // endommager dehors » ni être atteinte du dehors (`encloses`) ; « une créature non consentante doit réussir » la sauvegarde — une
+  // consentante l'enferme sans jet (`willingFails`).
+  "otilukes-resilient-sphere": { encloses: true, willingFails: true, effectChanges: { U5UciD171a5jcc7s: ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"].map(t => ({ key: "system.traits.di.value", type: "add", value: t })) } },
   // Globe d'invulnérabilité : « un sort de niveau 5 ou moins lancé de l'extérieur ne peut affecter quoi que ce soit dans l'Émanation de
   // 3 m » (la montée d'emplacement du globe : non reprise).
   "globe-of-invulnerability": { globe: { radius: 10, units: "ft", maxLevel: 5 } },

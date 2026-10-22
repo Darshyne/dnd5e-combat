@@ -1563,5 +1563,11 @@
   "DND5ECOMBAT.Retour.Desavantage": "Disadvantage",
   "DND5ECOMBAT.Retour.AvecMode": "with",
   "DND5ECOMBAT.Reglage.floatAdvantage.Nom": "Show: Advantage and Disadvantage",
-  "DND5ECOMBAT.Reglage.floatAdvantage.Aide": "An attack roll or saving throw made with Advantage or Disadvantage says so, after its total (“17 with Advantage · Miss”)."
+  "DND5ECOMBAT.Reglage.floatAdvantage.Aide": "An attack roll or saving throw made with Advantage or Disadvantage says so, after its total (“17 with Advantage · Miss”).",
+  "DND5ECOMBAT.NonAffecte.enclosed": "unaffected: separated by {item}",
+  "DND5ECOMBAT.Retour.Enferme": "Separated by {item}",
+  "DND5ECOMBAT.Consentant.Question": "Is {name} willing? A willing creature fails the saving throw automatically.",
+  "DND5ECOMBAT.Consentant.Oui": "Willing (no roll)",
+  "DND5ECOMBAT.Consentant.Non": "Unwilling (saving throw)",
+  "DND5ECOMBAT.Consentant.Carte": "willing: saving throw failed automatically"
 }

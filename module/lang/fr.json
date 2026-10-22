@@ -1563,5 +1563,11 @@
   "DND5ECOMBAT.Retour.Desavantage": "Désavantage",
   "DND5ECOMBAT.Retour.AvecMode": "avec",
   "DND5ECOMBAT.Reglage.floatAdvantage.Nom": "Afficher : Avantage et Désavantage",
-  "DND5ECOMBAT.Reglage.floatAdvantage.Aide": "Un jet d'attaque ou de sauvegarde lancé avec Avantage ou Désavantage le dit, après son total (« 17 avec Avantage · Raté »)."
+  "DND5ECOMBAT.Reglage.floatAdvantage.Aide": "Un jet d'attaque ou de sauvegarde lancé avec Avantage ou Désavantage le dit, après son total (« 17 avec Avantage · Raté »).",
+  "DND5ECOMBAT.NonAffecte.enclosed": "non affecté : séparé par {item}",
+  "DND5ECOMBAT.Retour.Enferme": "Séparé par {item}",
+  "DND5ECOMBAT.Consentant.Question": "{name} est-elle consentante ? Une créature consentante rate la sauvegarde d'office.",
+  "DND5ECOMBAT.Consentant.Oui": "Consentante (pas de jet)",
+  "DND5ECOMBAT.Consentant.Non": "Non consentante (jet de sauvegarde)",
+  "DND5ECOMBAT.Consentant.Carte": "consentante : sauvegarde ratée d'office"
 }

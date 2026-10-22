@@ -68,10 +68,13 @@ export function poolEffectsOf(activity) {
 /**
  * Les effets de l'activité, avec leur moment. `condition` (facultative) : ce que la cible doit remplir pour les recevoir,
  * en JSON comme la condition d'une étape (M3 : porte de taille).
+ * §158, §226 : aucun pour un item `zoneEffects`, quel que soit le type de l'activité — ses effets sont portés par la zone (le
+ * comportement `applyActiveEffect` du cœur, adapter/zone-effects.mjs) ; posés en plus sur les cibles, ils ne partaient jamais.
  */
-const effectsOf = (activity, when, condition=null) => applicableEffectsOf(activity).map(e => ({
-  id: effectKey(e), activity: activity.uuid, when: when(e), ...(condition ? { if: JSON.stringify(condition) } : {})
-}));
+const effectsOf = (activity, when, condition=null) => (contentOf(activity.item).entry?.zoneEffects === true) ? []
+  : applicableEffectsOf(activity).map(e => ({
+    id: effectKey(e), activity: activity.uuid, when: when(e), ...(condition ? { if: JSON.stringify(condition) } : {})
+  }));
 
 /** M5 (§18.8) : la variante d'attaque que la situation désigne, pour la première cible du message. */
 function attackVariant(message, activity, targets) {
@@ -209,9 +212,8 @@ function outcomeStepsOf(item, moment, when) {
  */
 function saveEffectsOf(activity) {
   const entry = activity.item ? contentOf(activity.item).entry : null;
-  // §158 : les effets d'une zone `zoneEffects` sont portés par la zone (entrée, sortie) — la sauvegarde ne les pose pas en plus
-  // (Tempête radieuse de Jallarzi : Aveuglé, Assourdi « tant qu'elle est dans le Cylindre »).
-  if ( entry?.zoneEffects === true ) return [];
+  // §158 : rien pour une zone `zoneEffects` (`effectsOf`) — Tempête radieuse de Jallarzi : Aveuglé, Assourdi « tant qu'elle est dans
+  // le Cylindre ».
   const saved = new Set(entry?.savedEffects ?? []);
   const margins = entry?.failMargins ?? {};
   return effectsOf(activity, e => saved.has(effectKey(e)) ? "saved" : (e.onSave === true ? "always" : "failedSave"))
@@ -365,7 +367,8 @@ function readPlan(message) {
     case "damage":
       // §89 : une activité de dégâts dont le contenu retire les dégâts (`noDamage` : Feinte) pose encore ses effets, comme un utilitaire.
       if ( !hasDamageParts(activity) ) {
-        return applicableEffectsOf(activity).length ? { ...common, targets, plan: { effects: effectsOf(activity, () => "always") } } : null;
+        const effects = effectsOf(activity, () => "always");
+        return effects.length ? { ...common, targets, plan: { effects } } : null;
       }
       // Une activité de dégâts utilisée après le toucher (Frappe occulte, §16.19) porte les étapes « au toucher » du contenu.
       // À gabarit (Nuage de dagues, Croissance d'épines, §16.20), c'est une zone : ses cibles sont ceux qu'elle recouvre.
@@ -383,7 +386,8 @@ function readPlan(message) {
       // §164 : rejouée par une zone (Lumière guérisseuse d'Invocation de céleste), personne n'a cliqué — le moteur lance les soins.
       return { ...common, targets, plan: { damage: message.getFlag?.(MODULE_ID, "areaTick") ? "author" : "system", heal: true, effects: effectsOf(activity, () => "always") } };
     case "utility":
-      if ( !applicableEffectsOf(activity).length ) return null;
+      // §226 : Silence — ses effets n'existent que dans sa zone (`effectsOf` n'en rend aucun) : rien à résoudre.
+      if ( !effectsOf(activity, () => "always").length ) return null;
       // Une activité qui prend une action de base (Ruse : Se cacher, §20) : le moteur la fait (runtime/hide.mjs) ; l'effet
       // « Hiding » de l'item n'est pas posé.
       if ( contentOf(activity.item).entry?.basicActions?.[activity.id] ) return null;

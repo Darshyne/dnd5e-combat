@@ -3,7 +3,9 @@
  * lui-même hors de la zone. Vérifie :
  *  - le Zombi, déjà dedans à la pose, porte l'effet (Assourdi, `silenced`) ;
  *  - il sort de la zone : l'effet part (comportement `applyActiveEffect` du cœur) ; il y revient : l'effet revient ;
- *  - la concentration du Clerc retirée : la zone disparaît, l'effet aussi.
+ *  - la concentration du Clerc retirée : la zone disparaît, l'effet aussi ;
+ *  - §226 : le Zombi désigné comme cible à l'utilisation ne reçoit pas de seconde copie (l'activité est utilitaire : avant, le moteur
+ *    posait aussi ses effets sur chaque cible, une copie que la sortie de la zone ne retirait pas).
  * Remet positions, effets, zone et concentration.
  */
 const PHB = "Compendium.dnd-players-handbook.spells.Item.";
@@ -41,14 +43,14 @@ export default {
     };
     ctx.restore(reset);
 
-    const used = await ctx.use({ tokenId: cleric.id, itemId: silenceId, activityType: "utility", consume: false,
+    const used = await ctx.use({ tokenId: cleric.id, itemId: silenceId, activityType: "utility", consume: false, targetTokenIds: [zombi.id],
       area: { shape: "circle", x: home.x + grid / 2, y: home.y + grid / 2, radius: 4 * grid } });
     regionId = used.regionId ?? null;
     if ( !ctx.expect(!!regionId, "la Sphère est posée sur le Zombi") ) return;
     await pause(2500);
     const atCast = await silenced();
     ctx.expect(atCast.length === 1 && (atCast[0].statuses ?? []).includes("deafened"),
-      `déjà dedans à la pose : l'effet est porté (${atCast.map(e => `${e.name} [${(e.statuses ?? []).join(", ")}]`).join(" ; ")})`);
+      `déjà dedans à la pose, désigné comme cible : l'effet est porté, une seule fois (${atCast.map(e => `${e.name} [${(e.statuses ?? []).join(", ")}]`).join(" ; ")})`);
     const region = (await ctx.call("get-scene-object", { type: "Region", objectId: regionId })).data;
     ctx.expect((region.behaviors ?? []).some(b => b.type === "applyActiveEffect"), "la région porte le comportement « appliquer un effet » du cœur");
 

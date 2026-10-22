@@ -20,6 +20,7 @@ import { convertLength } from "../core/units.mjs";
 import { readUnitFactors, lengthIn } from "./units.mjs";
 import { depthOf, verticalExtent, verticalGap } from "../core/space.mjs";
 import { climbSpeed } from "../core/climb.mjs";
+import { actionSpeed } from "../core/movement.mjs";
 import { multiattackOf, useKeysOf, isMultiattackItem } from "./multiattack.mjs";
 import { pendingMetamagic, distantRange } from "./metamagic.mjs";
 
@@ -369,7 +370,8 @@ export function movementOf(combatant, factors) {
 }
 
 /**
- * Vitesse de marche d'un acteur, dans l'unité de la grille (hors combat aussi : §67, la réaction qui rejoint l'attaquant).
+ * Vitesse d'un acteur, dans l'unité de la grille (hors combat aussi : §67, la réaction qui rejoint l'attaquant) : la marche, ou celle
+ * de l'action de déplacement `mode` (§229 : vol, nage, fouissement — `actionSpeed`, core/movement.mjs).
  * §192 : en escalade (`mode` = `climb`), la vitesse d'escalade si la fiche en a une, sinon la marche (le ×2 est dans le coût de dnd5e).
  * @returns {{speed: number, units: string}|null}
  */
@@ -378,7 +380,7 @@ export function speedOf(actor, factors, mode=null) {
   if ( !movement ) return null;
   const gridUnits = canvas.scene?.grid.units ?? movement.units;
   const speeds = movement.speeds ?? movement;
-  const value = (mode === "climb") ? climbSpeed(speeds).speed : (speeds.walk ?? 0);
+  const value = (mode === "climb") ? climbSpeed(speeds).speed : actionSpeed(speeds, mode, CONFIG.DND5E?.movementTypes ?? {});
   let speed = lengthIn(value, movement.units, gridUnits, factors);
   return { speed, units: gridUnits };
 }

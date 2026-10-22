@@ -106,3 +106,21 @@ export function facingRotation(dx, dy) {
   const angle = (Math.atan2(dy, dx) * 180) / Math.PI;   // 0 = est, 90 = sud
   return Math.round(((angle - 90) % 360 + 360) % 360);
 }
+
+/**
+ * §229 : la vitesse qui borne un déplacement selon l'action de déplacement du token (marche, vol, nage…), comme la règle de dnd5e
+ * la colore (canvas/ruler.mjs, `#getSpeedBasedStyle`) : la vitesse de cette action ; pour une action qui retombe sur la marche
+ * (`walkFallback` : escalade, nage) ou qui n'est pas un mode de dnd5e (`ethereal`, ramper…), la plus grande des deux. Avant, le moteur
+ * ne lisait que la marche : une Âme-en-peine en vol (marche 5 ft, vol 60 ft) n'avançait que de 5 ft au menu contextuel.
+ * L'escalade garde sa règle (`climbSpeed`, core/climb.mjs : le ×2 sans vitesse d'escalade est dans le coût de dnd5e).
+ * @param {Record<string, number>} speeds   `system.attributes.movement.speeds`.
+ * @param {string|null} action             L'action de déplacement (`token.movementAction`), null : la marche.
+ * @param {Record<string, {walkFallback?: boolean}>} types   `CONFIG.DND5E.movementTypes`.
+ * @returns {number}
+ */
+export function actionSpeed(speeds, action, types={}) {
+  const walk = Number(speeds?.walk) || 0;
+  if ( !action || (action === "walk") ) return walk;
+  const own = Number(speeds?.[action]) || 0;
+  return (types[action]?.walkFallback || !types[action]) ? Math.max(own, walk) : own;
+}

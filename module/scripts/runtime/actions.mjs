@@ -560,7 +560,7 @@ export async function fleeFrom(token, anchor, { extra=0, dryRun=false }={}) {
   const distance = token.parent.grid.distance || 5;
   const cap = movementCap(token);
   const history = historyCosts(token);
-  const speed = speedOf(token.actor, readUnitFactors())?.speed ?? 0;
+  const speed = speedOf(token.actor, readUnitFactors(), token._source?.movementAction ?? null)?.speed ?? 0;   // §229 : vol, nage…
   const left = Number.isFinite(cap) ? (cap - history.spent - history.excluded) : speed;
   const maxCost = (Number.isFinite(cap) ? cap : (history.spent + history.excluded + speed)) + (Number(extra) || 0);
   const cells = Math.floor((Math.max(0, left) + (Number(extra) || 0)) / distance);
@@ -683,7 +683,7 @@ export async function reactionApproach(actor, target, activity) {
   // Hors combat (pas de budget de tour), la Vitesse seule, comptée depuis l'historique du cœur tel qu'il est.
   const combatant = combatantFor(actor);
   const movement = combatant ? movementOf(combatant, readUnitFactors())
-    : { spent: historyCosts(token).spent, ...(speedOf(actor, readUnitFactors()) ?? { speed: 0 }) };
+    : { spent: historyCosts(token).spent, ...(speedOf(actor, readUnitFactors(), token._source?.movementAction ?? null) ?? { speed: 0 }) };
   if ( !(movement?.speed > 0) || isGrappled(token) ) return false;
   // Le plafond se compare à l'historique du cœur (ce tour-ci) : ce qui est déjà fait, plus la Vitesse que donne la réaction.
   const maxCost = movement.spent + movement.speed + historyCosts(token).excluded;

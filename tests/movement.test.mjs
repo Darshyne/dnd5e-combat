@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { findPath, turningPoints, cellDistance } from "../module/scripts/core/pathfind.mjs";
 import {
-  footprintGap, approach, chooseBasicAttack, spentMovement
+  footprintGap, approach, chooseBasicAttack, spentMovement, actionSpeed
 } from "../module/scripts/core/movement.mjs";
 
 const key = c => `${c.i},${c.j}`;
@@ -205,5 +205,23 @@ describe("facingRotation (§18.27)", () => {
   it("diagonale sud-est = 315 ; sans déplacement : null", () => {
     expect(facingRotation(1, 1)).toBe(315);
     expect(facingRotation(0, 0)).toBeNull();
+  });
+});
+
+describe("vitesse de l'action de déplacement (§229)", () => {
+  const types = { walk: {}, burrow: {}, climb: { walkFallback: true }, fly: {}, jump: {}, swim: { walkFallback: true } };
+  const wraith = { walk: 5, fly: 60, swim: 0, burrow: 0, climb: 0 };
+  it("en vol, la vitesse de vol ; à pied, la marche", () => {
+    expect(actionSpeed(wraith, "fly", types)).toBe(60);
+    expect(actionSpeed(wraith, "walk", types)).toBe(5);
+    expect(actionSpeed(wraith, null, types)).toBe(5);
+  });
+  it("nage : la plus grande avec la marche ; vol sans vitesse de vol : 0, comme la règle de dnd5e", () => {
+    expect(actionSpeed({ walk: 30, swim: 0 }, "swim", types)).toBe(30);
+    expect(actionSpeed({ walk: 30, swim: 40 }, "swim", types)).toBe(40);
+    expect(actionSpeed({ walk: 30, fly: 0 }, "fly", types)).toBe(0);
+  });
+  it("une action qui n'est pas un mode de dnd5e (Éthéré) : la marche", () => {
+    expect(actionSpeed({ walk: 30 }, "ethereal", types)).toBe(30);
   });
 });

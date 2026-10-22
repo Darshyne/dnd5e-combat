@@ -31,7 +31,7 @@ async function flee(token, caster, item) {
     log(`${item.name}: ${token.name} has no Reaction left — does not flee`);
     return;
   }
-  const speed = speedOf(actor, readUnitFactors())?.speed ?? 0;
+  const speed = speedOf(actor, readUnitFactors(), token._source?.movementAction ?? null)?.speed ?? 0;   // §229 : en vol, la vitesse de vol
   const cells = Math.floor(speed / (token.parent.grid.distance || 5));
   if ( cells <= 0 ) return;
   if ( budget ) await writeBudget(combatant, { ...budget, reaction: Math.max(0, (budget.reaction ?? 1) - 1), reactedAt: currentTurnKey() });

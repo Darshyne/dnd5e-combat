@@ -8,11 +8,13 @@
 /**
  * @typedef {object} Feedback
  * @property {string} token   UUID du token au-dessus duquel écrire.
- * @property {"critical"|"miss"|"cover"|"reaction"|"saveSuccess"|"saveFail"|"duplicate"|"unaffected"} kind
+ * @property {"hit"|"critical"|"miss"|"cover"|"reaction"|"saveSuccess"|"saveFail"|"duplicate"|"unaffected"} kind
+ *           `hit` : un coup qui touche sans critique (§228 : affiché seulement si le MJ le veut, ou par son jet)
  *           `duplicate` : une réplique d'Image miroir a pris le coup (§16.25) ; `unaffected` : l'action ne peut pas l'affecter (§16.8)
  * @property {string} [degree]  Abri : "half", "threeQuarters", "total".
  * @property {string} [name]    Réaction : son nom.
  * @property {boolean} [auto]   Sauvegarde ratée d'office (état).
+ * @property {number} [roll]    §228 : le total du jet d'attaque (verdict) ou de sauvegarde, quand il est connu.
  */
 
 const blank = { hit: null, critical: false, cover: null, reaction: null, save: null, duplicate: null, unaffected: null };
@@ -27,6 +29,7 @@ export function feedbackBetween(before, after) {
   if ( !after?.targets?.length || (after.step === "undone") ) return [];
   const previous = new Map((before?.targets ?? []).map(t => [t.token, t]));
   const out = [];
+  const attackTotal = Number.isFinite(after.attack?.roll?.total) ? { roll: after.attack.roll.total } : {};
   for ( const t of after.targets ) {
     const b = previous.get(t.token) ?? blank;
     const judged = (t.hit !== null) && (t.hit !== undefined);
@@ -36,11 +39,15 @@ export function feedbackBetween(before, after) {
     if ( t.unaffected && !b.unaffected ) out.push({ token: t.token, kind: "unaffected" });
     if ( t.duplicate?.taken && !b.duplicate?.taken ) out.push({ token: t.token, kind: "duplicate" });
     else if ( judged && (newlyJudged || (b.hit !== t.hit) || (b.critical !== t.critical)) ) {
-      if ( t.hit === false ) out.push({ token: t.token, kind: "miss" });
-      else if ( t.critical ) out.push({ token: t.token, kind: "critical" });
+      if ( t.hit === false ) out.push({ token: t.token, kind: "miss", ...attackTotal });
+      else if ( t.critical ) out.push({ token: t.token, kind: "critical", ...attackTotal });
+      else if ( t.hit === true ) out.push({ token: t.token, kind: "hit", ...attackTotal });
     }
     // §169 : un rejeu sans sauvegarde (`noSave`) n'en annonce aucune.
-    if ( t.save && !b.save && (t.save.auto !== "noSave") ) out.push({ token: t.token, kind: t.save.success ? "saveSuccess" : "saveFail", auto: !!t.save.auto });
+    if ( t.save && !b.save && (t.save.auto !== "noSave") ) {
+      out.push({ token: t.token, kind: t.save.success ? "saveSuccess" : "saveFail", auto: !!t.save.auto,
+        ...(Number.isFinite(t.save.total) ? { roll: t.save.total } : {}) });
+    }
   }
   return out;
 }

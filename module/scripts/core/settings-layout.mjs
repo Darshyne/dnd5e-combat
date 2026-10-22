@@ -25,7 +25,11 @@ export const SETTINGS_TABS = Object.freeze([
     keys: ["clickToAttack", "targetingMode", "fastAttack", "quickRolls", "releaseTargets", "situationalCursor", "targetingBanner",
       "closeSheetOnUse", "hitChance", "hitChancePlayers"] },
   { id: "chat", icon: "fa-solid fa-comments",
-    keys: ["chatLight", "chatCompact", "chatPurgeMax", "chatPurgeKeep", "syncAnimations", "animationWait", "feedbackText"] },
+    keys: ["chatLight", "chatCompact", "chatPurgeMax", "chatPurgeKeep", "syncAnimations", "animationWait"] },
+  // §228 : les textes qui défilent sur les tokens — rythme, puis ce qui s'affiche.
+  { id: "float", icon: "fa-solid fa-comment-dots",
+    keys: ["feedbackText", "floatDuration", "floatSpacing", "floatDistance", "floatDirection", "floatScale", "floatDice", "floatIcons",
+      "floatAttacks", "floatHits", "floatSaves", "floatCover", "floatReactions", "floatStrikes", "floatEffects", "floatResources", "floatPrompts"] },
   { id: "advanced", icon: "fa-solid fa-gears", keys: ["perfWarnMs", "automationBadges"] }
 ]);
 

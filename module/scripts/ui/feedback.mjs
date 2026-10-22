@@ -1,6 +1,6 @@
 /**
  * Retour visuel au-dessus des tokens, façon BG3 (SPEC §15.3) : « Critique ! », « Raté », l'abri, la
- * réaction, la sauvegarde — le texte défilant du cœur (`canvas.interface.createScrollingText`,
+ * réaction, la sauvegarde — à la manière du texte défilant du cœur (`canvas.interface.createScrollingText`,
  * client/canvas/groups/interface.mjs:174), celui que dnd5e utilise pour les PV
  * (documents/actor/actor.mjs:3557). Les PV eux-mêmes restent au système.
  *
@@ -8,10 +8,17 @@
  * exécute le moteur ; ici chaque client lit la résolution sur le drapeau du message, qu'il reçoit
  * comme tout le monde, et n'écrit que ce qui a changé depuis l'état précédent (core/feedback.mjs).
  * Rien n'est décidé, rien n'est écrit dans le monde.
+ *
+ * §228 : le moteur dessine ses textes lui-même (un conteneur dans `canvas.interface`, animé par `CanvasAnimation` du cœur) au lieu du
+ * texte défilant du cœur, qui efface son texte pendant toute sa course et n'accepte pas d'image : rythme, course, taille, ce qui
+ * s'affiche et pictogrammes (dé et total du jet) sont réglés par le MJ pour la table (onglet « Textes flottants »). Le réglage du cœur
+ * « texte défilant » (`core.scrollingStatusText`) reste respecté. Les PV perdus ou rendus restent ceux de dnd5e
+ * (documents/actor/actor.mjs:3557, `_displayTokenEffect`) : leur rythme n'est pas réglable sans patcher le système.
  */
 
 import { MODULE_ID } from "../constants.mjs";
 import { feedbackBetween } from "../core/feedback.mjs";
+import { FLOAT_CATEGORY_DEFAULTS, FLOAT_DEFAULTS, floatLine, floatFrame, floatDelays } from "../core/float-text.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc } from "../runtime/shared.mjs";
 import { resourceChangesOf } from "../adapter/limits.mjs";
@@ -20,8 +27,10 @@ import { resourceChangesOf } from "../adapter/limits.mjs";
 const seen = new Map();
 /** Un message qu'on n'a jamais vu passer : on n'en montre les faits que s'il est récent (pas un vieux message rejoué). */
 const FRESH_MS = 120000;
-/** Écart entre deux textes sur un même token. */
-const STAGGER_MS = 450;
+/** Par token, l'heure (ms) où son prochain texte peut partir (core/float-text.mjs, `floatDelays`). */
+const busyUntil = new Map();
+/** Le conteneur des textes, recréé avec le canevas. */
+let layer = null;
 
 const STYLES = {
   critical: { fill: 0xffd24a, fontSize: 30 },
@@ -44,6 +53,7 @@ function textOf(f) {
   switch ( f.kind ) {
     case "critical": return loc("Retour.Critique");
     case "miss": return loc("Retour.Rate");
+    case "hit": return null;   // §228 : « Touché » ou le jet seul (core/float-text.mjs, `floatLine`)
     case "cover": return (f.degree === "total") ? loc("Retour.AbriTotal") : loc(`Abri.${f.degree}`);
     case "reaction": return f.name;
     case "saveSuccess": return loc("Retour.SauvegardeReussie");
@@ -55,30 +65,115 @@ function textOf(f) {
   return null;
 }
 
+/** Un réglage du module, ou sa valeur par défaut s'il n'est pas (encore) enregistré. */
+function option(key, fallback) {
+  try { return game.settings.get(MODULE_ID, key) ?? fallback; }
+  catch { return fallback; }
+}
+
+/** Les réglages de la table (§228), lus à chaque salve : un changement du MJ vaut tout de suite. */
+function floatOptions() {
+  const show = Object.fromEntries(Object.entries(FLOAT_CATEGORY_DEFAULTS).map(([key, value]) => [key, !!option(key, value)]));
+  return {
+    show, dice: !!option("floatDice", true), icons: !!option("floatIcons", true), hitText: loc("Retour.Touche"),
+    duration: Number(option("floatDuration", FLOAT_DEFAULTS.duration)) || FLOAT_DEFAULTS.duration,
+    spacing: Number(option("floatSpacing", FLOAT_DEFAULTS.spacing)),
+    distance: Number(option("floatDistance", FLOAT_DEFAULTS.distance)) || FLOAT_DEFAULTS.distance,
+    scale: (Number(option("floatScale", FLOAT_DEFAULTS.scale)) || FLOAT_DEFAULTS.scale) / 100,
+    up: option("floatDirection", FLOAT_DEFAULTS.direction) === "up"
+  };
+}
+
+function layerOf() {
+  if ( !layer || layer.destroyed || (layer.parent !== canvas.interface) ) {
+    layer = canvas.interface.addChild(new PIXI.Container());
+    layer.eventMode = "none";
+    layer.zIndex = 1000;
+  }
+  return layer;
+}
+
+/** Une image du cœur (blanche), à la hauteur du texte et teinte de sa couleur. */
+async function iconSprite(src, size, tint) {
+  const texture = await foundry.canvas.loadTexture(src).catch(() => null);
+  if ( !texture ) return null;
+  const sprite = new PIXI.Sprite(texture);
+  sprite.width = sprite.height = size;
+  sprite.tint = tint;
+  return sprite;
+}
+
+/** Une ligne (pictogrammes, total du jet, texte) au-dessous ou au-dessus du token, puis son animation. */
+async function drawLine(token, line, kind, options) {
+  const base = STYLES[kind] ?? STYLES.prompt;
+  const fontSize = Math.round(base.fontSize * options.scale);
+  const { PreciseText } = foundry.canvas.containers;
+  const style = PreciseText.getTextStyle({ fill: base.fill, fontSize, stroke: 0x000000, strokeThickness: 4 });
+  const parts = [];
+  for ( const src of [line.dieIcon ? "icons/svg/d20.svg" : null, line.icon] ) {
+    const sprite = src ? await iconSprite(src, fontSize * 1.15, base.fill) : null;
+    if ( sprite ) parts.push(sprite);
+  }
+  const label = [Number.isFinite(line.roll) ? String(line.roll) : null, line.text || null].filter(Boolean).join(" · ");
+  if ( label ) parts.push(new PreciseText(label, style));
+  if ( !parts.length || !canvas?.ready || !token.visible ) return;
+  // Côte à côte, centrés verticalement, la ligne entière centrée sur le token.
+  const box = new PIXI.Container();
+  const gap = fontSize * 0.25;
+  const height = Math.max(...parts.map(p => p.height));
+  let x = 0;
+  for ( const part of parts ) {
+    part.position.set(x, (height - part.height) / 2);
+    x += part.width + gap;
+    box.addChild(part);
+  }
+  box.pivot.set((x - gap) / 2, options.up ? height : 0);
+  const { x: cx, y: cy } = token.center;
+  // Sous le token en descendant (défaut) : dnd5e écrit les PV depuis le centre, en montant (actor.mjs:3557) — partir du même point
+  // superposait « Sauvegarde ratée » et « -12 ». Vers le haut : depuis le haut du token.
+  const start = options.up ? cy - (token.h / 2) : cy + (token.h / 2);
+  const travel = (options.up ? -1 : 1) * options.distance * canvas.grid.size;
+  const s = canvas.dimensions.uiScale ?? 1;
+  box.position.set(cx + ((Math.random() - 0.5) * 0.1 * (x - gap)), start);
+  box.alpha = 0;
+  layerOf().addChild(box);
+  const state = { p: 0 };
+  try {
+    await foundry.canvas.animation.CanvasAnimation.animate([{ parent: state, attribute: "p", from: 0, to: 1 }], {
+      context: box, duration: options.duration * 1000,
+      ontick: () => {
+        if ( box.destroyed ) return;
+        const f = floatFrame(state.p);
+        box.alpha = f.alpha;
+        box.scale.set(f.scale * s);
+        box.y = start + (travel * f.offset);
+      }
+    });
+  } finally {
+    // Les textures des pictogrammes sont celles du cache du cœur : on ne les détruit pas.
+    if ( !box.destroyed ) box.destroy({ children: true, texture: false });
+  }
+}
+
 function show(feedback) {
-  const delays = new Map();
+  if ( !canvas?.ready || !game.settings.get("core", "scrollingStatusText") ) return;
+  const options = floatOptions();
+  const lines = [];
   for ( const f of feedback ) {
     const token = fromUuidSync(f.token)?.object;
     if ( !token?.visible || token.document.isSecret ) continue;
     const raw = textOf(f);
-    if ( !raw ) continue;
-    const text = raw.charAt(0).toLocaleUpperCase() + raw.slice(1);   // « abri partiel » vient d'une clé partagée avec le chat
-    const delay = delays.get(f.token) ?? 0;
-    delays.set(f.token, delay + STAGGER_MS);
-    setTimeout(() => {
-      if ( !canvas?.ready || !token.visible ) return;
-      // Sous le token, en descendant : dnd5e écrit les PV depuis le centre, ancrés au-dessus et en
-      // montant (actor.mjs:3557) — partir du même point superposait « Sauvegarde ratée » et « -12 ».
-      const { x, y } = token.center;
-      // §41.3 : si la vue change pendant le défilement (un escalier : autre niveau, le canevas est redessiné), le cœur détruit
-      // le texte avec le canevas puis une seconde fois à la fin de son animation — sa promesse échoue (« Cannot read
-      // properties of null (reading 'off') », PreciseText.destroy). Rien à rattraper : le texte n'est plus là.
-      canvas.interface.createScrollingText({ x, y: y + (token.h / 2) }, text, {
-        anchor: CONST.TEXT_ANCHOR_POINTS.BOTTOM, direction: CONST.TEXT_ANCHOR_POINTS.BOTTOM,
-        stroke: 0x000000, strokeThickness: 4, jitter: 0.15, duration: 2200, ...STYLES[f.kind]
-      })?.catch?.(() => {});
-    }, delay);
+    // « abri partiel » vient d'une clé partagée avec le chat
+    const line = floatLine(f, raw ? raw.charAt(0).toLocaleUpperCase() + raw.slice(1) : null, options);
+    if ( line ) lines.push({ f, token, line });
   }
+  const delays = floatDelays(lines.map(l => l.f.token), options.spacing, Date.now(), busyUntil);
+  lines.forEach(({ f, token, line }, i) => setTimeout(() => {
+    if ( !canvas?.ready || !token.visible ) return;
+    // §41.3 : si la vue change pendant le défilement (un escalier : autre niveau, le canevas est redessiné), le texte part avec le
+    // canevas. Rien à rattraper.
+    drawLine(token, line, f.kind, options).catch(() => {});
+  }, delays[i]));
 }
 
 /**
@@ -150,6 +245,18 @@ function onUpdateMessage(message, changes) {
 export function registerFeedback() {
   game.settings.register(MODULE_ID, "feedbackText", { scope: "client", config: true, type: Boolean, default: true,
     name: "DND5ECOMBAT.Reglage.feedbackText.Nom", hint: "DND5ECOMBAT.Reglage.feedbackText.Aide" });
+  // §228 : le rythme et le contenu des textes, pour la table (MJ).
+  const world = (key, data) => game.settings.register(MODULE_ID, key, { scope: "world", config: true,
+    name: `DND5ECOMBAT.Reglage.${key}.Nom`, hint: `DND5ECOMBAT.Reglage.${key}.Aide`, ...data });
+  world("floatDuration", { type: Number, default: FLOAT_DEFAULTS.duration, range: { min: 1, max: 10, step: 0.5 } });
+  world("floatSpacing", { type: Number, default: FLOAT_DEFAULTS.spacing, range: { min: 0.2, max: 3, step: 0.1 } });
+  world("floatDistance", { type: Number, default: FLOAT_DEFAULTS.distance, range: { min: 0.5, max: 4, step: 0.25 } });
+  world("floatDirection", { type: String, default: FLOAT_DEFAULTS.direction,
+    choices: { down: "DND5ECOMBAT.Reglage.floatDirection.down", up: "DND5ECOMBAT.Reglage.floatDirection.up" } });
+  world("floatScale", { type: Number, default: FLOAT_DEFAULTS.scale, range: { min: 50, max: 250, step: 10 } });
+  world("floatDice", { type: Boolean, default: true });
+  world("floatIcons", { type: Boolean, default: true });
+  for ( const [key, value] of Object.entries(FLOAT_CATEGORY_DEFAULTS) ) world(key, { type: Boolean, default: value });
   route("updateChatMessage", onUpdateMessage, { label: "visual feedback above tokens" });
   route("deleteChatMessage", message => seen.delete(message.id), { label: "visual feedback: forget" });
   route(`${MODULE_ID}.notice`, n => floatNotice(n.token, n.text, n.kind), { label: "visual feedback: engine notice" });

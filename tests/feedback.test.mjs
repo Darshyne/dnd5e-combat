@@ -16,9 +16,11 @@ describe("retour visuel : faits nouveaux d'une résolution", () => {
     expect(out[0].degree).toBe("half");
   });
 
-  it("critique ; un coup normal n'écrit rien (les PV s'en chargent)", () => {
+  it("critique ; un coup normal est un fait « hit » (§228 : l'affichage décide), avec le total du jet", () => {
     expect(feedbackBetween(null, state([target({ hit: true, critical: true })])).map(f => f.kind)).toEqual(["critical"]);
-    expect(feedbackBetween(null, state([target({ hit: true })]))).toEqual([]);
+    expect(feedbackBetween(null, state([target({ hit: true })])).map(f => f.kind)).toEqual(["hit"]);
+    const rolled = { ...state([target({ hit: false })]), attack: { roll: { total: 9 } } };
+    expect(feedbackBetween(null, rolled)).toEqual([{ token: "Scene.s.Token.z", kind: "miss", roll: 9 }]);
   });
 
   it("réaction qui change le verdict : son nom, puis le raté", () => {
@@ -38,8 +40,8 @@ describe("retour visuel : faits nouveaux d'une résolution", () => {
       target({ token: "c", save: { success: false, total: null, auto: "paralyzed" } })
     ]);
     expect(feedbackBetween(before, after)).toEqual([
-      { token: "a", kind: "saveSuccess", auto: false },
-      { token: "b", kind: "saveFail", auto: false },
+      { token: "a", kind: "saveSuccess", auto: false, roll: 15 },
+      { token: "b", kind: "saveFail", auto: false, roll: 4 },
       { token: "c", kind: "saveFail", auto: true }
     ]);
     expect(feedbackBetween(after, after)).toEqual([]);

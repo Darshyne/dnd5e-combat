@@ -11,6 +11,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { current, undoPlan, wantsDamageRoll, isCriticalHit, pendingChoice, pendingAllocation, STEPS } from "../core/action.mjs";
 import { isAutoCritical, autoFailSave } from "../core/conditions.mjs";
+import { maximizeDice } from "../core/max-dice.mjs";
 import { unaffectedBy } from "../adapter/eligibility.mjs";
 import { restoreHp, rollDamageFor } from "../adapter/messages.mjs";
 import { removeEffects, TARGETS_QUERY, handleTargetsQuery, SAVE_QUERY, handleSaveQuery } from "../adapter/saves.mjs";
@@ -123,6 +124,24 @@ export function healsDownedToMax(healer, activity, target) {
   // §27 : Guérison suprême — le maximum de chaque dé, quelle que soit la créature soignée.
   if ( healer.items.some(i => contentOf(i).entry?.supremeHealing === true) ) return true;
   return ((target?.system?.attributes?.hp?.value ?? 1) <= 0) && healer.items.some(i => contentOf(i).entry?.healsDownedMax === true);
+}
+
+/**
+ * §233 : au jet d'un soin (sur le client du soigneur), quand chaque cible désignée le reçoit au maximum (`healsMax`, `healsDownedToMax` :
+ * Retour à la vie du Cercle de mortalité, Guérison suprême, Lueur d'espoir), les dés deviennent leur maximum AVANT le jet — « ne lancez pas
+ * ces dés ». Avant, dnd5e lançait les dés (Conduit divin : Étincelle divine) et le moteur n'appliquait le maximum qu'aux PV rendus : la carte
+ * montrait un jet ordinaire. L'application garde son maximum (`maximizedHealing`, sans effet sur une formule déjà sans dés).
+ */
+function onPreRollHealing(config) {
+  const activity = config?.subject;
+  if ( (activity?.type !== "heal") || !(config.rolls?.length) ) return true;
+  const patients = Array.from(game.user.targets ?? []).map(t => t.actor).filter(Boolean);
+  if ( !patients.length ) return true;
+  const healer = activity.actor;
+  if ( !patients.every(p => healsMax(p) || healsDownedToMax(healer, activity, p)) ) return true;
+  for ( const roll of config.rolls ) roll.parts = (roll.parts ?? []).map(part => maximizeDice(part));
+  log(`${activity.item?.name}: healing dice at their maximum (${patients.map(p => p.name).join(", ")})`);
+  return true;
 }
 
 /**
@@ -361,6 +380,7 @@ export function registerEngine() {
   CONFIG.queries[CHOICE_QUERY] = handleChoiceQuery;   // sur tous les clients : c'est l'auteur qui répond
   CONFIG.queries[ALLOCATION_QUERY] = handleAllocationQuery;
   route("updateChatMessage", onResolutionFlag, { label: "chained damage roll" });
+  route("dnd5e.preRollDamageV2", onPreRollHealing, { cancellable: true, label: "healing dice at their maximum" });
   // Une résolution qui échoue ne doit jamais bloquer le jeu : les boutons et plateaux du système restent utilisables.
   const failure = { executor: true, notify: "DND5ECOMBAT.ResolutionInterrompue" };
   route("createRegion", onRegionCreated, { ...failure, label: "area resolution interrupted" });

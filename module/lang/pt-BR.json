@@ -1558,5 +1558,16 @@
   "DND5ECOMBAT.Reglage.floatResources.Nom": "Exibir: recursos",
   "DND5ECOMBAT.Reglage.floatResources.Aide": "O que uma habilidade recupera ou gasta (+1 Forma Selvagem, −1 espaço de magia).",
   "DND5ECOMBAT.Reglage.floatPrompts.Nom": "Exibir: avisos e recusas",
-  "DND5ECOMBAT.Reglage.floatPrompts.Aide": "Durante a seleção de alvos, para o jogador que está agindo: \"Salto!\", \"Longe demais\", \"Alvo já selecionado\"…"
+  "DND5ECOMBAT.Reglage.floatPrompts.Aide": "Durante a seleção de alvos, para o jogador que está agindo: \"Salto!\", \"Longe demais\", \"Alvo já selecionado\"…",
+  "DND5ECOMBAT.Retour.Avantage": "Vantagem",
+  "DND5ECOMBAT.Retour.Desavantage": "Desvantagem",
+  "DND5ECOMBAT.Retour.AvecMode": "com",
+  "DND5ECOMBAT.Reglage.floatAdvantage.Nom": "Exibir: Vantagem e Desvantagem",
+  "DND5ECOMBAT.Reglage.floatAdvantage.Aide": "Uma jogada de ataque ou salvaguarda feita com Vantagem ou Desvantagem indica isso após o total (\"17 com Vantagem · Errou\").",
+  "DND5ECOMBAT.NonAffecte.enclosed": "não afetado: separado por {item}",
+  "DND5ECOMBAT.Retour.Enferme": "Separado por {item}",
+  "DND5ECOMBAT.Consentant.Question": "A criatura {name} é voluntária? Uma criatura voluntária falha automaticamente na salvaguarda.",
+  "DND5ECOMBAT.Consentant.Oui": "Voluntária (sem rolagem)",
+  "DND5ECOMBAT.Consentant.Non": "Não voluntária (salvaguarda)",
+  "DND5ECOMBAT.Consentant.Carte": "voluntária: falha automática na salvaguarda"
 }

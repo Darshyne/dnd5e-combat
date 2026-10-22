@@ -66,7 +66,10 @@ export const SUMMONS = Object.freeze({
   // téléportation est approchée par un déplacement, sans attaque d'opportunité). Gardien de la foi : « un ennemi qui arrive à 3 m
   // du gardien pour la première fois d'un tour ou y commence son tour » fait la sauvegarde de « Guarded Area » (la limite de 60 dégâts
   // n'est pas reprise). Chien de garde : « au début de votre tour, le chien tente de mordre un ennemi à 1,50 m de lui ».
-  "find-steed": after,
+  // §230 : « Si vous avez déjà un destrier de ce sort, il est remplacé par le nouveau » ; la monture volante (« Fly 60 ft. (requires
+  // level 4+ spell) », note Foundry : activité « Summon Flying Steed » à partir d'un emplacement de niveau 4) — l'incantation gratuite
+  // de Fidèle destrier (paladin niveau 5, au niveau 2 du sort) ne la donne pas.
+  "find-steed": { ...after, replaces: true, minLevels: { o4YsONnsS8rOOEaS: 4 } },
   // §164 : Invocation d'élémentaire — « quand une créature entre dans l'espace de l'esprit ou commence son tour à 1,50 m de lui », la
   // sauvegarde de l'élément (8d8, Entravée) ; un item par élément (air, terre, feu, eau). L'esprit n'agit pas. (« Une seule créature
   // Entravée à la fois » : au MJ.)

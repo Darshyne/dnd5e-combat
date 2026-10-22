@@ -19,7 +19,8 @@
  * @param {boolean} [query.running]   Le sort est déjà en cours pour ce lanceur (concentration, effet posé).
  * @param {{healthy: string, wounded: string}|null} [query.byWounds]  Glas : l'activité selon les PV de la cible.
  * @param {boolean} [query.wounded]   Les cibles désignées sont toutes blessées.
- * @param {boolean} [query.slotLeft]  Le lanceur a encore un emplacement du niveau du sort ou plus.
+ * @param {boolean} [query.slotLeft]  Le lanceur a encore un emplacement du niveau du sort ou plus (§230 : ne décide plus de
+ *   l'incantation gratuite, gardé pour les appelants).
  * @returns {string|null}  L'identifiant de l'activité à utiliser, ou null : la question reste posée.
  */
 export function activityToUse({ activities=[], level=0, known=false, running=false, byWounds=null, wounded=false, entry=null,
@@ -40,10 +41,12 @@ export function activityToUse({ activities=[], level=0, known=false, running=fal
   }
   if ( !known ) return null;
   const timed = activities.filter(a => a.timed);
-  // §127 : une incantation gratuite qui reste (Initié à la magie…). Sans emplacement, c'est elle ; avec, le joueur choisit —
-  // il peut vouloir garder l'une ou l'autre. Le Sommeil d'un Moine de niveau 1 partait sur l'emplacement qu'il n'a pas.
+  // §127 : une incantation gratuite qui reste (Initié à la magie…) — le Sommeil d'un Moine de niveau 1 partait sur l'emplacement qu'il
+  // n'a pas. §230 (retour de table, Fidèle destrier : « consomme toujours un sort même la première fois ») : l'incantation gratuite
+  // d'abord, emplacements restants ou non ; plusieurs incantations gratuites, le joueur choisit. L'emplacement reste atteignable par
+  // la liste des activités de la fiche (et Maj + clic de dnd5e, qui prend la première activité).
   const free = activities.filter(a => a.free);   // « forward » de dnd5e : sans temps d'incantation propre
-  if ( free.length && !running && (level > 0) ) return (!slotLeft && (free.length === 1)) ? free[0].id : null;
+  if ( free.length && !running && (level > 0) ) return (free.length === 1) ? free[0].id : null;
   // Une seule activité se lance : les autres sont des suites.
   if ( timed.length === 1 ) return timed[0].id;
   // Un sort à emplacements pas encore lancé : l'incantation est la seule à dépenser l'emplacement, les autres (déplacer la

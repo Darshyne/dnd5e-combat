@@ -37,6 +37,10 @@ function isRunning(item) {
  */
 function freeCast(item, a) {
   if ( (a.consumption?.spellSlot !== false) && (a.type !== "forward") ) return false;
+  // §230 : une « forward » vers une activité qui demande un niveau de sort plus haut que celui du sort (la monture volante d'Appel de
+  // destrier, niveau 4) n'est pas une incantation gratuite : elle lance au niveau de base.
+  const minLevel = contentOf(item).entry?.summon?.minLevels?.[a.activity?.id ?? a.id];
+  if ( Number.isFinite(minLevel) && ((item.system?.level ?? 0) < minLevel) ) return false;
   const left = u => (u?.max > 0) && (u.value > 0);
   const onItem = (a.consumption?.targets ?? []).some(t => (t.type === "itemUses") && !t.target);
   return onItem ? left(item.system.uses) : left(a.uses);

@@ -69,8 +69,20 @@ describe("choix d'activité — incantation gratuite (§127)", () => {
   it("Sommeil d'Initié à la magie sans emplacement : l'incantation gratuite", () => {
     expect(activityToUse({ activities: sleep, known: true, level: 1, slotLeft: false })).toBe("free");
   });
-  it("avec un emplacement : le joueur choisit", () => {
-    expect(activityToUse({ activities: sleep, known: true, level: 1, slotLeft: true })).toBeNull();
+  it("§230 : avec un emplacement aussi, l'incantation gratuite d'abord", () => {
+    expect(activityToUse({ activities: sleep, known: true, level: 1, slotLeft: true })).toBe("free");
+  });
+  it("§230 : deux incantations gratuites (Appel de destrier mal configuré) : le joueur choisit", () => {
+    const two = [...sleep, { id: "free2", timed: true, slot: false, free: true }];
+    expect(activityToUse({ activities: two, known: true, level: 2, slotLeft: true })).toBeNull();
+  });
+  it("§230 : Appel de destrier — gratuite ordinaire seule valable (la volante demande le niveau 4)", () => {
+    const steed = [{ id: "steed", timed: true, slot: true }, { id: "flying", timed: true, slot: true },
+      { id: "steedFree", timed: true, slot: false, free: true }, { id: "flyingFree", timed: true, slot: false, free: false }];
+    expect(activityToUse({ activities: steed, known: true, level: 2, slotLeft: true })).toBe("steedFree");
+  });
+  it("le sort déjà en cours : rien n'est choisi pour le joueur", () => {
+    expect(activityToUse({ activities: sleep, known: true, level: 1, running: true })).toBeNull();
   });
   it("incantation gratuite dépensée : l'emplacement, comme avant", () => {
     const spent = [{ id: "free", timed: true, slot: false, free: false }, { id: "slot", timed: true, slot: true }];

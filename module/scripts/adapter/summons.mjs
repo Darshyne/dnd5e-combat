@@ -62,6 +62,28 @@ export function expiredSummons(now=game.time.worldTime) {
   return out;
 }
 
+/**
+ * §230 : les invocations qu'une nouvelle remplace — celles du même item (`flags.dnd5e.summon.origin`, documents/activity/summon.mjs:264),
+ * créées avant elle, sur toutes les scènes, quand le contenu de l'item dit `summon.replaces` (Appel de destrier). MJ actif.
+ * @param {TokenDocument} tokenDoc  Le token qui vient d'être créé.
+ * @returns {TokenDocument[]}
+ */
+export function replacedSummons(tokenDoc) {
+  const origin = tokenDoc?.actor?.getFlag?.("dnd5e", "summon.origin");
+  const item = origin ? fromUuidSync(origin, { strict: false }) : null;
+  if ( !item || (contentOf(item).entry?.summon?.replaces !== true) ) return [];
+  const born = tokenDoc._stats?.createdTime ?? Infinity;
+  const out = [];
+  for ( const scene of game.scenes ) {
+    for ( const token of scene.tokens ) {
+      if ( (token === tokenDoc) || (token.id === tokenDoc.id) ) continue;
+      if ( token.actor?.getFlag?.("dnd5e", "summon.origin") !== origin ) continue;
+      if ( (token._stats?.createdTime ?? 0) < born ) out.push(token);
+    }
+  }
+  return out;
+}
+
 /** L'item qui a invoqué ce token, ou null. */
 export function summonItemOf(tokenDoc) {
   const uuid = tokenDoc?.actor?.getFlag?.("dnd5e", "summon.origin");

@@ -35,6 +35,10 @@
  *                                               « partage votre initiative et joue juste après vous » (Summon X) ;
  *                                               `own` = « lance sa propre initiative » (Appel de familier) ; `none` =
  *                                               n'entre pas au combat (Œil magique, Lumières dansantes : ils n'agissent pas).
+ *                                               `replaces: true` (§230) : une nouvelle invocation renvoie les précédentes du même
+ *                                               item (Appel de destrier : « le destrier est remplacé par le nouveau ») ;
+ *                                               `minLevels: { <activité>: n }` (§230) : cette activité ne se lance qu'à partir
+ *                                               du niveau de sort n — son incantation gratuite (au niveau de base) n'en est pas une.
  *                                               `familiar: true` (§107) : un familier — actions de base sauf l'attaque, vision
  *                                               activée, son maître peut le congédier dans sa poche dimensionnelle et l'en rappeler.
  *                                               `pilot: { cost, distance, units, onCast? }` (§16.15, B19) : un objet que

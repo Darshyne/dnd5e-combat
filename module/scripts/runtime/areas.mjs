@@ -6,7 +6,7 @@ import { payWithoutUse } from "../adapter/reactions.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
 import { placeAreaAt } from "../adapter/self-area.mjs";
 import { positionOf as position, committedPosition, tokenCenter } from "../adapter/turn.mjs";
-import { noteSummonExpiry, expiredSummons } from "../adapter/summons.mjs";
+import { noteSummonExpiry, expiredSummons, replacedSummons } from "../adapter/summons.mjs";
 import { holdZoneEffects, holdDifficultTerrain, syncZoneEffects } from "../adapter/zone-effects.mjs";
 import { wallSideRuleOf, isThinWall, crossesWallRegion } from "../adapter/wall-side.mjs";
 import { enqueue } from "./queue.mjs";
@@ -262,18 +262,21 @@ function onUpdateRegion(region, changes) {
   for ( const token of region.parent.tokens ) if ( isInside(token, region) ) tick(region, token, "enter");
 }
 
+/** Une invocation renvoyée : ses combattants, puis son token. MJ actif. */
+async function dismissSummon(token, why) {
+  const name = token.name;
+  for ( const combat of game.combats ) {
+    const gone = combat.combatants.filter(c => (c.sceneId === token.parent.id) && (c.tokenId === token.id)).map(c => c.id);
+    if ( gone.length ) await combat.deleteEmbeddedDocuments("Combatant", gone);
+  }
+  await token.delete();
+  log(`${name}: ${why}, dismissed`);
+}
+
 /** §16.37 : l'heure du monde avance (repos, voyage, rounds de combat) — les zones échues disparaissent. MJ actif. */
 async function onWorldTime(worldTime) {
   // §16.39 : les créatures invoquées pour une durée (Compagnon sauvage) — et leurs combattants.
-  for ( const token of expiredSummons(worldTime) ) {
-    const name = token.name;
-    for ( const combat of game.combats ) {
-      const gone = combat.combatants.filter(c => (c.sceneId === token.parent.id) && (c.tokenId === token.id)).map(c => c.id);
-      if ( gone.length ) await combat.deleteEmbeddedDocuments("Combatant", gone);
-    }
-    await token.delete();
-    log(`${name}: duration elapsed, dismissed`);
-  }
+  for ( const token of expiredSummons(worldTime) ) await dismissSummon(token, "duration elapsed");
   const gone = expiredRegions(worldTime);
   for ( const region of gone ) {
     const name = region.name;
@@ -304,6 +307,10 @@ export function registerAreas() {
     const at = await noteSummonExpiry(tokenDoc);
     if ( at !== null ) log(`${tokenDoc.name}: dismissed at world time ${at} (in ${at - game.time.worldTime} s)`);
   }, { executor: true, label: "summon: duration not recorded" });
+  // §230 : Appel de destrier — le nouveau destrier remplace l'ancien.
+  route("createToken", async tokenDoc => {
+    for ( const token of replacedSummons(tokenDoc) ) await dismissSummon(token, `replaced by ${tokenDoc.name}`);
+  }, { executor: true, label: "summon: previous one not replaced" });
   route("combatTurnChange", onTurnChange, trigger);
   route("moveToken", onMoveToken, trigger);
   // §191 : les effets portés par une zone (Silence, Tempête radieuse) suivent la position, téléportation comprise — après le

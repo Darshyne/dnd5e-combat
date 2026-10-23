@@ -1569,5 +1569,14 @@
   "DND5ECOMBAT.Consentant.Question": "A criatura {name} é voluntária? Uma criatura voluntária falha automaticamente na salvaguarda.",
   "DND5ECOMBAT.Consentant.Oui": "Voluntária (sem rolagem)",
   "DND5ECOMBAT.Consentant.Non": "Não voluntária (salvaguarda)",
-  "DND5ECOMBAT.Consentant.Carte": "voluntária: falha automática na salvaguarda"
+  "DND5ECOMBAT.Consentant.Carte": "voluntária: falha automática na salvaguarda",
+  "DND5ECOMBAT.ReactionEnnemiAttaque": "{attacker} acabou de atacar. Reagir?",
+  "DND5ECOMBAT.Relance.Question": "{what}: {total} contra {needed} (d20: {d20}). Rolar novamente a salvaguarda com +{bonus} ({item}, uma vez por Fúria)? O novo resultado será usado, mesmo que seja menor.",
+  "DND5ECOMBAT.Relance.Oui": "Rolar novamente",
+  "DND5ECOMBAT.Relance.Carte": "{item}: {name} rola novamente {what} — novo total {sum}",
+  "DND5ECOMBAT.Sournoise.Frappe.stealthAttack": "Ataque Escondido",
+  "DND5ECOMBAT.Inspiration.VaillanceDegats": "Inspiração de Combate: somar seu dado de Inspiração de Bardo ({formula}) ao dano deste acerto?",
+  "DND5ECOMBAT.Inspiration.VaillanceDefense": "Inspiração de Combate: o ataque acertou ({total} contra CA {ac}). Usar sua Reação para somar seu dado de Inspiração de Bardo ({formula}) à sua CA?",
+  "DND5ECOMBAT.Inspiration.VaillanceCarteDegats": "Inspiração de Combate ({bard}): {name} soma {total} ao dano",
+  "DND5ECOMBAT.Inspiration.VaillanceCarteDefense": "Inspiração de Combate ({bard}): {name} soma {total} à própria CA"
 }

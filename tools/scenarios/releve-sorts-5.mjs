@@ -163,7 +163,14 @@ export default {
 
     await part("Délivrance des malédictions", async () => {
       const hex = await lend(mage, "phbsplHex0000000");
-      await cast(mage, hex, [zombi]);
+      // Le moteur demande la caractéristique visée (fenêtre « Hex — … », effets au choix) : la première.
+      const known = (await ctx.call("list-dialogs", {})).windows.map(w => w.id);
+      const casting = cast(mage, hex, [zombi]);
+      for ( let i = 0, answered = false; (i < 8) && !answered; i++ ) {
+        const d = (await ctx.call("list-dialogs", { dialogsOnly: true, excludeIds: known, waitMs: 1500, details: true }).catch(() => null))?.windows?.[0];
+        if ( d?.buttons?.length ) { await ctx.call("answer-dialog", { id: d.id, button: d.buttons[0].action ?? d.buttons[0].label }).catch(() => {}); answered = true; }
+      }
+      await casting;
       const hexed = (await ctx.effectsFrom(zombi, "hex")).length > 0;
       if ( !ctx.expect(hexed, "Maléfice posé sur le Zombi") ) return;
       const id = await lend(cleric, "phbsplRemoveCurs");

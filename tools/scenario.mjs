@@ -643,6 +643,10 @@ const cones = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: 
 // §185 : de même, la Furtivité des règles 2024 (le scénario `furtivite-bg3` passe lui-même en BG3).
 const stealthRules = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "stealthRules", value: "2024" }, waitMs: 8000 })
   .then(r => r?.result?.before).catch(() => undefined);
+// §224 : les scénarios d'escalade, de saut, de chute et de vol supposent le système d'escalade et de chutes allumé ; le MJ peut l'avoir
+// coupé à sa table (bouton de la barre des tokens) — vu le 2026-10-23 : 16 scénarios en défaut. Allumé le temps de la passe, puis remis.
+const climbSystem = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "climbSystem", value: true }, waitMs: 8000 })
+  .then(r => r?.result?.before).catch(() => undefined);
 // Relevé des trous (2026-10-22) : une horloge qui avance le temps du monde hors combat (Simple Timekeeping de `dnd-6` : 600 s par
 // intervalle) fait expirer en quelques secondes une concentration ou un effet d'une minute, que dnd5e supprime hors combat — 61 faux
 // « non concentré » au premier balayage des sorts. Elle est arrêtée le temps de la passe (son réglage `paused`), puis remise.
@@ -724,6 +728,7 @@ for ( const file of files ) {
 if ( activeAtStart && (activeNow !== activeAtStart) ) await useScene(activeAtStart);
 if ( stealthRules !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "stealthRules", value: stealthRules }, waitMs: 8000 }).catch(() => null);
 if ( cones !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "visionCones", value: cones }, waitMs: 8000 }).catch(() => null);
+if ( climbSystem !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "climbSystem", value: climbSystem }, waitMs: 8000 }).catch(() => null);
 if ( clock !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "foreignSetting", args: { namespace: "simple-timekeeping", key: "paused", value: clock }, waitMs: 8000 }).catch(() => null);
 console.log(`\n${files.length - skipped - failed}/${files.length - skipped} scénario(s) tenus${skipped ? ` (${skipped} interactif(s) ou diagnostic(s) sauté(s))` : ""}`);
 process.exitCode = failed ? 1 : 0;

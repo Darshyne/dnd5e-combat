@@ -630,6 +630,10 @@ async function plummetOnce(token) {
   // lâché juste après la montée, le token n'était visuellement qu'à 1,5 ft et la chute ne faisait aucun dégât (vu le 2026-10-17).
   // On attend la fin de l'animation en cours (jamais dans un onglet masqué : au plus 5 s, puis on l'arrête).
   await settleAnimation(token);
+  // Relevé des trous (2026-10-23) : fenêtre en arrière-plan, l'animation d'une montée ne progresse pas, et l'arrêter fige le token à la
+  // hauteur AFFICHÉE (0 pour une montée de 15 ft) — `plummet` ne voit alors rien à tomber (vu au retour de l'Éthéré en l'air). Sans
+  // hauteur affichée juste, la chute n'est pas confiée à dnd5e : l'appelant tombe depuis la hauteur réelle (runtime/falls.mjs).
+  if ( Math.abs((token.elevation ?? 0) - (token._source.elevation ?? 0)) > 1e-6 ) return false;
   await token.plummet();   // dnd5e retire lui-même « En chute » après le déplacement de chute (`_onUpdateMovement`)
   return true;
 }

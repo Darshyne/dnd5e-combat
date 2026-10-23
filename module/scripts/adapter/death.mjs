@@ -225,7 +225,7 @@ export function planDamageAtZero(actor, amount, updates, options) {
     return;
   }
   // Déjà à 0 et gardée en vie par une telle arme : de nouveaux dégâts suivent la règle ordinaire (un PNJ meurt).
-  if ( (hp.value <= 0) && keptStable(actor) && (through > 0) ) updates[`flags.${MODULE_ID}.-=stableAtZero`] = null;
+  if ( (hp.value <= 0) && keptStable(actor) && (through > 0) ) updates[`flags.${MODULE_ID}.stableAtZero`] = new foundry.data.operators.ForcedDeletion();
   const critical = isCriticalDamage(options);
   // §61 : Robustesse de la non-vie — la sauvegarde due part avec les PV ; ni échec ni mort tant qu'elle n'est pas jouée.
   const taken = incoming;

@@ -76,7 +76,8 @@ function onEffectChange(effect) {
         // Le joueur qui lâche un mur fait tomber son token de son côté (runtime/climb.mjs) : on lui laisse un instant, puis on revérifie.
         await new Promise(resolve => setTimeout(resolve, 2000));
         if ( !actor.statuses?.has("falling") || !aloft(token) || climbFallInProgress(token) ) continue;
-        if ( await fallLikeDnd5e(token) ) log(`${token.name}: falls (dnd5e's Falling status, automatic)`);
+        // Sans la chute de dnd5e (hauteur affichée en retard : runtime/climb.mjs), celle du moteur, depuis la hauteur réelle.
+        if ( (await fallLikeDnd5e(token)) || (await dropToGround(token)) ) log(`${token.name}: falls (dnd5e's Falling status, automatic)`);
       } else if ( grounded(token) ) await dropFlier(token);
     }
   }).catch(err => console.error(`${MODULE_ID} | automatic fall`, err));

@@ -19,8 +19,12 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const SPELLS = { cure: "phbsplCureWounds", prayer: "phbsplPrayerofHe", charm: "phbsplCharmPerso", calm: "phbsplCalmEmotio",
   beacon: "phbsplBeaconofHo", knife: "phbsplIceKnife00", heat: "phbsplHeatMetal0", spikes: "phbsplSpikeGrowt", darkvision: "phbsplDarkvision" };
 /** Le maximum d'une formule « 2d8 + 3 » (dés au maximum, constantes gardées). */
-const maxOf = formula => String(formula ?? "").replace(/(\d*)d(\d+)/g, (_, n, f) => String((Number(n) || 1) * Number(f)))
-  .split(/(?=[+-])/).reduce((s, part) => s + (Number(part.replace(/\s+/g, "")) || 0), 0);
+// Chaque dé remplacé par son maximum, puis l'expression évaluée : depuis le §233, la formule arrive déjà maximisée (« (2 * 8) + 3 »),
+// parenthèses et produits compris — l'ancienne somme terme à terme en lisait 3.
+const maxOf = formula => {
+  const expr = String(formula ?? "").replace(/(\d*)d(\d+)/g, (_, n, f) => String((Number(n) || 1) * Number(f)));
+  return /^[\d\s+\-*/().]+$/.test(expr) ? Function(`return (${expr})`)() : NaN;
+};
 
 export default {
   name: "sorts, premier lot — Soins, Lueur d'espoir, Prière, Charme, Apaisement, Couteau de glace, Chauffer le métal, Épines, Vision",

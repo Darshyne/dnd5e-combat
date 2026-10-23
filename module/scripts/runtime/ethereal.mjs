@@ -104,7 +104,7 @@ async function syncAction(effect) {
     else if ( !inside ) {
       if ( current === ACTION ) {
         const previous = token.getFlag(MODULE_ID, PREVIOUS) ?? CONFIG.Token.movement.defaultAction;
-        await token.update({ movementAction: previous, [`flags.${MODULE_ID}.-=${PREVIOUS}`]: null }, { [MODULE_ID]: { altitude: true } });
+        await token.update({ movementAction: previous, [`flags.${MODULE_ID}.${PREVIOUS}`]: new foundry.data.operators.ForcedDeletion() }, { [MODULE_ID]: { altitude: true } });
       }
       // Lot 4 : le retour, une fois l'action d'avant remise (la chute en dépend : à pied, pas « ethereal »).
       if ( token.object ) await enqueue(`ethereal-return:${token.uuid}`, () => returnToken(token, { blink }));
@@ -130,7 +130,7 @@ async function applied(value) {
     const current = token._source.movementAction;
     if ( !etherealPlaneOn() && (current === ACTION) ) {
       const previous = token.getFlag(MODULE_ID, PREVIOUS) ?? CONFIG.Token.movement.defaultAction;
-      await token.update({ movementAction: previous, [`flags.${MODULE_ID}.-=${PREVIOUS}`]: null }, { [MODULE_ID]: { altitude: true } });
+      await token.update({ movementAction: previous, [`flags.${MODULE_ID}.${PREVIOUS}`]: new foundry.data.operators.ForcedDeletion() }, { [MODULE_ID]: { altitude: true } });
     }
     else if ( etherealPlaneOn() && isEthereal(token) && (current !== ACTION) ) {
       await token.update({ movementAction: ACTION, [`flags.${MODULE_ID}.${PREVIOUS}`]: current ?? null }, { [MODULE_ID]: { altitude: true } });

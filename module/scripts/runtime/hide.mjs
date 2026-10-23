@@ -75,7 +75,7 @@ async function stealthAttackCheck(combat, prior) {
     .filter(t => !["threeQuarters", "total"].includes(coverFor(t, token, { quiet: true })?.degree));
   if ( exposed.length ) await endHiding(actor, `Stealth Attack: not behind cover from ${exposed.map(t => t.name).join(", ")}`);
   else {
-    await actor.updateEmbeddedDocuments("ActiveEffect", effects.map(e => ({ _id: e.id, [`flags.${MODULE_ID}.-=stealthAttack`]: null })));
+    await actor.updateEmbeddedDocuments("ActiveEffect", effects.map(e => ({ _id: e.id, [`flags.${MODULE_ID}.stealthAttack`]: new foundry.data.operators.ForcedDeletion() })));
     log(`hide: ${actor.name} stays hidden (Stealth Attack, behind cover)`);
   }
 }

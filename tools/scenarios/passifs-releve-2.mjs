@@ -42,7 +42,7 @@ export default {
         for ( const e of (await ctx.call("get-actor", { actorId: t.actorId })).effects ?? [] ) {
           await ctx.call("remove-embedded-effect", { documentType: "Actor", id: t.actorId, effectId: e._id ?? e.id }).catch(() => {});
         }
-        for ( const flag of ["hiddenBeforeAttack"] ) await ctx.call("update-actor", { actorId: t.actorId, actorData: { [`flags.${MODULE_ID}.-=${flag}`]: null } }).catch(() => {});
+        for ( const flag of ["hiddenBeforeAttack"] ) await ctx.call("update-actor", { actorId: t.actorId, actorData: { [`flags.${MODULE_ID}.${flag}`]: null } }).catch(() => {});
         const h = homes.get(t.id);
         await ctx.call("move-token", { tokenId: t.id, x: h.x, y: h.y, elevation: 0 }).catch(() => {});
         await ctx.setHp(t, 999);

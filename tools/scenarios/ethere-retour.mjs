@@ -57,8 +57,9 @@ export default {
     const up = await ctx.engine("rawMove", { tokenId: fighter.id, elevation: 15 });
     ctx.expect(up.after.elevation === 15, `Éthéré, le Guerrier monte à 15 ft (${up.after.elevation} ft)`);
     await ethereal(fighter, false);
-    await pause(4000);
-    const landed = await ctx.position(fighter);
+    // Fenêtre de Foundry en arrière-plan, la montée n'a pas fini son animation : le moteur l'attend 5 s avant de tomber lui-même (§237).
+    let landed = await ctx.position(fighter);
+    for ( let i = 0; (i < 12) && (landed.elevation !== 0); i++ ) { await pause(1000); landed = await ctx.position(fighter); }
     ctx.expect(landed.elevation === 0, `revenu en l'air, il tombe au sol (${landed.elevation} ft)`);
     await ctx.setHp(fighter, hp0.fighter);
 

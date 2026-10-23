@@ -1,5 +1,5 @@
 import {
-  rollerFor, readConcentrationPrompt, rollConcentration, readConcentrationSave, breakConcentration, removeRegionsOf,
+  rollerFor, readConcentrationPrompt, concentrationKeptBy, rollConcentration, readConcentrationSave, breakConcentration, removeRegionsOf,
   isConcentrationEffect, concentrationDisabled, CONCENTRATION_QUERY, CONCENTRATION_TIMEOUT, handleConcentrationQuery
 } from "../adapter/concentration.mjs";
 import { tieSummonToConcentration, removeSummonsOf, joinSummonerCombat, summonItemOf } from "../adapter/summons.mjs";
@@ -20,6 +20,13 @@ async function onPrompt(message) {
     // Mort ou neutralisé : la règle ne prévoit aucun jet, la concentration tombe.
     const ended = await breakConcentration(prompt.actor);
     if ( ended.length ) log(`${prompt.actor.name}: Incapacitated, concentration ended`);
+    await message.delete();
+    return;
+  }
+  // Relevé des trous : « subir des dégâts ne peut pas rompre votre concentration sur la Marque du chasseur » (Chasseur implacable).
+  const kept = concentrationKeptBy(prompt.actor);
+  if ( kept ) {
+    log(`${prompt.actor.name}: ${kept.name}, concentration kept without a saving throw`);
     await message.delete();
     return;
   }

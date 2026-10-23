@@ -68,7 +68,10 @@ export const MOMENTS = Object.freeze({
   allyIsHit: "another creature was just hit (Sentinel at Death's Door: reaction window, before damage)",
   // §38 : une AUTRE créature que le réacteur va subir des dégâts, montant connu, avant leur application (Égide projetée : la réserve
   // du magicien les absorbe). Mêmes faits que `allyIsHit` : le réacteur en `self`, la créature en `target`, l'auteur en `source`.
-  allyIsDamaged: "another creature is about to take damage (Projected Ward: reaction window, before application)"
+  allyIsDamaged: "another creature is about to take damage (Projected Ward: reaction window, before application)",
+  // §236 : une créature hostile au réacteur vient de faire un jet d'attaque, touché ou raté, contre qui que ce soit (Âme de la vengeance).
+  // Les faits voient le réacteur en `target`, l'attaquant en `source`. Fenêtre sans attente, comme « raté ».
+  enemyAttacked: "a hostile creature just made an attack roll, hit or miss, against anyone (Soul of Vengeance: reaction window; it is the source)"
 });
 
 /** Les moments dont les déclarations sont portées par les EFFETS de la créature concernée (`via: "effect"`). */

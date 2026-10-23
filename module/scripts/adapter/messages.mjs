@@ -20,6 +20,9 @@ import { speakerTokenOf } from "./turn.mjs";
 import { chooseSmite } from "./smite.mjs";
 import { criticalChoice, drawCriticalTable } from "./criticals.mjs";
 import { current, STEPS } from "../core/action.mjs";
+import { contentOf } from "./content.mjs";
+import { spellClassOf } from "./spell-class.mjs";
+import { offerCombatInspirationDamage } from "./inspiration.mjs";
 
 const SETTLED_STEPS = new Set([STEPS.DONE, STEPS.MISSED, STEPS.UNDONE]);
 
@@ -167,11 +170,13 @@ export async function rollDamageForAttack(attackMessage, { critical, variant=nul
     ? optionalBonusesFor({ actor: used.actor, activity, sourceToken: sneak?.source ?? speakerTokenOf(attackMessage), targetToken: target }) : [];
   const hitOptions = await askHitOptions(used.actor, target, sneak, optional);
   const strikes = hitOptions.strikes;
+  // Relevé des trous : Inspiration de combat, Attaque — le dé du barde de la vaillance, ajouté aux dégâts (runtime/feats.mjs).
+  const inspired = await offerCombatInspirationDamage(used.actor);
   // §25 : un châtiment — lancé « immédiatement après avoir touché », ses dés s'ajoutent à ce jet (runtime/smite.mjs).
   const smite = await chooseSmite(used, attackMessage);
   const ours = { ...(damageType ? { damageType } : {}), ...(strikes.length ? { strikes } : {}), ...(smite ? { smite } : {}),
     ...(typeof hitOptions.sneak === "boolean" ? { sneak: hitOptions.sneak } : {}), ...(hitOptions.bonuses.length ? { acceptedBonuses: hitOptions.bonuses } : {}),
-    ...(criticalTable ? { criticalHit: criticalTable } : {}) };
+    ...(criticalTable ? { criticalHit: criticalTable } : {}), ...(inspired ? { combatInspiration: inspired } : {}) };
   return activity.rollDamage(
     { ability, ammunition, attackMode, isCritical, ...(Object.keys(ours).length ? { [MODULE_ID]: ours } : {}) },
     { configure: false },
@@ -186,12 +191,38 @@ export async function rollDamageForAttack(attackMessage, { critical, variant=nul
  */
 export function damageTypeChoices(activity) {
   const size = types => types?.size ?? types?.length ?? 0;
+  // Relevé des trous : Sorts psychiques — les types que le lanceur peut donner aux dégâts d'un sort de sa classe, après ceux du sort.
+  const extra = spellRetypes(activity);
+  if ( extra.length ) {
+    const own = [...((activity.damage.parts.find(p => size(p.types) > 1) ?? activity.damage.parts[0])?.types ?? [])];
+    return [...new Set([...own, ...extra])];
+  }
   const part = (activity?.damage?.parts ?? []).find(p => size(p.types) > 1);
   if ( part ) return [...part.types];
   // §16.45 : les dégâts de base d'une arme (l'arme de pacte : son type normal, nécrotique, psychique ou radiant, au choix à
   // chaque attaque) — le type normal en premier, choisi par défaut.
   const base = (activity?.damage?.includeBase && (activity.item?.type === "weapon")) ? activity.item.system.damage?.base?.types : null;
   return size(base) > 1 ? [...base] : [];
+}
+
+/**
+ * Relevé des trous (2026-10-22) : les types qu'un item du lanceur permet de donner aux dégâts de ce sort (clé `spellDamageTypes`) —
+ * Sorts psychiques : « quand vous lancez un sort d'Occultiste qui inflige des dégâts, vous pouvez changer leur type en psychique ». Un
+ * sort de la classe : rangé sous elle (`spellClassOf`), ou sans classe chez un acteur qui l'a (comme `activity.cantripOf`).
+ * @returns {string[]}
+ */
+export function spellRetypes(activity) {
+  const item = activity?.item;
+  const actor = activity?.actor;
+  if ( (item?.type !== "spell") || !actor || !(activity.damage?.parts ?? []).length ) return [];
+  const out = new Set();
+  for ( const i of actor.items ) {
+    const rule = contentOf(i).entry?.spellDamageTypes;
+    if ( !rule ) continue;
+    const cls = spellClassOf(item) || (actor.classes?.[rule.class] ? rule.class : null);
+    if ( cls === rule.class ) for ( const t of rule.types ) out.add(t);
+  }
+  return Array.from(out);
 }
 
 /**

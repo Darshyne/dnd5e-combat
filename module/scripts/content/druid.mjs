@@ -9,17 +9,20 @@
 
 /** Attaques primitives : « un jet d'attaque avec une arme ou une attaque de Bête sous Forme sauvage ». */
 const primalHit = { any: [{ "activity.isWeapon": true }, { "source.wildShaped": true, "activity.isAttack": true }] };
+/** Attaque primitive, pas pour un druide qui a reçu l'option Incantation puissante (item du Manuel ; relevé des trous, 2026-10-22). */
 const primalStrike = (formula, improved) => ({ on: "preDamageRoll", oncePerTurn: true,
-  if: { all: [primalHit, improved ? { "source.hasFeature": "improved-elemental-fury" } : { not: { "source.hasFeature": "improved-elemental-fury" } }] },
+  if: { all: [primalHit, { not: { "source.hasFeature": "elemental-fury-potent-spellcasting" } },
+    improved ? { "source.hasFeature": "improved-elemental-fury" } : { not: { "source.hasFeature": "improved-elemental-fury" } }] },
   do: [{ type: "damage", formula, damageType: "fire" }] });
 
 /**
  * Incantation puissante, l'autre option de Fureur élémentaire : « ajoutez votre modificateur de Sagesse aux dégâts de tout sort
- * mineur de Druide ». Comme les Impacts bénis du Clerc (§27), la fiche ne dit pas l'option retenue : Attaques primitives par
- * défaut ; pour un druide à Incantation puissante, la surcouche du monde remplace les déclarations de l'item :
- *   game.modules.get("dnd5e-combat").api.content.set("elemental-fury", { triggers: [{ on: "preDamageRoll",
- *     if: { "activity.cantripOf": "druid" }, do: [{ type: "damage", formula: "@abilities.wis.mod", damageType: "weapon" }] }] })
+ * mineur de Druide ». L'avancement du Druide ne donne que « Fureur élémentaire » (Attaques primitives par défaut) ; le Manuel a un item
+ * par option (« Elemental Fury: Potent Spellcasting », `elemental-fury-potent-spellcasting`) : posé sur la fiche, il porte la règle et
+ * retire l'Attaque primitive. Même règle pour le Clerc (relevé des trous, 2026-10-22 — avant, il fallait la surcouche du monde, et l'Attaque restait).
  */
+export const potentSpellcasting = cls => ({ triggers: [{ on: "preDamageRoll", if: { "activity.cantripOf": cls },
+  do: [{ type: "damage", formula: "@abilities.wis.mod", damageType: "weapon" }] }] });
 
 /** Courroux des mers (Mers 3) : sur une sauvegarde ratée, outre les dégâts de froid, une cible de taille G au plus est poussée de
  * 4,50 m en s'éloignant du druide. Enfant de la tempête (Mers 14) reprend la même sauvegarde (son activité). */
@@ -41,6 +44,10 @@ export const DRUID = Object.freeze({
   // Fureur élémentaire (niveau 7), option Attaques primitives : « une fois à chacun de vos tours, 1d8 dégâts de feu, de foudre, de
   // froid ou de tonnerre » — feu d'office (le choix n'est pas demandé) ; 2d8 avec Fureur élémentaire améliorée (niveau 15).
   "elemental-fury": { triggers: [primalStrike("1d8", false), primalStrike("2d8", true)] },
+  "elemental-fury-potent-spellcasting": potentSpellcasting("druid"),
+  // §236 : Fureur élémentaire améliorée (niveau 15) — l'Attaque primitive passe à 2d8 (« elemental-fury ») ; Incantation puissante : « un
+  // sort mineur de Druide d'une portée d'au moins 3 m porte 90 m plus loin » (adapter/turn.mjs, `rangeOf`).
+  "improved-elemental-fury": { cantripRange: { class: "druid", add: { value: 300, units: "ft" }, requires: "elemental-fury-potent-spellcasting" } },
   // Forme lunaire (Lune 10), Radiance lunaire améliorée : un coup porté sous Forme sauvage ajoute 2d10 radiants, au plus une
   // fois par tour.
   "lunar-form": { triggers: [{ on: "preDamageRoll", oncePerTurn: true, if: { "source.wildShaped": true, "activity.isAttack": true },

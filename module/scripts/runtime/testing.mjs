@@ -22,7 +22,7 @@ import { gmOnly, windows, viewedToken } from "./testing-shared.mjs";
 import { climbEntries } from "./climb.mjs";
 import { climbSystemOn } from "../core/climb-system.mjs";
 import { hoist, grab, jump, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, dash, door, familiar, familiarPocket, familiarRecall, follow, followState, move, movement, plan, stairs, stairsAt, takeStairs, teleport, teleportPick, threats, transpose, unfollow, view } from "./testing-moves.mjs";
-import { ready, burning, actionEnd, attackReasons, budget, cover, effectOrigins, enchant, endings, factions, heal, hurt, identify, issues, naturalOne, overrideContent, perceived, portent, rollCheck, rollSave, saveChance, flammable, scatter, sees, skillAid, skillAids, stats, stealth, use, masteries, etherealWalls } from "./testing-rules.mjs";
+import { range, ready, burning, actionEnd, attackReasons, budget, cover, effectOrigins, enchant, endings, factions, heal, hurt, identify, issues, naturalOne, overrideContent, perceived, portent, rollCheck, rollSave, saveChance, flammable, scatter, sees, skillAid, skillAids, stats, stealth, use, masteries, etherealWalls } from "./testing-rules.mjs";
 import { placeRegionAt, planning, storm, stormStrike, summonAt, wall, wallSide } from "./testing-areas.mjs";
 
 /** Ferme une fenêtre (un dialogue fermé vaut « non » : le déplacement mis en pause par le cœur se termine). */
@@ -189,6 +189,34 @@ async function setting({ key, value }) {
 }
 
 /**
+ * Affiche une scène chez le MJ (`Scene#view`) : activer une scène déjà active ne change pas ce que le MJ regarde (vu le 2026-10-22 :
+ * un balayage joué contre l'Arène de test, affichée, l'Arène des sorts étant active). Rend la scène affichée.
+ */
+async function viewScene({ sceneId }) {
+  gmOnly();
+  const scene = game.scenes.get(sceneId);
+  if ( !scene ) throw new Error(`scene ${sceneId} not found`);
+  if ( canvas.scene?.id !== sceneId ) await scene.view();
+  return { viewed: canvas.scene?.id ?? null };
+}
+
+/**
+ * Un réglage de MONDE d'un autre module, lu et changé le temps d'une passe de scénarios (relevé des trous, 2026-10-22) : une horloge
+ * qui avance le temps du monde hors combat (« Simple Timekeeping » de `dnd-6` : 600 s par intervalle, réglage `paused`) fait expirer
+ * en quelques secondes toute durée d'une minute — concentration comprise, que dnd5e supprime alors hors combat (`_onUpdate`, effet
+ * expiré). Rend `{ absent: true }` si le réglage n'existe pas (module absent ou inactif).
+ */
+async function foreignSetting({ namespace, key, value }) {
+  gmOnly();
+  const config = game.settings.settings.get(`${namespace}.${key}`);
+  if ( !config ) return { absent: true };
+  if ( config.scope !== "world" ) throw new Error(`${namespace}.${key}: not a world setting`);
+  const before = game.settings.get(namespace, key);
+  if ( value !== undefined ) await game.settings.set(namespace, key, value);
+  return { key, before, now: game.settings.get(namespace, key) };
+}
+
+/**
  * Les effets et sons en cours de Sequencer (module tiers : les animations de Boss Loot / BLFX), et la fin de ceux qu'on désigne —
  * pour que le lanceur de scénarios termine ce qu'un scénario a fait naître (vu le 2026-09-29 : le son en boucle de l'Aspersion acide
  * restait après le scénario `presage`). `Sequencer.EffectManager.effects` / `.endEffects({ effects: [ids] })`,
@@ -257,4 +285,4 @@ const diagnosticRestore = ({ uuid }) => diagRestore(uuid);
 
 
 /** Ce que `api.mcp` expose. */
-export const testApi = Object.freeze({ controls, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls });
+export const testApi = Object.freeze({ controls, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls });

@@ -52,6 +52,11 @@ export const PALADIN = Object.freeze({
   "aura-of-devotion": { aura: auraImmunity("charmed") },
   // Vœu d'inimitié (Serment de vengeance 3) : le paladin attaque la créature visée avec l'Avantage — l'effet « Vow of Enmity »
   // qu'elle porte, venu du paladin.
+  // §236 : Âme de la vengeance (Vengeance 15) — « juste après qu'une créature sous l'effet de votre Vœu d'inimitié a touché ou raté un jet
+  // d'attaque, vous pouvez prendre une Réaction pour lui porter une attaque au corps à corps si elle est à portée » (à 1,50 m : l'allonge
+  // ordinaire ; une arme à allonge n'est pas comptée).
+  "soul-of-vengeance": { triggers: [{ on: "enemyAttacked", if: { "source.hasEffectFromTarget": "vow-of-enmity", "target.within": { distance: 5, units: "ft" } },
+    do: [{ type: "use", target: "source", weapon: true }] }] },
   "vow-of-enmity": { triggers: [{ on: "preAttackRoll", via: "effect", if: { "target.hasEffectFrom": "vow-of-enmity" }, do: [{ type: "advantage" }] }] },
   // Abjuration des ennemis (niveau 9) : « Effrayé pendant 1 minute ou jusqu'à ce qu'elle subisse des dégâts ».
   "abjure-foes": { triggers: [{ on: "isDamaged", via: "effect", do: [{ type: "remove" }] }] },

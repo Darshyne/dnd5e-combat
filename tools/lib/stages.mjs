@@ -32,3 +32,19 @@ export const ARENA = Object.freeze({
   name: "Arène de test",
   tokens: Object.freeze({ ...RESTORED_KEEP.tokens, "Âme-en-peine": [3640, 5460], Zombi: [2800, 4900] })
 });
+
+/**
+ * L'« Arène des sorts » (2026-10-22, `tools/arene-sorts.mjs`) : scène plate de 40 × 20 cases de 140 px (5 ft), pour les balayages
+ * des sorts et des aptitudes. Positions en cases du canevas (coin haut-gauche, marge de la scène comprise). Le Lanceur et l'Allié côte à côte ; la Cible à 4 cases (20 ft,
+ * dans toute portée sauf le contact), sa voisine collée à elle, les cibles typées (mort-vivant, Grande, artificielle) à 15 ft au
+ * moins de la Cible pour qu'une zone de 10 ft centrée sur elle ne les prenne pas, la Cible lointaine à 150 ft ; l'Ennemi au contact,
+ * au-dessus du Lanceur, pour les émanations (Parole radieuse, Esprits gardiens) ; le Héros (un personnage) à l'écart, hors des zones.
+ */
+export const ARENE_SORTS = Object.freeze({
+  name: "Arène des sorts",
+  cols: 40, rows: 20, grid: 140,
+  tokens: Object.freeze({
+    "Lanceur": [5, 10], "Allié": [5, 11], "Héros": [2, 14], "Ennemi au contact": [5, 9], "Cible": [9, 10], "Cible voisine": [10, 10],
+    "Mort-vivant": [9, 15], "Grande cible": [14, 4], "Créature artificielle": [9, 4], "Cible lointaine": [35, 10]
+  })
+});

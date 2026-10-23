@@ -8,6 +8,7 @@
 import { contentOf } from "./content.mjs";
 import { combatantFor } from "./turn.mjs";
 import { ritualMode } from "../core/grimoire.mjs";
+import { spellClassOf } from "./spell-class.mjs";
 
 /** Le lanceur a-t-il encore un emplacement (ou un emplacement de pacte) du niveau du sort ou plus ? */
 export function slotLeft(item) {
@@ -17,7 +18,7 @@ export function slotLeft(item) {
 
 /** Le sort vient-il du grimoire de cette classe ? Sa classe d'origine, ou, sans elle, une classe que l'acteur a. */
 function fromClass(item, cls) {
-  const source = item.system?.sourceClass;
+  const source = spellClassOf(item);
   return source ? (source === cls) : !!item.actor?.classes?.[cls];
 }
 

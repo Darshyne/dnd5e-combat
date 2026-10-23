@@ -15,6 +15,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
 import { basicActionOf } from "./basics.mjs";
 import { originItemOf, comesFromItemEffect } from "./facts.mjs";
+import { spellClassOf } from "./spell-class.mjs";
 import { freshBudget, costOf } from "../core/turn.mjs";
 import { convertLength } from "../core/units.mjs";
 import { readUnitFactors, lengthIn } from "./units.mjs";
@@ -33,7 +34,9 @@ export function combatSceneActors(combat) {
 /** Le combattant d'un acteur dans le combat en cours, ou null hors combat. */
 export function combatantFor(actor) {
   if ( !actor || !game.combat?.started ) return null;
-  return game.combat.getCombatantsByActor(actor)[0] ?? null;
+  // §236 : deux combattants pour une même créature (Réflexes du voleur) — celui dont c'est le tour, sinon le premier.
+  const all = game.combat.getCombatantsByActor(actor);
+  return all.find(c => c.id === game.combat.combatant?.id) ?? all[0] ?? null;
 }
 
 /** Le tour de jeu en cours (« combat.round.turn »), pour « une réaction par tour » (§19.6). */
@@ -109,6 +112,16 @@ export function costFor(activity) {
 }
 
 /**
+ * §236 : Pas véloce — « quand vous prenez une action Bonus autre que Pas du vent, vous pouvez aussi utiliser Pas du vent juste après ».
+ * « free » : l'activité que la règle `fleetStep` nomme ; « opens » : toute autre (le cœur n'ouvre que sur une action Bonus) ; null sans la règle.
+ */
+function fleetStepOf(activity) {
+  const rule = Array.from(activity?.actor?.items ?? []).map(i => contentOf(i).entry?.fleetStep).find(Boolean);
+  if ( !rule ) return null;
+  return ((identifierOf(activity.item ?? {}).id === rule.item) && (activity.id === rule.activity)) ? "free" : "opens";
+}
+
+/**
  * Ce qu'une activité demande au budget (UseRequest du cœur). `costOverride` : « utiliser ma réaction ».
  * `attackMode` : le mode d'attaque s'il est connu. `offhand` est le mode de dnd5e pour une arme Légère
  * (data/item/weapon.mjs:188-195 ; les dégâts y perdent déjà le modificateur positif, attack-data.mjs:426) ;
@@ -139,7 +152,8 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
     keys: useKeysOf(activity),
     opensMultiattack: !!item && isMultiattackItem(item),
     basic: item ? (basicActionOf(item) ?? contentOf(item).entry?.basicActions?.[activity.id] ?? null) : null,   // §157 : l'action limitée de Hâte
-    utilize: isUtilize(activity)
+    utilize: isUtilize(activity),
+    fleetStep: fleetStepOf(activity)
   };
 }
 
@@ -218,7 +232,7 @@ export function rangeOf(activity, attackMode=null) {
     const range = { value: prepared.value ?? prepared.reach ?? null, long: prepared.long ?? null, units: prepared.units };
     // §32 : Sort ample, retenu pour ce sort.
     const distant = (activity.item?.type === "spell") && (range.units !== "self") && pendingMetamagic(activity.actor).includes("distant");
-    return spellSniperRange(activity, distant ? distantRange(range) : range);
+    return cantripRange(activity, spellSniperRange(activity, distant ? distantRange(range) : range));
   }
   const units = weapon.units ?? prepared.units;
   const reach = weapon.reach ?? prepared.reach ?? null;
@@ -241,6 +255,27 @@ function spellSniperRange(activity, range) {
   let add, least;
   try {
     add = convertLength(rule.spellRange.value, rule.spellRange.units, range.units, factors);
+    least = convertLength(10, "ft", range.units, factors);
+  } catch { return range; }
+  if ( range.value < least - 1e-6 ) return range;
+  return { ...range, value: range.value + add, long: Number.isFinite(range.long) ? range.long + add : range.long };
+}
+
+/**
+ * §236 : Fureur élémentaire améliorée, Incantation puissante — « quand vous lancez un sort mineur de Druide d'une portée d'au moins 3 m,
+ * sa portée augmente de 90 m ». La règle `cantripRange` d'un item du lanceur, s'il a l'item d'option qu'elle demande (`requires`).
+ */
+function cantripRange(activity, range) {
+  const item = activity.item;
+  const actor = activity.actor;
+  if ( (item?.type !== "spell") || (Number(item.system?.level) !== 0) || !Number.isFinite(range.value) || !range.units || !actor ) return range;
+  const owns = id => actor.items.some(i => identifierOf(i).id === id);
+  const rule = Array.from(actor.items).map(i => contentOf(i).entry?.cantripRange).find(r => r && (!r.requires || owns(r.requires)));
+  if ( !rule || ((spellClassOf(item) || (actor.classes?.[rule.class] ? rule.class : null)) !== rule.class) ) return range;
+  const factors = readUnitFactors();
+  let add, least;
+  try {
+    add = convertLength(rule.add.value, rule.add.units, range.units, factors);
     least = convertLength(10, "ft", range.units, factors);
   } catch { return range; }
   if ( range.value < least - 1e-6 ) return range;

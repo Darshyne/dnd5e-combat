@@ -11,6 +11,8 @@
 const marked = { "activity.isAttack": true, "target.hasEffectFrom": "hunters-mark" };
 
 export const RANGER = Object.freeze({
+  // Chasseur implacable (niveau 13) : « subir des dégâts ne peut pas rompre votre concentration sur la Marque du chasseur ».
+  "relentless-hunter": { keepsConcentration: ["hunters-mark"] },
   // Esquive des ombres (Traqueur des ténèbres 11) : en Réaction, le rôdeur donne le Désavantage à un jet d'attaque qui le vise
   // (§34 : fenêtre avant le jet) ; la téléportation de 9 m qui suit reste au joueur.
   "shadowy-dodge": { triggers: [{ on: "isAttacked", do: [{ type: "use", activity: "0DMuCuULnpS5lIR5" }, { type: "disadvantage" }] }] },

@@ -17,6 +17,10 @@ import { stealthRules } from "../adapter/stealth.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
+import { contentOf } from "../adapter/content.mjs";
+import { areEnemies } from "../adapter/factions.mjs";
+import { coverFor } from "../adapter/cover.mjs";
+import { enqueue } from "./queue.mjs";
 
 /** DD du test de Discrétion (règle 2024). */
 const HIDE_DC = 15;
@@ -34,11 +38,52 @@ async function forgetSpotters(actor) {
 export async function endHiding(actor, why) {
   const effects = hiddenEffectsOf(actor);
   if ( !effects.length || !actor.isOwner ) return;
+  // §236 : Faufilement suprême — l'état retiré par un jet d'attaque est gardé, pour que l'Attaque furtive le rende (runtime/sneak.mjs).
+  if ( (why === "attack roll") && hasStealthAttack(actor) ) {
+    await actor.setFlag(MODULE_ID, "hiddenBeforeAttack", effects.map(e => { const { _id, ...data } = e.toObject(); return data; }));
+  }
   await actor.deleteEmbeddedDocuments("ActiveEffect", effects.map(e => e.id));
   await forgetSpotters(actor);
   log(`hide: ${actor.name} is no longer hidden (${why})`);
   ui.notifications.info(loc("Furtivite.Fin", { name: actor.name }));
   Hooks.callAll(`${MODULE_ID}.sneak`, tokensOf(actor)[0] ?? null, false);
+}
+
+/** §236 : la créature connaît-elle l'Attaque furtive (une Frappe rusée `keepsHidden`) ? */
+const hasStealthAttack = actor => actor.items.some(i => Object.values(contentOf(i).entry?.cunningStrikes ?? {}).some(s => s.keepsHidden));
+
+/** §236 : rend l'état caché qu'un jet d'attaque a retiré (Attaque furtive) ; la fin du tour jugera l'abri. Rend true si rendu. */
+export async function restoreHiding(actor) {
+  const kept = actor.getFlag(MODULE_ID, "hiddenBeforeAttack");
+  if ( !Array.isArray(kept) || !kept.length ) return false;
+  await actor.unsetFlag(MODULE_ID, "hiddenBeforeAttack");
+  await actor.createEmbeddedDocuments("ActiveEffect", kept.map(e => foundry.utils.mergeObject(e, { [`flags.${MODULE_ID}.stealthAttack`]: true })));
+  Hooks.callAll(`${MODULE_ID}.sneak`, tokensOf(actor)[0] ?? null, true);
+  return true;
+}
+
+/**
+ * §236 : à la fin du tour d'une créature restée cachée par l'Attaque furtive, il lui faut un abri aux trois quarts ou total contre chaque
+ * ennemi qui la voit d'ordinaire (vivant, sur la scène) ; sinon l'état prend fin. MJ actif.
+ */
+async function stealthAttackCheck(combat, prior) {
+  const token = combat.combatants.get(prior?.combatantId)?.token;
+  const actor = token?.actor;
+  const effects = actor ? hiddenEffectsOf(actor).filter(e => e.getFlag(MODULE_ID, "stealthAttack")) : [];
+  if ( !effects.length ) return;
+  const exposed = token.parent.tokens.filter(t => (t !== token) && t.actor && areEnemies(t, token) && ((t.actor.system.attributes?.hp?.value ?? 0) > 0))
+    .filter(t => !["threeQuarters", "total"].includes(coverFor(t, token, { quiet: true })?.degree));
+  if ( exposed.length ) await endHiding(actor, `Stealth Attack: not behind cover from ${exposed.map(t => t.name).join(", ")}`);
+  else {
+    await actor.updateEmbeddedDocuments("ActiveEffect", effects.map(e => ({ _id: e.id, [`flags.${MODULE_ID}.-=stealthAttack`]: null })));
+    log(`hide: ${actor.name} stays hidden (Stealth Attack, behind cover)`);
+  }
+}
+
+/** Le drapeau d'un jet d'attaque sans Attaque furtive ne sert plus : retiré au tour suivant. */
+async function forgetKeptHiding(combat, prior) {
+  const actor = combat.combatants.get(prior?.combatantId)?.actor;
+  if ( actor?.getFlag(MODULE_ID, "hiddenBeforeAttack") ) await actor.unsetFlag(MODULE_ID, "hiddenBeforeAttack");
 }
 
 /**
@@ -114,4 +159,6 @@ export function registerHide() {
     const actor = subject?.actor;
     if ( actor ) endHiding(actor, "attack roll").catch(err => console.error(`${MODULE_ID} | hide`, err));
   }, { label: "hide: ends on attack roll" });
+  route("combatTurnChange", (combat, prior) => enqueue(`stealthAttack:${prior?.combatantId}`, async () => { await stealthAttackCheck(combat, prior); await forgetKeptHiding(combat, prior); }),
+    { executor: true, label: "Stealth Attack: cover not judged" });
 }

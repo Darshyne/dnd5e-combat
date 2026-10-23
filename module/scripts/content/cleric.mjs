@@ -7,18 +7,21 @@
  * (soin — le plafond « la moitié de ses PV » reste au MJ), Voile de la nature… et les utilisations de Conduit divin.
  */
 
-/** Impact divin : « une fois à chacun de vos tours, quand vous touchez une créature par un jet d'attaque avec une arme ». */
+import { potentSpellcasting } from "./druid.mjs";
+
+/**
+ * Impact divin : « une fois à chacun de vos tours, quand vous touchez une créature par un jet d'attaque avec une arme ». Pas pour un clerc
+ * qui a reçu l'option Incantation puissante (item du Manuel ; relevé des trous, 2026-10-22).
+ */
 const divineStrike = (formula, improved) => ({ on: "preDamageRoll", oncePerTurn: true,
-  if: { "activity.isWeapon": true, ...(improved ? { "source.hasFeature": "improved-blessed-strikes" } : { not: { "source.hasFeature": "improved-blessed-strikes" } }) },
+  if: { all: [{ "activity.isWeapon": true }, { not: { "source.hasFeature": "blessed-strikes-potent-spellcasting" } },
+    improved ? { "source.hasFeature": "improved-blessed-strikes" } : { not: { "source.hasFeature": "improved-blessed-strikes" } }] },
   do: [{ type: "damage", formula, damageType: "radiant" }] });
 
 /**
  * Incantation puissante, l'autre option d'Impacts bénis : « ajoutez votre modificateur de Sagesse aux dégâts de tout sort mineur de
- * Clerc ». La fiche ne dit pas quelle option a été retenue : Impact divin est déclaré par défaut ; pour un clerc qui a choisi
- * Incantation puissante, la surcouche du monde remplace les déclarations de l'item :
- *   game.modules.get("dnd5e-combat").api.content.set("blessed-strikes", { triggers: [{ on: "preDamageRoll",
- *     if: { "activity.cantripOf": "cleric" }, do: [{ type: "damage", formula: "@abilities.wis.mod", damageType: "weapon" }] }] })
- * (ou le flag `flags["dnd5e-combat"].triggers` de l'item de ce clerc seul).
+ * Clerc ». L'avancement du Clerc ne donne que « Impacts bénis » (Impact divin par défaut) ; l'item d'option du Manuel (« Blessed
+ * Strikes: Potent Spellcasting », `blessed-strikes-potent-spellcasting`) posé sur la fiche porte la règle et retire l'Impact divin.
  */
 
 export const CLERIC = Object.freeze({
@@ -30,8 +33,12 @@ export const CLERIC = Object.freeze({
   // Impacts bénis (niveau 7), option Impact divin : 1d8 radiants (au choix nécrotiques ou radiants : radiants d'office) ;
   // 2d8 avec Impacts bénis améliorés (niveau 14).
   "blessed-strikes": { triggers: [divineStrike("1d8", false), divineStrike("2d8", true)] },
+  "blessed-strikes-potent-spellcasting": potentSpellcasting("cleric"),
   // Guérison suprême (niveau 17) : « prenez la valeur maximale pour chaque dé » d'un sort ou d'une Conduit divin qui soigne.
   "supreme-healing": { supremeHealing: true },
+  // §236 : Avatar de la bataille (Guerre 17) — « Résistance aux dégâts contondants, perforants et tranchants » : aucun effet dans les
+  // données, l'effet est tenu sur l'acteur (runtime/speed-grants.mjs).
+  "avatar-of-battle": { grantsResistances: ["bludgeoning", "piercing", "slashing"] },
   // Disciple de la Vie (Vie 3) : « 2 plus le niveau de l'emplacement » de plus ; Guérisseur béni (Vie 6) : autant pour le lanceur
   // quand le sort soigne une autre créature.
   "disciple-of-life": { discipleOfLife: true },

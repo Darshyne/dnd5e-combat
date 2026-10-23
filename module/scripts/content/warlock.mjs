@@ -48,5 +48,9 @@ export const WARLOCK = Object.freeze({
     breaksOn: ["attack", "damage", "spell"],
     saveDamage: { kj8zIhPbjs4UIHtc: "none" }
   },
+  // Sorts psychiques (Grand Ancien 3) : « quand vous lancez un sort d'Occultiste qui inflige des dégâts, vous pouvez changer leur type
+  // en psychique » — proposé avec les types du sort avant le jet (adapter/messages.mjs). La seconde moitié (Enchantement ou Illusion
+  // sans composante verbale ni somatique) reste à la fiche.
+  "psychic-spells": { spellDamageTypes: { class: "warlock", types: ["psychic"] } },
   "dark-ones-own-luck": { rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["save", "check"] } }
 });

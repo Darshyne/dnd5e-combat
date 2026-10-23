@@ -18,7 +18,8 @@ import { inflict } from "../adapter/retaliation.mjs";
 import { victimsOf } from "../adapter/grapple.mjs";
 import { enqueue } from "./queue.mjs";
 import { contentOf } from "../adapter/content.mjs";
-import { combatantFor, readBudget, writeBudget } from "../adapter/turn.mjs";
+import { combatantFor, readBudget, writeBudget, movementOf } from "../adapter/turn.mjs";
+import { readUnitFactors } from "../adapter/units.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { route } from "./router.mjs";
 import { log, loc, say, locEsc } from "./shared.mjs";
@@ -35,6 +36,13 @@ function onPreRollDamage(config, dialog, message) {
   const activity = config.subject;
   const actor = activity?.actor;
   if ( !actor || !config.rolls?.length ) return true;
+  // Relevé des trous : Inspiration de combat, Attaque — le dé déjà lancé (adapter/messages.mjs), en part fixe du type de l'attaque.
+  const inspired = Number(config[MODULE_ID]?.combatInspiration) || 0;
+  if ( inspired ) {
+    const base = config.rolls.find(r => r.base) ?? config.rolls[0];
+    config.rolls.push({ data: base.data ?? {}, parts: [String(inspired)], options: { type: base.options?.type, types: base.options?.types ?? [], properties: [] } });
+    log(`Combat Inspiration: +${inspired} damage`);
+  }
   // Guérisseur : les dés de soins d'un sort.
   if ( (activity.type === "heal") && (activity.item?.type === "spell") && hasRule(actor, "healingRerolls") ) {
     for ( const roll of config.rolls ) roll.parts = (roll.parts ?? []).map(rerollOnesOnce);
@@ -100,6 +108,24 @@ function onPreRollDamage(config, dialog, message) {
 const seen = new Set();
 
 /** Après une attaque tranchée (MJ actif) : chaque cible touchée d'un coup critique du bon type reçoit la marque des dons de l'auteur. */
+/**
+ * Relevé des trous (2026-10-22) : Athlète remarquable — « immédiatement après avoir porté un coup critique, vous pouvez vous déplacer de
+ * la moitié de votre Vitesse sans provoquer d'attaque d'opportunité ». Au budget du tour, comme le Décalage tactique (§21) : la moitié de
+ * la Vitesse en plus, et plus d'attaque d'opportunité ce tour-là (simplification : le reste du tour, pas ce seul déplacement). À son
+ * propre tour seulement (un critique d'attaque d'opportunité ne déplace personne).
+ */
+async function critMove(resolution, source) {
+  if ( !(resolution.targets ?? []).some(t => t.hit && t.critical) ) return;
+  const item = source.items.find(i => contentOf(i).entry?.critMove === true);
+  const combatant = item ? combatantFor(source) : null;
+  if ( !combatant || (combatant.combat?.combatant?.id !== combatant.id) ) return;
+  const movement = movementOf(combatant, readUnitFactors());
+  if ( !movement ) return;
+  const budget = readBudget(combatant);
+  await writeBudget(combatant, { ...budget, bonusMove: (Number(budget.bonusMove) || 0) + (movement.speed / 2), disengaged: true });
+  log(`${item.name}: critical hit, ${source.name} may move +${movement.speed / 2} ${movement.units} without provoking Opportunity Attacks`);
+}
+
 async function onResolution(resolution) {
   if ( (resolution?.step !== STEPS.DONE) || !resolution.plan?.attack || seen.has(resolution.id) ) return;
   seen.add(resolution.id);
@@ -109,6 +135,7 @@ async function onResolution(resolution) {
   const activity = fromUuidSync(resolution.activity ?? "", { strict: false });
   if ( !source || !activity ) return;
   await halt(resolution, source);   // §133
+  await critMove(resolution, source);
   const rules = source.items.map(i => ({ item: i, rule: contentOf(i).entry?.critMark })).filter(r => r.rule);
   if ( !rules.length ) return;
   const types = attackDamageTypes(activity);
@@ -325,7 +352,46 @@ async function grappleDamage(actor, token) {
   }
 }
 
+/**
+ * §236 : Auto-restauration — « à la fin de chacun de vos tours, vous pouvez mettre fin à l'un de ces états sur vous : Charmé, Effrayé,
+ * Empoisonné ». Le premier que la créature porte, dans l'ordre de la règle ; les effets qui le portent sont retirés. MJ actif.
+ */
+async function endOwnCondition(actor) {
+  const item = actor.items.find(i => contentOf(i).entry?.endsOwnConditions);
+  if ( !item || ((actor.system.attributes?.hp?.value ?? 0) <= 0) ) return;
+  const status = contentOf(item).entry.endsOwnConditions.find(s => actor.statuses?.has(s));
+  if ( !status ) return;
+  const effects = actor.effects.filter(e => e.statuses?.has?.(status));
+  if ( effects.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", effects.map(e => e.id));
+  log(`${item.name}: ${actor.name} ends ${status} on themself (end of turn)`);
+}
+
+/**
+ * §236 : Puissance indomptable — « si votre total pour un test de Force ou un jet de sauvegarde de Force est inférieur à votre valeur de
+ * Force, vous pouvez utiliser cette valeur à la place ». Au jet, le d20 reçoit un minimum (`options.minimum`, comme le Présage) : total
+ * ≥ valeur ⇔ d20 ≥ valeur − bonus. Un bonus en dés (Bénédiction) est compté au plus bas : le total peut alors dépasser la valeur.
+ */
+function onPreRollD20(config) {
+  const actor = config?.subject;
+  const ability = config?.ability;
+  if ( !actor?.items || !ability ) return true;
+  const rule = actor.items.map(i => contentOf(i).entry?.scoreFloor).find(r => r?.includes(ability));
+  const score = Number(actor.system?.abilities?.[ability]?.value);
+  const roll = config.rolls?.[0];
+  if ( !rule || !Number.isFinite(score) || !roll ) return true;
+  let bonus;
+  try { bonus = new Roll((roll.parts ?? []).join(" + ") || "0", roll.data ?? actor.getRollData()).evaluateSync({ minimize: true, strict: false }).total; }
+  catch { return true; }
+  const minimum = Math.max(roll.options?.minimum ?? 1, Math.min(20, score - bonus));
+  if ( minimum <= 1 ) return true;
+  roll.options = { ...(roll.options ?? {}), minimum };
+  log(`${actor.name}: Indomitable Might, d20 at least ${minimum} (total at least ${score})`);
+  return true;
+}
+
 function onTurnChange(combat, prior, current) {
+  const ended = combat.combatants.get(prior?.combatantId)?.actor;
+  if ( ended ) enqueue(`feats-turn:${ended.uuid}`, () => endOwnCondition(ended));
   const combatant = combat.combatants.get(current?.combatantId);
   const actor = combatant?.actor;
   if ( !actor ) return;
@@ -340,6 +406,7 @@ export function registerFeats() {
   route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "origin feats (damage)" });
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`critMark:${resolution?.id}`, () => onResolution(resolution)), { executor: true, label: "critical mark not placed" });
   route("combatTurnChange", onTurnChange, { executor: true, label: "feat turn start" });
+  for ( const hook of ["dnd5e.preRollAbilityCheckV2", "dnd5e.preRollSavingThrowV2"] ) route(hook, onPreRollD20, { cancellable: true, label: "Indomitable Might" });
   route("dnd5e.preRollConcentrationV2", onPreRollConcentration, { cancellable: true, label: "Mage Slayer: concentration" });
   route("dnd5e.postUseActivity", (activity, usageConfig) => (activity?.actor?.isOwner ? spellRecall(activity, usageConfig) : null), { label: "Boon of Spell Recall" });
   // §134 : Expert élémentaire — le type, demandé à l'arrivée du don, et au chargement pour un don déjà là.

@@ -135,7 +135,7 @@ export function strikeOptionsOf(actor, target) {
       const size = target?.actor?.system?.traits?.size;
       const available = (!rule.requires || owns(actor, rule.requires))
         && (!rule.sizeAtMost || !size || (sizeRank(size) <= sizeRank(rule.sizeAtMost)));
-      out.push({ key, cost: rule.cost, available, item, activity, withdraw: rule.withdraw === true,
+      out.push({ key, cost: rule.cost, available, item, activity, withdraw: rule.withdraw === true, keepsHidden: rule.keepsHidden === true,
         label: game.i18n.localize(`DND5ECOMBAT.Sournoise.Frappe.${key}`) });
     }
   }

@@ -1,5 +1,6 @@
 import { turnKeyOf, shouldTrigger, markHit, entersArea, stepsInside, siblingFor, hitKey, pulseFor, pulseTargets } from "../core/area.mjs";
 import { MODULE_ID } from "../constants.mjs";
+import { spellRetypes } from "../adapter/messages.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { readAreaState, writeAreaState, lastingRegions, isInside, replayAgainst, noteExpiry, expiredRegions, pulseAll, zoneCenter, moveZoneTo, conditionalReplay } from "../adapter/areas.mjs";
 import { payWithoutUse } from "../adapter/reactions.mjs";
@@ -244,9 +245,12 @@ function passedCells(token, movement) {
 function onPreRollDamage(config) {
   // §16.27 : le type de dégâts choisi par l'auteur (Orbe chromatique), pour chaque jet qui le permet.
   const damageType = config?.[MODULE_ID]?.damageType;
+  // Relevé des trous : Sorts psychiques — le type en plus remplace celui des parts du sort (pas des dégâts bonus ajoutés ensuite).
+  const retyped = damageType && spellRetypes(config.subject).includes(damageType);
   if ( damageType ) for ( const roll of config.rolls ?? [] ) {
     const types = roll.options?.types ?? [];
-    if ( types.includes(damageType) ) roll.options.type = damageType;
+    if ( retyped && !types.includes(damageType) ) roll.options.types = [...types, damageType];
+    if ( retyped || types.includes(damageType) ) roll.options.type = damageType;
   }
   const times = config?.[MODULE_ID]?.times;
   if ( !(times > 1) ) return true;

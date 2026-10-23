@@ -158,7 +158,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       if ( !kinds.length || !kinds.every(k => BASIC_ACTION_KINDS.includes(k)) ) errors.push(`${at}basicActions.${id}: ${BASIC_ACTION_KINDS.join(", ")} (or a list)`);
     }
   }
-  for ( const key of ["actionOrBonus", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "noOpportunityAttacks", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
+  for ( const key of ["actionOrBonus", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "noOpportunityAttacks", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails", "critMove", "combatInspiration"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
   // §225, lot 4 : passer du plan matériel à l'Éthéré ou inversement (Saut éthéré) ; `others` : les cibles désignées suivent (Foulée éthérée).
   if ( ("etherealShift" in entry) && !((entry.etherealShift === true) || (isObject(entry.etherealShift)
     && Object.keys(entry.etherealShift).every(k => k === "others") && (entry.etherealShift.others === true))) ) {
@@ -168,6 +168,36 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   if ( ("cures" in entry) && (!Array.isArray(entry.cures) || !entry.cures.length || !entry.cures.every(s => (typeof s === "string") && s)) ) {
     errors.push(`${at}cures: list of condition identifiers`);
   }
+  // Relevé des trous (2026-10-22) : les sorts dont les dégâts ne rompent pas la concentration (Chasseur implacable : Marque du chasseur).
+  if ( ("keepsConcentration" in entry) && (!Array.isArray(entry.keepsConcentration) || !entry.keepsConcentration.length
+    || !entry.keepsConcentration.every(s => (typeof s === "string") && s)) ) errors.push(`${at}keepsConcentration: list of item identifiers`);
+  // Relevé des trous : les sorts de cette classe qui infligent des dégâts peuvent prendre ces types (Sorts psychiques : psychique).
+  if ( "spellDamageTypes" in entry ) {
+    const d = entry.spellDamageTypes;
+    if ( !isObject(d) || (typeof d.class !== "string") || !d.class || !Array.isArray(d.types) || !d.types.length
+      || !d.types.every(t => (typeof t === "string") && t) || !Object.keys(d).every(k => ["class", "types"].includes(k)) ) {
+      errors.push(`${at}spellDamageTypes: { class, types } (class identifier, damage types)`);
+    }
+  }
+  // Relevé des trous, §236 : listes de chaînes (états retirés en fin de tour, types de résistance, caractéristiques plancher).
+  for ( const key of ["endsOwnConditions", "grantsResistances", "scoreFloor"] ) {
+    if ( (key in entry) && (!Array.isArray(entry[key]) || !entry[key].length || !entry[key].every(s => (typeof s === "string") && s)) ) errors.push(`${at}${key}: list of identifiers`);
+  }
+  if ( ("regainOnInitiative" in entry) && !(isObject(entry.regainOnInitiative) && (typeof entry.regainOnInitiative.item === "string") && entry.regainOnInitiative.item
+    && Number.isInteger(entry.regainOnInitiative.upTo) && (entry.regainOnInitiative.upTo > 0) && Object.keys(entry.regainOnInitiative).every(k => ["item", "upTo"].includes(k))) ) {
+    errors.push(`${at}regainOnInitiative: { item, upTo } (identifier, positive integer)`);
+  }
+  if ( "cantripRange" in entry ) {
+    const r = entry.cantripRange;
+    if ( !isObject(r) || (typeof r.class !== "string") || !r.class || !isObject(r.add) || !Number.isFinite(r.add.value) || (typeof r.add.units !== "string")
+      || (("requires" in r) && ((typeof r.requires !== "string") || !r.requires)) || !Object.keys(r).every(k => ["class", "add", "requires"].includes(k)) ) {
+      errors.push(`${at}cantripRange: { class, add: { value, units }, requires? }`);
+    }
+  }
+  if ( ("fleetStep" in entry) && !(isObject(entry.fleetStep) && (typeof entry.fleetStep.item === "string") && entry.fleetStep.item && isId(entry.fleetStep.activity)
+    && Object.keys(entry.fleetStep).every(k => ["item", "activity"].includes(k))) ) errors.push(`${at}fleetStep: { item, activity } (identifier, activity id)`);
+  if ( ("extraFirstTurn" in entry) && !(isObject(entry.extraFirstTurn) && Number.isFinite(entry.extraFirstTurn.minus) && (entry.extraFirstTurn.minus > 0)
+    && Object.keys(entry.extraFirstTurn).every(k => k === "minus")) ) errors.push(`${at}extraFirstTurn: { minus } (positive number)`);
   if ( ("curesAll" in entry) && (!Array.isArray(entry.curesAll) || !entry.curesAll.length || !entry.curesAll.every(s => (typeof s === "string") && s)) ) {
     errors.push(`${at}curesAll: list of condition identifiers`);
   }

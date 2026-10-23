@@ -81,6 +81,8 @@ export function costOf(activationType) {
  */
 export function effectiveCost(budget, request) {
   if ( request.offhand ) return (request.nick && !budget.nickUsed) ? null : "bonus";
+  // §236 : Pas véloce — Pas du vent offert par une action Bonus prise plus tôt ce tour-ci.
+  if ( (request.fleetStep === "free") && budget.fleetStep ) return null;
   return request.cost;
 }
 
@@ -147,6 +149,7 @@ export function spendUse(budget, request, { isOwnTurn, attacksPerAction, turnKey
     return cost ? { ...budget, bonus: Math.max(0, budget.bonus - 1) } : { ...budget, nickUsed: true };
   }
   if ( !request.cost ) return budget;
+  if ( (request.fleetStep === "free") && budget.fleetStep ) return { ...budget, fleetStep: false };
   const next = { ...budget, attacks: { ...budget.attacks } };
   if ( request.lightWeapon && request.weaponAttack && (request.cost === "action") ) next.lightAttack = true;
   // M1 : Attaques multiples. Ouvertes par leur item (l'action payée, rien d'utilisé) ou par la première utilisation qui
@@ -177,6 +180,8 @@ export function spendUse(budget, request, { isOwnTurn, attacksPerAction, turnKey
     if ( request.weaponAttack && (request.cost === "action") && !budget.multi ) next.attacks = { granted: Math.max(1, attacksPerAction), used: 1 };
   }
   if ( request.usesSpellSlot && isOwnTurn ) next.slotCast = true;
+  // §236 : Pas véloce — une action Bonus (pas Pas du vent lui-même) ouvre Pas du vent gratuit pour ce tour.
+  if ( (request.fleetStep === "opens") && (request.cost === "bonus") ) next.fleetStep = true;
   return next;
 }
 
@@ -196,7 +201,8 @@ export function refundUse(current, before, after) {
   next.attacks.used = Math.max(0, next.attacks.used - usedDelta);
   // La première attaque avait ouvert l'action Attaquer : si plus rien n'en est utilisé, on la referme.
   if ( (after.attacks?.granted !== before.attacks?.granted) && (next.attacks.used === 0) ) next.attacks.granted = before.attacks?.granted ?? 0;
-  for ( const flag of ["slotCast", "nickUsed", "lightAttack"] ) if ( !before[flag] && after[flag] ) next[flag] = false;
+  for ( const flag of ["slotCast", "nickUsed", "lightAttack", "fleetStep"] ) if ( !before[flag] && after[flag] ) next[flag] = false;
+  if ( before.fleetStep && !after.fleetStep ) next.fleetStep = true;   // §236 : le Pas du vent offert est rendu
   // M1 : l'utilisation rendue sort des Attaques multiples ; si c'est elle qui les avait ouvertes et qu'il n'en reste rien, on les referme.
   if ( after.multi && (JSON.stringify(after.multi) !== JSON.stringify(before.multi)) && current.multi ) {
     const added = after.multi.used.at(-1);

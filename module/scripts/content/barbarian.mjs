@@ -28,6 +28,12 @@ export const BARBARIAN = Object.freeze({
   // Bond instinctif (niveau 7) : « dans le cadre de l'action Bonus pour entrer en Rage, vous pouvez vous déplacer de la moitié de
   // votre Vitesse » — sans rien dire des attaques d'opportunité.
   "instinctive-pounce": { movesAfter: { item: "rage", disengage: false } },
+  // §236 : Puissance indomptable (niveau 18) — « si votre total pour un test ou un jet de sauvegarde de Force est inférieur à votre valeur
+  // de Force, vous pouvez utiliser cette valeur à la place » (runtime/feats.mjs : le minimum du d20).
+  "indomitable-might": { scoreFloor: ["str"] },
+  // Concentration fanatique (Zélateur 6) : « une fois par Rage active, si vous ratez un jet de sauvegarde, vous pouvez le relancer avec
+  // un bonus égal à vos dégâts de Rage, et vous devez utiliser le nouveau jet » — les sauvegardes que le moteur lit.
+  "fanatical-focus": { rollBonus: { on: ["save"], reroll: { bonus: "@scale.barbarian.rage-damage", during: "rage" } } },
   // Rage implacable (niveau 11) : « si vous tombez à 0 PV en Rage sans mourir sur le coup, un JS de Constitution DD 10 : réussi,
   // vos PV deviennent le double de votre niveau de Barbare ; le DD augmente de 5 à chaque utilisation » — la sauvegarde de l'item
   // (dnd5eactivity100, DD « 10 + utilisations × 5 »).

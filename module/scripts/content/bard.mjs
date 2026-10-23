@@ -14,5 +14,11 @@ export const BARD = Object.freeze({
   // est rejugée (le dé vaut autant de CA). Les tests et les jets de dégâts restent au joueur.
   "cutting-words": { triggers: [{ on: ["isHit", "allyIsHit"], do: [{ type: "use" }, { type: "penalty", formula: "@scale.bard.inspiration" }] }] },
   // Esquive cavalière (Danse 14) : l'Esquive totale (§20) ; la partager avec une créature à 1,50 m reste au joueur.
-  "leading-evasion": { evasion: true }
+  "leading-evasion": { evasion: true },
+  // Inspiration de combat (Vaillance 3) : la créature inspirée par ce barde ajoute le dé aux dégâts d'un coup, ou à sa CA par sa Réaction
+  // quand elle est touchée (adapter/inspiration.mjs) — à la place de l'ajouter à un jet raté, qui reste possible.
+  "combat-inspiration": { combatInspiration: true },
+  // §236 : Inspiration supérieure (niveau 18) — « quand vous jouez l'initiative, vous regagnez des utilisations d'Inspiration bardique
+  // jusqu'à en avoir deux ».
+  "superior-inspiration": { regainOnInitiative: { item: "bardic-inspiration", upTo: 2 } }
 });

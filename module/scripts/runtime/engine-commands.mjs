@@ -19,7 +19,7 @@ import { readUnitFactors } from "../adapter/units.mjs";
 import { combatantFor, readBudget, writeBudget } from "../adapter/turn.mjs";
 import { dodge as takeDodge } from "../core/turn.mjs";
 import { tallyAfter } from "../core/tally.mjs";
-import { askHitReactions, windowIsDamaged, windowIsMissed, askDamageGuardians } from "./reactions.mjs";
+import { askHitReactions, windowIsDamaged, windowIsMissed, windowEnemyAttacked, askDamageGuardians } from "./reactions.mjs";
 import { markConcentrationBreaker, resistanceIgnoredBy, fortifiedExtra } from "./feats.mjs";
 import { liftToken } from "./elevation-spells.mjs";
 import { duplicateEffectsOf } from "../adapter/duplicates.mjs";
@@ -326,6 +326,8 @@ export const COMMANDS = {
       const missed = resolution.targets.filter(t => (t.hit === false) && !t.unaffected).map(t => t.token);
       if ( missed.length ) windowIsMissed(missed, speakerTokenUuid(carrier), carrier.speaker?.alias ?? "",
         { activity: resolution.activity, auto: autoReactOf(carrier, resolution) });
+      // §236 : « une créature hostile vient d'attaquer » (Âme de la vengeance), touché ou raté.
+      windowEnemyAttacked(speakerTokenUuid(carrier), carrier.speaker?.alias ?? "", { activity: resolution.activity, auto: autoReactOf(carrier, resolution) });
       return;
     }
     const damageMessage = game.messages.get(resolution.damageRoll?.messageId);

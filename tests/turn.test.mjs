@@ -206,3 +206,28 @@ describe("§157 : action limitée de Hâte", () => {
     expect(refundUse(used, after, used)).toMatchObject({ limited: 1 });
   });
 });
+
+describe("§236 : Pas véloce", () => {
+  const rage = { cost: "bonus", weaponAttack: false, usesSpellSlot: false, fleetStep: "opens" };
+  const step = { cost: "bonus", weaponAttack: false, usesSpellSlot: false, fleetStep: "free" };
+  it("une action Bonus ouvre Pas du vent, gratuit une fois", () => {
+    const after = spendUse(freshBudget(), rage, mine);
+    expect(after.bonus).toBe(0);
+    expect(after.fleetStep).toBe(true);
+    expect(checkUse(after, step, mine)).toEqual([]);
+    const stepped = spendUse(after, step, mine);
+    expect(stepped.fleetStep).toBe(false);
+    expect(stepped.bonus).toBe(0);
+    expect(checkUse(stepped, step, mine)).toEqual(["noBonus"]);
+  });
+  it("Pas du vent lui-même n'ouvre rien ; sans la règle, rien ne change", () => {
+    expect(spendUse(freshBudget(), step, mine).fleetStep).toBeFalsy();
+    expect(spendUse(freshBudget(), { ...rage, fleetStep: null }, mine).fleetStep).toBeFalsy();
+  });
+  it("une utilisation annulée rend le Pas du vent offert, ou le referme", () => {
+    const before = spendUse(freshBudget(), rage, mine);
+    const after = spendUse(before, step, mine);
+    expect(refundUse(after, before, after).fleetStep).toBe(true);
+    expect(refundUse(before, freshBudget(), before).fleetStep).toBe(false);
+  });
+});

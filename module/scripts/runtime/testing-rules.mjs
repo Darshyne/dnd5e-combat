@@ -8,7 +8,7 @@ import { baseWeapons, chosenMasteries, masterySourcesOf, restAllowanceOf } from 
 import { judgeMasteries } from "./mastery-choices.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { naturalOneFor } from "./natural-one.mjs";
-import { combatantFor, readBudget } from "../adapter/turn.mjs";
+import { combatantFor, readBudget, rangeOf } from "../adapter/turn.mjs";
 import { useIssues } from "./turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { movementCap } from "./actions.mjs";
@@ -234,6 +234,13 @@ export function issues({ tokenId, itemId, activityType=null, cost=null }) {
   const activity = item?.system.activities.find(a => !activityType || (a.type === activityType));
   if ( !activity ) throw new Error("activity not found");
   return useIssues(activity, { cost }).lines;
+}
+
+/** §236 : la portée que le moteur applique à une activité (règles de contenu comprises : Sniper de sorts, Fureur élémentaire améliorée). */
+export function range({ tokenId, itemId, activityType=null }) {
+  const activity = viewedToken({ tokenId }).actor?.items.get(itemId)?.system.activities.find(a => !activityType || (a.type === activityType));
+  if ( !activity ) throw new Error("activity not found");
+  return rangeOf(activity);
 }
 
 /** §20 : le budget du tour d'un combattant (action, action Bonus, Foncer, Se désengager, Vitesse à 0, déplacement en plus). */

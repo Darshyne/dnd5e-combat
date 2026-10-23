@@ -25,6 +25,7 @@ import { areEnemies, areSworn, sideOf } from "../adapter/factions.mjs";
 import { readyPlanOf, readyTriggered } from "../core/ready.mjs";
 import { readyOption } from "../adapter/ready.mjs";
 import { samePlane } from "../adapter/plane.mjs";
+import { offerCombatInspirationDefense, hasCombatInspiration } from "../adapter/inspiration.mjs";
 
 /** §134 : Rapide — le nom de l'item qui donne le Désavantage aux attaques d'opportunité contre cet acteur, ou null. */
 function hamperedBy(actor) {
@@ -47,7 +48,9 @@ export async function canReactToHit(tokenUuid, { activity=null, source=null }={}
   const context = activity ? { activity, source, target: actor, targetToken: token } : {};
   // §133 : les gardiens avec l'attaquant — sans lui, une condition sur sa position (Sentinelle : « une créature à 1,50 m de vous ») ne
   // tenait jamais, et la fenêtre ne s'ouvrait pas quand la cible n'avait elle-même aucune réaction.
-  return !!actor && ((reactionsOf(actor, "isHit", context).length > 0) || (guardiansOf(token, tokenOf(source), activity).length > 0));
+  // Relevé des trous : l'Inspiration de combat d'un barde de la vaillance (adapter/inspiration.mjs) ouvre aussi la fenêtre.
+  return !!actor && ((reactionsOf(actor, "isHit", context).length > 0) || (guardiansOf(token, tokenOf(source), activity).length > 0)
+    || hasCombatInspiration(actor));
 }
 
 /**
@@ -125,6 +128,10 @@ export async function askHitReactions(resolution, tokens, drained, { auto=null }
         break;
       }
     }
+    // Relevé des trous : Inspiration de combat, Défense — si rien d'autre n'a réagi, le dé du barde de la vaillance ajouté à la CA.
+    const inspired = (!answer && (auto !== "none")) ? await offerCombatInspirationDefense(actor, { total: resolution.attack?.roll?.total,
+      ac: await currentAc(tokenUuid) + (target?.cover?.bonus ?? 0), critical: target?.critical === true, auto: auto === "first" }) : 0;
+    if ( inspired ) { answer = { name: game.i18n.localize("DND5ECOMBAT.Inspiration.Nom"), penalty: inspired }; log(`${target?.name}: Combat Inspiration, +${inspired} AC`); }
     // §33 : Mots cinglants — le dé retiré au jet vaut autant de CA pour ce rejugement.
     const ac = await currentAc(tokenUuid) + (target?.cover?.bonus ?? 0) + (Number(answer?.penalty) || 0);   // l'abri du verdict reste acquis
     if ( answer?.penalty ) log(`${target?.name}: ${answer.name}, -${answer.penalty} to the attack roll`);
@@ -358,6 +365,17 @@ export function windowDisengaged(tokenDocument) {
     await askReaction(actor, { actor: actor.uuid, prompt: { key: "ReactionDesengage", data: { mover: tokenDocument.name } }, options,
       target: tokenDocument.uuid });
   })().catch(err => console.error(`${MODULE_ID} | "disengages" window interrupted`, err));
+}
+
+/**
+ * §236 : fenêtre « une créature hostile vient d'attaquer » — chaque créature de la scène hostile à l'attaquant, touchée ou non, visée ou
+ * non (Âme de la vengeance : la créature sous le Vœu d'inimitié attaque). Sans attente.
+ */
+export function windowEnemyAttacked(sourceToken, sourceName, { activity=null, auto=null }={}) {
+  const attacker = fromUuidSync(sourceToken ?? "", { strict: false });
+  if ( !attacker?.parent ) return;
+  const reactors = attacker.parent.tokens.filter(t => (t !== attacker) && t.actor && !isObjectToken(t) && areEnemies(t, attacker)).map(t => t.uuid);
+  fireTargetWindow("enemyAttacked", reactors, sourceToken, sourceName, { activity, auto, promptKey: "ReactionEnnemiAttaque", what: "seeing an enemy attack" });
 }
 
 export function windowIsMissed(tokenUuids, sourceToken, sourceName, { activity=null, auto=null }={}) {

@@ -60,8 +60,9 @@ export function validateExtras(entry, at, errors) {
       if ( ("requires" in s) && ((typeof s.requires !== "string") || !s.requires) ) errors.push(`${here}.requires: item identifier`);
       if ( ("sizeAtMost" in s) && !SIZES.includes(s.sizeAtMost) ) errors.push(`${here}.sizeAtMost: ${SIZES.join(", ")}`);
       if ( ("withdraw" in s) && (s.withdraw !== true) ) errors.push(`${here}.withdraw: true or absent`);
-      if ( !("activity" in s) && !s.withdraw ) errors.push(`${here}: an activity or withdraw`);
-      for ( const k of Object.keys(s) ) if ( !["cost", "activity", "requires", "sizeAtMost", "withdraw"].includes(k) ) errors.push(`${here}.${k}: unknown key`);
+      if ( ("keepsHidden" in s) && (s.keepsHidden !== true) ) errors.push(`${here}.keepsHidden: true or absent`);
+      if ( !("activity" in s) && !s.withdraw && !s.keepsHidden ) errors.push(`${here}: an activity, withdraw or keepsHidden`);
+      for ( const k of Object.keys(s) ) if ( !["cost", "activity", "requires", "sizeAtMost", "withdraw", "keepsHidden"].includes(k) ) errors.push(`${here}.${k}: unknown key`);
     }
   }
   if ( "movesAfter" in entry ) {
@@ -156,13 +157,18 @@ export function validateExtras(entry, at, errors) {
     && Object.keys(entry.smite).every(k => ["damage", "fiends", "save", "effect", "ranged", "any", "burst"].includes(k))) ) errors.push(`${at}smite: { damage, fiends?, save?, effect?, ranged?, any?, burst? } (activity ids, effect id)`);
   if ( ("metamagic" in entry) && !(isObject(entry.metamagic) && isId(entry.metamagic.activity) && METAMAGIC_KINDS.includes(entry.metamagic.kind)
     && Object.keys(entry.metamagic).every(k => ["activity", "kind"].includes(k))) ) errors.push(`${at}metamagic: { activity, kind: ${METAMAGIC_KINDS.join(" | ")} }`);
-  if ( ("rollBonus" in entry) && !(isObject(entry.rollBonus) && isId(entry.rollBonus.activity) && Array.isArray(entry.rollBonus.on)
+  // Relevé des trous : `reroll` — sans activité, le d20 relancé avec ce bonus, le nouveau jet imposé, une fois par effet de `during`.
+  const reroll = entry.rollBonus?.reroll;
+  const rerollOk = (reroll === undefined) || (isObject(reroll) && (typeof reroll.bonus === "string") && !!reroll.bonus.trim()
+    && (typeof reroll.during === "string") && !!reroll.during && Object.keys(reroll).every(k => ["bonus", "during"].includes(k)));
+  if ( ("rollBonus" in entry) && !(isObject(entry.rollBonus) && (isId(entry.rollBonus.activity) ? !reroll : (!!reroll && !("activity" in entry.rollBonus)))
+    && rerollOk && Array.isArray(entry.rollBonus.on)
     && entry.rollBonus.on.length && entry.rollBonus.on.every(k => ROLL_BONUS_ON.includes(k))
     && ["skills", "statuses"].every(key => !(key in entry.rollBonus) || (Array.isArray(entry.rollBonus[key]) && entry.rollBonus[key].length && entry.rollBonus[key].every(k => (typeof k === "string") && k)))
     && (!("luck" in entry.rollBonus) || (entry.rollBonus.luck === true))
     && (!("succeed" in entry.rollBonus) || (entry.rollBonus.succeed === true))
     && (!("abilities" in entry.rollBonus) || (Array.isArray(entry.rollBonus.abilities) && entry.rollBonus.abilities.length && entry.rollBonus.abilities.every(a => (typeof a === "string") && a)))
-    && Object.keys(entry.rollBonus).every(k => ["activity", "on", "skills", "statuses", "luck", "succeed", "abilities"].includes(k))) ) errors.push(`${at}rollBonus: { activity, on: [${ROLL_BONUS_ON.join(" | ")}], skills?, statuses?, luck?: true, succeed?: true, abilities? }`);
+    && Object.keys(entry.rollBonus).every(k => ["activity", "on", "skills", "statuses", "luck", "succeed", "abilities", "reroll"].includes(k))) ) errors.push(`${at}rollBonus: { activity (or reroll: { bonus, during }), on: [${ROLL_BONUS_ON.join(" | ")}], skills?, statuses?, luck?: true, succeed?: true, abilities? }`);
   if ( ("transpose" in entry) && !(isObject(entry.transpose) && (typeof entry.transpose.summon === "string") && entry.transpose.summon
     && Object.keys(entry.transpose).every(k => k === "summon")) ) errors.push(`${at}transpose: { summon } (identifier of the summoning item)`);
   if ( ("portent" in entry) && !(isObject(entry.portent) && Number.isInteger(entry.portent.dice) && (entry.portent.dice > 0)

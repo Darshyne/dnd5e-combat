@@ -50,7 +50,7 @@ export const MERGE = Object.freeze({
   oneAttack: "replace", martialArts: "replace", flurry: "replace", stunningStrike: "replace", openHand: "replace",
   smite: "replace", supremeHealing: "replace", discipleOfLife: "replace", blessedHealer: "replace",
   potentCantrip: "replace", sculptSpells: "replace", endurance: "replace", replacesAttack: "replace", hitRider: "replace",
-  metamagic: "replace", portent: "replace", dispel: "replace", zoneEffects: "replace", rollBonus: "replace",
+  metamagic: "replace", portent: "replace", dispel: "replace", zoneEffects: "replace", rollBonus: "replace", keepsConcentration: "replace", spellDamageTypes: "replace", critMove: "replace", combatInspiration: "replace", endsOwnConditions: "replace", regainOnInitiative: "replace", grantsResistances: "replace", scoreFloor: "replace", cantripRange: "replace", fleetStep: "replace", extraFirstTurn: "replace",
   transpose: "replace", stabilizes: "replace", carriedLight: "replace", kindles: "replace", scatter: "replace", flammable: "replace", climbsCeilings: "replace", grantsSpeeds: "replace", climbsOnTurn: "replace", slippery: "replace", notOnSlippery: "replace", saveAdvantageSize: "replace", jump: "replace", burns: "replace", savageAttacker: "replace",
   initiativeSwap: "replace", healingRerolls: "replace", effectWhile: "replace", rangedFeat: "replace", piercer: "replace",
   critMark: "replace", grappleDamage: "replace", haltOnReaction: "replace", concentrationBreaker: "replace",

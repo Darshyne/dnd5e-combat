@@ -9,6 +9,9 @@
  */
 
 export const FIGHTER = Object.freeze({
+  // Athlète remarquable (Champion 3) : l'Avantage à l'initiative et en Athlétisme est le drapeau de dnd5e ; « sitôt un coup critique,
+  // vous pouvez vous déplacer de la moitié de votre Vitesse sans provoquer d'attaque d'opportunité » — à son tour (runtime/feats.mjs).
+  "remarkable-athlete": { critMove: true },
   // §123 : Ralliement (Chevalier du dragon pourpre) — « un allié à 9 m ou moins » ; Interception (style de combat) — « une autre
   // créature à 1,50 m de vous ». « Personnelles » dans les données du Manuel des joueurs.
   "rally": { ranges: { uyAnJsUHU2Aek9Lk: { value: 30, units: "ft" } } },

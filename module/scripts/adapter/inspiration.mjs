@@ -31,7 +31,7 @@ export function inspirationOf(actor) {
     if ( effect.disabled || effect.isSuppressed ) continue;
     const item = originItemOf(effect);
     if ( !item || (identifierOf(item).id !== "bardic-inspiration") ) continue;
-    return { effect, formula: inspirationDieOf(item.actor), bard: item.actor?.name ?? "" };
+    return { effect, formula: inspirationDieOf(item.actor), bard: item.actor?.name ?? "", source: item.actor ?? null };
   }
   return null;
 }
@@ -125,6 +125,66 @@ export function usesLeftFor(activity) {
  * @param {{kind: "save"|"check"|"attack"|"initiative", what: string, total: number, needed?: number, skill?: string,
  *   statuses?: string[]}} context  `statuses` : les états que la sauvegarde évite ou fait finir (Survivant).
  */
+/**
+ * Relevé des trous (2026-10-22) : Inspiration de combat (Collège de la vaillance 3) — « une créature qui a un dé d'Inspiration bardique de
+ * vous peut l'utiliser ainsi. Défense : quand elle est touchée par un jet d'attaque, elle peut prendre une Réaction pour lancer le dé et
+ * ajouter le résultat à sa CA contre cette attaque, ce qui peut la faire rater. Attaque : juste après avoir touché, elle peut lancer le dé
+ * et ajouter le résultat aux dégâts de l'attaque. » L'inspiration de l'acteur, si son barde a l'aptitude (clé `combatInspiration`).
+ */
+function combatInspirationOf(actor) {
+  const inspiration = inspirationOf(actor);
+  if ( !inspiration?.source?.items?.some?.(i => contentOf(i).entry?.combatInspiration === true) ) return null;
+  return inspiration;
+}
+
+/** La créature pourrait-elle se défendre par l'Inspiration de combat ? (pré-contrôle de la fenêtre « touché », sans l'attaque) */
+export function hasCombatInspiration(actor) {
+  return !!combatInspirationOf(actor);
+}
+
+/** Le dé lancé en clair et l'inspiration dépensée. */
+async function spendCombatInspiration(actor, inspiration, key) {
+  const roll = await new Roll(inspiration.formula).evaluate();
+  await roll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }), flavor: t(key, { name: actor.name, bard: inspiration.bard, total: roll.total }),
+    flags: { [MODULE_ID]: { combatInspiration: { kind: key, total: roll.total } } } });
+  await inspiration.effect.delete().catch(err => console.warn(`${MODULE_ID} | inspiration not removed`, err));
+  return roll.total;
+}
+
+/**
+ * Inspiration de combat, Attaque : sur le client de l'auteur, avant le jet de dégâts d'un coup. Rend le résultat du dé (ajouté aux
+ * dégâts par runtime/feats.mjs), ou 0.
+ */
+export async function offerCombatInspirationDamage(actor) {
+  const inspiration = combatInspirationOf(actor);
+  if ( !inspiration ) return 0;
+  const answer = await askChoice(actor, { actor: actor.uuid, item: t("Nom"), prompt: t("VaillanceDegats", { formula: inspiration.formula }),
+    options: [{ id: "no", label: t("Non") }, { id: "yes", label: t("Oui", { formula: inspiration.formula }) }] });
+  return (answer?.id === "yes") ? spendCombatInspiration(actor, inspiration, "VaillanceCarteDegats") : 0;
+}
+
+/**
+ * Inspiration de combat, Défense : la créature touchée (fenêtre « touché », runtime/reactions.mjs), si sa Réaction est libre, que le coup
+ * n'est pas critique et que le dé peut le faire rater. `auto` : la réponse sans question (`autoReact: "first"`). Rend le dé, ajouté à
+ * la CA pour rejuger ; 0 sinon. La Réaction est dépensée.
+ */
+export async function offerCombatInspirationDefense(actor, { total, ac, critical=false, auto=false }) {
+  const inspiration = critical ? null : combatInspirationOf(actor);
+  if ( !inspiration || !Number.isFinite(total) || !Number.isFinite(ac) ) return 0;
+  let max = Infinity;
+  try { max = new Roll(inspiration.formula).evaluateSync({ maximize: true }).total; } catch { /* formule inconnue : on propose */ }
+  if ( total >= ac + max ) return 0;
+  const combatant = combatantFor(actor);
+  if ( combatant && !((readBudget(combatant).reaction ?? 1) >= 1) ) return 0;
+  if ( !auto ) {
+    const answer = await askChoice(actor, { actor: actor.uuid, item: t("Nom"), prompt: t("VaillanceDefense", { total, ac, formula: inspiration.formula }),
+      options: [{ id: "no", label: t("Non") }, { id: "yes", label: t("Oui", { formula: inspiration.formula }) }] });
+    if ( answer?.id !== "yes" ) return 0;
+  }
+  if ( combatant ) { const budget = readBudget(combatant); await writeBudget(combatant, { ...budget, reaction: Math.max(0, (budget.reaction ?? 1) - 1) }); }
+  return spendCombatInspiration(actor, inspiration, "VaillanceCarteDefense");
+}
+
 /** §129 : le d20 gardé d'un jet (celui qui compte, après Avantage / Désavantage), ou null. */
 export function keptD20(roll) {
   const die = roll?.dice?.find?.(d => d.faces === 20);
@@ -157,6 +217,25 @@ export async function offerRollBonus(actor, { kind, what, total, needed=null, sk
         content: `<p>${game.i18n.format("DND5ECOMBAT.EspritGarde.Carte", { item: item.name, name: actor.name, what })}</p>`,
         flags: { [MODULE_ID]: { rollBonus: { item: identifierOf(item).id, kind, added: needed - total, succeed: true } } } });
       return needed - total;
+    }
+    // Relevé des trous (2026-10-22) : Concentration fanatique — « une fois par Rage active, si vous ratez un jet de sauvegarde, vous pouvez
+    // le relancer avec un bonus égal à vos dégâts de Rage ; vous devez utiliser le nouveau jet ». Ce qui s'ajoute peut être négatif.
+    if ( rule.reroll ) {
+      const during = (actor.appliedEffects ?? actor.effects ?? []).find(e => !e.disabled && (identifierOf(originItemOf(e) ?? {}).id === rule.reroll.during));
+      if ( !during || during.getFlag(MODULE_ID, "rerolled") || !Number.isInteger(d20) || !Number.isFinite(needed) || (total >= needed) ) continue;
+      const answer = await askChoice(actor, {
+        actor: actor.uuid, item: item.name,
+        prompt: game.i18n.format("DND5ECOMBAT.Relance.Question", { what, total, needed, d20, bonus: rule.reroll.bonus, item: item.name }),
+        options: [{ id: "no", label: game.i18n.localize("DND5ECOMBAT.BonusJet.Non") }, { id: "yes", label: game.i18n.localize("DND5ECOMBAT.Relance.Oui") }]
+      });
+      if ( answer?.id !== "yes" ) continue;
+      await during.setFlag(MODULE_ID, "rerolled", true);
+      const roll = await new Roll(`1d20 + ${rule.reroll.bonus}`, actor.getRollData()).evaluate();
+      const added = roll.total - d20;
+      await roll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }),
+        flavor: game.i18n.format("DND5ECOMBAT.Relance.Carte", { item: item.name, name: actor.name, what, sum: total + added }),
+        flags: { [MODULE_ID]: { rollBonus: { item: identifierOf(item).id, kind, added, reroll: { old: d20, new: roll.total } } } } });
+      return added;
     }
     // §129 : Chanceux — le d20 relancé, le meilleur gardé : il faut connaître le d20 du jet.
     if ( rule.luck && !Number.isInteger(d20) ) continue;

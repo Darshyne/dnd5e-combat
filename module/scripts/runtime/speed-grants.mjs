@@ -6,6 +6,7 @@
  * avec l'item. Un équipement ne la donne que porté (et harmonisé s'il le demande : Pantoufles d'araignée, Cape d'arachnide). La vitesse
  * d'escalade devient ainsi une vraie vitesse pour dnd5e (coût ×1, `walkFallback`) et pour le moteur
  * (`climbingOf(token).native`). Rien n'est écrit sur l'item.
+ * §236 : de même les Résistances qu'un item donne sans effet (`grantsResistances`, Avatar de la bataille), dans le même effet.
  * Limite : « égale à votre Vitesse » est lue sur la Vitesse de base (fiche, sinon espèce), pas sur la Vitesse du moment (Rapidité, Grande
  * foulée ne s'y reportent pas).
  */
@@ -38,10 +39,12 @@ function wantedOf(actor) {
   const walk = baseWalkOf(actor);
   const out = new Map();
   for ( const item of actor?.items ?? [] ) {
-    const rule = contentOf(item).entry?.grantsSpeeds;
-    if ( !rule || !worn(item) ) continue;
-    const changes = grantedSpeedChanges(rule, walk);
-    if ( changes.length ) out.set(item.id, { item, changes });
+    const entry = contentOf(item).entry;
+    if ( !(entry?.grantsSpeeds || entry?.grantsResistances) || !worn(item) ) continue;
+    // §236 : les Résistances accordées (Avatar de la bataille) — la forme des données de dnd5e (Rage : `system.traits.dr.value`, « add »).
+    const changes = [...grantedSpeedChanges(entry.grantsSpeeds ?? {}, walk),
+      ...(entry.grantsResistances ?? []).map(type => ({ key: "system.traits.dr.value", type: "add", value: type }))];
+    if ( changes.length ) out.set(item.id, { item, changes, speed: !!entry.grantsSpeeds });
   }
   return out;
 }
@@ -58,7 +61,7 @@ async function sync(actor) {
     await actor.deleteEmbeddedDocuments("ActiveEffect", remove, { [MODULE_ID]: { speedGrant: true } });
     log(`${actor.name}: ${remove.length} granted speed effect(s) removed`);
   }
-  for ( const [itemId, { item, changes }] of wanted ) {
+  for ( const [itemId, { item, changes, speed }] of wanted ) {
     const withPhase = changes.map(c => ({ ...c, phase: "initial" }));
     const effect = have.find(e => e.getFlag(MODULE_ID, SPEED_GRANT_FLAG) === itemId);
     if ( effect ) {
@@ -68,7 +71,7 @@ async function sync(actor) {
       continue;
     }
     await actor.createEmbeddedDocuments("ActiveEffect", [{
-      name: loc("Escalade.VitesseAccordee", { item: item.name }), img: item.img, origin: item.uuid, transfer: false, disabled: false,
+      name: speed ? loc("Escalade.VitesseAccordee", { item: item.name }) : item.name, img: item.img, origin: item.uuid, transfer: false, disabled: false,
       system: { changes: withPhase },
       flags: { [MODULE_ID]: { [SPEED_GRANT_FLAG]: itemId } }
     }], { [MODULE_ID]: { speedGrant: true } });

@@ -17,6 +17,7 @@ import { readUnitFactors } from "./units.mjs";
 import { isWithinRange } from "../core/units.mjs";
 import { INCAPACITATING } from "../core/conditions.mjs";
 import { isDeadActor } from "./death.mjs";
+import { spellClassOf } from "./spell-class.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { hasNotActedYet } from "../core/sneak.mjs";
 import { isSpellCast, spellSchoolOf } from "./scrolls.mjs";
@@ -245,9 +246,9 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     "activity.isMelee": isMelee,
     "activity.identifier": activity?.item ? identifierOf(activity.item).id : null,
     "activity.id": activity?.id ?? null,
-    // §32 : un sort de cette classe (Sorcellerie innée : « sorts d'Ensorceleur ») — `system.sourceClass`, ou la classe de l'acteur.
+    // §32 : un sort de cette classe (Sorcellerie innée : « sorts d'Ensorceleur ») — la classe du sort (`spellClassOf`), ou celle de l'acteur.
     "activity.classSpell": cls => (activity?.item?.type === "spell")
-      && ((activity.item.system.sourceClass || (activity.item.actor?.classes?.[cls] ? cls : null)) === cls),
+      && ((spellClassOf(activity.item) || (activity.item.actor?.classes?.[cls] ? cls : null)) === cls),
     // §32 : l'acteur résiste à ce type de dégâts (Affinité élémentaire : le type choisi est celui de la résistance donnée).
     "source.resists": type => (source?.system?.traits?.dr?.value?.has?.(type) ?? source?.system?.traits?.dr?.value?.includes?.(type)) === true,
     // §29 : l'item porte un enchantement venu d'un item de cet identifiant (arme de pacte : « pact-of-the-blade » ; Décharge
@@ -256,10 +257,10 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
       && (identifierOf(originItemOf(e) ?? {}).id === id)),
     // §28 : l'école d'un sort (`system.school` : "evo" Évocation, "abj" Abjuration…) — Évocation améliorée.
     "activity.school": spellSchoolOf(activity?.item),   // §48 : celle du sort d'un parchemin
-    // §27 : « tout sort mineur de Clerc » (Incantation puissante) — un tour de magie rangé sous cette classe (`system.sourceClass`) ;
+    // §27 : « tout sort mineur de Clerc » (Incantation puissante) — un tour de magie rangé sous cette classe (`spellClassOf`) ;
     // un sort ajouté à la main n'en a pas : il compte si l'acteur a cette classe.
     "activity.cantripOf": cls => (activity?.item?.type === "spell") && (Number(activity.item.system.level) === 0)
-      && ((activity.item.system.sourceClass || (activity.item.actor?.classes?.[cls] ? cls : null)) === cls),
+      && ((spellClassOf(activity.item) || (activity.item.actor?.classes?.[cls] ? cls : null)) === cls),
     // §24 : « ses dégâts comptent des dégâts contondants, perforants ou tranchants » (Parade) — les types des parts de l'activité,
     // et ceux de l'arme si elle les reprend. Sans activité connue (pré-contrôle « peut-il réagir ? », runtime/reactions.mjs,
     // `canReactToHit`), on tient pour oui : la vraie fenêtre, elle, connaît l'attaque.

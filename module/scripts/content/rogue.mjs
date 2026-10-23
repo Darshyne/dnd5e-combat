@@ -48,6 +48,11 @@ export const ROGUE = Object.freeze({
     cunningStrikes: CUNNING_STRIKES,
     triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "RazTM6biKVtNtjEW", do: [{ type: "resave" }] }]
   },
+  // §236 : Faufilement suprême (Voleur 9) — option de Frappe rusée Attaque furtive (1d6) : caché par Se cacher, l'attaque n'y met pas
+  // fin si le roublard finit son tour derrière un abri aux trois quarts ou total (runtime/sneak.mjs, runtime/hide.mjs).
+  "supreme-sneak": { cunningStrikes: { stealthAttack: { cost: 1, keepsHidden: true } } },
+  // §236 : Réflexes du voleur (Voleur 17) — deux tours au premier round, le second à l'initiative moins 10 (runtime/roll-bonus.mjs).
+  "thiefs-reflexes": { extraFirstTurn: { minus: 10 } },
   // Frappe rusée améliorée (niveau 11) : « jusqu'à deux effets de Frappe rusée ».
   "improved-cunning-strike": { cunningStrikeMax: 2 },
   // Frappes sournoises (niveau 14). Assommer : « Inconscient pendant 1 minute ou jusqu'à ce qu'elle subisse des dégâts ; elle

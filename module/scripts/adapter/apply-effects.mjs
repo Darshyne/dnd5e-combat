@@ -41,6 +41,16 @@ async function lostEffectOf(activity, effectId) {
     const effect = source?.items?.get(item.id)?.effects?.get(effectId);
     if ( effect ) { console.log(`${MODULE_ID} | "${effect.name}" taken from ${pack.collection}: the world item lost it`); return effect; }
   }
+  // Relevé des trous (2026-10-22) : ni source ni fiche d'origine retrouvable — la Rage du Barbare pré-tiré du Manuel, copiée sous un autre
+  // id, cite l'effet `G5XZTi4zYTFiHVll` sans le porter. Un item de compendium de même identifiant qui a cet effet sous cet id.
+  const identifier = item.system?.identifier;
+  for ( const pack of identifier ? game.packs.filter(p => p.documentName === "Item") : [] ) {
+    const index = await pack.getIndex({ fields: ["system.identifier"] }).catch(() => null);
+    for ( const entry of index?.filter?.(e => e.system?.identifier === identifier) ?? [] ) {
+      const effect = (await pack.getDocument(entry._id).catch(() => null))?.effects?.get(effectId);
+      if ( effect ) { console.log(`${MODULE_ID} | "${effect.name}" taken from ${pack.collection} (same identifier): the world item lost it`); return effect; }
+    }
+  }
   return null;
 }
 
@@ -55,7 +65,8 @@ export async function applyEffectsToToken(usageMessage, tokenUuid, refs) {
     const activity = activityFor(usageMessage, ref.activity);
     // §37 : un effet de la réserve (`choice.pool`) n'est pas un profil de l'activité.
     const profile = [...(activity?.effects ?? []), ...poolEffectsOf(activity)].find(e => effectKey(e) === ref.id);
-    const effect = (await profile?.getEffect()) ?? (profile ? await lostEffectOf(activity, ref.id) : null);
+    const own = await profile?.getEffect();
+    const effect = own ?? (profile ? await lostEffectOf(activity, ref.id) : null);
     if ( !effect ) {
       console.log(`${MODULE_ID} | effect ${ref.id} not found on ${activity?.item?.name ?? ref.activity}, nor on its source sheet`);
       continue;
@@ -63,6 +74,9 @@ export async function applyEffectsToToken(usageMessage, tokenUuid, refs) {
     // §16.8 : immunisée contre l'un de ses états, la créature ne reçoit pas l'effet (Motif hypnotique sans Charmé).
     if ( blockedFor(effect, actor).length ) continue;
     const result = await tray._applyEffectToActor(effect, actor);
+    // Relevé des trous : un effet repris d'un compendium a pour origine l'item du compendium — le moteur ne le rattacherait plus à l'item
+    // de la fiche (`originItemOf` : Concentration fanatique « en Rage », auras, fins d'effet). L'origine redevient l'item du monde.
+    if ( result?.uuid && !own && activity?.item && (result.origin !== activity.item.uuid) ) await result.update({ origin: activity.item.uuid }).catch(() => null);
     if ( result?.uuid ) applied.push(result.uuid);
   }
   return applied;

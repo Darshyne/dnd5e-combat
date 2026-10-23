@@ -119,7 +119,7 @@ function midiReplacement(item, doc) {
   const s = old.system ?? {};
   const keep = paths => { for ( const p of paths ) { const v = foundry.utils.getProperty(s, p); if ( v !== undefined ) foundry.utils.setProperty(data.system, p, v); } };
   keep(["uses.spent", "container"]);
-  if ( item.type === "spell" ) keep(["method", "prepared", "sourceClass", "ability"]);
+  if ( item.type === "spell" ) keep(["method", "prepared", "sourceItem", "sourceClass", "ability"]);
   if ( MIDI.PHYSICAL.has(item.type) ) {
     if ( !(item.system.identifier in MIDI.RENAMED) ) { data.name = old.name; data.img = old.img; }
     keep(["quantity", "equipped", "attuned", "attunement", "identified"]);

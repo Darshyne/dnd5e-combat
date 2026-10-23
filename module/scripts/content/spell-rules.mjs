@@ -163,11 +163,13 @@ export const SPELL_RULES = Object.freeze({
   },
   "sleet-storm": { difficultTerrain: {} },
   // Tentacules noirs d'Evard : « … qui y entre pour la première fois d'un tour ou y termine son tour » rejoue la sauvegarde ; « une action
-  // pour un test de Force (Athlétisme) contre votre DD » met fin à Entravé.
+  // pour un test de Force (Athlétisme) contre votre DD » met fin à Entravé. « Sur un échec, elle subit 3d6 dégâts » : rien sur une
+  // réussite, mais l'activité de la donnée porte `onSave: "half"` (relevé des trous, 2026-10-22 : 4 PV sur une réussite, vu en jeu).
   "evards-black-tentacles": {
     difficultTerrain: {},
     triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }],
-    actionEnds: { NDytclFrNmC418CS: { by: "bearer", roll: "check" } }
+    actionEnds: { NDytclFrNmC418CS: { by: "bearer", roll: "check" } },
+    saveDamage: { dnd5eactivity000: "none" }
   },
   // Brume mortelle, Nuage incendiaire : la sphère rejoue sa sauvegarde à l'entrée et en fin de tour, et « s'éloigne de 3 m de vous au
   // début de chacun de vos tours » (fortement obscurcie : content/bursts.mjs).

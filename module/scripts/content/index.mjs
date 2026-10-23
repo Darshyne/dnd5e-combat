@@ -74,6 +74,18 @@ export const ENTRY_TABLES = Object.freeze([
   DRUID, SPECIES, FEATS, SORCERER, BARD, SPELL_RULES, GEAR
 ]);
 
+/**
+ * Relevé des trous (2026-10-22) : les sorts que le SRD 2024 de dnd5e renomme (sans le nom du mage) gardent l'id de document et les ids
+ * d'activité et d'effet du Manuel des joueurs (vérifié dans `packs/spells24`), mais pas son identifiant. Sans le Manuel premium, ces
+ * sorts n'avaient aucune règle. Identifiant du SRD → identifiant du Manuel ; une entrée propre au SRD, s'il y en a une, l'emporte.
+ * (La Main de Bigby, `arcane-hand`, a la sienne : content/summons.mjs.)
+ */
+export const SRD_ALIASES = Object.freeze({
+  "black-tentacles": "evards-black-tentacles", "acid-arrow": "melfs-acid-arrow", "resilient-sphere": "otilukes-resilient-sphere",
+  "arcane-sword": "mordenkainens-sword", "faithful-hound": "mordenkainens-faithful-hound",
+  "magnificent-mansion": "mordenkainens-magnificent-mansion"
+});
+
 function build() {
   const table = {};
   for ( const [source, key] of BRICKS ) {
@@ -86,6 +98,7 @@ function build() {
   for ( const source of ENTRY_TABLES ) {
     for ( const [id, entry] of Object.entries(source) ) table[id] = mergeEntries([table[id] ?? null, entry]);
   }
+  for ( const [srd, phb] of Object.entries(SRD_ALIASES) ) if ( table[phb] && !table[srd] ) table[srd] = table[phb];
   return Object.freeze(table);
 }
 

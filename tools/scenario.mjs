@@ -23,7 +23,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { connect } from "./lib/connector.mjs";
-import { ARENA, RESTORED_KEEP } from "./lib/stages.mjs";
+import { ARENA, ARENE_SORTS, RESTORED_KEEP } from "./lib/stages.mjs";
 
 const MODULE_ID = "dnd5e-combat";
 const TERMINAL = new Set(["done", "missed", "undone"]);
@@ -385,8 +385,11 @@ function makeContext(mcp) {
       // non établie (règle ou étiquette d'un token animé), le suiveur arrive quand même. Pas une erreur du moteur.
       // « triggerItems is not iterable » : `_updateCombat` de boss-loot-assets-premium (hooks.js:779), au changement de tour d'un
       // combat dont un combattant vient de mourir — vu dans `crapaud` (ravenloft, 2026-10-01). Module tiers.
+      // « Cannot read properties of null (reading 'querySelector') » à ChatLog5e.updateMessage (dnd5e) : le journal de discussion du MJ
+      // jamais affiché depuis le F5 (barre latérale repliée), dnd5e y rafraîchit la carte d'origine d'un jet (`ui.chat.element` nul).
+      // Vu à chaque lancer du balayage des sorts, le 2026-10-22. Le système, pas le moteur.
       const thirdPartyAnimation = /Cannot (read|set) properties of null[\s\S]*(modules\/sequencer\/dist\/sequencer\.js|modules\/boss-loot-assets-premium\/)/;
-      return (r.entries ?? r.errors ?? r ?? []).filter?.(e => !thirdPartyAnimation.test(e.message ?? e.text ?? "")).filter?.(e => !/reading 'chain'\)[\s\S]*#animate|Failed to load audio element "(modules\/blfx-|sounds\/)|Codec reclaimed due to inactivity|triggerItems is not iterable|reading 'off'\)[\s\S]*PreciseText\.destroy|screen resolution|usable window dimensions|ResizeObserver loop|search for 'turn' in undefined|does not exist in the EmbeddedCollection|"auraeffects.aura" is not a valid type|Cannot set properties of null \(setting 'hidden'\)|bg3-hud-dnd5e\/scripts\/components\/containers\/DnD5e(Passives|ActionButtons|Info)Container/i.test(e.message ?? e.text ?? "")) ?? [];
+      return (r.entries ?? r.errors ?? r ?? []).filter?.(e => !thirdPartyAnimation.test(e.message ?? e.text ?? "")).filter?.(e => !/reading 'chain'\)[\s\S]*#animate|Failed to load audio element "(modules\/blfx-|sounds\/)|Codec reclaimed due to inactivity|triggerItems is not iterable|reading 'off'\)[\s\S]*PreciseText\.destroy|screen resolution|usable window dimensions|ResizeObserver loop|search for 'turn' in undefined|does not exist in the EmbeddedCollection|"auraeffects.aura" is not a valid type|Cannot set properties of null \(setting 'hidden'\)|bg3-hud-dnd5e\/scripts\/components\/containers\/DnD5e(Passives|ActionButtons|Info)Container|ChatLog5e\.updateMessage/i.test(e.message ?? e.text ?? "")) ?? [];
     },
 
     /** Le journal du moteur (lignes `dnd5e-combat |`) depuis le dernier vidage : imprimé quand un scénario échoue. */
@@ -596,8 +599,13 @@ let activeNow = activeAtStart;
 
 /** Active une scène et attend que le client du MJ l'affiche. */
 async function useScene(id) {
-  if ( !id || (activeNow === id) ) return;
+  if ( !id ) return;
+  // La scène AFFICHÉE chez le MJ, pas seulement l'active : le MJ peut regarder une autre scène que celle qui est active (vu le
+  // 2026-10-22 : balayage joué contre l'Arène de test, affichée, alors que l'Arène des sorts était active).
+  const viewed = (await mcp.call("list-scene-objects", { types: ["Token"] }).catch(() => ({}))).sceneId;
+  if ( (activeNow === id) && (viewed === id) ) return;
   await mcp.call("activate-scene", { sceneId: id });
+  if ( activeNow === id ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "viewScene", args: { sceneId: id }, waitMs: 8000 }).catch(() => null);
   for ( let i = 0; i < 30; i++ ) {
     await sleep(500);
     const { sceneId } = await mcp.call("list-scene-objects", { types: ["Token"] }).catch(() => ({}));
@@ -608,11 +616,12 @@ async function useScene(id) {
   console.log(`    ⇄ scène : ${sceneList.find(s => s.id === id)?.name ?? id}`);
 }
 
-/** Dans l'arène, chaque token de la distribution à sa place, au sol. */
-async function arrangeArena() {
+/** Dans l'arène, chaque token de la distribution à sa place, au sol. L'Arène des sorts donne ses positions en cases. */
+async function arrangeArena(layout=ARENA) {
   const { objects } = await mcp.call("list-scene-objects", { types: ["Token"] });
   for ( const t of objects.Token ?? [] ) {
-    const at = ARENA.tokens[t.name];
+    const cell = layout.tokens[t.name];
+    const at = cell && layout.grid ? cell.map(c => c * layout.grid) : cell;
     if ( !at ) continue;
     const { data } = await mcp.call("get-scene-object", { type: "Token", objectId: t.id });
     if ( (data.x === at[0]) && (data.y === at[1]) && !(data.elevation ?? 0) ) continue;
@@ -634,6 +643,11 @@ const cones = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: 
 // §185 : de même, la Furtivité des règles 2024 (le scénario `furtivite-bg3` passe lui-même en BG3).
 const stealthRules = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "stealthRules", value: "2024" }, waitMs: 8000 })
   .then(r => r?.result?.before).catch(() => undefined);
+// Relevé des trous (2026-10-22) : une horloge qui avance le temps du monde hors combat (Simple Timekeeping de `dnd-6` : 600 s par
+// intervalle) fait expirer en quelques secondes une concentration ou un effet d'une minute, que dnd5e supprime hors combat — 61 faux
+// « non concentré » au premier balayage des sorts. Elle est arrêtée le temps de la passe (son réglage `paused`), puis remise.
+const clock = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "foreignSetting", args: { namespace: "simple-timekeeping", key: "paused", value: true }, waitMs: 8000 })
+  .then(r => (r?.result?.absent ? undefined : r?.result?.before)).catch(() => undefined);
 for ( const file of files ) {
   const { default: scenario } = await import(pathToFileURL(file).href);
   const named = wanted.length || external.includes(file);
@@ -651,6 +665,7 @@ for ( const file of files ) {
   if ( own ) {
     if ( own.id !== activeNow ) previous = null;
     await useScene(own.id);
+    if ( own.name === ARENE_SORTS.name ) await arrangeArena(ARENE_SORTS);
   }
   else if ( arenaScene ) {
     const target = (scenario.scene === "keep") ? keepScene : arenaScene;
@@ -709,6 +724,7 @@ for ( const file of files ) {
 if ( activeAtStart && (activeNow !== activeAtStart) ) await useScene(activeAtStart);
 if ( stealthRules !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "stealthRules", value: stealthRules }, waitMs: 8000 }).catch(() => null);
 if ( cones !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "visionCones", value: cones }, waitMs: 8000 }).catch(() => null);
+if ( clock !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "foreignSetting", args: { namespace: "simple-timekeeping", key: "paused", value: clock }, waitMs: 8000 }).catch(() => null);
 console.log(`\n${files.length - skipped - failed}/${files.length - skipped} scénario(s) tenus${skipped ? ` (${skipped} interactif(s) ou diagnostic(s) sauté(s))` : ""}`);
 process.exitCode = failed ? 1 : 0;
 await mcp.close();

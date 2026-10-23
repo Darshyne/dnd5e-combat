@@ -30,6 +30,7 @@ import { tokenOf } from "../adapter/facts.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log, loc, notice } from "./shared.mjs";
+import { restoreHiding } from "./hide.mjs";
 
 /** Libellés des raisons pour lesquelles l'Attaque sournoise ne s'applique pas (journal seulement). */
 const WHY = Object.freeze({
@@ -90,6 +91,18 @@ async function withdraw(sourceToken) {
   log(`Withdraw: ${sourceToken.name} can move ${extra} more ${movement.units}, without provoking Opportunity Attacks`);
 }
 
+/**
+ * §236 : Faufilement suprême, Attaque furtive — « si vous avez l'état Invisible de l'action Se cacher, cette attaque n'y met pas fin si vous
+ * finissez le tour derrière un abri aux trois quarts ou total ». Le jet d'attaque a déjà retiré l'état caché (runtime/hide.mjs, qui garde ce
+ * qu'il a retiré) : il est rendu, et la fin du tour juge l'abri (runtime/hide.mjs, `stealthAttackCheck`).
+ */
+async function stealthAttack(sourceToken) {
+  const actor = sourceToken?.actor;
+  if ( !actor ) return;
+  const restored = await restoreHiding(actor);
+  log(restored ? `Stealth Attack: ${actor.name} stays hidden until the end of the turn (cover is judged then)` : `Stealth Attack: ${actor.name} was not hidden`);
+}
+
 async function onResolution(resolution) {
   if ( (resolution?.step !== STEPS.DONE) || !resolution.plan?.attack || seen.has(resolution.id) ) return;
   const damage = game.messages.get(resolution.damageRoll?.messageId ?? "");
@@ -105,6 +118,7 @@ async function onResolution(resolution) {
     const option = options.find(o => o.key === key);
     if ( !option ) continue;
     if ( option.withdraw ) { await withdraw(source); continue; }
+    if ( option.keepsHidden ) { await stealthAttack(source); continue; }
     // Une cible tombée à 0 PV sous les dégâts n'a plus de sauvegarde à faire.
     if ( (target.actor.system.attributes?.hp?.value ?? 0) <= 0 ) { log(`${option.label}: ${target.name} is at 0 Hit Points, not applicable`); continue; }
     log(`${option.label}: ${target.name} makes their saving throw (${source.name}'s Cunning Strike)`);

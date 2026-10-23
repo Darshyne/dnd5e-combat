@@ -183,6 +183,30 @@
  *     quickSearch?: true                        §134 : l'action Chercher se prend par une action Bonus quand elle est libre (Observateur)
  *     haltOnReaction?: { effect }               §133 : une attaque en Réaction (attaque d'opportunité) qui touche pose cet effet de
  *                                               l'item sur la cible (Sentinelle, Halte : Vitesse 0)
+ *     spellDamageTypes?: { class, types }       relevé des trous : un sort de cette classe qui inflige des dégâts peut prendre l'un
+ *                                               de ces types, proposé avec ses types au choix avant le jet (Sorts psychiques)
+ *     endsOwnConditions?: string[]              §236 : à la fin de chacun de ses tours, le porteur met fin à l'un de ces états
+ *                                               (Auto-restauration : Charmé, Effrayé, Empoisonné)
+ *     regainOnInitiative?: { item, upTo }       §236 : au jet d'initiative, les utilisations de l'item remontent à `upTo` au moins
+ *                                               (Inspiration supérieure)
+ *     grantsResistances?: string[]              §236 : les Résistances que l'item donne sans effet dans ses données (Avatar de la
+ *                                               bataille) — un effet tenu sur l'acteur, comme `grantsSpeeds`
+ *     scoreFloor?: string[]                     §236 : un test ou une sauvegarde de ces caractéristiques vaut au moins leur valeur
+ *                                               (Puissance indomptable : Force)
+ *     cantripRange?: { class, add, requires? }  §236 : un tour de magie de la classe, d'une portée d'au moins 3 m, porte plus loin
+ *                                               de `add` — si l'acteur a l'item `requires` (Fureur élémentaire améliorée)
+ *     fleetStep?: { item, activity }            §236 : après une action Bonus autre que celle-ci, l'activité de l'item est gratuite
+ *                                               une fois ce tour-là (Pas véloce : Pas du vent)
+ *     extraFirstTurn?: { minus }                §236 : un second tour au premier round, à l'initiative moins `minus`, sauf Surpris
+ *                                               (Réflexes du voleur)
+ *     combatInspiration?: true                  relevé des trous : la créature qui porte l'Inspiration bardique de ce barde peut en
+ *                                               ajouter le dé aux dégâts de son coup, ou à sa CA par sa Réaction quand elle est
+ *                                               touchée (Inspiration de combat, Collège de la vaillance ; adapter/inspiration.mjs)
+ *     critMove?: true                           relevé des trous : sitôt un coup critique porté, à son tour, la moitié de sa Vitesse
+ *                                               en plus sans attaque d'opportunité (Athlète remarquable)
+ *     keepsConcentration?: string[]             relevé des trous : subir des dégâts ne rompt pas la concentration sur ces items
+ *                                               (identifiants) — pas de jet de concentration quand toute la concentration du porteur
+ *                                               vient d'eux (Chasseur implacable : Marque du chasseur)
  *     concentrationBreaker?: true               §133 : la créature concentrée que le porteur blesse a le Désavantage à son prochain
  *                                               jet de concentration (Tueur de mages)
  *     interposeShield?: true                    §133 : sauvegarde de Dextérité réussie contre des dégâts réduits de moitié, bouclier
@@ -356,7 +380,7 @@
  *                                               créature contre lesquels ni Avantage ni allié ne sont requis : ["undead"])
  *     sneakBonus?: { formula, firstRound? }     une part de plus quand l'Attaque sournoise touche (du type de l'arme) ; `firstRound` :
  *                                               seulement au premier round du combat (Assassinat : « égaux à votre niveau de Roublard »)
- *     cunningStrikes?: { <clé>: { cost, activity?, requires?, sizeAtMost?, withdraw? } }
+ *     cunningStrikes?: { <clé>: { cost, activity?, requires?, sizeAtMost?, withdraw?, keepsHidden? } }
  *                                               Frappes rusées (§20) : effets payés en dés d'Attaque sournoise, choisis par l'auteur
  *                                               avant ses dégâts ; `activity` : la sauvegarde de l'item jouée sur la cible après les
  *                                               dégâts ; `requires` : identifiant d'un item que l'auteur doit avoir (trousse
@@ -477,7 +501,10 @@
  *                                               compétences dont le test compte (Embuscade : ["ste"]) ; §94 `statuses` : une
  *                                               sauvegarde seulement pour éviter ou finir l'un de ces états (Survivant) ;
  *                                               §129 `luck: true` — pas de dé de l'activité : le d20 est relancé et le meilleur
- *                                               gardé (Chanceux : l'Avantage, décidé après avoir vu le jet) ; s'ajoute l'écart positif
+ *                                               gardé (Chanceux : l'Avantage, décidé après avoir vu le jet) ; s'ajoute l'écart positif ;
+ *                                               relevé des trous `reroll: { bonus, during }` — sans activité : le d20 relancé, `bonus`
+ *                                               ajouté, le nouveau jet imposé, une fois par effet de l'item `during` (Concentration
+ *                                               fanatique : sauvegarde ratée en Rage, bonus des dégâts de Rage)
  *     transpose?: { summon }                    échanger sa place avec l'invocation pilotée de l'item `summon` (identifiant),
  *                                               quand l'action Bonus la crée ou la déplace (§38.2, Troc du filou ; core/pilot.mjs)
  *     portent?: { dice }                        Présage (§36) : `dice` d20 notés à chaque Repos long (Présage : 2 ; Présage

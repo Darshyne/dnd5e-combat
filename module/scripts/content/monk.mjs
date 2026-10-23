@@ -18,6 +18,11 @@ export const MONK = Object.freeze({
   // Concentration du moine : Déluge de coups (2ghJTBhilLrFn9xT) — « 1 point : deux frappes à mains nues par une action Bonus » ;
   // Défense patiente — gratuite : Se désengager (EFzidO6yAapw8d60) ; 1 point : Se désengager et Esquiver (7xj7b6e8tDznDSrE) ;
   // Pas du vent — 1 point : Se désengager et Foncer (0MuRZ0Ur95xQTKFq ; la version gratuite, Foncer seul, n'a pas d'activité).
+  // §236 : Auto-restauration (niveau 10) — « à la fin de chacun de vos tours, vous pouvez mettre fin à l'un de ces états sur vous ».
+  "self-restoration": { endsOwnConditions: ["charmed", "frightened", "poisoned"] },
+  // §236 : Pas véloce (Main ouverte 11) — « quand vous prenez une action Bonus autre que Pas du vent, vous pouvez aussi utiliser Pas du
+  // vent juste après » : gratuit une fois ce tour-là (simplification : jusqu'à la fin du tour, pas seulement « juste après »).
+  "fleet-step": { fleetStep: { item: "monks-focus", activity: "0MuRZ0Ur95xQTKFq" } },
   "monks-focus": {
     flurry: { activity: "2ghJTBhilLrFn9xT", strikes: 2 },
     basicActions: { EFzidO6yAapw8d60: "disengage", "7xj7b6e8tDznDSrE": ["disengage", "dodge"], "0MuRZ0Ur95xQTKFq": ["dash", "disengage"] },

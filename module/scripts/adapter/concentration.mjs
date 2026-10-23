@@ -23,10 +23,27 @@
 import { MODULE_ID } from "../constants.mjs";
 import { chooseRoller } from "../core/roller.mjs";
 import { closeRollDialogAfter } from "./dialogs.mjs";
+import { contentOf, identifierOf } from "./content.mjs";
+import { originItemOf } from "./facts.mjs";
 
 /** §141 : la requête « sauvegarde de concentration » envoyée au joueur connecté ; sa réponse. */
 export const CONCENTRATION_QUERY = `${MODULE_ID}.concentration`;
 export const CONCENTRATION_TIMEOUT = 40000;   // la fenêtre du jet est bornée par adapter/dialogs.mjs
+
+/**
+ * Relevé des trous (2026-10-22) : l'item du porteur qui le dispense du jet de concentration après des dégâts (clé `keepsConcentration`,
+ * Chasseur implacable), quand TOUTE sa concentration vient des items qu'il nomme ; null sinon. Une concentration sur un autre sort
+ * garde son jet (il vaut pour toutes : dnd5e en demande un seul).
+ */
+export function concentrationKeptBy(actor) {
+  const effects = Array.from(actor?.concentration?.effects ?? []);
+  if ( !effects.length ) return null;
+  const from = effects.map(e => identifierOf(originItemOf(e) ?? {}).id);
+  return actor.items.find(i => {
+    const kept = contentOf(i).entry?.keepsConcentration;
+    return Array.isArray(kept) && from.every(id => id && kept.includes(id));
+  }) ?? null;
+}
 
 /** Le joueur connecté qui doit lancer pour cet acteur, ou null si c'est au moteur. */
 export function rollerFor(actor) {

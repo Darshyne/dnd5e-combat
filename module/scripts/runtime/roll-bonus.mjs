@@ -17,7 +17,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { offerInspiration, offerRollBonus, keptD20 } from "../adapter/inspiration.mjs";
-import { contentOf } from "../adapter/content.mjs";
+import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { initiativeReroll, rerolledInitiative } from "../core/initiative.mjs";
 import { swapPartners } from "../core/feats.mjs";
@@ -53,8 +53,53 @@ function onPreUpdateCombatant(combatant, changes, options) {
   if ( (combatant.initiative === null) && Number.isFinite(changes?.initiative) ) options[MODULE_ID] = { ...(options[MODULE_ID] ?? {}), firstInitiative: true };
 }
 
+/**
+ * §236 : Inspiration supérieure — « quand vous jouez l'initiative, vous regagnez des utilisations d'Inspiration bardique jusqu'à en avoir
+ * deux ». La règle `regainOnInitiative` : les utilisations de l'item nommé remontent à `upTo` au moins.
+ */
+async function regainOnInitiative(actor) {
+  for ( const rule of actor.items.map(i => contentOf(i).entry?.regainOnInitiative).filter(Boolean) ) {
+    const item = actor.items.find(i => identifierOf(i).id === rule.item);
+    const uses = item?.system?.uses;
+    const max = Number(uses?.max) || 0;
+    if ( !max ) continue;
+    const left = max - (Number(uses.spent) || 0);
+    if ( left >= Math.min(rule.upTo, max) ) continue;
+    await item.update({ "system.uses.spent": max - Math.min(rule.upTo, max) });
+    log(`${actor.name}: ${item.name}, uses back to ${Math.min(rule.upTo, max)} (Initiative)`);
+  }
+}
+
+/**
+ * §236 : Réflexes du voleur — « vous pouvez jouer deux tours au premier round : le premier à votre initiative, le second à votre
+ * initiative moins 10 ». Un second combattant pour le même token (drapeau `extraTurn`), retiré au round 2 ; pas si la créature est
+ * Surprise (« vous ne pouvez pas utiliser cette aptitude si vous êtes Surpris » n'est pas dans le texte 2024, mais dnd5e retire Surpris au
+ * jet d'initiative : on lit l'état au moment du jet). Chaque combattant a son budget de tour (adapter/turn.mjs, `combatantFor`).
+ */
+async function extraFirstTurn(combatant) {
+  const rule = combatant.actor.items.map(i => contentOf(i).entry?.extraFirstTurn).find(Boolean);
+  const combat = combatant.combat;
+  if ( !rule || !combat || ((combat.round ?? 0) > 1) || combatant.getFlag(MODULE_ID, "extraTurn") ) return;
+  if ( combat.combatants.some(c => (c.tokenId === combatant.tokenId) && c.getFlag(MODULE_ID, "extraTurn")) ) return;
+  if ( combatant.actor.statuses?.has("surprised") ) return;
+  await combat.createEmbeddedDocuments("Combatant", [{ tokenId: combatant.tokenId, sceneId: combatant.sceneId, actorId: combatant.actorId,
+    initiative: combatant.initiative - rule.minus, hidden: combatant.hidden, flags: { [MODULE_ID]: { extraTurn: true } } }]);
+  log(`${combatant.name}: second turn in round 1, Initiative ${combatant.initiative - rule.minus}`);
+}
+
+/** Au round 2, les seconds tours du premier round s'en vont. */
+async function onUpdateCombat(combat, changes) {
+  if ( !((changes?.round ?? 0) >= 2) ) return;
+  const extra = combat.combatants.filter(c => c.getFlag(MODULE_ID, "extraTurn")).map(c => c.id);
+  if ( extra.length ) await combat.deleteEmbeddedDocuments("Combatant", extra);
+}
+
 async function onUpdateCombatant(combatant, changes, options) {
   if ( !options?.[MODULE_ID]?.firstInitiative || !Number.isFinite(combatant.initiative) || !combatant.actor ) return;
+  if ( !combatant.getFlag(MODULE_ID, "extraTurn") ) {
+    await regainOnInitiative(combatant.actor);
+    await extraFirstTurn(combatant);
+  }
   const total = combatant.initiative;
   const added = await offerRollBonus(combatant.actor, { kind: "initiative", what: game.i18n.localize("DND5E.Initiative"), total });
   if ( !added ) return;
@@ -155,5 +200,6 @@ export function registerRollBonus() {
   }
   route("preUpdateCombatant", onPreUpdateCombatant, { label: "first Initiative not recorded" });
   route("updateCombatant", onUpdateCombatant, { executor: true, label: "Initiative die not offered" });
+  route("updateCombat", onUpdateCombat, { executor: true, label: "second turn not removed" });
   route("createChatMessage", onInitiativeMessage, { executor: true, label: "Initiative d20 not rerolled" });
 }

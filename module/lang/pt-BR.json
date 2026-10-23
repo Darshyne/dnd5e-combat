@@ -200,7 +200,7 @@
   "DND5ECOMBAT.Reglage.clickToMove.combat": "Somente em combate",
   "DND5ECOMBAT.Reglage.clickToMove.off": "Nunca",
   "DND5ECOMBAT.Reglage.clickToAttack.Nom": "Ataque básico ao clicar em um inimigo",
-  "DND5ECOMBAT.Reglage.clickToAttack.Aide": "Um clique esquerdo no inimigo realiza um ataque básico, aproximando-se primeiro se necessário. Para o mestre, esse clique deixa de selecionar o token.",
+  "DND5ECOMBAT.Reglage.clickToAttack.Aide": "Um clique esquerdo em um inimigo realiza o ataque básico, aproximando-se primeiro se necessário. O clique direito continua oferecendo a opção de ataque; para o mestre, o clique esquerdo mantém a seleção normal do token.",
   "DND5ECOMBAT.Reglage.clickToAttack.always": "Sempre",
   "DND5ECOMBAT.Reglage.clickToAttack.combat": "Somente em combate",
   "DND5ECOMBAT.Reglage.clickToAttack.off": "Nunca",

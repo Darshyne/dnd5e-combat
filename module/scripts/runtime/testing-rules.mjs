@@ -42,6 +42,7 @@ import { isBurning } from "../adapter/burning.mjs";
 import { readyOptionsOf, slotsFor, heldEffectOf } from "../adapter/ready.mjs";
 import { finite, gmOnly, viewedToken } from "./testing-shared.mjs";
 import { etherealWallsOf, etherealWallBetween } from "../adapter/plane.mjs";
+import { requestGroupRoll, groupRollView, rollsApi } from "./group-roll.mjs";
 
 /**
  * §43.2 : les effets auxquels une action met fin — ceux du token (`own`), ceux qu'un autre lui retire (`byOther`) ; et le
@@ -463,3 +464,35 @@ export function etherealWalls({ tokenId, point }) {
     walls: etherealWallsOf(scene, token._source.level).length, crosses: etherealWallBetween(scene, token.object.center, point, token._source.level) };
 }
 
+
+/** §242 : le point d'une demande, en JSON (sans documents). */
+function plainRoll(view) {
+  if ( !view ) return null;
+  return { id: view.id, request: view.request, done: view.done, success: view.success, successes: view.successes, cancelled: !!view.cancelled,
+    entries: view.entries.map(e => ({ name: e.name, total: e.total, d20: e.d20, status: e.status, success: e.success, user: e.user })) };
+}
+
+/**
+ * §242 : une demande de jets aux tokens donnés, comme le bouton « Demander » ; `wait: false` rend la carte tout de suite (les joueurs
+ * peuvent prendre leur temps), sinon le point final.
+ */
+export async function groupRoll({ tokenIds=[], wait=true, ...request }) {
+  const actors = tokenIds.map(tokenId => viewedToken({ tokenId }).actor).filter(Boolean);
+  const before = new Set(game.messages.keys());
+  const done = requestGroupRoll({ actors, ...request });
+  if ( wait ) return plainRoll(await done);
+  for ( let waited = 0; waited < 5000; waited += 100 ) {
+    const card = game.messages.find(m => !before.has(m.id) && (m.type === "request"));
+    if ( card ) return plainRoll(groupRollView(card.id));
+    await sleep(100);
+  }
+  return null;
+}
+
+/** §242 : le point d'une carte de demande, et les tuiles de bonus d'un token pour une demande. */
+export function groupRollState({ id }) {
+  return plainRoll(groupRollView(id));
+}
+export function groupRollBreakdown({ tokenId, ...request }) {
+  return rollsApi.breakdown(viewedToken({ tokenId }).actor, request);
+}

@@ -22,11 +22,12 @@ const LIST_ABOVE = 6;
 
 /**
  * Côté de celui qui choisit : une fenêtre, un bouton par option.
- * @param {{actor: string, item: string, prompt: string|null, options: Array<{id: string, label: string}>, untimed?: boolean}} payload
- *   `untimed` (§137) : pas de délai ni de compte à rebours ; fermée sans choisir, rien n'est choisi.
+ * @param {{actor: string, item: string, prompt: string|null, options: Array<{id: string, label: string}>, untimed?: boolean, seconds?: number}} payload
+ *   `untimed` (§137) : pas de délai ni de compte à rebours ; fermée sans choisir, rien n'est choisi. `seconds` (§242) : un délai propre au
+ *   lieu de celui des fenêtres de combat (un test demandé hors combat laisse au joueur le temps de lire).
  * @returns {Promise<{id: string}|null>}  null si la fenêtre est fermée sans choisir.
  */
-export async function handleChoiceQuery({ actor: actorUuid, item, prompt, options, untimed=false }) {
+export async function handleChoiceQuery({ actor: actorUuid, item, prompt, options, untimed=false, seconds=null }) {
   const actor = await fromUuid(actorUuid);
   const question = `<p>${prompt ?? game.i18n.localize("DND5ECOMBAT.ChoixEffet")}</p>`;
   // §113 : au-delà de quelques options (Assistance : 18 compétences), une liste déroulante — un bouton par option faisait une
@@ -46,7 +47,7 @@ export async function handleChoiceQuery({ actor: actorUuid, item, prompt, option
   };
   // Sans réponse dans le délai : la première option. §137 : sans délai, la fenêtre attend.
   const picked = untimed ? await foundry.applications.api.DialogV2.wait({ ...config, rejectClose: false })
-    : await timedWait(config, { fallback: "pick0" });
+    : await timedWait(config, { fallback: "pick0", ...(Number(seconds) > 0 ? { seconds: Number(seconds) } : {}) });
   const option = options[Number(String(picked ?? "").replace("pick", ""))];
   return picked?.startsWith?.("pick") && option ? { id: option.id } : null;
 }
@@ -63,7 +64,8 @@ export async function askChoice(actor, payload) {
   let answer = null;
   if ( userId === game.user.id ) return handleChoiceQuery(payload);
   if ( userId ) {
-    try { answer = await game.users.get(userId).query(CHOICE_QUERY, payload, { timeout: payload.untimed ? UNTIMED_TIMEOUT : CHOICE_TIMEOUT }); }
+    const timeout = payload.untimed ? UNTIMED_TIMEOUT : (Number(payload.seconds) > 0 ? (Number(payload.seconds) + 15) * 1000 : CHOICE_TIMEOUT);
+    try { answer = await game.users.get(userId).query(CHOICE_QUERY, payload, { timeout }); }
     catch(err) { console.warn(`${MODULE_ID} | choice for ${actor.name}: no answer from the player`, err); }
     // §137 : une question sans délai reste au joueur — fermée sans choisir, le MJ n'est pas consulté à sa place.
     if ( payload.untimed ) return answer;

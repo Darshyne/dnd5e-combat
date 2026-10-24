@@ -37,6 +37,8 @@ async function onCheckRolled(rolls, { skill=null, tool=null, ability=null, subje
   const actor = subject;
   const total = rolls?.[0]?.total;
   if ( !actor?.isOwner || !Number.isFinite(total) ) return;
+  // §242 : un jet demandé par le MJ — ses dés d'après le jet passent par la demande, qui les compte (runtime/group-roll.mjs).
+  if ( rolls[0].options?.[MODULE_ID]?.groupRoll ) return;
   const what = checkName({ skill, tool, ability });
   // §148 : le DD du test quand le jet le porte (carte de demande, DD donné au jet : `options.target` du D20Roll).
   const dc = Number.isFinite(rolls?.[0]?.options?.target) ? rolls[0].options.target : null;

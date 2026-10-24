@@ -84,6 +84,9 @@ import { registerWallSideUi } from "./ui/wall-side.mjs";
 import { registerKindleUi } from "./ui/kindle.mjs";
 import { registerSkillAid } from "./runtime/skill-aid.mjs";
 import { registerSkillAidUi } from "./ui/skill-aid.mjs";
+import { registerGroupRoll, rollsApi } from "./runtime/group-roll.mjs";
+import { registerGroupRollUI, openGroupRoll } from "./ui/group-roll.mjs";
+import { registerGroupRollTracker, openTracker } from "./ui/group-roll-tracker.mjs";
 import { registerHelp } from "./runtime/help.mjs";
 import { registerHide } from "./runtime/hide.mjs";
 import { registerSearch } from "./runtime/search.mjs";
@@ -179,6 +182,12 @@ import { openDiagnostic } from "./ui/diagnostic.mjs";
  *   `down`, `drop`, `toward` ; §224 : `enabled()`, `setEnabled(on)` — l'interrupteur du MJ, hook `dnd5e-combat.climbSystem`) ;
  *   `gap(a, b)` → `{ cells, vertical }` — l'écart de deux tokens en cases, en trois dimensions (la distance
  *   du moteur, des pieds à la tête : 0 superposés, 1 au contact) et son seul vide vertical (au plafond, en vol). Lecture seule.
+ * §242 : `rolls` — jets demandés par le MJ à plusieurs personnages : `request({ actors, type, key, dc, hideDc, advantage, disadvantage,
+ *   bonus, label, group })` → promesse du point final ; `open({ actors, values })` (la fenêtre, MJ) ; `tracker()` (le suivi, MJ) ;
+ *   `force(messageId, actorUuid)` (MJ : lancer pour un joueur qui tarde) ; `view(messageId)` ; `mode(actor, request)` (l'Avantage /
+ *   le Désavantage que le système donnera) ; `breakdown(actor,
+ *   request)` (les tuiles de bonus) ; `title(request)`. Hooks `dnd5e-combat.groupRoll` (le point, à chaque résultat, sur chaque client) et
+ *   `dnd5e-combat.groupRollPrompt` (une interface prend la fenêtre du joueur : runtime/group-roll.mjs).
  * `welcome.open()` : l'écran d'accueil (§177) ; `diagnostic.open({ check })` : le diagnostic du monde (vérifications, réparation après
  *   sauvegarde, restauration), sur une seule vérification si `check` est donné (macros « Outils du MJ »).
  */
@@ -195,6 +204,7 @@ const state = {
   climb: climbApi,
   ethereal: etherealApi,   // §225 : `is(token)`, `perceives(observer, target)`, `toggle(tokens?, active?)`
   theater: theaterApi,   // §220 : Théâtre de l'esprit — `active()`, `set(on)` ; hook `dnd5e-combat.theater`
+  rolls: { ...rollsApi, open: openGroupRoll, tracker: openTracker },   // §242 : jets demandés par le MJ — hooks `groupRoll`, `groupRollPrompt`
   gap: publicGap
 };
 
@@ -340,6 +350,7 @@ Hooks.once("init", () => {
   gated(registerFlammable);   // §188 : huile au sol, toile — zones qui s'embrasent
   gated(registerHelp);
   gated(registerSkillAid);   // §113 : Assistance et Soutien demandés pour un test de compétence (requête à l'aidant)
+  gated(registerGroupRoll);   // §242 : jets demandés par le MJ (requête au joueur, carte de demande de dnd5e)
   gated(registerHide);
   gated(registerSearch);
   gated(registerPassivePerception);
@@ -366,6 +377,8 @@ Hooks.once("init", () => {
   gated(registerWallSideUi);   // §171 : anneau de feu — vers l'intérieur ou vers l'extérieur
   gated(registerKindleUi);   // §52 : boîte à amadou
   gated(registerSkillAidUi);   // §113 : section « Aides » de la fenêtre de jet d'un test
+  gated(registerGroupRollUI);   // §242 : fenêtre de demande, dé de la barre d'outils, HUD du token, carte
+  gated(registerGroupRollTracker);   // §242 : fenêtre de suivi du MJ (jets en cours, lancer pour un joueur qui tarde)
   gated(registerAutomation);
   gated(registerMasteryUI);   // §222 : pastille de botte sur la fiche, fenêtre des bottes
   gated(registerFactionsUI);   // §181 : fenêtre, outil de la barre, HUD du token

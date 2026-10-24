@@ -188,6 +188,7 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .dnd5e-combat-aids .dnd5e-combat-aid[data-status="pending"] { opacity: 0.7; font-style: italic; }
 .dnd5e-combat-aids .dnd5e-combat-aid[data-status="granted"] { opacity: 1; border-color: #6fbf5f; box-shadow: 0 0 4px #6fbf5f inset; }
 .dnd5e-combat-aids .dnd5e-combat-aid[data-status="refused"] { opacity: 0.5; text-decoration: line-through; }
+.dnd5e-combat-aids .dnd5e-combat-aid[data-status="taken"] { opacity: 0.4; }
 
 /* ---------- Accueil et diagnostic (§177) : l'aspect du site darshyne.github.io (anthracite, fuchsia, dégradé du logo) ---------- */
 .das-screen {
@@ -428,3 +429,104 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-hit-option input[type=checkbox] { flex: 0 0 auto; margin: 0; }
 .das-hit-option__label { flex: 1 1 auto; }
 .das-hit-option__hint { flex: 0 0 auto; white-space: nowrap; font-weight: bold; opacity: 0.8; }
+
+/* §242 : jets demandés par le MJ — la fenêtre de demande et la carte de demande de dnd5e complétée. */
+.das-group-roll__body { padding: 1em 1.2em; display: flex; flex-direction: column; gap: 0.55em; }
+.das-group-roll__row { display: flex; gap: 0.7em; align-items: flex-end; flex-wrap: wrap; }
+.das-group-roll__body label { display: flex; flex-direction: column; gap: 0.2em; color: var(--das-muted); font-size: 0.9em; }
+.das-group-roll__body label.wide { flex: 1; }
+.das-group-roll__body label.check { flex-direction: row; align-items: center; gap: 0.4em; color: var(--das-ink); }
+.das-group-roll__body input[type=number] { width: 5em; }
+/* Comme la fenêtre de réglages : sans `-webkit-text-fill-color` ni fond posé sur les options, le thème du cœur donnait un texte
+   blanc sur fond blanc dans les listes (vu par l'utilisateur le 2026-10-24). */
+.das-group-roll__body input[type=text], .das-group-roll__body input[type=number], .das-group-roll__body select {
+  color: var(--das-ink); -webkit-text-fill-color: var(--das-ink); opacity: 1;
+  background: var(--das-bg); border: 1px solid var(--das-line); border-radius: 5px; height: 30px; padding: 0 8px;
+}
+.das-group-roll__body select option { background: var(--das-surface); color: var(--das-ink); }
+.das-group-roll__body select:focus, .das-group-roll__body input:focus { border-color: var(--das-accent); outline: none; box-shadow: none; }
+.das-group-roll__row.modes { gap: 1.2em; }
+.das-group-roll__body label.das-group-roll__mode { flex-direction: row; align-items: center; gap: 0.35em; color: var(--das-ink); font-size: 1em; }
+.das-group-roll__actors { border: 1px solid var(--das-line); border-radius: 8px; padding: 0.3em 0.5em; margin: 0; max-height: 40vh; overflow-y: auto; }
+.das-group-roll__actors legend { color: var(--das-muted); font-size: 0.85em; padding: 0 0.3em; }
+.das-group-roll__body label.das-group-roll__actor { flex-direction: row; align-items: center; gap: 0.5em; padding: 0.2em 0.3em; border-radius: 6px;
+  cursor: pointer; color: var(--das-ink); font-size: 1em; }
+.das-group-roll__actor.on { background: var(--das-accent-soft); }
+.das-group-roll__actor img { width: 34px; height: 34px; border: none; border-radius: 50%; object-fit: cover; }
+.das-group-roll__actor .name { display: flex; flex-direction: column; }
+.das-group-roll__actor small { color: var(--das-muted); font-size: 0.8em; }
+.das-group-roll__actor .online { color: var(--das-ok); font-size: 0.6em; }
+.das-group-roll__actor .offline { color: var(--das-muted); font-size: 0.6em; opacity: 0.5; }
+.das-group-roll__foot { display: flex; justify-content: flex-end; padding-top: 0.4em; border-top: 1px solid var(--das-line); }
+.das-group-roll-card .das-group-roll__head { margin-bottom: 0.3em; }
+.das-group-roll-card .das-group-roll__head p { margin: 0.1em 0; }
+.das-group-roll-card .das-group-roll__label { font-weight: bold; font-size: 1.1em; }
+.das-group-roll-card .das-group-roll__dc { font-weight: bold; }
+.das-group-roll-card .das-group-roll__tags { font-size: 0.85em; opacity: 0.8; }
+.das-group-roll-card .das-group-roll__verdict { margin: 0.4em 0 0; padding: 0.25em 0.5em; border-radius: 4px; font-weight: bold; text-align: center; }
+.das-group-roll-card .das-group-roll__verdict.success { background: rgba(95, 211, 138, 0.18); color: #1d7a3f; }
+.das-group-roll-card .das-group-roll__verdict.failure { background: rgba(224, 113, 95, 0.18); color: #a3321f; }
+
+/* §242 : la fenêtre de suivi du MJ — l'aspect de la fenêtre de jet du joueur (Combat UI) : fond nuit, filets dorés, d20 dessiné. Une demande
+   par bloc, une carte par personnage, côte à côte. */
+.das-group-roll-tracker {
+  --das-roll-gold: #c9a45c; --das-roll-gold-dim: #7d6538; --das-roll-ink: #f2e8d5; --das-roll-night: #151927; --das-roll-night-hi: #2b3149;
+  --das-roll-die: #4a5170; --das-roll-die-face: #b9bfd6; --das-roll-die-edge: #f4f1ff; --das-roll-die-text: #1b1d2b;
+  --das-roll-success: #5fd38a; --das-roll-failure: #e0715f;
+}
+.das-group-roll-tracker .window-content { background: radial-gradient(ellipse at 50% 0%, var(--das-roll-night-hi), var(--das-roll-night) 70%); }
+.das-tracker__body { padding: 0.8em 1em 1em; display: flex; flex-direction: column; gap: 1em; max-height: 80vh; overflow-y: auto;
+  color: var(--das-roll-ink); font-family: "Signika", "Modesto Condensed", Georgia, serif; }
+.das-tracker__request { position: relative; padding-bottom: 0.6em; border-bottom: 1px solid var(--das-roll-gold-dim); }
+.das-tracker__request:last-child { border-bottom: none; }
+.das-tracker__request header { text-align: center; padding: 0 2em; }
+.das-tracker__label { margin: 0; font-style: italic; opacity: 0.9; }
+.das-group-roll-tracker .das-tracker__request h3 { margin: 0.1em 0; color: var(--das-roll-ink); font-family: inherit; font-weight: normal; font-size: 1.5em; }
+.das-tracker__meta { margin: 0; display: flex; justify-content: center; gap: 1em; color: var(--das-roll-gold); font-size: 0.92em; }
+.das-tracker__dc { font-weight: bold; }
+.das-tracker__dismiss { position: absolute; top: 0; right: 0; width: auto; background: none; border: none; color: var(--das-roll-gold-dim); cursor: pointer; }
+.das-tracker__dismiss:hover { color: var(--das-roll-gold); }
+.das-tracker__people { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 0.7em; }
+.das-tracker__person {
+  width: 132px; box-sizing: border-box; padding: 8px 6px; display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center;
+  background: linear-gradient(180deg, #1d1a2a, #0e0c16); border: 1px solid var(--das-roll-gold-dim); border-radius: 12px 12px 6px 6px;
+}
+.das-tracker__person.success { border-color: var(--das-roll-success); box-shadow: 0 0 10px color-mix(in srgb, var(--das-roll-success) 45%, transparent); }
+.das-tracker__person.failure { border-color: var(--das-roll-failure); box-shadow: 0 0 10px color-mix(in srgb, var(--das-roll-failure) 45%, transparent); }
+.das-tracker__portrait { width: 44px; height: 44px; border: 1px solid var(--das-roll-gold-dim); border-radius: 50%; object-fit: cover; }
+.das-tracker__name { font-size: 0.95em; line-height: 1.1; }
+.das-tracker__player { font-size: 0.75em; opacity: 0.75; }
+.das-tracker__player .online { color: var(--das-roll-success); font-size: 0.7em; }
+.das-tracker__player .offline { opacity: 0.4; font-size: 0.7em; }
+.das-tracker__d20 { width: 62px; height: 62px; margin: 2px 0; filter: drop-shadow(0 3px 6px #000a); }
+.das-tracker__d20 .face { fill: var(--das-roll-die); stroke: var(--das-roll-die-edge); stroke-width: 1.5; }
+.das-tracker__d20 .inner { fill: var(--das-roll-die-face); stroke: var(--das-roll-die-edge); stroke-width: 1.5; }
+.das-tracker__d20 .edges line { stroke: var(--das-roll-die-edge); stroke-width: 1.2; opacity: 0.8; }
+.das-tracker__d20 text { font-size: 24px; text-anchor: middle; fill: var(--das-roll-die-text); font-weight: bold; font-family: inherit; }
+.das-tracker__d20.waiting { animation: das-tracker-wait 1.6s ease-in-out infinite; }
+@keyframes das-tracker-wait { 50% { opacity: 0.45; transform: scale(0.94); } }
+.das-tracker__total { min-height: 1.6em; display: flex; align-items: center; gap: 0.35em; font-size: 1.35em; font-weight: bold; }
+.das-tracker__total .das-muted { font-size: 0.6em; font-weight: normal; }
+.das-tracker__person.success .das-tracker__total i { color: var(--das-roll-success); }
+.das-tracker__person.failure .das-tracker__total i { color: var(--das-roll-failure); }
+.das-tracker__mode { min-height: 1.2em; display: flex; align-items: center; gap: 0.3em; font-size: 1.1em; }
+.das-tracker__mode small { font-size: 0.65em; opacity: 0.8; }
+.das-tracker__adv { color: var(--das-roll-success); }
+.das-tracker__dis { color: var(--das-roll-failure); }
+.das-tracker__aids { min-height: 24px; display: flex; gap: 3px; }
+.das-tracker__aid { width: 22px; height: 22px; border: 1px solid var(--das-roll-gold-dim); border-radius: 50%; object-fit: cover; }
+.das-tracker__force {
+  width: auto; margin-top: 2px; padding: 2px 8px; font-size: 0.75em; line-height: 1.6; cursor: pointer; font-family: inherit;
+  background: #0008; color: var(--das-roll-ink); border: 1px solid var(--das-roll-gold-dim); border-radius: 10px;
+}
+.das-tracker__force:hover:not(:disabled) { border-color: var(--das-roll-gold); color: var(--das-roll-gold); }
+.das-tracker__force i { margin-right: 0.3em; }
+.das-tracker__request footer { display: flex; justify-content: center; margin-top: 0.5em; }
+.das-tracker__ribbon {
+  margin: 0.6em -1em 0; padding: 0.3em 0; text-align: center; font-size: 1.2em; letter-spacing: 1px; text-transform: uppercase; color: #fff;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--das-roll-success) 55%, transparent) 25%,
+    color-mix(in srgb, var(--das-roll-success) 55%, transparent) 75%, transparent);
+}
+.das-tracker__ribbon.failure { background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--das-roll-failure) 55%, transparent) 25%,
+  color-mix(in srgb, var(--das-roll-failure) 55%, transparent) 75%, transparent); }
+.das-group-roll-tracker .das-muted { color: inherit; opacity: 0.7; }

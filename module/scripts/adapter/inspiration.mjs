@@ -55,7 +55,7 @@ export function inspirationSourceOf(bard) {
  *   total, le seuil ; `needed` null pour un test libre (§113), dont le moteur ne connaît pas le DD. §148 : `test` — un test dont le DD
  *   est connu (porté par le jet) : la question le dit.
  */
-export async function offerInspiration(actor, { what, total, needed, test=false }) {
+export async function offerInspiration(actor, { what, total, needed, test=false, save=false, seconds=null }) {
   const inspiration = inspirationOf(actor);
   if ( !inspiration ) return 0;
   // §148 : seuil connu — rien sur une réussite, ni quand même le plus haut résultat du dé ne suffirait (le dé ne se gâche pas).
@@ -65,12 +65,15 @@ export async function offerInspiration(actor, { what, total, needed, test=false 
   if ( offer !== "offer" ) return 0;
   const answer = await askChoice(actor, {
     actor: actor.uuid, item: t("Nom"),
-    prompt: (needed === null) ? t("QuestionTest", { what, total, formula: inspiration.formula })
+    // §242 : une sauvegarde demandée, DD caché — pas « Test (…) ».
+    prompt: ((needed === null) && save) ? t("QuestionSave", { what, total, formula: inspiration.formula })
+      : (needed === null) ? t("QuestionTest", { what, total, formula: inspiration.formula })
       : test ? t("QuestionDD", { what, total, needed, gap: needed - total, formula: inspiration.formula })
       : t("Question", { what, total, needed, formula: inspiration.formula }),
     // « Non » d'abord : sans réponse dans le délai, askChoice retient la première option — l'inspiration n'est pas dépensée sans accord
     // (choix de l'utilisateur le 2026-09-29, comme la Chance du ténébreux).
-    options: [{ id: "no", label: t("Non") }, { id: "yes", label: t("Oui", { formula: inspiration.formula }) }]
+    options: [{ id: "no", label: t("Non") }, { id: "yes", label: t("Oui", { formula: inspiration.formula }) }],
+    ...(Number(seconds) > 0 ? { seconds } : {})
   });
   if ( answer?.id !== "yes" ) return 0;
   const roll = await new Roll(inspiration.formula).evaluate();
@@ -192,7 +195,7 @@ export function keptD20(roll) {
   return (kept.length === 1) ? kept[0].result : null;
 }
 
-export async function offerRollBonus(actor, { kind, what, total, needed=null, skill=null, statuses=[], d20=null, ability=null }) {
+export async function offerRollBonus(actor, { kind, what, total, needed=null, skill=null, statuses=[], d20=null, ability=null, seconds=null }) {
   for ( const item of actor?.items ?? [] ) {
     const rule = contentOf(item).entry?.rollBonus;
     if ( !rule || !(rule.on ?? []).includes(kind) ) continue;
@@ -206,7 +209,7 @@ export async function offerRollBonus(actor, { kind, what, total, needed=null, sk
       const left = usesLeftFor(activity);
       if ( !activity || !Number.isFinite(needed) || (total >= needed) || !(left > 0) ) continue;
       const answer = await askChoice(actor, {
-        actor: actor.uuid, item: item.name,
+        actor: actor.uuid, item: item.name, ...(Number(seconds) > 0 ? { seconds } : {}),
         prompt: game.i18n.format("DND5ECOMBAT.EspritGarde.Question", { what, total, needed, item: item.name, left: Number.isFinite(left) ? left : "∞" }),
         options: [{ id: "no", label: game.i18n.localize("DND5ECOMBAT.BonusJet.Non") }, { id: "yes", label: game.i18n.localize("DND5ECOMBAT.EspritGarde.Oui") }]
       });
@@ -224,7 +227,7 @@ export async function offerRollBonus(actor, { kind, what, total, needed=null, sk
       const during = (actor.appliedEffects ?? actor.effects ?? []).find(e => !e.disabled && (identifierOf(originItemOf(e) ?? {}).id === rule.reroll.during));
       if ( !during || during.getFlag(MODULE_ID, "rerolled") || !Number.isInteger(d20) || !Number.isFinite(needed) || (total >= needed) ) continue;
       const answer = await askChoice(actor, {
-        actor: actor.uuid, item: item.name,
+        actor: actor.uuid, item: item.name, ...(Number(seconds) > 0 ? { seconds } : {}),
         prompt: game.i18n.format("DND5ECOMBAT.Relance.Question", { what, total, needed, d20, bonus: rule.reroll.bonus, item: item.name }),
         options: [{ id: "no", label: game.i18n.localize("DND5ECOMBAT.BonusJet.Non") }, { id: "yes", label: game.i18n.localize("DND5ECOMBAT.Relance.Oui") }]
       });

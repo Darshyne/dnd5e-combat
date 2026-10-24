@@ -54,10 +54,13 @@ function grantAdvantage(app) {
   app.render({ parts: ["buttons"] });
 }
 
+/** Une aide de cette sorte est-elle déjà demandée (en attente) ou accordée pour ce jet ? Une seule de chaque sorte (§242). */
+const kindTaken = (state, kind) => Array.from(state.values()).some(s => (s.aid.kind === kind) && (s.status !== "refused"));
+
 async function onAsk(app, aid, test) {
   const state = states.get(app);
   const key = keyOf(aid);
-  if ( state.get(key) ) return;
+  if ( state.get(key) || kindTaken(state, aid.kind) ) return;
   state.set(key, { status: "pending", aid });
   if ( app.rendered ) app.render({ parts: ["formulas"] });   // partiel : le choix de caractéristique du formulaire reste
   lockRoll(app);
@@ -84,7 +87,9 @@ function onRender(app, element) {
   const aids = [...offered, ...asked];
   if ( !aids.length ) return element.querySelector(".dnd5e-combat-aids")?.remove();
   const buttons = aids.map(aid => {
-    const status = state.get(keyOf(aid))?.status ?? "";
+    const own = state.get(keyOf(aid))?.status ?? "";
+    // Une autre aide de la même sorte en cours ou accordée : celle-ci n'est plus proposée.
+    const status = own || (kindTaken(state, aid.kind) ? "taken" : "");
     const label = loc({ guidance: aid.self ? "AideTest.AssistanceSoi" : "AideTest.Assistance", inspiration: "AideTest.Inspiration",
       help: "AideTest.Soutien" }[aid.kind], { name: aid.helper.name });
     const gain = loc({ guidance: "AideTest.Gain1d4", inspiration: "AideTest.GainInspiration", help: "AideTest.GainAvantage" }[aid.kind],

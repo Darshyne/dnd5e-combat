@@ -33,7 +33,7 @@ describe("chargement du module", () => {
       "chatCards", "climb", "climbCeiling", "climbDown", "climbHolds", "climbState", "climbToward", "closeWindow", "controls",
       "cover", "dash", "diagnosticBackups", "diagnosticForget", "diagnosticRepair", "diagnosticRestore", "diagnosticScan",
       "door", "dropDown", "effectOrigins", "enchant", "endings", "etherealWalls", "factions", "familiar", "familiarPocket", "familiarRecall",
-      "flammable", "flight", "follow", "followState", "foreignSetting", "grab", "heal", "hoist", "hurt", "identify", "inventory", "issues", "jump",
+      "flammable", "flight", "follow", "followState", "foreignSetting", "grab", "groupRoll", "groupRollBreakdown", "groupRollState", "heal", "hoist", "hurt", "identify", "inventory", "issues", "jump",
       "lightState", "masteries", "menu", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "placeRegionAt",
       "plan", "planning", "portent", "range", "rawMove", "reachCheck", "ready", "reload", "reports", "restoreItem", "rollCard",
       "rollCheck", "rollSave", "runMacro", "saveChance", "scatter", "sees", "sequencer", "setting", "skillAid", "skillAids",
@@ -62,7 +62,7 @@ describe("chargement du module", () => {
   it("appelle les inscrits de createChatMessage dans l'ordre voulu : résolution d'abord", () => {
     expect(api.api.routes().createChatMessage.map(r => r.label)).toEqual([
       "resolution interrupted", "concentration: processing interrupted", "pool: recharge not written", "targets released", "Flurry of Blows: targeting not opened",
-      "budget: spending not recorded", "Dispel Magic: nothing dispelled", "trace or mark not handled", "weapon mastery: mark not used up", "maneuver: Bait and Switch or Commander's Strike not played", "Initiative d20 not rerolled", "Rage: upkeep not recorded", "swallow / engulf: action not tracked", "fall damage not applied", "Ready: \"attacks / casts a spell\" trigger not checked", "help", "tether: not recorded", "single card: roll not folded", "chat log purge", "visual feedback: effect ending"
+      "budget: spending not recorded", "Dispel Magic: nothing dispelled", "trace or mark not handled", "weapon mastery: mark not used up", "maneuver: Bait and Switch or Commander's Strike not played", "Initiative d20 not rerolled", "Rage: upkeep not recorded", "swallow / engulf: action not tracked", "fall damage not applied", "Ready: \"attacks / casts a spell\" trigger not checked", "help", "group roll: result not processed", "tether: not recorded", "single card: roll not folded", "chat log purge", "visual feedback: effect ending", "group roll: tracker not opened"
     ]);
   });
 
@@ -80,7 +80,7 @@ describe("chargement du module", () => {
 
   it("enregistre les requêtes entre clients", () => {
     expect(Object.keys(CONFIG.queries).sort()).toEqual([
-      "dnd5e-combat.actionEnd", "dnd5e-combat.allocation", "dnd5e-combat.choice", "dnd5e-combat.climbCheck", "dnd5e-combat.concentration", "dnd5e-combat.contest", "dnd5e-combat.criticalTable", "dnd5e-combat.cure", "dnd5e-combat.deathSave", "dnd5e-combat.dismissSummon", "dnd5e-combat.enchant", "dnd5e-combat.extinguish", "dnd5e-combat.familiarPocket", "dnd5e-combat.familiarRecall", "dnd5e-combat.flipWallSide", "dnd5e-combat.ignite", "dnd5e-combat.improvised", "dnd5e-combat.masteryWindow", "dnd5e-combat.moveZone", "dnd5e-combat.opportunity", "dnd5e-combat.pickUp", "dnd5e-combat.portent", "dnd5e-combat.reaction", "dnd5e-combat.revertForm", "dnd5e-combat.rollSave", "dnd5e-combat.search", "dnd5e-combat.setTargets", "dnd5e-combat.skillAid", "dnd5e-combat.stabilize", "dnd5e-combat.toppleSave", "dnd5e-combat.transform", "dnd5e-combat.wake"
+      "dnd5e-combat.actionEnd", "dnd5e-combat.allocation", "dnd5e-combat.choice", "dnd5e-combat.climbCheck", "dnd5e-combat.concentration", "dnd5e-combat.contest", "dnd5e-combat.criticalTable", "dnd5e-combat.cure", "dnd5e-combat.deathSave", "dnd5e-combat.dismissSummon", "dnd5e-combat.enchant", "dnd5e-combat.extinguish", "dnd5e-combat.familiarPocket", "dnd5e-combat.familiarRecall", "dnd5e-combat.flipWallSide", "dnd5e-combat.groupRoll", "dnd5e-combat.ignite", "dnd5e-combat.improvised", "dnd5e-combat.masteryWindow", "dnd5e-combat.moveZone", "dnd5e-combat.opportunity", "dnd5e-combat.pickUp", "dnd5e-combat.portent", "dnd5e-combat.reaction", "dnd5e-combat.revertForm", "dnd5e-combat.rollSave", "dnd5e-combat.search", "dnd5e-combat.setTargets", "dnd5e-combat.skillAid", "dnd5e-combat.stabilize", "dnd5e-combat.toppleSave", "dnd5e-combat.transform", "dnd5e-combat.wake"
     ]);
   });
 });

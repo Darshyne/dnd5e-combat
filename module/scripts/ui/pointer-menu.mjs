@@ -38,6 +38,7 @@ import { climbEntries } from "../runtime/climb.mjs";
 import { flightEntries } from "../runtime/altitude.mjs";
 import { actingToken, engageWith, exclusive, inCombat, observe } from "./pointer.mjs";
 import { down, startRecall } from "./pointer-mouse.mjs";
+import { groupRollEntry } from "./group-roll.mjs";
 
 /* -------------------------------------------- */
 /*  Menu contextuel                             */
@@ -345,6 +346,7 @@ function tokenEntries(token, target, { aggressive=true }={}) {
     entries.push(...familiarEntries(token, target));
     entries.push({ icon: "fa-solid fa-eye", label: loc("Menu.Observer"), run: () => observe(target) });
     if ( game.user.isGM ) entries.push({ icon: "fa-solid fa-gear", label: loc("Menu.Hud"), run: () => canvas.hud.token.bind(target.object) });
+    pushGroupRoll(entries, target);
     return entries;
   }
   for ( const { activity, melee } of weaponAttacks(token.actor) ) {
@@ -406,5 +408,13 @@ function tokenEntries(token, target, { aggressive=true }={}) {
   entries.push(...familiarEntries(token, target));
   entries.push({ icon: "fa-solid fa-eye", label: loc("Menu.Observer"), run: () => observe(target) });
   if ( game.user.isGM ) entries.push({ icon: "fa-solid fa-gear", label: loc("Menu.Hud"), run: () => canvas.hud.token.bind(target.object) });
+  pushGroupRoll(entries, target);
   return entries;
+}
+
+/** §242 : MJ, sur un personnage joueur — « Demander un jet » (la fenêtre de demande, ce token et la sélection cochés). */
+function pushGroupRoll(entries, target) {
+  if ( target?.actor?.type !== "character" ) return;
+  const entry = groupRollEntry(target);
+  if ( entry ) entries.push(entry);
 }

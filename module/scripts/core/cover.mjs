@@ -7,7 +7,8 @@
  *
  * Géométrie en pixels ; ce qui bloque une ligne (murs, surfaces) est un prédicat fourni par
  * l'adaptateur. Les coins sont rentrés d'un peu (`inset`) : une ligne qui longe exactement un mur
- * ou frôle le coin d'une créature ne compte pas. Fonctions pures, aucune dépendance à Foundry.
+ * ou frôle le coin d'une créature ne compte pas. Un coin que le mur sépare du centre de sa créature (case coupée par un mur de
+ * grotte) est ramené devant le mur (§239). Fonctions pures, aucune dépendance à Foundry.
  */
 
 /** Tailles dont le corps, même mort, reste un obstacle (demande de l'utilisateur 2026-09-26). */
@@ -74,6 +75,33 @@ export function segmentCrossesRect(a, b, rect) {
 }
 
 /**
+ * §239 : les coins (rentrés) d'un espace, chacun ramené par `clip` vers le centre quand un mur les sépare. Sur une carte dont les murs
+ * ne suivent pas la grille (une grotte), le coin d'une case peut tomber derrière le mur : la ligne qui y mène serait bloquée quel que
+ * soit l'attaquant, et la créature collée au mur aurait un demi-abri contre tout le monde (issue #14).
+ */
+function clipped(rect, inset, clip) {
+  const points = corners(shrink(rect, inset));
+  if ( !clip ) return points;
+  const centre = { x: rect.x + (rect.width / 2), y: rect.y + (rect.height / 2) };
+  return points.map(p => clip(centre, p) ?? p);
+}
+
+/**
+ * Le point de `centre` vers `corner` arrêté à `margin` avant l'obstacle `hit` (null : rien entre les deux, le coin reste).
+ * @param {{x,y}} centre
+ * @param {{x,y}} corner
+ * @param {{x,y}|null} hit
+ * @param {number} margin
+ */
+export function pullBack(centre, corner, hit, margin) {
+  if ( !hit ) return corner;
+  const full = Math.hypot(corner.x - centre.x, corner.y - centre.y);
+  if ( full < 1e-9 ) return corner;
+  const k = Math.max(0, Math.hypot(hit.x - centre.x, hit.y - centre.y) - margin) / full;
+  return { x: centre.x + ((corner.x - centre.x) * k), y: centre.y + ((corner.y - centre.y) * k) };
+}
+
+/**
  * L'abri dont une cible bénéficie contre un attaquant.
  * @param {object} context
  * @param {Rect} context.attacker                     Espace de l'attaquant.
@@ -81,11 +109,14 @@ export function segmentCrossesRect(a, b, rect) {
  * @param {Rect[]} [context.bodies]                   Espaces des autres créatures (ni l'attaquant, ni la cible).
  * @param {(a: {x,y}, b: {x,y}) => boolean} [context.blocked]  Un obstacle (mur, surface) coupe-t-il la ligne ?
  * @param {number} [context.inset]                    Retrait des coins et des corps, en pixels.
+ * @param {(centre: {x,y}, corner: {x,y}) => {x,y}} [context.clipAttacker]  §239 : ramène un coin de l'attaquant du côté des murs
+ *                                                    où se trouve son centre (un coin dans la roche n'est pas son espace).
+ * @param {(centre: {x,y}, corner: {x,y}) => {x,y}} [context.clipTarget]    §239 : de même pour la cible.
  * @returns {{degree: "none"|"half"|"threeQuarters"|"total", bonus: number|null, blockedLines: number, byCreature: boolean}}
  */
-export function coverBetween({ attacker, target, bodies=[], blocked=() => false, inset=0 }) {
-  const from = corners(shrink(attacker, inset));
-  const to = corners(shrink(target, inset));
+export function coverBetween({ attacker, target, bodies=[], blocked=() => false, inset=0, clipAttacker=null, clipTarget=null }) {
+  const from = clipped(attacker, inset, clipAttacker);
+  const to = clipped(target, inset, clipTarget);
   const solids = bodies.map(r => shrink(r, inset));
   let best = null;
   for ( const a of from ) {

@@ -90,3 +90,45 @@ describe("un mort interposé", () => {
     expect(bodyGivesCover({ dead: true, size: "huge" })).toBe(true);
   });
 });
+
+import { pullBack } from "../module/scripts/core/cover.mjs";
+
+/** Le point où [a, b] coupe le segment [p, q], ou null. */
+function intersection(a, b, p, q) {
+  const d = ((b.x - a.x) * (q.y - p.y)) - ((b.y - a.y) * (q.x - p.x));
+  if ( Math.abs(d) < 1e-12 ) return null;
+  const t = (((p.x - a.x) * (q.y - p.y)) - ((p.y - a.y) * (q.x - p.x))) / d;
+  const u = (((p.x - a.x) * (b.y - a.y)) - ((p.y - a.y) * (b.x - a.x))) / d;
+  return ((t >= 0) && (t <= 1) && (u >= 0) && (u <= 1)) ? { x: a.x + (t * (b.x - a.x)), y: a.y + (t * (b.y - a.y)) } : null;
+}
+
+describe("§239 : case coupée par un mur qui ne suit pas la grille (issue #14)", () => {
+  // Une grotte : un mur en diagonale coupe le coin haut-droit de la case de la cible, (1, 4) = x 400–500, y 100–200.
+  const p = { x: 440, y: 100 }, q = { x: 500, y: 160 };
+  const blocked = (a, b) => !!intersection(a, b, p, q);
+  const clip = (centre, corner) => pullBack(centre, corner, intersection(centre, corner, p, q), 10);
+  const cave = cell(1, 4);
+  const shooter = cell(4, 1);   // en diagonale, de l'autre côté de la salle
+
+  it("sans ramener les coins, le coin dans la roche donne un demi-abri", () => {
+    expect(coverBetween({ attacker: shooter, target: cave, blocked, inset: 10 }).degree).toBe("half");
+  });
+
+  it("le coin ramené devant le mur : pas d'abri contre un tireur dans la salle", () => {
+    const cover = coverBetween({ attacker: shooter, target: cave, blocked, inset: 10, clipAttacker: clip, clipTarget: clip });
+    expect(cover).toMatchObject({ degree: "none", bonus: 0 });
+  });
+
+  it("un vrai mur entre les deux donne toujours l'abri", () => {
+    const between = wall(200, -1000, 1000);
+    const clipWall = (centre, corner) => pullBack(centre, corner, between(centre, corner) ? { x: 200, y: centre.y } : null, 10);
+    const cover = coverBetween({ attacker, target, blocked: between, inset: 10, clipAttacker: clipWall, clipTarget: clipWall });
+    expect(cover.degree).toBe("total");
+  });
+
+  it("pullBack : arrêté avant l'obstacle, le coin intact sans obstacle", () => {
+    expect(pullBack({ x: 0, y: 0 }, { x: 100, y: 0 }, null, 10)).toEqual({ x: 100, y: 0 });
+    expect(pullBack({ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 60, y: 0 }, 10)).toEqual({ x: 50, y: 0 });
+    expect(pullBack({ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 5, y: 0 }, 10)).toEqual({ x: 0, y: 0 });
+  });
+});

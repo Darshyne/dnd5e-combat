@@ -18,7 +18,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { coverBetween, bodyGivesCover, strongerCover, COVER } from "../core/cover.mjs";
+import { coverBetween, bodyGivesCover, strongerCover, pullBack, COVER } from "../core/cover.mjs";
 import { crossesWall } from "../core/wall.mjs";
 import { contentOf } from "./content.mjs";
 import { wallGeometryOf } from "./wall-side.mjs";
@@ -84,6 +84,26 @@ export function rayBlocker(from, to, { posA, posB }={}) {
   };
 }
 
+/**
+ * §239 : ramène un coin de l'espace d'un token devant le premier mur qui le sépare de son centre (niveau du token, hauteur de ses
+ * yeux), à `margin` pixels du point de contact — l'espace réel d'une créature dont la case est coupée par un mur de grotte.
+ * @param {TokenDocument} doc
+ * @param {object} [pos]      Position (défaut : la position validée).
+ * @param {number} margin
+ * @returns {(centre: {x: number, y: number}, corner: {x: number, y: number}) => {x: number, y: number}}
+ */
+export function spaceClipper(doc, pos, margin) {
+  const p = pos ?? committedPosition(doc);
+  const eye = eyeElevation(doc, p);
+  const level = doc.parent.levels?.get?.(p.level ?? doc._source.level) ?? undefined;
+  const backend = CONFIG.Canvas.polygonBackends.move;
+  return (centre, corner) => {
+    const hit = backend.testCollision({ x: centre.x, y: centre.y, elevation: eye }, { x: corner.x, y: corner.y, elevation: eye },
+      { type: "move", mode: "closest", level });
+    return pullBack(centre, corner, hit ?? null, margin);
+  };
+}
+
 /** Les autres créatures qui peuvent s'interposer. */
 function bodiesAround(attacker, target) {
   return attacker.parent.tokens
@@ -140,10 +160,12 @@ export function coverFor(attacker, target, { posA, quiet=false, activity=null, a
   if ( !attacker?.parent || (attacker.parent !== target?.parent) || !canJudgeCover(attacker.parent) ) return null;
   if ( COVER_STATUSES.some(s => target.actor?.statuses.has(s)) ) return null;
   const grid = attacker.parent.grid;
+  const inset = grid.size * INSET_FRACTION;
+  const pa = posA ? { ...committedPosition(attacker), ...posA } : undefined;
   const cover = coverBetween({
-    attacker: rectOf(attacker, posA ? { ...committedPosition(attacker), ...posA } : undefined),
-    target: rectOf(target), bodies: bodiesAround(attacker, target),
-    blocked: rayBlocker(attacker, target, { posA }), inset: grid.size * INSET_FRACTION
+    attacker: rectOf(attacker, pa), target: rectOf(target), bodies: bodiesAround(attacker, target),
+    blocked: rayBlocker(attacker, target, { posA }), inset,
+    clipAttacker: spaceClipper(attacker, pa, inset), clipTarget: spaceClipper(target, undefined, inset)
   });
   // §172 : une zone qui donne un abri à qui est derrière (Barrière de lames) — la ligne entre les deux la traverse.
   const behind = zoneCoverBetween(attacker, target, posA, activity, attackMode);
@@ -201,10 +223,13 @@ export function hasLineOfEffect(from, to, positions={}) {
   const grid = from.parent.grid;
   const posA = positions.posA;
   const posB = positions.posB;
+  const inset = grid.size * INSET_FRACTION;
+  const pa = posA ? { ...committedPosition(from), ...posA } : undefined;
+  const pb = posB ? { ...committedPosition(to), ...posB } : undefined;
   const cover = coverBetween({
-    attacker: rectOf(from, posA ? { ...committedPosition(from), ...posA } : undefined),
-    target: rectOf(to, posB ? { ...committedPosition(to), ...posB } : undefined),
-    bodies: [], blocked: rayBlocker(from, to, positions), inset: grid.size * INSET_FRACTION
+    attacker: rectOf(from, pa), target: rectOf(to, pb),
+    bodies: [], blocked: rayBlocker(from, to, positions), inset,
+    clipAttacker: spaceClipper(from, pa, inset), clipTarget: spaceClipper(to, pb, inset)
   });
   return cover.degree !== "total";
 }

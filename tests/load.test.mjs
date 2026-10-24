@@ -34,7 +34,7 @@ describe("chargement du module", () => {
       "cover", "dash", "diagnosticBackups", "diagnosticForget", "diagnosticRepair", "diagnosticRestore", "diagnosticScan",
       "door", "dropDown", "effectOrigins", "enchant", "endings", "etherealWalls", "factions", "familiar", "familiarPocket", "familiarRecall",
       "flammable", "follow", "followState", "foreignSetting", "grab", "heal", "hoist", "hurt", "identify", "inventory", "issues", "jump",
-      "lightState", "masteries", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "placeRegionAt",
+      "lightState", "masteries", "menu", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "placeRegionAt",
       "plan", "planning", "portent", "range", "rawMove", "reachCheck", "ready", "reload", "reports", "restoreItem", "rollCard",
       "rollCheck", "rollSave", "runMacro", "saveChance", "scatter", "sees", "sequencer", "setting", "skillAid", "skillAids",
       "stairs", "stairsAt", "stats", "status", "stealth", "storm", "stormStrike", "summonAt", "takeStairs", "teleport",

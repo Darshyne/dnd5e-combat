@@ -269,6 +269,7 @@
   "DND5ECOMBAT.Action.dodge.Texte": "Ação: até o início do seu próximo turno, ataques contra você têm Desvantagem se você puder ver o atacante, e você tem Vantagem em salvaguardas de Destreza. O efeito termina se você ficar Incapacitado ou seu Deslocamento chegar a 0.",
   "DND5ECOMBAT.Souci.noLightAttack": "Ataque com a mão secundária: você precisa primeiro atacar com uma arma Leve usando a ação Atacar neste turno.",
   "DND5ECOMBAT.Menu.MainSecondaire": "Atacar (mão secundária): {name}",
+  "DND5ECOMBAT.Menu.LancerMainSecondaire": "Arremessar (mão secundária): {name}",
   "DND5ECOMBAT.Reglage.provideBasicActions.Nom": "Adicionar ações básicas aos personagens",
   "DND5ECOMBAT.Reglage.provideBasicActions.Aide": "O sistema adiciona a cada personagem (jogador ou mestre) as ações básicas que faltam: Disparada, Desengajar, Esquivar, Preparar, Ajudar, Esconder-se, Escapar e Ataque Desarmado (Agarrar, Empurrar). Isso ocorre ao carregar o mundo, criar personagem ou iniciar combate. Aparecem na ficha (características; Ataque Desarmado no inventário) e na barra de ações. Nada é removido e nenhum item é adicionado a NPCs.",
   "DND5ECOMBAT.Action.unarmed.Nom": "Ataque Desarmado",

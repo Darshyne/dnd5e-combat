@@ -177,6 +177,35 @@ function controls({ tokenId=null }={}) {
 }
 
 /**
+ * §240 : les entrées du menu contextuel de `targetId` pour `tokenId` (pris en main le temps de la lecture), lues par l'API publique
+ * `api.ui.tokenMenu` — `runtime/` n'importe pas `ui/`. `run` : lance l'entrée de ce libellé sans l'attendre (un jet peut ouvrir une
+ * fenêtre) ; la prise en main d'avant revient quand elle a fini.
+ */
+function menu({ tokenId, targetId, run=null }) {
+  gmOnly();
+  const token = viewedToken({ tokenId });
+  const target = viewedToken({ tokenId: targetId });
+  const before = canvas.tokens.controlled.map(t => t.document.id);
+  const giveBack = () => {
+    canvas.tokens.releaseAll();
+    for ( const id of before ) canvas.tokens.get(id)?.control({ releaseOthers: false });
+  };
+  token.object.control({ releaseOthers: true });
+  let entries;
+  try { entries = game.modules.get(MODULE_ID).api.ui.tokenMenu(target); }
+  catch(err) { giveBack(); throw err; }
+  const labels = entries.map(e => e.label);
+  const entry = run ? entries.find(e => e.label === run) : null;
+  if ( !entry ) {
+    giveBack();
+    if ( run ) throw new Error(`no menu entry « ${run} » (${labels.join(" | ")})`);
+    return { labels };
+  }
+  Promise.resolve(entry.run()).catch(err => console.error(`${MODULE_ID} | test menu`, err)).finally(giveBack);
+  return { labels, started: true };
+}
+
+/**
  * Un réglage du moteur (et de lui seul) : rend la valeur d'avant, pour qu'un scénario la remette ; `value` absent : lecture seule.
  * Réservé au MJ (§38.4 : le scénario `presage` désactive le Présage le temps d'une partie).
  */
@@ -285,4 +314,4 @@ const diagnosticRestore = ({ uuid }) => diagRestore(uuid);
 
 
 /** Ce que `api.mcp` expose. */
-export const testApi = Object.freeze({ controls, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls });
+export const testApi = Object.freeze({ controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls });

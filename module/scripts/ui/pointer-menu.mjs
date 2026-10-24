@@ -355,6 +355,13 @@ function tokenEntries(token, target, { aggressive=true }={}) {
     if ( canBeThrown(activity) ) {
       entries.push({ icon: "fa-solid fa-hand-point-right",
         label: loc("Menu.Lancer", { name: activity.item.name }), run: event => engageWith(token, target, activity, { mode: "thrown", event }) });
+      // §240 (issue #13) : une arme Légère et de Lancer offre aussi le lancer de la main secondaire (`thrown-offhand` de dnd5e,
+      // weapon.mjs:204) — même coût que la main secondaire (action Bonus, ou Coup double).
+      if ( activity.item.system.attackModes?.some(m => m.value === "thrown-offhand") ) {
+        entries.push({ icon: "fa-solid fa-hand-point-right",
+          label: loc("Menu.LancerMainSecondaire", { name: activity.item.name }),
+          run: event => engageWith(token, target, activity, { mode: "thrown-offhand", event }) });
+      }
     }
   }
   // §16.43 : l'action suivante d'un lien (Trait ensorcelé : 1d12, action Bonus), sur la créature liée.

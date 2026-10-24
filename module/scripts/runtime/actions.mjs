@@ -23,7 +23,7 @@ import { sharesSpaceWith } from "../adapter/space-sharing.mjs";
 import { planPath, previewPath, walk, stopAllWalks, cellUnder, footprintOf, sizeOf, cellOf, stairsEntry, rulerShown } from "../adapter/movement.mjs";
 import { hasLineOfSight } from "../adapter/vision.mjs";
 import { victimsOf, sizeRankOf } from "../adapter/grapple.mjs";
-import { basicActionOf } from "../adapter/basics.mjs";
+import { basicActionOf, unarmedAttackOf } from "../adapter/basics.mjs";
 import { cellsAtGap, footprintDistance } from "../core/orders.mjs";
 import { fleeGaps } from "../core/flee.mjs";
 import { opportunityThreats, resolveOpportunity, splitForReady } from "./reactions.mjs";
@@ -164,7 +164,8 @@ export function basicAttack(actor) {
   const weapon = chooseBasicAttack(weaponAttacks(actor));
   if ( weapon ) return weapon;
   const pilot = pilotOfActor(actor);
-  const activity = pilot ? commandActivities(pilot).find(a => a.type === "attack") : null;
+  // §241 : aucune arme équipée — l'attaque à mains nues (la main vide des jeux d'armes d'une interface).
+  const activity = pilot ? commandActivities(pilot).find(a => a.type === "attack") : unarmedAttackOf(actor);
   return activity ? { id: activity.uuid, activity, melee: activity.attack?.type?.value !== "ranged" } : null;
 }
 

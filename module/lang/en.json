@@ -271,6 +271,7 @@
   "DND5ECOMBAT.Action.dodge.Texte": "Action: until the start of your next turn, attack rolls against you have Disadvantage if you can see the attacker, and you have Advantage on Dexterity saving throws. The effect ends if you have the Incapacitated condition or your Speed drops to 0.",
   "DND5ECOMBAT.Souci.noLightAttack": "Off-hand attack: you must first attack with a Light weapon as part of the Attack action this turn.",
   "DND5ECOMBAT.Menu.MainSecondaire": "Attack (off hand): {name}",
+  "DND5ECOMBAT.Menu.LancerMainSecondaire": "Throw (off hand): {name}",
   "DND5ECOMBAT.Reglage.provideBasicActions.Nom": "Basic actions on characters",
   "DND5ECOMBAT.Reglage.provideBasicActions.Aide": "The engine adds to every character (played by a player or by the GM) the basic action items they lack: Dash, Disengage, Dodge, Ready, Help, Hide, Escape and the Unarmed Strike (Grapple, Shove). Always: when the world loads, when a character is created, when a combat starts. They show on the sheet (features; the Unarmed Strike under inventory) and in the action bar. Nothing is removed, nothing is placed on NPCs.",
   "DND5ECOMBAT.Action.unarmed.Nom": "Unarmed Strike",

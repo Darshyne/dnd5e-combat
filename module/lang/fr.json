@@ -271,6 +271,7 @@
   "DND5ECOMBAT.Action.dodge.Texte": "Action : jusqu'au début de votre prochain tour, les jets d'attaque contre vous ont le désavantage si vous voyez l'attaquant, et vous avez l'avantage aux sauvegardes de Dextérité. L'effet cesse si vous êtes neutralisé ou si votre vitesse tombe à 0.",
   "DND5ECOMBAT.Souci.noLightAttack": "Attaque de la main secondaire : il faut d'abord avoir attaqué avec une arme Légère dans l'action Attaquer ce tour-ci.",
   "DND5ECOMBAT.Menu.MainSecondaire": "Attaquer (main secondaire) : {name}",
+  "DND5ECOMBAT.Menu.LancerMainSecondaire": "Lancer (main secondaire) : {name}",
   "DND5ECOMBAT.Reglage.provideBasicActions.Nom": "Actions de base sur les personnages",
   "DND5ECOMBAT.Reglage.provideBasicActions.Aide": "Le moteur ajoute à tous les personnages (joués par un joueur ou par le MJ) les items d'actions de base qui leur manquent : Pointe, Désengagement, Esquive, Intention, Soutien, Furtivité, S'échapper et l'Attaque à mains nues (Lutte, Bousculade). En permanence : au chargement du monde, à la création d'un personnage, au début d'un combat. Ils apparaissent sur la fiche (capacités ; l'attaque à mains nues dans l'inventaire) et dans la barre d'actions. Rien n'est retiré, rien n'est posé sur un PNJ.",
   "DND5ECOMBAT.Action.unarmed.Nom": "Attaque à mains nues",

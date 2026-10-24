@@ -22,10 +22,10 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { placementOf, alignPath, modeShift, coherentElevation, speedFor } from "../core/altitude.mjs";
+import { placementOf, alignPath, modeShift, coherentElevation, speedFor, flightChoice } from "../core/altitude.mjs";
 import { climbSystemOn } from "../core/climb-system.mjs";
 import { rulerShown, continuedFlags } from "../adapter/movement.mjs";
-import { boundsUnder, levelAt, clearanceOf, modeRefusalFor, groundModeOf, effectiveMode, grantSpeedFor, revokeSpeedsBut, grantedSpeedEffects } from "../adapter/altitude.mjs";
+import { boundsUnder, levelAt, clearanceOf, modeRefusalFor, groundModeOf, effectiveMode, grantSpeedFor, revokeSpeedsBut, grantedSpeedEffects, isAirborne, speedsOf } from "../adapter/altitude.mjs";
 import { pilotOf, isIntangible } from "../adapter/pilot.mjs";
 import { route } from "./router.mjs";
 import { loc, log, notice } from "./shared.mjs";
@@ -155,6 +155,49 @@ function onPreUpdateToken(token, changes, options) {
   applyMode(token, value).then(ok => { if ( !ok ) refuse(token, "Impossible"); })
     .catch(err => console.error(`${MODULE_ID} | mode change`, err));
   return false;
+}
+
+/* -------------------------------------------- */
+/*  S'envoler, atterrir (menu, §238)            */
+/* -------------------------------------------- */
+
+/**
+ * §238 : ce que le menu propose pour le vol à ce token (`takeOff`, `land`), ou null. Aussi quand l'interrupteur « Escalade et chutes »
+ * est coupé (§224, le cas de `dnd-6`) : décoller et atterrir sont des choix, pas une chute ni un alignement imposé.
+ */
+export function flightChoiceOf(token) {
+  if ( !token?.isOwner || !concerned(token, { switchedOff: true }) ) return null;
+  const { ground, ceiling } = boundsUnder(token);
+  // Le mode du document, pas la source : un token dont personne n'a choisi le mode a `null` en source (le mode par défaut du cœur).
+  return flightChoice({ mode: token.movementAction, airborne: isAirborne(token), flySpeed: Number(speedsOf(token.actor).fly) || 0,
+    ground, ceiling, clearance: clearanceOf(token.parent) });
+}
+
+/**
+ * §238 : s'envoler (5 ft au-dessus du sol) ou atterrir (descendre en volant jusqu'à son sol, d'un niveau à l'autre s'il le faut) — le
+ * même chemin que le choix du mode dans le HUD du cœur (`applyMode`) : mouvement vertical payé comme un déplacement, puis le mode.
+ * En l'air dans un mode au sol (une créature qui vole sans qu'on ait changé son mode) : le mode vol d'abord, puis l'atterrissage.
+ * @returns {Promise<boolean>}
+ */
+export async function takeFlight(token, choice=flightChoiceOf(token)) {
+  if ( !choice ) return false;
+  let ok;
+  if ( choice === "takeOff" ) ok = await applyMode(token, "fly");
+  else {
+    if ( placementOf(token.movementAction) !== "air" ) await switchMode(token, "fly", null);
+    ok = await applyMode(token, groundModeOf(token.actor));
+  }
+  if ( !ok ) refuse(token, "Impossible");
+  log(`${token.name}: ${choice === "takeOff" ? "takes off" : "lands"} from the menu${ok ? "" : " — refused"}`);
+  return ok;
+}
+
+/** §238 : les entrées du menu de son propre token (MJ et joueurs), selon ses vitesses : « S'envoler » ou « Atterrir ». */
+export function flightEntries(token) {
+  const choice = flightChoiceOf(token);
+  if ( choice === "takeOff" ) return [{ icon: "fa-solid fa-dove", label: loc("Menu.SEnvoler"), run: () => takeFlight(token, choice) }];
+  if ( choice === "land" ) return [{ icon: "fa-solid fa-plane-arrival", label: loc("Menu.Atterrir"), run: () => takeFlight(token, choice) }];
+  return [];
 }
 
 /* -------------------------------------------- */

@@ -111,3 +111,23 @@ export function alignPath(origin, waypoints, { clearance, step, lenient=false })
  * grimper ni sauter dans le vide.
  */
 export const groundStepAllowed = (fromGround, toGround, step) => Math.abs(toGround - fromGround) <= step + 1e-6;
+
+/**
+ * §238 : ce que le menu de son propre token propose pour le vol — `takeOff` (s'envoler : 5 ft au-dessus du sol), `land` (atterrir :
+ * descendre en volant jusqu'au sol), ou null.
+ *  - Atterrir : en vol, ou en l'air dans un mode au sol chez une créature qui vole (`effectiveMode`).
+ *  - S'envoler : dans un mode au sol, au sol, avec une Vitesse de vol (À terre, Agrippé… la ramènent à 0) et la place sous le plafond.
+ *  - Les autres modes (escalade, nage, fouissement) n'ont rien ici : l'escalade a ses propres entrées.
+ * @param {{mode: string, airborne: boolean, flySpeed: number, ground: number, ceiling: number, clearance: number}} state
+ *   `ceiling` : l'élévation la plus haute où poser les pieds en vol (adapter/altitude.mjs `boundsUnder`).
+ * @returns {"takeOff"|"land"|null}
+ */
+export function flightChoice({ mode, airborne, flySpeed, ground, ceiling=Infinity, clearance }) {
+  const placement = placementOf(mode);
+  const flies = Number(flySpeed) > 0;
+  if ( placement === "air" ) return "land";
+  if ( placement !== "ground" ) return null;
+  if ( airborne ) return flies ? "land" : null;
+  if ( !flies || (ceiling < ground + clearance - 1e-6) ) return null;
+  return "takeOff";
+}

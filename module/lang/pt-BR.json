@@ -1244,6 +1244,8 @@
   "DND5ECOMBAT.Etat.climbing": "Escalando",
   "DND5ECOMBAT.Menu.Grimper": "Escalar a parede",
   "DND5ECOMBAT.Menu.SeLaisserTomber": "Soltar-se e cair",
+  "DND5ECOMBAT.Menu.SEnvoler": "Levantar voo",
+  "DND5ECOMBAT.Menu.Atterrir": "Pousar",
   "DND5ECOMBAT.Escalade.Titre": "Escalar",
   "DND5ECOMBAT.Escalade.Question": "Quantos quadrados para cima? No máximo {max}; cada quadrado custa {cost} {units} de deslocamento.",
   "DND5ECOMBAT.Escalade.Cases": "Quadrados",

@@ -24,6 +24,10 @@ import { wall } from "./testing-areas.mjs";
 import { hoistOnto, grabEdge, startClimb, dropDown as dropDownIntent, canClimb, climbRoom, canClimbCeiling, climbToCeiling, ceilingRoom, canClimbDown, climbDown as climbDownIntent, descentRoom, climbStateOf, climbHoldsAt, climbToward as climbTowardIntent } from "./climb.mjs";
 import { wallsNear, isClimbing, isOnCeiling, climbingOf, climbRules, canWalkCeilings, ceilingPerchFor, FLIP_FLAG, inSlipperyZone, canWalkCeilingsAt, acrobaticFor, ledgesOf, edgesBelowOf } from "../adapter/climb.mjs";
 import { speedGrantEffects } from "./speed-grants.mjs";
+import { flightChoiceOf, flightEntries, takeFlight } from "./altitude.mjs";
+import { boundsUnder, isAirborne, speedsOf } from "../adapter/altitude.mjs";
+import { pilotOf } from "../adapter/pilot.mjs";
+import { isEthereal } from "../adapter/plane.mjs";
 import { MODE_STATUSES } from "../adapter/conditions.mjs";
 
 /** Les escaliers et échelles de la scène, avec les cases qu'ils couvrent (centre dans la région). */
@@ -406,4 +410,17 @@ export async function dropDown({ tokenId }) {
   const before = positionJson(token);
   const done = await dropDownIntent(token);
   return { done, before, after: positionJson(token), hp: token.actor?.system?.attributes?.hp?.value ?? null, ...climbState({ tokenId }) };
+}
+
+/** §238 : ce que le menu propose pour le vol à un token (choix, libellés) ; `run` : le jouer, comme un clic sur l'entrée. */
+export async function flight({ tokenId, run=false }) {
+  const token = viewedToken({ tokenId });
+  const choice = flightChoiceOf(token);
+  const before = positionJson(token);
+  const done = run ? await takeFlight(token, choice) : null;
+  return { choice, entries: flightEntries(token).map(e => e.label), done, before, after: positionJson(token),
+    fly: Number(token.actor?.system?.attributes?.movement?.fly) || 0, falling: token.actor?.statuses?.has("falling") === true,
+    // Ce qui décide (`flightChoiceOf`) : pour comprendre un menu vide.
+    why: { owner: token.isOwner, creature: token.actor?.system?.isCreature !== false, pilot: !!pilotOf(token), ethereal: isEthereal(token),
+      airborne: isAirborne(token), speeds: speedsOf(token.actor), bounds: { ...boundsUnder(token) }, altitude: game.settings.get(MODULE_ID, "altitude") } };
 }

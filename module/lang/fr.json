@@ -1260,6 +1260,8 @@
   "DND5ECOMBAT.Etat.climbing": "En escalade",
   "DND5ECOMBAT.Menu.Grimper": "Grimper au mur",
   "DND5ECOMBAT.Menu.SeLaisserTomber": "Se laisser tomber",
+  "DND5ECOMBAT.Menu.SEnvoler": "S'envoler",
+  "DND5ECOMBAT.Menu.Atterrir": "Atterrir",
   "DND5ECOMBAT.Escalade.Titre": "Grimper",
   "DND5ECOMBAT.Escalade.Question": "Combien de cases monter ? {max} au plus ; chaque case coûte {cost} {units} de déplacement.",
   "DND5ECOMBAT.Escalade.Cases": "Cases",

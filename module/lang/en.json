@@ -1260,6 +1260,8 @@
   "DND5ECOMBAT.Etat.climbing": "Climbing",
   "DND5ECOMBAT.Menu.Grimper": "Climb the wall",
   "DND5ECOMBAT.Menu.SeLaisserTomber": "Let go and drop",
+  "DND5ECOMBAT.Menu.SEnvoler": "Take off",
+  "DND5ECOMBAT.Menu.Atterrir": "Land",
   "DND5ECOMBAT.Escalade.Titre": "Climb",
   "DND5ECOMBAT.Escalade.Question": "How many squares up? {max} at most; each square costs {cost} {units} of movement.",
   "DND5ECOMBAT.Escalade.Cases": "Squares",

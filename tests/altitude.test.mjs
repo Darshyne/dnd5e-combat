@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  placementOf, modeRefusal, coherentElevation, modeShift, alignPath, groundStepAllowed
+  placementOf, modeRefusal, coherentElevation, modeShift, alignPath, groundStepAllowed, flightChoice
 } from "../module/scripts/core/altitude.mjs";
 
 const opts = { clearance: 5, step: 5 };
@@ -125,5 +125,32 @@ describe("alignPath", () => {
     expect(groundStepAllowed(0, 5, 5)).toBe(true);
     expect(groundStepAllowed(0, 10, 5)).toBe(false);
     expect(groundStepAllowed(10, 0, 5)).toBe(false);
+  });
+});
+
+describe("§238 : s'envoler, atterrir (menu)", () => {
+  const base = { mode: "walk", airborne: false, flySpeed: 60, ground: 0, ceiling: Infinity, clearance: 5 };
+  it("au sol avec une Vitesse de vol : s'envoler", () => {
+    expect(flightChoice(base)).toBe("takeOff");
+    expect(flightChoice({ ...base, mode: "crawl" })).toBe("takeOff");
+  });
+  it("sans Vitesse de vol (ou ramenée à 0) : rien", () => {
+    expect(flightChoice({ ...base, flySpeed: 0 })).toBeNull();
+    expect(flightChoice({ ...base, flySpeed: undefined })).toBeNull();
+  });
+  it("pas la place sous le plafond : rien", () => {
+    expect(flightChoice({ ...base, ceiling: 3 })).toBeNull();
+    expect(flightChoice({ ...base, ceiling: 5 })).toBe("takeOff");
+  });
+  it("en vol : atterrir, même sans vitesse lisible", () => {
+    expect(flightChoice({ ...base, mode: "fly", airborne: true })).toBe("land");
+    expect(flightChoice({ ...base, mode: "fly", airborne: true, flySpeed: 0 })).toBe("land");
+  });
+  it("en l'air dans un mode au sol : atterrir s'il vole, sinon rien (c'est une chute)", () => {
+    expect(flightChoice({ ...base, airborne: true })).toBe("land");
+    expect(flightChoice({ ...base, airborne: true, flySpeed: 0 })).toBeNull();
+  });
+  it("escalade, nage, fouissement : rien", () => {
+    for ( const mode of ["climb", "swim", "burrow"] ) expect(flightChoice({ ...base, mode })).toBeNull();
   });
 });

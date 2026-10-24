@@ -35,6 +35,7 @@ import { pickUpEntries } from "../runtime/scatter.mjs";
 import { igniteEntries } from "../runtime/flammable.mjs";
 import { burningEntries } from "../runtime/burning.mjs";
 import { climbEntries } from "../runtime/climb.mjs";
+import { flightEntries } from "../runtime/altitude.mjs";
 import { actingToken, engageWith, exclusive, inCombat, observe } from "./pointer.mjs";
 import { down, startRecall } from "./pointer-mouse.mjs";
 
@@ -246,6 +247,8 @@ export function selfEntries(token) {
   entries.push(...igniteEntries(token));
   // §192 : grimper au mur qu'on touche ; en escalade, se laisser tomber.
   entries.push(...climbEntries(token));
+  // §238 : s'envoler ou atterrir, selon les vitesses de sa fiche.
+  entries.push(...flightEntries(token));
   // §210 : coups non létaux (comme l'interrupteur de BG3) — activer ou couper, si le réglage de monde l'affiche dans ce menu.
   if ( token.isOwner && token.actor && nonLethalOffered() ) {
     const on = isNonLethal(token.actor);

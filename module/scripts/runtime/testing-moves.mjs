@@ -8,7 +8,8 @@ import { MODULE_ID } from "../constants.mjs";
 import { afterTeleportOptions } from "./teleport-options.mjs";
 import { planPath, stairsOf, stairsDestinations, stopWalking } from "../adapter/movement.mjs";
 import { combatantFor, readBudget, movementOf } from "../adapter/turn.mjs";
-import { setDoorOpen, doorState } from "./doors.mjs";
+import { setDoorOpen, doorState, pickLock, forceDoor, unlockWithKey, lockEntriesFor, handleLockQuery, DOOR_UNLOCKED_HOOK, NOISE_HOOK } from "./doors.mjs";
+import { triesOf } from "../adapter/locks.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { jumpOptionsOf } from "../adapter/jump.mjs";
 import { jumpTo, moveTo, movementCap, selfTeleportOf, teleportTo, afterTeleport, teleportClick, dashStrike, dashTargets, dashProblem, dashLimit, lineDashOf, transpose as transposeIntent, takeStairs as takeStairsIntent, gapCells, verticalGapCells, tooHighFor, reachCells, basicAttack, rangeStatus, engage, approach } from "./actions.mjs";
@@ -255,6 +256,27 @@ export async function door({ tokenId, wallId, open=true }) {
   if ( !wall?.isDoor ) throw new Error(`wall ${wallId} is not a door of the viewed scene`);
   await setDoorOpen(token, wall, open);
   return { state: doorState(wall), x: token._source.x, y: token._source.y };
+}
+
+/**
+ * §244 : une serrure de porte. Sans `total`, le chemin du menu (s'avancer, payer l'action en combat, lancer le test, juger) ; avec
+ * `total`, le jugement du MJ actif seul, pour un résultat voulu. Rend le verdict, l'état de la porte, les essais notés, les entrées du
+ * menu et les hooks publics tirés pendant l'appel.
+ */
+export async function lock({ tokenId, wallId, method="pick", total=null }) {
+  const token = viewedToken({ tokenId });
+  const wall = canvas.walls.get(wallId);
+  if ( !wall?.isDoor ) throw new Error(`wall ${wallId} is not a door of the viewed scene`);
+  const fired = [];
+  const onUnlock = ({ door, token: t, method: m }) => fired.push({ hook: "doorUnlocked", door: door?.id, token: t?.id, method: m });
+  const onNoise = ({ token: t, point, cause }) => fired.push({ hook: "noise", token: t?.id, point, cause });
+  const hooks = [[DOOR_UNLOCKED_HOOK, Hooks.on(DOOR_UNLOCKED_HOOK, onUnlock)], [NOISE_HOOK, Hooks.on(NOISE_HOOK, onNoise)]];
+  let outcome;
+  try {
+    if ( total !== null ) outcome = (await handleLockQuery({ wall: wall.document.uuid, token: token.uuid, method, total }))?.outcome ?? null;
+    else outcome = await ({ pick: pickLock, force: forceDoor, key: unlockWithKey })[method](token, wall);
+  } finally { for ( const [name, id] of hooks ) Hooks.off(name, id); }
+  return { outcome, state: doorState(wall), tries: triesOf(wall), entries: lockEntriesFor(token, wall), fired, x: token._source.x, y: token._source.y };
 }
 
 /* -------------------------------------------- */

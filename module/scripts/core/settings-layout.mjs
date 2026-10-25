@@ -16,7 +16,7 @@ export const SETTINGS_TABS = Object.freeze([
       "critMargin", "criticalMode", "criticalTable", "criticalNpc", "masteryRules", "sneakAttackMode", "nonLethalMenu"] },
   { id: "movement", icon: "fa-solid fa-shoe-prints",
     keys: ["climbSystem", "climbSystemButton", "altitude", "climbRules", "autoFall", "highJumpMenu", "fireSpread", "volumes", "faceMovement", "clickToMove",
-      "pathPreview", "teleportPlanning"] },
+      "pathPreview", "teleportPlanning", "lockFailure"] },
   { id: "vision", icon: "fa-solid fa-eye",
     keys: ["vision", "passivePerception", "twilightDarkness", "visionCones", "coneAngles", "stealthRules", "surpriseFromStealth", "factionRules", "factionIcons",
       "lightIndicator"],

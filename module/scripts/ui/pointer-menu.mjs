@@ -25,7 +25,7 @@ import { canStandUp, standUp } from "../runtime/prone.mjs";
 import { escapableRestraintsOf } from "../adapter/escape.mjs";
 import { escapeGrapple, holdsOf, releaseGrapple } from "../runtime/grapple.mjs";
 import { ownEndingsOf, endingsOn, endFor } from "../runtime/action-end.mjs";
-import { doorState, setDoorOpen, setDoorLocked, pickLock, forceDoor } from "../runtime/doors.mjs";
+import { doorState, setDoorOpen, setDoorLocked, pickLock, forceDoor, unlockWithKey, lockEntriesFor, hasLockTries, resetLockTries } from "../runtime/doors.mjs";
 import { swallowerOf } from "../adapter/swallow.mjs";
 import { loc, notice } from "../runtime/shared.mjs";
 import { effectOfProfile } from "../adapter/usage.mjs";
@@ -155,20 +155,32 @@ export function hoveredDoor() {
   return (wall?.isDoor && wall.doorControl?.visible !== false) ? wall : null;
 }
 
-/** Ouvrir / fermer ; devant une porte verrouillée, crocheter et forcer ; pour le MJ, verrouiller / déverrouiller. */
+const LOCK_ENTRIES = {
+  key: { icon: "fa-solid fa-key", label: "Serrure.AvecCle", run: (token, wall) => unlockWithKey(token, wall) },
+  pick: { icon: "fa-solid fa-unlock-keyhole", label: "Menu.Crocheter", run: (token, wall, options) => pickLock(token, wall, options) },
+  force: { icon: "fa-solid fa-hand-fist", label: "Menu.Forcer", run: (token, wall, options) => forceDoor(token, wall, options) }
+};
+
+/**
+ * Ouvrir / fermer ; devant une porte verrouillée, la clé, crocheter et forcer (§244) ; pour le MJ, verrouiller / déverrouiller, et
+ * remettre les essais à zéro.
+ */
 export function doorEntries(token, wall) {
   const state = doorState(wall);
   const entries = [];
   if ( state === "open" ) entries.push({ icon: "fa-solid fa-door-closed", label: loc("Menu.Fermer"), run: () => setDoorOpen(token, wall, false) });
   else entries.push({ icon: "fa-solid fa-door-open", label: loc("Menu.Ouvrir"), run: () => setDoorOpen(token, wall, true) });
-  if ( state === "locked" ) {
-    entries.push({ icon: "fa-solid fa-key", label: loc("Menu.Crocheter"), run: event => pickLock(token, wall, { event }) });
-    entries.push({ icon: "fa-solid fa-hand-fist", label: loc("Menu.Forcer"), run: event => forceDoor(token, wall, { event }) });
+  // §244 : la clé si on la porte, crocheter, forcer (sauf porte qui ne le peut pas) ; un essai déjà fait le dit.
+  if ( state === "locked" ) for ( const { method, spent } of lockEntriesFor(token, wall) ) {
+    const entry = LOCK_ENTRIES[method];
+    const label = loc(entry.label) + (spent ? ` — ${loc("Serrure.Essaye")}` : "");
+    entries.push({ icon: entry.icon, label, run: event => entry.run(token, wall, { event }) });
   }
   if ( game.user.isGM && (state !== "open") ) {
     const locked = state === "locked";
     entries.push({ icon: locked ? "fa-solid fa-lock-open" : "fa-solid fa-lock", label: loc(locked ? "Menu.Deverrouiller" : "Menu.Verrouiller"),
       run: () => setDoorLocked(wall, !locked) });
+    if ( locked && hasLockTries(wall) ) entries.push({ icon: "fa-solid fa-rotate-left", label: loc("Serrure.RemettreEssais"), run: () => resetLockTries(wall) });
   }
   return entries;
 }

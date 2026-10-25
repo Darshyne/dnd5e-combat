@@ -176,6 +176,8 @@ export function doorEntries(token, wall) {
     const label = loc(entry.label) + (spent ? ` — ${loc("Serrure.Essaye")}` : "");
     entries.push({ icon: entry.icon, label, run: event => entry.run(token, wall, { event }) });
   }
+  // §247 : les entrées des modules voisins (une porte piégée : « Désamorcer le piège »), après celles du moteur pour le joueur.
+  entries.push(...neighbourEntries("doorMenu", { token, wall: wall.document }));
   if ( game.user.isGM && (state !== "open") ) {
     const locked = state === "locked";
     entries.push({ icon: locked ? "fa-solid fa-lock-open" : "fa-solid fa-lock", label: loc(locked ? "Menu.Deverrouiller" : "Menu.Verrouiller"),
@@ -216,8 +218,17 @@ const nonLethalOffered = () => { try { return game.settings.get(MODULE_ID, NONLE
  * Comme `tokenMenu`, le hook peut partir plusieurs fois pour un même clic droit : un écouteur ne fait qu'ajouter des entrées.
  */
 function neighbourGroundEntries(token, point) {
+  return neighbourEntries("groundMenu", { token, point });
+}
+
+/**
+ * Les entrées qu'ajoutent les modules voisins par le hook `dnd5e-combat.<name>` — `(entries, context)`, pousser `{ icon, label,
+ * run(event) }` ; une entrée sans libellé ou sans `run` est ignorée. `groundMenu` (§243) et `doorMenu` (§247 : `{ token, wall }`, le
+ * WallDocument de la porte).
+ */
+function neighbourEntries(name, context) {
   const entries = [];
-  Hooks.callAll(`${MODULE_ID}.groundMenu`, entries, { token, point });
+  Hooks.callAll(`${MODULE_ID}.${name}`, entries, context);
   return entries.filter(e => e && (typeof e.run === "function") && e.label);
 }
 

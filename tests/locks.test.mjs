@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  normalizeLock, isKey, judgeAttempt, normalizeTries, alreadyTried, recordTry, lockChoices, stateAfter, triesKey
+  normalizeLock, isKey, judgeAttempt, normalizeTries, alreadyTried, recordTry, lockChoices, stateAfter, triesKey, attemptReport
 } from "../module/scripts/core/locks.mjs";
 
 describe("serrure d'une porte (§244)", () => {
@@ -62,5 +62,18 @@ describe("serrure d'une porte (§244)", () => {
     expect(stateAfter("pick")).toBe("closed");
     expect(stateAfter("key")).toBe("closed");
     expect(stateAfter("force")).toBe("open");
+  });
+});
+
+describe("hook lockAttempt (§247)", () => {
+  it("rapporte la façon, l'issue et le total", () => {
+    expect(attemptReport("pick", "failure", 7)).toEqual({ method: "pick", outcome: "failure", total: 7 });
+    expect(attemptReport("force", "success", "21")).toEqual({ method: "force", outcome: "success", total: 21 });
+    expect(attemptReport("pick", "gm", 14)).toEqual({ method: "pick", outcome: "gm", total: 14 });
+  });
+  it("pas de total pour la clé ni pour un total illisible", () => {
+    expect(attemptReport("key", "success", undefined).total).toBeNull();
+    expect(attemptReport("pick", "failure", NaN).total).toBeNull();
+    expect(attemptReport("pick", "failure", null).total).toBeNull();
   });
 });

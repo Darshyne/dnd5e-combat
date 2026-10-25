@@ -5,14 +5,15 @@
  *
  * §244 (issue #22) : la serrure réglée par le MJ (adapter/locks.mjs, core/locks.mjs). Le test se lance chez le joueur, visible ; le
  * MJ actif le juge contre le DD, qui reste caché, et déverrouille (crocheter, clé : fermée) ou ouvre (forcer). Sans DD : le MJ tranche,
- * comme avant. En combat, crocheter ou forcer coûte l'action (Utiliser). Chez le MJ actif, après les dés 3D, deux hooks publics :
+ * comme avant. En combat, crocheter ou forcer coûte l'action (Utiliser). Chez le MJ actif, après les dés 3D, trois hooks publics :
+ *  - `dnd5e-combat.lockAttempt` `({ door, token, method, outcome, total })` : chaque essai jugé (§247), réussi ou non ;
  *  - `dnd5e-combat.doorUnlocked` `({ door, token, method })` : la porte vient d'être déverrouillée (`method` : pick, force, key) ;
  *  - `dnd5e-combat.noise` `({ token, point, scene, cause, wall })` : un bruit (forcer une porte, réussi ou non), pour les modules
  *    qui font entendre les créatures (`api.vision.canHear`).
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { LOCK_FAILURE_MODES, judgeAttempt, alreadyTried, recordTry, lockChoices, stateAfter, triesKey } from "../core/locks.mjs";
+import { LOCK_FAILURE_MODES, judgeAttempt, alreadyTried, recordTry, lockChoices, stateAfter, triesKey, attemptReport } from "../core/locks.mjs";
 import { LOCK_TRIES_FLAG, lockOf, triesOf, keyItemFor, doorPoint } from "../adapter/locks.mjs";
 import { payAction } from "./action-end.mjs";
 import { approachDoor } from "./actions.mjs";
@@ -22,6 +23,15 @@ export const LOCK_QUERY = `${MODULE_ID}.doorLock`;
 export const LOCK_FAILURE_SETTING = "lockFailure";
 export const DOOR_UNLOCKED_HOOK = `${MODULE_ID}.doorUnlocked`;
 export const NOISE_HOOK = `${MODULE_ID}.noise`;
+export const LOCK_ATTEMPT_HOOK = `${MODULE_ID}.lockAttempt`;
+
+/**
+ * §247 : chez le MJ actif, chaque essai jugé sur une serrure (crocheter, forcer, clé) — `({ door, token, method, outcome, total })`,
+ * `outcome` success / failure / gm. Pour les modules voisins (une porte piégée qui part sur un crochetage raté) ; le moteur n'en attend rien.
+ */
+function announceAttempt(wall, token, method, outcome, total) {
+  Hooks.callAll(LOCK_ATTEMPT_HOOK, { door: wall, token, ...attemptReport(method, outcome, total) });
+}
 
 const states = () => CONST.WALL_DOOR_STATES;
 
@@ -174,11 +184,13 @@ async function handleLockQuery({ wall: wallUuid, token: tokUuid, method, total }
   const shown = Number.isFinite(value) ? ` (${value})` : "";
   if ( outcome === "gm" ) {
     log(`${token.name}: ${method} the lock${shown} — no DC set, the GM decides`);
+    announceAttempt(wall, token, method, outcome, value);
     return { outcome };
   }
   if ( outcome === "failure" ) {
     if ( method !== "key" ) await say(speaker, loc((method === "pick") ? "Serrure.CrochetageRate" : "Serrure.ForcageRate", { name }));
     log(`${token.name}: ${method} the lock fails${shown}`);
+    announceAttempt(wall, token, method, outcome, value);
     return { outcome };
   }
   const key = keyItemFor(actor, lock);
@@ -188,6 +200,7 @@ async function handleLockQuery({ wall: wallUuid, token: tokUuid, method, total }
   await say(speaker, loc(text, { name, key: esc(key?.name ?? "") }));
   notice(token, loc("Serrure.Deverrouillee"), "gain");
   log(`${token.name}: door unlocked (${method}${shown})`);
+  announceAttempt(wall, token, method, outcome, value);
   Hooks.callAll(DOOR_UNLOCKED_HOOK, { door: wall, token, method });
   return { outcome };
 }

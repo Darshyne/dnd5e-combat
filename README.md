@@ -33,7 +33,9 @@ pick, `api.ui.targeting()`), walking a token up to a
 target (`api.approach`), stopping this client's walks (`api.stopWalks`), the turn budget (`api.budget.issues` /
 `api.budget.spend`), content by identifier (`api.content`), and generic hooks (`dnd5e-combat.claimClick`,
 `dnd5e-combat.tokenMenu` — on other tokens and on one's own —, `dnd5e-combat.dropItems`, `dnd5e-combat.targeting`,
-`dnd5e-combat.summonOnTargets` — take over a summon cast on targets —, `dnd5e-combat.criticalHit` — decide how a critical hit is handled…). It does not know any of its
+`dnd5e-combat.summonOnTargets` — take over a summon cast on targets —, `dnd5e-combat.criticalHit` — decide how a critical hit is handled —,
+`dnd5e-combat.groundMenu` / `dnd5e-combat.doorMenu` — add entries to the context menu of a cell or a door —, `dnd5e-combat.doorUnlocked` /
+`dnd5e-combat.lockAttempt` — every judged lock attempt on a door —…). It does not know any of its
 neighbours by name.
 
 A creature module can declare the rules for its own abilities, by dnd5e identifier, without touching the

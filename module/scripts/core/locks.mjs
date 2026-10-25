@@ -119,6 +119,15 @@ export function lockChoices(lock, { hasKey=false, tries={}, who="", mode="free" 
 }
 
 /** L'état de porte après un succès : crochetée ou ouverte à la clé, elle est fermée ; forcée, elle s'ouvre. */
+/**
+ * §247 : la charge du hook public `dnd5e-combat.lockAttempt` (hors documents) — la façon, l'issue (`success`, `failure`, `gm`) et le
+ * total du test (null pour la clé, ou un total illisible).
+ */
+export function attemptReport(method, outcome, total) {
+  const value = Number(total);
+  return { method, outcome, total: ((method !== "key") && (total !== null) && (total !== undefined) && Number.isFinite(value)) ? value : null };
+}
+
 export function stateAfter(method) {
   return (method === "force") ? "open" : "closed";
 }

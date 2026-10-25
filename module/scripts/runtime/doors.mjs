@@ -5,7 +5,7 @@
  *
  * §244 (issue #22) : la serrure réglée par le MJ (adapter/locks.mjs, core/locks.mjs). Le test se lance chez le joueur, visible ; le
  * MJ actif le juge contre le DD, qui reste caché, et déverrouille (crocheter, clé : fermée) ou ouvre (forcer). Sans DD : le MJ tranche,
- * comme avant. En combat, crocheter ou forcer coûte l'action (Utiliser). Chez le MJ actif, deux hooks publics :
+ * comme avant. En combat, crocheter ou forcer coûte l'action (Utiliser). Chez le MJ actif, après les dés 3D, deux hooks publics :
  *  - `dnd5e-combat.doorUnlocked` `({ door, token, method })` : la porte vient d'être déverrouillée (`method` : pick, force, key) ;
  *  - `dnd5e-combat.noise` `({ token, point, scene, cause, wall })` : un bruit (forcer une porte, réussi ou non), pour les modules
  *    qui font entendre les créatures (`api.vision.canHear`).
@@ -16,7 +16,7 @@ import { LOCK_FAILURE_MODES, judgeAttempt, alreadyTried, recordTry, lockChoices,
 import { LOCK_TRIES_FLAG, lockOf, triesOf, keyItemFor, doorPoint } from "../adapter/locks.mjs";
 import { payAction } from "./action-end.mjs";
 import { approachDoor } from "./actions.mjs";
-import { log, loc, notice, say, esc, viaActiveGM } from "./shared.mjs";
+import { log, loc, notice, say, esc, viaActiveGM, waitForDice } from "./shared.mjs";
 
 export const LOCK_QUERY = `${MODULE_ID}.doorLock`;
 export const LOCK_FAILURE_SETTING = "lockFailure";
@@ -89,13 +89,21 @@ export function lockEntriesFor(token, wall) {
   return lockChoices(lock, { hasKey: !!keyItemFor(actor, lock), tries: triesOf(wall), who: triesKey(actor?.uuid), mode: lockFailureMode() });
 }
 
-/** Le test, chez le joueur : `null` s'il a été annulé. */
+/**
+ * Le test, chez le joueur : `null` s'il a été annulé. On attend que les dés 3D se soient arrêtés (`waitForDice`, borné) : le verdict,
+ * la porte qui cède et son animation (hooks publics) n'arrivent qu'après. dnd5e ne rend que les jets : le message est le dernier
+ * message de jet de ce client créé pendant le test.
+ */
 async function rollFor(actor, method, event) {
+  const known = new Set(game.messages.keys());
   const rolls = (method === "pick")
     ? await actor.rollToolCheck({ tool: "thief", ability: "dex", event }, { configure: false })
     : await actor.rollSkill({ skill: "ath", ability: "str", event }, { configure: false });
   const total = rolls?.[0]?.total;
-  return Number.isFinite(total) ? total : null;
+  if ( !Number.isFinite(total) ) return null;
+  const message = game.messages.contents.findLast(m => !known.has(m.id) && m.isAuthor && m.rolls?.length);
+  if ( message ) await waitForDice(message);
+  return total;
 }
 
 const tokenUuid = token => token.document?.uuid ?? token.uuid;

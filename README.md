@@ -64,6 +64,22 @@ The first setting of the module picks one of three levels (changing it reloads t
 
 `api.level()` / `api.levelAtLeast(level)` tell neighbour modules which level is active.
 
+## Supported content
+
+The per-item automation (Full level) is written for the **official Foundry content**: the SRD 5.2 bundled with dnd5e and
+the official premium modules (*Player's Handbook*, *Monster Manual*, *Dungeon Master's Guide*…). A rule recognises its
+item by its dnd5e identifier, and often finds the right activity or effect inside it by its id in the official data.
+
+Items imported from elsewhere — **D&D Beyond (DDB Importer)**, other modules, homebrew — carry other activities and
+effects under other ids. The general rules (attacks, saving throws, damage, conditions, Concentration…) still apply to
+them, but their own automation may do nothing, or only part of it. To get it, replace the item on the sheet with the
+official one: drag it from the SRD or premium compendium onto the sheet, then delete the imported copy. If your sheets are
+synced with D&D Beyond, a new sync brings the imported copy back.
+
+Some spells and features are not in the SRD (Armor of Agathys, Blade Ward, Wrathful or Thunderous Smite, the Summon
+spells…): without the premium module they come from, there is no official item to automate. For your own items,
+[DAS · Homebrew](https://github.com/Darshyne/darsh-homebrew) builds automated ones without code.
+
 ## Welcome screen and world diagnostic
 
 The first time the module runs in a world, the GM sees a **welcome screen**: the three automation levels as big buttons,

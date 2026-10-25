@@ -5,15 +5,17 @@
  *    outil) et ce qu'on lance, les personnages concernés (le groupe de dnd5e, les personnages des joueurs, plus les tokens sélectionnés
  *    ou celui d'où l'on vient ; un point vert pour un joueur connecté), le DD (facultatif, caché ou non aux joueurs), Avantage /
  *    Désavantage, un modificateur fixe et le test de groupe 2024. « Demander » passe à runtime/group-roll.mjs.
- *  - **Où l'ouvrir** : un dé dans la barre d'outils des tokens, un bouton du HUD d'un token (clic droit du cœur), l'entrée « Demander un
- *    jet » du menu du moteur sur un personnage (ui/pointer-menu.mjs), et `api.rolls.open({ actors })`.
+ *  - **Où l'ouvrir** : un dé dans la barre d'outils des tokens, l'entrée « Demander un jet » du menu du moteur sur une créature (MJ,
+ *    ui/pointer-menu.mjs), et `api.rolls.open({ actors })`.
+ *  - **Enregistrer en macro** : une macro de script qui refait la même demande (mêmes personnages, même test, mêmes options), d'un clic
+ *    dans la barre de macros.
  *  - **Carte** : la carte de demande de dnd5e, complétée — le DD (« caché » pour les joueurs), les réussites que dnd5e ne marque pas
  *    (DD caché : les jets n'en portent pas, seul le MJ les voit), et le verdict du groupe.
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { ROLL_TYPES } from "../core/group-roll.mjs";
-import { requestOf, viewOf, toolLabel } from "../adapter/group-roll.mjs";
+import { ROLL_TYPES, normalizeRequest } from "../core/group-roll.mjs";
+import { requestOf, viewOf, toolLabel, testTitle } from "../adapter/group-roll.mjs";
 import { requestGroupRoll } from "../runtime/group-roll.mjs";
 import { openTracker } from "./group-roll-tracker.mjs";
 import { route } from "../runtime/router.mjs";
@@ -70,6 +72,7 @@ const GroupRollApp = () => GroupRollClass ??= class GroupRollApp extends foundry
     position: { width: 520, height: "auto" },
     actions: {
       send: GroupRollApp.#send,
+      macro: GroupRollApp.#macro,
       tracker: () => openTracker(),
       pick: GroupRollApp.#pick
     }
@@ -125,6 +128,8 @@ const GroupRollApp = () => GroupRollClass ??= class GroupRollApp extends foundry
       </fieldset>
       <footer class="das-group-roll__foot">
         <button type="button" class="das-button ghost" data-action="tracker"><i class="fa-solid fa-list-check"></i>${esc(loc("JetGroupe.Suivi.Bouton"))}</button>
+        <button type="button" class="das-button ghost" data-action="macro" ${this.chosen.size ? "" : "disabled"}
+          data-tooltip="${esc(loc("JetGroupe.MacroAide"))}"><i class="fa-solid fa-code"></i>${esc(loc("JetGroupe.Macro"))}</button>
         <button type="button" class="das-button" data-action="send" ${this.chosen.size ? "" : "disabled"}>
           <i class="fa-solid fa-dice-d20"></i>${esc(loc("JetGroupe.Demander", { count: this.chosen.size }))}</button>
       </footer>
@@ -162,6 +167,37 @@ const GroupRollApp = () => GroupRollClass ??= class GroupRollApp extends foundry
     this.chosen = new Set(list.filter(a => (which === "all") || ((which === "online") && ownersOf(a).some(u => u.active))).map(a => a.uuid));
     this.#read(this.element.querySelector("form"));
     this.render();
+  }
+
+  /** La demande telle que la fenêtre la décrit, prête pour `api.rolls.request` (les personnages en uuid). */
+  #request() {
+    this.#read(this.element.querySelector("form"));
+    const v = this.values;
+    return { actors: [...this.chosen], type: v.type, key: v.key, dc: v.dc, hideDc: v.hideDc, bonus: v.bonus, label: v.label, group: v.group,
+      advantage: v.mode === "advantage", disadvantage: v.mode === "disadvantage" };
+  }
+
+  /**
+   * « Enregistrer en macro » : une macro de script (dans le répertoire des macros, à glisser dans la barre) qui refait cette demande —
+   * mêmes personnages (ceux qui n'existent plus sont ignorés), même test, mêmes options — par l'API publique du moteur.
+   */
+  static async #macro() {
+    const input = this.#request();
+    const { request, error } = normalizeRequest(input);
+    if ( error || !input.actors.length ) return ui.notifications.warn(loc("JetGroupe.Erreur"));
+    const data = { ...request, actors: input.actors };
+    const name = request.label || testTitle(request);
+    const command = [
+      `// DAS · Core — ${loc("JetGroupe.MacroCommentaire", { name })}`,
+      `const rolls = game.modules.get("dnd5e-combat")?.api?.rolls;`,
+      `if ( !rolls || !game.user.isGM ) return ui.notifications.warn(${JSON.stringify(loc("JetGroupe.MacroMJ"))});`,
+      `const request = ${JSON.stringify(data, null, 2)};`,
+      `request.actors = request.actors.filter(uuid => fromUuidSync(uuid));`,
+      `if ( !request.actors.length ) return ui.notifications.warn(${JSON.stringify(loc("JetGroupe.MacroPersonne"))});`,
+      `rolls.request(request);`
+    ].join("\n");
+    const macro = await Macro.implementation.create({ name, type: "script", img: "icons/svg/d20-highlight.svg", command });
+    if ( macro ) ui.notifications.info(loc("JetGroupe.MacroCreee", { name: macro.name }));
   }
 
   static async #send() {
@@ -206,24 +242,6 @@ function withSelection(token=null) {
 export function groupRollEntry(target) {
   if ( !game.user.isGM || !target?.actor?.system?.abilities ) return null;
   return { icon: "fa-solid fa-dice-d20", label: loc("JetGroupe.Menu"), run: () => openGroupRoll({ actors: withSelection(target) }) };
-}
-
-function onTokenHUD(hud, html) {
-  if ( !game.user.isGM ) return;
-  const token = hud.document;
-  const root = html instanceof HTMLElement ? html : html?.[0];
-  const column = root?.querySelector(".col.left");
-  if ( !token?.actor?.system?.abilities || !column ) return;
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "control-icon das-group-roll-hud";
-  button.dataset.tooltip = loc("JetGroupe.Menu");
-  button.innerHTML = `<i class="fa-solid fa-dice-d20"></i>`;
-  button.addEventListener("click", event => {
-    event.preventDefault(); event.stopPropagation();
-    openGroupRoll({ actors: withSelection(token) });
-  });
-  column.append(button);
 }
 
 /* -------------------------------------------- */
@@ -300,6 +318,5 @@ export function registerGroupRollUI() {
     tokens.tools["das-group-roll"] = { name: "das-group-roll", order: last + 1, icon: "fa-solid fa-dice-d20", title: "DND5ECOMBAT.JetGroupe.Titre",
       button: true, visible: true, onChange: () => openGroupRoll({ actors: withSelection() }) };
   }, { always: true, label: "group roll: tool" });
-  route("renderTokenHUD", onTokenHUD, { always: true, label: "group roll: token HUD" });
   route("dnd5e.renderChatMessage", onRenderCard, { always: true, label: "group roll: card" });
 }

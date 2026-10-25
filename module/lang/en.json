@@ -1638,5 +1638,11 @@
   "DND5ECOMBAT.JetGroupe.CarteBonus": "including +{bonus} added after the roll (Bardic Inspiration…)",
   "DND5ECOMBAT.JetGroupe.CarteDecision": "Rolled — waiting for the decision on a die to add (Bardic Inspiration…)",
   "DND5ECOMBAT.JetGroupe.Suivi.Decision": "deciding…",
-  "DND5ECOMBAT.Inspiration.QuestionSave": "{what}: {total}. Failed? Use your Bardic Inspiration ({formula})?"
+  "DND5ECOMBAT.Inspiration.QuestionSave": "{what}: {total}. Failed? Use your Bardic Inspiration ({formula})?",
+  "DND5ECOMBAT.JetGroupe.Macro": "Save as macro",
+  "DND5ECOMBAT.JetGroupe.MacroAide": "Creates a macro that makes this request again (same characters, same check) — drag it to the macro bar.",
+  "DND5ECOMBAT.JetGroupe.MacroCommentaire": "requested roll “{name}” (created by the “Request a roll” window)",
+  "DND5ECOMBAT.JetGroupe.MacroMJ": "DAS · Core: only the GM can request a roll.",
+  "DND5ECOMBAT.JetGroupe.MacroPersonne": "DAS · Core: none of this request's characters exists anymore.",
+  "DND5ECOMBAT.JetGroupe.MacroCreee": "Macro “{name}” created in the macro directory."
 }

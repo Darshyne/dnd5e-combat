@@ -265,6 +265,7 @@ export function selfEntries(token) {
   // §41.3 : ce token suit quelqu'un.
   const leader = leaderOf(token);
   if ( leader ) entries.push({ icon: "fa-solid fa-person-walking-arrow-right", label: loc("Menu.NePlusSuivre", { name: leader.name }), run: () => unfollow(token) });
+  pushGroupRoll(entries, token);   // §242 : MJ
   // §102 : les modules voisins ajoutent aussi leurs entrées sur son propre token (hook `tokenMenu`, `target === token`).
   const all = withNeighbourEntries(entries, token, token, false);
   // Le menu remplace le HUD du cœur au clic droit : son propriétaire (pas seulement le MJ) le retrouve par cette entrée.
@@ -412,9 +413,11 @@ function tokenEntries(token, target, { aggressive=true }={}) {
   return entries;
 }
 
-/** §242 : MJ, sur un personnage joueur — « Demander un jet » (la fenêtre de demande, ce token et la sélection cochés). */
+/**
+ * §242 : MJ, sur une créature — « Demander un jet » (la fenêtre de demande, ce token et la sélection cochés). Dans le menu du moteur seulement
+ * (retour de l'utilisateur, 2026-10-25 : pas dans le HUD du token) ; sur son propre token aussi, où l'entrée « HUD » le garde à portée.
+ */
 function pushGroupRoll(entries, target) {
-  if ( target?.actor?.type !== "character" ) return;
   const entry = groupRollEntry(target);
   if ( entry ) entries.push(entry);
 }

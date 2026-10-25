@@ -1638,5 +1638,11 @@
   "DND5ECOMBAT.JetGroupe.CarteBonus": "dont +{bonus} ajouté après le jet (Inspiration bardique…)",
   "DND5ECOMBAT.JetGroupe.CarteDecision": "Jet fait — en attente de la décision sur un dé à ajouter (Inspiration bardique…)",
   "DND5ECOMBAT.JetGroupe.Suivi.Decision": "décide…",
-  "DND5ECOMBAT.Inspiration.QuestionSave": "{what} : {total}. Raté ? Utiliser votre Inspiration bardique ({formula}) ?"
+  "DND5ECOMBAT.Inspiration.QuestionSave": "{what} : {total}. Raté ? Utiliser votre Inspiration bardique ({formula}) ?",
+  "DND5ECOMBAT.JetGroupe.Macro": "Enregistrer en macro",
+  "DND5ECOMBAT.JetGroupe.MacroAide": "Crée une macro qui refait cette demande (mêmes personnages, même test) — à glisser dans la barre de macros.",
+  "DND5ECOMBAT.JetGroupe.MacroCommentaire": "jet demandé « {name} » (créé par la fenêtre « Demander un jet »)",
+  "DND5ECOMBAT.JetGroupe.MacroMJ": "DAS · Core : seul le MJ peut demander un jet.",
+  "DND5ECOMBAT.JetGroupe.MacroPersonne": "DAS · Core : aucun des personnages de cette demande n'existe plus.",
+  "DND5ECOMBAT.JetGroupe.MacroCreee": "Macro « {name} » créée dans le répertoire des macros."
 }

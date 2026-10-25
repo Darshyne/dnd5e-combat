@@ -38,11 +38,10 @@ import { closeRollDialogAfter } from "../adapter/dialogs.mjs";
 import { actorOfEffect } from "../adapter/grapple.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { pilotOf, isIntangible } from "../adapter/pilot.mjs";
-import { rulerShown, continuedFlags } from "../adapter/movement.mjs";
+import { walkOptions, continuedFlags } from "../adapter/movement.mjs";
 import { historyCosts, positionOf, tokenCenter, combatantFor, readBudget, writeBudget } from "../adapter/turn.mjs";
 import { settingOr } from "../adapter/settings.mjs";
 import { ALTITUDE_SETTING } from "./altitude.mjs";
-import { FACING_SETTING } from "./facing.mjs";
 import { movementCap, isGrappled, approach, gapCells } from "./actions.mjs";
 import { footprintOf, sizeOf, cellOf } from "../adapter/movement.mjs";
 import { rayBlocker } from "../adapter/cover.mjs";
@@ -359,7 +358,7 @@ export async function startClimb(token, { cells=null, acrobatic=false }={}) {
     // l'écrivaient se marchaient dessus) ; on l'attend, sinon dnd5e mettrait le grimpeur « En chute » entre la montée et le statut.
     await statusSettled(token, true);
   }
-  await token.move([{ elevation: from + (n * grid.distance), action: "climb" }], { showRuler: rulerShown() });
+  await token.move([{ elevation: from + (n * grid.distance), action: "climb" }], walkOptions());
   // §217 : une montée qui passe la limite d'un niveau (20 ft : First → Second Floor) se termine en deux temps chez le cœur — jugée trop
   // tôt, elle passait pour refusée : le mode était rendu, le grimpeur restait en l'air et tombait.
   await elevationSettled(token, from);
@@ -425,7 +424,7 @@ export async function climbToCeiling(token) {
     await token.update({ movementAction: "climb", [`flags.${MODULE_ID}.${CLIMB_FLAG}`]: { from: mode, checkedAt: Date.now() } }, ALTITUDE_OPTIONS);
     await statusSettled(token, true);
   }
-  if ( need.cells > 0 ) await token.move([{ elevation: need.perch, action: "climb" }], { showRuler: rulerShown() });
+  if ( need.cells > 0 ) await token.move([{ elevation: need.perch, action: "climb" }], walkOptions());
   if ( Math.abs((token._source.elevation ?? 0) - need.perch) > 1e-6 ) {
     if ( !already ) await token.update({ movementAction: mode, [`flags.${MODULE_ID}.${CLIMB_FLAG}`]: null }, ALTITUDE_OPTIONS);
     ui.notifications.warn(loc("Escalade.Impossible", { name: token.name }));
@@ -478,7 +477,7 @@ export async function climbDown(token, { cells=null }={}) {
     await token.update({ [`flags.${MODULE_ID}.${CLIMB_FLAG}`]: { ...(climbFlag(token) ?? {}), ceiling: false } }, ALTITUDE_OPTIONS);
     await statusSettled(token, true);
   }
-  await token.move([{ elevation: from - (n * grid.distance), action: "climb" }], { showRuler: rulerShown() });
+  await token.move([{ elevation: from - (n * grid.distance), action: "climb" }], walkOptions());
   await elevationSettled(token, from);
   if ( Math.abs((token._source.elevation ?? 0) - from) < 1e-6 ) {
     ui.notifications.warn(loc("Escalade.Impossible", { name: token.name }));
@@ -534,12 +533,13 @@ export async function hoistOnto(token, ledge) {
 /**
  * Le miroir vertical d'un token au plafond, tenu par le MJ actif (§192.4 point 8) : `texture.scaleY` inversé en arrivant au plafond
  * (l'échelle d'origine gardée dans `flags.dnd5e-combat.ceilingFlip`), rendu dès qu'il n'y est plus (descente, chute, mode changé) —
- * seulement si le réglage « Orienter les tokens dans le sens du mouvement » est inactif (avec lui, le token tourne déjà). En file par
- * token : deux mises à jour qui se suivent ne l'écrivent pas en même temps.
+ * seulement si le token ne tourne pas déjà en marchant : rotation automatique du cœur coupée (`core.tokenAutoRotate`, §246) ou
+ * rotation verrouillée sur le token. En file par token : deux mises à jour qui se suivent ne l'écrivent pas en même temps.
  */
 const syncFlip = token => enqueue(`climb-flip:${token.uuid}`, async () => {
   const kept = token.getFlag(MODULE_ID, FLIP_FLAG) ?? null;
-  const wanted = isOnCeiling(token) && !settingOr(FACING_SETTING, true);
+  const turns = (game.settings.get("core", "tokenAutoRotate") === true) && !token.lockRotation;
+  const wanted = isOnCeiling(token) && !turns;
   if ( wanted && !kept ) {
     const scaleY = token._source.texture?.scaleY ?? 1;
     await token.update({ "texture.scaleY": flippedScale(scaleY), [`flags.${MODULE_ID}.${FLIP_FLAG}`]: { scaleY } }, ALTITUDE_OPTIONS);

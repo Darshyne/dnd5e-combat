@@ -18,6 +18,7 @@ import { ddbItemsAtRisk } from "../runtime/diagnostic/checks.mjs";
 
 const SEEN_SETTING = "welcomeSeen";
 const DDB_SETTING = "ddbNotice";
+const ROTATION_SETTING = "autoRotateNotice";
 const LINKS = Object.freeze({
   site: "https://darshyne.github.io", discord: "https://discord.gg/PDSq8dYdTP", github: "https://github.com/Darshyne/dnd5e-combat"
 });
@@ -147,10 +148,13 @@ export function registerWelcome({ menu=false }={}) {
     icon: "fa-solid fa-dragon", type: WelcomeApp(), restricted: true
   });
   game.settings.register(MODULE_ID, DDB_SETTING, { scope: "world", config: false, type: Number, default: 0 });
+  game.settings.register(MODULE_ID, ROTATION_SETTING, { scope: "world", config: false, type: Boolean, default: false });
   route("ready", () => {
     if ( !game.users.activeGM?.isSelf ) return;
-    if ( !game.settings.get(MODULE_ID, SEEN_SETTING) ) return openWelcome();
+    // Un monde neuf n'a jamais eu l'ancien réglage d'orientation : rien à lui dire (§246).
+    if ( !game.settings.get(MODULE_ID, SEEN_SETTING) ) return game.settings.set(MODULE_ID, ROTATION_SETTING, true).then(openWelcome);
     noticeDdb().catch(err => console.error(`${MODULE_ID} | DDB notice`, err));
+    noticeRotation().catch(err => console.error(`${MODULE_ID} | auto-rotation notice`, err));
   }, { label: "welcome screen" });
 }
 
@@ -163,4 +167,23 @@ async function noticeDdb() {
   const told = game.settings.get(MODULE_ID, DDB_SETTING);
   if ( count !== told ) await game.settings.set(MODULE_ID, DDB_SETTING, count);
   if ( count > told ) ui.notifications.warn(loc("Diagnostic.DdbAvis", { count }));
+}
+
+/**
+ * §246 (issue #20) : le réglage du moteur « Orienter les tokens dans le sens du mouvement » (`faceMovement`, actif par défaut) a été
+ * retiré au profit de la « Rotation automatique des tokens » du cœur (`core.tokenAutoRotate`). Une seule fois, au MJ actif : si
+ * l'ancien réglage n'avait pas été coupé (sa valeur gardée par le monde, lue telle quelle — il n'est plus déclaré) et que celui du
+ * cœur l'est, le MJ choisit d'allumer celui du cœur. Sinon rien : les tokens tournaient et tournent encore.
+ */
+async function noticeRotation() {
+  if ( game.settings.get(MODULE_ID, ROTATION_SETTING) ) return;
+  await game.settings.set(MODULE_ID, ROTATION_SETTING, true);
+  const stored = game.settings.storage.get("world")?.getSetting(`${MODULE_ID}.faceMovement`)?._source?.value;
+  if ( (stored === "false") || (game.settings.get("core", "tokenAutoRotate") === true) ) return;
+  const yes = await foundry.applications.api.DialogV2.confirm({
+    window: { title: loc("Accueil.Rotation.Titre") },
+    content: `<p>${esc(loc("Accueil.Rotation.Texte"))}</p>`,
+    rejectClose: false
+  });
+  if ( yes ) await game.settings.set("core", "tokenAutoRotate", true);
 }

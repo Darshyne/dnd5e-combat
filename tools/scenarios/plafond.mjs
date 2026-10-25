@@ -40,8 +40,9 @@ export default {
     };
     const rules = await ctx.engine("setting", { key: "climbRules", value: "2024" });
     ctx.restore(() => ctx.engine("setting", { key: "climbRules", value: rules?.before ?? "2024" }));
-    const facing = await ctx.engine("setting", { key: "faceMovement", value: false });
-    ctx.restore(() => ctx.engine("setting", { key: "faceMovement", value: facing?.before ?? true }));
+    // §246 : sans la rotation automatique du cœur, le token au plafond est retourné (`ceilingFlip`).
+    const facing = await ctx.engine("foreignSetting", { namespace: "core", key: "tokenAutoRotate", value: false });
+    ctx.restore(() => ctx.engine("foreignSetting", { namespace: "core", key: "tokenAutoRotate", value: facing?.before ?? true }));
     ctx.restore(reset);
     ctx.restore(() => ctx.removeEffectsFrom(hero, "spider-climb"));
     const statusesOf = async () => (await ctx.effects(hero)).filter(e => !e.disabled).flatMap(e => e.statuses ?? []);

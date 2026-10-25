@@ -193,21 +193,6 @@ describe("déplacement dépensé (§16.10)", () => {
   });
 });
 
-import { facingRotation } from "../module/scripts/core/movement.mjs";
-
-describe("facingRotation (§18.27)", () => {
-  it("sud = 0, ouest = 90, nord = 180, est = 270", () => {
-    expect(facingRotation(0, 1)).toBe(0);
-    expect(facingRotation(-1, 0)).toBe(90);
-    expect(facingRotation(0, -1)).toBe(180);
-    expect(facingRotation(1, 0)).toBe(270);
-  });
-  it("diagonale sud-est = 315 ; sans déplacement : null", () => {
-    expect(facingRotation(1, 1)).toBe(315);
-    expect(facingRotation(0, 0)).toBeNull();
-  });
-});
-
 describe("vitesse de l'action de déplacement (§229)", () => {
   const types = { walk: {}, burrow: {}, climb: { walkFallback: true }, fly: {}, jump: {}, swim: { walkFallback: true } };
   const wraith = { walk: 5, fly: 60, swim: 0, burrow: 0, climb: 0 };

@@ -9,7 +9,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { combatantFor, distanceBetween, positionOf } from "../adapter/turn.mjs";
 import { pilotOf, summonerToken, groupTokens } from "../adapter/pilot.mjs";
 import { lengthIn } from "../adapter/units.mjs";
-import { continuedFlags, rulerShown } from "../adapter/movement.mjs";
+import { continuedFlags, walkOptions } from "../adapter/movement.mjs";
 import { fearSources } from "../adapter/conditions.mjs";
 import { movesCloser } from "../core/conditions.mjs";
 import { opportunityThreats, resolveOpportunity, splitForReady } from "./reactions.mjs";
@@ -73,18 +73,18 @@ function opportunityFirst(token, movement, operation) {
     if ( split ) {
       if ( !(await resolveOpportunity(token, split.before)) ) return;
       if ( split.first.length ) {
-        await token.move(split.first, { showRuler: rulerShown(), [MODULE_ID]: { cleared: true } });
+        await token.move(split.first, { ...walkOptions(movement), [MODULE_ID]: { cleared: true } });
         const animation = token.object?.movementAnimationPromise;
         if ( animation ) await Promise.race([animation, new Promise(resolve => setTimeout(resolve, 10000))]);
       }
       if ( !(await resolveOpportunity(token, [split.ready])) ) return;
-      if ( split.rest.length ) await token.move(split.rest, { showRuler: rulerShown() });
+      if ( split.rest.length ) await token.move(split.rest, walkOptions(movement));
       return;
     }
     if ( !(await resolveOpportunity(token, threats)) ) return;
     const again = waypoints.map(({ x, y, elevation, width, height, depth, shape, level, action, snapped, explicit, checkpoint }) =>
       ({ x, y, elevation, width, height, depth, shape, level, action, snapped, explicit, checkpoint }));
-    await token.move(again, { showRuler: rulerShown(), [MODULE_ID]: { cleared: true } });
+    await token.move(again, { ...walkOptions(movement), [MODULE_ID]: { cleared: true } });
   })().catch(err => console.error(`${MODULE_ID} | opportunity attack before movement`, err));
   return false;
 }

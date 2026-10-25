@@ -97,17 +97,6 @@ export function dragAllowance(cap, spent, multiplier) {
 }
 
 /**
- * §18.27 : la rotation (degrés, sens horaire, comme `TokenDocument#rotation`) qui tourne un token vers un déplacement de
- * (dx, dy) — y vers le bas. Rotation 0 = face au sud : la convention du cœur (un cône de vision de rotation 0 regarde vers
- * le bas), et celle des tokens vus de dessus. null si le déplacement est nul.
- */
-export function facingRotation(dx, dy) {
-  if ( !dx && !dy ) return null;
-  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;   // 0 = est, 90 = sud
-  return Math.round(((angle - 90) % 360 + 360) % 360);
-}
-
-/**
  * §229 : la vitesse qui borne un déplacement selon l'action de déplacement du token (marche, vol, nage…), comme la règle de dnd5e
  * la colore (canvas/ruler.mjs, `#getSpeedBasedStyle`) : la vitesse de cette action ; pour une action qui retombe sur la marche
  * (`walkFallback` : escalade, nage) ou qui n'est pas un mode de dnd5e (`ethereal`, ramper…), la plus grande des deux. Avant, le moteur

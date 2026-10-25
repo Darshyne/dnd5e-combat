@@ -76,6 +76,18 @@ export function cellUnder(token, point) {
  */
 export const rulerShown = () => game.combat?.started === true;
 
+/**
+ * §246 (issue #20) : les options d'une marche du moteur — la règle (`rulerShown`) et la rotation automatique du cœur. Un
+ * `token.move()` sans méthode est « api », que le cœur ne tourne jamais (documents/token.mjs:1741) ; seuls le glisser et le clavier
+ * suivent le réglage « Rotation automatique des tokens » (`core.tokenAutoRotate`, game.mjs:1421). Une marche du moteur (chemin A*,
+ * `api.approach`, fuite, reprise d'un glisser arrêté) le suit comme eux ; une téléportation, une chute ou un pas `displace` ne la
+ * prend pas. Le cœur tourne le token par segment pendant l'animation et garde la rotation du dernier (token.mjs:2461).
+ * `movement` : le déplacement arrêté à `preMoveToken` qu'on rejoue (attaques d'opportunité, réalignement, chausse-trapes) — il garde
+ * sa propre rotation (un glisser la suit, une téléportation non).
+ */
+export const walkOptions = movement => ({ showRuler: rulerShown(),
+  autoRotate: movement ? (movement.autoRotate === true) : (game.settings.get("core", "tokenAutoRotate") === true) });
+
 export const isDefeated = token => token.actor?.statuses?.has(CONFIG.specialStatusEffects.DEFEATED) === true;
 
 /* -------------------------------------------- */
@@ -397,7 +409,7 @@ async function walkMoves(token, plan, options, state) {
     // §219 : `overWalls` — sauter du bord d'un toit à ciel ouvert vers plus bas, par-dessus le mur « garde-fou » qui borde ce bord.
     const constrainOptions = (isIntangible(token) || options[MODULE_ID].overWalls)
       ? { ...(isIntangible(token) ? { ignoreTokens: true } : {}), ...(options[MODULE_ID].overWalls ? { ignoreWalls: true } : {}) } : undefined;
-    const done = await token.move(checkpointed(move, !options[MODULE_ID].follow), { showRuler: rulerShown(), ...(constrainOptions ? { constrainOptions } : {}), ...options });
+    const done = await token.move(checkpointed(move, !options[MODULE_ID].follow), { ...walkOptions(), ...(constrainOptions ? { constrainOptions } : {}), ...options });
     // Dans un onglet masqué l'animation ne se termine jamais : on n'attend pas indéfiniment. Un pas `displace` qui change de niveau
     // (escalier) n'a rien à attendre : téléporté sur un niveau que la vue n'affiche pas encore, le token ne finit jamais son animation
     // et chaque escalier coûtait les 10 s du filet (vu le 2026-09-29 : 22 à 24 s l'aller-retour du scénario `escaliers`, §38.8).

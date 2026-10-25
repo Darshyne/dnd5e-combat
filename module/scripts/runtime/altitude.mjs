@@ -24,7 +24,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { placementOf, alignPath, modeShift, coherentElevation, speedFor, flightChoice } from "../core/altitude.mjs";
 import { climbSystemOn } from "../core/climb-system.mjs";
-import { rulerShown, continuedFlags } from "../adapter/movement.mjs";
+import { walkOptions, continuedFlags } from "../adapter/movement.mjs";
 import { boundsUnder, levelAt, clearanceOf, modeRefusalFor, groundModeOf, effectiveMode, grantSpeedFor, revokeSpeedsBut, grantedSpeedEffects, isAirborne, speedsOf } from "../adapter/altitude.mjs";
 import { pilotOf, isIntangible } from "../adapter/pilot.mjs";
 import { route } from "./router.mjs";
@@ -337,7 +337,7 @@ function onPreMoveToken(token, movement, operation) {
     const again = waypoints.map(w => ({ ...copyOf(w), action: (placementOf(w.action) === "ground") ? implied : w.action }));
     (async () => {
       if ( !(await switchMode(token, implied, null)) ) return;
-      await token.move(again, { showRuler: rulerShown() });
+      await token.move(again, walkOptions(movement));
     })().catch(err => console.error(`${MODULE_ID} | movement in the elevation's mode`, err));
     return false;
   }
@@ -352,7 +352,7 @@ function onPreMoveToken(token, movement, operation) {
   if ( !result.kept ) return false;
   const again = waypoints.slice(0, result.kept).map((w, n) => ({ ...copyOf(w), elevation: result.elevations[n], level: levels[n] }));
   const from = token._source.level;
-  token.move(again, { showRuler: rulerShown(), [MODULE_ID]: { altitude: true } }).then(() => relevelled && followLevel(token, from))
+  token.move(again, { ...walkOptions(movement), [MODULE_ID]: { altitude: true } }).then(() => relevelled && followLevel(token, from))
     .catch(err => console.error(`${MODULE_ID} | movement aligned to the ground`, err));
   return false;
 }

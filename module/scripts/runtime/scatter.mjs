@@ -13,7 +13,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { readAreaState, lastingRegions, isInside } from "../adapter/areas.mjs";
 import { positionOf, committedPosition } from "../adapter/turn.mjs";
-import { continuedFlags, rulerShown } from "../adapter/movement.mjs";
+import { continuedFlags, walkOptions } from "../adapter/movement.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { firstEntry, shouldTrigger, turnKeyOf } from "../core/area.mjs";
 import { route } from "./router.mjs";
@@ -124,7 +124,7 @@ export function scatterStop(token, movement, operation) {
   const action = waypoints[0].action;
   const cut = path.slice(1, k + 1).map(p => ({ ...p, action }));
   log(`${token.name}: steps onto ${zone?.name ?? "a scattered item"}, stops there`);
-  token.move(cut, { showRuler: rulerShown(), [MODULE_ID]: { ...(flags ?? {}), scatterChecked: true } })
+  token.move(cut, { ...walkOptions(movement), [MODULE_ID]: { ...(flags ?? {}), scatterChecked: true } })
     .catch(err => console.error(`${MODULE_ID} | scattered item: stop on entry`, err));
   return false;
 }

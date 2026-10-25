@@ -214,8 +214,6 @@
   "DND5ECOMBAT.Reglage.pathPreview.Aide": "Exibe sob o ponteiro o caminho que será percorrido.",
   "DND5ECOMBAT.Reglage.releaseTargets.Nom": "Liberar alvos automaticamente",
   "DND5ECOMBAT.Reglage.releaseTargets.Aide": "Os alvos são liberados após a resolução da ação (ataques e salvaguardas) e ao final do turno.",
-  "DND5ECOMBAT.Reglage.faceMovement.Nom": "Orientar os tokens no sentido do movimento",
-  "DND5ECOMBAT.Reglage.faceMovement.Aide": "Um token andando se vira para a direção do deslocamento (pressupõe imagem voltada para o sul com rotação 0, conforme o Foundry); mantém a rotação do último passo. Não se aplica a teletransportes ou tokens com rotação travada.",
   "DND5ECOMBAT.DemandeSauvegardeJoueur": "{name}: salvaguarda solicitada ({item}).",
   "DND5ECOMBAT.Toucher.HorsDatteinte": "Fora do alcance neste turno",
   "DND5ECOMBAT.Toucher.Critique": "crítico {percent}%",

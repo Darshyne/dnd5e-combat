@@ -20,7 +20,7 @@ import { overlapsVertically, verticalExtent, verticalGap } from "../core/space.m
 import { pilotOf, pilotOfActor, commandPlan, commandDistance, commandActivities, summonerToken, isIntangible } from "../adapter/pilot.mjs";
 import { readUnitFactors, lengthIn } from "../adapter/units.mjs";
 import { sharesSpaceWith } from "../adapter/space-sharing.mjs";
-import { planPath, previewPath, walk, stopAllWalks, cellUnder, footprintOf, sizeOf, cellOf, stairsEntry, rulerShown } from "../adapter/movement.mjs";
+import { planPath, previewPath, walk, stopAllWalks, cellUnder, footprintOf, sizeOf, cellOf, stairsEntry, walkOptions } from "../adapter/movement.mjs";
 import { hasLineOfSight } from "../adapter/vision.mjs";
 import { victimsOf, sizeRankOf } from "../adapter/grapple.mjs";
 import { basicActionOf, unarmedAttackOf } from "../adapter/basics.mjs";
@@ -366,7 +366,7 @@ async function enterStairs(token, plan, stairs, cell, action) {
   const here = cellOf(token);
   const entry = stairs.entries?.get(`${here.i},${here.j}`) ?? cell;
   const step = { ...token.parent.grid.getTopLeftPoint(entry), snapped: true, ...(action ? { action } : {}) };
-  await token.move([step], { showRuler: rulerShown() });
+  await token.move([step], walkOptions());
 }
 
 /**

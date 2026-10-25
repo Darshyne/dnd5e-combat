@@ -14,8 +14,10 @@ import { route } from "../runtime/router.mjs";
 import { loc, esc } from "../runtime/shared.mjs";
 import { LOGO } from "../runtime/diagnostic/backup.mjs";
 import { openDiagnostic } from "./diagnostic.mjs";
+import { ddbItemsAtRisk } from "../runtime/diagnostic/checks.mjs";
 
 const SEEN_SETTING = "welcomeSeen";
+const DDB_SETTING = "ddbNotice";
 const LINKS = Object.freeze({
   site: "https://darshyne.github.io", discord: "https://discord.gg/PDSq8dYdTP", github: "https://github.com/Darshyne/dnd5e-combat"
 });
@@ -144,9 +146,21 @@ export function registerWelcome({ menu=false }={}) {
     name: "DND5ECOMBAT.Accueil.Menu.Nom", label: "DND5ECOMBAT.Accueil.Menu.Bouton", hint: "DND5ECOMBAT.Accueil.Menu.Aide",
     icon: "fa-solid fa-dragon", type: WelcomeApp(), restricted: true
   });
+  game.settings.register(MODULE_ID, DDB_SETTING, { scope: "world", config: false, type: Number, default: 0 });
   route("ready", () => {
     if ( !game.users.activeGM?.isSelf ) return;
-    if ( game.settings.get(MODULE_ID, SEEN_SETTING) ) return;
-    openWelcome();
+    if ( !game.settings.get(MODULE_ID, SEEN_SETTING) ) return openWelcome();
+    noticeDdb().catch(err => console.error(`${MODULE_ID} | DDB notice`, err));
   }, { label: "welcome screen" });
+}
+
+/**
+ * §245 : une seule notification au MJ actif quand des objets importés de D&D Beyond risquent de ne pas être automatisés (la liste est
+ * dans le diagnostic, vérification « ddb »). Le nombre signalé est gardé : rien de plus tant qu'il n'augmente pas (un nouvel import).
+ */
+async function noticeDdb() {
+  const count = (await ddbItemsAtRisk()).length;
+  const told = game.settings.get(MODULE_ID, DDB_SETTING);
+  if ( count !== told ) await game.settings.set(MODULE_ID, DDB_SETTING, count);
+  if ( count > told ) ui.notifications.warn(loc("Diagnostic.DdbAvis", { count }));
 }

@@ -12,6 +12,7 @@ import { basicActionData } from "../../adapter/basics.mjs";
 import { scrollSpellOf } from "../../adapter/scrolls.mjs";
 import { localizeEffectNames } from "../../core/localize.mjs";
 import { referenceReader, retranslationOf, applyRetranslation } from "../../adapter/retranslate.mjs";
+import { contentOf } from "../../adapter/content.mjs";
 
 /**
  * §202 : les effets d'une référence du compendium, prêts à recopier — un effet au nom d'origine (anglais) de l'objet prend le nom
@@ -388,6 +389,55 @@ const scrolls = {
 };
 
 /* -------------------------------------------- */
+/*  4 bis. Objets importés de D&D Beyond          */
+/* -------------------------------------------- */
+
+/**
+ * §245 (issue #21) : un objet importé par DDB Importer (`flags.ddbimporter`) porte ses activités et ses effets sous d'autres ids que
+ * l'objet officiel (Manuel, SRD). Une règle du contenu qui cite l'un de ces ids ne trouve rien : l'automatisation de l'objet peut ne
+ * rien faire (l'Armure d'Agathys donnait ses PV temporaires, pas sa riposte). Le moteur ne s'y adapte pas, par décision : le
+ * diagnostic les signale, sans rien réparer. Ne sont retenus que les objets dont la règle cite un id d'activité ou d'effet de l'objet
+ * officiel absent de l'objet importé ; sans objet officiel dans le monde, les ids cités qui ont l'allure d'un id Foundry (16
+ * caractères, au moins un chiffre).
+ * @returns {Promise<Array<{item: Item, official: Item|null, viaMidi: boolean}>>}
+ */
+export async function ddbItemsAtRisk() {
+  const out = [];
+  for ( const item of allItems() ) {
+    if ( !item.flags?.ddbimporter ) continue;
+    const { entry } = contentOf(item);
+    if ( !entry ) continue;
+    const cited = new Set(JSON.stringify(entry).match(/[A-Za-z0-9]{16}/g) ?? []);
+    if ( !cited.size ) continue;
+    const official = await officialFor(item).catch(() => null);
+    const idsOf = doc => new Set([...Object.keys(doc?._source?.system?.activities ?? {}), ...(doc?.effects?.map(e => e.id) ?? [])]);
+    const own = idsOf(item);
+    const reference = official ? idsOf(official) : null;
+    const relevant = [...cited].filter(id => reference ? reference.has(id) : /\d/.test(id));
+    if ( !relevant.some(id => !own.has(id)) ) continue;
+    // La vérification « Midi-QOL » remplace déjà cet objet par l'officiel (fiche touchée par Midi, objet à reprendre).
+    const actor = item.parent?.documentName === "Actor" ? item.parent : null;
+    const viaMidi = !!official && !!actor && touchedByMidi(actor) && needsWork(item);
+    out.push({ item, official, viaMidi });
+  }
+  return out;
+}
+
+const ddb = {
+  id: "ddb", icon: "fa-brands fa-d-and-d-beyond",
+  async scan() {
+    const t = tr("Ddb");
+    return (await ddbItemsAtRisk()).map(({ item, official, viaMidi }) => {
+      const name = esc(item.name);
+      const text = viaMidi ? t("LineMidi", { name, official: esc(official.name) })
+        : official ? t("Line", { name, official: esc(official.name), pack: esc(official.pack ?? "") })
+        : t("LineNone", { name });
+      return { root: rootOf(item), where: whereOf(item), text };
+    });
+  }
+};
+
+/* -------------------------------------------- */
 /*  5. Actions de base sur les tas d'Item Piles   */
 /* -------------------------------------------- */
 
@@ -495,4 +545,4 @@ const retranslate = {
 };
 
 /** Les vérifications, dans l'ordre où les macros les proposaient. */
-export const CHECKS = Object.freeze([cleanMidi, phbEffects, lostEffects, scrolls, pileBasics, creatures, retranslate]);
+export const CHECKS = Object.freeze([cleanMidi, phbEffects, lostEffects, scrolls, ddb, pileBasics, creatures, retranslate]);

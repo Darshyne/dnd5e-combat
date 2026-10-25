@@ -197,9 +197,22 @@ const highJumpOffered = () => { try { return game.settings.get(MODULE_ID, HIGH_J
 export const NONLETHAL_MENU_SETTING = "nonLethalMenu";
 const nonLethalOffered = () => { try { return game.settings.get(MODULE_ID, NONLETHAL_MENU_SETTING) === true; } catch { return false; } };
 
+/**
+ * §243 : les modules voisins ajoutent leurs entrées au menu d'une case (un coffre posé au sol : « Fouiller ») par le hook
+ * `dnd5e-combat.groundMenu` — `(entries, { token, point })`, `point` le point de la scène cliqué, chaque entrée `{ icon, label,
+ * run(event) }` poussée dans `entries`. Elles passent **avant** celles du moteur (ce qui est sur la case d'abord, puis s'y déplacer).
+ * Comme `tokenMenu`, le hook peut partir plusieurs fois pour un même clic droit : un écouteur ne fait qu'ajouter des entrées.
+ */
+function neighbourGroundEntries(token, point) {
+  const entries = [];
+  Hooks.callAll(`${MODULE_ID}.groundMenu`, entries, { token, point });
+  return entries.filter(e => e && (typeof e.run === "function") && e.label);
+}
+
 export function groundEntries(token, point) {
   const high = highJumpOffered();
   return [
+    ...neighbourGroundEntries(token, point),
     ...stairsEntries(token, point),
     { icon: "fa-solid fa-person-walking", label: loc("Menu.SeDeplacer"), run: () => moveTo(token, point) },
     { icon: "fa-solid fa-person-running", label: loc("Menu.Sauter"), run: () => jumpTo(token, point, { highOffered: high }) },

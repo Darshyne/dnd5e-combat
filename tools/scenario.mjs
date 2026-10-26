@@ -41,6 +41,7 @@ function makeContext(mcp) {
   const failures = [];
   const restorations = [];
   let scene = null;
+  const healed = new Set();   // tokens déjà remis à leurs PV max dans ce scénario (ctx.token)
   /** Heure des bornes rendues par `lastMessageId`, pour le cas où le message borne disparaît. */
   const stamps = new Map();
 
@@ -128,6 +129,31 @@ function makeContext(mcp) {
       const rank = t => (t.hidden ? 4 : 0) + (((t.level ?? null) === main) ? 0 : 2) + ((t.elevation ?? 0) ? 1 : 0);
       const found = tokens.filter(t => t.name === name).sort((a, b) => rank(a) - rank(b))[0];
       if ( !found ) throw new Error(`token « ${name} » absent de la scène (présents : ${[...new Set(tokens.map(t => t.name))].join(", ")})`);
+      // Caché par le MJ (le moteur le tient hors jeu pour tous, adapter/vision.mjs) : montré le temps du scénario qui le nomme, puis
+      // recaché — vu le 2026-10-26, l'Arène désencombrée à la main faisait échouer trente scénarios (« attaquant non vu »).
+      if ( found.hidden ) {
+        await mcp.call("update-scene-object", { type: "Token", objectId: found.id, data: { hidden: false } });
+        found.hidden = false;
+        console.log(`    👁 ${found.name} montré le temps du scénario (caché par le MJ)`);
+        restorations.unshift(async () => {
+          await mcp.call("update-scene-object", { type: "Token", objectId: found.id, data: { hidden: true } });
+          found.hidden = true;
+        });
+        await sleep(300);
+      }
+      // Blessé (PV sous le maximum calculé par dnd5e) : remis au maximum pour le scénario qui le nomme — le filet de sécurité remet ses
+      // PV d'avant ensuite. Vu le 2026-10-26 : le Guerrier à 8/13 et le Clerc à 6 PV faisaient échouer les scénarios qui lisent les PV
+      // du monde comme ceux d'un personnage indemne (Retour à la vie, Drain, Représailles infernales). Jamais baissés : des scénarios
+      // comptent sur un Zombi ou un Bandit plus robuste que sa fiche.
+      if ( !healed.has(found.id) ) {
+        healed.add(found.id);
+        const max = (await ctx.engine("stats", { tokenId: found.id }).catch(() => null))?.hp?.max;
+        const now = Number.isFinite(max) ? await ctx.hp(found).catch(() => null) : null;
+        if ( Number.isFinite(now) && (now > 0) && (now < max) ) {
+          await ctx.setHp(found, max);
+          console.log(`    ❤ ${found.name} remis à ${max} PV (${now} dans le monde) le temps du scénario`);
+        }
+      }
       return found;
     },
 
@@ -486,6 +512,9 @@ async function snapshotScene(mcp) {
       id: t.id, name: t.name, linked: !!data.actorLink, actorId: data.actorId,
       pos: { x: data.x, y: data.y, elevation: data.elevation ?? 0, level: data.level ?? null },
       hp: data.actorLink ? (actor?.system?.attributes?.hp?.value ?? null) : (data.delta?.system?.attributes?.hp?.value ?? null),
+      // Le maximum que porte le delta d'un token non lié (null : celui de la fiche) — les scénarios qui « endurcissent » le Bandit
+      // l'écrivent (300) ; non remis, il restait à 200 et faussait « indemne » dans les suivants (vu le 2026-10-26).
+      hpMax: data.actorLink ? null : (data.delta?.system?.attributes?.hp?.max ?? null),
       effects: new Set((data.actorLink ? (actor?.effects ?? []) : (data.delta?.effects ?? [])).map(e => e._id)),
       // §84 : les emplacements de sort restants d'un acteur lié (les scénarios qui consomment vidaient ceux du Clerc).
       spells: data.actorLink ? Object.fromEntries(Object.entries(actor?.system?.spells ?? {}).map(([k, v]) => [k, v?.value ?? null])) : null,
@@ -528,6 +557,12 @@ async function restoreScene(mcp, snap) {
       // §82 : token non lié qui héritait des PV de sa fiche ; le scénario lui en a écrit dans son delta — on les retire.
       await mcp.call("update-scene-object", { type: "Token", objectId: t.id, data: { "delta.system.attributes.hp.-=value": null } });
       fixed.push(`${t.name} PV ${hp} → ceux de la fiche`);
+    }
+    const hpMax = t.linked ? null : (data.delta?.system?.attributes?.hp?.max ?? null);
+    if ( !t.linked && (hpMax !== t.hpMax) ) {
+      const change = (t.hpMax === null) ? { "delta.system.attributes.hp.-=max": null } : { "delta.system.attributes.hp.max": t.hpMax };
+      await mcp.call("update-scene-object", { type: "Token", objectId: t.id, data: change });
+      fixed.push(`${t.name} PV max ${hpMax} → ${t.hpMax ?? "ceux de la fiche"}`);
     }
     if ( t.spells && actor ) {
       const changed = Object.entries(t.spells).filter(([k, v]) => (v !== null) && ((actor.system?.spells?.[k]?.value ?? null) !== v));
@@ -647,6 +682,15 @@ const stealthRules = await mcp.call("call-module-api", { moduleId: "dnd5e-combat
 // coupé à sa table (bouton de la barre des tokens) — vu le 2026-10-23 : 16 scénarios en défaut. Allumé le temps de la passe, puis remis.
 const climbSystem = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "climbSystem", value: true }, waitMs: 8000 })
   .then(r => r?.result?.before).catch(() => undefined);
+// 2026-10-26 : deux choix de table que les scénarios ne supposent pas — Attaque sournoise « demander » (`roublard` attend la question de
+// Frappe malicieuse, pas celle du choix ; `roublard-choix` passe lui-même en « demander ») et des fenêtres de combat plus courtes que
+// les 10 s par défaut (une réaction se fermait avant la réponse du scénario). Mis à leur défaut le temps de la passe, puis remis.
+const PINNED = { sneakAttackMode: "auto", combatWindowSeconds: 10 };
+const pinned = {};
+for ( const [key, value] of Object.entries(PINNED) ) {
+  pinned[key] = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key, value }, waitMs: 8000 })
+    .then(r => r?.result?.before).catch(() => undefined);
+}
 // Relevé des trous (2026-10-22) : une horloge qui avance le temps du monde hors combat (Simple Timekeeping de `dnd-6` : 600 s par
 // intervalle) fait expirer en quelques secondes une concentration ou un effet d'une minute, que dnd5e supprime hors combat — 61 faux
 // « non concentré » au premier balayage des sorts. Elle est arrêtée le temps de la passe (son réglage `paused`), puis remise.
@@ -728,6 +772,9 @@ for ( const file of files ) {
 if ( activeAtStart && (activeNow !== activeAtStart) ) await useScene(activeAtStart);
 if ( stealthRules !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "stealthRules", value: stealthRules }, waitMs: 8000 }).catch(() => null);
 if ( cones !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "visionCones", value: cones }, waitMs: 8000 }).catch(() => null);
+for ( const [key, value] of Object.entries(pinned) ) {
+  if ( value !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key, value }, waitMs: 8000 }).catch(() => null);
+}
 if ( climbSystem !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "climbSystem", value: climbSystem }, waitMs: 8000 }).catch(() => null);
 if ( clock !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "foreignSetting", args: { namespace: "simple-timekeeping", key: "paused", value: clock }, waitMs: 8000 }).catch(() => null);
 console.log(`\n${files.length - skipped - failed}/${files.length - skipped} scénario(s) tenus${skipped ? ` (${skipped} interactif(s) ou diagnostic(s) sauté(s))` : ""}`);

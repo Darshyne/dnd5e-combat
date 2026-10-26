@@ -39,6 +39,8 @@ export default {
     await pause(800);
     const on = await ctx.position(fighter);
     ctx.expect((on.x === home.zombi.x) && (on.y === home.zombi.y), `Éthéré, le Guerrier se tient sur la case du Zombi (${on.x}, ${on.y})`);
+    // PV au maximum calculé : laissé bas dans le monde (8 PV le 2026-10-26), le Guerrier ne pouvait pas perdre les 10 attendus.
+    await ctx.setHp(fighter, (await ctx.engine("stats", { tokenId: fighter.id }))?.hp?.max ?? hp0.fighter);
     const hpBefore = await ctx.hp(fighter);
     await ethereal(fighter, false);
     await pause(3000);

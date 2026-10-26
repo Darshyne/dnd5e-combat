@@ -33,10 +33,10 @@ describe("chargement du module", () => {
       "chatCards", "climb", "climbCeiling", "climbDown", "climbHolds", "climbState", "climbToward", "closeWindow", "controls",
       "cover", "dash", "diagnosticBackups", "diagnosticForget", "diagnosticRepair", "diagnosticRestore", "diagnosticScan",
       "door", "dropDown", "effectOrigins", "enchant", "endings", "etherealWalls", "factions", "familiar", "familiarPocket", "familiarRecall",
-      "flammable", "flight", "follow", "followState", "foreignSetting", "grab", "groupRoll", "groupRollBreakdown", "groupRollState", "heal", "hoist", "hurt", "identify", "inventory", "issues", "jump",
-      "lightState", "lock", "masteries", "menu", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "placeRegionAt",
+      "flammable", "flight", "follow", "followState", "foreignSetting", "grab", "groupRoll", "groupRollBreakdown", "groupRollForce", "groupRollMode", "groupRollState", "heal", "hoist", "hurt", "identify", "inventory", "issues", "jump",
+      "lightState", "lock", "masteries", "menu", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "placeMenu", "placeRegionAt",
       "plan", "planning", "portent", "range", "rawMove", "reachCheck", "ready", "reload", "reports", "restoreItem", "rollCard",
-      "rollCheck", "rollSave", "runMacro", "saveChance", "scatter", "sees", "sequencer", "setting", "skillAid", "skillAids",
+      "rollCheck", "rollSave", "runMacro", "saveChance", "scatter", "sees", "sequencer", "setting", "settingsChanged", "skillAid", "skillAids",
       "stairs", "stairsAt", "stats", "status", "stealth", "storm", "stormStrike", "summonAt", "takeStairs", "teleport",
       "teleportPick", "threats", "toggleLight", "transpose", "unfollow", "use", "view", "viewScene", "wall", "wallSide", "windows"]);
     expect(Object.isFrozen(api.api.mcp)).toBe(true);

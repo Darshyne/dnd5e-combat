@@ -123,6 +123,23 @@ export function menuEntriesFor(target) {
 }
 
 /**
+ * Le menu d'une porte (`wall` : Wall, WallDocument ou id) et celui d'une case (`point` : `{ x, y }` de la scène) pour le token en
+ * main, comme `menuEntriesFor` : les mêmes entrées que le clic droit, celles des voisins comprises (`doorMenu` §247, `groundMenu`
+ * §243). Vides sans token en main ou sur une autre scène.
+ */
+export function doorMenuFor(wall) {
+  const me = actingToken();
+  const placeable = (typeof wall === "string") ? canvas.walls?.get(wall) : (wall?.object ?? wall);
+  if ( !me || !placeable?.isDoor || (placeable.document.parent !== me.parent) ) return [];
+  return doorEntries(me, placeable).map(e => ({ icon: e.icon, label: e.label, run: event => exclusive(() => e.run(event)) }));
+}
+export function groundMenuFor(point) {
+  const me = actingToken();
+  if ( !me || (me.parent !== canvas.scene) || !Number.isFinite(point?.x) || !Number.isFinite(point?.y) ) return [];
+  return groundEntries(me, { x: point.x, y: point.y }).map(e => ({ icon: e.icon, label: e.label, run: event => exclusive(() => e.run(event)) }));
+}
+
+/**
  * §39.4 : les modules voisins ajoutent leurs entrées au menu d'un token (Darsh Loot : « Échanger » sur un autre PJ) par le
  * hook `dnd5e-combat.tokenMenu` — `(entries, { token, target, aggressive })`, chaque entrée `{ icon, label, run(event) }`
  * poussée dans `entries`. Le moteur n'en connaît aucun ; sans inscrit, le menu est le sien. Le hook peut partir plusieurs fois

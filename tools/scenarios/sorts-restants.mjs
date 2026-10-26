@@ -75,7 +75,9 @@ export default {
       await pause(1000);
       let rebuke = null;
       // PV au maximum le temps du test : tombé à 0 par le coup, le Clerc ne réagirait plus (vu le 2026-10-20 : 6 PV laissés par une partie).
-      const clericMax = (await ctx.call("get-actor", { actorId: cleric.actorId })).system?.attributes?.hp?.max ?? hp0.get(cleric.id);
+      // Le maximum calculé par dnd5e (une fiche de PJ ne le stocke pas : `hp.max` vaut null dans la source — vu le 2026-10-26, le Clerc
+      // laissé à 6 PV était « remis » à 6 et tombait au premier coup).
+      const clericMax = (await ctx.engine("stats", { tokenId: cleric.id }))?.hp?.max ?? hp0.get(cleric.id);
       for ( let i = 0; (i < 20) && !rebuke; i++ ) {
         await ctx.setHp(cleric, Math.max(clericMax, hp0.get(cleric.id)));
         await ctx.setHp(zombi, 60);

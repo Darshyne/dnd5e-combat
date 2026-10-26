@@ -54,7 +54,7 @@ import { clampPolyline, polylineLength, orthogonalize } from "../core/wall.mjs";
 import { closeMenu, onMenuShift, HIGH_JUMP_MENU_SETTING, NONLETHAL_MENU_SETTING } from "./pointer-menu.mjs";
 import { cancellable, clearPreview, forgetHover, lastPointer, onKeyDown, onModifierKey, onPointerDown, onPointerMove, onPointerUp, refusalFor, setCursor, trackPointer } from "./pointer-mouse.mjs";
 import { clearTargets, leftoverTargets, noteInFlight, offerEnchantedAttack, onFlurryUsed, onPostUseActivity, onPreRollDamage, onResolutionSettled, onTurnChange } from "./pointer-offers.mjs";
-export { menuEntriesFor } from "./pointer-menu.mjs";
+export { menuEntriesFor, doorMenuFor, groundMenuFor } from "./pointer-menu.mjs";
 
 export const setting = key => game.settings.get(MODULE_ID, key);
 export const inCombat = () => game.combat?.started === true;

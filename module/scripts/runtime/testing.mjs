@@ -22,7 +22,7 @@ import { gmOnly, windows, viewedToken } from "./testing-shared.mjs";
 import { climbEntries } from "./climb.mjs";
 import { climbSystemOn } from "../core/climb-system.mjs";
 import { flight, hoist, grab, jump, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, dash, door, lock, familiar, familiarPocket, familiarRecall, follow, followState, move, movement, plan, stairs, stairsAt, takeStairs, teleport, teleportPick, threats, transpose, unfollow, view } from "./testing-moves.mjs";
-import { range, ready, burning, actionEnd, attackReasons, budget, cover, effectOrigins, enchant, endings, factions, heal, hurt, identify, issues, naturalOne, overrideContent, perceived, portent, rollCheck, rollSave, saveChance, flammable, scatter, sees, skillAid, skillAids, stats, stealth, use, masteries, etherealWalls, groupRoll, groupRollState, groupRollBreakdown } from "./testing-rules.mjs";
+import { range, ready, burning, actionEnd, attackReasons, budget, cover, effectOrigins, enchant, endings, factions, heal, hurt, identify, issues, naturalOne, overrideContent, perceived, portent, rollCheck, rollSave, saveChance, flammable, scatter, sees, skillAid, skillAids, stats, stealth, use, masteries, etherealWalls, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode } from "./testing-rules.mjs";
 import { placeRegionAt, planning, storm, stormStrike, summonAt, wall, wallSide } from "./testing-areas.mjs";
 
 /** Ferme une fenêtre (un dialogue fermé vaut « non » : le déplacement mis en pause par le cœur se termine). */
@@ -206,6 +206,33 @@ function menu({ tokenId, targetId, run=null }) {
 }
 
 /**
+ * §243, §247 : les entrées du menu d'une porte (`wallId`) ou d'une case (`x`, `y`) pour `tokenId`, lues par l'API publique
+ * (`api.ui.doorMenu`, `api.ui.groundMenu`), avec celles des voisins. `probe` : une entrée d'essai ajoutée le temps de la lecture par
+ * le hook du menu (`doorMenu` / `groundMenu`), pour vérifier qu'un voisin y est entendu ; le contexte reçu est rendu.
+ */
+function placeMenu({ tokenId, wallId=null, x=null, y=null, probe=null }) {
+  gmOnly();
+  const token = viewedToken({ tokenId });
+  const before = canvas.tokens.controlled.map(t => t.document.id);
+  const hook = wallId ? `${MODULE_ID}.doorMenu` : `${MODULE_ID}.groundMenu`;
+  const seen = [];
+  const listener = probe ? Hooks.on(hook, (entries, context) => {
+    seen.push({ token: context.token?.id ?? null, wall: context.wall?.id ?? null, point: context.point ?? null });
+    entries.push({ icon: "fa-solid fa-flask", label: probe, run: () => {} });
+  }) : null;
+  token.object.control({ releaseOthers: true });
+  try {
+    const api = game.modules.get(MODULE_ID).api.ui;
+    const entries = wallId ? api.doorMenu(wallId) : api.groundMenu({ x, y });
+    return { labels: entries.map(e => e.label), seen };
+  } finally {
+    if ( listener !== null ) Hooks.off(hook, listener);
+    canvas.tokens.releaseAll();
+    for ( const id of before ) canvas.tokens.get(id)?.control({ releaseOthers: false });
+  }
+}
+
+/**
  * Un réglage du moteur (et de lui seul) : rend la valeur d'avant, pour qu'un scénario la remette ; `value` absent : lecture seule.
  * Réservé au MJ (§38.4 : le scénario `presage` désactive le Présage le temps d'une partie).
  */
@@ -215,6 +242,20 @@ async function setting({ key, value }) {
   const before = game.settings.get(MODULE_ID, key);
   if ( value !== undefined ) await game.settings.set(MODULE_ID, key, value);
   return { key, before, now: game.settings.get(MODULE_ID, key) };
+}
+
+/** Les réglages de monde du moteur qui ne sont pas à leur valeur par défaut (lecture seule) : ce que la table a choisi. */
+function settingsChanged() {
+  gmOnly();
+  const out = {};
+  for ( const [id, config] of game.settings.settings ) {
+    if ( (config.namespace !== MODULE_ID) || (config.scope !== "world") || !config.config && (config.type === Object) ) continue;
+    let value;
+    try { value = game.settings.get(MODULE_ID, config.key); } catch { continue; }
+    const def = (typeof config.default === "function") ? undefined : config.default;
+    if ( (def !== undefined) && (JSON.stringify(value) !== JSON.stringify(def)) ) out[config.key] = { value, default: def };
+  }
+  return out;
 }
 
 /**
@@ -314,4 +355,4 @@ const diagnosticRestore = ({ uuid }) => diagRestore(uuid);
 
 
 /** Ce que `api.mcp` expose. */
-export const testApi = Object.freeze({ controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown });
+export const testApi = Object.freeze({ controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged });

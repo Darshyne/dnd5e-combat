@@ -73,7 +73,7 @@ export default {
     await ctx.use({ tokenId: hero.id, itemId: spellId, targetTokenIds: [hero.id], collectMs: 1500 });
     await pause(800);
     s = await state();
-    if ( !ctx.expect(s.walksCeilings && s.canCeiling, `Pattes d'araignée en effet : capacité ${s.walksCeilings}, « Grimper au plafond » proposé ${s.canCeiling}`) ) return;
+    if ( !ctx.expect(s.walksCeilings && s.canCeiling, `Pattes d'araignée en effet : capacité ${s.walksCeilings}, « Grimper au plafond » proposé ${s.canCeiling} (ici ${s.walksCeilingsHere}, mode ${s.movementAction}, chute ${s.fallReason}, perchoir ${s.perch}, états ${(s.statuses ?? []).join("/")})`) ) return;
     const up = await ctx.engine("climbCeiling", { tokenId: hero.id });
     if ( !ctx.expect(up.done && (up.after.elevation === 15) && (up.after.movementAction === "climb") && up.onCeiling,
       `gagne le plafond : élévation ${up.after.elevation}, mode ${up.after.movementAction}, au plafond ${up.onCeiling}`) ) return;

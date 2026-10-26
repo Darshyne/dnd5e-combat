@@ -496,3 +496,10 @@ export function groupRollState({ id }) {
 export function groupRollBreakdown({ tokenId, ...request }) {
   return rollsApi.breakdown(viewedToken({ tokenId }).actor, request);
 }
+/** §242 : « Lancer pour lui » sur une ligne de la carte (refusé si elle a déjà un jet), et le mode du système pour une demande. */
+export async function groupRollForce({ id, tokenId }) {
+  return rollsApi.force(id, viewedToken({ tokenId }).actor.uuid);
+}
+export function groupRollMode({ tokenId, ...request }) {
+  return rollsApi.mode(viewedToken({ tokenId }).actor, request);
+}

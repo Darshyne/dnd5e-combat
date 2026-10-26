@@ -272,7 +272,10 @@ export function readUsage(message) {
   const usage = readPlan(message);
   if ( !usage ) return null;
   const activity = message.getAssociatedActivity?.({ scaled: true });
-  return { ...usage, plan: casterRules(activity, withChoice(activity, usage.plan), message) };
+  // Une sauvegarde répétée n'applique rien (`resavePlan`) : pas de question d'effet exclusif — l'effet choisi au lancer est déjà posé
+  // (vu le 2026-10-26 : Cécité/Surdité reposait « choisir un effet » à chaque fin de tour, et la sauvegarde restait en attente).
+  const plan = message.getFlag?.(MODULE_ID, "resave") ? usage.plan : withChoice(activity, usage.plan);
+  return { ...usage, plan: casterRules(activity, plan, message) };
 }
 
 /**

@@ -94,7 +94,9 @@ function onPreRollDamage(config, dialog, message) {
 
 /** Feinte : une attaque RATÉE contre la cible désignée éteint la promesse (« votre prochain jet d'attaque contre elle »). §90 : Balayage. */
 async function onResolution(resolution) {
-  if ( (resolution?.step !== STEPS.DONE) || !resolution.plan?.attack ) return;
+  // Une attaque qui rate tout le monde finit en MISSED, pas en DONE (core/action.mjs, `afterVerdict`) : sans ce cas, la Feinte ratée
+  // gardait son dé pour le coup suivant (vu le 2026-10-26, scénario `maitre-de-guerre`).
+  if ( ![STEPS.DONE, STEPS.MISSED].includes(resolution?.step) || !resolution.plan?.attack ) return;
   const source = fromUuidSync(resolution.source ?? "", { strict: false });
   const actor = source?.actor ?? source;
   if ( actor?.items ) await sweep(resolution, actor, source?.actor ? source : tokenOf(actor));

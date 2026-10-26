@@ -8,7 +8,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { afterTeleportOptions } from "./teleport-options.mjs";
 import { planPath, stairsOf, stairsDestinations, stopWalking } from "../adapter/movement.mjs";
 import { combatantFor, readBudget, movementOf } from "../adapter/turn.mjs";
-import { setDoorOpen, doorState, pickLock, forceDoor, unlockWithKey, lockEntriesFor, handleLockQuery, DOOR_UNLOCKED_HOOK, NOISE_HOOK } from "./doors.mjs";
+import { setDoorOpen, doorState, pickLock, forceDoor, unlockWithKey, lockEntriesFor, handleLockQuery, DOOR_UNLOCKED_HOOK, NOISE_HOOK, LOCK_ATTEMPT_HOOK } from "./doors.mjs";
 import { triesOf } from "../adapter/locks.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { jumpOptionsOf } from "../adapter/jump.mjs";
@@ -23,7 +23,7 @@ import { cellArg, finite, gmOnly, positionJson, viewedToken, waypointOf, windows
 import { budget } from "./testing-rules.mjs";
 import { wall } from "./testing-areas.mjs";
 import { hoistOnto, grabEdge, startClimb, dropDown as dropDownIntent, canClimb, climbRoom, canClimbCeiling, climbToCeiling, ceilingRoom, canClimbDown, climbDown as climbDownIntent, descentRoom, climbStateOf, climbHoldsAt, climbToward as climbTowardIntent } from "./climb.mjs";
-import { wallsNear, isClimbing, isOnCeiling, climbingOf, climbRules, canWalkCeilings, ceilingPerchFor, FLIP_FLAG, inSlipperyZone, canWalkCeilingsAt, acrobaticFor, ledgesOf, edgesBelowOf } from "../adapter/climb.mjs";
+import { wallsNear, isClimbing, isOnCeiling, climbingOf, climbRules, canWalkCeilings, ceilingPerchFor, FLIP_FLAG, inSlipperyZone, canWalkCeilingsAt, acrobaticFor, ledgesOf, edgesBelowOf, climbFallReasonFor } from "../adapter/climb.mjs";
 import { speedGrantEffects } from "./speed-grants.mjs";
 import { flightChoiceOf, flightEntries, takeFlight } from "./altitude.mjs";
 import { boundsUnder, isAirborne, speedsOf } from "../adapter/altitude.mjs";
@@ -270,7 +270,9 @@ export async function lock({ tokenId, wallId, method="pick", total=null }) {
   const fired = [];
   const onUnlock = ({ door, token: t, method: m }) => fired.push({ hook: "doorUnlocked", door: door?.id, token: t?.id, method: m });
   const onNoise = ({ token: t, point, cause }) => fired.push({ hook: "noise", token: t?.id, point, cause });
-  const hooks = [[DOOR_UNLOCKED_HOOK, Hooks.on(DOOR_UNLOCKED_HOOK, onUnlock)], [NOISE_HOOK, Hooks.on(NOISE_HOOK, onNoise)]];
+  const onAttempt = ({ door, token: t, method: m, outcome: o, total: n }) => fired.push({ hook: "lockAttempt", door: door?.id, token: t?.id, method: m, outcome: o, total: n });
+  const hooks = [[DOOR_UNLOCKED_HOOK, Hooks.on(DOOR_UNLOCKED_HOOK, onUnlock)], [NOISE_HOOK, Hooks.on(NOISE_HOOK, onNoise)],
+    [LOCK_ATTEMPT_HOOK, Hooks.on(LOCK_ATTEMPT_HOOK, onAttempt)]];
   let outcome;
   try {
     if ( total !== null ) outcome = (await handleLockQuery({ wall: wall.document.uuid, token: token.uuid, method, total }))?.outcome ?? null;
@@ -302,6 +304,7 @@ export function climbState({ tokenId }) {
     scaleY: token._source.texture?.scaleY ?? 1, flip: token.getFlag(MODULE_ID, FLIP_FLAG) ?? null,
     // Lot 3 (§195) : surface glissante, capacité au plafond ici, « Courir sur le mur », vitesses accordées par le contenu.
     slippery: inSlipperyZone(token), walksCeilingsHere: canWalkCeilingsAt(token), canRun: acrobaticFor(token),
+    fallReason: climbFallReasonFor(token) ?? null, movementAction: token.movementAction ?? null, statuses: Array.from(token.actor?.statuses ?? []),
     acrobatic: token.getFlag(MODULE_ID, "climb")?.acrobatic === true,
     grants: speedGrantEffects(token.actor).map(e => ({ id: e.id, name: e.name, changes: (e.system?.changes ?? e.changes ?? []).map(c => ({ key: c.key, value: c.value })) })),
     // §196 : ce que publie `api.climb.state`.

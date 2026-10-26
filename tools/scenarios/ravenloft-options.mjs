@@ -54,6 +54,9 @@ export default {
     const paladin = await ctx.token("Paladin");
     const zombiDoc = tokens.find(t => (t.name === "Zombi") && (t.level === bandit.level) && !t.hidden);
     const grid = await ctx.gridSize();
+    // Les PV du Bandit sont comptés sur sa fiche du Manuel des monstres (11) : un maximum plus haut laissé dans son delta (200, vu le
+    // 2026-10-26) rendait « indemne » un Bandit à 11 PV blessé. Maximum de 11 le temps du scénario (le filet de sécurité le remet).
+    await ctx.call("update-scene-object", { type: "Token", objectId: bandit.id, data: { "delta.system.attributes.hp.max": 11 } });
     const homes = new Map();
     for ( const t of [guerrier, clerc, bandit, paladin, zombiDoc].filter(Boolean) ) homes.set(t.id, { pos: await ctx.position(t), hp: await ctx.hp(t) });
     const place = async (t, x, y) => {

@@ -16,6 +16,10 @@ export default {
     // Sur une scène à niveaux (Restored Keep a plusieurs Zombis), celui du niveau du lanceur : un plancher arrêterait la zone.
     const { tokens } = await ctx.scene();
     const zombi = tokens.find(t => (t.name === "Zombi") && !t.hidden && (t.level === sorc.level)) ?? await ctx.token("Zombi");
+    // Un test de volumes, pas de gravité : le Zombi n'a pas de Vitesse de vol, et le système d'escalade et de chutes (allumé par le
+    // lanceur) le ferait tomber de ses 30 ft (vu le 2026-10-26 : À terre, et la remise au sol refusée). Coupé le temps du scénario.
+    const climb = await ctx.engine("setting", { key: "climbSystem", value: false });
+    ctx.restore(() => ctx.engine("setting", { key: "climbSystem", value: climb.before }).catch(() => {}));
     const hp0 = await ctx.hp(zombi);
     ctx.restore(() => ctx.setHp(zombi, hp0));
     const elevation0 = zombi.elevation ?? 0;

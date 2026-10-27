@@ -37,7 +37,7 @@ export const FEATURE_LEVELS = Object.freeze({
   registerPerf: E, registerContent: E, registerIcons: E, registerAltitude: E, registerClimb: E, registerFalls: E, registerKnockout: E, registerTheater: E, registerClimbSystem: E, registerActions: E, registerFollow: E, registerDoors: E, registerDoorLockUi: E, registerCombatEvents: E,
   registerPointer: E, registerTurn: E, registerVision: E, registerSpace: E, registerBasics: E,
   registerIllumination: E, registerPerception: E, registerEtherealUI: E, registerEtherealMovement: E, registerTracker: E, registerLightIndicator: E, registerFeedback: E,
-  registerPurge: E, registerAutomation: E, registerSummonHandover: E, registerAutoTranslate: E, registerCriticals: A, registerFactions: E, registerFactionsUI: E, registerSettingsWindow: E, registerStealthMode: E, registerStealthUI: E, registerGroupRoll: E, registerGroupRollUI: E, registerGroupRollTracker: E,
+  registerPurge: E, registerAutomation: E, registerSummonHandover: E, registerAutoTranslate: E, registerClock: E, registerCriticals: A, registerFactions: E, registerFactionsUI: E, registerSettingsWindow: E, registerStealthMode: E, registerStealthUI: E, registerGroupRoll: E, registerGroupRollUI: E, registerGroupRollTracker: E,
 
   // Assisté : la résolution, et les règles générales qui valent pour toute créature.
   registerEngine: A, registerConcentration: A, registerDeath: A, registerUsage: A, registerReactions: A, registerReady: A, registerBurning: A, registerImprovised: A, registerArmorTraining: A, registerMasteryChoices: A, registerMasteryUI: A, registerTriggers: A,

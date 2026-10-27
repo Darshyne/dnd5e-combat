@@ -1413,6 +1413,8 @@
   "DND5ECOMBAT.Macro.Retranslate.Field.token": "token name",
   "DND5ECOMBAT.Reglage.autoTranslate.Nom": "Translate on creation",
   "DND5ECOMBAT.Reglage.autoTranslate.Aide": "An item, spell, feature or creature created from a translated compendium (Babele) immediately gets the translation of whatever stayed in the original language — created by a player without file-browsing permission, by a client in another language, or with a translation that leaves effect names untranslated. Done by the active GM, in their client's language; only texts still identical to the original change, automation is untouched. For what already exists: the world diagnostic.",
+  "DND5ECOMBAT.Reglage.realTimeClock.Nom": "Real-time clock out of combat",
+  "DND5ECOMBAT.Reglage.realTimeClock.Aide": "Out of combat, world time advances by one second per real second (in steps of 6 s), so durations counted in world time run out: spell areas, summons, Wild Shape, torches and lamps, burning oil, delays of neighbouring modules. Stopped while the game is paused and during combat (Foundry already counts 6 s per round). Advanced by the active GM. Steps aside when a clock module is active (Simple Timekeeping, Simple Calendar, Calendaria, About Time): use its clock instead.",
   "DND5ECOMBAT.Sauvegarde.Raison.size": "Large or larger",
   "DND5ECOMBAT.Reglage.critMargin.Nom": "Critical hit by beating AC",
   "DND5ECOMBAT.Reglage.critMargin.Aide": "House rule, off at 0: a hit whose total beats the target's AC by at least this much (10, for example) is a critical hit, on top of a natural 20. Judged per target, cover included; a Shield raising the AC can cancel it.",

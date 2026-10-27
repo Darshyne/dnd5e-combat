@@ -1413,6 +1413,8 @@
   "DND5ECOMBAT.Macro.Retranslate.Field.token": "nom du token",
   "DND5ECOMBAT.Reglage.autoTranslate.Nom": "Traduire à la création",
   "DND5ECOMBAT.Reglage.autoTranslate.Aide": "Un objet, un sort, une capacité ou une créature créé depuis un compendium traduit (Babele) prend tout de suite la traduction de ce qui est resté dans la langue d'origine — créé par un joueur sans droit de parcourir les fichiers, par un client dans une autre langue, ou avec une traduction qui ne traduit pas les noms d'effets. Fait par le MJ actif, dans la langue de son client ; seuls les textes encore identiques à l'original changent, l'automatisation ne bouge pas. Pour ce qui existe déjà : le diagnostic du monde.",
+  "DND5ECOMBAT.Reglage.realTimeClock.Nom": "Horloge en temps réel hors combat",
+  "DND5ECOMBAT.Reglage.realTimeClock.Aide": "Hors combat, le temps du monde avance d'une seconde par seconde réelle (par pas de 6 s), pour que les durées comptées en temps du monde s'écoulent : zones de sort, invocations, Forme sauvage, torches et lampes, huile en feu, délais des modules voisins. Arrêtée pendant la pause et en combat (Foundry y compte déjà 6 s par round). Avancée par le MJ actif. S'efface quand un module d'horloge est actif (Simple Timekeeping, Simple Calendar, Calendaria, About Time) : utilisez alors son horloge.",
   "DND5ECOMBAT.Sauvegarde.Raison.size": "taille G ou supérieure",
   "DND5ECOMBAT.Reglage.critMargin.Nom": "Critique en dépassant la CA",
   "DND5ECOMBAT.Reglage.critMargin.Aide": "Règle maison, désactivée à 0 : un coup qui touche et dont le total dépasse la CA de la cible d'au moins cet écart (10 par exemple) est un coup critique, en plus du 20 naturel. Jugé pour chaque cible, abri compris ; un Bouclier qui fait remonter la CA peut l'annuler.",

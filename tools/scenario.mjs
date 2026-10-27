@@ -685,7 +685,8 @@ const climbSystem = await mcp.call("call-module-api", { moduleId: "dnd5e-combat"
 // 2026-10-26 : deux choix de table que les scénarios ne supposent pas — Attaque sournoise « demander » (`roublard` attend la question de
 // Frappe malicieuse, pas celle du choix ; `roublard-choix` passe lui-même en « demander ») et des fenêtres de combat plus courtes que
 // les 10 s par défaut (une réaction se fermait avant la réponse du scénario). Mis à leur défaut le temps de la passe, puis remis.
-const PINNED = { sneakAttackMode: "auto", combatWindowSeconds: 10 };
+// §251 : l'horloge en temps réel du moteur, comme Simple Timekeeping plus bas, arrêtée le temps de la passe.
+const PINNED = { sneakAttackMode: "auto", combatWindowSeconds: 10, realTimeClock: false };
 const pinned = {};
 for ( const [key, value] of Object.entries(PINNED) ) {
   pinned[key] = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key, value }, waitMs: 8000 })

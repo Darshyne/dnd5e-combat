@@ -42,7 +42,7 @@ import { registerEmanations } from "./runtime/emanations.mjs";
 import { registerRegeneration } from "./runtime/regeneration.mjs";
 import { registerFortitude } from "./runtime/fortitude.mjs";
 import { registerDrain } from "./runtime/drain.mjs";
-import { registerSpaceSharing } from "./runtime/space-sharing.mjs";
+import { registerSpaceSharing, registerObjectPassage } from "./runtime/space-sharing.mjs";
 import { registerEmpower } from "./runtime/empower.mjs";
 import { registerLifesteal } from "./runtime/lifesteal.mjs";
 import { registerDischarge } from "./runtime/discharge.mjs";
@@ -309,6 +309,7 @@ Hooks.once("init", () => {
   gated(registerFortitude);   // §61 : Robustesse de la non-vie (la sauvegarde due part avec les PV, adapter/death.mjs)
   gated(registerDrain);
   gated(registerSpaceSharing);
+  gated(registerObjectPassage);   // §255
   gated(registerEmpower);   // §19.9 : Morsure vampirique (Dhampir)
   gated(registerLifesteal);   // §120 : Caresse du vampire
   gated(registerDischarge);   // §19.9 : Chemin vers la tombe, fin anticipée de la malédiction

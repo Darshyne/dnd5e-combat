@@ -21,6 +21,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { selfAreaOf, placeSelfArea, aimedAreaOf, placeAimedArea, wallAreaOf, placeWallArea } from "../adapter/self-area.mjs";
+import { carriedLightOf } from "../adapter/carried-lights.mjs";
 import { suppliesTemplate, withTemplate } from "../adapter/template.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
@@ -120,6 +121,9 @@ function onPostUse(activity, usageConfig, results) {
 }
 
 function onPreTemplate(activity) {
+  // §254 : une source de lumière portée n'a pas de zone — sa lumière est sur le token (§121). Le bouton « Placer le gabarit » de sa carte
+  // ferait poser à dnd5e une émanation rattachée au porteur.
+  if ( carriedLightOf(activity?.item) ) return false;
   const area = selfAreaOf(activity);
   if ( !area ) return;
   place(activity, area);

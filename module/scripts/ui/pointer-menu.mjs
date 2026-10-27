@@ -3,6 +3,7 @@
  * d'effets. Extrait d'ui/pointer.mjs.
  */
 
+import { isObjectToken } from "../adapter/bodies.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { canBeThrown } from "../adapter/turn.mjs";
 import { areAdjacent } from "../adapter/conditions.mjs";
@@ -347,7 +348,8 @@ function familiarEntries(token, target) {
  */
 function followEntries(token, target) {
   const entries = [];
-  if ( hostileTo(token, target) ) return entries;
+  // §255 : on ne suit pas un objet (piège posé, arme spirituelle), et il ne suit personne.
+  if ( hostileTo(token, target) || isObjectToken(target) || isObjectToken(token) ) return entries;
   if ( leaderOf(token) === target ) entries.push({ icon: "fa-solid fa-person-walking-arrow-right", label: loc("Menu.NePlusSuivre", { name: target.name }), run: () => unfollow(token) });
   else if ( canFollow(token, target) ) entries.push({ icon: "fa-solid fa-person-walking-arrow-right", label: loc("Menu.Suivre", { name: target.name }), run: () => follow(token, target) });
   if ( target.isOwner ) {

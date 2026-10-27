@@ -15,6 +15,7 @@ import { CONTENT } from "../content/index.mjs";
 import { SOURCE_IDENTIFIERS } from "../content/sources.mjs";
 import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
+import { isObjectToken } from "./bodies.mjs";
 
 export const OVERRIDES_SETTING = "contentOverrides";
 
@@ -159,7 +160,19 @@ export function rangeUnitsOf(activity) {
   // le moteur prend en charge (Déluge de coups, Transposition du filou, Prêtre de guerre…) gardent leur propre circuit.
   if ( (activity?.type !== "attack") && PLAYER_ACTIVATIONS.includes(activity?.activation?.type)
     && TARGETS.includes(affects?.type) && !contentOf(activity.item).entry ) return null;
+  // §253 : un piège (PNJ au type de créature « Trap » des pièges du DMG 2024, ou token objet du moteur) a une portée « personnelle »
+  // dans les données mais frappe une créature : lancé à la main sans cible désignée, la visée s'ouvre (rien ne se passait).
+  if ( TARGETS.includes(affects?.type) && trapLike(activity?.actor) ) return null;
   return units;
+}
+
+const TRAP_TYPE = /^(traps?|pièges?)$/i;
+
+/** §253 : un acteur piège — type de créature personnalisé « Trap » (DMG 2024), ou le token d'un objet du moteur. */
+export function trapLike(actor) {
+  const type = actor?.system?.details?.type;
+  if ( (type?.value === "custom") && TRAP_TYPE.test(String(type.custom ?? "").trim()) ) return true;
+  return isObjectToken(actor?.token);
 }
 
 /** §124 : les activations qu'un joueur déclenche lui-même (pas une réaction, pas un supplément au coup). */

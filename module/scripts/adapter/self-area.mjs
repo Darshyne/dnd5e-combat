@@ -18,6 +18,7 @@ import { templateOf } from "./template.mjs";
 import { contentOf } from "./content.mjs";
 import { clampPolyline, wallLineShapes, orthogonalize, cellWallShapes } from "../core/wall.mjs";
 import { lengthIn } from "./units.mjs";
+import { carriedLightOf } from "./carried-lights.mjs";
 
 /**
  * La forme et le token d'une zone à poser d'office, ou null (dnd5e pose comme d'habitude) : portée personnelle, zone
@@ -26,6 +27,9 @@ import { lengthIn } from "./units.mjs";
  * @returns {{shape: "emanation"|"circle", token: TokenDocument}|null}
  */
 export function selfAreaOf(activity) {
+  // §254 : le rayon d'une source de lumière portée (lanterne à capote : « Light », 60 pi sur soi) est sa lumière, que le moteur pose
+  // sur le token (§121) — pas une zone : la région suivait le porteur partout.
+  if ( carriedLightOf(activity?.item) ) return null;
   const template = templateOf(activity);   // §86 : ou celui que le contenu fournit
   const shape = selfAreaShape({ rangeUnits: activity?.range?.units, type: template?.type, count: template?.count, size: template?.size });
   if ( !shape ) return null;
@@ -203,6 +207,8 @@ export function rangedTooFar(area, shapeData) {
  * @returns {{shape: "cone"|"line"|"cube", token: TokenDocument}|null}
  */
 export function aimedAreaOf(activity) {
+  // §254 : de même le cône d'une lanterne sourde.
+  if ( carriedLightOf(activity?.item) ) return null;
   const template = activity?.target?.template;
   const shape = aimedAreaShape({ rangeUnits: activity?.range?.units, type: template?.type, count: template?.count, size: template?.size });
   if ( !shape ) return null;

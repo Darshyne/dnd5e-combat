@@ -20,6 +20,7 @@ import { summonItemOf } from "./summons.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
 import { combatantFor, isOwnTurn } from "./turn.mjs";
 import { lengthIn } from "./units.mjs";
+import { isObjectToken } from "./bodies.mjs";
 
 /**
  * L'objet piloté que ce token représente, ou null.
@@ -143,7 +144,10 @@ export function pulseOf(tokenDoc) {
 
 /** L'objet n'occupe-t-il pas son espace (Main de Bigby) ? */
 export function isIntangible(tokenDoc) {
-  return pilotOf(tokenDoc)?.rule.occupies === false;
+  const pilot = pilotOf(tokenDoc);
+  if ( pilot ) return pilot.rule.occupies === false;
+  // §255 : un objet sans pilote (piège posé, `flags.dnd5e-combat.object`) n'occupe pas son espace — ni il ne gêne, ni il n'est gêné.
+  return isObjectToken(tokenDoc);
 }
 
 /**

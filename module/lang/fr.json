@@ -1679,5 +1679,6 @@
   "DND5ECOMBAT.JetGroupe.MacroCommentaire": "jet demandé « {name} » (créé par la fenêtre « Demander un jet »)",
   "DND5ECOMBAT.JetGroupe.MacroMJ": "DAS · Core : seul le MJ peut demander un jet.",
   "DND5ECOMBAT.JetGroupe.MacroPersonne": "DAS · Core : aucun des personnages de cette demande n'existe plus.",
-  "DND5ECOMBAT.JetGroupe.MacroCreee": "Macro « {name} » créée dans le répertoire des macros."
+  "DND5ECOMBAT.JetGroupe.MacroCreee": "Macro « {name} » créée dans le répertoire des macros.",
+  "DND5ECOMBAT.Evenement.Nom": "Évènement"
 }

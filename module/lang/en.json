@@ -1679,5 +1679,6 @@
   "DND5ECOMBAT.JetGroupe.MacroCommentaire": "requested roll “{name}” (created by the “Request a roll” window)",
   "DND5ECOMBAT.JetGroupe.MacroMJ": "DAS · Core: only the GM can request a roll.",
   "DND5ECOMBAT.JetGroupe.MacroPersonne": "DAS · Core: none of this request's characters exists anymore.",
-  "DND5ECOMBAT.JetGroupe.MacroCreee": "Macro “{name}” created in the macro directory."
+  "DND5ECOMBAT.JetGroupe.MacroCreee": "Macro “{name}” created in the macro directory.",
+  "DND5ECOMBAT.Evenement.Nom": "Event"
 }

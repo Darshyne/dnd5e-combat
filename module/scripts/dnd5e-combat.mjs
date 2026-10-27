@@ -16,6 +16,7 @@ import { registerActions, approach, pathTo, fleeFrom, gapCells, verticalGapCells
 import { registerFollow } from "./runtime/follow.mjs";
 import { registerDoors } from "./runtime/doors.mjs";
 import { registerDoorLockUi } from "./ui/door-lock.mjs";
+import { registerCombatEvents, combatApi } from "./runtime/combat-events.mjs";
 import { registerTurn } from "./runtime/turn.mjs";
 import { registerMetamagic } from "./runtime/metamagic.mjs";
 import { registerReactions } from "./runtime/reactions.mjs";
@@ -206,6 +207,7 @@ const state = {
   ethereal: etherealApi,   // §225 : `is(token)`, `perceives(observer, target)`, `toggle(tokens?, active?)`
   theater: theaterApi,   // §220 : Théâtre de l'esprit — `active()`, `set(on)` ; hook `dnd5e-combat.theater`
   rolls: { ...rollsApi, open: openGroupRoll, tracker: openTracker },   // §242 : jets demandés par le MJ — hooks `groupRoll`, `groupRollPrompt`
+  combat: combatApi,   // §250 : évènements dans l'initiative — `addEvent`, `removeEvent`, `events`, `isEvent` ; hook `dnd5e-combat.eventTurn`
   gap: publicGap
 };
 
@@ -272,6 +274,7 @@ Hooks.once("init", () => {
   gated(registerFollow);   // §41.3 : après les actions — le suivi marche par `approach`
   gated(registerDoors);   // §244 : serrures des portes (réglage, requête au MJ actif)
   gated(registerDoorLockUi);   // §244 : section « DAS · Serrure » de la configuration du mur
+  gated(registerCombatEvents);   // §250 : évènements dans l'initiative (un piège à son initiative)
   gated(registerRecast);   // avant la souris : une relance repasse par la visée et la légalité
   gated(registerPointer);
   gated(registerProjectiles);   // après la visée (les cibles sont désignées), avant la légalité

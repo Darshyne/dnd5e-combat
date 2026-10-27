@@ -28,6 +28,7 @@ import { usageMetamagic } from "./metamagic.mjs";
 import { foretellFor } from "./portent.mjs";
 import { foretoldRange } from "../core/portent.mjs";
 import { isSpellCast } from "./scrolls.mjs";
+import { normalizeTargetModes, saveModeFor } from "../core/target-modes.mjs";
 import { areEnemies, sideOf, factionOf } from "./factions.mjs";
 import { samePlane } from "./plane.mjs";
 export { applyEffectsToToken, applyMarkToToken, applyStatusToToken, removeEffects, splitPushes } from "./apply-effects.mjs";
@@ -117,12 +118,13 @@ export const SAVE_QUERY = `${MODULE_ID}.rollSave`;
 const SAVE_TIMEOUT = 40000;   // deux fenêtres possibles (choix, jet), chacune bornée par adapter/dialogs.mjs
 
 /** Paramètres du jet, les mêmes que le bouton « Sauvegarde » de la carte (save.mjs:122-134). */
-function saveRollArguments(activity, actor, token, usageMessage, { ability, dc, disadvantage=false, foretold=null }) {
+function saveRollArguments(activity, actor, token, usageMessage, { ability, dc, advantage=false, disadvantage=false, foretold=null }) {
   const bonus = CONFIG.Dice.BasicRoll.constructParts({ activityBonus: activity.save.bonus }, activity.getRollData());
   const rollConfig = { ability, target: dc };
   // §16.25 : Ascendance féerique — l'avantage contre une activité qui pose un état que l'un de ses items désigne.
   if ( saveAdvantageAgainst(actor, activity) || fightingAdvantageFor(activity, token) || sizeAdvantageFor(actor, activity) ) rollConfig.advantage = true;
-  // §32 : Sort intensifié (la cible choisie par requestSaves).
+  // §32 : Sort intensifié (la cible choisie par requestSaves) ; §249 : le mode donné par cible dans le message d'utilisation.
+  if ( advantage ) rollConfig.advantage = true;
   if ( disadvantage ) rollConfig.disadvantage = true;
   // §36 : Présage — le d20 remplacé par le jet noté (bornes du dé, adapter/portent.mjs).
   if ( Number.isInteger(foretold) ) rollConfig.rolls = [{ ...bonus, options: foretoldRange(foretold) }];
@@ -240,7 +242,7 @@ export async function chooseSaveAbility(actor, abilities, { dc, item }) {
  * n'est jamais lancé à sa place ; fenêtre fermée → false, et le MJ actif lui laisse la carte de
  * demande du système pour qu'il lance quand il veut. Plusieurs caractéristiques au choix : il choisit d'abord.
  */
-export async function handleSaveQuery({ usage, token: tokenUuid, ability, abilities=null, ask=true, dc, item, activity: activityUuid=null, disadvantage=false, foretold=null }) {
+export async function handleSaveQuery({ usage, token: tokenUuid, ability, abilities=null, ask=true, dc, item, activity: activityUuid=null, advantage=false, disadvantage=false, foretold=null }) {
   const usageMessage = game.messages.get(usage);
   const token = await fromUuid(tokenUuid);
   const actor = token?.actor;
@@ -251,11 +253,11 @@ export async function handleSaveQuery({ usage, token: tokenUuid, ability, abilit
   // La fenêtre du jet se ferme au bout du délai ; le jet part alors seul (ses dés, sans dialogue).
   let timedOut = false;
   const cancel = closeRollDialogAfter(actor, () => { timedOut = true; });
-  const [rollConfig, messageConfig] = saveRollArguments(activity, actor, token, usageMessage, { ability, dc, disadvantage, foretold });
+  const [rollConfig, messageConfig] = saveRollArguments(activity, actor, token, usageMessage, { ability, dc, advantage, disadvantage, foretold });
   let rolls = await actor.rollSavingThrow(rollConfig, { configure: true }, messageConfig);
   cancel();
   if ( !rolls?.length && timedOut ) {
-    const [again, againMessage] = saveRollArguments(activity, actor, token, usageMessage, { ability, dc, disadvantage, foretold });
+    const [again, againMessage] = saveRollArguments(activity, actor, token, usageMessage, { ability, dc, advantage, disadvantage, foretold });
     rolls = await actor.rollSavingThrow(again, { configure: false }, againMessage);
   }
   return !!rolls?.length;
@@ -278,6 +280,8 @@ export async function requestSaves(usageMessage, save, targets, { askPlayers=tru
   if ( !activity ) return;
   const { dc } = save;
   const heightened = heightenedTarget(activity, usageMessage, targets);
+  // §249 : l'Avantage ou le Désavantage donné par cible par celui qui a utilisé l'activité (le MJ devant un piège).
+  const given = normalizeTargetModes(usageMessage.getFlag(MODULE_ID, "targetModes"));
   const requested = [];
   const asked = [];
   // §36 : un devin qui décline le Présage pour une cible n'est plus consulté pour les autres (Boule de feu : une question, pas cinq).
@@ -292,7 +296,10 @@ export async function requestSaves(usageMessage, save, targets, { askPlayers=tru
     ability = bestSaveAbility(actor, abilities);
     // §157 : « une Créature artificielle a le Désavantage au jet de sauvegarde » (Fracassement) — `saveDisadvantageFor` du contenu.
     const byType = (contentOf(activity.item).entry?.saveDisadvantageFor ?? []).includes(creatureTypeOf(actor));
-    const disadvantage = (token.uuid === heightened) || byType;
+    const mode = saveModeFor(given, token.uuid);
+    const disadvantage = (token.uuid === heightened) || byType || mode.disadvantage;
+    const advantage = mode.advantage;
+    if ( given?.[token.uuid] ) console.log(`${MODULE_ID} | ${activity.item.name}: ${token.name} has ${given[token.uuid]} on its saving throw (given by the user)`);
     if ( token.uuid === heightened ) console.log(`${MODULE_ID} | Heightened Spell: ${token.name} has Disadvantage on its saving throw`);
     else if ( byType ) console.log(`${MODULE_ID} | ${activity.item.name}: ${token.name} (${creatureTypeOf(actor)}) has Disadvantage on its saving throw`);
     // §36 : Présage — « à décider avant le jet » : un devin qui voit la cible peut remplacer son d20 par un jet noté. La question
@@ -303,13 +310,13 @@ export async function requestSaves(usageMessage, save, targets, { askPlayers=tru
     if ( userId ) {
       // Sans attendre : les joueurs lancent en parallèle, les PNJ n'attendent personne.
       asked.push(game.users.get(userId).query(SAVE_QUERY,
-        { usage: usageMessage.id, token: token.uuid, ability, abilities, ask: askPlayers, dc, item: activity.item.name, activity: activity.uuid, disadvantage, foretold }, { timeout: SAVE_TIMEOUT })
+        { usage: usageMessage.id, token: token.uuid, ability, abilities, ask: askPlayers, dc, item: activity.item.name, activity: activity.uuid, advantage, disadvantage, foretold }, { timeout: SAVE_TIMEOUT })
         .catch(() => false)
         .then(rolled => { if ( !rolled ) requested.push({ actor: actor.uuid, user: userId }); }));
       continue;
     }
     if ( askGM && (abilities.length > 1) ) ability = await chooseSaveAbility(actor, abilities, { dc, item: activity.item.name });
-    const [rollConfig, messageConfig] = saveRollArguments(activity, actor, token, usageMessage, { ability, dc, disadvantage, foretold });
+    const [rollConfig, messageConfig] = saveRollArguments(activity, actor, token, usageMessage, { ability, dc, advantage, disadvantage, foretold });
     await actor.rollSavingThrow(rollConfig, { configure: false }, messageConfig);
   }
 

@@ -10,6 +10,7 @@ import { takeAttackMods } from "./reactions.mjs";
 import { foretoldRange } from "../core/portent.mjs";
 import { log } from "./shared.mjs";
 import { enqueue } from "./queue.mjs";
+import { normalizeTargetModes, attackModeAgainst } from "../core/target-modes.mjs";
 
 /**
  * Avant le dialogue du jet d'attaque, sur le client de l'attaquant : les états des deux créatures
@@ -126,11 +127,34 @@ function syncTurnStatuses(combatant, budgetOf) {
   });
 }
 
+/**
+ * §249 : l'Avantage ou le Désavantage donné par cible dans le message d'utilisation (`flags.dnd5e-combat.targetModes`, core/target-modes.mjs),
+ * inversé sur le jet d'attaque contre elle. Lu sur le message d'origine du jet (`system.origin`, activity/attack.mjs:69), que l'attaquant ait
+ * un token ou non (un piège). Le système combine nos sources aux siennes (les deux : jet normal). Des cibles qui ne s'accordent pas : rien
+ * n'est posé, et l'avertissement des cibles divergentes.
+ */
+function onGivenTargetModes(config, dialogConfig, messageConfig) {
+  const roll = config.rolls?.[0];
+  const originId = foundry.utils.getProperty(messageConfig ?? {}, "data.system.origin");
+  const modes = normalizeTargetModes(originId ? game.messages.get(originId)?.getFlag(MODULE_ID, "targetModes") : null);
+  if ( !roll || !modes ) return true;
+  const targets = Array.from(game.user.targets).map(t => t.document);
+  const { advantage, disadvantage, agreed } = attackModeAgainst(targets.map(t => modes[t.uuid] ?? null));
+  if ( !agreed ) { ui.notifications.warn("DND5ECOMBAT.CiblesDivergentes", { localize: true }); return true; }
+  if ( !advantage && !disadvantage ) return true;
+  roll.options ??= {};
+  if ( advantage ) roll.options.advantage = true;
+  if ( disadvantage ) roll.options.disadvantage = true;
+  log(`attack: ${advantage ? "advantage" : "disadvantage"} given by the user against ${targets.map(t => t.name).join(", ")}`);
+  return true;
+}
+
 /* -------------------------------------------- */
 
 export function registerConditions() {
   registerTurnStatuses();
   route("dnd5e.preRollAttackV2", onPreRollAttack, { cancellable: true, label: "condition advantage and disadvantage" });
+  route("dnd5e.preRollAttackV2", onGivenTargetModes, { cancellable: true, label: "advantage and disadvantage given per target" });
   route("dnd5e.preRollAbilityCheckV2", onPreRollAbilityCheck, { label: "Frightened: disadvantage on checks" });
 
   const statuses = { executor: true, label: "turn statuses not synchronized" };

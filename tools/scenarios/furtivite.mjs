@@ -41,9 +41,11 @@ export default {
         for ( const until = Date.now() + 6000; Date.now() < until; await sleep(300) ) {
           if ( (await ctx.messagesSince(used.usageMessageId)).some(m => m.type === "check") ) break;
         }
-        await sleep(600);
-        const effects = await hiddenEffects();
-        if ( effects.length ) return effects[0];
+        // §252 : le verdict attend la fin des dés 3D (borné à 8 s) — on attend l'effet jusque-là, un échec n'en pose aucun.
+        for ( const until = Date.now() + 9000; Date.now() < until; await sleep(300) ) {
+          const effects = await hiddenEffects();
+          if ( effects.length ) return effects[0];
+        }
       }
       return null;
     }

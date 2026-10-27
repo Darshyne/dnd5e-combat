@@ -20,7 +20,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { feedbackBetween } from "../core/feedback.mjs";
 import { FLOAT_CATEGORY_DEFAULTS, FLOAT_DEFAULTS, floatLine, floatLabel, floatFrame, floatDelays } from "../core/float-text.mjs";
 import { route } from "../runtime/router.mjs";
-import { loc } from "../runtime/shared.mjs";
+import { loc, NOTICE_QUERY, receiveNotice } from "../runtime/shared.mjs";
 import { resourceChangesOf } from "../adapter/limits.mjs";
 
 /** Dernier état vu, par message. */
@@ -261,5 +261,7 @@ export function registerFeedback() {
   route("updateChatMessage", onUpdateMessage, { label: "visual feedback above tokens" });
   route("deleteChatMessage", message => seen.delete(message.id), { label: "visual feedback: forget" });
   route(`${MODULE_ID}.notice`, n => floatNotice(n.token, n.text, n.kind), { label: "visual feedback: engine notice" });
+  // §252 : l'avis d'une action d'un autre client (runtime/shared.mjs, `notice(…, { all: true })`), dessiné ici.
+  CONFIG.queries[NOTICE_QUERY] = receiveNotice;
   route("createChatMessage", onCreateMessage, { label: "visual feedback: effect ending" });
 }

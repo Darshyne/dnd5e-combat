@@ -15,7 +15,7 @@ import { basicActionOfActivity } from "../adapter/basics.mjs";
 import { hiddenEffectsOf, hiddenEffectData, enemiesSeeing } from "../adapter/hide.mjs";
 import { stealthRules } from "../adapter/stealth.mjs";
 import { route } from "./router.mjs";
-import { log, loc } from "./shared.mjs";
+import { log, loc, notice, rolledAndShown } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
@@ -104,11 +104,13 @@ export async function attemptHide(actor, token=null) {
   let dc;
   if ( rules === "bg3" ) dc = Number(actor.system?.skills?.ste?.passive) || (10 + (Number(actor.system?.skills?.ste?.total) || 0));
   else {
-    const rolls = await actor.rollSkill({ skill: "ste", target: HIDE_DC }, { configure: false });
+    // §252 : le verdict attend la fin des dés 3D, puis se voit et s'entend chez tous.
+    const rolls = await rolledAndShown(() => actor.rollSkill({ skill: "ste", target: HIDE_DC }, { configure: false }));
     const total = rolls?.[0]?.total;
     if ( !Number.isFinite(total) ) return { hidden: false, reason: "noRoll" };
     if ( total < HIDE_DC ) {
       log(`hide: ${actor.name} fails (${total} vs DC ${HIDE_DC})`);
+      if ( t ) notice(t, { key: "Retour.Action.PasCache" }, "refused", { all: true, action: "hide", outcome: "failure" });
       if ( t?.isOwner && !fighting(t) ) await t.setFlag(MODULE_ID, "hideRetryAt", Date.now() + RETRY_MS);
       ui.notifications.info(loc("Furtivite.Rate", { name: actor.name, total }));
       return { hidden: false, total, reason: "failed" };
@@ -120,6 +122,7 @@ export async function attemptHide(actor, token=null) {
   await actor.createEmbeddedDocuments("ActiveEffect", [hiddenEffectData(dc, loc("Furtivite.Effet", { dc }))]);
   log(`hide: ${actor.name} is hidden (${rules}, DC ${dc} to find them)`);
   ui.notifications.info(loc(rules === "bg3" ? "Furtivite.ReussieBG3" : "Furtivite.Reussie", { name: actor.name, total: dc }));
+  if ( t ) notice(t, { key: "Retour.Action.Cache" }, "gain", { all: true, action: "hide", outcome: "success" });
   Hooks.callAll(`${MODULE_ID}.sneak`, t, true);
   return { hidden: true, total: dc };
 }

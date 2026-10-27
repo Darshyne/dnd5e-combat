@@ -16,7 +16,7 @@ import { usageTokenOf } from "../adapter/turn.mjs";
 import { searchRollMode, searchVerdicts } from "../core/search.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { route } from "./router.mjs";
-import { log, loc, notice, viaOwnerOrGM } from "./shared.mjs";
+import { log, loc, notice, viaOwnerOrGM, rolledAndShown } from "./shared.mjs";
 import { spendItemUses } from "../adapter/uses.mjs";
 
 export const SEARCH_QUERY = `${MODULE_ID}.search`;
@@ -43,8 +43,9 @@ async function onPostUse(activity) {
   const bonuses = actor.items.map(i => ({ item: i, rule: contentOf(i).entry?.searchBonus })).filter(b => b.rule);
   const parts = bonuses.map(b => b.rule.formula).filter(Boolean);
   const keen = bonuses.find(b => b.rule.advantage && (!Number(b.item.system.uses?.max) || (Number(b.item.system.uses.value) > 0)));
-  const rolls = await actor.rollSkill({ skill: "prc", disadvantage: mode === "disadvantage", ...(keen ? { advantage: true } : {}),
-    ...(parts.length ? { rolls: [{ parts }] } : {}) }, { configure: false });
+  // §252 : le verdict attend la fin des dés 3D, puis se voit et s'entend chez tous.
+  const rolls = await rolledAndShown(() => actor.rollSkill({ skill: "prc", disadvantage: mode === "disadvantage",
+    ...(keen ? { advantage: true } : {}), ...(parts.length ? { rolls: [{ parts }] } : {}) }, { configure: false }));
   const roll = rolls?.[0];
   if ( !Number.isFinite(roll?.total) ) return;
   const verdicts = searchVerdicts(candidates, perceptionRollParts(roll));
@@ -57,8 +58,10 @@ async function onPostUse(activity) {
   if ( parts.length || keen ) log(`search: ${[...parts, ...(keen ? [`Advantage (${keen.item.name})`] : [])].join(", ")}`);
   for ( const token of found ) {
     await reveal(token);
-    notice(token, loc("Chercher.Trouve"), "ended");
+    notice(token, { key: "Chercher.Trouve" }, "ended", { all: true, sound: null });
   }
+  notice(searcher, { key: found.length ? "Retour.Action.Trouve" : "Retour.Action.Rien" }, found.length ? "gain" : "ended",
+    { all: true, action: "search", outcome: found.length ? "success" : "failure" });
   if ( found.length ) ui.notifications.info(loc("Chercher.Trouves", { name: actor.name, names: found.map(t => t.name).join(", ") }));
   else ui.notifications.info(loc("Chercher.Rien", { name: actor.name, total: roll.total }));
 }

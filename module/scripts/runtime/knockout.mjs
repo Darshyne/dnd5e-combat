@@ -13,7 +13,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { KNOCKED_OUT_FLAG, FIRST_AID_DC, isKnockedOut } from "../adapter/knockout.mjs";
 import { hiddenFrom } from "../adapter/stealth.mjs";
 import { route } from "./router.mjs";
-import { log, loc, locEsc, notice, say, viaOwnerOrGM } from "./shared.mjs";
+import { log, loc, locEsc, notice, say, viaOwnerOrGM, rolledAndShown } from "./shared.mjs";
 
 export const SURPRISE_SETTING = "surpriseFromStealth";
 export const WAKE_QUERY = `${MODULE_ID}.wake`;
@@ -51,13 +51,15 @@ function onActorUpdate(actor, changes) {
 export async function firstAid(token, target) {
   const actor = token?.actor;
   if ( !actor || !isKnockedOut(target?.actor) ) return false;
-  const rolls = await actor.rollSkill({ skill: "med", ability: "wis", target: FIRST_AID_DC }, { configure: true });
+  // §252 : le verdict attend la fin des dés 3D, puis se voit et s'entend chez tous.
+  const rolls = await rolledAndShown(() => actor.rollSkill({ skill: "med", ability: "wis", target: FIRST_AID_DC }, { configure: true }));
   const total = rolls?.[0]?.total;
   if ( !Number.isFinite(total) ) return false;
   if ( total < FIRST_AID_DC ) {
-    notice(target, loc("Assomme.SoinsRates"));
+    notice(target, { key: "Assomme.SoinsRates" }, "refused", { all: true, action: "firstAid", outcome: "failure" });
     return false;
   }
+  notice(target, { key: "Retour.Action.SoinsReussis" }, "gain", { all: true, action: "firstAid", outcome: "success" });
   return viaOwnerOrGM(!!target.actor.isOwner, WAKE_QUERY, handleWake, { target: target.uuid, by: actor.name }, { fallback: false });
 }
 

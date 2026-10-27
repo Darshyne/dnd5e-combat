@@ -17,7 +17,7 @@ import { LOCK_FAILURE_MODES, judgeAttempt, alreadyTried, recordTry, lockChoices,
 import { LOCK_TRIES_FLAG, lockOf, triesOf, keyItemFor, doorPoint } from "../adapter/locks.mjs";
 import { payAction } from "./action-end.mjs";
 import { approachDoor } from "./actions.mjs";
-import { log, loc, notice, say, esc, viaActiveGM, waitForDice } from "./shared.mjs";
+import { log, loc, notice, say, esc, viaActiveGM, rolledAndShown } from "./shared.mjs";
 
 export const LOCK_QUERY = `${MODULE_ID}.doorLock`;
 export const LOCK_FAILURE_SETTING = "lockFailure";
@@ -105,15 +105,11 @@ export function lockEntriesFor(token, wall) {
  * message de jet de ce client créé pendant le test.
  */
 async function rollFor(actor, method, event) {
-  const known = new Set(game.messages.keys());
-  const rolls = (method === "pick")
-    ? await actor.rollToolCheck({ tool: "thief", ability: "dex", event }, { configure: false })
-    : await actor.rollSkill({ skill: "ath", ability: "str", event }, { configure: false });
+  const rolls = await rolledAndShown(() => (method === "pick")
+    ? actor.rollToolCheck({ tool: "thief", ability: "dex", event }, { configure: false })
+    : actor.rollSkill({ skill: "ath", ability: "str", event }, { configure: false }));
   const total = rolls?.[0]?.total;
-  if ( !Number.isFinite(total) ) return null;
-  const message = game.messages.contents.findLast(m => !known.has(m.id) && m.isAuthor && m.rolls?.length);
-  if ( message ) await waitForDice(message);
-  return total;
+  return Number.isFinite(total) ? total : null;
 }
 
 const tokenUuid = token => token.document?.uuid ?? token.uuid;
@@ -189,6 +185,9 @@ async function handleLockQuery({ wall: wallUuid, token: tokUuid, method, total }
   }
   if ( outcome === "failure" ) {
     if ( method !== "key" ) await say(speaker, loc((method === "pick") ? "Serrure.CrochetageRate" : "Serrure.ForcageRate", { name }));
+    // §252 : l'échec se voit et s'entend chez tous (texte flottant, son de la serrure qui résiste).
+    notice(token, { key: { pick: "Retour.Action.SerrureRatee", force: "Retour.Action.PorteResiste", key: "Retour.Action.PasLaCle" }[method] },
+      "refused", { all: true, action: method, outcome: "failure" });
     log(`${token.name}: ${method} the lock fails${shown}`);
     announceAttempt(wall, token, method, outcome, value);
     return { outcome };
@@ -198,7 +197,7 @@ async function handleLockQuery({ wall: wallUuid, token: tokUuid, method, total }
   await wall.update({ ds, [`flags.${MODULE_ID}.-=${LOCK_TRIES_FLAG}`]: null });
   const text = { pick: "Serrure.Crochetee", force: "Serrure.Forcee", key: "Serrure.OuverteCle" }[method];
   await say(speaker, loc(text, { name, key: esc(key?.name ?? "") }));
-  notice(token, loc("Serrure.Deverrouillee"), "gain");
+  notice(token, { key: "Serrure.Deverrouillee" }, "gain", { all: true, action: method, outcome: "success" });   // §252 : chez tous, avec son
   log(`${token.name}: door unlocked (${method}${shown})`);
   announceAttempt(wall, token, method, outcome, value);
   Hooks.callAll(DOOR_UNLOCKED_HOOK, { door: wall, token, method });

@@ -33,7 +33,7 @@ import { dragDestination } from "../adapter/movement.mjs";
 import { combatantFor, readBudget, writeBudget, isOwnTurn, committedPosition } from "../adapter/turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { route } from "./router.mjs";
-import { log, loc } from "./shared.mjs";
+import { log, loc, notice, rolledAndShown, tokenOfActor } from "./shared.mjs";
 
 /* -------------------------------------------- */
 /*  Tient-elle encore ?                         */
@@ -176,16 +176,24 @@ async function dragVictims(token, movement, operation) {
  * sauvegarde des sorts du lanceur). La réussite retire l'effet de la créature, pas le sort : les autres restent pris.
  */
 async function escapeRestraint(actor, { effect, item, ability, skill, dc }) {
-  const rolls = skill
-    ? await actor.rollSkill({ skill, ...(ability ? { ability } : {}), target: dc }, { configure: false })
-    : await actor.rollAbilityCheck({ ability, target: dc }, { configure: false });
+  const rolls = await rolledAndShown(() => skill
+    ? actor.rollSkill({ skill, ...(ability ? { ability } : {}), target: dc }, { configure: false })
+    : actor.rollAbilityCheck({ ability, target: dc }, { configure: false }));
   const total = rolls?.[0]?.total;
   if ( !Number.isFinite(total) ) return false;
   const free = total >= dc;
+  escapeNotice(actor, free);
   log(`${actor.name} ${free ? "breaks free of" : "does not break free of"} ${item.name} (${total} vs DC ${dc})`);
   ui.notifications.info(loc(free ? "Entrave.Libere" : "Entrave.Rate", { name: actor.name, source: item.name }));
   if ( free ) await effect.delete();
   return free;
+}
+
+/** §252 : l'issue d'une évasion, chez tous (texte flottant et son), après les dés 3D. */
+function escapeNotice(actor, free) {
+  const token = tokenOfActor(actor);
+  if ( token ) notice(token, { key: free ? "Retour.Action.Libere" : "Retour.Action.Retenu" }, free ? "gain" : "refused",
+    { all: true, action: "escape", outcome: free ? "success" : "failure" });
 }
 
 /** Plusieurs choses dont s'échapper (une empoignade et une entrave…) : laquelle ? La première sans réponse. */
@@ -223,9 +231,10 @@ async function attemptEscape(actor) {
   if ( dc === null ) { ui.notifications.warn(loc("Empoignade.DDInconnu", { name: actor.name })); return false; }
   const skills = actor.system.skills ?? {};
   const skill = ((skills.acr?.total ?? -Infinity) > (skills.ath?.total ?? -Infinity)) ? "acr" : "ath";
-  const rolls = await actor.rollSkill({ skill, target: dc }, { configure: false });
+  const rolls = await rolledAndShown(() => actor.rollSkill({ skill, target: dc }, { configure: false }));
   const total = rolls?.[0]?.total;
   if ( !Number.isFinite(total) ) return false;
+  escapeNotice(actor, total >= dc);
   if ( total >= dc ) {
     await effect.delete();
     log(`${actor.name} escapes (${total} vs DC ${dc})`);

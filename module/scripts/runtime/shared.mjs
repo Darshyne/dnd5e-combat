@@ -1,17 +1,44 @@
 /** Ce que tout le runtime partage (SPEC §13, S1) : une seule définition de chaque chose. */
 
 import { MODULE_ID } from "../constants.mjs";
+import { actionSound, noticeText } from "../core/action-feedback.mjs";
 
 export const log = (...args) => console.log(`${MODULE_ID} |`, ...args);
 
-/** Texte traduit du module, avec ou sans données. */
+export const NOTICE_HOOK = `${MODULE_ID}.notice`;
+export const FEEDBACK_HOOK = `${MODULE_ID}.feedback`;
+/** §252 : la requête qui fait dessiner un avis chez un autre client (ui/feedback.mjs l'enregistre). */
+export const NOTICE_QUERY = `${MODULE_ID}.notice`;
+
 /**
  * Un avis du moteur au-dessus d'un token (refus, invite : « Déjà visé », « Trop loin »), sur ce client : publié pour
  * l'interface (ui/feedback.mjs), qui l'écrit en texte défilant. Le runtime ne connaît pas l'interface.
+ *
+ * §252 (règles DAS du 2026-10-27) : `all: true` en fait le retour d'une **action** pour toute la table — le texte est dessiné chez
+ * chaque client connecté (requête `NOTICE_QUERY`) et un son est diffusé à tous. `text` peut alors être `{ key, data }` (clé sans le
+ * préfixe `DND5ECOMBAT.`), traduit chez chacun. Le son : `sound` s'il est donné (null : aucun), sinon celui de `action` / `outcome`
+ * (core/action-feedback.mjs). Avant de le jouer, le hook public `dnd5e-combat.feedback` `({ token, action, outcome, kind, text, sound })`
+ * est appelé sur ce client seulement (`Hooks.call`) : un module voisin qui joue lui-même son animation et son son rend `false`, et le
+ * moteur se tait. Les refus et les invites restent locaux (`all` faux).
  */
-export function notice(token, text, kind="refused") {
+export function notice(token, text, kind="refused", { all=false, action=null, outcome=null, sound=undefined }={}) {
   const uuid = token?.uuid ?? token?.document?.uuid ?? token ?? null;
-  if ( uuid ) Hooks.callAll(`${MODULE_ID}.notice`, { token: uuid, text, kind });
+  if ( !uuid ) return;
+  Hooks.callAll(NOTICE_HOOK, { token: uuid, text: noticeText(text, loc), kind });
+  if ( !all ) return;
+  for ( const user of game.users ) {
+    if ( !user.active || user.isSelf ) continue;
+    user.query(NOTICE_QUERY, { token: uuid, text, kind }, { timeout: 5000 }).catch(() => {});
+  }
+  const src = (sound === undefined) ? actionSound(action, outcome) : sound;
+  const allowed = Hooks.call(FEEDBACK_HOOK, { token: uuid, action, outcome, kind, text: noticeText(text, loc), sound: src });
+  if ( (allowed !== false) && src ) foundry.audio.AudioHelper.play({ src, volume: 0.8, loop: false }, true)?.catch?.(() => {});
+}
+
+/** §252 : chez un autre client, l'avis qu'une action de la table lui fait voir (requête `NOTICE_QUERY`). */
+export function receiveNotice({ token, text, kind }={}) {
+  if ( token ) Hooks.callAll(NOTICE_HOOK, { token, text: noticeText(text, loc), kind });
+  return true;
 }
 
 /** Un texte échappé pour du HTML (noms d'acteurs, d'objets…). */
@@ -138,3 +165,19 @@ export const waitForDice = createDiceWait({
   sleep,
   report: why => log(`3D dice: continuing without waiting (${why})`)
 });
+
+/**
+ * §252 : lancer un jet de dnd5e (`roll`, qui rend ses jets) puis attendre la fin des dés 3D de son message (`waitForDice`, borné) avant de
+ * rendre la main — le verdict ne part qu'après. dnd5e ne rend que les jets : le message est le dernier message de jet de ce client créé
+ * pendant le jet.
+ */
+export async function rolledAndShown(roll) {
+  const known = new Set(game.messages.keys());
+  const rolls = await roll();
+  const message = game.messages.contents.findLast(m => !known.has(m.id) && m.isAuthor && m.rolls?.length);
+  if ( message ) await waitForDice(message);
+  return rolls;
+}
+
+/** Le token (document) d'un acteur : celui d'un acteur de token, sinon le premier actif. */
+export const tokenOfActor = actor => actor?.token ?? actor?.getActiveTokens?.(false, true)?.[0] ?? null;

@@ -28,7 +28,7 @@ import { cellsAtGap, footprintDistance } from "../core/orders.mjs";
 import { fleeGaps } from "../core/flee.mjs";
 import { opportunityThreats, resolveOpportunity, splitForReady } from "./reactions.mjs";
 import { route } from "./router.mjs";
-import { loc, notice, log } from "./shared.mjs";
+import { loc, notice, log, rolledAndShown } from "./shared.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { onTeleport } from "./teleport.mjs";
 import { onDashTemplate, onDashUsed } from "./dash.mjs";
@@ -468,12 +468,13 @@ export async function jumpTo(token, point, { high=false, configure=true, highOff
   const center = { x: top.x + ((token.width ?? 1) * grid.sizeX / 2), y: top.y + ((token.height ?? 1) * grid.sizeY / 2) };
   if ( landsOnDifficult(token, center, elevation) ) {
     ui.notifications.info(loc("Saut.Atterrissage", { name: token.name, dc: LANDING_DC }));
-    const rolls = await token.actor.rollSkill({ skill: "acr", ability: "dex", target: LANDING_DC }, { configure });
+    // §252 : la chute attend la fin des dés 3D, puis se voit et s'entend chez tous.
+    const rolls = await rolledAndShown(() => token.actor.rollSkill({ skill: "acr", ability: "dex", target: LANDING_DC }, { configure }));
     const total = rolls?.[0]?.total;
     if ( Number.isFinite(total) && (total < LANDING_DC) ) {
       await token.actor.toggleStatusEffect("prone", { active: true });
-      notice(token, loc("Saut.ATerre"));
-    }
+      notice(token, { key: "Saut.ATerre" }, "refused", { all: true, action: "land", outcome: "failure" });
+    } else if ( Number.isFinite(total) ) notice(token, { key: "Retour.Action.Retombe" }, "gain", { all: true, action: "land", outcome: "success" });
   }
   return { done: moved !== false, reason: null, fixed: jump.fixed, cost: jump.cost, ...info };
 }

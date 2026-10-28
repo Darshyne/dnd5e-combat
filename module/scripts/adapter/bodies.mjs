@@ -7,7 +7,14 @@
 
 import { MODULE_ID } from "../constants.mjs";
 
-/** Pas une créature : objet piloté. */
+/**
+ * Les types d'acteur de dnd5e qui ne sont jamais une créature : un groupe (le contenant de butin d'un module voisin, le groupe
+ * d'aventuriers) et une rencontre. §260 : posés sur une scène, ils étaient pris dans les zones, qui attendaient pour toujours leur
+ * sauvegarde.
+ */
+const NON_CREATURE_TYPES = Object.freeze(["group", "encounter"]);
+
+/** Pas une créature : objet piloté, ou acteur d'un type qui n'en est jamais une. */
 export function isObjectToken(token) {
-  return !!token?.flags?.[MODULE_ID]?.object;
+  return !!token?.flags?.[MODULE_ID]?.object || NON_CREATURE_TYPES.includes(token?.actor?.type);
 }

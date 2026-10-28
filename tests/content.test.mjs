@@ -188,7 +188,7 @@ describe("contenu livré", () => {
       "guardian-of-faith", "guidance", "guiding-bolt", "gust-of-wind", "hail-of-thorns", "hand-of-healing", "hand-of-ultimate-mercy",
       "haste", "heal", "healer", "healers-kit", "heat-aura", "heat-metal", "heavy-armor-master", "heightened-spell", "hellish-rebuke",
       "heroic-warrior", "heroism", "hex", "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-aura", "holy-nimbus",
-      "holy-water", "hunger-of-hadar", "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "illusory-self",
+      "holy-water", "hunger-of-hadar", "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "ice-storm", "illusory-self",
       "improved-cunning-strike", "improved-elemental-fury", "incendiary-cloud", "indomitable-might", "innate-sorcery", "insect-plague",
       "instinctive-pounce", "interception", "invisibility", "invoke-duplicity", "jallarzis-storm-of-radiance", "jump",
       "knowledge-from-a-past-life", "lamp", "lantern-bullseye", "lantern-hooded", "large-form", "lay-on-hands", "leading-evasion",

@@ -6,6 +6,7 @@
  * le moteur n'ajoute que le comportement. MJ actif.
  */
 
+import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
 
 /** L'activité qui a posé la région (`flags.dnd5e.activity`), ou null. */
@@ -105,4 +106,24 @@ export async function syncZoneEffects(token) {
     }
   }
   return fixed;
+}
+
+/**
+ * §261 : une zone instantanée qui laisse un terrain difficile derrière elle (`difficultTerrain.lingers`, Tempête de grêle : « la zone
+ * devient un terrain difficile jusqu'à la fin de votre prochain tour ») — une copie de sa forme, sans les drapeaux de dnd5e (le moteur
+ * ne la prend pas pour une zone de sort), avec le comportement de terrain difficile, visible de tous, notée pour être retirée à la fin
+ * du prochain tour du lanceur (runtime/lingering.mjs). En combat seulement. MJ actif.
+ * @returns {Promise<RegionDocument|null>}
+ */
+export async function leaveDifficultTerrain(region, activity, { caster, combat }) {
+  const rule = contentOf(activity?.item).entry?.difficultTerrain;
+  if ( !rule?.lingers || !caster || !combat?.started ) return null;
+  const data = region.toObject();
+  delete data._id;
+  data.name = activity.item.name;
+  data.visibility = CONST.REGION_VISIBILITY.ALWAYS;
+  data.behaviors = [{ type: "dnd5e.difficultTerrain", name: activity.item.name, system: { magical: true, types: rule.types ?? [] } }];
+  data.flags = { [MODULE_ID]: { lingering: { item: activity.item.uuid, caster: caster.uuid, combat: combat.id, round: combat.round, until: rule.lingers } } };
+  const [created] = await region.parent.createEmbeddedDocuments("Region", [data]);
+  return created ?? null;
 }

@@ -11,6 +11,7 @@ import { areaRulesOf, isInstantaneous, writeAreaState, markTransient, shrinkToBo
 import { ensureRegionElevation } from "../adapter/space.mjs";
 import { stormOf, isBoltRegion } from "../adapter/storm.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
+import { leaveDifficultTerrain } from "../adapter/zone-effects.mjs";
 import { scatterOf, scatterState } from "./scatter.mjs";
 import { flammableOf, groundFlammableState, igniteUnder } from "./flammable.mjs";
 import { log } from "./shared.mjs";
@@ -107,6 +108,10 @@ export async function onRegionCreated(region) {
       if ( !usage?.area || scatter || ground || (rules.on.length && !actsOnPose(rules.on)) ) return null;
     } else if ( isInstantaneous(activity) || bolt ) {
       await markTransient(region, message.id);
+      // §261 : Tempête de grêle — le terrain difficile reste quand la zone part.
+      const caster = fromUuidSync(area.origin ?? "", { strict: false })?.actor ?? null;
+      const left = await leaveDifficultTerrain(region, activity, { caster, combat: game.combat });
+      if ( left ) log(`${activity.item.name}: difficult terrain left until the end of ${caster.name}'s next turn`);
       // §201 : la résolution commence — la zone ne recouvre plus l'animation du sort.
       await hideRegion(region);
       // Personne dedans : aucune résolution ne viendra la retirer. On la laisse voir un instant.

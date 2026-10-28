@@ -500,7 +500,9 @@
  *                                               multiplicateur que ×2 (Mur d'épines : ×4), par le comportement « coût de
  *                                               déplacement » du cœur V14 à la place de celui de dnd5e ; sinon comportement
  *                                               `dnd5e.difficultTerrain` posé sur la région si les données ne l'ont pas
- *                                               (Manuel des joueurs premium : Enchevêtrement, Croissance d'épines…) ; magique
+ *                                               (Manuel des joueurs premium : Enchevêtrement, Croissance d'épines…) ; magique ;
+ *                                               `lingers: "casterNextTurnEnd"` (§261) : une zone instantanée laisse ce
+ *                                               terrain jusqu'à la fin du prochain tour du lanceur (Tempête de grêle)
  *     encloses?: true                           §232 : un effet de cet item enferme sa cible (Sphère résiliente d'Otiluke) — rien ne
  *                                               l'atteint du dehors, elle n'atteint rien dehors (résolutions « non affecté », clics refusés).
  *     willingFails?: true                       §232 : une créature consentante peut rater la sauvegarde d'office — le lanceur dit, à

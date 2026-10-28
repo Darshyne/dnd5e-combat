@@ -301,7 +301,8 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     else {
       if ( ("types" in t) && (!Array.isArray(t.types) || !t.types.every(x => (typeof x === "string") && x)) ) errors.push(`${at}difficultTerrain.types: list of strings`);
       if ( ("cost" in t) && !(Number.isFinite(t.cost) && (t.cost > 1) && (t.cost <= 5)) ) errors.push(`${at}difficultTerrain.cost: a multiplier, more than 1, up to 5`);
-      for ( const key of Object.keys(t) ) if ( !["types", "cost"].includes(key) ) errors.push(`${at}difficultTerrain.${key}: unknown key`);
+      if ( ("lingers" in t) && (t.lingers !== "casterNextTurnEnd") ) errors.push(`${at}difficultTerrain.lingers: casterNextTurnEnd`);
+      for ( const key of Object.keys(t) ) if ( !["types", "cost", "lingers"].includes(key) ) errors.push(`${at}difficultTerrain.${key}: unknown key`);
     }
   }
   if ( "lineDash" in entry ) {

@@ -95,3 +95,11 @@ describe("§259 : Gardien de la foi, plafond de dégâts", () => {
     expect(validateEntry({ summon: { initiative: "none", vanishesAfterDamage: 0 } })).toHaveLength(1);
   });
 });
+
+describe("§261 : terrain difficile laissé par une zone instantanée", () => {
+  it("Tempête de grêle, jusqu'à la fin du prochain tour du lanceur", () => {
+    expect(CONTENT["ice-storm"].difficultTerrain).toEqual({ lingers: "casterNextTurnEnd" });
+    expect(validateEntry(CONTENT["ice-storm"])).toEqual([]);
+    expect(validateEntry({ difficultTerrain: { lingers: "forever" } })).toHaveLength(1);
+  });
+});

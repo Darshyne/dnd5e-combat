@@ -162,6 +162,8 @@ export const SPELL_RULES = Object.freeze({
     triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }, { on: "failedSave", do: [{ type: "status", status: "prone" }] }]
   },
   "sleet-storm": { difficultTerrain: {} },
+  // §261 : Tempête de grêle — « la zone devient un terrain difficile jusqu'à la fin de votre prochain tour ».
+  "ice-storm": { difficultTerrain: { lingers: "casterNextTurnEnd" } },
   // Tentacules noirs d'Evard : « … qui y entre pour la première fois d'un tour ou y termine son tour » rejoue la sauvegarde ; « une action
   // pour un test de Force (Athlétisme) contre votre DD » met fin à Entravé. « Sur un échec, elle subit 3d6 dégâts » : rien sur une
   // réussite, mais l'activité de la donnée porte `onSave: "half"` (relevé des trous, 2026-10-22 : 4 PV sur une réussite, vu en jeu).

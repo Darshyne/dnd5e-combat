@@ -34,6 +34,7 @@ import { canSee as visionCanSee, isVisionAvailable } from "./adapter/vision.mjs"
 import { registerSpace } from "./runtime/space.mjs";
 import { registerSelfAreas } from "./runtime/self-area.mjs";
 import { registerAreas } from "./runtime/areas.mjs";
+import { registerLingering } from "./runtime/lingering.mjs";
 import { registerBursts } from "./runtime/bursts.mjs";
 import { registerFelled } from "./runtime/felled.mjs";
 import { registerProjectiles } from "./runtime/projectiles.mjs";
@@ -297,6 +298,7 @@ Hooks.once("init", () => {
   gated(registerSpace);
   gated(registerConditions);
   gated(registerAreas);
+  gated(registerLingering);   // §261 : le terrain que laisse une zone instantanée (Tempête de grêle)
   gated(registerContest);   // §72 : test en opposition (Combat perspicace)
   gated(registerStorm);   // §70 : Appel de la foudre, le dé de l'orage déjà là
   gated(registerSelfAreas);   // §47 : une zone « sur soi » se pose d'office sur le lanceur

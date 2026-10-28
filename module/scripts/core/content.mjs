@@ -448,11 +448,13 @@
  *     stunningStrike?: { activity, focus }      Frappe étourdissante (§24) : après un coup, une fois par tour, la sauvegarde de l'item
  *                                               contre une utilisation de l'item `focus` (identifiant)
  *     openHand?: { addle, push, topple }        Technique de la main ouverte (§24) : après un coup du Déluge, l'une des trois activités
- *     smite?: { damage, fiends?, save?, effect?, ranged?, burst? }
+ *     smite?: { damage, fiends?, save?, effect?, ranged?, burst?, saveAtMostHp? }
  *                                               sort de châtiment (§25) : proposé au jet de dégâts d'un coup au corps à corps, ses dés
  *                                               (activité `damage`, ou `fiends` contre un Fiélon ou un Mort-vivant) s'ajoutent au jet,
  *                                               puis la sauvegarde `save` joue sur la cible ; `effect` : l'effet de l'item posé sur
- *                                               la cible touchée, sans sauvegarde (brûlure du Châtiment de fournaise, §42.2)
+ *                                               la cible touchée, sans sauvegarde (brûlure du Châtiment de fournaise, §42.2) ;
+ *                                               `saveAtMostHp` (§262) : la sauvegarde ne joue que si le coup laisse la cible à ce
+ *                                               nombre de PV ou moins (Châtiment bannissant : 50)
  *     healsDownedMax?: true                     le porteur de l'item soigne au maximum des dés une créature à 0 PV, avec un sort ou
  *                                               une Conduit divin (Retour à la vie du Domaine de la Tombe, §19.9)
  *     dispel?: true                             Dissipation de la magie (§37.2) : les sorts en cours sur les cibles cessent —

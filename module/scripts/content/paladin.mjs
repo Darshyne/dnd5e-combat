@@ -45,7 +45,8 @@ export const PALADIN = Object.freeze({
   // §42.2 : l'aveuglement (« Blinded »), posé au coup ; la sauvegarde de fin de tour dans content/triggers.mjs.
   "blinding-smite": { smite: { damage: "dnd5eactivity000", effect: "5FPaEGhqJ5yPP2Ln" } },
   "staggering-smite": { smite: { damage: "AMwFB1wsbzWYakK4", save: "dnd5eactivity000" } },
-  "banishing-smite": { smite: { damage: "CXmmXBTfen6D6LXY", save: "dnd5eactivity000" } },
+  // §262 : « si l'attaque réduit la cible à 50 points de vie ou moins, celle-ci doit réussir un jet de sauvegarde de Charisme ».
+  "banishing-smite": { smite: { damage: "CXmmXBTfen6D6LXY", save: "dnd5eactivity000", saveAtMostHp: 50 } },
 
   // Aura de courage (niveau 10) : immunité à Effrayé ; Aura de dévotion (Serment de dévotion 7) : immunité à Charmé.
   "aura-of-courage": { aura: auraImmunity("frightened") },

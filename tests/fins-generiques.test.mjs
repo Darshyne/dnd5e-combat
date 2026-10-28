@@ -103,3 +103,11 @@ describe("§261 : terrain difficile laissé par une zone instantanée", () => {
     expect(validateEntry({ difficultTerrain: { lingers: "forever" } })).toHaveLength(1);
   });
 });
+
+describe("§262 : Châtiment bannissant, sauvegarde sous 50 PV", () => {
+  it("contenu et schéma", () => {
+    expect(CONTENT["banishing-smite"].smite.saveAtMostHp).toBe(50);
+    expect(validateEntry(CONTENT["banishing-smite"])).toEqual([]);
+    expect(validateEntry({ smite: { damage: "CXmmXBTfen6D6LXY", saveAtMostHp: -1 } })).toHaveLength(1);
+  });
+});

@@ -62,6 +62,7 @@ export default {
       return r.id;
     };
     await lend("phbsplThunderous");
+    await lend("phbsplBanishingS");
 
     const remettre = async () => {
       for ( const [id, h] of homes ) {
@@ -163,6 +164,29 @@ export default {
       const prone = (await ctx.engine("stats", { tokenId: bandit.id }))?.statuses?.includes("prone");
       ctx.expect(!!t?.save && (prone === !t.save.success), `Force ${t?.save?.total} (${t?.save?.success ? "réussie" : "ratée"}), À terre ${prone}`);
     });
+
+    // §262 : Châtiment bannissant — la sauvegarde de Charisme ne joue que si le coup laisse la cible à 50 PV ou moins. Un emplacement
+    // de niveau 5 prêté (`override` : le Paladin niveau 8 n'en a pas).
+    const banish = async (hp, expectSave) => {
+      await tough(); await place(bandit, g.x + grid, g.y);
+      if ( hp !== 300 ) await ctx.call("update-scene-object", { type: "Token", objectId: bandit.id, data: { "delta.system.attributes.hp.value": hp } });
+      await setUses(1);
+      await ctx.call("update-actor", { actorId: pal.actorId, actorData: { "system.spells.spell5.override": 1, "system.spells.spell5.value": 1 } });
+      ctx.restore(() => ctx.call("update-actor", { actorId: pal.actorId, actorData: { "system.spells.spell5.override": null } }).catch(() => {}));
+      if ( !ctx.expect(await fight(), "combat : au tour du Paladin") ) return;
+      const res = await smiteHit(/bannissant|Banishing/i);
+      if ( !ctx.expect(!!res, "l'épée longue touche le Bandit (10 essais au plus)") ) return;
+      ctx.expect(res.damage?.flags?.[MODULE_ID]?.smite?.formula === "5d10", `+5d10 de force (${res.damage?.flags?.[MODULE_ID]?.smite?.formula})`);
+      let save = null;
+      for ( const stop = Date.now() + (expectSave ? 15000 : 6000); !save && (Date.now() < stop); await pause(500) ) {
+        save = (await ctx.messagesSince(res.a.since)).find(m => m.flags?.[MODULE_ID]?.areaTick?.event === "cunningStrike");
+      }
+      const left = await ctx.hp(bandit);
+      if ( expectSave && (left <= 0) ) { ctx.log(`le Bandit est tombé (${left} PV) : pas de sauvegarde, comme il se doit`); return; }
+      ctx.expect(!!save === expectSave, `${left} PV après le coup : sauvegarde de Charisme ${save ? "jouée" : "non jouée"}`);
+    };
+    await part("Châtiment bannissant, cible à plus de 50 PV", () => banish(300, false));
+    await part("Châtiment bannissant, cible à 50 PV ou moins", () => banish(52, true));
 
     await part("Pas de châtiment", async () => {
       await tough(); await place(bandit, g.x + grid, g.y);

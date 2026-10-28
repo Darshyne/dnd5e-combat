@@ -73,6 +73,10 @@ async function onResolution(resolution) {
   if ( !save ) return;
   const source = actor.getActiveTokens(false, true)[0] ?? null;
   if ( !source ) return;
+  // §262 : « si l'attaque réduit la cible à 50 points de vie ou moins » (Châtiment bannissant).
+  const ceiling = contentOf(item).entry?.smite?.saveAtMostHp;
+  const hp = target.actor.system.attributes?.hp?.value ?? 0;
+  if ( !down && ceiling && (hp > ceiling) ) { log(`${smite.name}: ${target.name} still has ${hp} HP (> ${ceiling}), no saving throw`); return; }
   if ( !down ) {
     log(`${smite.name}: ${target.name} makes their saving throw`);
     await strikeAgainst(save, source, target, { flavor: "DND5ECOMBAT.Chatiment.Carte" });

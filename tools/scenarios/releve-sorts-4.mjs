@@ -158,8 +158,13 @@ export default {
       const z = await ctx.position(zombi);
       const guardian = await summon(cleric, itemId, z.x + 2 * grid, z.y);
       if ( !ctx.expect(!!guardian, `Gardien : invoqué (${guardian?.name ?? "rien"})`) ) return;
+      // §259 : « il disparaît quand il a infligé 60 dégâts au total » — 59 déjà comptés, le pouls suivant (au moins 1) l'achève.
+      await ctx.call("update-scene-object", { type: "Token", objectId: guardian.id, data: { "flags.dnd5e-combat.pulseDamage": 59 } });
       const r = await pulseOn(zombi, 2);
       ctx.expect(!!r, "Gardien : le Zombi commence son tour à 3 m → sa sauvegarde");
+      await new Promise(res => setTimeout(res, 2500));
+      const live = (await ctx.call("list-scene-objects", { type: "Token" })).objects.Token.some(t => t.id === guardian.id);
+      ctx.expect(!live, "Gardien : 60 dégâts atteints, il a disparu");
     });
 
     await part("Chien de garde", async () => {

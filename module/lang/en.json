@@ -1704,5 +1704,6 @@
   "DND5ECOMBAT.FinGenerique.zeroHp": "{item} ends: a creature it binds has dropped to 0 Hit Points.",
   "DND5ECOMBAT.FinGenerique.unaffected": "{item}: no creature was affected, {name} stops concentrating on it.",
   "DND5ECOMBAT.Reglage.endUnaffected.Nom": "End concentration when nobody is affected",
-  "DND5ECOMBAT.Reglage.endUnaffected.Aide": "When every target of a concentration spell that only works on a failed save succeeds (Hold Person, Banishment, Slow…), the caster's concentration ends at once instead of being held for nothing."
+  "DND5ECOMBAT.Reglage.endUnaffected.Aide": "When every target of a concentration spell that only works on a failed save succeeds (Hold Person, Banishment, Slow…), the caster's concentration ends at once instead of being held for nothing.",
+  "DND5ECOMBAT.Retour.Disparait": "Vanishes"
 }

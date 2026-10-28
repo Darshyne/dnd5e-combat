@@ -12,8 +12,11 @@ import { isId, isObject } from "./shared.mjs";
 export function validateSummon(summon, at, errors) {
   if ( !isObject(summon) || !["after", "own", "none"].includes(summon.initiative) ) return errors.push(`${at}.initiative: "after", "own" or "none"`);
   if ( ("endsSpell" in summon) && (summon.endsSpell !== true) ) errors.push(`${at}.endsSpell: true or absent`);
-  for ( const flag of ["endsAtZero", "mimic", "endsIfIncapacitated", "castFrom", "familiar", "replaces"] ) {
+  for ( const flag of ["endsAtZero", "vanishesAtZero", "mimic", "endsIfIncapacitated", "castFrom", "familiar", "replaces"] ) {
     if ( (flag in summon) && (summon[flag] !== true) ) errors.push(`${at}.${flag}: true or absent`);
+  }
+  if ( ("vanishesAfterDamage" in summon) && !(Number.isInteger(summon.vanishesAfterDamage) && (summon.vanishesAfterDamage > 0)) ) {
+    errors.push(`${at}.vanishesAfterDamage: a positive whole number`);
   }
   if ( "lasts" in summon ) {
     const l = summon.lasts;
@@ -57,7 +60,7 @@ export function validateSummon(summon, at, errors) {
       errors.push(`${at}.minLevels: { activity id: level }`);
     }
   }
-  for ( const key of Object.keys(summon) ) if ( !["initiative", "pilot", "endsSpell", "endsAtZero", "pulse", "mimic", "endsIfIncapacitated", "castFrom", "lasts", "familiar", "replaces", "minLevels"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
+  for ( const key of Object.keys(summon) ) if ( !["initiative", "pilot", "endsSpell", "endsAtZero", "vanishesAtZero", "vanishesAfterDamage", "pulse", "mimic", "endsIfIncapacitated", "castFrom", "lasts", "familiar", "replaces", "minLevels"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 export function validateAbsorb(absorb, at, errors) {

@@ -73,3 +73,25 @@ describe("fins génériques — contenu livré", () => {
     }
   });
 });
+
+describe("§259 : invocations qui disparaissent à 0 PV", () => {
+  it("les sorts d'invocation, Insecte géant, Destrier fidèle, Serviteur invisible", () => {
+    for ( const id of ["summon-beast", "summon-undead", "giant-insect", "find-steed", "unseen-servant"] ) {
+      expect(CONTENT[id].summon.vanishesAtZero).toBe(true);
+      expect(validateEntry(CONTENT[id])).toEqual([]);
+    }
+    expect(CONTENT["find-steed"].summon.replaces).toBe(true);
+    expect(CONTENT["animate-objects"].summon.vanishesAtZero).toBeUndefined();
+  });
+  it("schéma : true ou absent", () => {
+    expect(validateEntry({ summon: { initiative: "after", vanishesAtZero: "oui" } })).toHaveLength(1);
+  });
+});
+
+describe("§259 : Gardien de la foi, plafond de dégâts", () => {
+  it("60 dégâts au total", () => {
+    expect(CONTENT["guardian-of-faith"].summon.vanishesAfterDamage).toBe(60);
+    expect(validateEntry(CONTENT["guardian-of-faith"])).toEqual([]);
+    expect(validateEntry({ summon: { initiative: "none", vanishesAfterDamage: 0 } })).toHaveLength(1);
+  });
+});

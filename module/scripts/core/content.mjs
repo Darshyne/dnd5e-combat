@@ -59,7 +59,11 @@
  *                                               `castFrom: true` (le lanceur lance ses sorts depuis sa case : la portée
  *                                               se mesure depuis l'un ou l'autre). `endsSpell: true` : retirer
  *                                               l'objet met fin à la concentration du sort ; `endsAtZero: true` :
- *                                               l'objet à 0 PV aussi. `pulse: { item, radius, units }` : une créature
+ *                                               l'objet à 0 PV aussi ; `vanishesAtZero: true` : la créature
+ *                                               disparaît à 0 PV, le sort continue (§259 : sorts d'invocation
+ *                                               du PHB 2024) ; `vanishesAfterDamage: n` : elle disparaît quand
+ *                                               ses pulsations ont infligé n dégâts au total (Gardien de la foi).
+ *                                               `pulse: { item, radius, units }` : une créature
  *                                               qui finit son tour à `radius` de l'objet subit l'activité de son
  *                                               item `item` (identifiant ; Sphère de feu : « flames ») ; `on` : les
  *                                               moments (turnEnd par défaut ; enter : une créature arrive à portée ; turnStart : elle commence son tour à portée ;

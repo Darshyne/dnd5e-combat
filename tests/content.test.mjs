@@ -223,7 +223,7 @@ describe("contenu livré", () => {
       "tashas-hideous-laughter", "tavern-brawler", "telekinesis", "telekinetic", "thiefs-reflexes", "thorn-whip", "thrown-weapon-fighting",
       "thunderous-smite", "thunderwave", "tinderbox", "toll-the-dead", "torch", "trampling-charge", "tricksters-transposition",
       "trip-attack", "true-resurrection", "true-strike", "tsunami", "umbral-dagger", "unarmed-fighting", "unarmed-strike", "uncanny-dodge",
-      "undead-fortitude", "vampiric-bite", "vampiric-touch", "vicious-mockery", "vile-appearance", "vitriolic-sphere", "vow-of-enmity",
+      "undead-fortitude", "unseen-servant", "vampiric-bite", "vampiric-touch", "vicious-mockery", "vile-appearance", "vitriolic-sphere", "vow-of-enmity",
       "wails-from-the-grave", "wall-of-fire", "wall-of-force", "wall-of-ice", "wall-of-stone", "wall-of-thorns", "war-caster",
       "war-priest", "warding-bond", "warding-flare", "watchers", "water-element", "water-form", "watery-rush", "web", "weird",
       "wild-companion", "wild-resurgence", "wind-wall", "witch-bolt", "wrath-of-the-sea", "wrath-of-the-wild", "wrathful-smite",

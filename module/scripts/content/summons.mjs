@@ -26,6 +26,8 @@
  */
 
 const after = { initiative: "after" };
+// §259 : « elle disparaît lorsqu'elle tombe à 0 point de vie ou lorsque le sort prend fin » (les sorts d'invocation du PHB 2024).
+const vanishing = { ...after, vanishesAtZero: true };
 const piloted = (distance, onCast, more={}) => ({
   initiative: "after", endsSpell: true,
   pilot: { cost: "bonus", distance, units: "ft", ...(onCast ? { onCast } : {}), ...(more.pilot ?? {}) },
@@ -34,9 +36,11 @@ const piloted = (distance, onCast, more={}) => ({
 const hand = piloted(60, "command", { pilot: { occupies: false }, summon: { endsAtZero: true } });
 
 export const SUMMONS = Object.freeze({
-  "summon-aberration": after, "summon-beast": after, "summon-celestial": after, "summon-construct": after,
-  "summon-dragon": after, "summon-elemental": after, "summon-fey": after, "summon-fiend": after, "summon-undead": after,
-  "animate-objects": after, "giant-insect": after,
+  "summon-aberration": vanishing, "summon-beast": vanishing, "summon-celestial": vanishing, "summon-construct": vanishing,
+  "summon-dragon": vanishing, "summon-elemental": vanishing, "summon-fey": vanishing, "summon-fiend": vanishing, "summon-undead": vanishing,
+  "animate-objects": after, "giant-insect": vanishing,
+  // §259 : « s'il tombe à 0 point de vie, le sort prend fin » — sans concentration, le serviteur disparaît.
+  "unseen-servant": { initiative: "none", vanishesAtZero: true },
   // §107 : `familiar` — actions de base sauf l'attaque, vision, poche dimensionnelle. Le Pacte de la chaîne (occultiste, PHB
   // 2024) porte ses propres activités d'invocation « Find Familiar » : l'invocation a pour origine l'item du pacte.
   "find-familiar": { initiative: "own", familiar: true },
@@ -64,19 +68,21 @@ export const SUMMONS = Object.freeze({
   // « attaque à l'apparition, puis par une action Bonus, se déplace de 9 m et attaque » (« Move and Attack »). Invocation de fée :
   // l'esprit attaque à l'apparition, puis par une action Bonus « se téléporte de 9 m et attaque » (le pilote le déplace : la
   // téléportation est approchée par un déplacement, sans attaque d'opportunité). Gardien de la foi : « un ennemi qui arrive à 3 m
-  // du gardien pour la première fois d'un tour ou y commence son tour » fait la sauvegarde de « Guarded Area » (la limite de 60 dégâts
-  // n'est pas reprise). Chien de garde : « au début de votre tour, le chien tente de mordre un ennemi à 1,50 m de lui ».
+  // du gardien pour la première fois d'un tour ou y commence son tour » fait la sauvegarde de « Guarded Area » (§259 : il disparaît
+  // quand il a infligé 60 dégâts au total, `vanishesAfterDamage`). Chien de garde : « au début de votre tour, le chien tente de
+  // mordre un ennemi à 1,50 m de lui ».
   // §230 : « Si vous avez déjà un destrier de ce sort, il est remplacé par le nouveau » ; la monture volante (« Fly 60 ft. (requires
   // level 4+ spell) », note Foundry : activité « Summon Flying Steed » à partir d'un emplacement de niveau 4) — l'incantation gratuite
   // de Fidèle destrier (paladin niveau 5, au niveau 2 du sort) ne la donne pas.
-  "find-steed": { ...after, replaces: true, minLevels: { o4YsONnsS8rOOEaS: 4 } },
+  // §259 : « la monture disparaît si elle tombe à 0 point de vie ».
+  "find-steed": { ...vanishing, replaces: true, minLevels: { o4YsONnsS8rOOEaS: 4 } },
   // §164 : Invocation d'élémentaire — « quand une créature entre dans l'espace de l'esprit ou commence son tour à 1,50 m de lui », la
   // sauvegarde de l'élément (8d8, Entravée) ; un item par élément (air, terre, feu, eau). L'esprit n'agit pas. (« Une seule créature
   // Entravée à la fois » : au MJ.)
   "conjure-elemental": { initiative: "none", pulse: { item: ["air-element", "earth-element", "fire-element", "water-element"], radius: 5, units: "ft", on: ["enter", "turnStart"], affects: "enemy" } },
   "mordenkainens-sword": piloted(30, "use"),
   "conjure-fey": piloted(30, "use"),
-  "guardian-of-faith": { initiative: "none", pulse: { item: "guarded-area", radius: 10, units: "ft", on: ["enter", "turnStart"], affects: "enemy" } },
+  "guardian-of-faith": { initiative: "none", vanishesAfterDamage: 60, pulse: { item: "guarded-area", radius: 10, units: "ft", on: ["enter", "turnStart"], affects: "enemy" } },
   "mordenkainens-faithful-hound": { initiative: "none", pulse: { item: "bite", radius: 5, units: "ft", on: ["casterTurnStart"], affects: "enemy" } },
   "arcane-eye": { initiative: "none", endsSpell: true, pilot: { cost: "bonus", distance: 30, units: "ft", occupies: false } },
   "dancing-lights": { initiative: "none", endsSpell: true, pilot: {

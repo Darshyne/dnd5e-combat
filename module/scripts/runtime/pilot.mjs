@@ -25,7 +25,10 @@ import {
 import { pulseAgainst } from "../adapter/areas.mjs";
 import { summonItemOf } from "../adapter/summons.mjs";
 import { route } from "./router.mjs";
-import { log, loc, viaActiveGM } from "./shared.mjs";
+import { log, loc, notice, viaActiveGM } from "./shared.mjs";
+import { contentOf } from "../adapter/content.mjs";
+import { STEPS } from "../core/action.mjs";
+import { enqueue } from "./queue.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { lengthIn } from "../adapter/units.mjs";
@@ -308,11 +311,46 @@ async function pulseOnMove(tokenDoc, movement) {
   }
 }
 
+/** §259 : une créature invoquée qui disparaît — un texte flottant et un son chez toute la table (§252), puis son combattant et son token. */
+async function vanish(token) {
+  log(`${token.name} at 0 HP: vanishes`);
+  notice(token, { key: "Retour.Disparait" }, "ended", { all: true, action: "spellEnds", outcome: "success" });
+  for ( const combat of game.combats ) {
+    const gone = combat.combatants.filter(c => (c.sceneId === token.parent?.id) && (c.tokenId === token.id)).map(c => c.id);
+    if ( gone.length ) await combat.deleteEmbeddedDocuments("Combatant", gone);
+  }
+  if ( token.parent?.tokens?.has(token.id) ) await token.delete();
+}
+
+/**
+ * §259 : Gardien de la foi — « le gardien disparaît quand il a infligé un total de 60 dégâts ». À chaque résolution d'une pulsation
+ * (`areaTick.event: "pulse"`, adapter/areas.mjs), les dégâts appliqués s'ajoutent au total noté sur son token ; le plafond
+ * (`summon.vanishesAfterDamage`) atteint, il disparaît. MJ actif.
+ */
+async function onPulseResolution(resolution) {
+  if ( resolution?.step !== STEPS.DONE ) return;
+  const tick = game.messages.get(resolution.origin ?? "")?.getFlag(MODULE_ID, "areaTick");
+  if ( tick?.event !== "pulse" ) return;
+  const token = fromUuidSync(tick.source ?? "", { strict: false });
+  const origin = token ? summonItemOf(token) : null;
+  const cap = origin ? contentOf(origin).entry?.summon?.vanishesAfterDamage : null;
+  if ( !cap || token.getFlag(MODULE_ID, "pulseCounted")?.includes?.(resolution.id) ) return;
+  const dealt = (resolution.targets ?? []).reduce((sum, t) => sum + Math.max(0, Number(t.damage?.applied) || 0), 0);
+  const total = (token.getFlag(MODULE_ID, "pulseDamage") ?? 0) + dealt;
+  const counted = [...(token.getFlag(MODULE_ID, "pulseCounted") ?? []), resolution.id].slice(-20);
+  log(`${token.name}: ${dealt} damage dealt, ${total}/${cap}`);
+  if ( total >= cap ) return vanish(token);
+  await token.update({ [`flags.${MODULE_ID}`]: { pulseDamage: total, pulseCounted: counted } });
+}
+
 /** L'objet tombé à 0 PV (`endsAtZero`, Main de Bigby : « si elle tombe à 0 point de vie, le sort prend fin »). MJ actif. */
 async function onUpdateActor(actor, changes) {
   if ( foundry.utils.getProperty(changes, "system.attributes.hp.value") === undefined ) return;
   if ( (actor.system.attributes?.hp?.value ?? 1) > 0 ) return;
   const token = actor.token ?? actor.getActiveTokens?.(false, true)?.[0] ?? null;
+  // §259 : « elle disparaît lorsqu'elle tombe à 0 point de vie » — le token et son combattant partent, le sort continue.
+  const origin = token ? summonItemOf(token) : null;
+  if ( origin && contentOf(origin).entry?.summon?.vanishesAtZero ) return vanish(token);
   if ( !token?.getFlag(MODULE_ID, "endsAtZero") ) return;
   const effect = fromUuidSync(token.getFlag(MODULE_ID, "summonedBy") ?? "", { strict: false });
   if ( !effect ) return;
@@ -364,6 +402,8 @@ export function registerPilot() {
   route("combatTurnChange", pulseAtTurnEnd, { executor: true, label: "summoned object: end of turn within range" });
   route("combatTurnChange", pulseAtTurnStart, { executor: true, label: "summoned object: start of turn within range" });
   route("updateActor", onUpdateActor, { executor: true, label: "piloted object: spell ends at 0 HP" });
+  route(`${MODULE_ID}.resolution`, resolution => enqueue(`pulseCap:${resolution?.id}`, () => onPulseResolution(resolution)),
+    { executor: true, label: "summoned object: damage cap not counted" });
   route("createToken", onCreateToken, { executor: true, label: "piloted object: command on cast" });
   route("moveToken", onMoveToken, { executor: true, label: "piloted object: command not paid" });
   route("moveToken", pulseOnMove, { executor: true, label: "summoned object: arriving within range" });

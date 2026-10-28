@@ -1704,5 +1704,6 @@
   "DND5ECOMBAT.FinGenerique.zeroHp": "{item} prend fin : une créature qu'il lie est tombée à 0 point de vie.",
   "DND5ECOMBAT.FinGenerique.unaffected": "{item} : aucune créature n'est affectée, {name} cesse de se concentrer dessus.",
   "DND5ECOMBAT.Reglage.endUnaffected.Nom": "Fin de concentration quand personne n'est affecté",
-  "DND5ECOMBAT.Reglage.endUnaffected.Aide": "Quand toutes les cibles d'un sort de concentration qui n'agit que sur une sauvegarde ratée réussissent (Immobilisation de personne, Bannissement, Lenteur…), la concentration du lanceur prend fin aussitôt au lieu d'être tenue pour rien."
+  "DND5ECOMBAT.Reglage.endUnaffected.Aide": "Quand toutes les cibles d'un sort de concentration qui n'agit que sur une sauvegarde ratée réussissent (Immobilisation de personne, Bannissement, Lenteur…), la concentration du lanceur prend fin aussitôt au lieu d'être tenue pour rien.",
+  "DND5ECOMBAT.Retour.Disparait": "Disparaît"
 }

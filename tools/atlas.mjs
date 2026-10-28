@@ -85,6 +85,27 @@ const CATS = {
   mv: ["teleport", "afterTeleport", "jump", "leap", "movesAfter", "swapPlaces", "transpose", "etherealShift", "climbsOnTurn", "fleetStep",
     "noOpportunity", "tether", "sharesSpace", "quickStand", "critMove", "haltOnReaction"]
 };
+// Événements de fin annoncés par le texte. `fixed` : une échéance que la durée d'un effet dnd5e suffit à porter ; `engine` : ce qui,
+// dans l'entrée de contenu du moteur, porte ce type de fin.
+const END_EVENTS = [
+  { id: "resave", label: "sauvegarde répétée", engine: /"resave"|"repeatsSave"/,
+    re: /\brepeats? the save|\bmakes? (another|a new) [^.]{0,30}saving throw at the (end|start) of each of its turns|at the (end|start) of each of its turns, (it|the target|the creature) (can )?(makes?|repeats?)/i },
+  { id: "damage", label: "fin sur dégâts", engine: /"isDamaged"|"breaksOn":\[[^\]]*"damage"/,
+    re: /\b(ends?|wakes? up)[^.]{0,40}\b(if|when) (it|the target|the creature|they) takes? (any )?damage|\bdamage ends (the|this)/i },
+  { id: "acts", label: "fin si le porteur attaque ou lance un sort", engine: /"breaksOn"/,
+    re: /\bends (early )?(for (it|that target) )?(if|when) [^.]{0,50}\b(makes? an attack|attack roll|casts? a spell|deals damage)/i },
+  { id: "action", label: "action pour mettre fin", engine: /"actionEnds"|"escape"/,
+    re: /\b(can )?(take|use) an action to [^.]{0,60}(end|escape|free)|\bas an action, [^.]{0,40}(end|escape)/i },
+  { id: "distance", label: "fin hors de portée", engine: /"tether"|"effectEnds"/,
+    re: /\bends (early )?if [^.]{0,60}(more than|farther than|beyond) \d+ feet/i },
+  { id: "early", label: "fin anticipée (autre)", engine: /"effectEnds"|"breaksOn"|"zoneEnd"|"endsOwnConditions"|"concentrationBreaker"|"effectsExpire"/,
+    re: /\b(spell|effect) ends (early )?(if|when|for)|\bends early\b/i },
+  { id: "nextTurn", label: "fin du prochain tour", fixed: true, engine: /"effectEnds"|"atTurnStart"|"effectsExpire"/,
+    re: /\buntil the (start|end) of (your|its|the \w+'s) next turn/i },
+  { id: "thisTurn", label: "fin de ce tour", fixed: true, engine: /"effectEnds"|"atTurnStart"|"effectsExpire"/,
+    re: /\buntil the (start|end) of (your|its) turn\b/i }
+];
+const END_STATUS = { das: "DAS", sys: "système", man: "manuel" };
 const CAT_OF = new Map();
 for ( const [cat, keys] of Object.entries(CATS) ) for ( const k of keys ) if ( !CAT_OF.has(k) ) CAT_OF.set(k, cat);
 
@@ -327,6 +348,21 @@ function describe({ item, tab, mod, version, pack, owner, actorId, frEntry, effe
     announced.push(name);
   }
 
+  // Fin : la durée des effets dans les données (V14 : { value, units, expiry }), et chaque événement de fin annoncé par le texte,
+  // porté par le moteur, par la durée d'un effet (fin fixe), ou par rien.
+  const span = d => {
+    if ( !d?.value || !d.units ) return "";
+    if ( d.units !== "seconds" ) return `${d.value} ${{ rounds: "round", turns: "tour" }[d.units] ?? d.units}${d.value > 1 ? "s" : ""}`;
+    const v = d.value;
+    return v % 86400 === 0 ? `${v / 86400} j` : v % 3600 === 0 ? `${v / 3600} h` : v % 60 === 0 ? `${v / 60} min` : `${v} s`;
+  };
+  const effectEnd = [...new Set(effects.filter(e => !e.transfer).map(e => span(e.duration)).filter(Boolean))];
+  const turnBound = effects.some(e => !e.transfer && ["rounds", "turns"].includes(e.duration?.units));
+  const ends = END_EVENTS.filter(e => e.re.test(desc)).map(e => ({ id: e.id, label: e.label,
+    s: e.engine.test(entryText) ? "das" : (e.fixed && turnBound) ? "sys" : "man" }));
+  // Une fin anticipée déjà comptée sous un type précis ne compte pas deux fois.
+  const endList = ends.filter(e => (e.id !== "early") || !ends.some(o => ["damage", "acts", "distance"].includes(o.id)));
+
   // Statuts par champ.
   const das = cat => engine.some(k => CAT_OF.get(k) === cat);
   const S = {};
@@ -342,6 +378,9 @@ function describe({ item, tab, mod, version, pack, owner, actorId, frEntry, effe
   field("su", summons.length, says.su && !summons.length && (tab !== "creatures"));
   field("us", uses.length, false);
   field("mv", false, says.mv);
+  // Fin : le pire des événements annoncés ; sans événement, la durée d'un effet suffit (système).
+  S.fi = endList.some(e => e.s === "man") ? "man" : endList.some(e => e.s === "sys") ? "sys" : endList.length ? "das"
+    : effectEnd.length ? "sys" : "";
   const script = engine.filter(k => !CAT_OF.has(k));
   const inCode = !entry && codeRefs.has(ident);
   S.sp = (script.length || inCode) ? "das" : "";
@@ -386,6 +425,7 @@ function describe({ item, tab, mod, version, pack, owner, actorId, frEntry, effe
     ef: effectNames.join(" · "), st: statuses, an: announced, su: summons.join(" · "), us: uses.join(" · "),
     ot: others.join(", "), mvt: says.mv ? "annoncé" : "",
     pg: advancements.join(" · "),
+    fi: [...effectEnd.map(x => `effet ${x}`), ...endList.map(e => `${e.label} (${END_STATUS[e.s]})`)].join(" · "), fe: endList.map(e => `${e.id}:${e.s}`),
     eng: inCode ? ["code du moteur"] : engine, ej: entry ? JSON.stringify(entry).slice(0, 1200) : "",
     S, g, bad,
     rd: rd ? rd.status : "", rdm: rd?.missing ?? "",
@@ -431,6 +471,9 @@ for ( const tab of TABS ) {
   for ( const r of list ) for ( const [f, st] of Object.entries(r.S) ) if ( st ) { byField[f] ??= {}; byField[f][st] = (byField[f][st] ?? 0) + 1; }
   for ( const [g, n] of Object.entries(byG) ) summary.push({ tab, kind: "statut", key: g, n });
   for ( const [f, c] of Object.entries(byField) ) for ( const [st, n] of Object.entries(c) ) summary.push({ tab, kind: "champ", key: `${f}:${st}`, n });
+  const byEnd = {};
+  for ( const r of list ) for ( const e of r.fe ) byEnd[e] = (byEnd[e] ?? 0) + 1;
+  for ( const [key, n] of Object.entries(byEnd) ) summary.push({ tab, kind: "fin", key, n });
 }
 // Le tableau de bord ne lit que des lignes : les métadonnées du relevé en sont aussi.
 const meta = [["date", TODAY], ["engine", ENGINE_VERSION], ["previous", previous ?? ""], ["rows", String(rows.length)],
@@ -454,6 +497,15 @@ for ( const tab of TABS ) {
   const list = rows.filter(r => r.t === tab);
   const counts = Object.fromEntries(Object.keys(CATS).map(c => [c, list.filter(r => r.S[c] === "man").length]));
   md.push(`- **${tab}** : ${Object.entries(counts).filter(([, n]) => n).map(([c, n]) => `${c} ${n}`).join(" · ") || "aucun"}`);
+}
+md.push("", "## Types de fin (événements annoncés par le texte)", "",
+  "Par type : items où le moteur le porte (DAS), où la durée d'un effet dnd5e suffit (système), où rien ne le porte (manuel).", "",
+  "| Type de fin | " + TABS.join(" | ") + " |", "|---|" + TABS.map(() => "---|").join(""));
+for ( const e of END_EVENTS ) {
+  md.push(`| ${e.label} | ${TABS.map(tab => { const l = rows.filter(r => r.t === tab);
+    const n = st => l.filter(r => r.fe.includes(`${e.id}:${st}`)).length;
+    return [n("das") && `${n("das")} DAS`, n("sys") && `${n("sys")} sys`, n("man") && `${n("man")} man`].filter(Boolean).join(" · ") || "";
+  }).join(" | ")} |`);
 }
 md.push("", "## Défauts de données", "");
 for ( const r of rows.filter(r => r.bad.length).slice(0, 400) ) md.push(`- ${r.t} · ${r.o ? `${r.o} · ` : ""}${r.f ?? r.n} \`${r.i}\` (${r.m}) : ${r.bad.join(" ; ")}`);

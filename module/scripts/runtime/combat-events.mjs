@@ -86,4 +86,8 @@ export function registerCombatEvents() {
   route("combatTurnChange", onTurnChange, { executor: true, label: "initiative event not announced" });
   route("combatStart", onCombatStart, { executor: true, label: "initiative event not announced" });
   route("deleteCombat", combat => { for ( const k of [...announced] ) if ( k.startsWith(`${combat.id}:`) ) announced.delete(k); });
+  // §256 : dnd5e récupère les usages de chaque combattant au début, à chaque tour et à la fin du combat (`recoverCombatUses`) en
+  // écrivant sur son acteur — un évènement n'en a pas : sans ce refus, une erreur à chaque fois (« performBulkUpdate » de null).
+  route("dnd5e.preCombatRecovery", combatant => (isEvent(combatant) ? false : undefined),
+    { cancellable: true, always: true, label: "initiative event: no combat recovery" });
 }

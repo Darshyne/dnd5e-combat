@@ -75,7 +75,7 @@ describe("chargement du module", () => {
 
   it("déclare annulables les hooks `pre…` du système et du cœur, `dnd5e.teleport`, `dnd5e.createMeasuredTemplate` (§190) et `dropCanvasData` (appelés par Hooks.call, board.mjs:2490), et eux seuls", () => {
     const cancellable = Object.entries(api.api.routes()).filter(([, rs]) => rs.some(r => r.cancellable)).map(([h]) => h).sort();
-    expect(cancellable).toEqual(["dnd5e.createMeasuredTemplate", "dnd5e.postAttackRollConfiguration", "dnd5e.preCreateMeasuredTemplate", "dnd5e.preDisplayCardV2", "dnd5e.preRollAbilityCheckV2", "dnd5e.preRollAttackV2", "dnd5e.preRollConcentrationV2", "dnd5e.preRollDamageV2", "dnd5e.preRollSavingThrowV2", "dnd5e.preSummon", "dnd5e.preUseActivity", "dnd5e.teleport", "dropCanvasData", "preCreateActiveEffect", "preCreateItem", "preMoveToken", "preUpdateActiveEffect", "preUpdateActor", "preUpdateItem", "preUpdateToken"]);
+    expect(cancellable).toEqual(["dnd5e.createMeasuredTemplate", "dnd5e.postAttackRollConfiguration", "dnd5e.preCombatRecovery", "dnd5e.preCreateMeasuredTemplate", "dnd5e.preDisplayCardV2", "dnd5e.preRollAbilityCheckV2", "dnd5e.preRollAttackV2", "dnd5e.preRollConcentrationV2", "dnd5e.preRollDamageV2", "dnd5e.preRollSavingThrowV2", "dnd5e.preSummon", "dnd5e.preUseActivity", "dnd5e.teleport", "dropCanvasData", "preCreateActiveEffect", "preCreateItem", "preMoveToken", "preUpdateActiveEffect", "preUpdateActor", "preUpdateItem", "preUpdateToken"]);
   });
 
   it("enregistre les requêtes entre clients", () => {

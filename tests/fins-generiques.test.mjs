@@ -134,3 +134,11 @@ describe("§265 : Bannissement réel", () => {
     expect(validateEntry({ banishes: ["court"] })).toHaveLength(1);
   });
 });
+
+describe("§266 : Bouclier de feu éclaire", () => {
+  it("3 m de lumière vive, 3 m de faible", () => {
+    expect(CONTENT["fire-shield"].light).toEqual({ on: "effect", bright: 10, dim: 20, units: "ft" });
+    expect(CONTENT["fire-shield"].choice).toBeTruthy();
+    expect(validateEntry({ light: CONTENT["fire-shield"].light })).toEqual([]);
+  });
+});

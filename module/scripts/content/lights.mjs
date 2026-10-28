@@ -33,6 +33,8 @@ export const LIGHTS = Object.freeze({
   "flame-blade": { on: "effect", bright: 10, dim: 20, units: "ft" },
   // Flammes (§16.42) : « une Lumière vive sur un rayon de 6 m et une Lumière faible sur 6 m de plus ».
   "produce-flame": { on: "effect", bright: 20, dim: 40, units: "ft" },
+  // §266 : Bouclier de feu — « les flammes émettent une Lumière vive dans un rayon de 3 m et une Lumière faible sur 3 m de plus ».
+  "fire-shield": { on: "effect", bright: 10, dim: 20, units: "ft" },
   // §170 : Mur de feu — le texte ne dit rien de la lumière ; choix de table (2026-10-12) : celle d'une grande flamme, de chaque côté.
   "wall-of-fire": { on: "wall", bright: 10, dim: 20, units: "ft", color: "#ff8a2b", animation: { type: "torch", speed: 3, intensity: 3 } },
   // §173 : Mur prismatique — « Lumière vive dans un rayon de 30 m et Lumière faible sur 30 m de plus ».

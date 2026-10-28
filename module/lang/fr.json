@@ -1698,5 +1698,11 @@
   "DND5ECOMBAT.JetGroupe.MacroMJ": "DAS · Core : seul le MJ peut demander un jet.",
   "DND5ECOMBAT.JetGroupe.MacroPersonne": "DAS · Core : aucun des personnages de cette demande n'existe plus.",
   "DND5ECOMBAT.JetGroupe.MacroCreee": "Macro « {name} » créée dans le répertoire des macros.",
-  "DND5ECOMBAT.Evenement.Nom": "Évènement"
+  "DND5ECOMBAT.Evenement.Nom": "Évènement",
+  "DND5ECOMBAT.FinGenerique.armor": "{item} cesse pour {name}, qui vient d'enfiler une armure.",
+  "DND5ECOMBAT.FinGenerique.apart": "{item} prend fin : {name} est trop loin du lanceur.",
+  "DND5ECOMBAT.FinGenerique.zeroHp": "{item} prend fin : une créature qu'il lie est tombée à 0 point de vie.",
+  "DND5ECOMBAT.FinGenerique.unaffected": "{item} : aucune créature n'est affectée, {name} cesse de se concentrer dessus.",
+  "DND5ECOMBAT.Reglage.endUnaffected.Nom": "Fin de concentration quand personne n'est affecté",
+  "DND5ECOMBAT.Reglage.endUnaffected.Aide": "Quand toutes les cibles d'un sort de concentration qui n'agit que sur une sauvegarde ratée réussissent (Immobilisation de personne, Bannissement, Lenteur…), la concentration du lanceur prend fin aussitôt au lieu d'être tenue pour rien."
 }

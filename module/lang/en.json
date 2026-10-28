@@ -1698,5 +1698,11 @@
   "DND5ECOMBAT.JetGroupe.MacroMJ": "DAS · Core: only the GM can request a roll.",
   "DND5ECOMBAT.JetGroupe.MacroPersonne": "DAS · Core: none of this request's characters exists anymore.",
   "DND5ECOMBAT.JetGroupe.MacroCreee": "Macro “{name}” created in the macro directory.",
-  "DND5ECOMBAT.Evenement.Nom": "Event"
+  "DND5ECOMBAT.Evenement.Nom": "Event",
+  "DND5ECOMBAT.FinGenerique.armor": "{item} ends for {name}, who just put on armor.",
+  "DND5ECOMBAT.FinGenerique.apart": "{item} ends: {name} is too far from the caster.",
+  "DND5ECOMBAT.FinGenerique.zeroHp": "{item} ends: a creature it binds has dropped to 0 Hit Points.",
+  "DND5ECOMBAT.FinGenerique.unaffected": "{item}: no creature was affected, {name} stops concentrating on it.",
+  "DND5ECOMBAT.Reglage.endUnaffected.Nom": "End concentration when nobody is affected",
+  "DND5ECOMBAT.Reglage.endUnaffected.Aide": "When every target of a concentration spell that only works on a failed save succeeds (Hold Person, Banishment, Slow…), the caster's concentration ends at once instead of being held for nothing."
 }

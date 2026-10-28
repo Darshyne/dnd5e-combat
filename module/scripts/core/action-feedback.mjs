@@ -15,7 +15,8 @@ export const CORE_SOUNDS = Object.freeze({
   shut: "sounds/doors/shutter/close.ogg",
   rattle: "sounds/doors/jail/test.ogg",
   chime: "sounds/doors/magic/unlock.ogg",
-  dull: "sounds/doors/wood/lock.ogg"
+  dull: "sounds/doors/wood/lock.ogg",
+  fade: "sounds/doors/magic/lock.ogg"
 });
 
 /** Le son par défaut d'une action (`action`) selon son issue (`success`, `failure`), ou null. */
@@ -27,7 +28,9 @@ const DEFAULTS = Object.freeze({
   search: { success: CORE_SOUNDS.chime, failure: CORE_SOUNDS.dull },
   escape: { success: CORE_SOUNDS.rattle, failure: CORE_SOUNDS.dull },
   firstAid: { success: CORE_SOUNDS.chime, failure: CORE_SOUNDS.dull },
-  land: { success: null, failure: CORE_SOUNDS.thud }
+  land: { success: null, failure: CORE_SOUNDS.thud },
+  // §258 : un sort ou un effet qui prend fin (fins génériques, runtime/endings.mjs).
+  spellEnds: { success: CORE_SOUNDS.fade, failure: null }
 });
 
 /** Le son par défaut de cette action et de cette issue (null : aucun). */

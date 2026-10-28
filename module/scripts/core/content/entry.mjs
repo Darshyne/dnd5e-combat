@@ -6,7 +6,7 @@ import { CREATURE_TYPES } from "../eligibility.mjs";
 import { ORDERS } from "../orders.mjs";
 import { unknownFacts } from "../triggers.mjs";
 import { validateAbsorb, validateCarriedLight, validateChoice, validateEmanation, validateLight, validateSummon, validateTargets, validateTeleport } from "./annex.mjs";
-import { BASIC_ACTION_KINDS, BONUS_ATTACK_AFTER, BREAK_MOMENTS, EFFECT_EXPIRIES, ENTRY_KEYS, SIZES } from "./enums.mjs";
+import { BASIC_ACTION_KINDS, BONUS_ATTACK_AFTER, BREAK_MOMENTS, EFFECT_EXPIRIES, ENDS_APART_AT, ENDS_ARMOR, ENDS_UNAFFECTED, ENTRY_KEYS, SIZES } from "./enums.mjs";
 import { validateExtras } from "./extras.mjs";
 import { isId, isObject } from "./shared.mjs";
 import { validateAura, validateTrigger } from "./steps.mjs";
@@ -87,6 +87,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     const b = entry.breaksOn;
     if ( !Array.isArray(b) || !b.length || !b.every(m => BREAK_MOMENTS.includes(m)) ) errors.push(`${at}breaksOn: list among ${BREAK_MOMENTS.join(", ")}`);
   }
+  if ( "endsWhen" in entry ) validateEndsWhen(entry.endsWhen, `${at}endsWhen`, errors);
   if ( "emanation" in entry ) validateEmanation(entry.emanation, `${at}emanation`, errors);
   if ( ("noOpportunity" in entry) && !["always", "flying", "afterUse", "whileEffect"].includes(entry.noOpportunity) ) errors.push(`${at}noOpportunity: always, flying, afterUse, whileEffect`);
   if ( ("sharesSpace" in entry) && !["enter", "mutual"].includes(entry.sharesSpace) ) errors.push(`${at}sharesSpace: enter, mutual`);
@@ -531,4 +532,22 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
 export function validateTable(table, { facts={} }={}) {
   if ( !isObject(table) ) return ["the table is an object { identifier: entry }"];
   return Object.entries(table).flatMap(([id, entry]) => validateEntry(entry, { facts, at: `${id}.` }));
+}
+
+/** §258 : `endsWhen: { armor?, apart?, zeroHp?, unaffected?, spell? }` — les fins génériques d'un sort ou d'un effet (core/endings.mjs). */
+function validateEndsWhen(w, at, errors) {
+  if ( !isObject(w) || !Object.keys(w).length ) return errors.push(`${at}: { armor?, apart?, zeroHp?, unaffected?, spell? }`);
+  for ( const key of Object.keys(w) ) if ( !["armor", "apart", "zeroHp", "unaffected", "spell"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
+  if ( ("armor" in w) && !ENDS_ARMOR.includes(w.armor) ) errors.push(`${at}.armor: ${ENDS_ARMOR.join(", ")}`);
+  if ( "apart" in w ) {
+    const a = w.apart;
+    if ( !isObject(a) || !(Number(a.distance) > 0) || (typeof a.units !== "string") || !a.units ) errors.push(`${at}.apart: { distance, units, at? }`);
+    else {
+      if ( ("at" in a) && !ENDS_APART_AT.includes(a.at) ) errors.push(`${at}.apart.at: ${ENDS_APART_AT.join(", ")}`);
+      for ( const key of Object.keys(a) ) if ( !["distance", "units", "at"].includes(key) ) errors.push(`${at}.apart.${key}: unknown key`);
+    }
+  }
+  if ( ("zeroHp" in w) && (w.zeroHp !== true) ) errors.push(`${at}.zeroHp: true or absent`);
+  if ( ("unaffected" in w) && !ENDS_UNAFFECTED.includes(w.unaffected) ) errors.push(`${at}.unaffected: ${ENDS_UNAFFECTED.join(", ")}`);
+  if ( ("spell" in w) && (w.spell !== true) ) errors.push(`${at}.spell: true or absent`);
 }

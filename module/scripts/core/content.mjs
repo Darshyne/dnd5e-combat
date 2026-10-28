@@ -420,6 +420,15 @@
  *                                               (sans `roll` : secouer un dormeur — `verb: "wake"` pour le libellé ; `roll:
  *                                               "check"` : Frappe piégeuse) ; `status` : l'état que le porteur se donne en y mettant fin (§49,
  *                                               feu grégeois : « en vous infligeant l'état À terre »)
+ *     endsWhen?: { armor?: "any"|"heavy", apart?: { distance, units, at?: "move"|"casterTurnEnd" }, zeroHp?: true,
+ *                  unaffected?: "failedSave"|"noHits"|"noTargets", spell?: true }
+ *                                               §258 : fins génériques (core/endings.mjs, runtime/endings.mjs) — l'effet de l'item
+ *                                               cesse quand son porteur enfile une armure (`heavy` : lourde ; Armure du mage, Rage),
+ *                                               quand porteur et lanceur sont séparés de plus de `apart` (à chaque déplacement, ou
+ *                                               à la fin du tour du lanceur : Lien de garde, Duel forcé), quand l'un des deux tombe à
+ *                                               0 PV (`zeroHp`) ; `unaffected` : l'utilisation n'a affecté personne, la
+ *                                               concentration tombe (réglage `endUnaffected`) ; `spell` : la fin vaut pour tout le
+ *                                               sort (sa concentration, ou ses effets sur chaque créature), pas pour ce seul porteur
  *     effectThen?: { <id d'effet>: <id d'effet> }
  *                                               quand le premier effet de l'item cesse sur une créature, le second y est posé
  *                                               (Hâte : « quand le sort prend fin, la cible est Neutralisée… », §42.2)

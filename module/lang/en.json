@@ -1715,5 +1715,8 @@
   "DND5ECOMBAT.Retour.Revenu": "Returns",
   "DND5ECOMBAT.Souci.noAttacksOrSpells": "Under {item}, you can't attack or cast spells.",
   "DND5ECOMBAT.FinGenerique.casterTargetsOther": "{item} ends: the caster turned on another creature.",
-  "DND5ECOMBAT.FinGenerique.allyDamages": "{item} ends: an ally of the caster hurt {name}."
+  "DND5ECOMBAT.FinGenerique.allyDamages": "{item} ends: an ally of the caster hurt {name}.",
+  "DND5ECOMBAT.Minuterie.Secondes": "s",
+  "DND5ECOMBAT.Reglage.timerHideSeconds.Nom": "Timers without seconds",
+  "DND5ECOMBAT.Reglage.timerHideSeconds.Aide": "Gestures that take time (searching, disarming a trap…) show a timer above the token, seen by everyone who sees the token: a spinning gear and a gauge. When ticked, the remaining seconds are not written next to the gauge."
 }

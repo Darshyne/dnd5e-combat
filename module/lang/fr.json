@@ -1715,5 +1715,8 @@
   "DND5ECOMBAT.Retour.Revenu": "De retour",
   "DND5ECOMBAT.Souci.noAttacksOrSpells": "Sous {item}, vous ne pouvez ni attaquer ni lancer de sorts.",
   "DND5ECOMBAT.FinGenerique.casterTargetsOther": "{item} prend fin : le lanceur s'en est pris à une autre créature.",
-  "DND5ECOMBAT.FinGenerique.allyDamages": "{item} prend fin : un allié du lanceur a blessé {name}."
+  "DND5ECOMBAT.FinGenerique.allyDamages": "{item} prend fin : un allié du lanceur a blessé {name}.",
+  "DND5ECOMBAT.Minuterie.Secondes": "s",
+  "DND5ECOMBAT.Reglage.timerHideSeconds.Nom": "Minuteries sans les secondes",
+  "DND5ECOMBAT.Reglage.timerHideSeconds.Aide": "Les gestes qui prennent du temps (fouiller, désamorcer un piège…) montrent une minuterie au-dessus du token, vue de tous ceux qui voient le token : un engrenage qui tourne et une jauge. Cochée, les secondes restantes ne s'écrivent pas à côté de la jauge."
 }

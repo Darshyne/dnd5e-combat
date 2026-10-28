@@ -20,6 +20,7 @@ import { carriedLightsOf, carriedLightState } from "../adapter/lights.mjs";
 import { toggleCarriedLight } from "../runtime/lights.mjs";
 import { ritualModeOf } from "../adapter/grimoire.mjs";
 import { identifierOf } from "../adapter/content.mjs";
+import { startTimer } from "./timers.mjs";
 import { climbingOf } from "../adapter/climb.mjs";
 
 /**
@@ -155,7 +156,13 @@ function ritual(activity) {
   try { return ritualModeOf(activity); } catch { return "none"; }
 }
 
-export const uiApi = { budget, wards, movableZone, movement, issues, cost, cell, ritual, multiattackLeft: multiattack, light: lightState, globalLight: globalLightState,
+export const uiApi = {
+  /**
+   * §272 : `timer({ token, seconds, label?, icon?, id? })` — une minuterie au-dessus du token, chez tous les clients qui le voient
+   * (engrenage qui tourne, jauge au dégradé DAS) ; rend `{ id, done, stop() }` (`stop` : geste interrompu, partout).
+   */
+  timer: startTimer,
+  budget, wards, movableZone, movement, issues, cost, cell, ritual, multiattackLeft: multiattack, light: lightState, globalLight: globalLightState,
   /** §41.4 : `tokenMenu(token)` — les entrées du menu contextuel de ce token pour le token en main (ui/pointer.mjs). */
   tokenMenu: menuEntriesFor,
   /** `doorMenu(wall)`, `groundMenu({ x, y })` — le menu d'une porte, d'une case, pour le token en main (ui/pointer-menu.mjs). */

@@ -127,6 +127,7 @@ import { registerCompact } from "./ui/compact.mjs";
 import { registerPurge } from "./runtime/purge.mjs";
 import { registerPerf, perfApi } from "./runtime/perf.mjs";
 import { registerFeedback } from "./ui/feedback.mjs";
+import { registerTimers, startTimer } from "./ui/timers.mjs";
 import { registerTracker } from "./ui/tracker.mjs";
 import { registerLightIndicator, lightState } from "./ui/illumination.mjs";
 import { registerPerception } from "./ui/perception.mjs";
@@ -198,7 +199,9 @@ import { openDiagnostic } from "./ui/diagnostic.mjs";
  *   sauvegarde, restauration), sur une seule vérification si `check` est donné (macros « Outils du MJ »).
  */
 const state = {
-  active: false, reason: null, unitFactors: null, routes: describeRoutes, content: contentApi, reports: reportsApi, mastery: masteryApi, mcp: testApi, perf: perfApi,
+  active: false, reason: null, unitFactors: null, routes: describeRoutes, content: contentApi, reports: reportsApi, mastery: masteryApi,
+  // §272 : la minuterie se lance aussi par le connecteur (`timer` : token de la scène affichée, secondes, libellé) — elle vit dans ui/.
+  mcp: Object.freeze({ ...testApi, timer: ({ tokenId, seconds=5, label="" }={}) => ({ id: startTimer({ token: canvas.tokens.get(tokenId)?.document, seconds, label }).id }) }), perf: perfApi,
   ui: uiApi, light: lightState, approach, nonLethal: { get: isNonLethal, set: setNonLethal, knockedOut: isKnockedOut }, scrolls: { spellOf: scrollSpellOf }, basics: { data: basicActionData, take: takeBasicAction }, path: pathTo,
   flee: fleeFrom, save: requestSave, drop: dropHeldBy,
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
@@ -381,6 +384,7 @@ Hooks.once("init", () => {
   gated(registerChat);
   gated(registerPurge);
   gated(registerFeedback);
+  gated(registerTimers);   // §272 : minuteries au-dessus des tokens (fouille, désamorçage), vues de toute la table
   gated(registerTracker);
   gated(registerLightIndicator);
   gated(registerPerception);   // §62 : la brume cache à l'écran, l'ouïe montre ce qu'on entend

@@ -20,6 +20,8 @@ export const NO_REACTIONS = Object.freeze(["arms-of-hadar", "fetid-cloud", "slow
 
 /** §77 : « une action ou une action Bonus lors de son tour, pas les deux » — Nuage fétide (Dretch, Monster Manual 2024), Lenteur. */
 export const ACTION_OR_BONUS = Object.freeze(["fetid-cloud", "slow"]);
+/** §267 : « elle ne peut faire qu'une attaque si elle prend l'action Attaquer » (Lenteur). */
+export const SINGLE_ATTACK = Object.freeze(["slow"]);
 
 /**
  * §19 : effets posés seulement sur une sauvegarde RÉUSSIE. Rayon affaiblissant — « sur une réussite, la cible a le Désavantage

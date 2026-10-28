@@ -195,6 +195,8 @@ export function isUtilize(activity) {
  * suit son plan (M1, core/multiattack.mjs) ; si son texte ne se lit pas, on ne le limite pas.
  */
 export function attacksPerAction(actor) {
+  // §267 : Lenteur — « elle ne peut faire qu'une attaque si elle prend l'action Attaquer ».
+  if ( (actor?.effects ?? []).some(e => !e.disabled && !e.isSuppressed && (contentOf(originItemOf(e))?.entry?.singleAttack === true)) ) return 1;
   // Par `identifierOf` : un item d'un module premium traduit, ou créé sans identifiant, porte un identifiant tiré de son nom
   // traduit (§19.9) — lu brut, « Attaque supplémentaire » n'était pas reconnue et l'action ne donnait qu'une attaque.
   const identifiers = new Set(actor.items.map(i => identifierOf(i).id));

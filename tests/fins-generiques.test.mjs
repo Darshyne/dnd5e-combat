@@ -142,3 +142,11 @@ describe("§266 : Bouclier de feu éclaire", () => {
     expect(validateEntry({ light: CONTENT["fire-shield"].light })).toEqual([]);
   });
 });
+
+describe("§267 : Lenteur, une seule attaque", () => {
+  it("contenu", () => {
+    expect(CONTENT["slow"].singleAttack).toBe(true);
+    expect(CONTENT["slow"].actionOrBonus).toBe(true);
+    expect(validateEntry({ singleAttack: "oui" })).toHaveLength(1);
+  });
+});

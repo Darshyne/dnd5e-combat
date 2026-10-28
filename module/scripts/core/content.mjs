@@ -426,6 +426,8 @@
  *                                               (sans `roll` : secouer un dormeur — `verb: "wake"` pour le libellé ; `roll:
  *                                               "check"` : Frappe piégeuse) ; `status` : l'état que le porteur se donne en y mettant fin (§49,
  *                                               feu grégeois : « en vous infligeant l'état À terre »)
+ *     singleAttack?: true                       §267 : le porteur d'un effet de l'item ne fait qu'une attaque par action Attaquer
+ *                                               (Lenteur ; un PNJ à Attaques multiples garde son plan)
  *     banishes?: [ids d'effet]                  §265 : ces effets de l'item transportent leur porteur dans un demi-plan — token et
  *                                               combattant cachés tant qu'ils durent, retour à l'espace quitté (ou au plus proche
  *                                               libre) quand ils tombent (Bannissement, Châtiment bannissant)

@@ -20,7 +20,7 @@ import { placeItemEffect } from "../adapter/effects.mjs";
 import { combatantFor, readBudget, writeBudget, distanceBetween } from "../adapter/turn.mjs";
 import { pushAway } from "../adapter/movement.mjs";
 import { readUnitFactors, lengthIn } from "../adapter/units.mjs";
-import { contentOf } from "../adapter/content.mjs";
+import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log } from "./shared.mjs";
@@ -42,6 +42,20 @@ function onPreRollDamage(config, dialog, message) {
 
 const seen = new Set();
 
+/**
+ * §273 : ce qu'un châtiment déclenche chez son auteur (`afterSmite`) — un item de la fiche pose l'un de ses effets sur lui quand l'un des
+ * châtiments nommés touche (Châtiment de protection : « chaque fois que vous lancez Châtiment divin », l'effet qui allume son aura).
+ */
+async function afterSmite(actor, smiteItem) {
+  const smiteId = identifierOf(smiteItem).id;
+  for ( const own of actor.items ) {
+    const rule = contentOf(own).entry?.afterSmite;
+    if ( !rule || (rule.smites && !rule.smites.includes(smiteId)) ) continue;
+    const placed = await placeItemEffect(own, rule.effect, actor);
+    if ( placed ) log(`${own.name}: after ${smiteItem.name}, "${placed.name}" on ${actor.name}`);
+  }
+}
+
 async function onResolution(resolution) {
   if ( (resolution?.step !== STEPS.DONE) || !resolution.plan?.attack || seen.has(resolution.id) ) return;
   const damage = game.messages.get(resolution.damageRoll?.messageId ?? "");
@@ -56,6 +70,7 @@ async function onResolution(resolution) {
   const combatant = combatantFor(actor);
   const budget = combatant ? readBudget(combatant) : null;
   if ( budget ) await writeBudget(combatant, { ...budget, bonus: Math.max(0, (budget.bonus ?? 1) - 1) });
+  if ( (resolution.targets ?? []).some(t => (t.token === smite.target) && (t.hit === true)) ) await afterSmite(actor, item);
   if ( !smite.save && !smite.effect ) return;
   const target = fromUuidSync(smite.target, { strict: false });
   const hit = (resolution.targets ?? []).some(t => (t.token === smite.target) && (t.hit === true));

@@ -212,7 +212,7 @@ describe("contenu livré", () => {
       "sculpt-spells", "sear-undead", "searing-smite", "second-story-work", "see-invisibility", "self-restoration", "sentinel",
       "sentinel-at-deaths-door", "shade-spirit", "shadow-stealth", "shadow-walk", "shadowy-dodge", "sharp-eye-ravenloft", "sharpshooter",
       "shatter", "shield", "shield-master", "shillelagh", "shining-smite", "shocking-grasp", "sickening-vapors", "silence", "skulker",
-      "slam", "slasher", "sleep", "sleet-storm", "slippers-of-spider-climbing", "slow", "smelting-charge", "sneak-attack",
+      "slam", "slasher", "sleep", "sleet-storm", "slippers-of-spider-climbing", "slow", "smelting-charge", "smite-of-protection", "sneak-attack",
       "soul-of-vengeance", "spare-the-dying", "speedy", "spell-resistance", "spell-sniper", "spider-climb", "spike-growth",
       "spirit-guardians", "spirit-shroud", "spiritual-weapon", "staggering-smite", "starry-wisp", "steady-aim", "stench",
       "steps-of-the-fey", "stinking-cloud", "stomp", "stones-endurance", "storm-of-vengeance", "stormborn", "storms-thunder",

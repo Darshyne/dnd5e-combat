@@ -29,6 +29,15 @@ export const PALADIN = Object.freeze({
   "holy-nimbus": { ranges: { k6gGbWQBoLTgqbSG: { units: "self" } } },
   // Sorts de châtiment (PHB 2024) — Châtiment divin : 2d8 radiants (+1d8 par niveau), 3d8 contre un Fiélon ou un Mort-vivant.
   "divine-smite": { smite: { damage: "dnd5eactivity200", fiends: "dnd5eactivity000" } },
+  // §273 : Châtiment de protection (paladin, PHB 2024) — « chaque fois que vous lancez Châtiment divin, vous-même et vos
+  // alliés bénéficiez d'un Abri partiel dans votre Aura de protection, jusqu'au début de votre tour suivant ». La donnée n'a qu'un effet
+  // passif éteint (« Smite of Protection », état Abri partiel, à allumer à la main) : le Châtiment divin qui touche le pose sur le
+  // paladin jusqu'au début de son prochain tour, et une aura du rayon de l'Aura de protection en pose une copie aux alliés.
+  "smite-of-protection": {
+    afterSmite: { effect: "EyWEQv8qPwbXyDmA", smites: ["divine-smite"] },
+    effectEnds: { EyWEQv8qPwbXyDmA: "casterTurnStart" },
+    aura: { whileActive: true, includeSelf: true, affects: "ally", radiusFormula: "@scale.paladin.aura", radius: 10, units: "ft", effect: "EyWEQv8qPwbXyDmA" }
+  },
   // Châtiment de fournaise (1d6 feu ; §42.2 : la brûlure qui dure, effet « Seared », posée au coup — sa suite dans content/triggers.mjs),
   // Châtiment lumineux (2d6 radiants ; la marque « Shining » reste au MJ).
   "searing-smite": { smite: { damage: "M4KS57lcf4K6fUMU", effect: "A0tTvLeRetrC708K" } },

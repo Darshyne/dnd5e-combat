@@ -88,6 +88,11 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     if ( !Array.isArray(b) || !b.length || !b.every(m => BREAK_MOMENTS.includes(m)) ) errors.push(`${at}breaksOn: list among ${BREAK_MOMENTS.join(", ")}`);
   }
   if ( "endsWhen" in entry ) validateEndsWhen(entry.endsWhen, `${at}endsWhen`, errors);
+  if ( "afterSmite" in entry ) {
+    const a = entry.afterSmite;
+    if ( !isObject(a) || !isId(a.effect) || (("smites" in a) && (!Array.isArray(a.smites) || !a.smites.length || !a.smites.every(x => (typeof x === "string") && x)))
+      || Object.keys(a).some(k => !["effect", "smites"].includes(k)) ) errors.push(`${at}afterSmite: { effect: effect id, smites?: [identifiers] }`);
+  }
   if ( "wardsConditions" in entry ) {
     const w = entry.wardsConditions;
     if ( !isObject(w) || !Array.isArray(w.types) || !w.types.length || !w.types.every(t => CREATURE_TYPES.includes(t))

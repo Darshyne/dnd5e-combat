@@ -144,6 +144,33 @@ export default {
       ctx.expect((await budget())?.bonus === 0, `action Bonus dépensée (${(await budget())?.bonus})`);
     });
 
+    // §273 : Châtiment de protection — le Châtiment divin qui touche donne un Abri partiel au paladin et aux alliés de son Aura de
+    // protection, jusqu'au début de son prochain tour.
+    await part("Châtiment de protection", async () => {
+      const guerrier = tokens.find(t => t.name === "Guerrier");
+      if ( !guerrier ) { ctx.log("Guerrier absent : partie sautée"); return; }
+      const gHome = await ctx.position(guerrier);
+      ctx.restore(() => ctx.call("move-token", { tokenId: guerrier.id, x: gHome.x, y: gHome.y, elevation: gHome.elevation }).catch(() => {}));
+      const { data } = await ctx.call("get-compendium-entry", { uuid: "Compendium.dnd-players-handbook.classes.Item.phbpdnSmiteOfPro" });
+      const { _id, folder, ownership, _stats, ...itemData } = data;
+      setPath(itemData, "flags.dnd5e-combat.scenarioLent", "smite-of-protection");
+      const lent = await ctx.call("upsert-actor-item", { actorId: pal.actorId, itemData, match: { path: "flags.dnd5e-combat.scenarioLent", value: "smite-of-protection" } });
+      ctx.restore(() => ctx.call("remove-embedded-item", { documentType: "Actor", id: pal.actorId, itemId: lent.id }).catch(() => {}));
+      ctx.restore(() => ctx.removeEffectsFrom(pal, "smite-of-protection"));
+      ctx.restore(() => ctx.removeEffectsFrom(guerrier, "smite-of-protection"));
+      await tough(); await place(bandit, g.x + grid, g.y);
+      await place(guerrier, g.x, g.y + grid);
+      await setSlots({ ...slots0, spell1: 0, spell2: 0 });
+      if ( !ctx.expect(await fight(), "combat : au tour du Paladin") ) return;
+      const covered = async t => (await ctx.effectsFrom(t, "smite-of-protection")).filter(e => !e.disabled && (e.statuses ?? []).includes("coverHalf")).length > 0;
+      ctx.expect(!(await covered(pal)) && !(await covered(guerrier)), "avant le châtiment : pas d'Abri partiel");
+      const res = await smiteHit(/divin|Divine/i);
+      if ( !ctx.expect(!!res, "l'épée longue touche le Bandit (10 essais au plus)") ) return;
+      await pause(3000);
+      ctx.expect(await covered(pal), "après le Châtiment divin : le Paladin a l'Abri partiel");
+      ctx.expect(await covered(guerrier), "le Guerrier, dans l'Aura de protection : Abri partiel aussi");
+    });
+
     await part("Châtiment de tonnerre (niveau 2)", async () => {
       await tough(); await place(bandit, g.x + grid, g.y);
       await setUses(1);

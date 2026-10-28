@@ -426,6 +426,8 @@
  *                                               (sans `roll` : secouer un dormeur — `verb: "wake"` pour le libellé ; `roll:
  *                                               "check"` : Frappe piégeuse) ; `status` : l'état que le porteur se donne en y mettant fin (§49,
  *                                               feu grégeois : « en vous infligeant l'état À terre »)
+ *     afterSmite?: { effect, smites? }           §273 : quand l'un des châtiments nommés (identifiants ; tous sans `smites`) de son porteur
+ *                                               touche, cet effet de l'item est posé sur lui (Châtiment de protection)
  *     wardsConditions?: { types, statuses }      §268 : le porteur d'un effet de l'item est immunisé contre ces états quand ils viennent
  *                                               d'une créature de ces types (Protection contre le Mal et le Bien : Charmé, Effrayé)
  *     noAttacksOrSpells?: true                  §269 : le porteur d'un effet de l'item ne peut ni attaquer ni lancer de sorts (Forme

@@ -168,3 +168,13 @@ describe("§269 : Forme gazeuse, ni attaque ni sort", () => {
     expect(CONTENT["gaseous-form"].actionEnds).toBeTruthy();
   });
 });
+
+describe("§273 : Châtiment de protection", () => {
+  it("l'effet posé après un Châtiment divin, l'aura qu'il allume, sa fin", () => {
+    const e = CONTENT["smite-of-protection"];
+    expect(e.afterSmite).toEqual({ effect: "EyWEQv8qPwbXyDmA", smites: ["divine-smite"] });
+    expect(e.effectEnds).toEqual({ EyWEQv8qPwbXyDmA: "casterTurnStart" });
+    expect(e.aura.whileActive).toBe(true);
+    expect(validateEntry({ afterSmite: { effect: "court" } })).toHaveLength(1);
+  });
+});

@@ -111,3 +111,9 @@ describe("§262 : Châtiment bannissant, sauvegarde sous 50 PV", () => {
     expect(validateEntry({ smite: { damage: "CXmmXBTfen6D6LXY", saveAtMostHp: -1 } })).toHaveLength(1);
   });
 });
+
+describe("§263 : « chaque créature de votre choix » — les alliés épargnés", () => {
+  it("Vague destructrice, Parole radieuse, Tir de barrage, Volée", () => {
+    for ( const id of ["destructive-wave", "word-of-radiance", "conjure-barrage", "conjure-volley"] ) expect(CONTENT[id].zoneAffects).toBe("enemy");
+  });
+});

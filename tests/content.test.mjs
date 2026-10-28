@@ -166,11 +166,11 @@ describe("contenu livré", () => {
       "channel-divinity", "channel-divinity-cleric", "charger", "charging-horn", "charm-monster", "charm-person", "chill-touch",
       "chromatic-orb", "circle-of-mortality", "circle-of-power", "cloak-of-arachnida", "cloud-of-daggers", "cloudkill", "clouds-jaunt",
       "combat-inspiration", "command", "commanders-strike", "commanding-presence", "compelled-duel", "compulsion", "confusion",
-      "conjure-animals", "conjure-celestial", "conjure-elemental", "conjure-fey", "conjure-minor-elementals", "conjure-woodland-beings",
+      "conjure-animals", "conjure-barrage", "conjure-celestial", "conjure-elemental", "conjure-fey", "conjure-minor-elementals", "conjure-volley", "conjure-woodland-beings",
       "contagion", "continual-flame", "cordon-of-arrows", "corrosive-form", "cosmic-omen", "counterspell", "coward-spirit",
       "crossbow-expert", "crown-of-madness", "crusaders-mantle", "crusher", "cunning-action", "cunning-strike", "cutting-words",
       "dancing-lights", "dark-ones-blessing", "dark-ones-own-luck", "darkness", "daylight", "death-burst", "death-throes", "death-ward",
-      "deathless-agility", "defense", "defensive-duelist", "deflect-attacks", "delayed-blast-fireball", "demiplane", "devious-strikes",
+      "deathless-agility", "defense", "defensive-duelist", "deflect-attacks", "delayed-blast-fireball", "demiplane", "destructive-wave", "devious-strikes",
       "dimension-door", "disarming-attack", "disciple-of-life", "dispel-magic", "dissonant-whispers", "distant-spell",
       "distracting-strike", "divine-fury", "divine-smite", "divine-word", "dominate-beast", "dominate-monster", "dominate-person",
       "draining-kiss", "draining-swipe", "dread-ambusher", "dreadful-strikes", "dueling", "dwarven-resilience", "earth-element",
@@ -226,7 +226,7 @@ describe("contenu livré", () => {
       "undead-fortitude", "unseen-servant", "vampiric-bite", "vampiric-touch", "vicious-mockery", "vile-appearance", "vitriolic-sphere", "vow-of-enmity",
       "wails-from-the-grave", "wall-of-fire", "wall-of-force", "wall-of-ice", "wall-of-stone", "wall-of-thorns", "war-caster",
       "war-priest", "warding-bond", "warding-flare", "watchers", "water-element", "water-form", "watery-rush", "web", "weird",
-      "wild-companion", "wild-resurgence", "wind-wall", "witch-bolt", "wrath-of-the-sea", "wrath-of-the-wild", "wrathful-smite",
+      "wild-companion", "wild-resurgence", "wind-wall", "witch-bolt", "word-of-radiance", "wrath-of-the-sea", "wrath-of-the-wild", "wrathful-smite",
       "yolandes-regal-presence"
     ]);
     expect(CONTENT["aura-of-protection"].aura.radius).toBe(10);

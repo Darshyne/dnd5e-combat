@@ -195,6 +195,12 @@ export const SPELL_RULES = Object.freeze({
   // posée d'office ; « une créature que vous voyez… vous pouvez la forcer » : les alliés épargnés. Qui y entre (ou que
   // l'émanation recouvre) ou y finit son tour : « Emanation Save » (dzeoGwKOPG7PHbyE, Sagesse, 4d6 psychiques), une fois par tour ;
   // ratée, À terre. « Vous pouvez la pousser de 3 m » : au MJ.
+  // §263 : « chaque créature de votre choix » dans la zone — la donnée ne le dit pas (`affects.choice` absent) : les alliés du
+  // lanceur sont épargnés, comme pour les Esprits gardiens (§16.23). Audit CAT / CPR : Vague destructrice touchait aussi les alliés.
+  "destructive-wave": { zoneAffects: "enemy" },
+  "word-of-radiance": { zoneAffects: "enemy" },
+  "conjure-barrage": { zoneAffects: "enemy" },
+  "conjure-volley": { zoneAffects: "enemy" },
   "yolandes-regal-presence": {
     selfZone: { OJHRKWz8JvLzyl9R: { type: "radius", size: 10, units: "ft" } },
     zoneAffects: "enemy",

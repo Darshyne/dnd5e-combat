@@ -121,6 +121,8 @@ import { isNonLethal, setNonLethal, isKnockedOut } from "./adapter/knockout.mjs"
 import { describeRoutes, skippedRoutes } from "./runtime/router.mjs";
 import { testApi } from "./runtime/testing.mjs";
 import { registerPointer } from "./ui/pointer.mjs";
+import { registerAmmo } from "./runtime/ammo.mjs";
+import { ammoState, setAmmo } from "./adapter/ammo.mjs";
 import { registerRecast } from "./runtime/recast.mjs";
 import { registerChat } from "./ui/chat.mjs";
 import { registerCompact } from "./ui/compact.mjs";
@@ -215,7 +217,10 @@ const state = {
   theater: theaterApi,   // §220 : Théâtre de l'esprit — `active()`, `set(on)` ; hook `dnd5e-combat.theater`
   rolls: { ...rollsApi, open: openGroupRoll, tracker: openTracker },   // §242 : jets demandés par le MJ — hooks `groupRoll`, `groupRollPrompt`
   combat: combatApi,   // §250 : évènements dans l'initiative — `addEvent`, `removeEvent`, `events`, `isEvent` ; hook `dnd5e-combat.eventTurn`
-  gap: publicGap
+  gap: publicGap,
+  // §274 : munitions d'une arme — `options(item)` : `{ options: [{ id, name, img, quantity }], current, ask }` (null si l'arme n'en tire
+  // pas) ; `set(item, ammoId)` : la munition retenue pour ses prochaines attaques. Hook `dnd5e-combat.ammunition` `(item, ammoId)`.
+  ammo: { options: (item, activity=null) => ammoState(item, activity), set: setAmmo }
 };
 
 /** §196 : l'écart de deux tokens en cases (3D, et son vide vertical), pour un voisin qui juge une allonge — null s'il ne se mesure pas. */
@@ -288,6 +293,7 @@ Hooks.once("init", () => {
   gated(registerUsage);   // §68 : avant la métamagie et la légalité — l'emplacement choisi est celui qu'elles liront
   gated(registerMetamagic);   // §32 : avant registerTurn — le Sort accéléré change le coût que la légalité lit
   gated(registerTurn);
+  gated(registerAmmo);   // §274 : après la légalité — le mode d'attaque et la confirmation sont posés quand la munition se choisit
   gated(registerGates);   // après la légalité : une porte ne s'ouvre que pour une utilisation confirmée
   gated(registerSummonHandover);   // §118 : après la légalité — une utilisation refusée ne réclame rien aux voisins
   gated(registerAutoTranslate);

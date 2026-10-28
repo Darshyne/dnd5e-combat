@@ -22,7 +22,7 @@ export const SETTINGS_TABS = Object.freeze([
       "lightIndicator"],
     tools: [{ id: "factions", icon: "fa-solid fa-flag" }] },
   { id: "mouse", icon: "fa-solid fa-crosshairs",
-    keys: ["clickToAttack", "targetingMode", "fastAttack", "quickRolls", "releaseTargets", "situationalCursor", "targetingBanner",
+    keys: ["clickToAttack", "targetingMode", "fastAttack", "quickRolls", "ammoPrompt", "releaseTargets", "situationalCursor", "targetingBanner",
       "closeSheetOnUse", "hitChance", "hitChancePlayers"] },
   { id: "chat", icon: "fa-solid fa-comments",
     keys: ["chatLight", "chatCompact", "chatPurgeMax", "chatPurgeKeep", "syncAnimations", "animationWait"] },

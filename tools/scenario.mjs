@@ -675,6 +675,10 @@ let previous = null;
 // `cones` les rallume lui-même), puis remis.
 const cones = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "visionCones", value: false }, waitMs: 8000 })
   .then(r => r?.result?.before).catch(() => undefined);
+// §274 : la fenêtre de choix de munition attendrait une réponse chez le MJ — coupée le temps de la passe (le scénario `munitions` la
+// rallume lui-même).
+const ammoPrompt = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "ammoPrompt", value: false }, waitMs: 8000 })
+  .then(r => r?.result?.before).catch(() => undefined);
 // §185 : de même, la Furtivité des règles 2024 (le scénario `furtivite-bg3` passe lui-même en BG3).
 const stealthRules = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "stealthRules", value: "2024" }, waitMs: 8000 })
   .then(r => r?.result?.before).catch(() => undefined);
@@ -773,6 +777,7 @@ for ( const file of files ) {
 if ( activeAtStart && (activeNow !== activeAtStart) ) await useScene(activeAtStart);
 if ( stealthRules !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "stealthRules", value: stealthRules }, waitMs: 8000 }).catch(() => null);
 if ( cones !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "visionCones", value: cones }, waitMs: 8000 }).catch(() => null);
+if ( ammoPrompt !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "ammoPrompt", value: ammoPrompt }, waitMs: 8000 }).catch(() => null);
 for ( const [key, value] of Object.entries(pinned) ) {
   if ( value !== undefined ) await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key, value }, waitMs: 8000 }).catch(() => null);
 }

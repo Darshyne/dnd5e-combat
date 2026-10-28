@@ -238,7 +238,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     });
     return false;
   }
-  for ( const key of ["choice", "attackMode", "saveChoice", "legendary", "autoReact", "recast", "cost", "damageType", "order", "cleave", "metamagic", "basicChoice"] ) {
+  for ( const key of ["choice", "attackMode", "saveChoice", "legendary", "autoReact", "recast", "cost", "damageType", "order", "cleave", "metamagic", "basicChoice", "ammunition"] ) {
     const value = usageConfig[MODULE_ID]?.[key];
     if ( value && messageConfig ) foundry.utils.setProperty(messageConfig, `data.flags.${MODULE_ID}.${key}`, value);
   }
@@ -405,7 +405,7 @@ function onPostAttackRollConfiguration(rolls, config, dialogConfig, messageConfi
     activity.rollAttack({
       event: config.event, ability, ammunition, attackMode, mastery,
       advantage: advantageMode === 1, disadvantage: advantageMode === -1,
-      [MODULE_ID]: { confirmed: true, modeChosen: true }
+      [MODULE_ID]: { confirmed: true, modeChosen: true, ammoChosen: true }
     }, { configure: false },
     { data: { system: { origin: foundry.utils.getProperty(messageConfig ?? {}, "data.system.origin") } } });
   });

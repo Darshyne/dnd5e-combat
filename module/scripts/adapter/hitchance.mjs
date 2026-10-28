@@ -27,6 +27,7 @@ import { attackContext, coverAgainst } from "./conditions.mjs";
 import { coverFor } from "./cover.mjs";
 import { readUnitFactors } from "./units.mjs";
 import { effectOfProfile } from "./usage.mjs";
+import { ammoState } from "./ammo.mjs";
 
 /**
  * Le bonus d'une formule, séparé en partie fixe et dés. null si la formule a autre chose qu'une
@@ -68,8 +69,7 @@ function rollChoices(activity, attackMode=null) {
   const last = item.getFlag?.("dnd5e", `last.${activity.id}`) ?? {};
   const modes = item.system.attackModes ?? [];
   const mode = attackMode ?? (modes.find(m => m.value === last.attackMode) ? last.attackMode : modes[0]?.value);
-  const ammoOptions = item.system.ammunitionOptions ?? [];
-  const ammunition = (last.ammunition !== undefined) ? last.ammunition : ammoOptions[0]?.value;
+  const ammunition = ammoState(item, activity)?.current;   // §274 : celle que le jet tirera
   return { attackMode: mode ?? null, ability: last.ability, ammunition: ammunition || undefined };
 }
 

@@ -14,7 +14,11 @@ import { MODULE_ID } from "../constants.mjs";
  */
 const NON_CREATURE_TYPES = Object.freeze(["group", "encounter"]);
 
-/** Pas une créature : objet piloté, ou acteur d'un type qui n'en est jamais une. */
+/** §271 : un piège du Guide du maître 2024 — un PNJ au type de créature personnalisé « Trap » (ou « Piège »), même posé sans la marque. */
+const TRAP_TYPE = /^(traps?|pièges?)$/i;
+const isTrapActor = actor => (actor?.system?.details?.type?.value === "custom") && TRAP_TYPE.test(String(actor.system.details.type.custom ?? "").trim());
+
+/** Pas une créature : objet piloté, acteur d'un type qui n'en est jamais une, ou piège. */
 export function isObjectToken(token) {
-  return !!token?.flags?.[MODULE_ID]?.object || NON_CREATURE_TYPES.includes(token?.actor?.type);
+  return !!token?.flags?.[MODULE_ID]?.object || NON_CREATURE_TYPES.includes(token?.actor?.type) || isTrapActor(token?.actor);
 }

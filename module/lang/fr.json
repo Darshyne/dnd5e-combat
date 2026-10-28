@@ -1705,5 +1705,10 @@
   "DND5ECOMBAT.FinGenerique.unaffected": "{item} : aucune créature n'est affectée, {name} cesse de se concentrer dessus.",
   "DND5ECOMBAT.Reglage.endUnaffected.Nom": "Fin de concentration quand personne n'est affecté",
   "DND5ECOMBAT.Reglage.endUnaffected.Aide": "Quand toutes les cibles d'un sort de concentration qui n'agit que sur une sauvegarde ratée réussissent (Immobilisation de personne, Bannissement, Lenteur…), la concentration du lanceur prend fin aussitôt au lieu d'être tenue pour rien.",
-  "DND5ECOMBAT.Retour.Disparait": "Disparaît"
+  "DND5ECOMBAT.Retour.Disparait": "Disparaît",
+  "DND5ECOMBAT.Passagers.Titre": "Emmener quelqu'un ?",
+  "DND5ECOMBAT.Passagers.Question": "Une créature consentante à côté de vous peut se téléporter avec vous (jusqu'à {max}). Qui vient ?",
+  "DND5ECOMBAT.Passagers.Personne": "Personne",
+  "DND5ECOMBAT.Passagers.SansMJ": "Pas de MJ actif : le passager reste sur place.",
+  "DND5ECOMBAT.Retour.Teleporte": "Téléporté"
 }

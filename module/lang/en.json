@@ -1705,5 +1705,10 @@
   "DND5ECOMBAT.FinGenerique.unaffected": "{item}: no creature was affected, {name} stops concentrating on it.",
   "DND5ECOMBAT.Reglage.endUnaffected.Nom": "End concentration when nobody is affected",
   "DND5ECOMBAT.Reglage.endUnaffected.Aide": "When every target of a concentration spell that only works on a failed save succeeds (Hold Person, Banishment, Slow…), the caster's concentration ends at once instead of being held for nothing.",
-  "DND5ECOMBAT.Retour.Disparait": "Vanishes"
+  "DND5ECOMBAT.Retour.Disparait": "Vanishes",
+  "DND5ECOMBAT.Passagers.Titre": "Take someone along?",
+  "DND5ECOMBAT.Passagers.Question": "A willing creature next to you can teleport with you (up to {max}). Who comes along?",
+  "DND5ECOMBAT.Passagers.Personne": "Nobody",
+  "DND5ECOMBAT.Passagers.SansMJ": "No active GM: the passenger stays behind.",
+  "DND5ECOMBAT.Retour.Teleporte": "Teleported"
 }

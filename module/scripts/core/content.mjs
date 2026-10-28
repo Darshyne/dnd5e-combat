@@ -20,7 +20,9 @@
  *     teleport?: { distance, units, activity? } l'utilisation téléporte l'utilisateur (§16.10, B11) : la destination se
  *                                               choisit aussitôt, à `distance` au plus — pour un item sans activité
  *                                               « teleport » de dnd5e (tout le PHB : Foulée brumeuse y est utilitaire) ;
- *                                               `then` : id d'une activité de l'item utilisée à l'arrivée (§67 quater)
+ *                                               `then` : id d'une activité de l'item utilisée à l'arrivée (§67 quater) ;
+ *                                               `passengers: { count, within?, units? }` (§264) : jusqu'à `count` créatures non
+ *                                               hostiles à `within` (5 ft) partent avec lui, posées à son contact (Porte dimensionnelle)
  *     lineDash?: { reach, units, activity? }    ruée en ligne droite (§57) : à l'utilisation, la case
  *                                               d'arrivée se choisit (jusqu'à la Vitesse, inoccupée, en vue, en ligne droite à
  *                                               travers les créatures, sans attaque d'opportunité) ; l'activité (défaut : celle

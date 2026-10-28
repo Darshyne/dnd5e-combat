@@ -117,3 +117,11 @@ describe("§263 : « chaque créature de votre choix » — les alliés épargn�
     for ( const id of ["destructive-wave", "word-of-radiance", "conjure-barrage", "conjure-volley"] ) expect(CONTENT[id].zoneAffects).toBe("enemy");
   });
 });
+
+describe("§264 : téléportation avec passager", () => {
+  it("Porte dimensionnelle emmène une créature à 1,50 m", () => {
+    expect(CONTENT["dimension-door"].teleport.passengers).toEqual({ count: 1, within: 5, units: "ft" });
+    expect(validateEntry(CONTENT["dimension-door"])).toEqual([]);
+    expect(validateEntry({ teleport: { distance: 30, units: "ft", passengers: { count: 0 } } })).toHaveLength(1);
+  });
+});

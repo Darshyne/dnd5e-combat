@@ -10,8 +10,8 @@
 export const TELEPORTS = Object.freeze({
   // « Vous vous téléportez jusqu'à 9 m dans un espace inoccupé que vous voyez » (action bonus).
   "misty-step": { distance: 30, units: "ft" },
-  // « …jusqu'à 150 m » (la créature consentante emmenée n'est pas reprise : on la déplace à la main).
-  "dimension-door": { distance: 500, units: "ft" },
+  // « …jusqu'à 150 m » ; §264 : « une créature consentante… à 1,50 m de vous… dans un espace à 1,50 m de votre destination ».
+  "dimension-door": { distance: 500, units: "ft", passengers: { count: 1, within: 5, units: "ft" } },
   // Goliath, ascendance des géants des nuages : « jusqu'à 9 m dans un espace inoccupé que vous voyez ».
   "clouds-jaunt": { distance: 30, units: "ft" },
   // Don du voyage dimensionnel, Pas clignotants : « …après l'action Attaque ou Magie, jusqu'à 9 m ».

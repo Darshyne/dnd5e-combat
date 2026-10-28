@@ -80,7 +80,15 @@ export function validateTeleport(teleport, at, errors) {
   if ( (typeof teleport.units !== "string") || !teleport.units ) errors.push(`${at}.units: unit required`);
   if ( ("activity" in teleport) && !isId(teleport.activity) ) errors.push(`${at}.activity: activity id (16 characters) expected`);
   if ( ("then" in teleport) && !isId(teleport.then) ) errors.push(`${at}.then: activity id (16 characters) expected`);
-  for ( const key of Object.keys(teleport) ) if ( !["distance", "units", "activity", "then"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
+  if ( "passengers" in teleport ) {
+    const p = teleport.passengers;
+    if ( !isObject(p) || !(Number.isInteger(p.count) && (p.count > 0)) ) errors.push(`${at}.passengers: { count, within?, units? }`);
+    else {
+      if ( ("within" in p) && !(Number.isFinite(p.within) && (p.within > 0)) ) errors.push(`${at}.passengers.within: positive number`);
+      for ( const key of Object.keys(p) ) if ( !["count", "within", "units"].includes(key) ) errors.push(`${at}.passengers.${key}: unknown key`);
+    }
+  }
+  for ( const key of Object.keys(teleport) ) if ( !["distance", "units", "activity", "then", "passengers"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 export function validateTargets(targets, at, facts, errors) {

@@ -6,6 +6,7 @@
 import { strike } from "./storm.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { afterTeleportOptions } from "./teleport-options.mjs";
+import { carryPassengers, choosePassengers } from "./passengers.mjs";
 import { planPath, stairsOf, stairsDestinations, stopWalking } from "../adapter/movement.mjs";
 import { combatantFor, readBudget, movementOf } from "../adapter/turn.mjs";
 import { setDoorOpen, doorState, pickLock, forceDoor, unlockWithKey, lockEntriesFor, handleLockQuery, DOOR_UNLOCKED_HOOK, NOISE_HOOK, LOCK_ATTEMPT_HOOK } from "./doors.mjs";
@@ -191,13 +192,18 @@ export function teleportPick({ x, y }) {
  * runtime/actions.mjs, `onTeleport`) ; accepté, le token se téléporte (action « blink »). Seul le clic lui-même (la
  * planification interactive du cœur) n'est pas joué.
  */
-export async function teleport({ tokenId, itemId, x, y }) {
+export async function teleport({ tokenId, itemId, x, y, passengers=[] }) {
   const token = viewedToken({ tokenId });
   const activity = token.actor?.items.get(itemId)?.system.activities?.find(a => selfTeleportOf(a)) ?? null;
   if ( !activity ) throw new Error("no self-teleport on this item");
+  // §264 : les passagers désignés comme le joueur le ferait — en les ciblant avant le saut.
+  for ( const t of game.user.targets ) t.setTarget(false, { releaseOthers: false });
+  for ( const id of passengers ) canvas.tokens.get(id)?.setTarget(true, { releaseOthers: false });
+  const chosen = passengers.length ? await choosePassengers(token, selfTeleportOf(activity).passengers) : [];
   const from = { x: token._source.x, y: token._source.y, elevation: token._source.elevation ?? 0, level: token._source.level ?? null };
   // Le même chemin que le clic du joueur (`teleportSelf`) : validation, `blink`, puis l'activité d'arrivée (`teleport.then`).
   const accepted = await teleportTo(activity, token, { x, y });
+  if ( accepted ) await carryPassengers(token, chosen);
   if ( accepted ) await afterTeleport(activity, selfTeleportOf(activity));
   // §92 : les options de la Foulée des fées, comme après le vrai geste — sans les attendre (le scénario répond à la question).
   if ( accepted ) afterTeleportOptions(activity, token, from).catch(err => console.error(err));

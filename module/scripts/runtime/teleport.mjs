@@ -10,6 +10,7 @@ import { contentOf } from "../adapter/content.mjs";
 import { cellUnder } from "../adapter/movement.mjs";
 import { canSeePoint, isVisionAvailable } from "../adapter/vision.mjs";
 import { afterTeleportOptions } from "./teleport-options.mjs";
+import { carryPassengers, choosePassengers } from "./passengers.mjs";
 import { loc, notice, log } from "./shared.mjs";
 import { occupiedAt } from "./actions.mjs";
 
@@ -73,10 +74,11 @@ export function onTeleport(activity, plans) {
  * @returns {{native: true}|{native: false, distance: number, units: string}|null}
  */
 export function selfTeleportOf(activity) {
-  if ( (activity?.type === "teleport") && (activity.range?.units === "self") && activity.canPlanTeleport ) return { native: true };
   const rule = activity?.item ? contentOf(activity.item).entry?.teleport : null;
+  // §264 : les passagers que le contenu déclare valent aussi pour l'activité native (Porte dimensionnelle du SRD).
+  if ( (activity?.type === "teleport") && (activity.range?.units === "self") && activity.canPlanTeleport ) return { native: true, passengers: rule?.passengers ?? null };
   if ( !rule || (rule.activity && (rule.activity !== activity.id)) ) return null;
-  return { native: false, distance: rule.distance, units: rule.units, then: rule.then ?? null };
+  return { native: false, distance: rule.distance, units: rule.units, then: rule.then ?? null, passengers: rule.passengers ?? null };
 }
 
 /**
@@ -149,7 +151,12 @@ export async function teleportSelf(activity) {
   teleporting = { token, limit: teleportLimit(activity, token.parent) };
   // §92 : la case quittée, pour les options de la Foulée des fées (créatures à 1,50 m de l'espace quitté).
   const from = { x: token._source.x, y: token._source.y, elevation: token._source.elevation ?? 0, level: token._source.level ?? null };
-  const done = async () => { await afterTeleport(activity, rule); await afterTeleportOptions(activity, token, from); return true; };
+  // §264 : qui part avec lui (Porte dimensionnelle), choisi avant le saut ; posé à côté de lui à l'arrivée.
+  const passengers = await choosePassengers(token, rule.passengers);
+  const done = async () => {
+    await carryPassengers(token, passengers);
+    await afterTeleport(activity, rule); await afterTeleportOptions(activity, token, from); return true;
+  };
   try {
     for ( let attempt = 0; attempt < 5; attempt++ ) {
       object.control({ releaseOthers: true });

@@ -159,3 +159,10 @@ describe("§268 : Protection contre le Mal et le Bien écarte Charmé et Effray�
     expect(validateEntry({ wardsConditions: { types: ["dragonkin"], statuses: ["charmed"] } })).toHaveLength(1);
   });
 });
+
+describe("§269 : Forme gazeuse, ni attaque ni sort", () => {
+  it("contenu", () => {
+    expect(CONTENT["gaseous-form"].noAttacksOrSpells).toBe(true);
+    expect(CONTENT["gaseous-form"].actionEnds).toBeTruthy();
+  });
+});

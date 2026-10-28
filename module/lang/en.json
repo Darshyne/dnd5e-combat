@@ -1712,5 +1712,6 @@
   "DND5ECOMBAT.Passagers.SansMJ": "No active GM: the passenger stays behind.",
   "DND5ECOMBAT.Retour.Teleporte": "Teleported",
   "DND5ECOMBAT.Retour.Banni": "Banished",
-  "DND5ECOMBAT.Retour.Revenu": "Returns"
+  "DND5ECOMBAT.Retour.Revenu": "Returns",
+  "DND5ECOMBAT.Souci.noAttacksOrSpells": "Under {item}, you can't attack or cast spells."
 }

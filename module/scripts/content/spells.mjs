@@ -22,6 +22,8 @@ export const NO_REACTIONS = Object.freeze(["arms-of-hadar", "fetid-cloud", "slow
 export const ACTION_OR_BONUS = Object.freeze(["fetid-cloud", "slow"]);
 /** §267 : « elle ne peut faire qu'une attaque si elle prend l'action Attaquer » (Lenteur). */
 export const SINGLE_ATTACK = Object.freeze(["slow"]);
+/** §269 : « la cible ne peut ni attaquer ni lancer de sorts » (Forme gazeuse). */
+export const NO_ATTACKS_OR_SPELLS = Object.freeze(["gaseous-form"]);
 
 /**
  * §19 : effets posés seulement sur une sauvegarde RÉUSSIE. Rayon affaiblissant — « sur une réussite, la cible a le Désavantage

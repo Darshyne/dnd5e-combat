@@ -428,6 +428,8 @@
  *                                               feu grégeois : « en vous infligeant l'état À terre »)
  *     wardsConditions?: { types, statuses }      §268 : le porteur d'un effet de l'item est immunisé contre ces états quand ils viennent
  *                                               d'une créature de ces types (Protection contre le Mal et le Bien : Charmé, Effrayé)
+ *     noAttacksOrSpells?: true                  §269 : le porteur d'un effet de l'item ne peut ni attaquer ni lancer de sorts (Forme
+ *                                               gazeuse) — un souci de légalité, l'item lui-même excepté
  *     singleAttack?: true                       §267 : le porteur d'un effet de l'item ne fait qu'une attaque par action Attaquer
  *                                               (Lenteur ; un PNJ à Attaques multiples garde son plan)
  *     banishes?: [ids d'effet]                  §265 : ces effets de l'item transportent leur porteur dans un demi-plan — token et

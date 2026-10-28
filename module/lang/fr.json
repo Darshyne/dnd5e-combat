@@ -1712,5 +1712,6 @@
   "DND5ECOMBAT.Passagers.SansMJ": "Pas de MJ actif : le passager reste sur place.",
   "DND5ECOMBAT.Retour.Teleporte": "Téléporté",
   "DND5ECOMBAT.Retour.Banni": "Banni",
-  "DND5ECOMBAT.Retour.Revenu": "De retour"
+  "DND5ECOMBAT.Retour.Revenu": "De retour",
+  "DND5ECOMBAT.Souci.noAttacksOrSpells": "Sous {item}, vous ne pouvez ni attaquer ni lancer de sorts."
 }

@@ -9,6 +9,7 @@ import { usageLimitProblems, markUsedThisTurn, applyLowestSlot } from "../adapte
 import { readUnitFactors } from "../adapter/units.mjs";
 import { basicActionOf, basicActionOfActivity, basicChoiceOf } from "../adapter/basics.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
+import { originItemOf } from "../adapter/facts.mjs";
 import { isRaging } from "../adapter/rage.mjs";
 import { enemiesSeeing } from "../adapter/hide.mjs";
 import { verbalBlockOf, charmersOf, hostileToCharmer, sightRequired } from "../adapter/conditions.mjs";
@@ -152,6 +153,11 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
   const raging = isSpellCast(activity.item) && isRaging(activity.actor);   // §48 : lire un parchemin aussi
   // §163 : Champ antimagie — on n'y lance aucun sort.
   const antimagic = (isSpellCast(activity.item) && !pilot) ? antimagicAround(usageToken(activity)) : null;
+  // §269 : Forme gazeuse — « la cible ne peut ni attaquer ni lancer de sorts » (l'action qui y met fin reste permise).
+  const shapeless = ((activity.type === "attack") || isSpellCast(activity.item))
+    ? (activity.actor?.effects ?? []).map(e => (!e.disabled && !e.isSuppressed) ? originItemOf(e) : null)
+      .find(item => item && (item !== activity.item) && (contentOf(item).entry?.noAttacksOrSpells === true)) ?? null
+    : null;
   // §214 : armure portée sans formation — pas de sorts.
   const unarmored = isSpellCast(activity.item) ? untrainedArmor(activity.actor) : null;
   const lines = [
@@ -159,6 +165,7 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
     ...(outOfAmmunition(activity, attackMode) ? [loc("Souci.noAmmunition", { item: activity.item.name })] : []),
     ...(silenced ? [loc("Souci.silenced")] : []),
     ...(raging ? [loc("Souci.rage")] : []),
+    ...(shapeless ? [loc("Souci.noAttacksOrSpells", { item: shapeless.name })] : []),
     ...(unarmored ? [loc("Souci.untrainedArmor", { item: unarmored.name })] : []),
     ...(antimagic ? [loc("Souci.antimagic", { item: antimagic.item.name })] : []),
     ...limits.issues.map(i => loc(`Souci.${i}`, { item: limits.item ?? "" })),

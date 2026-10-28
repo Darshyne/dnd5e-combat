@@ -75,8 +75,14 @@ item by its dnd5e identifier, and often finds the right activity or effect insid
 Items imported from elsewhere — **D&D Beyond (DDB Importer)**, other modules, homebrew — carry other activities and
 effects under other ids. The general rules (attacks, saving throws, damage, conditions, Concentration…) still apply to
 them, but their own automation may do nothing, or only part of it. To get it, replace the item on the sheet with the
-official one: drag it from the SRD or premium compendium onto the sheet, then delete the imported copy. If your sheets are
-synced with D&D Beyond, a new sync brings the imported copy back.
+official one: drag it from the SRD or premium compendium onto the sheet, then delete the imported copy.
+
+For items imported with DDB Importer, the world diagnostic does it for you (Configure Settings → DAS · Core → Open
+settings → General → World diagnostic, section "D&D Beyond"): it replaces each imported item with the official one found
+in this world's compendiums, keeping the item's id and its state on the sheet, after a backup. A new D&D Beyond sync
+brings the imported versions back, unless you tick "Keep the official items at the next D&D Beyond sync", which sets
+DDB Importer's own "Ignore this item" on them: D&D Beyond then no longer updates those items. Classes, subclasses and
+origins are only listed, as their choices can't be carried over.
 
 Some spells and features are not in the SRD (Armor of Agathys, Blade Ward, Wrathful or Thunderous Smite, the Summon
 spells…): without the premium module they come from, there is no official item to automate. For your own items,

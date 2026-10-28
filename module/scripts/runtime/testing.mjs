@@ -335,11 +335,14 @@ async function diagnosticScan({ checks=null }={}) {
   return Object.fromEntries(Object.entries(scan).map(([id, tasks]) => [id, tasks.map(plainTask)]));
 }
 
-/** Répare les tâches réparables de ces vérifications dont la racine est l'un de ces uuid (toutes si `roots` est absent). */
-async function diagnosticRepair({ checks=null, roots=null }={}) {
+/**
+ * Répare les tâches réparables de ces vérifications dont la racine est l'un de ces uuid (toutes si `roots` est absent), avec ces
+ * options de vérification (`{ [checkId]: { [optionId]: valeur } }`).
+ */
+async function diagnosticRepair({ checks=null, roots=null, options={} }={}) {
   const scan = await scanWorld(checks);
   const tasks = Object.values(scan).flat().filter(t => t.apply && (!roots || roots.includes(t.root?.uuid)));
-  const { backup, results } = await repairTasks(tasks);
+  const { backup, results } = await repairTasks(tasks, options);
   return { backup, results: results.map(r => ({ ...plainTask(r.task), ok: r.ok, line: String(r.line).replace(/<[^>]+>/g, "") })) };
 }
 

@@ -423,16 +423,61 @@ export async function ddbItemsAtRisk() {
   return out;
 }
 
+/**
+ * Les objets que la réparation ne remplace pas : classes, sous-classes et origines, et tout objet officiel à avancements — les choix
+ * faits sur la fiche (compétences, dons, valeurs d'échelle…) vivent dans ses avancements et ne passent pas d'une version à l'autre.
+ */
+const DDB_BY_HAND = new Set(["class", "subclass", "background", "race"]);
+const ddbRepairable = official => !DDB_BY_HAND.has(official.type)
+  && !Object.keys(official._source?.system?.advancement ?? {}).length;
+
+/**
+ * L'objet officiel à la place de l'objet importé, comme la vérification Midi-QOL (`midiReplacement` : même id, état de la fiche
+ * gardé). `flags.ddbimporter` reste : DDB Importer apparie ses objets par `flags.ddbimporter.id` et le nom, ou par `id` +
+ * `definitionId` (sorts, objets ; pas les aptitudes). Sans verrou, la synchro suivante le recrée en version DDB, sous le même id ;
+ * avec le verrou (`ignoreItemImport`, l'option « Ignore this item » de DDB Importer), elle le laisse tel quel — et le garde même
+ * retiré de D&D Beyond. Verrouillé, un objet sans `definitionId` garde son nom DDB, sans quoi la synchro ne le reconnaîtrait plus et
+ * ajouterait la version DDB à côté.
+ */
+function ddbReplacement(item, doc, { lock=false }={}) {
+  const data = midiReplacement(item, doc);
+  const ddbFlags = foundry.utils.deepClone(item._source.flags?.ddbimporter ?? {});
+  if ( lock ) {
+    ddbFlags.ignoreItemImport = true;
+    if ( ddbFlags.definitionId === undefined ) data.name = item._source.name;
+  }
+  data.flags.ddbimporter = ddbFlags;
+  if ( !item.parent ) data.folder = item._source.folder ?? null;
+  return data;
+}
+
 const ddb = {
-  id: "ddb", icon: "fa-brands fa-d-and-d-beyond",
+  id: "ddb", group: "ddb", icon: "fa-brands fa-d-and-d-beyond", options: [{ id: "lock", default: false }],
   async scan() {
     const t = tr("Ddb");
     return (await ddbItemsAtRisk()).map(({ item, official, viaMidi }) => {
       const name = esc(item.name);
-      const text = viaMidi ? t("LineMidi", { name, official: esc(official.name) })
-        : official ? t("Line", { name, official: esc(official.name), pack: esc(official.pack ?? "") })
-        : t("LineNone", { name });
-      return { root: rootOf(item), where: whereOf(item), text };
+      const where = whereOf(item);
+      const root = rootOf(item);
+      if ( viaMidi ) return { root, where, text: t("LineMidi", { name, official: esc(official.name) }) };
+      if ( !official ) return { root, where, text: t("LineNone", { name }) };
+      const target = { name, official: esc(official.name), pack: esc(official.pack ?? "") };
+      if ( !ddbRepairable(official) ) return { root, where, text: t("LineByHand", target) };
+      const text = t("LineRepair", target);
+      return { root, where, text, preselect: true,
+        apply: async ({ lock=false }={}) => {
+          const current = fresh(item);
+          const data = ddbReplacement(current, official, { lock });
+          const parent = current.parent;
+          if ( parent ) {
+            await parent.deleteEmbeddedDocuments("Item", [current.id]);
+            await parent.createEmbeddedDocuments("Item", [data], { keepId: true });
+          } else {
+            await current.delete();
+            await Item.implementation.create(data, { keepId: true });
+          }
+          return lock ? `${text} ${t("Locked")}` : text;
+        } };
     });
   }
 };

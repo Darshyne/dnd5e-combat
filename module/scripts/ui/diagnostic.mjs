@@ -35,6 +35,7 @@ export const DiagnosticApp = () => DiagnosticClass ??= class DiagnosticApp exten
   #tab = "scan";
   #scan = null;          // { [checkId]: tâches }
   #checked = new Set();  // ids des tâches cochées
+  #options = {};         // { [checkId]: { [optionId]: valeur } } choisies par le MJ
   #result = null;        // { backup, results }
   #backups = null;
   #working = false;
@@ -57,9 +58,12 @@ export const DiagnosticApp = () => DiagnosticClass ??= class DiagnosticApp exten
       return `${intro}<div class="das-center"><button type="button" class="das-button big" data-action="scan">
         <i class="fa-solid fa-magnifying-glass"></i> ${esc(loc("Diagnostic.Analyser"))}</button></div>`;
     }
-    const sections = CHECKS.filter(c => this.#scan[c.id]).map(check => {
+    const section = check => {
       const tasks = this.#scan[check.id];
       const fixable = tasks.filter(t => t.apply).length;
+      const options = fixable ? (check.options ?? []).map(o => `<label class="das-option">
+          <input type="checkbox" data-option="${check.id}.${o.id}" ${this.#option(check.id, o) ? "checked" : ""}>
+          <span>${esc(loc(`Diagnostic.Verif.${check.id}.Option.${o.id}`))}</span></label>`).join("") : "";
       const rows = tasks.map(t => `<label class="das-task${t.apply ? "" : " info"}">
           <input type="checkbox" data-task="${t.id}" ${t.apply ? "" : "disabled"} ${this.#checked.has(t.id) ? "checked" : ""}>
           <span class="das-task__where">${t.where}</span><span class="das-task__text">${t.text}</span></label>`).join("");
@@ -69,8 +73,16 @@ export const DiagnosticApp = () => DiagnosticClass ??= class DiagnosticApp exten
         <p class="das-muted">${esc(loc(`Diagnostic.Verif.${check.id}.Aide`))}</p>
         ${fixable ? `<div class="das-row"><button type="button" class="das-link" data-all="${check.id}">${esc(loc("Diagnostic.ToutCocher"))}</button>
           <button type="button" class="das-link" data-none="${check.id}">${esc(loc("Diagnostic.ToutDecocher"))}</button></div>` : ""}
-        ${rows}</details>`;
-    }).join("");
+        ${options}${rows}</details>`;
+    };
+    // Les vérifications d'un groupe (`check.group`, ainsi « ddb » : le contenu importé de D&D Beyond) forment une section à part,
+    // après les autres, sous leur titre.
+    const shown = CHECKS.filter(c => this.#scan[c.id]);
+    const groups = [...new Set(shown.map(c => c.group).filter(Boolean))].map(group => `<section class="das-group">
+        <h3><i class="${shown.find(c => c.group === group).icon}"></i> ${esc(loc(`Diagnostic.Groupe.${group}.Nom`))}</h3>
+        <p class="das-muted">${esc(loc(`Diagnostic.Groupe.${group}.Aide`))}</p>
+        ${shown.filter(c => c.group === group).map(section).join("")}</section>`).join("");
+    const sections = shown.filter(c => !c.group).map(section).join("") + groups;
     const count = this.#selected().length;
     return `${intro}<div class="das-checks">${sections}</div>
       <footer class="das-actions">
@@ -110,6 +122,17 @@ export const DiagnosticApp = () => DiagnosticClass ??= class DiagnosticApp exten
     content.replaceChildren(result);
   }
 
+  /** La valeur d'une option de vérification : celle choisie, sinon son défaut. */
+  #option(checkId, option) {
+    return this.#options[checkId]?.[option.id] ?? option.default;
+  }
+
+  /** Les options de chaque vérification, défauts compris, pour la réparation. */
+  #allOptions() {
+    return Object.fromEntries(CHECKS.filter(c => c.options?.length)
+      .map(c => [c.id, Object.fromEntries(c.options.map(o => [o.id, this.#option(c.id, o)]))]));
+  }
+
   /** Les tâches cochées (seulement celles qu'on peut réparer). */
   #selected() {
     return Object.values(this.#scan ?? {}).flat().filter(t => t.apply && this.#checked.has(t.id));
@@ -126,6 +149,10 @@ export const DiagnosticApp = () => DiagnosticClass ??= class DiagnosticApp exten
       const count = this.#selected().length;
       const repair = el.querySelector("[data-action=repair]");
       if ( repair ) { repair.disabled = !count; repair.lastChild.textContent = ` ${loc("Diagnostic.Reparer", { count })}`; }
+    }));
+    el.querySelectorAll("[data-option]").forEach(box => box.addEventListener("change", () => {
+      const [checkId, optionId] = box.dataset.option.split(".");
+      (this.#options[checkId] ??= {})[optionId] = box.checked;
     }));
     const pick = (id, on) => {
       for ( const t of this.#scan?.[id] ?? [] ) if ( t.apply ) { if ( on ) this.#checked.add(t.id); else this.#checked.delete(t.id); }
@@ -161,7 +188,7 @@ export const DiagnosticApp = () => DiagnosticClass ??= class DiagnosticApp exten
     if ( !yes ) return;
     this.#working = true; this.render();
     try {
-      this.#result = await repairTasks(tasks);
+      this.#result = await repairTasks(tasks, this.#allOptions());
       this.#scan = null;
       this.#checked.clear();
     } catch(err) {

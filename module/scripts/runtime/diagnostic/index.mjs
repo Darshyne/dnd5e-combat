@@ -29,9 +29,10 @@ export async function scanWorld(ids=null) {
 
 /**
  * Répare ces tâches. Rend `{ backup, results: [{ task, ok, line }] }`. Lève si la sauvegarde n'a pas pu être faite (rien n'a
- * alors été modifié).
+ * alors été modifié). `options` : `{ [checkId]: { [optionId]: valeur } }`, les options d'une vérification (`check.options`),
+ * passées à l'`apply` de chacune de ses tâches.
  */
-export async function repairTasks(tasks) {
+export async function repairTasks(tasks, options={}) {
   if ( !game.user.isGM ) throw new Error("only a GM can repair");
   if ( busy ) throw new Error(loc("Diagnostic.Occupe"));
   const todo = tasks.filter(t => typeof t.apply === "function" && t.root);
@@ -42,7 +43,7 @@ export async function repairTasks(tasks) {
     const results = [];
     for ( const task of todo ) {
       try {
-        results.push({ task, ok: true, line: await task.apply() });
+        results.push({ task, ok: true, line: await task.apply(options[task.check] ?? {}) });
       } catch(err) {
         console.error(`${MODULE_ID} | repair ${task.id}`, err);
         results.push({ task, ok: false, line: loc("Diagnostic.ReparationEchec", { error: foundry.utils.escapeHTML(err.message) }) });

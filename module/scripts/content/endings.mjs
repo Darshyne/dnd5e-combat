@@ -4,6 +4,12 @@
 
 const NOBODY = { unaffected: "failedSave" };
 
+/** §265 : les effets « Banni » qui transportent leur porteur dans un demi-plan (PHB 2.2.0). */
+export const BANISHES = Object.freeze({
+  "banishment": ["nwne4bDtD4pSWWPM"],
+  "banishing-smite": ["dAnHnTaGvsiN1WzK"]
+});
+
 export const ENDS_WHEN = Object.freeze({
   // « Le sort prend fin plus tôt si la cible enfile une armure. »
   "mage-armor": { armor: "any" },

@@ -88,6 +88,9 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     if ( !Array.isArray(b) || !b.length || !b.every(m => BREAK_MOMENTS.includes(m)) ) errors.push(`${at}breaksOn: list among ${BREAK_MOMENTS.join(", ")}`);
   }
   if ( "endsWhen" in entry ) validateEndsWhen(entry.endsWhen, `${at}endsWhen`, errors);
+  if ( ("banishes" in entry) && (!Array.isArray(entry.banishes) || !entry.banishes.length || !entry.banishes.every(isId)) ) {
+    errors.push(`${at}banishes: list of effect ids (16 characters)`);
+  }
   if ( "emanation" in entry ) validateEmanation(entry.emanation, `${at}emanation`, errors);
   if ( ("noOpportunity" in entry) && !["always", "flying", "afterUse", "whileEffect"].includes(entry.noOpportunity) ) errors.push(`${at}noOpportunity: always, flying, afterUse, whileEffect`);
   if ( ("sharesSpace" in entry) && !["enter", "mutual"].includes(entry.sharesSpace) ) errors.push(`${at}sharesSpace: enter, mutual`);

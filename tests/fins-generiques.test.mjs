@@ -125,3 +125,12 @@ describe("§264 : téléportation avec passager", () => {
     expect(validateEntry({ teleport: { distance: 30, units: "ft", passengers: { count: 0 } } })).toHaveLength(1);
   });
 });
+
+describe("§265 : Bannissement réel", () => {
+  it("les effets « Banni » déclarés", () => {
+    expect(CONTENT["banishment"].banishes).toEqual(["nwne4bDtD4pSWWPM"]);
+    expect(CONTENT["banishing-smite"].banishes).toEqual(["dAnHnTaGvsiN1WzK"]);
+    expect(CONTENT["banishing-smite"].smite.saveAtMostHp).toBe(50);
+    expect(validateEntry({ banishes: ["court"] })).toHaveLength(1);
+  });
+});

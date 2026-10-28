@@ -36,6 +36,7 @@ import { registerSelfAreas } from "./runtime/self-area.mjs";
 import { registerAreas } from "./runtime/areas.mjs";
 import { registerLingering } from "./runtime/lingering.mjs";
 import { registerPassengers } from "./runtime/passengers.mjs";
+import { registerBanish } from "./runtime/banish.mjs";
 import { registerBursts } from "./runtime/bursts.mjs";
 import { registerFelled } from "./runtime/felled.mjs";
 import { registerProjectiles } from "./runtime/projectiles.mjs";
@@ -299,6 +300,7 @@ Hooks.once("init", () => {
   gated(registerSpace);
   gated(registerConditions);
   gated(registerAreas);
+  gated(registerBanish);   // §265 : le Bannissement réel (cible cachée, retour à la fin)
   gated(registerPassengers);   // §264 : les passagers d'une téléportation (Porte dimensionnelle), posés par le MJ actif
   gated(registerLingering);   // §261 : le terrain que laisse une zone instantanée (Tempête de grêle)
   gated(registerContest);   // §72 : test en opposition (Combat perspicace)

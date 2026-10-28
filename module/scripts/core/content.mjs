@@ -426,6 +426,9 @@
  *                                               (sans `roll` : secouer un dormeur — `verb: "wake"` pour le libellé ; `roll:
  *                                               "check"` : Frappe piégeuse) ; `status` : l'état que le porteur se donne en y mettant fin (§49,
  *                                               feu grégeois : « en vous infligeant l'état À terre »)
+ *     banishes?: [ids d'effet]                  §265 : ces effets de l'item transportent leur porteur dans un demi-plan — token et
+ *                                               combattant cachés tant qu'ils durent, retour à l'espace quitté (ou au plus proche
+ *                                               libre) quand ils tombent (Bannissement, Châtiment bannissant)
  *     endsWhen?: { armor?: "any"|"heavy", apart?: { distance, units, at?: "move"|"casterTurnEnd" }, zeroHp?: true,
  *                  unaffected?: "failedSave"|"noHits"|"noTargets", spell?: true }
  *                                               §258 : fins génériques (core/endings.mjs, runtime/endings.mjs) — l'effet de l'item

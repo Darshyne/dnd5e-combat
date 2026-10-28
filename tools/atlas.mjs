@@ -96,6 +96,31 @@ if ( existsSync("prive/RELEVE_SORTS.md") ) {
   }
 }
 const READING_TO = { moteur: "das", dnd5e: "sys", partiel: "part", trou: "man", "hors-combat": "off", manuel: "gm" };
+// Relevé des dons : ses lignes nomment les dons en français (parfois groupés, l'anglais entre parenthèses), sans identifiant.
+const fold = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const featReading = new Map();
+if ( existsSync("prive/RELEVE_DONS.md") ) {
+  for ( const m of readFileSync("prive/RELEVE_DONS.md", "utf8").matchAll(/^\| ([^|]+) \| ([^|]+) \| ([^|]*) \|$/gm) ) {
+    const state = m[2].trim();
+    if ( /^(État|---)/.test(state) ) continue;
+    const g = /^FAUX/.test(state) ? "bad" : /^(Plus tard|À FAIRE)/i.test(state) ? "man"
+      : /^(FAIT|MOTEUR|Attaque réactive|Observateur FAIT)/.test(state) ? (/: non|à faire|pas d'/.test(state) ? "part" : "das")
+      : /^OK/.test(state) ? "sys" : null;
+    if ( !g ) continue;
+    for ( const part of m[1].split(/,|\/| et /) ) {
+      for ( const name of [part.replace(/\(.*?\)/g, ""), ...(part.match(/\(([^)]+)\)/g) ?? []).map(s => s.slice(1, -1))] ) {
+        if ( fold(name) ) featReading.set(fold(name), { status: state, missing: m[3].trim(), g });
+      }
+    }
+  }
+}
+// Identifiants que le code du moteur nomme hors des tables de contenu (Combat à deux armes, Maître d'armes…) : une règle DAS aussi.
+const codeRefs = new Set();
+for ( const f of readdirSync("module/scripts", { recursive: true }).map(String).filter(f => f.endsWith(".mjs") && !/^content[\\/]/.test(f)) ) {
+  for ( const m of readFileSync(join("module/scripts", f), "utf8").matchAll(/["'`]([a-z][a-z0-9]*(?:-[a-z0-9]+)+)["'`]/g) ) codeRefs.add(m[1]);
+}
+const ADVANCEMENT = { AbilityScoreImprovement: "caractéristiques", Trait: "maîtrises", ItemGrant: "objets ou sorts accordés",
+  ItemChoice: "choix d'objets ou de sorts", ScaleValue: "valeur d'échelle", HitPoints: "points de vie", Size: "taille", Subclass: "sous-classe" };
 const sweeps = new Map();
 if ( existsSync("prive/balayages") ) {
   for ( const f of readdirSync("prive/balayages").filter(f => f.endsWith(".json")).sort() ) {
@@ -318,18 +343,23 @@ function describe({ item, tab, mod, version, pack, owner, actorId, frEntry, effe
   field("us", uses.length, false);
   field("mv", false, says.mv);
   const script = engine.filter(k => !CAT_OF.has(k));
-  S.sp = script.length ? "das" : "";
+  const inCode = !entry && codeRefs.has(ident);
+  S.sp = (script.length || inCode) ? "das" : "";
+  // Progressions dnd5e (caractéristiques, maîtrises, sorts accordés) : ce que le système applique seul à l'ajout de l'item.
+  const advancements = [...new Set(Object.values(s.advancement ?? {}).map(a => ADVANCEMENT[a.type] ?? a.type))];
+  S.pg = advancements.length ? "sys" : "";
   // Un champ « man » que le moteur couvre par une règle générale (triggers, choice) reste à vérifier : le relevé de lecture tranche.
   const values = Object.values(S);
 
   // Statut global.
-  const rd = (tab === "sorts") ? reading.get(ident) : null;
-  const rdKey = rd ? (READING_TO[rd.status.replace(/\s*\(.*$/, "")] ?? null) : null;
+  const rd = (tab === "sorts") ? reading.get(ident)
+    : (tab === "dons") ? (featReading.get(fold(frEntry?.name)) ?? featReading.get(fold(item.name)) ?? null) : null;
+  const rdKey = rd ? (rd.g ?? READING_TO[rd.status.replace(/\s*\(.*$/, "")] ?? null) : null;
   let g;
   if ( rdKey ) g = rdKey;
   else if ( values.includes("bad") ) g = "bad";
   else if ( values.includes("man") ) g = (values.includes("das") || values.includes("sys")) ? "part" : "man";
-  else if ( engine.length ) g = "das";
+  else if ( engine.length || inCode ) g = "das";
   else if ( values.includes("sys") ) g = "sys";
   else g = "text";
 
@@ -355,7 +385,8 @@ function describe({ item, tab, mod, version, pack, owner, actorId, frEntry, effe
     at: attacks.join(" · "), dm: damages.join(" · "), he: heals.join(" · "), sv: saves.join(" · "),
     ef: effectNames.join(" · "), st: statuses, an: announced, su: summons.join(" · "), us: uses.join(" · "),
     ot: others.join(", "), mvt: says.mv ? "annoncé" : "",
-    eng: engine, ej: entry ? JSON.stringify(entry).slice(0, 1200) : "",
+    pg: advancements.join(" · "),
+    eng: inCode ? ["code du moteur"] : engine, ej: entry ? JSON.stringify(entry).slice(0, 1200) : "",
     S, g, bad,
     rd: rd ? rd.status : "", rdm: rd?.missing ?? "",
     sw: sweep ? `${sweep.ok ? "✓" : "✗"} ${sweep.at}${sweep.note ? ` — ${sweep.note}` : ""}` : "",

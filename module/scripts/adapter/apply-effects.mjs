@@ -8,7 +8,7 @@ import { currentTurnKey } from "./turn.mjs";
 import { effectKey, poolEffectsOf } from "./usage.mjs";
 import { pushOf } from "./basics.mjs";
 import { blockedFor } from "./eligibility.mjs";
-import { conditionImmunitiesOf } from "./facts.mjs";
+import { conditionImmunitiesAgainst } from "./facts.mjs";
 import { activityFor } from "./saves.mjs";
 
 /**
@@ -72,7 +72,7 @@ export async function applyEffectsToToken(usageMessage, tokenUuid, refs) {
       continue;
     }
     // §16.8 : immunisée contre l'un de ses états, la créature ne reçoit pas l'effet (Motif hypnotique sans Charmé).
-    if ( blockedFor(effect, actor).length ) continue;
+    if ( blockedFor(effect, actor, activity?.actor ?? usageMessage.getAssociatedActor?.() ?? null).length ) continue;
     const result = await tray._applyEffectToActor(effect, actor);
     // Relevé des trous : un effet repris d'un compendium a pour origine l'item du compendium — le moteur ne le rattacherait plus à l'item
     // de la fiche (`originItemOf` : Concentration fanatique « en Rage », auras, fins d'effet). L'origine redevient l'item du monde.
@@ -111,12 +111,13 @@ export async function applyStatusToToken(usageMessage, tokenUuid, status) {
   const actor = (await fromUuid(tokenUuid))?.actor;
   if ( !actor || !CONFIG.statusEffects.some(s => s.id === status) ) return null;
   if ( actor.statuses.has(status) ) return null;
-  if ( conditionImmunitiesOf(actor).includes(status) ) return null;   // §16.8 : immunisée, rien n'est posé
+  const activity = usageMessage.getAssociatedActivity?.();
+  // §16.8 : immunisée, rien n'est posé ; §268 : y compris face à cette source (Protection contre le Mal et le Bien).
+  if ( conditionImmunitiesAgainst(actor, activity?.actor ?? null).includes(status) ) return null;
   const effect = await actor.toggleStatusEffect(status, { active: true });
   if ( !effect?.uuid ) return null;
   // Un état est un effet `condition`, dont le modèle de dnd5e retire `system.origin` (data/active-effect/
   // condition.mjs:12) : l'origine va dans le champ `origin` du cœur, que `originItemOf` lit en repli.
-  const activity = usageMessage.getAssociatedActivity?.();
   // §157 : le tour de la pose noté, comme pour un effet d'item (runtime/cantrips.mjs) — « jusqu'à la fin de votre prochain tour ».
   if ( activity ) await effect.update({ origin: activity.uuid, ...(game.combat?.started ? { [`flags.${MODULE_ID}.placedOn`]: currentTurnKey() } : {}) });
   return effect.uuid;

@@ -150,3 +150,12 @@ describe("§267 : Lenteur, une seule attaque", () => {
     expect(validateEntry({ singleAttack: "oui" })).toHaveLength(1);
   });
 });
+
+describe("§268 : Protection contre le Mal et le Bien écarte Charmé et Effrayé", () => {
+  it("contenu et schéma", () => {
+    expect(CONTENT["protection-from-evil-and-good"].wardsConditions.statuses).toEqual(["charmed", "frightened"]);
+    expect(CONTENT["protection-from-evil-and-good"].wardsConditions.types).toContain("fiend");
+    expect(CONTENT["protection-from-evil-and-good"].triggers).toBeTruthy();
+    expect(validateEntry({ wardsConditions: { types: ["dragonkin"], statuses: ["charmed"] } })).toHaveLength(1);
+  });
+});

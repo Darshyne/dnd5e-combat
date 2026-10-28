@@ -228,6 +228,22 @@ export const creatureTypeOf = actor => actor?.system?.details?.type?.value ?? nu
 export const conditionImmunitiesOf = actor => Array.from(actor?.system?.traits?.ci?.value ?? []);
 
 /**
+ * §268 : les états contre lesquels un acteur est immunisé face à cette source — les siens, plus ceux qu'un effet qu'il porte écarte quand la
+ * source est d'un type donné (`wardsConditions` : Protection contre le Mal et le Bien, « la cible ne peut être Charmée ni Effrayée par
+ * elles »). Sans source connue : les siens.
+ */
+export function conditionImmunitiesAgainst(actor, source) {
+  const own = conditionImmunitiesOf(actor);
+  const type = source ? creatureTypeOf(source) : null;
+  if ( !type ) return own;
+  const warded = (actor?.effects ?? []).filter(e => !e.disabled && !e.isSuppressed).flatMap(e => {
+    const rule = contentOf(originItemOf(e)).entry?.wardsConditions;
+    return (rule && rule.types.includes(type)) ? rule.statuses : [];
+  });
+  return [...new Set([...own, ...warded])];
+}
+
+/**
  * Les faits d'un moment. `source` : qui agit ; `target` : qui subit ; `activity` : ce qui est utilisé ;
  * `sourceToken` / `targetToken` : leurs tokens quand le moment les connaît (sinon retrouvés par l'acteur).
  * Une clé absente ici est inconnue du cœur, et une condition qui l'emploie ne tient jamais.

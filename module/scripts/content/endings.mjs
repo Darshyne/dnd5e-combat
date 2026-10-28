@@ -10,6 +10,11 @@ export const BANISHES = Object.freeze({
   "banishing-smite": ["dAnHnTaGvsiN1WzK"]
 });
 
+/** §268 : « la cible ne peut être Charmée, Effrayée ni possédée par elles » (Protection contre le Mal et le Bien). */
+export const WARDS_CONDITIONS = Object.freeze({
+  "protection-from-evil-and-good": { types: ["aberration", "celestial", "elemental", "fey", "fiend", "undead"], statuses: ["charmed", "frightened"] }
+});
+
 export const ENDS_WHEN = Object.freeze({
   // « Le sort prend fin plus tôt si la cible enfile une armure. »
   "mage-armor": { armor: "any" },

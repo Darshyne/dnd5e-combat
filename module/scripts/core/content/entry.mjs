@@ -88,6 +88,12 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     if ( !Array.isArray(b) || !b.length || !b.every(m => BREAK_MOMENTS.includes(m)) ) errors.push(`${at}breaksOn: list among ${BREAK_MOMENTS.join(", ")}`);
   }
   if ( "endsWhen" in entry ) validateEndsWhen(entry.endsWhen, `${at}endsWhen`, errors);
+  if ( "wardsConditions" in entry ) {
+    const w = entry.wardsConditions;
+    if ( !isObject(w) || !Array.isArray(w.types) || !w.types.length || !w.types.every(t => CREATURE_TYPES.includes(t))
+      || !Array.isArray(w.statuses) || !w.statuses.length || !w.statuses.every(s => (typeof s === "string") && s)
+      || Object.keys(w).some(k => !["types", "statuses"].includes(k)) ) errors.push(`${at}wardsConditions: { types: creature types, statuses: [ids] }`);
+  }
   if ( ("banishes" in entry) && (!Array.isArray(entry.banishes) || !entry.banishes.length || !entry.banishes.every(isId)) ) {
     errors.push(`${at}banishes: list of effect ids (16 characters)`);
   }

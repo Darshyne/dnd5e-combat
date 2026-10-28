@@ -9,7 +9,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { typeAllowed, immuneToAll } from "../core/eligibility.mjs";
 import { holds } from "../core/triggers.mjs";
 import { contentOf } from "./content.mjs";
-import { factsFor, creatureTypeOf, conditionImmunitiesOf, originItemOf, enclosureBetween } from "./facts.mjs";
+import { factsFor, creatureTypeOf, conditionImmunitiesAgainst, originItemOf, enclosureBetween } from "./facts.mjs";
 import { distanceBetween } from "./turn.mjs";
 import { readUnitFactors, lengthIn } from "./units.mjs";
 import { isSpellCast } from "./scrolls.mjs";
@@ -89,13 +89,13 @@ export async function unaffectedBy(activity, plan, token, { castLevel=null }={})
   }
   const effects = [];
   for ( const ref of plan.effects ?? [] ) effects.push(await statusesOfRef(ref));
-  const immune = immuneToAll({ damage: !!plan.damage || !!plan.heal, steps: (plan.steps?.length ?? 0) > 0, effects }, conditionImmunitiesOf(actor));
+  const immune = immuneToAll({ damage: !!plan.damage || !!plan.heal, steps: (plan.steps?.length ?? 0) > 0, effects }, conditionImmunitiesAgainst(actor, activity.actor ?? null));
   return immune ? { reason: "immune", detail: immune } : null;
 }
 
 /** Un effet que la créature ne peut pas recevoir (immunité à l'un de ses états) : ses états bloqués, sinon vide. */
-export function blockedFor(effect, actor) {
-  const immune = conditionImmunitiesOf(actor);
+export function blockedFor(effect, actor, source=null) {
+  const immune = conditionImmunitiesAgainst(actor, source);
   const blocked = Array.from(effect?.statuses ?? []).filter(s => immune.includes(s));
   if ( blocked.length ) console.log(`${MODULE_ID} | "${effect.name}" not applied to ${actor.name}: immunity (${blocked.join(", ")})`);
   return blocked;

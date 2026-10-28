@@ -315,7 +315,8 @@ export const TRIGGERS = Object.freeze({
     do: [{ type: "advantage" }]
   }],
   // Protection contre le mal et le bien : « les créatures de ces types ont le Désavantage aux jets d'attaque
-  // contre la cible » — porté par l'effet sur la cible. (Charme, peur et possession : non jugés.)
+  // contre la cible » — porté par l'effet sur la cible. Charmé et Effrayé : `wardsConditions` (§268, content/endings.mjs) ; la
+  // possession reste au MJ.
   "protection-from-evil-and-good": [{
     on: "preAttackRoll", via: "effect",
     if: { "target.hasEffect": "protection-from-evil-and-good", "source.creatureType": ["aberration", "celestial", "elemental", "fey", "fiend", "undead"] },

@@ -1713,5 +1713,7 @@
   "DND5ECOMBAT.Retour.Teleporte": "Téléporté",
   "DND5ECOMBAT.Retour.Banni": "Banni",
   "DND5ECOMBAT.Retour.Revenu": "De retour",
-  "DND5ECOMBAT.Souci.noAttacksOrSpells": "Sous {item}, vous ne pouvez ni attaquer ni lancer de sorts."
+  "DND5ECOMBAT.Souci.noAttacksOrSpells": "Sous {item}, vous ne pouvez ni attaquer ni lancer de sorts.",
+  "DND5ECOMBAT.FinGenerique.casterTargetsOther": "{item} prend fin : le lanceur s'en est pris à une autre créature.",
+  "DND5ECOMBAT.FinGenerique.allyDamages": "{item} prend fin : un allié du lanceur a blessé {name}."
 }

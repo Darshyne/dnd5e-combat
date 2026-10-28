@@ -13,6 +13,9 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
+import { damagedByOriginSide } from "../core/triggers.mjs";
+import { areEnemies, sideOf } from "../adapter/factions.mjs";
+import { isSpellCast } from "../adapter/scrolls.mjs";
 import { ARMOR_WEIGHTS, armorEnds, nobodyAffected, tooFarApart } from "../core/endings.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
@@ -127,16 +130,65 @@ async function onUpdateItem(item, changes) {
   });
 }
 
-/** 0 PV : le porteur, ou le lanceur dont les effets courent sur d'autres (Lien de garde). */
+/** §270 : un allié du lanceur (pas lui) vient de blesser le porteur (Duel forcé) — l'auteur noté par runtime/triggers.mjs (`damagedBy`). */
+function hurtByCasterAlly(actor, caster, scene) {
+  const noted = actor.getFlag(MODULE_ID, "damagedBy");
+  if ( !noted?.uuid || ((Date.now() - (noted.at ?? 0)) > 10000) ) return false;
+  const damager = fromUuidSync(noted.uuid, { strict: false });
+  if ( !damager || !caster || (damager === caster) ) return false;
+  const dt = tokenIn(damager, scene), ct = tokenIn(caster, scene);
+  return damagedByOriginSide({ damager: damager.uuid, origin: caster.uuid, damagerDisposition: dt?.disposition ?? null,
+    originDisposition: ct?.disposition ?? null, damagerSide: dt ? sideOf(dt) : null, originSide: ct ? sideOf(ct) : null });
+}
+
+/** 0 PV : le porteur, ou le lanceur dont les effets courent sur d'autres (Lien de garde) ; §270 : blessé par un allié du lanceur. */
 async function onUpdateActor(actor, changes) {
   const hp = foundry.utils.getProperty(changes, "system.attributes.hp.value");
-  if ( (hp === undefined) || (hp > 0) ) return;
+  if ( hp === undefined ) return;
+  if ( hp > 0 ) return onHurt(actor);
   const scene = actor.isToken ? actor.token?.parent : (actor.getActiveTokens?.(false, true)?.[0]?.parent ?? canvas?.scene);
   const entries = endingEffects(actorsOf(scene)).filter(e => e.rule.zeroHp && ((e.actor === actor) || (e.item.actor === actor)));
   if ( !entries.length ) return;
   return enqueue(`endsWhen:${actor.uuid}`, async () => {
     const done = new Set();
     for ( const e of entries ) await endEntry(e, "zeroHp", scene, done);
+  });
+}
+
+async function onHurt(actor) {
+  const scene = actor.isToken ? actor.token?.parent : (actor.getActiveTokens?.(false, true)?.[0]?.parent ?? canvas?.scene);
+  const entries = endingEffects([actor]).filter(e => e.rule.allyDamages && hurtByCasterAlly(actor, e.item.actor, scene));
+  if ( !entries.length ) return;
+  return enqueue(`endsWhen:${actor.uuid}`, async () => {
+    const done = new Set();
+    for ( const e of entries ) await endEntry(e, "allyDamages", scene, done);
+  });
+}
+
+/**
+ * §270 : le lanceur vient d'utiliser une activité qui vise une autre créature que le porteur — un jet d'attaque contre elle, ou un sort sur
+ * un ennemi (Duel forcé : « si vous effectuez un jet d'attaque contre une créature autre que la cible, si vous lancez un sort sur un
+ * ennemi autre que la cible »). Le message d'utilisation porte ses cibles.
+ */
+async function onUsage(message) {
+  if ( message.type !== "usage" ) return;
+  const activity = message.getAssociatedActivity?.();
+  const caster = activity?.actor;
+  const targets = (message.system?.targets ?? []).map(t => fromUuidSync(t.token ?? "", { strict: false })).filter(Boolean);
+  if ( !caster || !targets.length ) return;
+  const scene = targets[0].parent;
+  const entries = endingEffects(actorsOf(scene)).filter(e => e.rule.casterTargetsOther && (e.item.actor === caster) && (e.item !== activity.item));
+  if ( !entries.length ) return;
+  const casterToken = tokenIn(caster, scene);
+  return enqueue(`endsWhen:${caster.uuid}`, async () => {
+    const done = new Set();
+    for ( const e of entries ) {
+      const bearer = tokenIn(e.actor, scene);
+      const others = targets.filter(t => t !== bearer);
+      const breaks = (activity.type === "attack") ? others.length > 0
+        : (isSpellCast(activity.item) && others.some(t => casterToken && areEnemies(casterToken, t)));
+      if ( breaks ) await endEntry(e, "casterTargetsOther", scene, done);
+    }
   });
 }
 
@@ -201,6 +253,7 @@ export function registerEndings() {
   route("deleteActiveEffect", onDeleteEffect, { executor: true, label: "effect end: next effect not applied" });
   route("updateItem", onUpdateItem, { executor: true, label: "effect end on armor: not played" });
   route("updateActor", onUpdateActor, { executor: true, label: "effect end at 0 HP: not played" });
+  route("createChatMessage", onUsage, { executor: true, label: "effect end when the caster targets another creature: not judged" });
   route("moveToken", onMoveToken, { executor: true, label: "effect end by distance: not judged" });
   route("combatTurnChange", onTurnChange, { executor: true, label: "effect end by distance at turn end: not judged" });
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`endsWhen:resolution:${resolution?.id}`, () => onResolution(resolution)),

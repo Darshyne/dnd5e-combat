@@ -1713,5 +1713,7 @@
   "DND5ECOMBAT.Retour.Teleporte": "Teleported",
   "DND5ECOMBAT.Retour.Banni": "Banished",
   "DND5ECOMBAT.Retour.Revenu": "Returns",
-  "DND5ECOMBAT.Souci.noAttacksOrSpells": "Under {item}, you can't attack or cast spells."
+  "DND5ECOMBAT.Souci.noAttacksOrSpells": "Under {item}, you can't attack or cast spells.",
+  "DND5ECOMBAT.FinGenerique.casterTargetsOther": "{item} ends: the caster turned on another creature.",
+  "DND5ECOMBAT.FinGenerique.allyDamages": "{item} ends: an ally of the caster hurt {name}."
 }

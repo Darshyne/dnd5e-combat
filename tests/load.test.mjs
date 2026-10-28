@@ -62,7 +62,7 @@ describe("chargement du module", () => {
   it("appelle les inscrits de createChatMessage dans l'ordre voulu : résolution d'abord", () => {
     expect(api.api.routes().createChatMessage.map(r => r.label)).toEqual([
       "resolution interrupted", "concentration: processing interrupted", "pool: recharge not written", "targets released", "Flurry of Blows: targeting not opened",
-      "budget: spending not recorded", "Dispel Magic: nothing dispelled", "trace or mark not handled", "weapon mastery: mark not used up", "maneuver: Bait and Switch or Commander's Strike not played", "Initiative d20 not rerolled", "Rage: upkeep not recorded", "swallow / engulf: action not tracked", "fall damage not applied", "Ready: \"attacks / casts a spell\" trigger not checked", "help", "group roll: result not processed", "tether: not recorded", "single card: roll not folded", "chat log purge", "visual feedback: effect ending", "group roll: tracker not opened"
+      "budget: spending not recorded", "Dispel Magic: nothing dispelled", "trace or mark not handled", "weapon mastery: mark not used up", "maneuver: Bait and Switch or Commander's Strike not played", "Initiative d20 not rerolled", "effect end when the caster targets another creature: not judged", "Rage: upkeep not recorded", "swallow / engulf: action not tracked", "fall damage not applied", "Ready: \"attacks / casts a spell\" trigger not checked", "help", "group roll: result not processed", "tether: not recorded", "single card: roll not folded", "chat log purge", "visual feedback: effect ending", "group roll: tracker not opened"
     ]);
   });
 

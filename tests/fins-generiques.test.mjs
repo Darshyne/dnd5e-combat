@@ -64,6 +64,8 @@ describe("fins génériques — contenu livré", () => {
     expect(CONTENT["warding-bond"].endsWhen).toEqual({ apart: { distance: 60, units: "ft" }, zeroHp: true, spell: true });
     expect(CONTENT["warding-bond"].triggers).toBeTruthy();
     expect(CONTENT["compelled-duel"].endsWhen.apart.at).toBe("casterTurnEnd");
+    expect(CONTENT["compelled-duel"].endsWhen.casterTargetsOther).toBe(true);
+    expect(CONTENT["compelled-duel"].endsWhen.allyDamages).toBe(true);
     expect(CONTENT["compelled-duel"].triggers).toBeTruthy();
   });
   it("les sorts de sauvegarde à concentration finissent quand personne n'est affecté", () => {

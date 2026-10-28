@@ -436,14 +436,16 @@
  *                                               combattant cachés tant qu'ils durent, retour à l'espace quitté (ou au plus proche
  *                                               libre) quand ils tombent (Bannissement, Châtiment bannissant)
  *     endsWhen?: { armor?: "any"|"heavy", apart?: { distance, units, at?: "move"|"casterTurnEnd" }, zeroHp?: true,
- *                  unaffected?: "failedSave"|"noHits"|"noTargets", spell?: true }
+ *                  unaffected?: "failedSave"|"noHits"|"noTargets", spell?: true, casterTargetsOther?: true, allyDamages?: true }
  *                                               §258 : fins génériques (core/endings.mjs, runtime/endings.mjs) — l'effet de l'item
  *                                               cesse quand son porteur enfile une armure (`heavy` : lourde ; Armure du mage, Rage),
  *                                               quand porteur et lanceur sont séparés de plus de `apart` (à chaque déplacement, ou
  *                                               à la fin du tour du lanceur : Lien de garde, Duel forcé), quand l'un des deux tombe à
  *                                               0 PV (`zeroHp`) ; `unaffected` : l'utilisation n'a affecté personne, la
  *                                               concentration tombe (réglage `endUnaffected`) ; `spell` : la fin vaut pour tout le
- *                                               sort (sa concentration, ou ses effets sur chaque créature), pas pour ce seul porteur
+ *                                               sort (sa concentration, ou ses effets sur chaque créature), pas pour ce seul porteur ;
+ *                                               §270 `casterTargetsOther` : le lanceur attaque une autre créature, ou lance un sort sur
+ *                                               un autre ennemi ; `allyDamages` : un allié du lanceur blesse le porteur (Duel forcé)
  *     effectThen?: { <id d'effet>: <id d'effet> }
  *                                               quand le premier effet de l'item cesse sur une créature, le second y est posé
  *                                               (Hâte : « quand le sort prend fin, la cible est Neutralisée… », §42.2)

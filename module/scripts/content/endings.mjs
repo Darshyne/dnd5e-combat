@@ -22,9 +22,10 @@ export const ENDS_WHEN = Object.freeze({
   "rage": { armor: "heavy" },
   // Lien de garde : « le sort prend fin si l'un de vous tombe à 0 point de vie, ou si vous êtes séparés de plus de 18 mètres ».
   "warding-bond": { apart: { distance: 60, units: "ft" }, zeroHp: true, spell: true },
-  // Duel forcé : « …ou si vous finissez votre tour à plus de 9 mètres de la cible ». Les autres fins (attaquer une autre créature,
-  // un allié qui la blesse) restent au MJ.
-  "compelled-duel": { apart: { distance: 30, units: "ft", at: "casterTurnEnd" }, spell: true, ...NOBODY },
+  // Duel forcé : « le sort prend fin si vous effectuez un jet d'attaque contre une créature autre que la cible, si vous lancez un sort
+  // sur un ennemi autre que la cible, si un de vos alliés inflige des dégâts à la cible ou si vous terminez votre tour à plus de 9 m
+  // d'elle » (§270 pour les trois premières).
+  "compelled-duel": { apart: { distance: 30, units: "ft", at: "casterTurnEnd" }, casterTargetsOther: true, allyDamages: true, spell: true, ...NOBODY },
   // Sorts de concentration qui n'ont d'effet que sur une sauvegarde ratée : si toutes les cibles réussissent, la concentration n'a
   // plus rien à tenir (réglage `endUnaffected`).
   "banishment": NOBODY,

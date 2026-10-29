@@ -103,6 +103,8 @@ export const contentApi = Object.freeze({
   version: CONTENT_VERSION,
   /** Le contenu en vigueur : livré + enregistré par d'autres modules. */
   shipped: CONTENT,
+  /** §277 : le contenu livré avec le moteur, seul (sans les tables enregistrées) — pour dire qu'une table en recouvre une règle. */
+  builtin: SHIPPED,
   facts: Object.keys(KNOWN_FACTS),
   world: worldOverrides,
   set: setWorldOverride,

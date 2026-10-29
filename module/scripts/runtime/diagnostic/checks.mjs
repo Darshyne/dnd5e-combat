@@ -13,6 +13,7 @@ import { scrollSpellOf } from "../../adapter/scrolls.mjs";
 import { localizeEffectNames } from "../../core/localize.mjs";
 import { referenceReader, retranslationOf, applyRetranslation } from "../../adapter/retranslate.mjs";
 import { contentOf } from "../../adapter/content.mjs";
+import { sourceKind } from "../../core/item-sources.mjs";
 
 /**
  * §202 : les effets d'une référence du compendium, prêts à recopier — un effet au nom d'origine (anglais) de l'objet prend le nom
@@ -91,14 +92,19 @@ const deletion = flags => {
 };
 const badEffect = e => hasBad(e.flags) || (e.type !== "base" && e.type !== "enchantment")
   || (e.system?.changes ?? e.changes ?? []).some(c => MIDI.MACRO_KEY.test(c.key ?? ""));
+// §276 : un objet d'un autre module officiel (Ravenloft…) n'est pas « à reprendre » pour sa seule source.
 const needsWork = item => hasBad(item.flags) || item.effects.some(badEffect) || (item.effects.invalidDocumentIds?.size > 0)
-  || !MIDI.OFFICIAL.test(item._stats?.compendiumSource ?? "") && !!item._stats?.compendiumSource;
+  || (sourceKind(item._stats?.compendiumSource) === "other");
 const touchedByMidi = actor => hasBad(actor.flags) || actor.effects.some(e => hasBad(e.flags))
   || actor.items.some(i => hasBad(i.flags) || i.effects.some(e => hasBad(e.flags)) || MIDI.THIRD_PARTY.test(i._stats?.compendiumSource ?? ""));
 
 async function officialFor(item) {
   const src = item._stats?.compendiumSource ?? "";
-  if ( MIDI.OFFICIAL.test(src) ) { const doc = await fromUuid(src).catch(() => null); if ( doc ) return doc; }
+  const kind = sourceKind(src);
+  if ( (kind === "reference") || (kind === "premium") ) { const doc = await fromUuid(src).catch(() => null); if ( doc ) return doc; }
+  // §276 : jamais d'homonyme par identifiant pour un objet d'un autre module officiel — vu le 2026-10-28, le don « Survivant » de
+  // Ravenloft (identifiant `survivor`) remplacé par l'aptitude « Survivor » du Champion.
+  if ( kind === "premium" ) return null;
   const identifier = MIDI.RENAMED[item.system.identifier] ?? item.system.identifier;
   for ( const pack of MIDI.PACK_ORDER.map(id => game.packs.get(id)).filter(p => p?.documentName === "Item") ) {
     const index = await pack.getIndex({ fields: ["system.identifier"] });

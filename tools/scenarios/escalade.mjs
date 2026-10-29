@@ -98,7 +98,9 @@ export default {
       await ctx.call("set-status", { tokenId: hero.id, statusId: "prone", active: true });
       let fell = null;
       for ( let i = 0; (i < 30) && !fell; i++ ) { await pause(500); const now = await state(); if ( now.position.elevation === home.elevation ) fell = now; }
-      const hp2 = await ctx.hp(hero);
+      // Les dégâts suivent la fin des dés 3D (waitForDice, 8 s au plus) : on les attend.
+      let hp2 = await ctx.hp(hero);
+      for ( let i = 0; (i < 24) && (hp2 >= hp0); i++ ) { await pause(500); hp2 = await ctx.hp(hero); }
       ctx.expect(!!fell && !fell.climbing && !fell.status, `mis À terre au mur : tombe au sol (élévation ${fell?.position.elevation ?? "—"}, mode ${fell?.position.movementAction ?? "—"}, statut escalade ${fell?.status ?? "—"})`);
       ctx.expect(hp2 < hp0, `la chute blesse (PV ${hp0} → ${hp2})`);
     }

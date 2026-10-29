@@ -164,8 +164,10 @@ export default {
     await ctx.setHp(hero, hp0);
     await ctx.call("set-status", { tokenId: hero.id, statusId: "prone", active: true });
     ctx.expect(await landed(), "volant mis À terre à 20 ft : il tombe tout seul (« En chute » de dnd5e)");
-    await pause(2500);
-    ctx.expect((await ctx.hp(hero)) < hp0, `dégâts de chute appliqués (${hp0} → ${await ctx.hp(hero)})`);
+    // Les dégâts suivent la fin des dés 3D (waitForDice, 8 s au plus) : on les attend au lieu d'un délai fixe.
+    let hurt = hp0;
+    for ( let i = 0; (i < 24) && (hurt >= hp0); i++ ) { await pause(500); hurt = await ctx.hp(hero); }
+    ctx.expect(hurt < hp0, `dégâts de chute appliqués (${hp0} → ${hurt})`);
     await ctx.call("set-status", { tokenId: hero.id, statusId: "prone", active: false });
     await ctx.setHp(hero, hp0);
     await aloft();

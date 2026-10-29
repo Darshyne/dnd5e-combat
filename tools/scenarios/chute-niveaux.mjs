@@ -47,7 +47,10 @@ export default {
     const fell = async (label, since) => {
       await landed();
       const pos = await tokenNow();
-      const hp = await ctx.hp(hero);
+      // Les dégâts suivent la fin des dés 3D (waitForDice, 8 s au plus) : les attendre, sinon ils tombent après la remise à zéro
+      // de l'étape suivante (vu le 2026-10-28 : 13 → 13, puis 13 → 0).
+      let hp = await ctx.hp(hero);
+      for ( let i = 0; (i < 24) && (hp >= hp0); i++ ) { await pause(500); hp = await ctx.hp(hero); }
       ctx.expect((pos.elevation ?? 0) === 0 && (pos.level === FIRST), `${label} : au sol de la cour (${pos.elevation} ft, niveau ${pos.level})`);
       ctx.expect((hp0 - hp >= 2) && (hp0 - hp <= 12), `${label} : 2d6 de chute appliqués (${hp0} → ${hp})`);
     };

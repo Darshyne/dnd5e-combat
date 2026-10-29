@@ -92,13 +92,15 @@ const END_EVENTS = [
     re: /\brepeats? the save|\bmakes? (another|a new) [^.]{0,30}saving throw at the (end|start) of each of its turns|at the (end|start) of each of its turns, (it|the target|the creature) (can )?(makes?|repeats?)/i },
   { id: "damage", label: "fin sur dégâts", engine: /"isDamaged"|"breaksOn":\[[^\]]*"damage"/,
     re: /\b(ends?|wakes? up)[^.]{0,40}\b(if|when) (it|the target|the creature|they) takes? (any )?damage|\bdamage ends (the|this)/i },
-  { id: "acts", label: "fin si le porteur attaque ou lance un sort", engine: /"breaksOn"/,
+  { id: "acts", label: "fin si le porteur attaque ou lance un sort", engine: /"breaksOn"|"isDamaged"[^\]]*"type":"remove"/,
     re: /\bends (early )?(for (it|that target) )?(if|when) [^.]{0,50}\b(makes? an attack|attack roll|casts? a spell|deals damage)/i },
   { id: "action", label: "action pour mettre fin", engine: /"actionEnds"|"escape"/,
     re: /\b(can )?(take|use) an action to [^.]{0,60}(end|escape|free)|\bas an action, [^.]{0,40}(end|escape)/i },
   { id: "distance", label: "fin hors de portée", engine: /"tether"|"effectEnds"|"apart"/,
     re: /\bends (early )?if [^.]{0,60}(more than|farther than|beyond) \d+ feet/i },
-  { id: "early", label: "fin anticipée (autre)", engine: /"effectEnds"|"breaksOn"|"zoneEnd"|"endsOwnConditions"|"concentrationBreaker"|"effectsExpire"|"endsWhen"/,
+  // 2026-10-29 (audit de Kaalisti) : un déclencheur qui retire l'effet (`"type":"remove"` : Suggestion blessée, Armure d'Agathys sans PV
+  // temporaires), le lien de Trait ensorcelé (`tether`) et les répliques d'Image miroir (`duplicates`) portent aussi une fin anticipée.
+  { id: "early", label: "fin anticipée (autre)", engine: /"effectEnds"|"breaksOn"|"zoneEnd"|"endsOwnConditions"|"concentrationBreaker"|"effectsExpire"|"endsWhen"|"type":"remove"|"tether"|"duplicates"/,
     re: /\b(spell|effect) ends (early )?(if|when|for)|\bends early\b/i },
   { id: "nextTurn", label: "fin du prochain tour", fixed: true, engine: /"effectEnds"|"atTurnStart"|"effectsExpire"/,
     re: /\buntil the (start|end) of (your|its|the \w+'s) next turn/i },

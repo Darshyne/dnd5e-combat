@@ -195,6 +195,19 @@ export function keptD20(roll) {
   return (kept.length === 1) ? kept[0].result : null;
 }
 
+/** §280 : les utilisations d'items que l'activité a coûtées reviennent ; l'item de la règle en perd une (s'il en compte). */
+async function refundFailed(activity, item) {
+  for ( const t of activity.consumption?.targets ?? [] ) {
+    if ( t.type !== "itemUses" ) continue;
+    const paid = t.target ? activity.actor?.items.get(t.target) : activity.item;
+    const spent = Number(paid?.system?.uses?.spent) || 0;
+    if ( paid && spent ) await paid.update({ "system.uses.spent": Math.max(0, spent - (Number(t.value) || 1)) });
+  }
+  const uses = item.system?.uses;
+  if ( Number(uses?.max) ) await item.update({ "system.uses.spent": Math.min(Number(uses.max), (Number(uses.spent) || 0) + 1) });
+  console.log(`${MODULE_ID} | ${item.name}: still failed, cost refunded and the feature is spent`);
+}
+
 export async function offerRollBonus(actor, { kind, what, total, needed=null, skill=null, statuses=[], d20=null, ability=null, seconds=null }) {
   for ( const item of actor?.items ?? [] ) {
     const rule = contentOf(item).entry?.rollBonus;
@@ -223,6 +236,26 @@ export async function offerRollBonus(actor, { kind, what, total, needed=null, sk
     }
     // Relevé des trous (2026-10-22) : Concentration fanatique — « une fois par Rage active, si vous ratez un jet de sauvegarde, vous pouvez
     // le relancer avec un bonus égal à vos dégâts de Rage ; vous devez utiliser le nouveau jet ». Ce qui s'ajoute peut être négatif.
+    // §280 : sans `during`, l'activité de la règle paie la relance (Inébranlable : un point de Moxie, une sauvegarde ratée).
+    if ( rule.reroll && !rule.reroll.during ) {
+      const left = usesLeftFor(activity);
+      if ( !activity || !(left > 0) || !Number.isInteger(d20) || !Number.isFinite(needed) || (total >= needed) ) continue;
+      const bonus = rule.reroll.bonus ?? "0";
+      const answer = await askChoice(actor, {
+        actor: actor.uuid, item: item.name, ...(Number(seconds) > 0 ? { seconds } : {}),
+        prompt: game.i18n.format("DND5ECOMBAT.Relance.Question", { what, total, needed, d20, bonus, item: item.name }),
+        options: [{ id: "no", label: game.i18n.localize("DND5ECOMBAT.BonusJet.Non") }, { id: "yes", label: game.i18n.localize("DND5ECOMBAT.Relance.Oui") }]
+      });
+      if ( answer?.id !== "yes" ) continue;
+      const used = await activity.use({ [MODULE_ID]: { confirmed: true } }, { configure: false }, { create: false }).catch(() => null);
+      if ( !used ) return 0;
+      const roll = await new Roll(`1d20 + ${bonus}`, actor.getRollData()).evaluate();
+      const added = roll.total - d20;
+      await roll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }),
+        flavor: game.i18n.format("DND5ECOMBAT.Relance.Carte", { item: item.name, name: actor.name, what, sum: total + added }),
+        flags: { [MODULE_ID]: { rollBonus: { item: identifierOf(item).id, kind, added, reroll: { old: d20, new: roll.total } } } } });
+      return added;
+    }
     if ( rule.reroll ) {
       const during = (actor.appliedEffects ?? actor.effects ?? []).find(e => !e.disabled && (identifierOf(originItemOf(e) ?? {}).id === rule.reroll.during));
       if ( !during || during.getFlag(MODULE_ID, "rerolled") || !Number.isInteger(d20) || !Number.isFinite(needed) || (total >= needed) ) continue;
@@ -242,6 +275,8 @@ export async function offerRollBonus(actor, { kind, what, total, needed=null, sk
     }
     // §129 : Chanceux — le d20 relancé, le meilleur gardé : il faut connaître le d20 du jet.
     if ( rule.luck && !Number.isInteger(d20) ) continue;
+    // §280 : un dé « quand vous ratez » (Fanfaronnade) n'est pas proposé sur un test déjà réussi, quand le DD est connu.
+    if ( rule.failRefund && Number.isFinite(needed) && (total >= needed) ) continue;
     const formula = rule.luck ? "1d20" : rollFormulaOf(activity);
     const left = usesLeftFor(activity);
     if ( !activity || !formula || !(left > 0) ) continue;
@@ -273,6 +308,9 @@ export async function offerRollBonus(actor, { kind, what, total, needed=null, sk
       flavor: rule.luck ? game.i18n.format("DND5ECOMBAT.Chance.Carte", { item: item.name, name: actor.name, what, old: d20, d20: roll.total, sum: total + added })
         : game.i18n.format("DND5ECOMBAT.BonusJet.CarteTotal", { item: item.name, name: actor.name, what, total, sum: total + roll.total }),
       flags: { [MODULE_ID]: { rollBonus: { item: identifierOf(item).id, kind, added, ...(rule.luck ? { luck: { old: d20, new: roll.total } } : {}) } } } });
+    // §280 : encore raté (DD connu) — ce que l'activité a coûté revient, et l'item perd une utilisation : « vous regagnez le point dépensé
+    // et ne pouvez plus utiliser cette aptitude avant un repos ».
+    if ( rule.failRefund && Number.isFinite(needed) && ((total + added) < needed) ) await refundFailed(activity, item);
     return added;
   }
   return 0;

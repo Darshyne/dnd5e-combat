@@ -51,7 +51,7 @@ describe("validation d'une entrée", () => {
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["save", "check"] } }, { facts })).toEqual([]);
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["attack"] } }, { facts })).toEqual([]);
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["check"], skills: ["ste"] } }, { facts })).toEqual([]);
-    expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["damage"] } }, { facts })).toEqual(["rollBonus: { activity (or reroll: { bonus, during }), on: [save | check | attack | initiative], skills?, statuses?, luck?: true, succeed?: true, abilities? }"]);
+    expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["damage"] } }, { facts })).toEqual(["rollBonus: { activity (or reroll: { bonus, during }), on: [save | check | attack | initiative], skills?, statuses?, luck?: true, succeed?: true, abilities?, reroll?: { bonus? }, failRefund?: true }"]);
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["check"], skills: [] } }, { facts })).toHaveLength(1);
     // Relevé des trous : `reroll` sans activité (Concentration fanatique) ; pas les deux, pas de bonus vide.
     expect(validateEntry({ rollBonus: { on: ["save"], reroll: { bonus: "@scale.barbarian.rage-damage", during: "rage" } } }, { facts })).toEqual([]);

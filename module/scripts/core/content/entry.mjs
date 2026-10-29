@@ -549,6 +549,22 @@ export function validateTable(table, { facts={} }={}) {
   return Object.entries(table).flatMap(([id, entry]) => validateEntry(entry, { facts, at: `${id}.` }));
 }
 
+/**
+ * §277 : les erreurs d'une table de sources `{ id de document: identifiant }` — les correspondances qu'un module enregistre avec sa
+ * table (`api.content.register(source, table, { sources })`) pour des items qui n'ont pas d'identifiant utilisable, comme
+ * content/sources.mjs. Clé : l'id du document (16 caractères) ; valeur : un identifiant en kebab-case.
+ * @returns {string[]}
+ */
+export function validateSources(sources) {
+  if ( !isObject(sources) ) return ["sources: an object { document id: identifier } expected"];
+  const errors = [];
+  for ( const [docId, identifier] of Object.entries(sources) ) {
+    if ( !isId(docId) ) errors.push(`sources.${docId}: document id (16 characters) expected`);
+    if ( (typeof identifier !== "string") || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(identifier) ) errors.push(`sources.${docId}: kebab-case identifier expected`);
+  }
+  return errors;
+}
+
 /** §258 : `endsWhen: { armor?, apart?, zeroHp?, unaffected?, spell? }` — les fins génériques d'un sort ou d'un effet (core/endings.mjs). */
 function validateEndsWhen(w, at, errors) {
   if ( !isObject(w) || !Object.keys(w).length ) return errors.push(`${at}: { armor?, apart?, zeroHp?, unaffected?, spell? }`);

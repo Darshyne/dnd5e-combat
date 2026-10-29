@@ -740,5 +740,5 @@
  */
 
 export * from "./content/enums.mjs";
-export { validateEntry, validateTable } from "./content/entry.mjs";
+export { validateEntry, validateTable, validateSources } from "./content/entry.mjs";
 export { mergeEntries } from "./content/merge.mjs";

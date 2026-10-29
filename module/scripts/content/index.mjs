@@ -43,6 +43,7 @@ import { BARD } from "./bard.mjs";
 import { SPELL_RULES } from "./spell-rules.mjs";
 import { GEAR } from "./gear.mjs";
 import { mergeEntries } from "../core/content.mjs";
+import { SOURCE_IDENTIFIERS } from "./sources.mjs";
 import { BURSTS, RECASTS, TURN_STARTS, BOLTS, OBSCURES, HEAL_MAX, DUPLICATES, SAVE_ADVANTAGES, ON_FELL, BONUS_ATTACKS, REACTIVE_SPELLS, PROJECTILES, LEAPS } from "./bursts.mjs";
 
 /**
@@ -133,11 +134,43 @@ export function registerTable(source, table) {
   return Object.keys(table);
 }
 
-/** Retire la table d'un module. @returns {boolean} Si elle était enregistrée. */
+/** Retire la table d'un module (et ses sources, §277). @returns {boolean} Si elle était enregistrée. */
 export function unregisterTable(source) {
   const had = REGISTERED.delete(source);
+  if ( REGISTERED_SOURCES.delete(source) ) rebuildSources();
   if ( had ) rebuild();
   return had;
+}
+
+/**
+ * §277 : les sources (id de document → identifiant) livrées (content/sources.mjs) puis enregistrées par d'autres modules, dans l'ordre
+ * des enregistrements — la dernière l'emporte. Même objet pour toute la session (lu par référence, adapter/content.mjs `identifierOf`).
+ */
+export const SOURCES = { ...SOURCE_IDENTIFIERS };
+
+/** Les sources enregistrées : `source` (id du module) → `{ id de document: identifiant }`, dans l'ordre. */
+const REGISTERED_SOURCES = new Map();
+
+function rebuildSources() {
+  for ( const id of Object.keys(SOURCES) ) delete SOURCES[id];
+  Object.assign(SOURCES, SOURCE_IDENTIFIERS);
+  for ( const map of REGISTERED_SOURCES.values() ) Object.assign(SOURCES, map);
+}
+
+/**
+ * §277 : enregistre (ou remplace, ou retire avec une table vide) les sources d'un module. Ne valide rien : runtime/content.mjs ne passe
+ * ici que des paires valides. @returns {string[]} Les ids de documents enregistrés.
+ */
+export function registerSources(source, sources) {
+  if ( sources && Object.keys(sources).length ) REGISTERED_SOURCES.set(source, Object.freeze({ ...sources }));
+  else REGISTERED_SOURCES.delete(source);
+  rebuildSources();
+  return Object.keys(sources ?? {});
+}
+
+/** Les sources enregistrées : `{ source: { id de document: identifiant } }`. */
+export function registeredSources() {
+  return Object.fromEntries(Array.from(REGISTERED_SOURCES, ([source, map]) => [source, { ...map }]));
 }
 
 /** Ce qui est enregistré : `{ source: [identifiants] }`. */

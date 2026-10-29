@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { validateEntry, validateTable, mergeEntries, CONTENT_VERSION } from "../module/scripts/core/content.mjs";
-import { CONTENT, SHIPPED, registerTable, unregisterTable, registeredTables } from "../module/scripts/content/index.mjs";
+import { validateEntry, validateTable, validateSources, mergeEntries, CONTENT_VERSION } from "../module/scripts/core/content.mjs";
+import { CONTENT, SHIPPED, SOURCES, registerTable, unregisterTable, registeredTables, registerSources, registeredSources } from "../module/scripts/content/index.mjs";
 
 const facts = Object.fromEntries(["activity.type", "activity.isAttack", "activity.isSpell", "activity.isWeapon", "activity.identifier", "activity.id",
   "activity.hasProperty", "source.hasStatus", "source.hasEffect", "source.creatureType", "source.allyNearTarget", "source.summonNearTarget", "source.seesTarget",
@@ -712,5 +712,31 @@ describe("Frappe piégeuse (§206)", async () => {
     if ( !entry ) return;
     expect(entry.smite).toEqual({ save: "dnd5eactivity000", any: true });
     expect(entry.saveAdvantageSize).toBe("lg");
+  });
+});
+
+describe("§277 : sources enregistrées avec une table", () => {
+  it("validateSources : id de document de 16 caractères → identifiant en kebab-case", () => {
+    expect(validateSources({ tiersDocument001: "exemple-poing" })).toEqual([]);
+    expect(validateSources({ court: "exemple", tiersDocument001: "Pas Bon" })).toEqual([
+      "sources.court: document id (16 characters) expected", "sources.tiersDocument001: kebab-case identifier expected"
+    ]);
+    expect(validateSources([])).toEqual(["sources: an object { document id: identifier } expected"]);
+  });
+
+  it("s'ajoutent aux sources livrées, la dernière l'emporte, et se retirent avec la table", () => {
+    const shipped = { ...SOURCES };
+    registerSources("premier", { exempleDocument1: "exemple-un", phbmnvParry00000: "autre-parade" });
+    registerTable("premier", {});
+    expect(SOURCES.exempleDocument1).toBe("exemple-un");
+    expect(SOURCES.phbmnvParry00000).toBe("autre-parade");
+    registerSources("second", { exempleDocument1: "exemple-deux" });
+    expect(SOURCES.exempleDocument1).toBe("exemple-deux");
+    expect(registeredSources()).toEqual({ premier: { exempleDocument1: "exemple-un", phbmnvParry00000: "autre-parade" }, second: { exempleDocument1: "exemple-deux" } });
+    registerSources("second", {});
+    expect(SOURCES.exempleDocument1).toBe("exemple-un");
+    unregisterTable("premier");
+    expect(registeredSources()).toEqual({});
+    expect(SOURCES).toEqual(shipped);
   });
 });

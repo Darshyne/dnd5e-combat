@@ -49,6 +49,11 @@ Hooks.once("dnd5e-combat.registerContent", register => register("my-module", {
 
 Or call `api.content.register(source, table)` later on. Each entry is validated just like the bundled content.
 
+Items that carry no usable identifier (an item whose identifier dnd5e derived from its name, a premium item without one) can
+be mapped by document id in the same call: `register(source, table, { sources: { "<16-character document id>": "my-identifier" } })`.
+The engine recognises the item by the id of its compendium source, or by its own id. `api.content.sources()` lists what was
+registered; `unregister(source)` removes the table and its sources.
+
 For tools that build rules without code, `api.content.recipes` describes the common building blocks (bonus damage,
 advantage, condition on a hit or a failed save, push/pull, repeated save, lasting zone, aura, reaction, teleport,
 summon…) as typed form fields, and `api.content.recipes.build(recipes, { identifier })` turns them into an entry

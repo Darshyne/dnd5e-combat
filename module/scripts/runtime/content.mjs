@@ -14,12 +14,17 @@
  * contenu livré : une entrée fausse est écartée et dite dans la console, les autres sont prises. La table est fusionnée
  * par-dessus le contenu livré, entrée par entrée (`mergeEntries`) ; enregistrer de nouveau la même source la remplace.
  * Le moteur ne connaît aucun de ces modules : sans eux, il tourne avec son seul contenu.
+ *
+ * §277 : `register(source, table, { sources })` — `sources` : `{ id de document: identifiant }`, pour des items qui n'ont pas
+ * d'identifiant utilisable (un item premium sans identifiant, un item importé dont dnd5e a tiré l'identifiant du nom), reconnus par
+ * l'id de leur source de compendium ou leur propre id, comme content/sources.mjs. Une paire fausse est écartée et dite ; les sources
+ * suivent la table : réenregistrer la source les remplace, `unregister` les retire.
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { validateEntry, validateTable, CONTENT_VERSION, ENTRY_KEYS } from "../core/content.mjs";
+import { validateEntry, validateTable, validateSources, CONTENT_VERSION, ENTRY_KEYS } from "../core/content.mjs";
 import { RECIPES, RECIPES_VERSION, FACTS, FACT_ARG_OPTIONS, FIELD_KINDS, PUBLIC_KEYS, buildEntry, buildCondition } from "../core/recipes.mjs";
-import { CONTENT, SHIPPED, registerTable, unregisterTable, registeredTables } from "../content/index.mjs";
+import { CONTENT, SHIPPED, registerTable, unregisterTable, registeredTables, registerSources, registeredSources } from "../content/index.mjs";
 import { OVERRIDES_SETTING, KNOWN_FACTS, worldOverrides, setWorldOverride, contentOf, inspect, identifierOf } from "../adapter/content.mjs";
 import { buildSpellIndex, stampScroll } from "../adapter/scrolls.mjs";
 import { route } from "./router.mjs";
@@ -45,9 +50,10 @@ function checkItemFlags(item, data) {
  * Enregistre la table de contenu d'un autre module (voir l'en-tête). Validée entrée par entrée comme le contenu livré.
  * @param {string} source                    L'id du module qui l'apporte.
  * @param {Record<string, object>} table     `{ identifiant dnd5e: entrée }`.
- * @returns {{source: string, accepted: string[], rejected: Record<string, string[]>}}
+ * @param {{sources?: Record<string, string>}} [options]  §277 : `{ id de document: identifiant }`.
+ * @returns {{source: string, accepted: string[], rejected: Record<string, string[]>, sources: string[], rejectedSources: string[]}}
  */
-export function registerExternal(source, table) {
+export function registerExternal(source, table, { sources={} }={}) {
   if ( (typeof source !== "string") || !source ) throw new Error(`${MODULE_ID} | content.register: the source module id is required`);
   if ( !table || (typeof table !== "object") || Array.isArray(table) ) {
     throw new Error(`${MODULE_ID} | content.register(${source}): the table is an object { identifier: entry }`);
@@ -59,15 +65,22 @@ export function registerExternal(source, table) {
     if ( errors.length ) rejected[id] = errors;
     else accepted[id] = entry;
   }
+  const goodSources = {};
+  const rejectedSources = validateSources(sources ?? {});
+  if ( sources && (typeof sources === "object") && !Array.isArray(sources) ) {
+    for ( const [docId, identifier] of Object.entries(sources) ) if ( !validateSources({ [docId]: identifier }).length ) goodSources[docId] = identifier;
+  }
+  registerSources(source, goodSources);
   registerTable(source, accepted);
   if ( Object.keys(rejected).length ) console.error(`${MODULE_ID} | content from ${source}: entries rejected`, rejected);
-  log(`content: ${Object.keys(accepted).length} entry(ies) registered by ${source}`);
-  return { source, accepted: Object.keys(accepted), rejected };
+  if ( rejectedSources.length ) console.error(`${MODULE_ID} | content from ${source}: sources rejected`, rejectedSources);
+  log(`content: ${Object.keys(accepted).length} entry(ies)${Object.keys(goodSources).length ? `, ${Object.keys(goodSources).length} source(s)` : ""} registered by ${source}`);
+  return { source, accepted: Object.keys(accepted), rejected, sources: Object.keys(goodSources), rejectedSources };
 }
 
 /** À `setup` : les autres modules donnent leur contenu par le hook, s'ils ne l'ont pas déjà fait par l'API. */
 function collectExternal() {
-  Hooks.callAll(REGISTER_HOOK, (source, table) => registerExternal(source, table));
+  Hooks.callAll(REGISTER_HOOK, (source, table, options) => registerExternal(source, table, options));
 }
 
 /** À `ready` : le contenu en vigueur (livré et enregistré) et la surcouche du monde sont relus ; ce qui est faux est dit une fois. */
@@ -97,12 +110,16 @@ export const contentApi = Object.freeze({
   identifierOf,
   inspect,
   validate: entry => validateEntry(entry, { facts: KNOWN_FACTS }),
-  /** `register(source, table)` : le contenu d'un autre module (voir l'en-tête de runtime/content.mjs). */
+  /** §277 : les erreurs d'une table de sources `{ id de document: identifiant }` (vide = valide). */
+  validateSources,
+  /** `register(source, table, { sources? })` : le contenu d'un autre module (voir l'en-tête de runtime/content.mjs). */
   register: registerExternal,
-  /** `unregister(source)` : retire la table d'un module. */
+  /** `unregister(source)` : retire la table d'un module, et ses sources. */
   unregister: unregisterTable,
   /** `{ source: [identifiants] }` : ce que d'autres modules ont enregistré. */
   registered: registeredTables,
+  /** §277 : `{ source: { id de document: identifiant } }` : les sources que d'autres modules ont enregistrées. */
+  sources: registeredSources,
   /**
    * §114 : les recettes — les briques du schéma dites pour un outil sans code (core/recipes.mjs). `build(recettes, { identifier,
    * base })` rend `{ entry, errors }` ; l'entrée se valide ensuite par `validate`, comme tout contenu.

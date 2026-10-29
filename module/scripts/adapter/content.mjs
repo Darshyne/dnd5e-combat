@@ -11,8 +11,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { mergeEntries, validateEntry, CONTENT_VERSION, ENTRY_KEYS } from "../core/content.mjs";
-import { CONTENT } from "../content/index.mjs";
-import { SOURCE_IDENTIFIERS } from "../content/sources.mjs";
+import { CONTENT, SOURCES } from "../content/index.mjs";
 import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
@@ -46,7 +45,8 @@ export function identifierOf(item) {
   const scroll = scrollSpellOf(item);
   if ( scroll ) return { id: scroll.identifier, from: "scroll" };
   const sourceUuid = item?._stats?.compendiumSource ?? item?.flags?.dnd5e?.sourceId ?? null;
-  const known = SOURCE_IDENTIFIERS[String(sourceUuid ?? "").split(".").at(-1)] ?? SOURCE_IDENTIFIERS[item?.id ?? ""];
+  // §277 : les sources livrées (content/sources.mjs) et celles qu'un autre module enregistre avec sa table.
+  const known = SOURCES[String(sourceUuid ?? "").split(".").at(-1)] ?? SOURCES[item?.id ?? ""];
   if ( known ) return { id: known, from: "source" };
   const own = item?.system?.identifier;
   const original = item?.flags?.babele?.originalName;

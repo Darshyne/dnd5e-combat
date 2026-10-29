@@ -199,7 +199,8 @@ export function keptD20(roll) {
 async function refundFailed(activity, item) {
   for ( const t of activity.consumption?.targets ?? [] ) {
     if ( t.type !== "itemUses" ) continue;
-    const paid = t.target ? activity.actor?.items.get(t.target) : activity.item;
+    // Une cible par identifiant (données de DDB Importer : « moxie ») plutôt que par id.
+    const paid = t.target ? (activity.actor?.items.get(t.target) ?? activity.actor?.items.find(i => identifierOf(i).id === t.target)) : activity.item;
     const spent = Number(paid?.system?.uses?.spent) || 0;
     if ( paid && spent ) await paid.update({ "system.uses.spent": Math.max(0, spent - (Number(t.value) || 1)) });
   }

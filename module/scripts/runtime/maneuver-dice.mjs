@@ -33,7 +33,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
-import { contentOf } from "../adapter/content.mjs";
+import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { maximizeDice } from "../core/max-dice.mjs";
 import { weaponKind } from "../adapter/messages.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
@@ -123,7 +123,8 @@ function maximizeOnHit(config, message) {
   if ( !promised ) return;
   actor.unsetFlag(MODULE_ID, MAX_FLAG).catch(() => {});
   for ( const { item: id, value } of promise.refund ?? [] ) {
-    const item = actor.items.get(id);
+    // Une cible de consommation par identifiant (données de DDB Importer : « moxie ») plutôt que par id.
+    const item = actor.items.get(id) ?? actor.items.find(i => identifierOf(i).id === id);
     const spent = Number(item?.system?.uses?.spent) || 0;
     if ( item && spent ) item.update({ "system.uses.spent": Math.max(0, spent - value) }).catch(() => {});
   }

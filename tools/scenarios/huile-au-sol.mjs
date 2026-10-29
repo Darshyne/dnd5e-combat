@@ -35,6 +35,9 @@ export default {
     const part = async (name, fn) => {
       try { await fn(); } catch ( err ) { ctx.expect(false, `${name} : ${err.message}`); }
       await endCombat();
+      // Les flaques de l'étape partent avec elle : toutes sont sur la même case, et une flaque encore en feu (12 s hors combat)
+      // brûlait aussi à l'étape suivante (vu le 2026-10-28 : 15 dégâts au lieu de 10, selon le minutage).
+      for ( const id of regions.splice(0) ) await ctx.call("delete-scene-object", { type: "Region", objectId: id }).catch(() => {});
       await ctx.setHp(zombi, hp0);
       await ctx.removeStatusEffects(zombi, "restrained").catch(() => {});
       await ctx.call("move-token", { tokenId: zombi.id, x: home.x, y: home.y }).catch(() => {});

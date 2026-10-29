@@ -21,6 +21,7 @@ import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { initiativeReroll, rerolledInitiative } from "../core/initiative.mjs";
 import { swapPartners } from "../core/feats.mjs";
+import { initiativeRegain } from "../core/self-care.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { log, say, locEsc } from "./shared.mjs";
@@ -57,18 +58,28 @@ function onPreUpdateCombatant(combatant, changes, options) {
 
 /**
  * §236 : Inspiration supérieure — « quand vous jouez l'initiative, vous regagnez des utilisations d'Inspiration bardique jusqu'à en avoir
- * deux ». La règle `regainOnInitiative` : les utilisations de l'item nommé remontent à `upTo` au moins.
+ * deux ». La règle `regainOnInitiative` : les utilisations de l'item nommé remontent à `upTo` au moins. §278 : ou celles de plusieurs items
+ * en entier, des niveaux d'Épuisement retirés, au prix d'une utilisation de l'item qui porte la règle (core/self-care.mjs).
  */
 async function regainOnInitiative(actor) {
-  for ( const rule of actor.items.map(i => contentOf(i).entry?.regainOnInitiative).filter(Boolean) ) {
-    const item = actor.items.find(i => identifierOf(i).id === rule.item);
-    const uses = item?.system?.uses;
-    const max = Number(uses?.max) || 0;
-    if ( !max ) continue;
-    const left = max - (Number(uses.spent) || 0);
-    if ( left >= Math.min(rule.upTo, max) ) continue;
-    await item.update({ "system.uses.spent": max - Math.min(rule.upTo, max) });
-    log(`${actor.name}: ${item.name}, uses back to ${Math.min(rule.upTo, max)} (Initiative)`);
+  const byId = new Map();
+  for ( const i of actor.items ) { const id = identifierOf(i).id; if ( id && !byId.has(id) ) byId.set(id, i); }
+  for ( const owner of actor.items.filter(i => contentOf(i).entry?.regainOnInitiative) ) {
+    const rule = contentOf(owner).entry.regainOnInitiative;
+    const items = {};
+    for ( const id of [rule.item, ...(rule.items ?? [])].filter(Boolean) ) {
+      const uses = byId.get(id)?.system?.uses;
+      if ( Number(uses?.max) ) items[id] = { max: Number(uses.max), spent: Number(uses.spent) || 0 };
+    }
+    const own = owner.system?.uses;
+    const usesLeft = Number(own?.max) ? (Number(own.max) - (Number(own.spent) || 0)) : null;
+    const plan = initiativeRegain(rule, { items, exhaustion: Number(actor.system.attributes?.exhaustion) || 0, usesLeft });
+    if ( !plan ) continue;
+    for ( const [id, spent] of Object.entries(plan.spent) ) await byId.get(id).update({ "system.uses.spent": spent });
+    if ( plan.exhaustion !== null ) await actor.update({ "system.attributes.exhaustion": plan.exhaustion });
+    if ( plan.pay ) await owner.update({ "system.uses.spent": (Number(own.spent) || 0) + 1 });
+    log(`${actor.name}: ${owner.name} on Initiative — uses back: ${Object.keys(plan.spent).join(", ") || "none"}`
+      + `${plan.exhaustion !== null ? `, Exhaustion ${plan.exhaustion}` : ""}`);
   }
 }
 

@@ -195,12 +195,27 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     }
   }
   // Relevé des trous, §236 : listes de chaînes (états retirés en fin de tour, types de résistance, caractéristiques plancher).
-  for ( const key of ["endsOwnConditions", "grantsResistances", "scoreFloor"] ) {
-    if ( (key in entry) && (!Array.isArray(entry[key]) || !entry[key].length || !entry[key].every(s => (typeof s === "string") && s)) ) errors.push(`${at}${key}: list of identifiers`);
+  const strings = v => Array.isArray(v) && v.length && v.every(s => (typeof s === "string") && s);
+  for ( const key of ["grantsResistances", "scoreFloor"] ) {
+    if ( (key in entry) && !strings(entry[key]) ) errors.push(`${at}${key}: list of identifiers`);
   }
-  if ( ("regainOnInitiative" in entry) && !(isObject(entry.regainOnInitiative) && (typeof entry.regainOnInitiative.item === "string") && entry.regainOnInitiative.item
-    && Number.isInteger(entry.regainOnInitiative.upTo) && (entry.regainOnInitiative.upTo > 0) && Object.keys(entry.regainOnInitiative).every(k => ["item", "upTo"].includes(k))) ) {
-    errors.push(`${at}regainOnInitiative: { item, upTo } (identifier, positive integer)`);
+  // §278 : la liste d'états, ou { statuses?, at?, exhaustion?, uses? } (core/self-care.mjs).
+  if ( "endsOwnConditions" in entry ) {
+    const e = entry.endsOwnConditions;
+    const ok = Array.isArray(e) ? strings(e) : (isObject(e) && Object.keys(e).every(k => ["statuses", "at", "exhaustion", "uses"].includes(k))
+      && (!("statuses" in e) || strings(e.statuses)) && (!("at" in e) || ["turnStart", "turnEnd"].includes(e.at))
+      && ["exhaustion", "uses"].every(k => !(k in e) || (e[k] === true)) && (strings(e.statuses) || (e.exhaustion === true)));
+    if ( !ok ) errors.push(`${at}endsOwnConditions: list of statuses, or { statuses?, at?: turnStart|turnEnd, exhaustion?: true, uses?: true }`);
+  }
+  // §278 : { item, upTo } (§236), ou { items?, exhaustion?, uses? }.
+  if ( "regainOnInitiative" in entry ) {
+    const r = entry.regainOnInitiative;
+    const legacy = isObject(r) && (typeof r.item === "string") && r.item && Number.isInteger(r.upTo) && (r.upTo > 0)
+      && Object.keys(r).every(k => ["item", "upTo"].includes(k));
+    const wide = isObject(r) && !("item" in r) && Object.keys(r).every(k => ["items", "exhaustion", "uses"].includes(k))
+      && (!("items" in r) || strings(r.items)) && (!("exhaustion" in r) || (Number.isInteger(r.exhaustion) && (r.exhaustion > 0)))
+      && (!("uses" in r) || (r.uses === true)) && (("items" in r) || ("exhaustion" in r));
+    if ( !legacy && !wide ) errors.push(`${at}regainOnInitiative: { item, upTo } or { items?, exhaustion?, uses? } (identifiers, positive integers)`);
   }
   if ( "cantripRange" in entry ) {
     const r = entry.cantripRange;

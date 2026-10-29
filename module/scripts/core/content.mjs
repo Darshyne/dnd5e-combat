@@ -191,10 +191,16 @@
  *                                               l'item sur la cible (Sentinelle, Halte : Vitesse 0)
  *     spellDamageTypes?: { class, types }       relevé des trous : un sort de cette classe qui inflige des dégâts peut prendre l'un
  *                                               de ces types, proposé avec ses types au choix avant le jet (Sorts psychiques)
- *     endsOwnConditions?: string[]              §236 : à la fin de chacun de ses tours, le porteur met fin à l'un de ces états
- *                                               (Auto-restauration : Charmé, Effrayé, Empoisonné)
- *     regainOnInitiative?: { item, upTo }       §236 : au jet d'initiative, les utilisations de l'item remontent à `upTo` au moins
- *                                               (Inspiration supérieure)
+ *     endsOwnConditions?: string[] | { statuses?, at?, exhaustion?, uses? }
+ *                                               §236 : à la fin de chacun de ses tours, le porteur met fin à l'un de ces états
+ *                                               (Auto-restauration : Charmé, Effrayé, Empoisonné) ; §278 : `at: "turnStart"` (au début),
+ *                                               `exhaustion` (à défaut d'un état, un niveau d'Épuisement), `uses` (une utilisation de
+ *                                               l'item chaque fois) — core/self-care.mjs
+ *     regainOnInitiative?: { item, upTo } | { items?, exhaustion?, uses? }
+ *                                               §236 : au jet d'initiative, les utilisations de l'item remontent à `upTo` au moins
+ *                                               (Inspiration supérieure) ; §278 : `items` (identifiants : toutes leurs utilisations
+ *                                               reviennent), `exhaustion` (niveaux retirés), `uses` (une utilisation de l'item, seulement
+ *                                               s'il y a quelque chose à regagner)
  *     grantsResistances?: string[]              §236 : les Résistances que l'item donne sans effet dans ses données (Avatar de la
  *                                               bataille) — un effet tenu sur l'acteur, comme `grantsSpeeds`
  *     scoreFloor?: string[]                     §236 : un test ou une sauvegarde de ces caractéristiques vaut au moins leur valeur

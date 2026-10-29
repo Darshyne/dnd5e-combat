@@ -12,6 +12,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { twiceKeepHighest, rerollOnesOnce, oneMoreKeepBest } from "../core/feats.mjs";
+import { ownConditionsRule, pickOwnCondition } from "../core/self-care.mjs";
 import { STEPS } from "../core/action.mjs";
 import { attackDamageTypes } from "../adapter/smite.mjs";
 import { inflict } from "../adapter/retaliation.mjs";
@@ -355,15 +356,26 @@ async function grappleDamage(actor, token) {
 /**
  * §236 : Auto-restauration — « à la fin de chacun de vos tours, vous pouvez mettre fin à l'un de ces états sur vous : Charmé, Effrayé,
  * Empoisonné ». Le premier que la créature porte, dans l'ordre de la règle ; les effets qui le portent sont retirés. MJ actif.
+ * §278 : la règle dit aussi le moment (`at`), un niveau d'Épuisement à défaut d'un état, et le coût d'une utilisation de l'item.
  */
-async function endOwnCondition(actor) {
-  const item = actor.items.find(i => contentOf(i).entry?.endsOwnConditions);
-  if ( !item || ((actor.system.attributes?.hp?.value ?? 0) <= 0) ) return;
-  const status = contentOf(item).entry.endsOwnConditions.find(s => actor.statuses?.has(s));
-  if ( !status ) return;
-  const effects = actor.effects.filter(e => e.statuses?.has?.(status));
-  if ( effects.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", effects.map(e => e.id));
-  log(`${item.name}: ${actor.name} ends ${status} on themself (end of turn)`);
+async function endOwnCondition(actor, at) {
+  if ( (actor.system.attributes?.hp?.value ?? 0) <= 0 ) return;
+  for ( const item of actor.items.filter(i => contentOf(i).entry?.endsOwnConditions) ) {
+    const rule = ownConditionsRule(contentOf(item).entry.endsOwnConditions);
+    if ( rule.at !== at ) continue;
+    const uses = item.system?.uses;
+    const usesLeft = Number(uses?.max) ? (Number(uses.max) - (Number(uses.spent) || 0)) : null;
+    const pick = pickOwnCondition(rule, { statuses: actor.statuses, exhaustion: Number(actor.system.attributes?.exhaustion) || 0, usesLeft });
+    if ( !pick ) continue;
+    if ( pick.status ) {
+      const effects = actor.effects.filter(e => e.statuses?.has?.(pick.status));
+      if ( effects.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", effects.map(e => e.id));
+    }
+    else await actor.update({ "system.attributes.exhaustion": Math.max(0, (Number(actor.system.attributes.exhaustion) || 0) - 1) });
+    if ( rule.uses ) await item.update({ "system.uses.spent": (Number(uses.spent) || 0) + 1 });
+    log(`${item.name}: ${actor.name} ends ${pick.status ?? "one Exhaustion level"} on themself (${at === "turnStart" ? "start" : "end"} of turn)`);
+    return;
+  }
 }
 
 /**
@@ -391,7 +403,7 @@ function onPreRollD20(config) {
 
 function onTurnChange(combat, prior, current) {
   const ended = combat.combatants.get(prior?.combatantId)?.actor;
-  if ( ended ) enqueue(`feats-turn:${ended.uuid}`, () => endOwnCondition(ended));
+  if ( ended ) enqueue(`feats-turn:${ended.uuid}`, () => endOwnCondition(ended, "turnEnd"));
   const combatant = combat.combatants.get(current?.combatantId);
   const actor = combatant?.actor;
   if ( !actor ) return;
@@ -399,6 +411,7 @@ function onTurnChange(combat, prior, current) {
     await dropMarks(actor.uuid);
     if ( actor.getFlag(MODULE_ID, "peerlessAim") ) await actor.unsetFlag(MODULE_ID, "peerlessAim");   // §135 : Visée sans pareille
     if ( (actor.system.attributes?.hp?.value ?? 0) > 0 ) await grappleDamage(actor, combatant.token);
+    await endOwnCondition(actor, "turnStart");   // §278
   });
 }
 

@@ -1,6 +1,6 @@
 /** §258 : fins génériques (`endsWhen`) relevées par l'audit CAT / CPR — décisions pures, schéma, contenu livré. */
 import { describe, it, expect } from "vitest";
-import { armorEnds, tooFarApart, nobodyAffected } from "../module/scripts/core/endings.mjs";
+import { armorEnds, isReplayUsage, tooFarApart, nobodyAffected } from "../module/scripts/core/endings.mjs";
 import { validateEntry } from "../module/scripts/core/content.mjs";
 import { CONTENT } from "../module/scripts/content/index.mjs";
 
@@ -18,6 +18,14 @@ describe("fins génériques — décisions", () => {
     expect(tooFarApart(60, 60)).toBe(false);
     expect(tooFarApart(65, 60)).toBe(true);
     expect(tooFarApart(NaN, 60)).toBe(false);
+  });
+
+  it("§275 : un rejeu (sauvegarde répétée, zone, relance) ne juge pas « personne d'affecté »", () => {
+    expect(isReplayUsage({ resave: { effect: "x", moment: "turnStart" } })).toBe(true);
+    expect(isReplayUsage({ areaTick: { event: "turnEnd" } })).toBe(true);
+    expect(isReplayUsage({ recast: true })).toBe(true);
+    expect(isReplayUsage({ resolution: {} })).toBe(false);
+    expect(isReplayUsage(undefined)).toBe(false);
   });
 
   it("personne d'affecté : toutes les sauvegardes réussies", () => {

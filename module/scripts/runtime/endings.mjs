@@ -16,7 +16,7 @@ import { STEPS } from "../core/action.mjs";
 import { damagedByOriginSide } from "../core/triggers.mjs";
 import { areEnemies, sideOf } from "../adapter/factions.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
-import { ARMOR_WEIGHTS, armorEnds, nobodyAffected, tooFarApart } from "../core/endings.mjs";
+import { ARMOR_WEIGHTS, armorEnds, isReplayUsage, nobodyAffected, tooFarApart } from "../core/endings.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
@@ -232,6 +232,8 @@ async function onTurnChange(combat, prior) {
 async function onResolution(resolution) {
   if ( ![STEPS.DONE, STEPS.MISSED].includes(resolution?.step) ) return;
   if ( !game.settings.get(MODULE_ID, END_UNAFFECTED_SETTING) ) return;
+  // §275 : un rejeu (sauvegarde répétée, zone, relance) ne dit pas que le sort n'affecte plus personne.
+  if ( isReplayUsage(game.messages.get(resolution.carrier)?.flags?.[MODULE_ID]) ) return;
   const item = fromUuidSync(resolution.activity ?? "", { strict: false })?.item;
   const rule = rulesOf(item);
   if ( !rule?.unaffected || !nobodyAffected(resolution, rule.unaffected) ) return;

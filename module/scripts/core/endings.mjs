@@ -46,3 +46,13 @@ export function nobodyAffected(resolution, condition) {
   }
   return false;
 }
+
+/**
+ * §275 : seule l'utilisation d'origine dit si le sort a « affecté » quelqu'un. Une sauvegarde répétée (`resave` : Malédiction, début de
+ * tour), le rejeu d'une zone (`areaTick`) ou une relance sous concentration (`recast`) n'en décide rien — sinon une sauvegarde réussie
+ * au rejeu ferait tomber la concentration de tout le sort (Malédiction réussie : la malédiction disparaissait ; Immobilisation sur deux
+ * cibles : la seconde libérée avec la première). `flags` : les drapeaux du moteur sur le message d'utilisation.
+ */
+export function isReplayUsage(flags) {
+  return !!(flags?.resave || flags?.areaTick || flags?.recast);
+}

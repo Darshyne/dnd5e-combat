@@ -21,6 +21,8 @@ import { MODULE_ID } from "../constants.mjs";
 import { coverBetween, bodyGivesCover, strongerCover, pullBack, COVER } from "../core/cover.mjs";
 import { crossesWall } from "../core/wall.mjs";
 import { contentOf } from "./content.mjs";
+import { grappleRulesOf } from "./grapple-rules.mjs";
+import { victimsOf } from "./grapple.mjs";
 import { wallGeometryOf } from "./wall-side.mjs";
 import { committedPosition } from "./turn.mjs";
 import { isDeadActor } from "./death.mjs";
@@ -171,6 +173,12 @@ export function coverFor(attacker, target, { posA, quiet=false, activity=null, a
   const behind = zoneCoverBetween(attacker, target, posA, activity, attackMode);
   if ( behind && (strongerCover(cover.degree, behind) !== cover.degree) ) {
     Object.assign(cover, { degree: behind, bonus: COVER[behind].bonus, byCreature: false });
+  }
+  // §281 : Bouclier de chair — qui agrippe une créature a cet abri contre les attaques des créatures qu'il n'agrippe pas.
+  const held = grappleRulesOf(target.actor).cover;
+  if ( held && (strongerCover(cover.degree, held) !== cover.degree) ) {
+    const victims = victimsOf(target);
+    if ( victims.length && !victims.includes(attacker) ) Object.assign(cover, { degree: held, bonus: COVER[held].bonus, byCreature: true });
   }
   if ( cover.degree === "none" ) return null;
   if ( !quiet ) console.log(`${MODULE_ID} | cover: ${target.name} against ${attacker.name} — ${cover.degree}${cover.byCreature ? " (creature in between)" : ""}`);

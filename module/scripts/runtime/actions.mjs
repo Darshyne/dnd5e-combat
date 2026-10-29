@@ -10,7 +10,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { movementAllowance } from "../core/turn.mjs";
-import { footprintGap, chooseBasicAttack, dragMultiplier, dragAllowance } from "../core/movement.mjs";
+import { footprintGap, chooseBasicAttack, dragMultiplier, dragMultiplierWith, dragAllowance } from "../core/movement.mjs";
 import { combatantFor, readBudget, writeBudget, movementOf, speedOf, rangeOf, historyCosts, tokenCenter, positionOf, committedPosition, distanceBetween } from "../adapter/turn.mjs";
 import { jumpCost, LANDING_DC } from "../core/jump.mjs";
 import { jumpOptionsOf, landsOnDifficult } from "../adapter/jump.mjs";
@@ -23,6 +23,7 @@ import { sharesSpaceWith } from "../adapter/space-sharing.mjs";
 import { planPath, previewPath, walk, stopAllWalks, cellUnder, footprintOf, sizeOf, cellOf, stairsEntry, walkOptions } from "../adapter/movement.mjs";
 import { hasLineOfSight } from "../adapter/vision.mjs";
 import { victimsOf, sizeRankOf } from "../adapter/grapple.mjs";
+import { grappleRulesOf } from "../adapter/grapple-rules.mjs";
 import { basicActionOf, unarmedAttackOf } from "../adapter/basics.mjs";
 import { cellsAtGap, footprintDistance } from "../core/orders.mjs";
 import { fleeGaps } from "../core/flee.mjs";
@@ -64,7 +65,10 @@ export function movementCap(token) {
   const excluded = historyCosts(token).excluded;
   const victims = victimsOf(token);
   if ( !victims.length ) return cap + excluded;
-  return dragAllowance(cap, movement.spent, dragMultiplier(sizeRankOf(token.actor), victims.map(v => sizeRankOf(v.actor)))) + excluded;
+  // §281 : un agrippeur que le contenu grandit (Poids lourd) traîne sans surcoût une victime de sa taille ou plus petite.
+  const rules = grappleRulesOf(token.actor);
+  return dragAllowance(cap, movement.spent, dragMultiplierWith(sizeRankOf(token.actor), victims.map(v => sizeRankOf(v.actor)),
+    { bonus: rules.bonus, freeUpTo: rules.dragFree })) + excluded;
 }
 
 /**
@@ -655,7 +659,8 @@ export function contactRefusal(token, target, activity) {
   if ( !contactAction(activity) ) return null;
   if ( target === token ) return loc("Retour.PasSoi");
   if ( (basicActionOf(activity.item) === "help") && !hostileTo(token, target) ) return loc("Retour.PasEnnemi");
-  if ( (activity.type === "save") && (sizeRankOf(target.actor) > sizeRankOf(token.actor) + 1) ) return loc("Retour.TropGrand");
+  // §281 : `grappleSize.bonus` — l'auteur compte comme plus grand pour Agripper et Pousser (Poids lourd).
+  if ( (activity.type === "save") && (sizeRankOf(target.actor) > sizeRankOf(token.actor) + 1 + grappleRulesOf(token.actor).bonus) ) return loc("Retour.TropGrand");
   return null;
 }
 

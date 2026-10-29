@@ -310,6 +310,16 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     }
   }
   if ( ("maxNextHit" in entry) && (entry.maxNextHit !== true) ) errors.push(`${at}maxNextHit: true or absent`);
+  // §281 : l'empoignade de l'auteur — plus grand pour Agripper et Pousser, traîner sans surcoût, Désavantage contre sa prise, abri.
+  if ( "grappleSize" in entry ) {
+    const g = entry.grappleSize;
+    if ( !isObject(g) || !Object.keys(g).length || !Object.keys(g).every(k => ["bonus", "dragFree"].includes(k))
+      || (("bonus" in g) && !(Number.isInteger(g.bonus) && (g.bonus > 0))) || (("dragFree" in g) && !Number.isInteger(g.dragFree)) ) {
+      errors.push(`${at}grappleSize: { bonus?: positive integer, dragFree?: integer }`);
+    }
+  }
+  if ( ("inescapable" in entry) && (entry.inescapable !== true) ) errors.push(`${at}inescapable: true or absent`);
+  if ( ("grappleCover" in entry) && !["half", "threeQuarters"].includes(entry.grappleCover) ) errors.push(`${at}grappleCover: half | threeQuarters`);
   if ( "weaponDamageTypes" in entry ) {
     const d = entry.weaponDamageTypes;
     if ( !isObject(d) || !kinds(d.weapons) || !Array.isArray(d.types) || !d.types.length || !d.types.every(t => (typeof t === "string") && t)

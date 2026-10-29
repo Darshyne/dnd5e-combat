@@ -24,6 +24,7 @@ import {
   grapplingMarksOf, grapplingMarkData, grappledTokenOf, victimsOf, actorOfEffect
 } from "../adapter/grapple.mjs";
 import { basicActionOf } from "../adapter/basics.mjs";
+import { grappleRulesOf } from "../adapter/grapple-rules.mjs";
 import { swallowerOf } from "../adapter/swallow.mjs";
 import { escapeSwallow } from "./swallow.mjs";
 import { escapableRestraintsOf } from "../adapter/escape.mjs";
@@ -231,7 +232,10 @@ async function attemptEscape(actor) {
   if ( dc === null ) { ui.notifications.warn(loc("Empoignade.DDInconnu", { name: actor.name })); return false; }
   const skills = actor.system.skills ?? {};
   const skill = ((skills.acr?.total ?? -Infinity) > (skills.ath?.total ?? -Infinity)) ? "acr" : "ath";
-  const rolls = await rolledAndShown(() => actor.rollSkill({ skill, target: dc }, { configure: false }));
+  // §281 : Inexorable — l'agrippeur impose le Désavantage aux tests contre sa prise.
+  const disadvantage = grappleRulesOf(grapplerOf(effect)).inescapable;
+  if ( disadvantage ) log(`${actor.name}: Disadvantage on the escape check (${grapplerOf(effect)?.name})`);
+  const rolls = await rolledAndShown(() => actor.rollSkill({ skill, target: dc, ...(disadvantage ? { disadvantage: true } : {}) }, { configure: false }));
   const total = rolls?.[0]?.total;
   if ( !Number.isFinite(total) ) return false;
   escapeNotice(actor, total >= dc);

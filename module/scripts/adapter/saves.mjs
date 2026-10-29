@@ -21,6 +21,7 @@ import { effectOfProfile } from "./usage.mjs";
 import { timedWait, closeRollDialogAfter } from "./dialogs.mjs";
 import { originItemOf, creatureTypeOf } from "./facts.mjs";
 import { contentOf } from "./content.mjs";
+import { grappleRulesOf } from "./grapple-rules.mjs";
 import { fightingAdvantage } from "../core/conditions.mjs";
 import { sizeAtLeast } from "../core/content/enums.mjs";
 import { isObjectToken } from "./bodies.mjs";
@@ -296,8 +297,11 @@ export async function requestSaves(usageMessage, save, targets, { askPlayers=tru
     ability = bestSaveAbility(actor, abilities);
     // §157 : « une Créature artificielle a le Désavantage au jet de sauvegarde » (Fracassement) — `saveDisadvantageFor` du contenu.
     const byType = (contentOf(activity.item).entry?.saveDisadvantageFor ?? []).includes(creatureTypeOf(actor));
+    // §281 : Inexorable — les sauvegardes contre la Lutte et la Bousculade d'un agrippeur qui l'a (Frappe à mains nues) ont le Désavantage.
+    const inescapable = unarmedSave(activity) && grappleRulesOf(activity.actor).inescapable;
+    if ( inescapable ) console.log(`${MODULE_ID} | ${activity.item.name}: ${token.name} has Disadvantage against the grapple or shove`);
     const mode = saveModeFor(given, token.uuid);
-    const disadvantage = (token.uuid === heightened) || byType || mode.disadvantage;
+    const disadvantage = (token.uuid === heightened) || byType || inescapable || mode.disadvantage;
     const advantage = mode.advantage;
     if ( given?.[token.uuid] ) console.log(`${MODULE_ID} | ${activity.item.name}: ${token.name} has ${given[token.uuid]} on its saving throw (given by the user)`);
     if ( token.uuid === heightened ) console.log(`${MODULE_ID} | Heightened Spell: ${token.name} has Disadvantage on its saving throw`);
@@ -366,4 +370,9 @@ export async function repairSaveAbility(message) {
   await item.update({ [`system.activities.${activity.id}.save.ability`]: abilities });
   console.log(`${MODULE_ID} | ${item.name} (${item.actor?.name}): saving throw ability repaired from the compendium -> ${abilities.join(", ")}`);
   return true;
+}
+
+/** §281 : une sauvegarde de Lutte ou de Bousculade — celle d'un item dont une attaque est une frappe à mains nues (Frappe à mains nues). */
+function unarmedSave(activity) {
+  return (activity?.type === "save") && !!activity.item?.system?.activities?.some?.(a => a.attack?.type?.classification === "unarmed");
 }

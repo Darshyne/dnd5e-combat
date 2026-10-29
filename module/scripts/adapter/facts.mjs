@@ -311,6 +311,8 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     "self.hasShield": want => (self?.items ?? []).some(i => (i.type === "equipment") && (i.system.type?.value === "shield") && i.system.equipped) === want,
     // §132 : la cible est Agrippée par l'attaquant (Lutteur : « l'Avantage aux jets d'attaque contre une créature que vous agrippez »).
     "target.grappledBySource": want => ((target?.effects ?? []).some(e => e.statuses?.has?.("grappled") && (grapplerOf(e) === source)) === want),
+    // §281 : l'inverse — la source est Agrippée par la cible (un ennemi agrippé par le réacteur finit son tour : Prise finale).
+    "source.grappledByTarget": want => ((source?.effects ?? []).some(e => e.statuses?.has?.("grappled") && (grapplerOf(e) === target)) === want),
     // §37 : l'attaquant porte un effet que la CIBLE a posé (Malédiction : « Désavantage aux jets d'attaque contre vous »).
     "source.hasEffectFromTarget": id => hasEffectFrom(source, id, target),
     // Type de créature de l'attaquant (Protection contre le mal et le bien : aberration, céleste, élémentaire, fée, fiélon, mort-vivant).

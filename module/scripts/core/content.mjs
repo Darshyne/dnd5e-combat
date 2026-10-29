@@ -499,6 +499,13 @@
  *                                               ratée, la promesse est perdue (runtime/maneuver-dice.mjs)
  *     maxNextHit?: true                         §279 : le porteur d'un effet de l'item subit le maximum des dés de la prochaine attaque qui
  *                                               le touche, puis l'effet cesse
+ *     grappleSize?: { bonus?, dragFree? }       §281 : l'auteur compte comme `bonus` tailles de plus pour Agripper et Pousser ; il traîne
+ *                                               sans surcoût une victime d'au plus `dragFree` tailles de plus que lui (Poids lourd : 1 et 0)
+ *     inescapable?: true                        §281 : les sauvegardes contre sa Lutte ou sa Bousculade, et les tests pour échapper à sa
+ *                                               prise, ont le Désavantage (Inexorable)
+ *     grappleCover?: "half"|"threeQuarters"     §281 : tant qu'il agrippe une créature, cet abri contre les attaques des créatures qu'il
+ *                                               n'agrippe pas (Bouclier de chair) ; fait `source.grappledByTarget` pour réagir à la fin du
+ *                                               tour d'un ennemi qu'il agrippe (`enemyTurnEnd`)
  *     weaponDamageTypes?: { weapons, types }    §279 : une attaque de l'auteur avec une arme de ces genres peut prendre l'un de ces types de
  *                                               dégâts, proposé avec le sien avant le jet (comme `spellDamageTypes`)
  *     rolledAc?: { activity, effect, to? }      §89 : l'activité lance le dé de son `roll` et pose l'effet de l'item sur l'auteur, le

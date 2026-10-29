@@ -88,6 +88,15 @@ export function dragMultiplier(grapplerSize, victimSizes) {
 }
 
 /**
+ * §281 : le multiplicateur d'un agrippeur que le contenu grandit (`grappleSize`, Poids lourd) — `bonus` tailles de plus, et aucun surcoût
+ * pour une victime d'au plus `freeUpTo` tailles de plus que lui (0 : « de votre taille ou plus petite ») ; null : la règle seule.
+ */
+export function dragMultiplierWith(grapplerSize, victimSizes, { bonus=0, freeUpTo=null }={}) {
+  if ( Number.isInteger(freeUpTo) && victimSizes.every(v => v <= grapplerSize + freeUpTo) ) return 1;
+  return dragMultiplier(grapplerSize + bonus, victimSizes);
+}
+
+/**
  * Plafond de coût du tour d'un agrippeur qui traîne sa victime : ce qui lui reste à parcourir compte
  * double. `cap` et `spent` sont historique compris, dans l'unité de la grille.
  */

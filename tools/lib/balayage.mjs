@@ -31,20 +31,25 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
  * @param {(data: object) => string} options.sortKey   l'ordre du balayage
  * @param {object} options.lend        retouches de `system` au prêt (un sort préparé…)
  * @param {boolean} options.consume    dépenser les ressources (emplacements)
+ * @param {string} [options.caster]    le token qui lance (« Lanceur » par défaut ; une copie de PJ pour l'audit d'une fiche)
+ * @param {() => Promise<{itemId: string, data: object}[]>} [options.items]  les items PROPRES du lanceur, à la place des compendiums :
+ *                                     rien n'est prêté ni retiré (audit d'une fiche, `audit-pj`)
  */
-export async function sweep(ctx, { kind, packs, select, sortKey, lend, consume }) {
+export async function sweep(ctx, { kind, packs = [], select, sortKey, lend = {}, consume, caster: casterName = "Lanceur", items }) {
   const names = Object.keys(ARENE_SORTS.tokens);
   const { tokens } = await ctx.scene();
   if ( !names.every(n => tokens.some(t => t.name === n)) ) { ctx.log("tokens de l'arène manquants : lancer tools/arene-sorts.mjs"); return; }
   const t = Object.fromEntries(await Promise.all(names.map(async n => [n, await ctx.token(n)])));
-  const caster = t["Lanceur"];
+  // Un autre lanceur (copie de PJ) : le Lanceur de l'arène reste sur la scène (gardé), mais hors du balayage.
+  const keep = new Set(Object.values(t).map(x => x.id));
+  if ( casterName !== "Lanceur" ) { delete t["Lanceur"]; t[casterName] = await ctx.token(casterName); keep.add(t[casterName].id); }
+  const caster = t[casterName];
   const grid = ARENE_SORTS.grid;
   const sceneId = (await ctx.scene()).sceneId;
-  const keep = new Set(Object.values(t).map(x => x.id));
 
-  // Les items : index des compendiums, filtres du balayage.
-  const docs = [];
-  for ( const packId of packs ) {
+  // Les items : index des compendiums, filtres du balayage — ou les items propres du lanceur.
+  const docs = items ? (await items()).filter(d => select(d.data)) : [];
+  for ( const packId of (items ? [] : packs) ) {
     const index = await ctx.call("list-compendium-entries", { packId });
     for ( const e of (Array.isArray(index) ? index : Object.values(index).find(Array.isArray)) ?? [] ) {
       if ( !["spell", "feat"].includes(e.type) ) continue;
@@ -67,11 +72,15 @@ export async function sweep(ctx, { kind, packs, select, sortKey, lend, consume }
     return (Number(hp.value) || 0) + (Number(hp.temp) || 0);
   };
 
+  // Les effets déjà là (ceux d'une fiche de PJ : espèce, dons, objets portés) ne sont jamais retirés.
+  const baseline = new Set();
+  for ( const tok of Object.values(t) ) for ( const e of (await ctx.call("get-actor", { actorId: tok.actorId })).effects ?? [] ) baseline.add(e._id ?? e.id);
+
   /** Tout ce qu'une utilisation a laissé : effets, zones, tokens invoqués, PV, emplacements, fenêtres. */
   const cleanup = async () => {
     for ( const tok of Object.values(t) ) {
       const actor = await ctx.call("get-actor", { actorId: tok.actorId });
-      for ( const e of actor.effects ?? [] ) await ctx.call("remove-embedded-effect", { documentType: "Actor", id: tok.actorId, effectId: e._id ?? e.id }).catch(() => {});
+      for ( const e of (actor.effects ?? []).filter(x => !baseline.has(x._id ?? x.id)) ) await ctx.call("remove-embedded-effect", { documentType: "Actor", id: tok.actorId, effectId: e._id ?? e.id }).catch(() => {});
       await ctx.setHp(tok, 999);
     }
     const { objects } = await ctx.call("list-scene-objects", { sceneId, types: ["Token", "Region", "Wall", "AmbientLight", "Tile"] });
@@ -81,7 +90,7 @@ export async function sweep(ctx, { kind, packs, select, sortKey, lend, consume }
         await ctx.call("delete-scene-object", { sceneId, type, objectId: o.id }).catch(() => {});
       }
     }
-    await ctx.call("update-actor", { actorId: caster.actorId, actorData: { system: { spells: SLOTS } } });
+    await ctx.call("update-actor", { actorId: caster.actorId, actorData: { system: { spells: { ...SLOTS, pact: { value: 9, override: 9 } } } } });
     for ( const w of await ctx.engine("windows").catch(() => []) ) await ctx.engine("closeWindow", { id: w.id }).catch(() => {});
   };
 
@@ -95,6 +104,9 @@ export async function sweep(ctx, { kind, packs, select, sortKey, lend, consume }
     const affects = target?.affects?.type ?? "";
     let who = (activity.type === "heal") || ["ally", "willing"].includes(affects) ? t["Allié"] : t["Cible"];
     if ( ((range?.units === "self") && !template) || (affects === "self") ) who = caster;
+    // Une arme de corps à corps (attaque, et la Lutte d'une attaque à mains nues) vise l'ennemi au contact : à 6 m, le moteur lâchait
+    // aussitôt une empoignade réussie, hors d'allonge (audit de Kaalisti, 2026-10-29).
+    if ( (item.type === "weapon") && ((activity.attack?.type?.value === "melee") || ((activity.type === "save") && (s.type?.value !== "simpleR") && (s.type?.value !== "martialR"))) ) who = t["Ennemi au contact"];
     if ( !template ) return { targets: [who] };
     if ( template.type === "wall" ) return { skip: "mur posé point par point" };
     // Une taille peut être une formule du niveau du sort (Confusion : « @item.level * 5 - 10 ») : évaluée au niveau de base.
@@ -124,7 +136,7 @@ export async function sweep(ctx, { kind, packs, select, sortKey, lend, consume }
 
   const report = [];
   await cleanup();
-  for ( const { uuid, data } of list ) {
+  for ( const { uuid, itemId: own, data } of list ) {
     const s = data.system;
     const ident = s.identifier;
     const isSpell = data.type === "spell";
@@ -132,12 +144,16 @@ export async function sweep(ctx, { kind, packs, select, sortKey, lend, consume }
       engine: Object.keys(CONTENT[ident] ?? {}).filter(k => k !== "source"), runs: [], notes: [] };
     report.push(row);
     if ( CONTENT[ident]?.teleport || CONTENT[ident]?.pointWall ) { row.notes.push(`non joué : ${CONTENT[ident]?.teleport ? "téléportation" : "mur point par point"} (attend un clic)`); continue; }
-    let itemId;
-    try { itemId = await ctx.ensureItem(caster, uuid, { system: lend }); }
+    let itemId = own;
+    if ( !own ) try { itemId = await ctx.ensureItem(caster, uuid, { system: lend }); }
     catch ( err ) { row.notes.push(`prêt impossible : ${err.message}`); continue; }
     for ( const activity of Object.values(s.activities ?? {}) ) {
       const label = `${activity.type}${activity.name ? ` « ${activity.name} »` : ""}`;
       if ( SKIPPED_TYPES.has(activity.type) ) { row.notes.push(`${label} : non joué`); continue; }
+      // Une activité « rider » qu'un enchantement de l'item donne à sa cible (l'attaque de l'arme de pacte) : dnd5e la cache sur
+      // l'item source (`isHidden`, `isRider`) et en refuse l'usage ; elle se joue sur l'arme enchantée.
+      const rider = Object.values(s.activities ?? {}).some(a => (a.effects ?? []).some(e => (e.riders?.activity ?? []).includes(activity._id)));
+      if ( rider ) { row.notes.push(`${label} : rider d'enchantement, joué sur l'objet enchanté`); continue; }
       // Les dégâts d'un châtiment se lancent après le coup d'une arme (§107) : utilisés seuls, ils frapperaient le Lanceur.
       if ( CONTENT[ident]?.smite && (activity.type === "damage") ) { row.notes.push(`${label} : non joué (après un coup d'arme)`); continue; }
       const run = { activity: label, issues: [] };
@@ -186,12 +202,25 @@ export async function sweep(ctx, { kind, packs, select, sortKey, lend, consume }
             // `use-activity` coupe l'enchaînement des jets (`subsequentActions: false`, §233) : les dégâts ou le soin d'une activité
             // sans jet d'attaque se lancent comme le bouton de la carte.
             if ( /^awaiting(Rolls|Damage|Healing)$/.test(r.step ?? "") ) await ctx.engine("rollCard", { messageId: used.usageMessageId }).catch(() => {});
-            try { r = await ctx.settle(used.usageMessageId, { timeoutMs: 25000 }); }
+            // 60 s : avec le journal de discussion du MJ masqué, Dice So Nice ne révèle pas ses jets et chaque attente des dés 3D va à son maximum
+            // (8 s) — une arme à deux jets (attaque, dégâts) et un châtiment dépassaient 25 s (audit de Kaalisti, 2026-10-29).
+            try { r = await ctx.settle(used.usageMessageId, { timeoutMs: 60000 }); }
             catch ( err ) { bad(`résolution bloquée : ${err.message.replace(/^résolution \S+ /, "")}`); }
           }
         }
         if ( ["attack", "save"].includes(activity.type) && !r ) bad("aucune résolution du moteur");
         await pause(1500);
+        // Un sort à projectiles (Décharge occulte à 2 rayons, Rayon ardent) enchaîne ses projectiles après la première résolution : on
+        // attend que les PV de la Cible ne bougent plus, sinon un rayon tardif tombait dans l'item suivant (audit de Kaalisti, 2026-10-29).
+        if ( CONTENT[ident]?.projectiles ) {
+          let last = await hpOf(t["Cible"]);
+          for ( let quiet = 0, i = 0; (quiet < 3) && (i < 30); i++ ) {
+            await pause(2000);
+            const now = await hpOf(t["Cible"]);
+            quiet = (now === last) ? quiet + 1 : 0;
+            last = now;
+          }
+        }
         run.step = r?.step;
 
         // 3. Les PV.
@@ -212,7 +241,12 @@ export async function sweep(ctx, { kind, packs, select, sortKey, lend, consume }
             : plan.targets;
           for ( const tok of affected ) {
             const on = await ctx.effectsFrom(tok, ident);
-            if ( !on.filter(e => !(e.statuses ?? []).includes("concentrating")).length ) bad(`${tok.name} : aucun effet de l'item (${declared.length} déclaré(s))`);
+            if ( on.filter(e => !(e.statuses ?? []).includes("concentrating")).length ) continue;
+            // Ce que la cible porte quand même (un état posé par le moteur sous une autre origine) : pour trier le constat.
+            const worn = ((await ctx.call("get-actor", { actorId: tok.actorId })).effects ?? []).filter(e => !baseline.has(e._id ?? e.id))
+              .map(e => `${e.name}${e.origin ? ` ← ${String(e.origin).split(".").slice(-2).join(".")}` : ""}`);
+            const tr = r?.targets?.find(x => tokenOf(x) === tok);
+            bad(`${tok.name} : aucun effet de l'item (${declared.length} déclaré(s) ; sauvegarde ${tr?.save?.total ?? "?"}${tr?.save ? (tr.save.success ? " réussie" : " ratée") : ""} ; porte : ${worn.join(", ") || "rien"})`);
           }
           const touched = new Set((r?.targets ?? []).map(tr => tr.name).concat(plan.targets.map(x => x.name), [caster.name]));
           for ( const tok of Object.values(t) ) {
@@ -250,7 +284,7 @@ export async function sweep(ctx, { kind, packs, select, sortKey, lend, consume }
       catch ( err ) { bad(`interrompu : ${err.message.slice(0, 200)}`); }
       finally { await cleanup(); }
     }
-    await ctx.call("remove-embedded-item", { documentType: "Actor", id: caster.actorId, itemId }).catch(() => {});
+    if ( !own ) await ctx.call("remove-embedded-item", { documentType: "Actor", id: caster.actorId, itemId }).catch(() => {});
     const issues = row.runs.flatMap(x => x.issues.map(i => `${x.activity} — ${i}`));
     ctx.log(`${issues.length ? "✗" : "✓"} ${data.name} (${row.level})${issues.length ? ` : ${issues.join(" ; ")}` : ""}${row.notes.length ? ` [${row.notes.join(" ; ")}]` : ""}`);
     for ( const i of issues ) ctx.expect(false, `${data.name} : ${i}`);
@@ -260,7 +294,7 @@ export async function sweep(ctx, { kind, packs, select, sortKey, lend, consume }
   mkdirSync("prive/balayages", { recursive: true });
   writeFileSync(`prive/balayages/${kind}-${date}.json`, JSON.stringify(report, null, 1));
   const spells = kind === "sorts";
-  const md = [`| ${spells ? "Sort" : "Aptitude"} | ${spells ? "Niv." : "Prérequis"} | Moteur | Constats |`, "|---|---|---|---|"].concat(report.map(r => {
+  const md = [`| ${spells ? "Sort" : "Item"} | ${spells ? "Niv." : "Niv. / prérequis"} | Moteur | Constats |`, "|---|---|---|---|"].concat(report.map(r => {
     const issues = r.runs.flatMap(x => x.issues.map(i => `${x.activity} : ${i}`).concat(x.skipped ? [`${x.activity} : non joué (${x.skipped})`] : [])).concat(r.notes);
     return `| ${r.name} | ${r.level} | ${r.engine.join(", ")} | ${issues.join(" ; ").replace(/\|/g, "/") || "✓"} |`;
   }));

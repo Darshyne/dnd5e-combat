@@ -414,11 +414,15 @@ function makeContext(mcp) {
       // « Cannot read properties of null (reading 'querySelector') » à ChatLog5e.updateMessage (dnd5e) : le journal de discussion du MJ
       // jamais affiché depuis le F5 (barre latérale repliée), dnd5e y rafraîchit la carte d'origine d'un jet (`ui.chat.element` nul).
       // Vu à chaque lancer du balayage des sorts, le 2026-10-22. Le système, pas le moteur.
+      // Même cause chez Dice So Nice (`ThrowPipeline._revealMessage`, « reading 'querySelector' ») : le journal de discussion du MJ
+      // pas affiché, le module y cherche la carte du jet à révéler. Vu dans `audit-pj`, le 2026-10-29. Module tiers.
+      // « setCombatVisibility » au hook `createCombat` (« reading 'querySelector' ») : l'horloge de Simple Timekeeping affichée chez
+      // le MJ cherche un élément de l'interface absent. Environnement, sur décision de l'utilisateur (2026-10-28).
       // « reading 'position' » à `set y` puis `CanvasAnimation#animateFrame` : un texte flottant du cœur (`createScrollingText`) animé
       // sur un objet détruit par le redessin du canevas au changement de niveau — `suivre`, 2/2 et déjà sur 0.259.0 (passe de nuit du
       // 2026-10-28). Le cœur V14, pas le moteur ; ignorée sur décision de l'utilisateur (2026-10-29).
       const thirdPartyAnimation = /Cannot (read|set) properties of null[\s\S]*(modules\/sequencer\/dist\/sequencer\.js|modules\/boss-loot-assets-premium\/)/;
-      return (r.entries ?? r.errors ?? r ?? []).filter?.(e => !thirdPartyAnimation.test(e.message ?? e.text ?? "")).filter?.(e => !/reading 'chain'\)[\s\S]*#animate|Failed to load audio element "(modules\/blfx-|sounds\/)|Codec reclaimed due to inactivity|triggerItems is not iterable|reading 'off'\)[\s\S]*PreciseText\.destroy|screen resolution|usable window dimensions|ResizeObserver loop|search for 'turn' in undefined|does not exist in the EmbeddedCollection|"auraeffects.aura" is not a valid type|Cannot set properties of null \(setting 'hidden'\)|bg3-hud-dnd5e\/scripts\/components\/containers\/DnD5e(Passives|ActionButtons|Info)Container|ChatLog5e\.updateMessage|reading 'position'\)[\s\S]*set y[\s\S]*#animateFrame/i.test(e.message ?? e.text ?? "")) ?? [];
+      return (r.entries ?? r.errors ?? r ?? []).filter?.(e => !thirdPartyAnimation.test(e.message ?? e.text ?? "")).filter?.(e => !/reading 'chain'\)[\s\S]*#animate|Failed to load audio element "(modules\/blfx-|sounds\/)|Codec reclaimed due to inactivity|triggerItems is not iterable|reading 'off'\)[\s\S]*PreciseText\.destroy|screen resolution|usable window dimensions|ResizeObserver loop|search for 'turn' in undefined|does not exist in the EmbeddedCollection|"auraeffects.aura" is not a valid type|Cannot set properties of null \(setting 'hidden'\)|bg3-hud-dnd5e\/scripts\/components\/containers\/DnD5e(Passives|ActionButtons|Info)Container|ChatLog5e\.updateMessage|reading 'querySelector'\)[\s\S]*ThrowPipeline\._revealMessage|setCombatVisibility[\s\S]*reading 'querySelector'|reading 'position'\)[\s\S]*set y[\s\S]*#animateFrame/i.test(e.message ?? e.text ?? "")) ?? [];
     },
 
     /** Le journal du moteur (lignes `dnd5e-combat |`) depuis le dernier vidage : imprimé quand un scénario échoue. */

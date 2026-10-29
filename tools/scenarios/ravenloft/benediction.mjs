@@ -29,7 +29,8 @@ export default {
       for ( let n = 1; n <= 12; n++ ) {
         await ctx.setHp(victim, 1);
         const used = await ctx.use({ tokenId: killer.id, identifier, activityType: "attack", targetTokenIds: [victim.id] });
-        const r = await ctx.settle(used.usageMessageId);
+        // 60 s : quand le journal de discussion du MJ n'est pas affiché, chaque attente des dés 3D va à son maximum (8 s).
+        const r = await ctx.settle(used.usageMessageId, { timeoutMs: 60000 });
         if ( r.targets[0]?.hit && ((await ctx.hp(victim)) === 0) ) return r;
       }
       return null;

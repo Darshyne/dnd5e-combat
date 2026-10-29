@@ -1,7 +1,8 @@
 /**
  * Lame assoiffée (SPEC §16.25) : l'action Attaquer de l'occultiste ouvre deux attaques. Monde `ravenloft` : Kaalisti, au
  * contact de Rahadin, à son tour de combat — la première attaque à l'épée à deux mains dépense l'action et en ouvre deux
- * (`attacks.granted`), la seconde est prise sans nouvelle action. Ailleurs : non applicable.
+ * (`attacks.granted`), la seconde est prise sans nouvelle action. Dans `dnd-6` (Kaalisti posée dans l'Arène de test), le Zombi
+ * à défaut de Rahadin (audit de Kaalisti, 2026-10-29 : le scénario s'y déclarait non applicable).
  */
 const MODULE_ID = "dnd5e-combat";
 const VICTIM = "Rahadin, chambellan du château";
@@ -12,9 +13,10 @@ export default {
 
   async run(ctx) {
     const { tokens } = await ctx.scene();
-    if ( !tokens.some(t => t.name === "Kaalisti") || !tokens.some(t => t.name === VICTIM) ) { ctx.log("Kaalisti ou Rahadin absent : non applicable"); return; }
+    const victimName = [VICTIM, "Zombi"].find(n => tokens.some(t => t.name === n));
+    if ( !tokens.some(t => t.name === "Kaalisti") || !victimName ) { ctx.log("Kaalisti, ou Rahadin et le Zombi, absents : non applicable"); return; }
     const kaalisti = await ctx.token("Kaalisti");
-    const victim = await ctx.token(VICTIM);
+    const victim = await ctx.token(victimName);
     const grid = await ctx.gridSize();
     const at = await ctx.position(kaalisti);
     await ctx.call("move-token", { tokenId: victim.id, x: at.x + grid, y: at.y });

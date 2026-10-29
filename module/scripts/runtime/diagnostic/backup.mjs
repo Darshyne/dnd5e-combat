@@ -66,6 +66,20 @@ function snapshot(root) {
   return { ...root, data: doc.toObject() };
 }
 
+/**
+ * Une copie que l'Aventure peut porter : un acteur ou un objet dont tous les types (le sien, ceux de ses objets et de ses effets) sont
+ * connus de ce monde. Un effet laissé par un module désactivé (« auraeffects.aura », retour Discord 2026-10-29) ferait refuser
+ * toute l'entrée par la validation de l'Aventure : une telle copie va telle quelle dans les flags, comme le delta d'un token.
+ */
+function storable({ type, data }) {
+  const known = (doc, t) => !t || (game.documentTypes?.[doc] ?? [t]).includes(t);
+  const effectsKnown = d => (d?.effects ?? []).every(e => known("ActiveEffect", e?.type));
+  const itemKnown = d => known("Item", d?.type) && effectsKnown(d);
+  if ( type === "Actor" ) return known("Actor", data?.type) && effectsKnown(data) && (data?.items ?? []).every(itemKnown);
+  if ( type === "Item" ) return itemKnown(data);
+  return false;
+}
+
 /** Ce que rend une entrée relue : les racines et leurs données. */
 function readEntry(entry) {
   const meta = entry.getFlag(MODULE_ID, "backup") ?? {};
@@ -73,9 +87,11 @@ function readEntry(entry) {
   const items = new Map(entry.items.map(i => [i._id, i.toObject?.() ?? i]));
   // Des flags lus d'un document ne sont pas des objets simples : une copie, avant de les rendre à une mise à jour.
   const tokens = new Map((meta.tokens ?? []).map(t => [t.uuid, foundry.utils.deepClone(t.data)]));
+  const raw = new Map((meta.raw ?? []).map(r => [r.uuid, foundry.utils.deepClone(r.data)]));
   return (meta.roots ?? []).map(root => {
     const id = root.uuid.split(".").at(-1);
-    const data = (root.type === "Actor") ? actors.get(id) : (root.type === "Item") ? items.get(id) : tokens.get(root.uuid);
+    const data = raw.get(root.uuid)
+      ?? ((root.type === "Actor") ? actors.get(id) : (root.type === "Item") ? items.get(id) : tokens.get(root.uuid));
     return { ...root, data };
   });
 }
@@ -96,12 +112,13 @@ export async function createBackup(roots, { label, checks=[] }) {
   const data = {
     name, img: LOGO,
     description: `<p>${foundry.utils.escapeHTML(loc("Diagnostic.SauvegardeAide"))}</p><ul>${list}</ul>`,
-    actors: copies.filter(c => c.type === "Actor").map(c => c.data),
-    items: copies.filter(c => c.type === "Item").map(c => c.data),
+    actors: copies.filter(c => (c.type === "Actor") && storable(c)).map(c => c.data),
+    items: copies.filter(c => (c.type === "Item") && storable(c)).map(c => c.data),
     flags: { [MODULE_ID]: { backup: {
       version: 1, label, date: Date.now(), checks, user: game.user.name,
       roots: copies.map(({ type, uuid, name }) => ({ type, uuid, name })),
-      tokens: copies.filter(c => c.type === "Token").map(c => ({ uuid: c.uuid, data: c.data }))
+      tokens: copies.filter(c => c.type === "Token").map(c => ({ uuid: c.uuid, data: c.data })),
+      raw: copies.filter(c => (c.type !== "Token") && !storable(c)).map(c => ({ uuid: c.uuid, data: c.data }))
     } } }
   };
   const created = await Adventure.implementation.create(data, { pack: pack.collection });

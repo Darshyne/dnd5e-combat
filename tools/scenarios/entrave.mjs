@@ -49,11 +49,16 @@ export default {
     let freed = false;
     let failures = 0;
     for ( let n = 1; (n <= 20) && !freed; n++ ) {
-      await ctx.use({ tokenId: fighter.id, itemId: escapeId });
-      await pause(2000);
       // Le moteur écrit « Guerrier se libère de Enchevêtrement (15 contre DD 13) » — le DD n'est pas sur le message. La
-      // trace est un tampon tournant : on prend la dernière ligne, celle de cet essai.
-      const line = (await ctx.engineLog()).reverse().find(l => /se libère pas de|se libère de|break free of|breaks free of/.test(l)) ?? "";
+      // trace est un tampon tournant : on prend la dernière ligne, celle de cet essai. Depuis §252 le verdict suit la fin des
+      // dés 3D (8 s au plus) : on attend une ligne de plus qu'avant l'essai.
+      const tries = async () => (await ctx.engineLog()).filter(l => /se libère pas de|se libère de|break free of|breaks free of/.test(l));
+      const lines0 = await tries();
+      await ctx.use({ tokenId: fighter.id, itemId: escapeId });
+      let lines = lines0;
+      const fresh = () => (lines.length > lines0.length) || (lines.at(-1) !== lines0.at(-1));
+      for ( let w = 0; (w < 24) && !fresh(); w++ ) { await pause(500); lines = await tries(); }
+      const line = lines.at(-1) ?? "";
       const m = line.match(/\((\d+) (?:contre DD|vs DC) (\d+)\)/);
       const total = m ? Number(m[1]) : null;
       const dc = m ? Number(m[2]) : null;

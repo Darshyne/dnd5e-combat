@@ -16,6 +16,7 @@ export default {
     // emplacements de niveau 3 sont remis à 3 le temps du scénario (à zéro sur la fiche telle qu'importée, et dnd5e
     // refuse l'utilisation sans emplacement) ; sinon le Zombi, avec un Contresort « à volonté ».
     const { tokens } = await ctx.scene();
+    let refill = null;
     const mageNpc = tokens.find(t => (t.name === "Mage") && !t.hidden);
     if ( mageNpc ) {
       // Le Mage du MM 2024 n'a pas d'emplacements (max 0) : Contresort en consomme un, dnd5e refuse sans. On lui en
@@ -30,9 +31,12 @@ export default {
       const { data: mageToken } = await ctx.call("get-scene-object", { type: "Token", objectId: mageNpc.id });
       const uuid = `Scene.${(await ctx.scene()).sceneId}.Token.${mageNpc.id}.Actor.${mageNpc.actorId}`;
       const protective = (mageToken.delta?.items ?? []).find(i => i.system?.identifier === "protective-magic");
-      if ( protective?.system?.uses?.spent ) {
+      if ( protective ) {
         const match = { path: "_id", value: protective._id };
-        await ctx.call("upsert-embedded-item", { uuid, itemData: { "system.uses.spent": 0 }, match });
+        // Remise à zéro à chaque lancer aussi : trois issues pareilles d'affilée épuisaient ses trois utilisations, et le
+        // quatrième lancer ne trouvait plus de Contresort (passe du 2026-10-28).
+        refill = () => ctx.call("upsert-embedded-item", { uuid, itemData: { "system.uses.spent": 0 }, match });
+        await refill();
         ctx.restore(() => ctx.call("upsert-embedded-item", { uuid, itemData: { "system.uses.spent": protective.system.uses.spent }, match }).catch(() => {}));
         ctx.log(`Magie protectrice du Mage (token) : ${protective.system.uses.spent} utilisation(s) dépensée(s) → 0 le temps du scénario`);
       }
@@ -47,6 +51,7 @@ export default {
     const seen = { dissipated: false, passed: false };
     for ( let i = 0; i < 20 && !(seen.dissipated && seen.passed); i++ ) {
       await ctx.setHp(zombi, hp0);
+      if ( refill ) await refill();
       const before = await ctx.lastMessageId();
       // Le connecteur rend la main dès que `use()` est annulé par la porte : on lit la suite dans le chat.
       await ctx.use({ tokenId: mage.id, identifier: "ray-of-frost", activityType: "attack", targetTokenIds: [zombi.id], usageConfig: { "dnd5e-combat": { autoReact: true } } });

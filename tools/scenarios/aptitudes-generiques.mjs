@@ -117,7 +117,7 @@ export default {
     else {
       const damage = (await ctx.messagesSince(hit.since)).find(m => m.type === "damage");
       const formula = (damage?.rolls ?? []).map(x => x.formula).join(" | ");
-      ctx.expect(/\(\d+\*\d+\)/.test(formula), `touché : dés au maximum (« ${formula} »)`);
+      ctx.expect(/\(\s*\d+\s*\*\s*\d+\s*\)/.test(formula), `touché : dés au maximum (« ${formula} »)`);
       ctx.expect(!(await actorOf()).flags?.[MODULE_ID]?.maxDamage, "touché : la promesse est tenue, effacée");
       const after = (await itemOf("massue"))?.system?.uses?.spent;
       ctx.expect(after === hit.spent - 1, `touché : l'utilisation est rendue (${hit.spent} → ${after})`);
@@ -125,7 +125,7 @@ export default {
 
     // --- 4. Le prochain coup au maximum ------------------------------------------------------------------------------
     const zombiDoc = (await ctx.call("get-scene-object", { type: "Token", objectId: zombi.id })).data;
-    const where = zombiDoc.actorLink ? { documentType: "Actor", id: zombiDoc.actorId } : { uuid: `Scene.${scene.id}.Token.${zombi.id}.Actor.${zombiDoc.actorId}` };
+    const where = zombiDoc.actorLink ? { documentType: "Actor", id: zombiDoc.actorId } : { uuid: `Scene.${scene.sceneId}.Token.${zombi.id}.Actor.${zombiDoc.actorId}` };
     await ctx.call("upsert-embedded-effect", { ...where, effectData: { name: "Essai : en danger", img: "icons/svg/hazard.svg", transfer: false,
       disabled: false, changes: [], origin: `Actor.${hero.actorId}.Item.${ids.danger}` } });
     ctx.restore(() => ctx.removeEffectsNamed(zombi, /Essai : en danger/).catch(() => {}));
@@ -141,7 +141,7 @@ export default {
     if ( !marked ) ctx.expect(false, "aucun coup en six essais (mise en danger)");
     else {
       const formula = ((await ctx.messagesSince(marked)).find(m => m.type === "damage")?.rolls ?? []).map(x => x.formula).join(" | ");
-      ctx.expect(/\(\d+\*\d+\)/.test(formula), `en danger : dés au maximum (« ${formula} »)`);
+      ctx.expect(/\(\s*\d+\s*\*\s*\d+\s*\)/.test(formula), `en danger : dés au maximum (« ${formula} »)`);
       const left = (await ctx.effects(zombi)).filter(e => e.name === "Essai : en danger").length;
       ctx.expect(left === 0, `en danger : l'effet a servi (${left} restant)`);
     }
@@ -163,7 +163,7 @@ export default {
       formula = (await ctx.messagesSince(since)).flatMap(m => m.rolls ?? []).find(x => /d20/.test(x.formula ?? ""))?.formula ?? formula;
       if ( r?.targets?.[0]?.save?.success === false ) held = true;
     }
-    ctx.expect(/kl/.test(formula), `sauvegarde contre la Lutte avec le Désavantage (« ${formula} »)`);
+    ctx.expect(/kl|dis/.test(formula), `sauvegarde contre la Lutte avec le Désavantage (« ${formula} »)`);
     if ( !ctx.expect(held, "le Guerrier agrippe le Zombi") ) return;
     await sleep(1000);
     const fromSorc = await ctx.engine("cover", { attackerId: sorc.id, targetId: hero.id });

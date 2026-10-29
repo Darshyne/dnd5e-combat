@@ -21,11 +21,22 @@
  *    l'un ou de l'autre, au choix de l'auteur.
  *  - `commandStrike` (Frappe commandée) : la créature visée reçoit l'ordre (`commanded` dans le budget de son tour : sa prochaine
  *    attaque d'arme ce tour-ci se paie par sa Réaction, runtime/turn.mjs) et le dé promis à ses dégâts (`pendingDie`, `against: "any"`).
+ *
+ * §279, dégâts maximaux :
+ *  - `maxDamage` `{ activity, weapons?, refundOnHit? }` : utiliser l'activité promet le maximum des dés à la prochaine attaque de l'auteur
+ *    ce tour-ci avec une arme de ces genres (`weapons` : "unarmed" ou un type d'arme de dnd5e, adapter/messages.mjs `weaponKind`) — la
+ *    promesse est portée comme `pendingDie` (`flags.dnd5e-combat.maxDamage`) ; touchée, les dés du jet de dégâts valent leur maximum et,
+ *    avec `refundOnHit`, les utilisations que l'activité a coûtées reviennent ; ratée, elle est perdue (sur le MJ actif, à la résolution).
+ *  - `maxNextHit: true` : une créature qui porte un effet de l'item subit le maximum des dés de la prochaine attaque qui la touche, puis
+ *    l'effet cesse (sur le MJ actif, à la résolution).
  */
 
 import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
 import { contentOf } from "../adapter/content.mjs";
+import { maximizeDice } from "../core/max-dice.mjs";
+import { weaponKind } from "../adapter/messages.mjs";
+import { originItemOf } from "../adapter/facts.mjs";
 import { currentTurnKey, combatantFor, readBudget, writeBudget, distanceBetween, historyCosts, speakerTokenOf } from "../adapter/turn.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
 import { usesLeftFor } from "../adapter/inspiration.mjs";
@@ -37,6 +48,7 @@ import { route } from "./router.mjs";
 import { log, loc, notice, sleep, say, locEsc } from "./shared.mjs";
 
 const FLAG = "pendingDie";
+const MAX_FLAG = "maxDamage";
 
 /** La formule de la première part de dégâts de l'activité, lue avec les données de l'acteur. */
 function dieOf(activity) {
@@ -58,6 +70,14 @@ async function onPostUse(activity, usageConfig, results) {
       log(`${activity.item.name}: +${formula} promised to the next hit ${pending.against === "target" ? "against the target" : "in melee"} this turn`);
     }
   }
+  // §279 : la promesse du maximum (Coup de massue), avec ce que l'activité a coûté, pour le rendre sur un coup.
+  if ( entry.maxDamage?.activity === activity.id ) {
+    const refund = (activity.consumption?.targets ?? []).filter(t => t.type === "itemUses")
+      .map(t => ({ item: t.target || activity.item.id, value: Number(t.value) || 1 }));
+    await actor.setFlag(MODULE_ID, MAX_FLAG, { item: activity.item.uuid, name: activity.item.name, weapons: entry.maxDamage.weapons ?? null,
+      refund: entry.maxDamage.refundOnHit ? refund : [], turn: currentTurnKey() });
+    log(`${activity.item.name}: maximum damage promised to the next qualifying attack this turn`);
+  }
   const rolled = ((entry.rolledAc?.activity === activity.id) && (entry.rolledAc.to !== "choose")) ? entry.rolledAc : null;
   if ( rolled && activity.roll?.formula ) {
     const roll = await new Roll(activity.roll.formula, activity.getRollData()).evaluate();
@@ -72,7 +92,45 @@ async function onPostUse(activity, usageConfig, results) {
   }
 }
 
+/** §279 : la promesse du maximum vaut-elle pour cette attaque (même tour, genre d'arme) ? */
+function maxPromiseFits(promise, activity) {
+  if ( !promise || (activity?.type !== "attack") ) return false;
+  return !promise.weapons || promise.weapons.includes(weaponKind(activity));
+}
+
+/** §279 : les créatures visées portent-elles un effet d'un item `maxNextHit` ? Rend ces effets. */
+function maxNextHitEffects(actor) {
+  return (actor?.appliedEffects ?? []).filter(e => {
+    const item = originItemOf(e);
+    return !!item && (contentOf(item).entry?.maxNextHit === true);
+  });
+}
+
+/** §279 : sur le client de l'auteur, au jet de dégâts d'un coup — les dés au maximum (Coup de massue, Mise en danger). */
+function maximizeOnHit(config, message) {
+  const activity = config?.subject;
+  const actor = activity?.actor;
+  if ( !actor || (activity.type !== "attack") || !config.rolls?.length ) return;
+  const promise = actor.getFlag(MODULE_ID, MAX_FLAG);
+  if ( promise && (promise.turn !== currentTurnKey()) ) actor.unsetFlag(MODULE_ID, MAX_FLAG).catch(() => {});
+  const promised = promise && (promise.turn === currentTurnKey()) && maxPromiseFits(promise, activity);
+  const targets = (foundry.utils.getProperty(message ?? {}, "data.system.targets") ?? [])
+    .map(t => fromUuidSync(t.token, { strict: false })?.actor).filter(Boolean);
+  const endangered = targets.length && targets.every(t => maxNextHitEffects(t).length);
+  if ( !promised && !endangered ) return;
+  for ( const roll of config.rolls ) roll.parts = (roll.parts ?? []).map(part => maximizeDice(part));
+  log(`${activity.item?.name}: damage dice at their maximum (${promised ? promise.name : "next hit"})`);
+  if ( !promised ) return;
+  actor.unsetFlag(MODULE_ID, MAX_FLAG).catch(() => {});
+  for ( const { item: id, value } of promise.refund ?? [] ) {
+    const item = actor.items.get(id);
+    const spent = Number(item?.system?.uses?.spent) || 0;
+    if ( item && spent ) item.update({ "system.uses.spent": Math.max(0, spent - value) }).catch(() => {});
+  }
+}
+
 function onPreRollDamage(config, dialog, message) {
+  maximizeOnHit(config, message);
   const activity = config?.subject;
   const actor = activity?.actor;
   const pending = actor?.getFlag(MODULE_ID, FLAG);
@@ -100,6 +158,7 @@ async function onResolution(resolution) {
   const source = fromUuidSync(resolution.source ?? "", { strict: false });
   const actor = source?.actor ?? source;
   if ( actor?.items ) await sweep(resolution, actor, source?.actor ? source : tokenOf(actor));
+  await settleMaxDamage(resolution, actor);
   const pending = actor?.getFlag?.(MODULE_ID, FLAG);
   if ( !pending || (pending.against !== "target") ) return;
   const missed = (resolution.targets ?? []).some(t => (t.token === pending.target) && (t.hit === false));
@@ -214,6 +273,29 @@ async function onUsageCard(message) {
   if ( entry.commandStrike?.activity === activity.id ) await commandStrike(activity, activity.actor, other);
   const swapped = (entry.swapPlaces?.activity === activity.id) && self ? await swapPlaces(activity.item, self, other) : true;
   if ( swapped && (entry.rolledAc?.activity === activity.id) && (entry.rolledAc.to === "choose") && self ) await chosenAc(activity, entry.rolledAc, self, other);
+}
+
+/**
+ * §279, sur le MJ actif : une attaque ratée qui répondait à la promesse du maximum la perd ; une créature touchée qui portait un effet
+ * `maxNextHit` le perd (son coup de maximum est passé).
+ */
+async function settleMaxDamage(resolution, actor) {
+  const promise = actor?.getFlag?.(MODULE_ID, MAX_FLAG);
+  const activity = fromUuidSync(resolution.activity ?? "", { strict: false });
+  if ( promise && (resolution.step === STEPS.MISSED) && maxPromiseFits(promise, activity) ) {
+    await actor.unsetFlag(MODULE_ID, MAX_FLAG);
+    log(`${promise.name}: the attack missed, the promise is lost`);
+  }
+  if ( resolution.step !== STEPS.DONE ) return;
+  for ( const t of resolution.targets ?? [] ) {
+    if ( !t.hit ) continue;
+    const target = fromUuidSync(t.token, { strict: false })?.actor;
+    const gone = maxNextHitEffects(target).filter(e => e.parent === target).map(e => e.id);
+    if ( gone.length ) {
+      await target.deleteEmbeddedDocuments("ActiveEffect", gone);
+      log(`${target.name}: maximum-damage mark spent`);
+    }
+  }
 }
 
 export function registerManeuverDice() {

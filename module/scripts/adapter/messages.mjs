@@ -192,9 +192,12 @@ export async function rollDamageForAttack(attackMessage, { critical, variant=nul
 export function damageTypeChoices(activity) {
   const size = types => types?.size ?? types?.length ?? 0;
   // Relevé des trous : Sorts psychiques — les types que le lanceur peut donner aux dégâts d'un sort de sa classe, après ceux du sort.
+  // §279 : de même pour une attaque d'arme ou à mains nues (`weaponDamageTypes`) — les types de l'arme d'abord.
   const extra = spellRetypes(activity);
   if ( extra.length ) {
-    const own = [...((activity.damage.parts.find(p => size(p.types) > 1) ?? activity.damage.parts[0])?.types ?? [])];
+    const parts = activity.damage?.parts ?? [];
+    const base = (activity.item?.type === "weapon") ? activity.item.system.damage?.base?.types : null;
+    const own = [...((parts.find(p => size(p.types) > 1) ?? parts[0])?.types ?? base ?? [])];
     return [...new Set([...own, ...extra])];
   }
   const part = (activity?.damage?.parts ?? []).find(p => size(p.types) > 1);
@@ -214,6 +217,7 @@ export function damageTypeChoices(activity) {
 export function spellRetypes(activity) {
   const item = activity?.item;
   const actor = activity?.actor;
+  if ( (item?.type === "weapon") && (activity.type === "attack") && actor ) return weaponRetypes(activity);
   if ( (item?.type !== "spell") || !actor || !(activity.damage?.parts ?? []).length ) return [];
   const out = new Set();
   for ( const i of actor.items ) {
@@ -221,6 +225,26 @@ export function spellRetypes(activity) {
     if ( !rule ) continue;
     const cls = spellClassOf(item) || (actor.classes?.[rule.class] ? rule.class : null);
     if ( cls === rule.class ) for ( const t of rule.types ) out.add(t);
+  }
+  return Array.from(out);
+}
+
+/**
+ * §279 : le genre d'une attaque d'arme, pour les règles qui en nomment une liste — « unarmed » (frappe à mains nues, classée ainsi par
+ * dnd5e : `attack.type.classification`), sinon le type d'arme de dnd5e (`simpleM`, `martialM`, `natural`, `improv`…).
+ */
+export function weaponKind(activity) {
+  if ( activity?.attack?.type?.classification === "unarmed" ) return "unarmed";
+  return activity?.item?.system?.type?.value ?? null;
+}
+
+/** §279 : `weaponDamageTypes` — les types qu'un item de l'auteur permet de donner aux dégâts d'une attaque de ces genres d'arme. */
+function weaponRetypes(activity) {
+  const kind = weaponKind(activity);
+  const out = new Set();
+  for ( const i of activity.actor.items ) {
+    const rule = contentOf(i).entry?.weaponDamageTypes;
+    if ( rule && kind && rule.weapons.includes(kind) ) for ( const t of rule.types ) out.add(t);
   }
   return Array.from(out);
 }

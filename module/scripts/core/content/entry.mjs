@@ -6,7 +6,7 @@ import { CREATURE_TYPES } from "../eligibility.mjs";
 import { ORDERS } from "../orders.mjs";
 import { unknownFacts } from "../triggers.mjs";
 import { validateAbsorb, validateCarriedLight, validateChoice, validateEmanation, validateLight, validateSummon, validateTargets, validateTeleport } from "./annex.mjs";
-import { BASIC_ACTION_KINDS, BONUS_ATTACK_AFTER, BREAK_MOMENTS, EFFECT_EXPIRIES, ENDS_APART_AT, ENDS_ARMOR, ENDS_UNAFFECTED, ENTRY_KEYS, SIZES } from "./enums.mjs";
+import { BASIC_ACTION_KINDS, BONUS_ATTACK_AFTER, BREAK_MOMENTS, EFFECT_EXPIRIES, ENDS_APART_AT, ENDS_ARMOR, ENDS_UNAFFECTED, ENTRY_KEYS, SIZES, WEAPON_KINDS } from "./enums.mjs";
 import { validateExtras } from "./extras.mjs";
 import { isId, isObject } from "./shared.mjs";
 import { validateAura, validateTrigger } from "./steps.mjs";
@@ -298,6 +298,23 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       if ( !isObject(t) || !["radius", "sphere", "circle", "cube", "square"].includes(t.type) ) errors.push(`${at}selfZone.${id}.type: radius, sphere, circle, cube, square`);
       if ( !(Number.isFinite(t?.size) && (t.size > 0)) ) errors.push(`${at}selfZone.${id}.size: positive number`);
       if ( (typeof t?.units !== "string") || !t.units ) errors.push(`${at}selfZone.${id}.units: unit required`);
+    }
+  }
+  // §279 : dégâts maximaux promis par une activité, ou sur la prochaine attaque qui touche le porteur d'un effet ; types en plus d'une arme.
+  const kinds = w => Array.isArray(w) && w.length && w.every(k => WEAPON_KINDS.includes(k));
+  if ( "maxDamage" in entry ) {
+    const m = entry.maxDamage;
+    if ( !isObject(m) || !isId(m.activity) || (("weapons" in m) && !kinds(m.weapons)) || (("refundOnHit" in m) && (m.refundOnHit !== true))
+      || !Object.keys(m).every(k => ["activity", "weapons", "refundOnHit"].includes(k)) ) {
+      errors.push(`${at}maxDamage: { activity, weapons?: [${WEAPON_KINDS.join("|")}], refundOnHit?: true }`);
+    }
+  }
+  if ( ("maxNextHit" in entry) && (entry.maxNextHit !== true) ) errors.push(`${at}maxNextHit: true or absent`);
+  if ( "weaponDamageTypes" in entry ) {
+    const d = entry.weaponDamageTypes;
+    if ( !isObject(d) || !kinds(d.weapons) || !Array.isArray(d.types) || !d.types.length || !d.types.every(t => (typeof t === "string") && t)
+      || !Object.keys(d).every(k => ["weapons", "types"].includes(k)) ) {
+      errors.push(`${at}weaponDamageTypes: { weapons: [${WEAPON_KINDS.join("|")}], types: [damage types] }`);
     }
   }
   if ( ("pendingDie" in entry) && !(isObject(entry.pendingDie) && isId(entry.pendingDie.activity) && ["melee", "target"].includes(entry.pendingDie.against)

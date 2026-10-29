@@ -493,6 +493,14 @@
  *     pendingDie?: { activity, against: "melee"|"target" }  §89 : l'activité promet son dé au prochain jet de dégâts d'une
  *                                               attaque de l'auteur ce tour-ci, au corps à corps ou contre la cible désignée (Fente,
  *                                               Feinte du Maître de guerre ; runtime/maneuver-dice.mjs)
+ *     maxDamage?: { activity, weapons?, refundOnHit? }  §279 : l'activité promet le maximum des dés à la prochaine attaque de l'auteur
+ *                                               ce tour-ci avec une arme de ces genres (`weapons` : "unarmed", "simpleM", "improv"… —
+ *                                               WEAPON_KINDS) ; touchée, `refundOnHit` rend les utilisations que l'activité a coûtées ;
+ *                                               ratée, la promesse est perdue (runtime/maneuver-dice.mjs)
+ *     maxNextHit?: true                         §279 : le porteur d'un effet de l'item subit le maximum des dés de la prochaine attaque qui
+ *                                               le touche, puis l'effet cesse
+ *     weaponDamageTypes?: { weapons, types }    §279 : une attaque de l'auteur avec une arme de ces genres peut prendre l'un de ces types de
+ *                                               dégâts, proposé avec le sien avant le jet (comme `spellDamageTypes`)
  *     rolledAc?: { activity, effect, to? }      §89 : l'activité lance le dé de son `roll` et pose l'effet de l'item sur l'auteur, le
  *                                               bonus de CA écrit dedans (Jeu de jambes évasif) ; §90 `to: "choose"` : sur l'auteur
  *                                               ou sur la créature visée, au choix de l'auteur (Chassé-croisé)

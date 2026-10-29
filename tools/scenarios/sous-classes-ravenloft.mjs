@@ -91,8 +91,11 @@ export default {
     await pause(800);
     // Le connecteur coupe l'enchaînement de dnd5e : le jet de PV temporaires se lance par la carte.
     if ( fu.usageMessageId ) await ctx.engine("rollCard", { messageId: fu.usageMessageId }).catch(() => null);
-    await pause(2500);
-    ctx.expect((await ctx.effects(warlock)).some(e => !e.disabled && /Dread|effroi/i.test(e.name ?? "")), "Forme d'effroi : l'effet sur l'Occultiste");
+    // L'effet suit le jet de PV temporaires, posé après la fin des dés 3D (8 s au plus) : on l'attend (vu le 2026-10-29 : ~3,5 s).
+    const dreadOn = async () => (await ctx.effects(warlock)).some(e => !e.disabled && /Dread|effroi/i.test(e.name ?? ""));
+    let dreading = false;
+    for ( let w = 0; (w < 24) && !dreading; w++ ) { await pause(500); dreading = await dreadOn(); }
+    ctx.expect(dreading, "Forme d'effroi : l'effet sur l'Occultiste");
     let frightful = null;
     for ( let n = 0; (n < 12) && !frightful; n++ ) {
       await tough(); await clear(bandit);

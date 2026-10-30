@@ -160,6 +160,8 @@ export default {
     });
 
     await part("Apaisement des émotions", async () => {
+      // Une zone ignore une créature à 0 PV (le Bandit de `dnd-6` l'est parfois, le lanceur ne relève pas les morts).
+      await tough();
       let posed = null;
       for ( let n = 1; (n <= 15) && !posed; n++ ) {
         await clearNew(bandit);

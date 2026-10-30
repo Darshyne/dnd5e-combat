@@ -159,3 +159,60 @@ export function withinSphere(sphere, box) {
 export function overlapsVertically(a, b, gridDistance) {
   return verticalGap(verticalExtent(a, gridDistance), verticalExtent(b, gridDistance)) <= 1e-6;
 }
+
+/* -------------------------------------------- */
+/*  Zones de plusieurs formes (§286)            */
+/* -------------------------------------------- */
+
+/**
+ * Le rectangle d'une forme « rectangle » de région, axes alignés (ancre comprise), ou null pour une autre forme.
+ * @param {{type: string, x: number, y: number, width: number, height: number, anchorX?: number, anchorY?: number}} shape
+ * @returns {{x0: number, y0: number, x1: number, y1: number}|null}
+ */
+export function rectOfShape(shape) {
+  if ( (shape?.type !== "rectangle") || !Number.isFinite(shape.width) || !Number.isFinite(shape.height) ) return null;
+  const x0 = shape.x - ((shape.anchorX ?? 0) * shape.width), y0 = shape.y - ((shape.anchorY ?? 0) * shape.height);
+  return { x0, y0, x1: x0 + shape.width, y1: y0 + shape.height };
+}
+
+/** Le point est-il dans le rectangle (bords compris) ? */
+export function pointInRect(point, rect) {
+  return !!rect && (point.x >= rect.x0 - 1e-6) && (point.x <= rect.x1 + 1e-6) && (point.y >= rect.y0 - 1e-6) && (point.y <= rect.y1 + 1e-6);
+}
+
+/**
+ * §286 : des cubes « contigus » (Tempête de feu : « chaque cube doit être contigu à au moins un autre ») — tous reliés de proche en
+ * proche par une face commune (un chevauchement compte, un coin seul non). Moins de deux rectangles : contigus.
+ * @param {Array<{x0: number, y0: number, x1: number, y1: number}>} rects
+ */
+export function contiguousRects(rects) {
+  if ( rects.length < 2 ) return true;
+  const eps = 1e-6;
+  const span = (a0, a1, b0, b1) => Math.min(a1, b1) - Math.max(a0, b0);
+  const touch = (a, b) => {
+    const sx = span(a.x0, a.x1, b.x0, b.x1), sy = span(a.y0, a.y1, b.y0, b.y1);
+    return ((sx > eps) && (sy > -eps)) || ((sy > eps) && (sx > -eps));
+  };
+  const seen = new Set([0]);
+  const queue = [0];
+  while ( queue.length ) {
+    const i = queue.shift();
+    rects.forEach((r, j) => { if ( !seen.has(j) && touch(rects[i], r) ) { seen.add(j); queue.push(j); } });
+  }
+  return seen.size === rects.length;
+}
+
+/**
+ * §286 : une zone de plusieurs formes (Nuée de météores : quatre sphères ; Tempête de feu : dix cubes) prend une créature si UNE de
+ * ses formes la contient et l'atteint — chaque forme a son point d'origine. Ce que la créature devient pour `areaTargets` :
+ * `inVolume` (false : hors de toute forme), `lineOfEffect` (false : chaque forme qui la contient est arrêtée par un plancher).
+ * @param {Array<{inShape: boolean|null, lineOfEffect: boolean|null}>} results  Une ligne par forme ; null : on ne sait pas.
+ * @returns {{inVolume: boolean|null, lineOfEffect: boolean|null}}
+ */
+export function anyShapeTakes(results) {
+  if ( !results?.length ) return { inVolume: null, lineOfEffect: null };
+  const takes = results.find(r => (r.inShape !== false) && (r.lineOfEffect !== false));
+  if ( takes ) return { inVolume: takes.inShape ?? null, lineOfEffect: takes.lineOfEffect ?? null };
+  if ( results.some(r => r.inShape !== false) ) return { inVolume: null, lineOfEffect: false };
+  return { inVolume: false, lineOfEffect: null };
+}

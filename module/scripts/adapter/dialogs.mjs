@@ -25,9 +25,10 @@ const countdownText = n => game.i18n.format("DND5ECOMBAT.Delai.Auto", { n });
  * @param {object} [options]
  * @param {*} [options.fallback]    Ce que rend la fenêtre si le délai l'a fermée (l'action d'un bouton…).
  * @param {number} [options.seconds]
+ * @param {boolean} [options.front]  §282 : la fenêtre passe devant les autres à son ouverture.
  * @returns {Promise<*>}  Le bouton choisi ; `fallback` au bout du délai ; null si on la ferme soi-même.
  */
-export function timedWait(config, { fallback=null, seconds=combatWindowSeconds() }={}) {
+export function timedWait(config, { fallback=null, seconds=combatWindowSeconds(), front=false }={}) {
   let left = seconds;
   let timer = null;
   let timedOut = false;
@@ -51,6 +52,7 @@ export function timedWait(config, { fallback=null, seconds=combatWindowSeconds()
     content: `${config.content ?? ""}${countdown}`,
     rejectClose: false,
     render: (event, dialog) => {
+      if ( front ) dialog.bringToFront?.();
       if ( timer ) return;
       requestAnimationFrame(() => update(dialog));   // après la première peinture, sinon pas de transition
       timer = setInterval(() => {

@@ -23,6 +23,7 @@ import { initiativeReroll, rerolledInitiative } from "../core/initiative.mjs";
 import { swapPartners } from "../core/feats.mjs";
 import { initiativeRegain } from "../core/self-care.mjs";
 import { enqueue } from "./queue.mjs";
+import { heroicAfter } from "./heroic.mjs";
 import { route } from "./router.mjs";
 import { log, say, locEsc } from "./shared.mjs";
 import { sideOf } from "../adapter/factions.mjs";
@@ -43,14 +44,17 @@ async function onCheckRolled(rolls, { skill=null, tool=null, ability=null, subje
   const what = checkName({ skill, tool, ability });
   // §148 : le DD du test quand le jet le porte (carte de demande, DD donné au jet : `options.target` du D20Roll).
   const dc = Number.isFinite(rolls?.[0]?.options?.target) ? rolls[0].options.target : null;
+  // §282 : l'Inspiration héroïque d'abord (runtime/heroic.mjs, inscrit avant) — la relance change le total et le d20 que lisent les dés suivants.
+  const heroic = await heroicAfter(rolls[0]);
+  const rolled = heroic?.total ?? total;
   // §280 : la caractéristique du test et son DD, quand le jet les porte (une règle limitée à certaines caractéristiques, « quand vous ratez »).
   const used = ability ?? rolls?.[0]?.data?.abilityId ?? (skill ? actor.system?.skills?.[skill]?.ability : null) ?? null;
-  const added = await offerRollBonus(actor, { kind: "check", what, total, skill, d20: keptD20(rolls?.[0]), needed: dc, ability: used });
-  if ( added ) log(`${actor.name}: die added to their check, ${total} + ${added} = ${total + added}`);
+  const added = await offerRollBonus(actor, { kind: "check", what, total: rolled, skill, d20: heroic?.kept ?? keptD20(rolls?.[0]), needed: dc, ability: used });
+  if ( added ) log(`${actor.name}: die added to their check, ${rolled} + ${added} = ${rolled + added}`);
   // §113 : l'Inspiration bardique sur un test (« quand la créature rate un Test d20 ») — sans DD connu, au joueur de juger ; §148 : avec
   // le DD, la question le dit, et rien sur une réussite ni quand le dé ne pourrait pas suffire.
-  const inspired = await offerInspiration(actor, { what, total: total + added, needed: dc, test: true });
-  if ( inspired ) log(`${actor.name}: Bardic Inspiration on their check, ${total + added} + ${inspired} = ${total + added + inspired}`);
+  const inspired = await offerInspiration(actor, { what, total: rolled + added, needed: dc, test: true });
+  if ( inspired ) log(`${actor.name}: Bardic Inspiration on their check, ${rolled + added} + ${inspired} = ${rolled + added + inspired}`);
 }
 
 /** Sur le client qui écrit l'initiative : est-ce la première que reçoit ce combattant ? (lu au `updateCombatant`, partout) */
@@ -202,7 +206,9 @@ function onInitiativeMessage(message) {
   const combatant = combatantOfMessage(message);
   if ( !combatant ) return;
   enqueue(`hypervigilance:${message.id}`, async () => {
-    await hypervigilance(message, combatant);
+    // §282 : l'Inspiration héroïque d'abord (runtime/heroic.mjs) ; un d20 qu'elle a relancé n'est plus celui de la carte.
+    const heroic = await heroicAfter(message.id);
+    if ( !heroic ) await hypervigilance(message, combatant);
     await alertSwap(combatant);
   });
 }

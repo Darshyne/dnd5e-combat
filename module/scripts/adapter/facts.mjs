@@ -89,12 +89,27 @@ export function originItemOf(effect) {
  * §16.36 : l'acteur porte-t-il un effet actif d'un item qui l'empêche de bénéficier de l'état Invisible (Poussière d'étoile,
  * Lueurs féeriques : `revealsInvisible`) ? Seulement s'il est Invisible — sinon il n'y a rien à retirer.
  */
-export function revealedInvisible(actor) {
+export function revealedInvisible(actor, observer=null) {
   if ( !actor?.statuses?.has?.("invisible") ) return false;
+  if ( knownTo(actor, observer) ) return true;   // §284 : Épine mentale, contre son lanceur seul
   for ( const effect of actor.appliedEffects ?? actor.effects ?? [] ) {
     if ( effect.disabled || effect.isSuppressed ) continue;
     const item = originItemOf(effect);
     if ( item && (contentOf(item).entry?.revealsInvisible === true) ) return true;
+  }
+  return false;
+}
+
+/**
+ * §284 : `observer` (acteur) a-t-il lancé sur `actor` un effet actif d'un item `knownToOrigin` (Épine mentale : « vous savez
+ * toujours où elle se trouve ; elle ne peut pas se Cacher de vous, et l'état Invisible ne lui apporte rien contre vous ») ?
+ */
+export function knownTo(actor, observer) {
+  if ( !actor || !observer || (actor === observer) ) return false;
+  for ( const effect of actor.appliedEffects ?? actor.effects ?? [] ) {
+    if ( effect.disabled || effect.isSuppressed ) continue;
+    const item = originItemOf(effect);
+    if ( item && (contentOf(item).entry?.knownToOrigin === true) && (item.actor?.uuid === observer.uuid) ) return true;
   }
   return false;
 }

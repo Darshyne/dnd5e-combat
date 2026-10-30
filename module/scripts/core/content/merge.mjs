@@ -25,12 +25,12 @@ const STRATEGIES = Object.freeze({
 
 /** La stratégie de chaque clé d'entrée (toutes celles de `ENTRY_KEYS`, tests/content.test.mjs), dans l'ordre où elles s'écrivent. */
 export const MERGE = Object.freeze({
-  triggers: "triggers", endsWhen: "shallow", banishes: "replace", singleAttack: "replace", noAttacksOrSpells: "replace", afterSmite: "replace", wardsConditions: "replace", aura: "shallow", onHit: "shallow", choice: "shallow", targets: "shallow", trace: "trace",
+  triggers: "triggers", endsWhen: "shallow", banishes: "replace", singleAttack: "replace", spellFailure: "replace", untypedDamage: "replace", noAttacksOrSpells: "replace", noSpells: "replace", knownToOrigin: "replace", panic: "replace", confusion: "replace", noBonus: "replace", forcedAttack: "replace", upkeep: "replace", keepsProne: "replace", afterSmite: "replace", wardsConditions: "replace", aura: "shallow", onHit: "shallow", choice: "shallow", targets: "shallow", trace: "trace",
   enchantTarget: "replace", ranges: "shallow", tether: "shallow", pact: "shallow", damageShield: "shallow",
   hitDiceHeal: "shallow", teleport: "shallow", lineDash: "shallow", absorb: "shallow", summon: "shallow",
   movable: "shallow", burst: "shallow", recast: "replace", obscures: "replace", revealsInvisible: "replace",
   effectsExpire: "replace", usageLimits: "shallow", healMax: "replace", duplicates: "replace", reactiveSpell: "replace",
-  saveAdvantage: "list", onFell: "shallow", bonusAttack: "shallow", projectiles: "shallow", leap: "shallow",
+  saveAdvantage: "list", onFell: "shallow", bonusAttack: "shallow", projectiles: "shallow", leap: "shallow", chain: "replace", curesOn: "replace", endsOnUse: "replace", drawsOnEnd: "shallow", catalyst: "replace",
   bolt: "shallow", light: "shallow", atTurnStart: "shallow", breaksOn: "list", noReactions: "replace",
   actionOrBonus: "replace", cures: "list", curesAll: "list", potionEffect: "replace", castTargets: "replace",
   effectChanges: "shallow", advantageIfFighting: "replace", emanation: "shallow", regeneration: "replace",

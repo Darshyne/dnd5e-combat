@@ -47,9 +47,9 @@ import { floatNotice } from "./feedback.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { potionCastsOnDrinker } from "../adapter/usage.mjs";
 import { isPotion } from "../adapter/potions.mjs";
-import { aimedAreaOf, aimedShapeData, aimedRegionData, wallAreaOf, rangedAreaOf, rangedTooFar, rangedCenter } from "../adapter/self-area.mjs";
+import { chainOf } from "../adapter/chain.mjs";
+import { aimedAreaOf, aimedShapeData, aimedRegionData, wallAreaOf, rangedAreaOf, rangedPlacementProblem } from "../adapter/self-area.mjs";
 import { castAimed, placeAimed, placeWall } from "../runtime/self-area.mjs";
-import { clearPathTo } from "../adapter/cover.mjs";
 import { clampPolyline, polylineLength, orthogonalize } from "../core/wall.mjs";
 import { closeMenu, onMenuShift, HIGH_JUMP_MENU_SETTING, NONLETHAL_MENU_SETTING } from "./pointer-menu.mjs";
 import { cancellable, clearPreview, forgetHover, lastPointer, onKeyDown, onModifierKey, onPointerDown, onPointerMove, onPointerUp, refusalFor, setCursor, trackPointer } from "./pointer-mouse.mjs";
@@ -688,12 +688,12 @@ function onCreateTemplate(activity, regionData) {
   const area = rangedAreaOf(activity);
   if ( !area ) return;
   const shapes = (regionData ?? []).flatMap(d => d.shapes ?? []);
-  const far = shapes.some(shape => rangedTooFar(area, shape));
   // §200 : « Chemin dégagé vers la cible » — pas de point d'origine derrière un mur (Boule de feu lancée derrière un mur, retour de
-  // table du 2026-10-18).
-  const hidden = !far && shapes.some(shape => clearPathTo(area.token, rangedCenter(shape)) === false);
-  if ( !far && !hidden ) return;
-  ui.notifications.warn(loc(far ? "Zone.HorsPortee" : "Zone.SansChemin", { item: activity.item.name, max: area.max, units: area.units }));
+  // table du 2026-10-18). §286 : chaque gabarit d'une zone multiple ; Tempête de feu — « chaque cube contigu à au moins un autre ».
+  const problem = rangedPlacementProblem(area, shapes);
+  if ( !problem ) return;
+  const key = { far: "Zone.HorsPortee", hidden: "Zone.SansChemin", apart: "Zone.NonContigue" }[problem];
+  ui.notifications.warn(loc(key, { item: activity.item.name, max: area.max, units: area.units }));
   dnd5e.canvas.TemplatePlacement.fromActivity(activity).catch(err => console.error(`${MODULE_ID} | ranged area placement`, err));
   return false;
 }
@@ -830,7 +830,9 @@ export function pickTarget(hover) {
     announceTargeting();
     return setReticleLabel(counterText());
   }
-  const refusal = refusalFor(picking.token, hover, picking.activity);
+  // §286 : Chaîne d'éclairs — après la première, chaque cible à 9 m d'elle.
+  const chained = (picking.group && picking.picks.length && chainOf(picking.activity.item)) ? { [MODULE_ID]: { chainFrom: picking.picks[0] } } : null;
+  const refusal = refusalFor(picking.token, hover, picking.activity, chained);
   if ( refusal ) return floatNotice(hover, refusal, "refused");
   picking.picks.push(hover.uuid);
   hover.object.setTarget(true, { releaseOthers: false, groupSelection: true });

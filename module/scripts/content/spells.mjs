@@ -16,14 +16,40 @@ export const BREAKS_ON = Object.freeze({
 });
 
 /** Le porteur d'un effet du sort ne peut pas prendre de Réaction (Tentacules de Hadar : jusqu'au début du tour suivant de la cible). */
-export const NO_REACTIONS = Object.freeze(["arms-of-hadar", "fetid-cloud", "slow"]);
+export const NO_REACTIONS = Object.freeze(["arms-of-hadar", "confusion", "fetid-cloud", "slow"]);
 
 /** §77 : « une action ou une action Bonus lors de son tour, pas les deux » — Nuage fétide (Dretch, Monster Manual 2024), Lenteur. */
 export const ACTION_OR_BONUS = Object.freeze(["fetid-cloud", "slow"]);
 /** §267 : « elle ne peut faire qu'une attaque si elle prend l'action Attaquer » (Lenteur). */
 export const SINGLE_ATTACK = Object.freeze(["slow"]);
+/** §283 : « si elle lance un sort avec une composante somatique, il y a 25 % de chances que le sort échoue » (Lenteur). */
+export const SPELL_FAILURES = Object.freeze({ "slow": { chance: 25, component: "somatic" } });
 /** §269 : « la cible ne peut ni attaquer ni lancer de sorts » (Forme gazeuse). */
 export const NO_ATTACKS_OR_SPELLS = Object.freeze(["gaseous-form"]);
+/** §284 : « ne peut pas lancer de sorts ni prendre l'action Magie » (Aliénation). */
+export const NO_SPELLS = Object.freeze(["befuddlement"]);
+/**
+ * §284 : « vous savez toujours où se trouve la cible ; elle ne peut pas se Cacher de vous, et l'état Invisible ne lui apporte
+ * rien contre vous » (Épine mentale) — vaut pour le lanceur seul.
+ */
+export const KNOWN_TO_ORIGIN = Object.freeze(["mind-spike"]);
+
+/**
+ * §285 : sorts de contrôle (runtime/control.mjs). Terreur — « lâche ce qu'elle tient » et, Effrayée, « prend l'action Foncer et
+ * s'éloigne de vous à chacun de ses tours » ; Mauvais œil, Paniqué (Kj1GwWXD5k0Zen75) — de même, et « si elle arrive à 18 m ou plus
+ * de vous, à un endroit d'où elle ne peut pas vous voir, cet effet prend fin ». Confusion (VxmsgUz9OIUet6WC, vide dans la donnée) :
+ * ni action Bonus ni Réaction, 1d10 au début de chacun de ses tours. Couronne du dément (0zixJ8ZoYFgSJtMV) : l'attaque imposée avant
+ * de se déplacer, et « à vos tours suivants, vous devez prendre l'action Magie pour garder le contrôle, ou le sort prend fin ».
+ * Fou rire de Tasha : « elle ne peut pas mettre fin à l'état À terre » (`keepsProne`).
+ */
+export const CONTROL = Object.freeze({
+  "fear": { panic: { drop: true } },
+  "eyebite": { panic: { effect: "Kj1GwWXD5k0Zen75", endsAt: { distance: 60, units: "ft" } } },
+  "confusion": { confusion: "VxmsgUz9OIUet6WC", noBonus: "VxmsgUz9OIUet6WC" },
+  "crown-of-madness": { forcedAttack: "0zixJ8ZoYFgSJtMV", upkeep: true },
+  "tashas-hideous-laughter": { keepsProne: true },
+  "hideous-laughter": { keepsProne: true }
+});
 
 /**
  * §19 : effets posés seulement sur une sauvegarde RÉUSSIE. Rayon affaiblissant — « sur une réussite, la cible a le Désavantage

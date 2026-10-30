@@ -23,7 +23,10 @@ import { readUnitFactors, lengthIn } from "../adapter/units.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
-import { log } from "./shared.mjs";
+import { log, loc, locEsc, notice, say, waitForDice } from "./shared.mjs";
+import { askChoice } from "../adapter/choices.mjs";
+import { rangedWeaponHit, smiteOptions, spendSmite } from "../adapter/smite.mjs";
+import { requestSave } from "./neighbours.mjs";
 
 function onPreRollDamage(config, dialog, message) {
   const smite = config[MODULE_ID]?.smite;
@@ -34,6 +37,8 @@ function onPreRollDamage(config, dialog, message) {
     foundry.utils.setProperty(message, `data.flags.${MODULE_ID}.smite`, smite);
     return true;
   }
+  // §288 : « au lieu de subir les dégâts et les autres effets de l'attaque » (Flèche de foudre) — les dés de l'arme partent.
+  if ( smite.replaces ) config.rolls.splice(0, config.rolls.length);
   config.rolls.push({ data: activity.getRollData(), parts: [smite.formula], options: { type, types: type ? [type] : [], properties: [] } });
   foundry.utils.setProperty(message, `data.flags.${MODULE_ID}.smite`, smite);
   log(`${smite.name}${smite.level ? ` (level ${smite.level})` : ""}: +${smite.formula} ${type ?? ""}`);
@@ -56,7 +61,88 @@ async function afterSmite(actor, smiteItem) {
   }
 }
 
+/**
+ * §288 : les dés d'une activité de l'item au niveau lancé, lancés dans le chat (Dice So Nice attendu). `{ total, type }`, ou null.
+ */
+async function rollActivityDice(item, activityId, level, flavor, speaker) {
+  const part = item.system.activities?.get(activityId)?.damage?.parts?.[0];
+  if ( !part?.number || !part.denomination ) return null;
+  const n = part.number + (Math.max(0, level - (Number(item.system.level) || 1)) * (Number(part.scaling?.number) || 0));
+  const type = Array.from(part.types ?? [])[0] ?? null;
+  const roll = await new CONFIG.Dice.DamageRoll(`${n}d${part.denomination}`, item.getRollData?.() ?? {}, { type, types: type ? [type] : [] }).evaluate();
+  const message = await roll.toMessage({ speaker, flavor });
+  await waitForDice(message);
+  return { total: roll.total, type };
+}
+
+/**
+ * §288 : Flèche de foudre — « chaque créature située dans un rayon de 3 m de la cible effectue ensuite un jet de sauvegarde de
+ * Dextérité et subit 2d8 dégâts de foudre en cas d'échec, la moitié en cas de réussite » : un jet de dégâts pour toutes, la sauvegarde
+ * de chacune (`requestSave`, DD du sort), les dégâts appliqués (résistances de dnd5e), un texte flottant et une carte. MJ actif.
+ */
+async function blastAround(item, level, target) {
+  const rule = contentOf(item).entry?.smite;
+  const blast = rule?.blast;
+  if ( !blast || !target?.parent ) return 0;
+  const radius = lengthIn(blast.radius, blast.units, target.parent.grid.units);
+  const caught = target.parent.tokens.filter(o => (o !== target) && o.actor && !o.hidden && ((o.actor.system.attributes?.hp?.value ?? 0) > 0)
+    && (o._source.level === target._source.level) && (distanceBetween(target, o).value <= radius + 1e-6));
+  if ( !caught.length ) { log(`${item.name}: nobody within ${blast.radius} ${blast.units} of ${target.name}`); return 0; }
+  const speaker = ChatMessage.implementation.getSpeaker({ actor: item.actor });
+  const dice = await rollActivityDice(item, blast.activity, level, loc("FlecheFoudre.Eclat", { item: item.name, name: target.name }), speaker);
+  if ( !dice ) return 0;
+  const dc = Number(item.system.activities?.get(rule.damage)?.save?.dc?.value ?? item.actor?.system.attributes?.spell?.dc) || null;
+  const lines = [];
+  for ( const other of caught ) {
+    const save = await requestSave(other.actor, { ability: blast.ability, dc, flavor: loc("FlecheFoudre.Sauvegarde", { item: item.name, name: other.name }) });
+    const amount = save?.success ? Math.floor(dice.total / 2) : dice.total;
+    await other.actor.applyDamage([{ value: amount, type: dice.type }]);
+    notice(other, { key: "FlecheFoudre.Touche", data: { amount } }, "refused", { all: true });
+    lines.push(locEsc(save?.success ? "FlecheFoudre.Reussie" : "FlecheFoudre.Ratee", { name: other.name, total: save?.total ?? "?", dc: dc ?? "?", amount }));
+    log(`${item.name}: ${other.name} ${save?.success ? "saves" : "fails"} (${save?.total} vs DC ${dc}), ${amount} ${dice.type}`);
+  }
+  await say(speaker, [locEsc("FlecheFoudre.Carte", { item: item.name, name: target.name }), ...lines], { lightningBlast: { item: item.name, target: target.uuid, caught: caught.map(t => t.uuid) } });
+  return caught.length;
+}
+
+/**
+ * §288 : Flèche de foudre sur un tir RATÉ — « au moment où votre attaque touche ou rate la cible » : la question à l'auteur (chez son
+ * joueur), l'emplacement et l'action Bonus dépensés, la moitié des 4d8 sur la cible, puis l'éclat. Un tir touché passe par la question
+ * des châtiments, au jet de dégâts (adapter/smite.mjs). MJ actif.
+ */
+async function onMissed(resolution) {
+  const activity = fromUuidSync(resolution.activity ?? "", { strict: false });
+  const actor = activity?.actor;
+  const attack = game.messages.get(resolution.attack?.messageId ?? "");
+  if ( !actor || !rangedWeaponHit(activity, attack?.system?.mode) || ((resolution.targets ?? []).length !== 1) ) return;
+  const target = fromUuidSync(resolution.targets[0].token ?? "", { strict: false });
+  if ( !target?.actor ) return;
+  const options = smiteOptions(actor, { ranged: true }).filter(o => o.rule.onMiss === "half");
+  if ( !options.length ) return;
+  const answer = await askChoice(actor, { actor: actor.uuid, item: options[0].item.name, prompt: loc("FlecheFoudre.Question", { name: target.name }),
+    options: [...options.map((o, i) => ({ id: `o${i}`, label: o.label })), { id: "none", label: loc("Chatiment.Aucun") }] });
+  const option = options[Number(String(answer?.id ?? "").replace("o", ""))];
+  if ( !answer?.id?.startsWith?.("o") || !option ) return;
+  await spendSmite(actor, option);
+  const combatant = combatantFor(actor);
+  const budget = combatant ? readBudget(combatant) : null;
+  if ( budget ) await writeBudget(combatant, { ...budget, bonus: Math.max(0, (budget.bonus ?? 1) - 1) });
+  const speaker = ChatMessage.implementation.getSpeaker({ actor });
+  const dice = await rollActivityDice(option.item, option.rule.damage, option.level, loc("FlecheFoudre.Rate", { item: option.item.name, name: target.name }), speaker);
+  if ( dice ) {
+    const amount = Math.floor(dice.total / 2);
+    await target.actor.applyDamage([{ value: amount, type: dice.type }]);
+    notice(target, { key: "FlecheFoudre.Touche", data: { amount } }, "refused", { all: true });
+    log(`${option.item.name}: missed, ${target.name} takes half (${amount} ${dice.type})`);
+  }
+  await blastAround(option.item, option.level, target);
+}
+
 async function onResolution(resolution) {
+  if ( (resolution?.step === STEPS.MISSED) && resolution.plan?.attack && !seen.has(resolution.id) ) {
+    seen.add(resolution.id);
+    return onMissed(resolution);
+  }
   if ( (resolution?.step !== STEPS.DONE) || !resolution.plan?.attack || seen.has(resolution.id) ) return;
   const damage = game.messages.get(resolution.damageRoll?.messageId ?? "");
   const smite = damage?.getFlag(MODULE_ID, "smite");
@@ -71,6 +157,11 @@ async function onResolution(resolution) {
   const budget = combatant ? readBudget(combatant) : null;
   if ( budget ) await writeBudget(combatant, { ...budget, bonus: Math.max(0, (budget.bonus ?? 1) - 1) });
   if ( (resolution.targets ?? []).some(t => (t.token === smite.target) && (t.hit === true)) ) await afterSmite(actor, item);
+  // §288 : l'éclat de Flèche de foudre, la cible touchée (même tombée).
+  if ( smite.blast ) {
+    const struck = fromUuidSync(smite.target, { strict: false });
+    if ( struck ) await blastAround(item, smite.level ?? Number(item.system.level), struck);
+  }
   if ( !smite.save && !smite.effect ) return;
   const target = fromUuidSync(smite.target, { strict: false });
   const hit = (resolution.targets ?? []).some(t => (t.token === smite.target) && (t.hit === true));

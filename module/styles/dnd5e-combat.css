@@ -545,3 +545,12 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .dnd5e-combat-ammo-line .name { flex: 1; }
 .dnd5e-combat-ammo-line .qty { opacity: 0.8; font-variant-numeric: tabular-nums; }
 .dnd5e-combat-ammo-line.empty { opacity: 0.45; cursor: default; }
+
+/* §282 : la question de l'Inspiration héroïque se reconnaît d'un coup d'œil — cadre et bandeau dorés. */
+.dnd5e-combat-heroic { border: 2px solid #d4a72c; box-shadow: 0 0 18px rgba(255, 210, 74, 0.55); }
+.dnd5e-combat-heroic .window-header { background: linear-gradient(90deg, #5a3d00, #a07a12, #5a3d00); color: #fff6d6; }
+.dnd5e-combat-heroic-banner { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 2px 0 6px; padding: 6px 8px;
+  border-radius: 6px; background: linear-gradient(90deg, rgba(160, 122, 18, 0.15), rgba(255, 210, 74, 0.35), rgba(160, 122, 18, 0.15));
+  color: #b8860b; font-size: 1.25em; letter-spacing: 0.04em; text-transform: uppercase; }
+.dnd5e-combat-heroic-banner i { color: #ffd24a; text-shadow: 0 0 4px rgba(0, 0, 0, 0.6); }
+.dnd5e-combat-heroic-rule { margin: 0 0 6px; font-style: italic; opacity: 0.85; text-align: center; }

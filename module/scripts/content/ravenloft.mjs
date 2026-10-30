@@ -63,12 +63,19 @@ export const RAVENLOFT = Object.freeze({
   /* §93 : Dons sombres — « juste après avoir fait un Test d20 et obtenu un 1 sur le d20 », la sauvegarde de l'item (DD 13 + maîtrise,
      sur soi), l'état sur un échec. */
 
-  // Anatomie aberrante, Chair déformante : Constitution ou Étourdi jusqu'à la fin de votre prochain tour.
-  "aberrant-anatomy": { onNatural1: { activity: "3gsyr1hLvSFRy6e8" } },
-  // Âme en écho, Échos intrusifs : Constitution ou Neutralisé (Vitesse réduite de moitié) jusqu'à la fin de votre prochain tour.
-  "echoing-soul": { onNatural1: { activity: "b0YlEc0swnlB4R93" } },
-  // Ombre vivante, Volonté funeste : Sagesse ou Neutralisé jusqu'au début de votre prochain tour (la table « Volonté de l'ombre » : au MJ).
-  "living-shadow": { onNatural1: { activity: "zitGmITljzBRXTkm" } },
+  // Anatomie aberrante, Chair déformante : Constitution ou Étourdi jusqu'à la fin de votre prochain tour (§289 : la donnée l'arrête au
+  // début du tour — `effectEnds`).
+  "aberrant-anatomy": { onNatural1: { activity: "3gsyr1hLvSFRy6e8" }, effectEnds: { ON3Q0GCwGVqeS0WV: "bearerTurnEnd" } },
+  // Âme en écho, Échos intrusifs : Constitution ou Neutralisé (Vitesse réduite de moitié) jusqu'à la fin de votre prochain tour (§289).
+  "echoing-soul": { onNatural1: { activity: "b0YlEc0swnlB4R93" }, effectEnds: { "13N8KOB67iya0ROs": "bearerTurnEnd" } },
+  // Ombre vivante, Volonté funeste : Sagesse ou Neutralisé jusqu'au début de votre prochain tour ; §289 : « vous devez alors lancer un dé
+  // sur la table Volonté de l'ombre pour déterminer ce que vous faites pendant ce tour » — tirée quand l'effet tombe (le résultat : au MJ).
+  "living-shadow": { onNatural1: { activity: "zitGmITljzBRXTkm" }, effectEnds: { MmYLSlBTwu1FC8UR: "bearerTurnStart" },
+    drawsOnEnd: { MmYLSlBTwu1FC8UR: "Compendium.dnd-ravenloft-horrors-within.tables.RollTable.rhwShadowsWillqh" } },
+  // §289 : Seconde peau, Changement involontaire — le catalyseur déclaré par le MJ (menu du token), la sauvegarde de Charisme au début du
+  // tour suivant ; ratée : Forme alternative lancée sans emplacement, ou, déjà dépensée, Étourdi jusqu'au début du tour suivant.
+  "second-skin": { catalyst: { save: "tJwaLWFWyZvq9y0r", cast: "ZrjtFFSbJZTj8Cfm", effect: "9HmJl0qrUIVbJQUA" },
+    effectEnds: { "9HmJl0qrUIVbJQUA": "bearerTurnStart" } },
   // Être symbiotique, Dessein symbiotique : Charisme ou Charmé 1d12 heures ; « chaque fois que vous subissez des dégâts, vous pouvez
   // rejouer cette sauvegarde ». Ce que le symbiote ordonne : au MJ.
   // §94 : Symbiose entretenue — « quand vous ratez une sauvegarde, par une Réaction, dépensez un dé de vie, lancez-le et ajoutez-le »
@@ -80,9 +87,15 @@ export const RAVENLOFT = Object.freeze({
   },
   // Murmures rassemblés : Voix d'outre-tombe au 1 naturel (Sagesse) ; §94 Cri surnaturel — « quand vous êtes touché par un jet
   // d'attaque, par une Réaction, ajoutez votre bonus de maîtrise à votre CA contre cette attaque » (comme la Parade du MM).
+  // §289 : Voix d'outre-tombe — Assourdi « jusqu'à la fin de votre tour suivant » (la donnée l'arrête au début) ; « vous avez le
+  // Désavantage aux tests de caractéristique et aux jets d'attaque » (la donnée n'a que les tests).
   "gathered-whispers": {
     onNatural1: { activity: "sGkDp5LeqKujiO7s" },
-    triggers: [{ on: "isHit", do: [{ type: "use", activity: "UXNlglsSGecujPQD" }, { type: "penalty", formula: "@prof" }] }]
+    effectEnds: { T67RGbFPYgYo6Ics: "bearerTurnEnd" },
+    triggers: [
+      { on: "isHit", do: [{ type: "use", activity: "UXNlglsSGecujPQD" }, { type: "penalty", formula: "@prof" }] },
+      { on: "preAttackRoll", via: "effect", fromEffect: "T67RGbFPYgYo6Ics", if: { "source.hasEffect": "gathered-whispers" }, do: [{ type: "disadvantage" }] }
+    ]
   },
   // Guetteurs, Guetteurs incessants : Sagesse ou Désavantage aux Tests d20 pendant 1 minute, sauvegarde rejouée à la fin de chacun de
   // vos tours. L'effet « Paranoïa » de la donnée met le Désavantage aux tests et aux sauvegardes ; les jets d'attaque (des Tests d20

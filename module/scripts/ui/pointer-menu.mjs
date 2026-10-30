@@ -23,6 +23,7 @@ import { traceAttacks } from "../adapter/traces.mjs";
 import { tetheredToken, tetherItems, tetherRuleOf } from "../adapter/tether.mjs";
 import { leaveForm } from "../runtime/wildshape.mjs";
 import { canStandUp, standUp } from "../runtime/prone.mjs";
+import { upkeepsOf, canMaintain, maintain } from "../runtime/control.mjs";
 import { escapableRestraintsOf } from "../adapter/escape.mjs";
 import { escapeGrapple, holdsOf, releaseGrapple } from "../runtime/grapple.mjs";
 import { ownEndingsOf, endingsOn, endFor } from "../runtime/action-end.mjs";
@@ -40,6 +41,8 @@ import { flightEntries } from "../runtime/altitude.mjs";
 import { actingToken, engageWith, exclusive, inCombat, observe } from "./pointer.mjs";
 import { down, startRecall } from "./pointer-mouse.mjs";
 import { groupRollEntry } from "./group-roll.mjs";
+import { setHeroic } from "../runtime/heroic.mjs";
+import { armCatalyst, catalystArmed, catalystOf } from "../runtime/catalyst.mjs";
 
 /* -------------------------------------------- */
 /*  Menu contextuel                             */
@@ -281,6 +284,10 @@ export const hasSelfMenu = token => selfEntries(token).length > 0;
 export function selfEntries(token) {
   const entries = [];
   if ( canStandUp(token) ) entries.push({ icon: "fa-solid fa-person-arrow-up-from-line", label: loc("Menu.SeRelever"), run: () => standUp(token) });
+  // §285 : entretenir un sort par l'action Magie (Couronne du dément).
+  for ( const { effect, item } of token.isOwner ? upkeepsOf(token.actor) : [] ) {
+    if ( canMaintain(token, effect) ) entries.push({ icon: "fa-solid fa-crown", label: loc("Controle.Maintenir", { item: item.name }), run: () => maintain(token, effect, item) });
+  }
   if ( grappledSelf(token) ) entries.push({ icon: "fa-solid fa-person-running", label: escapeLabel(token), run: event => escapeGrapple(token, { event }) });
   // §16.39 : quitter la Forme sauvage (action Bonus).
   const revert = revertActivityOf(token.actor);
@@ -475,4 +482,20 @@ function tokenEntries(token, target, { aggressive=true }={}) {
 function pushGroupRoll(entries, target) {
   const entry = groupRollEntry(target);
   if ( entry ) entries.push(entry);
+  // §282 : MJ, sur un personnage joueur — donner ou retirer l'Inspiration héroïque.
+  const heroic = heroicEntry(target);
+  if ( heroic ) entries.push(heroic);
+  // §289 : MJ — Seconde peau : le catalyseur du changement vécu.
+  const change = game.user.isGM ? catalystOf(target?.actor) : null;
+  if ( change && !catalystArmed(target.actor) ) {
+    entries.push({ icon: "fa-solid fa-paw-claws", label: loc("Catalyseur.Menu", { item: change.item.name }), run: () => armCatalyst(target.actor) });
+  }
+}
+
+function heroicEntry(target) {
+  const actor = target?.actor;
+  if ( !game.user.isGM || (actor?.type !== "character") ) return null;
+  const on = !!actor.system.attributes?.inspiration;
+  return { icon: on ? "fa-regular fa-star" : "fa-solid fa-star", label: loc(on ? "Heroique.MenuRetirer" : "Heroique.MenuDonner"),
+    run: () => setHeroic(actor, !on) };
 }

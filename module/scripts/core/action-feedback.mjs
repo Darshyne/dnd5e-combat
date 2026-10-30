@@ -16,7 +16,9 @@ export const CORE_SOUNDS = Object.freeze({
   rattle: "sounds/doors/jail/test.ogg",
   chime: "sounds/doors/magic/unlock.ogg",
   dull: "sounds/doors/wood/lock.ogg",
-  fade: "sounds/doors/magic/lock.ogg"
+  fade: "sounds/doors/magic/lock.ogg",
+  // §282 : l'Inspiration héroïque utilisée — un coup de tambour épique.
+  heroicHit: "sounds/combat/epic-turn-1hit.ogg"
 });
 
 /** Le son par défaut d'une action (`action`) selon son issue (`success`, `failure`), ou null. */
@@ -29,8 +31,15 @@ const DEFAULTS = Object.freeze({
   escape: { success: CORE_SOUNDS.rattle, failure: CORE_SOUNDS.dull },
   firstAid: { success: CORE_SOUNDS.chime, failure: CORE_SOUNDS.dull },
   land: { success: null, failure: CORE_SOUNDS.thud },
+  // §282 : l'Inspiration héroïque dépensée (un dé relancé), puis reçue.
+  heroic: { success: CORE_SOUNDS.heroicHit, failure: null },
   // §258 : un sort ou un effet qui prend fin (fins génériques, runtime/endings.mjs).
-  spellEnds: { success: CORE_SOUNDS.fade, failure: null }
+  spellEnds: { success: CORE_SOUNDS.fade, failure: null },
+  // §283 : un sort qui échoue sous Lenteur.
+  spellFails: { success: null, failure: CORE_SOUNDS.fade },
+  // §285 : un comportement imposé (panique, Confusion, Couronne du dément) ; l'entretien d'un sort par l'action Magie.
+  control: { success: CORE_SOUNDS.chime, failure: CORE_SOUNDS.dull },
+  upkeep: { success: CORE_SOUNDS.chime, failure: CORE_SOUNDS.fade }
 });
 
 /** Le son par défaut de cette action et de cette issue (null : aucun). */

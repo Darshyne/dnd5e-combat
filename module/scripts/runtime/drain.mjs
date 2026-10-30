@@ -9,9 +9,9 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
-import { drainedAmount } from "../core/drain.mjs";
+import { drainedAmount, flooredDrain } from "../core/drain.mjs";
 import { setDeathStatus } from "../adapter/death.mjs";
-import { drainOf, damageSourceItem, damageSourceMessage, applyDrainEffect } from "../adapter/drain.mjs";
+import { drainOf, damageSourceItem, damageSourceMessage, applyDrainEffect, effectiveMax } from "../adapter/drain.mjs";
 import { route } from "./router.mjs";
 import { loc, log } from "./shared.mjs";
 
@@ -40,10 +40,13 @@ function onCalculateDamage(actor, damages, options) {
     if ( message?.id ) pending.set(pendingKey(message.id, actor.uuid), n);
     return;
   }
-  if ( n > 0 ) (options[MODULE_ID] ??= {}).drain = { n, item: item.uuid, source: item.actor?.uuid ?? null, regains: rule.regains };
+  if ( n > 0 ) (options[MODULE_ID] ??= {}).drain = { n, item: item.uuid, source: item.actor?.uuid ?? null, regains: rule.regains, floor: rule.floor };
 }
 
-async function drain(actor, kind, n, { item, source=null, regains=false }) {
+async function drain(actor, kind, n, { item, source=null, regains=false, floor=null }) {
+  // §283 : Contamination — le maximum ne descend pas sous son plancher.
+  if ( kind === "hp" ) n = flooredDrain(n, effectiveMax(actor), floor);
+  if ( n <= 0 ) return;
   const left = await applyDrainEffect(actor, { kind, n, item, name: effectName(item, kind) });
   log(`${actor.name}: ${item.name} — ${kind === "hp" ? "Hit Point maximum" : kind} -${n} (${left})`);
   if ( left <= 0 ) {
@@ -85,7 +88,7 @@ async function onResolution(resolution) {
       const key = pendingKey(resolution.origin, actor.uuid);
       const n = pending.get(key) ?? t.damage?.applied ?? 0;
       pending.delete(key);
-      if ( (t.save?.success === false) && (n > 0) ) await drain(actor, "hp", n, { item, source: item.actor?.uuid ?? null, regains: rule.regains });
+      if ( (t.save?.success === false) && (n > 0) ) await drain(actor, "hp", n, { item, source: item.actor?.uuid ?? null, regains: rule.regains, floor: rule.floor });
     }
     if ( rule.fixed && (t.save?.success === false) ) {
       const roll = await new Roll(rule.fixed).evaluate();

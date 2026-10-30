@@ -40,7 +40,7 @@ export const FEATURE_LEVELS = Object.freeze({
   registerPurge: E, registerAutomation: E, registerSummonHandover: E, registerAutoTranslate: E, registerClock: E, registerCriticals: A, registerFactions: E, registerFactionsUI: E, registerSettingsWindow: E, registerStealthMode: E, registerStealthUI: E, registerGroupRoll: E, registerGroupRollUI: E, registerGroupRollTracker: E,
 
   // Assisté : la résolution, et les règles générales qui valent pour toute créature.
-  registerEngine: A, registerConcentration: A, registerDeath: A, registerUsage: A, registerReactions: A, registerReady: A, registerBurning: A, registerImprovised: A, registerArmorTraining: A, registerMasteryChoices: A, registerMasteryUI: A, registerTriggers: A,
+  registerEngine: A, registerHeroic: A, registerConcentration: A, registerDeath: A, registerUsage: A, registerReactions: A, registerReady: A, registerBurning: A, registerImprovised: A, registerArmorTraining: A, registerMasteryChoices: A, registerMasteryUI: A, registerTriggers: A,
   registerConditions: A, registerAreas: A, registerLingering: A, registerPassengers: A, registerBanish: F, registerSelfAreas: A, registerZones: A, registerGrapple: A, registerProne: A,
   registerStabilize: A, registerHelp: A, registerHide: A, registerSearch: A, registerPassivePerception: A, registerEffects: A,
   registerAnimations: A, registerActivityChoice: A, registerCompact: A, registerChat: A,
@@ -54,7 +54,7 @@ export const FEATURE_LEVELS = Object.freeze({
   registerAfterSneak: F, registerCantrips: F, registerEndings: F, registerActionEnd: F, registerBarbarian: F,
   registerSwallow: F, registerFamiliars: F, registerBreaks: F, registerCure: F, registerBlink: F, registerWalls: F, registerWallSide: F, registerElevationSpells: F, registerPotions: F, registerOil: F, registerScatter: F, registerFlammable: F,
   registerSkillAid: F, registerLights: F, registerWildShape: F, registerEnchant: F, registerTether: F, registerDefenses: F,
-  registerSize: F, registerOrders: F, registerVigor: F, registerCureUi: F, registerWallSideUi: F, registerKindleUi: F, registerSkillAidUi: F
+  registerSize: F, registerOrders: F, registerControl: F, registerCatalyst: F, registerVigor: F, registerCureUi: F, registerWallSideUi: F, registerKindleUi: F, registerSkillAidUi: F
 });
 
 /** Le niveau minimal d'une fonction (absente de la table : Intégral, par prudence). */

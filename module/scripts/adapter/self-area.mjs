@@ -19,6 +19,8 @@ import { contentOf } from "./content.mjs";
 import { clampPolyline, wallLineShapes, orthogonalize, cellWallShapes } from "../core/wall.mjs";
 import { lengthIn } from "./units.mjs";
 import { carriedLightOf } from "./carried-lights.mjs";
+import { clearPathTo } from "./cover.mjs";
+import { contiguousRects, rectOfShape } from "../core/space.mjs";
 
 /**
  * La forme et le token d'une zone à poser d'office, ou null (dnd5e pose comme d'habitude) : portée personnelle, zone
@@ -153,7 +155,7 @@ const LENGTH_UNITS = new Set(["ft", "m", "km", "mi"]);
 /**
  * §190 : une sphère, un cylindre, un cube ou un carré lancé « en un point à portée » (Aspersion d'acide, Boule de feu) — ce qu'il faut
  * pour le poser à la souris avec sa portée : `{ token, shape: "circle"|"rectangle", side (px : rayon ou côté), range (unités de la
- * grille), max, units }`, ou null (pose de dnd5e : plusieurs formes, portée personnelle ou au contact, lanceur absent de la scène
+ * grille), max, units, count, contiguous }`, ou null (portée personnelle ou au contact, lanceur absent de la scène
  * affichée). Formes et dimensions comme `TemplatePlacement#createShapeData` (template-placement.mjs:52-71).
  * @param {Activity} activity
  */
@@ -161,7 +163,8 @@ export function rangedAreaOf(activity) {
   const template = activity?.target?.template;
   const kind = CONFIG.DND5E?.areaTargetTypes?.[template?.type]?.template;
   if ( !["circle", "rect", "rectangle"].includes(kind) ) return null;
-  if ( (Number(template.count) || 1) > 1 ) return null;
+  // §286 : plusieurs gabarits (Nuée de météores, Tempête de feu) — chacun à portée ; `contiguous` : des cubes qui se touchent.
+  const count = Math.max(1, Number(template.count) || 1);
   const value = Number(activity.range?.value);
   if ( !(value > 0) || !LENGTH_UNITS.has(activity.range?.units) ) return null;
   const token = usageTokenOf(activity);
@@ -171,7 +174,8 @@ export function rangedAreaOf(activity) {
   const { size } = dimensionsOf(activity, scene);
   if ( !(size > 0) ) return null;
   return { token, shape: (kind === "circle") ? "circle" : "rectangle", side: size * (scene.grid.size / scene.grid.distance),
-    range: lengthIn(value, activity.range.units, scene.grid.units), max: value, units: activity.range.units };
+    range: lengthIn(value, activity.range.units, scene.grid.units), max: value, units: activity.range.units,
+    count, contiguous: (count > 1) && (template.contiguous === true) };
 }
 
 
@@ -192,6 +196,19 @@ export function rangedTooFar(area, shapeData) {
   const body = ((committedPosition(area.token).width || 1) * grid.distance) / 2;
   const slack = (shapeData.type === "rectangle") ? (area.side / 2) * (grid.distance / grid.size) : 0;
   return (distance - body) > (area.range + slack + 1e-6);
+}
+
+/**
+ * Ce qui refuse la pose de ces formes (`rangedAreaOf`) : `"far"` (§190, une forme hors de portée), `"hidden"` (§200, pas de chemin
+ * dégagé jusqu'à son point), `"apart"` (§286, des cubes `contiguous` qui ne se touchent pas : Tempête de feu), ou null.
+ * @param {object} area  `rangedAreaOf`.
+ * @param {object[]} shapes  Les formes des régions à créer.
+ */
+export function rangedPlacementProblem(area, shapes) {
+  if ( shapes.some(shape => rangedTooFar(area, shape)) ) return "far";
+  if ( shapes.some(shape => clearPathTo(area.token, rangedCenter(shape)) === false) ) return "hidden";
+  if ( area.contiguous && !contiguousRects(shapes.map(rectOfShape).filter(r => r)) ) return "apart";
+  return null;
 }
 
 

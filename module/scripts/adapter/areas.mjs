@@ -211,7 +211,7 @@ export async function pulseAll(usageMessage, tokens, sibling, region) {
  * @param {TokenDocument} token      La créature.
  * @param {string} moment            "startOfTurn" | "endOfTurn" | "isDamaged"
  */
-export async function resaveAgainst(effect, activity, token, moment, { onFail=null, keep=false, dodge=false, tally=null }={}) {
+export async function resaveAgainst(effect, activity, token, moment, { onFail=null, keep=false, dodge=false, tally=null, advantage=false }={}) {
   const caster = activity.item?.actor ?? null;
   const card = await activity.item.system.getCardData({ activity });
   // §43.1 : le compteur d'avant ce jet, dit sur la carte.
@@ -226,7 +226,9 @@ export async function resaveAgainst(effect, activity, token, moment, { onFail=nu
       core: { canPopout: true },
       // §19.6 : `onFail` — des dégâts du porteur qui ne valent que si la sauvegarde est ratée (saignement d'Épine).
       // §37 : `keep` — réussie, l'effet reste ; `dodge` — ratée, la créature prend l'action Esquiver (Malédiction).
-      [MODULE_ID]: { resave: { effect: effect.uuid, token: token.uuid, moment, ...(onFail ? { onFail } : {}), ...(keep ? { keep } : {}), ...(dodge ? { dodge } : {}), ...(tally ? { tally } : {}) } }
+      [MODULE_ID]: { resave: { effect: effect.uuid, token: token.uuid, moment, ...(onFail ? { onFail } : {}), ...(keep ? { keep } : {}), ...(dodge ? { dodge } : {}), ...(tally ? { tally } : {}) },
+        // §285 : Fou rire de Tasha — « l'Avantage à la sauvegarde quand elle est déclenchée par des dégâts » (mode par cible, §249).
+        ...(advantage ? { targetModes: [{ token: token.uuid, mode: "advantage" }] } : {}) }
     }
   });
 }

@@ -22,6 +22,15 @@
  * items hors SRD dans le module premium PHB 2.2.0.
  */
 
+/**
+ * §285 : Fou rire de Tasha — « à la fin de chacun de ses tours et chaque fois qu'elle subit des dégâts, elle refait la sauvegarde ;
+ * elle a l'Avantage quand la sauvegarde est déclenchée par des dégâts ».
+ */
+const LAUGHTER = Object.freeze([
+  { on: "endOfTurn", via: "effect", do: [{ type: "resave" }] },
+  { on: "isDamaged", via: "effect", do: [{ type: "resave", advantage: true }] }
+]);
+
 export const TRIGGERS = Object.freeze({
   // Réactions (règles 2024)
   // §138 : seulement quand +5 à la CA peut changer le coup (pas sur un critique, ni sur un jet qui dépasse la CA + 5).
@@ -144,14 +153,14 @@ export const TRIGGERS = Object.freeze({
   "hold-person": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }] }],
   // …et sur dégâts : « chaque fois qu'elle subit des dégâts, elle réitère le JS » (Domination de bête, de personne,
   // de monstre). Fou rire de Tasha : les deux — la fin de chacun de ses tours ET chaque fois qu'elle subit des dégâts
-  // (l'avantage que la règle donne au jet provoqué par les dégâts n'est pas repris).
+  // (§285 : avec l'Avantage au jet provoqué par les dégâts).
   "dominate-beast": [{ on: "isDamaged", via: "effect", do: [{ type: "resave" }] }],
   "dominate-person": [{ on: "isDamaged", via: "effect", do: [{ type: "resave" }] }],
   "dominate-monster": [{ on: "isDamaged", via: "effect", do: [{ type: "resave" }] }],
-  "hideous-laughter": [{ on: ["endOfTurn", "isDamaged"], via: "effect", do: [{ type: "resave" }] }],
+  "hideous-laughter": LAUGHTER,
   // §42.2 : le même sort dans le Manuel des joueurs s'appelle « tashas-hideous-laughter » (« hideous-laughter » est son nom du
   // SRD, celui du pack de dnd5e) — sans cette clé, la règle ne valait pour aucune fiche de joueur (relevé le 2026-10-01).
-  "tashas-hideous-laughter": [{ on: ["endOfTurn", "isDamaged"], via: "effect", do: [{ type: "resave" }] }],
+  "tashas-hideous-laughter": LAUGHTER,
   // §42.2 : les autres sorts du Manuel des joueurs dont « la cible réitère le JS à la fin de chacun de ses tours et met un
   // terme au sort sur elle-même en cas de réussite » — Immobilisation de monstre, Lenteur, Confusion, Éclat du soleil, et la
   // peur du Châtiment courroucé.
@@ -303,6 +312,20 @@ export const TRIGGERS = Object.freeze({
     on: "preAttackRoll", via: "effect", if: { "target.hasEffect": "blade-ward" },
     do: [{ type: "attackBonus", formula: "-1d4" }]
   }],
+  // §284 : Danse irrésistible d'Otto, sous Charmé (MpToumiJ2o3S16K7, vide dans la donnée) — « Désavantage aux jets d'attaque, et
+  // les autres créatures ont l'Avantage aux jets d'attaque contre elle » ; la danse courte d'une sauvegarde réussie n'en donne pas.
+  "ottos-irresistible-dance": [
+    { on: "preAttackRoll", via: "effect", fromEffect: "MpToumiJ2o3S16K7",
+      if: { "source.hasEffect": { item: "ottos-irresistible-dance", effect: "MpToumiJ2o3S16K7" } }, do: [{ type: "disadvantage" }] },
+    { on: "preAttackRoll", via: "effect", fromEffect: "MpToumiJ2o3S16K7",
+      if: { "target.hasEffect": { item: "ottos-irresistible-dance", effect: "MpToumiJ2o3S16K7" } }, do: [{ type: "advantage" }] }
+  ],
+  // §284 : Prémonition — « Avantage aux tests de d20 » (la donnée ne le donne qu'aux sauvegardes et tests, l'initiative suivant les
+  // tests de Dextérité) « et les autres créatures ont le Désavantage aux jets d'attaque contre elle ».
+  "foresight": [
+    { on: "preAttackRoll", via: "effect", if: { "source.hasEffect": "foresight" }, do: [{ type: "advantage" }] },
+    { on: "preAttackRoll", via: "effect", if: { "target.hasEffect": "foresight" }, do: [{ type: "disadvantage" }] }
+  ],
   "faerie-fire": [{
     on: "preAttackRoll", via: "effect",
     if: { "target.hasEffect": "faerie-fire", "source.seesTarget": true },
@@ -317,6 +340,13 @@ export const TRIGGERS = Object.freeze({
   // Protection contre le mal et le bien : « les créatures de ces types ont le Désavantage aux jets d'attaque
   // contre la cible » — porté par l'effet sur la cible. Charmé et Effrayé : `wardsConditions` (§268, content/endings.mjs) ; la
   // possession reste au MJ.
+  // §288 : Dissipation du mal et du bien — « Célestes, Élémentaires, Fées, Fiélons et Morts-vivants ont le Désavantage aux jets
+  // d'attaque contre vous » (la trace posée au lanceur, content/spell-rules.mjs).
+  "dispel-evil-and-good": [{
+    on: "preAttackRoll", via: "effect",
+    if: { "target.hasEffect": "dispel-evil-and-good", "source.creatureType": ["celestial", "elemental", "fey", "fiend", "undead"] },
+    do: [{ type: "disadvantage" }]
+  }],
   "protection-from-evil-and-good": [{
     on: "preAttackRoll", via: "effect",
     if: { "target.hasEffect": "protection-from-evil-and-good", "source.creatureType": ["aberration", "celestial", "elemental", "fey", "fiend", "undead"] },

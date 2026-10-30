@@ -24,12 +24,14 @@ const LIST_ABOVE = 6;
  * Côté de celui qui choisit : une fenêtre, un bouton par option.
  * @param {{actor: string, item: string, prompt: string|null, options: Array<{id: string, label: string}>, untimed?: boolean, seconds?: number}} payload
  *   `untimed` (§137) : pas de délai ni de compte à rebours ; fermée sans choisir, rien n'est choisi. `seconds` (§242) : un délai propre au
- *   lieu de celui des fenêtres de combat (un test demandé hors combat laisse au joueur le temps de lire).
+ *   lieu de celui des fenêtres de combat (un test demandé hors combat laisse au joueur le temps de lire). `front` (§282) : la fenêtre
+ *   passe devant les autres (Inspiration héroïque, posée avant les autres questions d'après le jet). `heading` (HTML sûr), `icon`
+ *   (icône du titre), `classes` : l'habillage d'une question qui doit se reconnaître d'un coup d'œil (§282).
  * @returns {Promise<{id: string}|null>}  null si la fenêtre est fermée sans choisir.
  */
-export async function handleChoiceQuery({ actor: actorUuid, item, prompt, options, untimed=false, seconds=null }) {
+export async function handleChoiceQuery({ actor: actorUuid, item, prompt, options, untimed=false, seconds=null, front=false, heading=null, icon=null, classes=[] }) {
   const actor = await fromUuid(actorUuid);
-  const question = `<p>${prompt ?? game.i18n.localize("DND5ECOMBAT.ChoixEffet")}</p>`;
+  const question = `${heading ?? ""}<p>${prompt ?? game.i18n.localize("DND5ECOMBAT.ChoixEffet")}</p>`;
   // §113 : au-delà de quelques options (Assistance : 18 compétences), une liste déroulante — un bouton par option faisait une
   // fenêtre plus haute que l'écran.
   const many = options.length > LIST_ABOVE;
@@ -41,13 +43,14 @@ export async function handleChoiceQuery({ actor: actorUuid, item, prompt, option
     .map((o, i) => ({ i, label: o.label })).sort((a, b) => a.label.localeCompare(b.label, game.i18n.lang))
     .map(o => `<option value="${o.i}">${foundry.utils.escapeHTML(String(o.label))}</option>`).join("")}</select>` : "";
   const config = {
-    window: { title: game.i18n.format("DND5ECOMBAT.ChoixTitre", { item, name: actor?.name ?? "" }) },
+    window: { title: game.i18n.format("DND5ECOMBAT.ChoixTitre", { item, name: actor?.name ?? "" }), ...(icon ? { icon } : {}) },
+    classes: [...classes],
     content: `${question}${list}`,
     buttons
   };
   // Sans réponse dans le délai : la première option. §137 : sans délai, la fenêtre attend.
   const picked = untimed ? await foundry.applications.api.DialogV2.wait({ ...config, rejectClose: false })
-    : await timedWait(config, { fallback: "pick0", ...(Number(seconds) > 0 ? { seconds: Number(seconds) } : {}) });
+    : await timedWait(config, { fallback: "pick0", front, ...(Number(seconds) > 0 ? { seconds: Number(seconds) } : {}) });
   const option = options[Number(String(picked ?? "").replace("pick", ""))];
   return picked?.startsWith?.("pick") && option ? { id: option.id } : null;
 }

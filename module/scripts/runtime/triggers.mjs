@@ -316,11 +316,12 @@ function onDamaged(actor, changes) {
         await say({ actor: origin }, locEsc("PartageDegats", { name: origin.name, item: d.name, n: amount, bearer: actor.name }),
           { shared: { item: d.identifier, from: actor.uuid, to: origin.uuid, amount } });
       }
-      if ( !stepsOf(d, "resave").length ) continue;
+      const resave = stepsOf(d, "resave")[0];
+      if ( !resave ) continue;
       const activity = saveActivityOf(await fromUuid(d.activity ?? ""));
       if ( (activity?.type !== "save") || !tokenDocument ) { log(`${d.name}: saving throw on damage impossible (save activity or token not found)`); continue; }
       log(`${d.name}: ${actor.name} repeats the saving throw (damage taken)`);
-      await resaveAgainst(effect, activity, tokenDocument, "isDamaged");
+      await resaveAgainst(effect, activity, tokenDocument, "isDamaged", { advantage: resave.advantage === true });
     }
   });
 }

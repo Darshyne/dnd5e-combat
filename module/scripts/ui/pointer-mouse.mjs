@@ -11,6 +11,7 @@ import { strike } from "../runtime/storm.mjs";
 import { movementCap, reachCells, basicAttack, hostileTo, moveTo, approaches, contactAction, contactRefusal, planeRefusal, rangeStatus, currentTeleport, teleportClick, dashStrike, dashRefusal, dashPreview, gapCells, tooHighFor } from "../runtime/actions.mjs";
 import { pocketedFamiliar, recallFamiliar, recallRefusal } from "../runtime/familiar.mjs";
 import { leapProblem } from "../runtime/projectiles.mjs";
+import { chainOf, chainLimit, chainOutliers } from "../adapter/chain.mjs";
 import { tetherOfActivity, tetheredToken } from "../adapter/tether.mjs";
 import { closeLegalityDialogs, openLegalityDialogs } from "../runtime/turn.mjs";
 import { doorState, setDoorOpen } from "../runtime/doors.mjs";
@@ -318,6 +319,15 @@ function refusalBeforeRange(me, hover, activity, usageConfig) {
   if ( leap ) {
     const problem = leapProblem(activity, leap, hover);
     if ( problem ) return problem.replace(/^[^:]*:\s*/, "");
+  }
+  // §286 : Chaîne d'éclairs — une cible secondaire à 9 m de la première.
+  const chainFrom = usageConfig?.[MODULE_ID]?.chainFrom;
+  if ( chainFrom ) {
+    const first = fromUuidSync(chainFrom, { strict: false });
+    const rule = chainOf(activity?.item);
+    if ( first && rule && chainOutliers(activity, [first, hover]).length ) {
+      return loc("Retour.ChaineTropLoin", { name: first.name, distance: chainLimit(rule, first), units: first.parent.grid.units });
+    }
   }
   return contactRefusal(me, hover, activity) ?? null;
 }

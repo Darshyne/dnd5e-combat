@@ -11,8 +11,11 @@ import { route } from "../runtime/router.mjs";
 import { loc, notice } from "../runtime/shared.mjs";
 
 async function onPostUse(activity) {
-  const cures = contentOf(activity?.item).entry?.cures;
+  const entry = contentOf(activity?.item).entry;
+  const cures = entry?.cures;
   if ( !cures?.length || !activity.actor?.isOwner ) return;
+  // §288 : Rupture d'enchantement — seulement cette activité du sort (pas « Cast » ni Renvoi).
+  if ( entry.curesOn && (entry.curesOn !== activity.id) ) return;
   const target = Array.from(game.user.targets)[0]?.document ?? usageTokenOf(activity);
   if ( !target?.actor ) return;
   const present = curable(Array.from(target.actor.statuses ?? []), cures);

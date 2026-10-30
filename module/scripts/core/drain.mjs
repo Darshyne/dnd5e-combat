@@ -29,28 +29,38 @@ const ABILITY_FR = new RegExp(String.raw`\bvaleur de (Force|Dextérité|Constitu
  * - `fixed` : « the target's Hit Point maximum decreases by 14 ([[/r 4d6]]) » — une formule, sur une sauvegarde ratée ;
  * - `onFailedSave` : format 2014, « must succeed on a … saving throw or its Hit Point maximum is reduced by… » — la part
  *   égale aux dégâts ne se draine que si la sauvegarde que le toucher impose est ratée ;
- * - `ability` : « the target's Strength score decreases by [[/r 1d4]] » — { key, formula }, au toucher.
+ * - `ability` : « the target's Strength score decreases by [[/r 1d4]] » — { key, formula }, au toucher ;
+ * - `floor` : §283, Contamination (PHB 2024) — « can't reduce a target's Hit Point maximum below 1 » : le maximum ne descend pas
+ *   sous ce plancher (et le drain ne tue pas). La même phrase dit « the Necrotic damage it took » et « On a failed save, it takes … and
+ *   its Hit Point maximum is reduced » : drain égal aux dégâts, sur la sauvegarde ratée.
  * Une réduction « every 24 hours » (malédictions de la Momie, du Slaad) n'est pas un drain de combat : ignorée.
  * @param {string} html
- * @returns {{equal: boolean, type: string|null, regains: boolean, fixed: string|null, onFailedSave: boolean, ability: {key: string, formula: string}|null}}
+ * @returns {{equal: boolean, type: string|null, regains: boolean, fixed: string|null, onFailedSave: boolean, ability: {key: string, formula: string}|null, floor: number|null}}
  */
 export function readDrain(html) {
   const raw = String(html ?? "").replace(/’/g, "'");
   const text = plain(raw);
-  const none = { equal: false, type: null, regains: false, fixed: null, onFailedSave: false, ability: null };
+  const none = { equal: false, type: null, regains: false, fixed: null, onFailedSave: false, ability: null, floor: null };
   if ( /\bevery \d+ hours\b|\btoutes les \d+ heures\b/i.test(text) ) return none;
-  const en = text.match(/Hit Point maximum (?:decreases|is reduced) by an amount equal to the (?:([A-Za-z]+) )?damage taken/i);
+  const en = text.match(/Hit Point maximum (?:decreases|is reduced) by an amount equal to the (?:([A-Za-z]+) )?damage (?:taken|it took)/i);
   const fr = text.match(/maximum de points de vie (?:est réduit|diminue|baisse) d'un montant égal aux dégâts (?:([a-zàâéèêîôû]+) )?subis/i);
   const equal = !!(en || fr);
   const type = en?.[1] ? en[1].toLowerCase() : (fr?.[1] ? (FRENCH_TYPES[fr[1].toLowerCase()] ?? null) : null);
   const regains = /\bregains Hit Points equal to that amount\b|\bregagne (?:autant de points de vie|un nombre de points de vie égal à ce montant)/i.test(text);
   const fixed = raw.match(/Hit Point maximum decreases by \d+ \(\[\[\/r ([^\]#]+?)(?:#[^\]]*)?\]\]\)/i)?.[1]?.trim() ?? null;
   const onFailedSave = equal && (/\bmust succeed on [^.]{0,80}saving throw or its Hit Point maximum/i.test(text)
+    || /\bOn a failed save, [^.]{0,120}Hit Point maximum (?:decreases|is reduced)/i.test(text)
     || /\bdoit réussir un jet de sauvegarde[^.]{0,80}sinon son maximum de points de vie/i.test(text));
   const a = raw.match(ABILITY_EN) ?? raw.match(ABILITY_FR);
   const ability = a ? { key: ABILITIES[a[1].toLowerCase()], formula: (a[2] ?? a[3]).trim() } : null;
-  return { equal, type, regains, fixed, onFailedSave, ability };
+  const below = text.match(/can't reduce (?:a|the) target's Hit Point maximum below (\d+)/i)
+    ?? text.match(/ne peut pas réduire le maximum de points de vie d'une cible en dessous de (\d+)/i);
+  const floor = below ? Number(below[1]) : null;
+  return { equal, type, regains, fixed, onFailedSave, ability, floor };
 }
+
+/** Ce qu'un drain peut encore ôter quand le maximum en vigueur est `max` et que le texte pose un plancher (null : tout). */
+export const flooredDrain = (n, max, floor) => (Number.isFinite(floor) ? Math.max(0, Math.min(n, max - floor)) : n);
 
 /** Le texte dit-il un drain que le moteur sait jouer ? */
 export const drains = rule => !!(rule && (rule.equal || rule.fixed || rule.ability));

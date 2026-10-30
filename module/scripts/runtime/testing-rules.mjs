@@ -38,6 +38,10 @@ import { lightAt as lightAtPoint, tokenPoint as stealthPoint } from "../adapter/
 import { sleep } from "./shared.mjs";
 import { setReadyPlan } from "./ready.mjs";
 import { extinguish } from "./burning.mjs";
+import { upkeepsOf, canMaintain, maintain as maintainSpell } from "./control.mjs";
+import { fortifiedExtra } from "./feats.mjs";
+import { armCatalyst } from "./catalyst.mjs";
+import { canStandUp, standUp } from "./prone.mjs";
 import { isBurning } from "../adapter/burning.mjs";
 import { readyOptionsOf, slotsFor, heldEffectOf } from "../adapter/ready.mjs";
 import { finite, gmOnly, viewedToken } from "./testing-shared.mjs";
@@ -502,4 +506,62 @@ export async function groupRollForce({ id, tokenId }) {
 }
 export function groupRollMode({ tokenId, ...request }) {
   return rollsApi.mode(viewedToken({ tokenId }).actor, request);
+}
+
+/**
+ * §285 : pose sur un token l'effet `effectId` de l'item `itemId` du lanceur `casterId`, avec son id (comme l'application de dnd5e) et
+ * l'item pour origine — ce que l'échec de la sauvegarde aurait posé, sans le hasard du jet. Rend l'id.
+ */
+export async function placeItemEffect({ tokenId, casterId, itemId, effectId }) {
+  gmOnly();
+  const item = viewedToken({ tokenId: casterId }).actor?.items.get(itemId);
+  const source = item?.effects.get(effectId);
+  if ( !source ) throw new Error("item effect not found");
+  const actor = viewedToken({ tokenId }).actor;
+  const data = foundry.utils.mergeObject(source.toObject(), { origin: item.uuid, transfer: false, disabled: false });
+  const [created] = await actor.createEmbeddedDocuments("ActiveEffect", [data], { keepId: true });
+  return { effectId: created?.id ?? null };
+}
+
+/** §285 : le lanceur se concentre sur la première activité de l'item (l'effet de concentration de dnd5e), sans rien lancer. */
+export async function concentrate({ tokenId, itemId }) {
+  gmOnly();
+  const actor = viewedToken({ tokenId }).actor;
+  const activity = actor?.items.get(itemId)?.system.activities.contents[0];
+  if ( !activity ) throw new Error("activity not found");
+  const effect = await actor.beginConcentrating(activity);
+  return { effectId: effect?.id ?? null };
+}
+
+/** §285 : l'entretien d'un sort (Couronne du dément) — l'état, l'entrée du menu offerte, et `maintain` : l'action Magie prise. */
+export async function upkeep({ tokenId, maintain=false }) {
+  gmOnly();
+  const token = viewedToken({ tokenId });
+  const doc = token.document ?? token;
+  const list = upkeepsOf(doc.actor);
+  const out = list.map(({ effect, item }) => ({ item: item.name, flag: effect.getFlag(MODULE_ID, "upkeep") ?? null, offered: canMaintain(doc, effect) }));
+  if ( maintain && list[0] ) out[0].maintained = await maintainSpell(doc, list[0].effect, list[0].item);
+  return out;
+}
+
+/** §285 : se relever (`standUp`), pour un scénario — rend s'il s'est relevé et si l'entrée du menu est offerte. */
+export async function stand({ tokenId }) {
+  gmOnly();
+  const token = viewedToken({ tokenId });
+  const doc = token.document ?? token;
+  return { offered: canStandUp(doc), stood: await standUp(doc) };
+}
+
+/** §289 : Faveur de vigueur — le bonus de Constitution accordé maintenant à un soin (0 s'il est déjà pris depuis le début de son tour). */
+export async function fortified({ tokenId }) {
+  gmOnly();
+  const actor = viewedToken({ tokenId }).actor;
+  return { extra: await fortifiedExtra(actor), con: Number(actor.system.abilities?.con?.mod) || 0 };
+}
+
+/** §289 : Seconde peau — le MJ déclare le catalyseur vécu (menu du token). */
+export async function catalyst({ tokenId }) {
+  gmOnly();
+  const actor = viewedToken({ tokenId }).actor;
+  return (await armCatalyst(actor)) ?? null;
 }

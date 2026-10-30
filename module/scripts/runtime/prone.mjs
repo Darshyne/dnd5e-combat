@@ -19,6 +19,7 @@ import { readUnitFactors } from "../adapter/units.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { convertLength } from "../core/units.mjs";
 import { actorOfEffect } from "../adapter/grapple.mjs";
+import { originItemOf } from "../adapter/facts.mjs";
 import { route } from "./router.mjs";
 import { loc, log, notice } from "./shared.mjs";
 
@@ -53,14 +54,20 @@ async function syncCrawl(actor) {
 
 /** Les effets qui mettent À terre et qu'on peut quitter en se relevant (pas Inconscient, qui l'impose). */
 function proneEffectsOf(actor) {
-  return actor.effects.filter(e => e.statuses.has("prone") && !e.statuses.has("unconscious"));
+  return actor.effects.filter(e => e.statuses.has("prone") && !e.statuses.has("unconscious") && !holdsProne(e));
 }
 
-export const canStandUp = token => token?.actor?.statuses?.has("prone") === true;
+/** §285 : un effet qui tient la créature À terre (Fou rire de Tasha : « elle ne peut pas mettre fin à l'état À terre »). */
+const holdsProne = effect => !effect.disabled && (contentOf(originItemOf(effect)).entry?.keepsProne === true);
+export const heldProne = actor => Array.from(actor?.effects ?? []).find(e => e.statuses?.has?.("prone") && holdsProne(e)) ?? null;
+
+export const canStandUp = token => (token?.actor?.statuses?.has("prone") === true) && !heldProne(token.actor);
 
 /** Se relever : la moitié de la vitesse en combat, puis les effets À terre retirés. Sur le client de celui qui se relève. */
 export async function standUp(token) {
   const actor = token?.actor;
+  const held = heldProne(actor);
+  if ( held ) { notice(token, loc("Relever.Tenu", { item: originItemOf(held)?.name ?? held.name })); return false; }
   if ( !canStandUp(token) ) return false;
   const combatant = combatantFor(actor);
   if ( combatant ) {

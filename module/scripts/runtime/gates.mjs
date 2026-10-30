@@ -13,6 +13,9 @@
  *    §66 : une réaction qui déclare `counter` (contresort à la manière de 2014) ne demande pas de sauvegarde : le sort, au niveau
  *    où il va être lancé, échoue d'office jusqu'au niveau du contresort, sinon sur un test de celui qui contre (DD 10 + niveau),
  *    fait chez lui (adapter/reactions.mjs) ; la porte lit sa réponse.
+ *  - §283 : `spellFailure` (Lenteur) — avant même le Contresort, un sort lancé par le porteur d'un effet qui le gêne (composante
+ *    somatique) échoue sur un d100 ≤ la chance : rien n'est lancé ni dépensé, comme un sort contré (même limite : l'action n'est pas
+ *    comptée). Le jet est montré dans le chat, attendu (Dice So Nice), l'échec vu et entendu de toute la table.
  */
 
 import { MODULE_ID } from "../constants.mjs";
@@ -27,12 +30,14 @@ import { attackReactors, askAttackReactions, rememberAttackMods } from "./reacti
 import { keepPendingAttack } from "./actions.mjs";
 import { seersOf, foretellFor } from "../adapter/portent.mjs";
 import { route } from "./router.mjs";
-import { log, loc, say, locEsc } from "./shared.mjs";
+import { log, loc, say, locEsc, notice, waitForDice } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { castLevelFor } from "../adapter/counter.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { settledResolution } from "../adapter/messages.mjs";
-import { identifierOf } from "../adapter/content.mjs";
+import { identifierOf, contentOf } from "../adapter/content.mjs";
+import { originItemOf } from "../adapter/facts.mjs";
+import { failureFor, spellFailed } from "../core/spell-failure.mjs";
 
 
 /** Une carte de chat qui dit ce que la porte a décidé (lue par les scénarios : flag `gate`) ; `details` : lignes de plus. */
@@ -118,6 +123,38 @@ async function passTargeted(activity, origin, candidates, { auto }) {
   }
 }
 
+/* -------------------------------------------- */
+/*  §283 : échec d'un sort (Lenteur)             */
+/* -------------------------------------------- */
+
+/** La règle d'échec que les effets du lanceur opposent à ce sort, ou null. */
+function failureAgainst(activity, actor) {
+  const rules = [];
+  for ( const effect of actor?.effects ?? [] ) {
+    if ( effect.disabled || effect.isSuppressed ) continue;
+    const item = originItemOf(effect);
+    const rule = item ? contentOf(item).entry?.spellFailure : null;
+    if ( rule ) rules.push({ ...rule, name: item.name });
+  }
+  return rules.length ? failureFor(rules, activity.item.system?.properties) : null;
+}
+
+/** Le d100 de l'échec, montré et attendu ; true si le sort passe. */
+async function passFailure(activity, origin, rule) {
+  const roll = await new Roll("1d100").evaluate();
+  const message = await roll.toMessage({
+    speaker: ChatMessage.getSpeaker({ token: origin }),
+    flavor: loc("PorteEchecJet", { item: rule.name, chance: rule.chance, spell: activity.item.name })
+  });
+  await waitForDice(message);
+  const failed = spellFailed(rule.chance, roll.total);
+  log(`${origin.name} casts ${activity.item.name} under ${rule.name}: d100 ${roll.total} vs ${rule.chance}% -> ${failed ? "the spell fails" : "the spell goes through"}`);
+  await tell(origin.actor, failed ? "PorteSortRate" : "PorteSortPasse", { name: origin.name, spell: activity.item.name, item: rule.name, roll: roll.total, chance: rule.chance },
+    { kind: "spellFailure", spell: identifierOf(activity.item).id, caster: origin.uuid, roll: roll.total, chance: rule.chance, failed });
+  if ( failed ) notice(origin, { key: "Retour.SortRate", data: { spell: activity.item.name } }, "refused", { all: true, action: "spellFails", outcome: "failure" });
+  return !failed;
+}
+
 /** Qui peut réagir au lancement de ce sort, avec quoi. */
 function counterCandidates(activity, origin) {
   const out = [];
@@ -196,6 +233,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const subtle = (usageConfig[MODULE_ID]?.metamagic ?? []).includes("subtle");
   if ( isSpell && subtle ) log(`${origin.name} casts ${activity.item.name} with Subtle Spell: no Counterspell possible`);
   let candidates = (isSpell && !subtle) ? counterCandidates(activity, origin) : [];
+  const failure = isSpell ? failureAgainst(activity, origin.actor) : null;
   // `autoReact: "none"` (scénarios) : personne ne réagit — et l'utilisation n'est pas suspendue du tout, sinon
   // l'appelant (connecteur) perd la main avant la relance (zone jamais posée, message jamais suivi).
   if ( (auto === "none") && candidates.length ) {
@@ -211,12 +249,13 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const seers = (preAttack && targets.length) ? seersOf(origin) : [];
   // §157 : une utilisation sans jet d'attaque qui vise des créatures (un projectile de Projectile magique) — leur fenêtre `isTargeted`.
   const targeted = ((activity.type !== "attack") && (auto !== "none") && targets.length) ? targetedCandidates(activity, origin, targets) : [];
-  if ( !wards.length && !candidates.length && !reactors.length && !seers.length && !targeted.length ) return true;
+  if ( !failure && !wards.length && !candidates.length && !reactors.length && !seers.length && !targeted.length ) return true;
 
   // Les cibles du lanceur, à remettre avant la relance : une réaction jouée sur ce même client (le MJ qui contrôle
   // les deux) les a remplacées par les siennes (vu le 2026-09-24 : le Rayon relancé sans cible, ou sur le lanceur).
   const chosen = Array.from(game.user.targets).map(t => t.id);
   (async () => {
+    if ( failure && !(await passFailure(activity, origin, failure)) ) return;
     if ( wards.length && !(await passWards(activity, origin, wards)) ) return;
     if ( candidates.length && !(await passCounters(activity, origin, candidates, { auto, castLevel: castLevelFor(activity, usageConfig) })) ) return;
     if ( targeted.length ) await passTargeted(activity, origin, targeted, { auto });

@@ -94,7 +94,7 @@
  *     revealsInvisible?: true                   le porteur d'un effet de l'item « ne peut pas bénéficier de l'état
  *                                               Invisible » (Poussière d'étoile, Lueurs féeriques, §16.36) : la vision
  *                                               simulée et l'état forfaitaire le jugent comme s'il ne l'était pas
- *     light?: { on, bright?, dim?, units?, darkness?, dispels?, carried?, single?, color?, animation? }
+ *     light?: { on, bright?, dim?, units?, darkness?, dispels?, carried?, single?, color?, animation?, activity? }
  *                                               lumière ou ténèbres du sort (§16.31, core/light.mjs). `on` : « area » = une
  *                                               source sur la zone posée, qui la suit et part avec elle (`darkness: true` :
  *                                               ténèbres magiques du rayon de la zone, qui bloquent la vue comme la brume,
@@ -105,6 +105,10 @@
  *                                               lanceur brille) et la couleur (§16.35) ;
  *                                               « wall » (§170) = une rangée de sources de chaque côté d'un mur posé par
  *                                               points (Mur de feu), qui naissent, suivent et partent avec lui ;
+ *                                               « caster » (§287) = à l'activité `activity` (sinon toute), le lanceur
+ *                                               brille tant que dure sa concentration (Rayon de soleil) ; `darkness` +
+ *                                               `dispels: n` : les ténèbres dissipent les lumières de sort de niveau ≤ n
+ *                                               qu'elles recouvrent (Ténèbres) ;
  *                                               `single` : relancer le sort éteint le précédent. Rayons en convention de
  *                                               Foundry (`dim` = rayon extérieur de la lumière faible)
  *     saveAdvantage?: string[]                  le porteur de l'item a l'avantage aux sauvegardes contre une activité qui
@@ -124,6 +128,8 @@
  *                                               false = ils touchent d'office, répartis entre les cibles (Projectile
  *                                               magique) ; true = une attaque par projectile, enchaînées par le moteur
  *                                               (Rayon ardent, Décharge occulte)
+ *     chain?: { radius, units }                §286 : les cibles après la première doivent être à `radius` d'elle (Chaîne
+ *                                               d'éclairs) — refusées à la visée, signalées au contrôle de légalité
  *     leap?: { radius, units, max }             sur un double aux dés de dégâts d'une attaque qui touche, le sort rebondit
  *                                               vers une autre cible à `radius` de la dernière, jamais visée par ce
  *                                               lancement, `max` fois au plus (formule : `@item.level`) — Orbe chromatique, §16.27
@@ -277,6 +283,14 @@
  *                                               Potion de vitalité ; « exhaustion » remet l'Épuisement à zéro)
  *     cures?: string[]                          l'utilisation fait cesser UN de ces états sur la cible, au choix (Restauration
  *                                               partielle, §16.47)
+ *     curesOn?: <id d'activité>                 §288 : `cures` seulement pour cette activité (Rupture d'enchantement)
+ *     drawsOnEnd?: { <id d'effet>: <uuid de table> }  §289 : quand cet effet de l'item tombe, la table est tirée (Ombre vivante :
+ *                                               « Volonté de l'ombre » au début du tour)
+ *     catalyst?: { save, cast, effect }         §289 : Seconde peau — le MJ déclare le catalyseur (menu du token) ; au début du tour
+ *                                               suivant du porteur, la sauvegarde `save` ; ratée, l'activité `cast` s'il reste une
+ *                                               utilisation, sinon l'effet `effect`
+ *     endsOnUse?: [ids d'activité]              §288 : utiliser l'une de ces activités met fin au sort — la concentration du
+ *                                               lanceur sur l'item tombe (Renvoi, Rupture d'enchantement de Dissipation du mal et du bien)
  *     advantageIfFighting?: true                avantage à la sauvegarde de la cible si elle est en combat contre le lanceur
  *                                               ou ses alliés (Charme-personne, §16.47)
  *     emanation?: { on, affects?, sees?, radius?, radiusFormula?, units?, activity?, whileActive? }
@@ -431,15 +445,38 @@
  *                                               l'effet tombe, Forme gazeuse) ; `by: "other"` : une autre créature au contact
  *                                               (sans `roll` : secouer un dormeur — `verb: "wake"` pour le libellé ; `roll:
  *                                               "check"` : Frappe piégeuse) ; `status` : l'état que le porteur se donne en y mettant fin (§49,
- *                                               feu grégeois : « en vous infligeant l'état À terre »)
+ *                                               feu grégeois : « en vous infligeant l'état À terre ») ; §288 : `spell` — l'effet
+ *                                               tombé, le sort prend fin (concentration du lanceur) ; `turnStart` — l'action est
+ *                                               proposée au porteur au début de son tour (Dédale : banni, son token est caché)
  *     afterSmite?: { effect, smites? }           §273 : quand l'un des châtiments nommés (identifiants ; tous sans `smites`) de son porteur
  *                                               touche, cet effet de l'item est posé sur lui (Châtiment de protection)
  *     wardsConditions?: { types, statuses }      §268 : le porteur d'un effet de l'item est immunisé contre ces états quand ils viennent
  *                                               d'une créature de ces types (Protection contre le Mal et le Bien : Charmé, Effrayé)
  *     noAttacksOrSpells?: true                  §269 : le porteur d'un effet de l'item ne peut ni attaquer ni lancer de sorts (Forme
  *                                               gazeuse) — un souci de légalité, l'item lui-même excepté
+ *     noSpells?: true                           §284 : le porteur d'un effet de l'item ne peut ni lancer de sorts ni prendre l'action
+ *                                               Magie (Aliénation) — un souci de légalité sur les sorts et les objets magiques
+ *     panic?: { effect?, drop?, endsAt? }      §285 : le porteur d'un effet de l'item (`effect` : celui-là) prend l'action Foncer et
+ *                                               s'éloigne du lanceur à chacun de ses tours ; `drop` : il lâche ce qu'il tient sur la
+ *                                               sauvegarde ratée ; `endsAt` ({ distance, units }) : l'effet cesse à cette distance
+ *                                               du lanceur, hors de sa vue (Terreur, Mauvais œil)
+ *     confusion?: <id d'effet>                  §285 : le porteur de cet effet lance 1d10 au début de son tour (table de Confusion)
+ *     noBonus?: <id d'effet>                    §285 : le porteur de cet effet n'a pas d'action Bonus (Confusion)
+ *     forcedAttack?: <id d'effet>               §285 : au début de son tour, le porteur doit attaquer au corps à corps une créature que
+ *                                               le lanceur choisit (rappel ; Couronne du dément)
+ *     upkeep?: true                             §285 : à ses tours suivants, le lanceur entretient le sort par une action Magie (menu
+ *                                               de son token), sinon sa concentration tombe à la fin de son tour (Couronne du dément)
+ *     keepsProne?: true                         §285 : le porteur d'un effet de l'item ne peut pas mettre fin à l'état À terre
+ *                                               (Fou rire de Tasha)
+ *     knownToOrigin?: true                      §284 : le porteur d'un effet de l'item ne peut pas se Cacher du lanceur de l'item, et
+ *                                               l'état Invisible ne lui sert à rien contre lui (Épine mentale)
  *     singleAttack?: true                       §267 : le porteur d'un effet de l'item ne fait qu'une attaque par action Attaquer
  *                                               (Lenteur ; un PNJ à Attaques multiples garde son plan)
+ *     spellFailure?: { chance, component? }     §283 : un sort lancé par le porteur d'un effet de l'item échoue sur un d100 ≤ chance
+ *                                               (seulement s'il a la composante nommée : Lenteur, 25 % pour « somatic ») — rien
+ *                                               n'est lancé ni dépensé, comme un sort contré (runtime/gates.mjs)
+ *     untypedDamage?: <type>                    §283 : un jet de dégâts de l'item que la donnée laisse sans type prend celui-ci, avant le
+ *                                               jet (Sphère glacée d'Otiluke : 10d6 sans type → froid ; résistances et immunités jouent)
  *     banishes?: [ids d'effet]                  §265 : ces effets de l'item transportent leur porteur dans un demi-plan — token et
  *                                               combattant cachés tant qu'ils durent, retour à l'espace quitté (ou au plus proche
  *                                               libre) quand ils tombent (Bannissement, Châtiment bannissant)
@@ -469,13 +506,17 @@
  *     stunningStrike?: { activity, focus }      Frappe étourdissante (§24) : après un coup, une fois par tour, la sauvegarde de l'item
  *                                               contre une utilisation de l'item `focus` (identifiant)
  *     openHand?: { addle, push, topple }        Technique de la main ouverte (§24) : après un coup du Déluge, l'une des trois activités
- *     smite?: { damage, fiends?, save?, effect?, ranged?, burst?, saveAtMostHp? }
+ *     smite?: { damage, fiends?, save?, effect?, ranged?, burst?, saveAtMostHp?, replaces?, onMiss?, blast? }
  *                                               sort de châtiment (§25) : proposé au jet de dégâts d'un coup au corps à corps, ses dés
  *                                               (activité `damage`, ou `fiends` contre un Fiélon ou un Mort-vivant) s'ajoutent au jet,
  *                                               puis la sauvegarde `save` joue sur la cible ; `effect` : l'effet de l'item posé sur
  *                                               la cible touchée, sans sauvegarde (brûlure du Châtiment de fournaise, §42.2) ;
  *                                               `saveAtMostHp` (§262) : la sauvegarde ne joue que si le coup laisse la cible à ce
- *                                               nombre de PV ou moins (Châtiment bannissant : 50)
+ *                                               nombre de PV ou moins (Châtiment bannissant : 50) ; §288 : `replaces` — ses dés
+ *                                               remplacent ceux de l'arme ; `onMiss: "half"` — offert aussi après un raté, la cible
+ *                                               subit la moitié ; `blast` — chaque créature à `radius` de la cible fait la sauvegarde
+ *                                               `ability` contre les dés de l'activité `activity`, moitié sur une réussite (Flèche de
+ *                                               foudre)
  *     healsDownedMax?: true                     le porteur de l'item soigne au maximum des dés une créature à 0 PV, avec un sort ou
  *                                               une Conduit divin (Retour à la vie du Domaine de la Tombe, §19.9)
  *     dispel?: true                             Dissipation de la magie (§37.2) : les sorts en cours sur les cibles cessent —
@@ -701,7 +742,7 @@
  *                                                        §43.1 : compteur — l'effet ne tombe qu'à `successes` réussites ; à
  *                                                        `failures` échecs plus aucune sauvegarde n'est rejouée, l'effet reste
  *                                                        et reçoit l'état `status` (Pétrification : « petrified »)
- *   { type: "resave", keep?, onFail?, unlessSeesOrigin? } la créature rejoue la sauvegarde ; réussie, l'effet tombe (`keep:
+ *   { type: "resave", keep?, onFail?, unlessSeesOrigin?, advantage? } la créature rejoue la sauvegarde ; réussie, l'effet tombe (`keep:
  *                                                        true` : il reste) ; `onFail: "dodge"` : ratée, elle prend l'action
  *                                                        Esquiver (§37, Malédiction : « Cursed Actions ») ;
  *                                                        `unlessSeesOrigin: true` : seulement si elle ne voit pas le lanceur

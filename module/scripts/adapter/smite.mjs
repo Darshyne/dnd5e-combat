@@ -287,5 +287,7 @@ export async function chooseSmite(activity, attackMessage) {
   }
   return { item: option.item.uuid, name: option.item.name, level: option.level, free: option.free, ...dice,
     save: option.rule.save ?? null, effect: option.rule.effect ?? null,
-    scaling: Math.max(0, option.level - (Number(option.item.system.level) || 1)), target: target.uuid };
+    scaling: Math.max(0, option.level - (Number(option.item.system.level) || 1)), target: target.uuid,
+    // §288 : Flèche de foudre — ses dés au lieu de ceux de l'arme ; l'éclat autour de la cible, une fois l'attaque résolue.
+    ...(option.rule.replaces ? { replaces: true } : {}), ...(option.rule.blast ? { blast: true } : {}) };
 }

@@ -16,7 +16,7 @@ import { isThinWall, touchesWallRegion } from "./wall-side.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { rollerFor } from "./concentration.mjs";
 import { committedPosition, usageTokenOf } from "./turn.mjs";
-import { areaOriginOf, reachesFromPoint, sphereOf, insideSphere } from "./space.mjs";
+import { areaOriginOf, reachesFromPoint, sphereOf, insideSphere, shapesReach } from "./space.mjs";
 import { effectOfProfile } from "./usage.mjs";
 import { timedWait, closeRollDialogAfter } from "./dialogs.mjs";
 import { originItemOf, creatureTypeOf } from "./facts.mjs";
@@ -72,6 +72,8 @@ export async function readActivityRegion(region) {
   // P2 : une vraie sphère — la tranche de la région en fait un cylindre, ses coins sont hors de la sphère.
   const sphere = sphereOf(region, activity, originToken);
   const thinWall = isThinWall(region);
+  // §286 : les `count` gabarits que dnd5e pose dans une seule région — pas les segments d'un mur (une forme par segment).
+  const several = !thinWall && ((Number(activity?.target?.template?.count) || 1) > 1) && ((region.shapes?.length ?? 0) > 1);
   return {
     activity: uuid,
     origin,
@@ -91,8 +93,8 @@ export async function readActivityRegion(region) {
       disposition: t.disposition,
       faction: factionOf(t), stance: t.getFlag(MODULE_ID, "stance") ?? null,   // §181
       defeated: t.actor.statuses?.has(CONFIG.specialStatusEffects.DEFEATED) === true,
-      lineOfEffect: reachesFromPoint(areaOrigin, t),
-      inVolume: insideSphere(sphere, t),
+      // §286 : plusieurs formes (Nuée de météores, Tempête de feu) — chacune son origine ; prise une seule fois.
+      ...(several ? shapesReach(region, activity, originToken, t) : { lineOfEffect: reachesFromPoint(areaOrigin, t), inVolume: insideSphere(sphere, t) }),
       offPlane: originToken ? !samePlane(originToken, t) : false   // §225 : la zone est sur le plan de son lanceur
     }))
   };

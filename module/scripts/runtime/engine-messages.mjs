@@ -12,6 +12,9 @@ import { offerInspiration, offerRollBonus, keptD20 } from "../adapter/inspiratio
 import { readUsage } from "../adapter/usage.mjs";
 import { canResistSave, askLegendary, resistSave, legendaryLeft } from "../adapter/legendary.mjs";
 import { offerInterpose, offerPeerlessAim } from "./feats.mjs";
+import { offerHeroicD20, offerHeroicDamage } from "./heroic.mjs";
+import { hasHeroic } from "../adapter/heroic.mjs";
+import { rerolledDamage } from "../core/heroic.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { critMargin } from "../adapter/criticals.mjs";
 import { log, loc, waitForDice } from "./shared.mjs";
@@ -44,10 +47,12 @@ export function onUsageMessage(message) {
  * son dé au total, avant le verdict. Rend le jet, éventuellement augmenté.
  */
 async function inspiredAttack(message, roll, targets) {
+  const actor = (await fromUuid(speakerTokenUuid(message) ?? ""))?.actor ?? message.getAssociatedActor?.() ?? null;
+  // §282 : l'Inspiration héroïque d'abord, sur tout jet (un 1 naturel aussi) — le nouveau d20 refait le critique et l'échec automatique.
+  roll = await heroicAttack(message, roll, targets, actor);
   if ( roll.isFumble || roll.isCritical ) return roll;
   const missed = resolveAttack(roll, targets.filter(t => !t.unaffected)).filter(t => t.reason === "miss");
   if ( !missed.length ) return roll;
-  const actor = (await fromUuid(speakerTokenUuid(message) ?? ""))?.actor ?? message.getAssociatedActor?.() ?? null;
   if ( !actor ) return roll;
   const needed = Math.min(...missed.map(t => t.ac));
   const bonus = await offerInspiration(actor, { what: loc("Inspiration.Attaque"), total: roll.total, needed });
@@ -55,12 +60,28 @@ async function inspiredAttack(message, roll, targets) {
   // §90 : Attaque précise — encore ratée, l'attaquant peut ajouter son propre dé (`rollBonus` sur "attack").
   const total = roll.total + bonus;
   const rules = actor.items.some(i => contentOf(i).entry?.rollBonus?.on?.includes("attack"));
-  const precise = (rules && (total < needed)) ? await offerRollBonus(actor, { kind: "attack", what: loc("Inspiration.Attaque"), total, needed, d20: keptD20(message.rolls?.[0]) }) : 0;
+  const precise = (rules && (total < needed)) ? await offerRollBonus(actor, { kind: "attack", what: loc("Inspiration.Attaque"), total, needed, d20: roll.heroic?.kept ?? keptD20(message.rolls?.[0]) }) : 0;
   if ( precise ) log(`${actor.name}: die added to their attack, ${total} + ${precise} = ${total + precise}`);
   // §135 : Faveur de prouesse martiale, Visée sans pareille — encore ratée : « vous pouvez toucher à la place ».
   const peerless = ((total + precise) < needed) && await offerPeerlessAim(actor, { total: total + precise, needed }) ? needed - (total + precise) : 0;
   if ( !bonus && !precise && !peerless ) return roll;
   return { ...roll, total: total + precise + peerless, inspired: bonus + precise + peerless };
+}
+
+/**
+ * §282 : Inspiration héroïque sur un jet d'attaque — « raté » quand une cible au moins n'est pas touchée (ou un 1 naturel), le seuil
+ * dit étant la CA la plus basse des cibles ratées (sinon des cibles). Rend le jet, relancé ou non.
+ */
+async function heroicAttack(message, roll, targets, actor) {
+  if ( !hasHeroic(actor) ) return roll;
+  const live = targets.filter(t => !t.unaffected);
+  const missed = resolveAttack(roll, live).filter(t => (t.reason === "miss") || (t.reason === "fumble"));
+  const acs = (missed.length ? missed : live).map(t => t.ac).filter(Number.isFinite);
+  const after = await offerHeroicD20(actor, { roll: message.rolls?.[0], what: loc("Inspiration.Attaque"), total: roll.total,
+    needed: acs.length ? Math.min(...acs) : null, failed: missed.length > 0 });
+  if ( !after ) return roll;
+  log(`${actor.name}: Heroic Inspiration, attack ${roll.total} → ${after.total}`);
+  return { ...roll, total: after.total, isCritical: after.critical, isFumble: after.fumble, heroic: { old: after.old, kept: after.kept } };
 }
 
 export async function onAttackMessage(message) {
@@ -109,6 +130,14 @@ export async function onDamageMessage(message) {
   const damage = readDamageMessage(message);
   if ( !damage ) return;
   await waitForDice(message);
+  // §282 : Inspiration héroïque — un dé de dégâts ou de soin relancé au choix ; sa part de l'agrégat bouge de la différence.
+  const actor = (await fromUuid(speakerTokenUuid(message) ?? ""))?.actor ?? message.getAssociatedActor?.() ?? null;
+  const heroic = hasHeroic(actor) ? await offerHeroicDamage(actor, message.rolls?.filter(r => r instanceof CONFIG.Dice.DamageRoll) ?? []) : null;
+  if ( heroic ) {
+    const sameProps = d => (d.properties.size === heroic.properties.length) && heroic.properties.every(p => d.properties.has(p));
+    const part = damage.damages.find(d => (d.type === heroic.type) && sameProps(d)) ?? damage.damages.find(d => d.type === heroic.type);
+    if ( part ) part.value = rerolledDamage(part.value, heroic.old, heroic.now);
+  }
   const event = { type: "damageRolled", messageId: message.id, damages: serializeDamages(damage.damages) };
   const accepts = resolution => damageFits(resolution, damage) ? event : null;
   if ( damage.origin && await dispatcher.send(damage.origin, accepts) ) return;
@@ -131,6 +160,10 @@ export async function onSaveMessage(message) {
   if ( !resolution ) return;   // sauvegarde libre, hors de toute résolution
   await waitForDice(message);
   const dc = resolution.plan?.save?.dc;
+  // §282 : l'Inspiration héroïque d'abord (un personnage joueur : pas de Résistance légendaire à départager).
+  const saver = await fromUuid(save.actor);
+  const heroic = hasHeroic(saver) ? await offerHeroicD20(saver, { roll: message.rolls?.[0], what: loc("Inspiration.Sauvegarde"), needed: dc }) : null;
+  if ( heroic ) save.total = heroic.total;
   const failed = Number.isFinite(dc) && (save.total < dc);
   // Une intention peut imposer le choix (`legendary: "always" | "never"` sur l'utilisation : scénarios, macros), comme `saveChoice`.
   const forced = game.messages.get(resolution.origin ?? carrierId)?.getFlag(MODULE_ID, "legendary") ?? carrier.getFlag(MODULE_ID, "legendary");
@@ -142,7 +175,7 @@ export async function onSaveMessage(message) {
     const bonus = actor ? await offerInspiration(actor, { what: loc("Inspiration.Sauvegarde"), total, needed: dc }) : 0;
     if ( bonus ) { log(`${actor.name}: Bardic Inspiration, saving throw ${total} + ${bonus} = ${total + bonus}`); total += bonus; }
     // §38 : Chance du ténébreux — encore ratée, la créature peut ajouter son propre dé (`rollBonus`).
-    const luck = (actor && (total < dc)) ? await offerRollBonus(actor, { kind: "save", what: loc("Inspiration.Sauvegarde"), total, needed: dc, statuses: saveStatuses(carrier, resolution), d20: keptD20(message.rolls?.[0]), ability: resolution.plan?.save?.ability ?? null }) : 0;
+    const luck = (actor && (total < dc)) ? await offerRollBonus(actor, { kind: "save", what: loc("Inspiration.Sauvegarde"), total, needed: dc, statuses: saveStatuses(carrier, resolution), d20: heroic?.kept ?? keptD20(message.rolls?.[0]), ability: resolution.plan?.save?.ability ?? null }) : 0;
     if ( luck ) { log(`${actor.name}: die added to their saving throw, ${total} + ${luck} = ${total + luck}`); total += luck; }
   }
   // §133 : Maître des boucliers, Interposer le bouclier — une sauvegarde de Dextérité réussie contre des dégâts réduits de moitié : la

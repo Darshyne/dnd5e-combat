@@ -11,6 +11,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { areEnemies } from "./factions.mjs";
 import { settingOr } from "./settings.mjs";
+import { knownTo } from "./facts.mjs";
 
 export const RULES_SETTING = "stealthRules";
 
@@ -37,5 +38,6 @@ export function spottedBy(token) {
 export function hiddenFrom(observer, target) {
   const o = doc(observer), t = doc(target);
   if ( !o || !t || (o === t) || !isHidden(t) || !areEnemies(o, t) ) return false;
+  if ( knownTo(t.actor, o.actor) ) return false;   // §284 : Épine mentale — elle ne peut pas se Cacher de son lanceur
   return !spottedBy(t).includes(o.id);
 }

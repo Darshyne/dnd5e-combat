@@ -19,7 +19,11 @@ import { setStatus } from "../adapter/conditions.mjs";
 import { combatantFor, readBudget, writeBudget, isOwnTurn } from "../adapter/turn.mjs";
 import { joinToken } from "./actions.mjs";
 import { saveActivityOf } from "./triggers.mjs";
-import { log, loc, notice, viaActiveGM } from "./shared.mjs";
+import { log, loc, locEsc, notice, rolledAndShown, say, viaActiveGM } from "./shared.mjs";
+import { askChoice } from "../adapter/choices.mjs";
+import { concentrationOn } from "../adapter/summons.mjs";
+import { route } from "./router.mjs";
+import { enqueue } from "./queue.mjs";
 
 export const ACTION_END_QUERY = `${MODULE_ID}.actionEnd`;
 
@@ -44,6 +48,11 @@ async function handleActionEnd({ effect: uuid }) {
   await effect.delete();
   // §49 : « en vous infligeant l'état À terre et en vous roulant par terre » (feu grégeois).
   if ( ending.rule.status ) await setStatus(actor, ending.rule.status, true);
+  // §288 : « elle s'évade et le sort prend fin » (Dédale) — la concentration du lanceur sur l'item.
+  if ( ending.rule.spell ) {
+    const concentration = concentrationOn(ending.item);
+    if ( concentration ) await ending.item.actor.endConcentration(concentration);
+  }
   return true;
 }
 
@@ -102,6 +111,40 @@ export async function endFor(token, target, ending) {
   return done;
 }
 
+/**
+ * §288 : au début de son tour, le porteur d'un effet `turnStart` (Dédale : banni, son token caché ne s'offre plus au clic) se voit
+ * proposer l'action qui y met fin — chez son joueur, sinon chez le MJ. Oui : l'action payée, le test de l'item (`check`), réussi, l'effet
+ * tombe (et le sort avec, `spell`). Carte et texte flottant pour tous. MJ actif.
+ */
+async function offerAtTurnStart(combatant) {
+  const actor = combatant?.actor;
+  const endings = ownEndingsOf(actor).filter(e => e.rule.turnStart && e.check);
+  for ( const ending of endings ) {
+    const { ability, skill, dc } = ending.check;
+    const what = skill ? (CONFIG.DND5E.skills[skill]?.label ?? skill) : (CONFIG.DND5E.abilities[ability]?.label ?? ability);
+    const answer = await askChoice(actor, { actor: actor.uuid, item: ending.item.name,
+      prompt: loc("Fin.Etude.Question", { item: ending.item.name, check: what, dc }),
+      options: [{ id: "yes", label: loc("Fin.Etude.Oui") }, { id: "no", label: loc("Fin.Etude.Non") }] });
+    if ( answer?.id !== "yes" ) continue;
+    const budget = readBudget(combatant);
+    if ( budget ) await writeBudget(combatant, spendUse(budget, { cost: "action", weaponAttack: false, usesSpellSlot: false }, { isOwnTurn: true, attacksPerAction: 1 }));
+    const rolls = await rolledAndShown(() => skill
+      ? actor.rollSkill({ skill, ...(ability ? { ability } : {}), target: dc }, { configure: false })
+      : actor.rollAbilityCheck({ ability, target: dc }, { configure: false }));
+    const total = rolls?.[0]?.total;
+    const success = Number.isFinite(total) && (total >= dc);
+    log(`${ending.item.name}: ${actor.name} studies (${total} vs DC ${dc}) — ${success ? "escapes" : "stays"}`);
+    await say({ actor }, locEsc(success ? "Fin.Etude.Reussie" : "Fin.Etude.Ratee", { name: actor.name, item: ending.item.name, total, dc }),
+      { actionEnd: { item: ending.item.name, total, dc, success } });
+    if ( success ) await handleActionEnd({ effect: ending.effect.uuid });
+    return;
+  }
+}
+
 export function registerActionEnd() {
   CONFIG.queries[ACTION_END_QUERY] = handleActionEnd;
+  route("combatTurnChange", (combat, prior, current) => {
+    const started = combat.combatants.get(current?.combatantId);
+    if ( started?.actor ) return enqueue(`actionEnd:${started.actor.uuid}`, () => offerAtTurnStart(started));
+  }, { executor: true, label: "study to escape: not offered" });
 }

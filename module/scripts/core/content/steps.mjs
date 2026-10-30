@@ -61,6 +61,7 @@ function validateStep(step, at, errors) {
   if ( (step.type === "consume") && !["target", "source"].includes(step.side) ) errors.push(`${at}.side: "target" or "source"`);
   if ( (step.type === "resave") && ("keep" in step) && (step.keep !== true) ) errors.push(`${at}.keep: true or absent`);
   if ( (step.type === "resave") && ("unlessSeesOrigin" in step) && (step.unlessSeesOrigin !== true) ) errors.push(`${at}.unlessSeesOrigin: true or absent`);
+  if ( (step.type === "resave") && ("advantage" in step) && (step.advantage !== true) ) errors.push(`${at}.advantage: true or absent`);
   if ( (step.type === "resave") && ("tally" in step) ) {
     const t = step.tally;
     const count = n => Number.isInteger(n) && (n > 0);

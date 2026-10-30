@@ -12,6 +12,9 @@ import { sideRegionOf } from "../adapter/wall-side.mjs";
 import { sleep } from "./shared.mjs";
 import { gmOnly, viewedToken } from "./testing-shared.mjs";
 import { move } from "./testing-moves.mjs";
+import { rangedAreaOf, rangedPlacementProblem } from "../adapter/self-area.mjs";
+import { chainOutliers } from "../adapter/chain.mjs";
+import { damageTypeChoices } from "../adapter/messages.mjs";
 
 /**
  * §162 : un mur posé par points, comme la visée de l'interface le ferait après les clics (ui/pointer.mjs, `aimWall`) : l'activité est
@@ -149,4 +152,48 @@ export function storm({ tokenId, itemId }) {
   const cloud = cloudOf(item);
   return { cloud: cloud ? { id: cloud.id, stormy: !!cloud.getFlag(MODULE_ID, "stormy"), behaviors: cloud.behaviors.map(b => b.type),
     visibility: cloud.visibility, circle: cloudCircle(cloud) } : null, aiming: !!boltAim() };
+}
+
+/**
+ * §286 : ce que la pose refuserait pour ces formes de l'activité de zone de l'item (`far`, `hidden`, `apart` — cubes non contigus),
+ * ou null ; sans ouvrir la pose de dnd5e. `shapes` : formes de région en pixels (`circle` { x, y, radius }, `rectangle` { x, y,
+ * width, height }).
+ */
+export function rangedPlacement({ tokenId, itemId, shapes }) {
+  gmOnly();
+  const token = viewedToken({ tokenId });
+  const item = (token.document ?? token).actor?.items.get(itemId);
+  const activity = item?.system.activities.find(a => a.target?.template?.type);
+  if ( !activity ) throw new Error("area activity not found");
+  const area = rangedAreaOf(activity);
+  return { area: area ? { count: area.count, contiguous: area.contiguous, range: area.range } : null, problem: area ? rangedPlacementProblem(area, shapes) : null };
+}
+
+/** §286 : Chaîne d'éclairs — les cibles (après la première) trop loin de la première, par nom. */
+export function chainCheck({ tokenId, itemId, targetIds }) {
+  gmOnly();
+  const token = viewedToken({ tokenId });
+  const item = (token.document ?? token).actor?.items.get(itemId);
+  const activity = item?.system.activities.contents[0];
+  if ( !activity ) throw new Error("activity not found");
+  const targets = targetIds.map(id => canvas.scene.tokens.get(id)).filter(t => t);
+  return { outliers: chainOutliers(activity, targets).map(t => t.name) };
+}
+
+/** §287 : la lumière du token telle que la rendent ses effets (`token.light.*` appliqués par le cœur), pas celle de sa source. */
+export function tokenLight({ tokenId }) {
+  gmOnly();
+  const token = viewedToken({ tokenId });
+  const light = (token.document ?? token).light ?? {};
+  return { bright: Number(light.bright) || 0, dim: Number(light.dim) || 0, color: light.color ? String(light.color) : null };
+}
+
+/** §288 : les types de dégâts au choix de l'attaque d'un item (Coup au but : celui de l'arme ou radiant), tels que le jet les proposera. */
+export function damageTypes({ tokenId, itemId }) {
+  gmOnly();
+  const token = viewedToken({ tokenId });
+  const item = (token.document ?? token).actor?.items.get(itemId);
+  const activity = item?.system.activities.find(a => a.type === "attack");
+  if ( !activity ) throw new Error("attack activity not found");
+  return { name: item.name, base: Array.from(item.system.damage?.base?.types ?? []), choices: damageTypeChoices(activity) };
 }

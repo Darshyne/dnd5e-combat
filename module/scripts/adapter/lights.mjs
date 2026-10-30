@@ -102,8 +102,10 @@ export async function lightUpRegion(region) {
     flags: { [MODULE_ID]: { region: region.id, darkness: radii.negative } }
   }]);
   // Après la pose : un défaut en dissipant ne laisse pas la zone sans sa lumière.
-  const dispelled = Number.isInteger(rule.dispels) ? await dispelDarkness(region, center, radii.dim, rule.dispels) : 0;
-  return light ? { light, dispelled } : null;
+  // §287 : des ténèbres qui dissipent (Ténèbres) visent les lumières de sort ; une lumière (Lumière du jour), les ténèbres.
+  const lightsDispelled = (Number.isInteger(rule.dispels) && rule.darkness) ? await dispelLights(region, center, radius, rule.dispels) : [];
+  const dispelled = (Number.isInteger(rule.dispels) && !rule.darkness) ? await dispelDarkness(region, center, radii.dim, rule.dispels) : lightsDispelled.length;
+  return light ? { light, dispelled, lightsDispelled } : null;
 }
 
 /**
@@ -187,6 +189,99 @@ async function dispelDarkness(region, center, radius, maxLevel) {
     if ( effect ) await effect.delete();
   }
   return ids.length;
+}
+
+/** Le niveau du sort d'où vient une lumière : celui noté par dnd5e (lancement surclassé compris), sinon celui de l'item. */
+function spellLevelOf(doc, item) {
+  const noted = Number(doc?.getFlag?.("dnd5e", "spellLevel"));
+  if ( Number.isFinite(noted) ) return noted;
+  return (item?.type === "spell") ? (Number(item.system.level) || 0) : null;
+}
+
+/**
+ * Le sort d'où vient une lumière prend fin : sa concentration tombe s'il en a une (dnd5e retire ce qui en dépend), sinon ses
+ * lumières s'éteignent (objets posés, effets lumineux sur le lanceur) et ses effets lumineux partent de qui les porte.
+ */
+async function endLightSpell(item, carrier=null) {
+  const caster = item.actor;
+  const concentration = caster?.effects.find(e => (e.getFlag("dnd5e", "item")?.id === item.id) && e.statuses?.has(CONFIG.specialStatusEffects.CONCENTRATING));
+  if ( concentration ) return caster.endConcentration(concentration);
+  await extinguishLights(item);
+  const ids = (carrier?.effects ?? []).filter(e => originItemOf(e) === item).map(e => e.id);
+  if ( ids.length ) await carrier.deleteEmbeddedDocuments("ActiveEffect", ids);
+}
+
+/**
+ * §287 : Ténèbres — « si une partie de la zone recouvre une Lumière vive ou faible créée par un sort de niveau 2 ou inférieur, ce sort
+ * est dissipé ». Les lumières de sort de la scène : un token qui brille d'un effet de sort (Lueurs féeriques, Lame de feu, Lumière
+ * tenue, Rayon de soleil…), un objet lumineux invoqué (Lumière, Flamme éternelle), une zone de lumière ; recouvertes quand les
+ * cercles se touchent (`dispelledBy`). Rend les sorts dissipés : `{ item: nom, token }` (le token qui brillait, pour le retour).
+ */
+async function dispelLights(region, center, radius, maxLevel) {
+  const scene = region.parent;
+  const px = r => (r / scene.grid.distance) * scene.grid.size;
+  const sources = [];
+  for ( const token of scene.tokens ) {
+    const c = { x: token.x + ((token.width * scene.grid.sizeX) / 2), y: token.y + ((token.height * scene.grid.sizeY) / 2) };
+    const lit = px(Math.max(Number(token.light?.dim) || 0, Number(token.light?.bright) || 0));
+    if ( !(lit > 0) ) continue;
+    const summoned = summonItemOf(token);
+    if ( summoned && (lightRuleOf(summoned)?.on === "summon") ) {
+      sources.push({ id: `token:${token.id}`, x: c.x, y: c.y, radius: lit, level: spellLevelOf(null, summoned), item: summoned, carrier: null, token: null });
+    }
+    for ( const effect of token.actor?.effects ?? [] ) {
+      if ( effect.disabled ) continue;
+      const lightOf = effect.getFlag(MODULE_ID, "lightOf");
+      const item = lightOf ? fromUuidSync(lightOf, { strict: false }) : originItemOf(effect);
+      if ( (item?.type !== "spell") || (!lightOf && !["effect", "caster"].includes(lightRuleOf(item)?.on)) ) continue;
+      sources.push({ id: `effect:${effect.uuid}`, x: c.x, y: c.y, radius: lit, level: spellLevelOf(effect, item), item, carrier: token.actor, token });
+    }
+  }
+  for ( const other of scene.regions ) {
+    if ( other === region ) continue;
+    const found = areaRuleOf(other);
+    const oc = (found && !found.rule.darkness) ? regionCenter(other) : null;
+    if ( !oc ) continue;
+    const dim = Number.isFinite(found.rule.dim) ? toGridUnits(found.rule.dim, found.rule.units, scene.grid) : regionRadius(other);
+    sources.push({ id: `region:${other.id}`, x: oc.x, y: oc.y, radius: px(dim), level: spellLevelOf(other, found.activity?.item),
+      item: found.activity?.item ?? null, carrier: null, region: other });
+  }
+  const ids = new Set(dispelledBy({ x: center.x, y: center.y, radius: px(radius) }, maxLevel, sources.filter(s => Number.isFinite(s.level))));
+  // Un sort qui éclaire plusieurs créatures (Lueurs féeriques) ne prend fin qu'une fois.
+  const ended = new Map();
+  for ( const source of sources.filter(s => ids.has(s.id)) ) {
+    if ( !source.item || ended.has(source.item.uuid) ) continue;
+    ended.set(source.item.uuid, { item: source.item.name, token: source.token ?? null });
+    if ( source.region && !source.item.actor ) { await scene.deleteEmbeddedDocuments("Region", [source.region.id]); continue; }
+    await endLightSpell(source.item, source.carrier);
+  }
+  return [...ended.values()];
+}
+
+/**
+ * §287 : Rayon de soleil — « un point de rayonnement éclatant brille au-dessus de vous » tant que le sort dure : à l'activité de la
+ * règle (`on: "caster"`, `activity`), un effet lumineux sur le lanceur, rattaché à sa concentration (`flags.dnd5e.dependents` : dnd5e
+ * le retire avec elle, documents/active-effect.mjs:1105). Rien s'il brille déjà de ce sort (« Create New Sunbeam »).
+ * @param {Activity} activity
+ * @param {ActiveEffect|null} concentration  La concentration ouverte par l'utilisation.
+ */
+export async function lightCasterFor(activity, concentration=null) {
+  const item = activity?.item;
+  const rule = lightRuleOf(item);
+  if ( (rule?.on !== "caster") || (rule.activity && (rule.activity !== activity.id)) ) return null;
+  const actor = activity.actor;
+  if ( !actor || actor.effects.some(e => e.getFlag(MODULE_ID, "lightOf") === item.uuid) ) return null;
+  const grid = canvas?.scene?.grid ?? game.scenes.active?.grid;
+  const radius = v => (Number.isFinite(v) && grid) ? toGridUnits(v, rule.units, grid) : (v ?? 0);
+  const [effect] = await actor.createEmbeddedDocuments("ActiveEffect", [{
+    name: item.name, img: item.img, origin: item.uuid, type: "base", duration: durationOf(item),
+    system: { changes: tokenLightChanges({ bright: radius(rule.bright), dim: radius(rule.dim), color: rule.color ?? null, animation: rule.animation ?? null }) },
+    flags: { [MODULE_ID]: { lightOf: item.uuid }, dnd5e: { spellLevel: item.system.level } }
+  }]);
+  if ( effect && concentration ) {
+    await concentration.setFlag("dnd5e", "dependents", [...(concentration.getFlag("dnd5e", "dependents") ?? []), { uuid: effect.uuid }]);
+  }
+  return effect ?? null;
 }
 
 /* -------------------------------------------- */

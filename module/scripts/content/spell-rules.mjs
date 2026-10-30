@@ -30,13 +30,22 @@ const BESTOW_CURSE = {
   ]
 };
 
+/** §284 : danser sur place — toutes les Vitesses à 0 tant que l'effet dure (Danse irrésistible d'Otto). */
+const DANCE_IN_PLACE = Object.freeze(["walk", "fly", "swim", "climb", "burrow"].map(m => ({ key: `system.attributes.movement.${m}`, type: "override", value: 0 })));
+
 export const SPELL_RULES = Object.freeze({
   // §43.1 : Pétrification — l'effet d'une sauvegarde réussie (Vitesse 0) tombe au début du prochain tour du lanceur.
   "flesh-to-stone": { effectEnds: { sFyjp6wt9bjyIl9W: "casterTurnStart" } },
   // §43.2 — une action met fin à l'effet.
   // Danse irrésistible d'Otto : « à chacun de ses tours, la cible peut prendre une action pour se ressaisir et réitérer la
   // sauvegarde » ; la danse d'une sauvegarde réussie cesse à la fin du prochain tour de la cible.
-  "ottos-irresistible-dance": { actionEnds: { MpToumiJ2o3S16K7: { by: "bearer", roll: "save" } }, effectEnds: { UhFtBDEZEDpVgz9G: "bearerTurnEnd" } },
+  // §284 : les deux effets sont vides dans la donnée — « doit dépenser tout son mouvement à danser sur place » (Vitesses à 0) ; sous
+  // Charmé, « Désavantage aux JS de Dextérité » (les jets d'attaque : content/triggers.mjs).
+  "ottos-irresistible-dance": { actionEnds: { MpToumiJ2o3S16K7: { by: "bearer", roll: "save" } }, effectEnds: { UhFtBDEZEDpVgz9G: "bearerTurnEnd" },
+    effectChanges: {
+      MpToumiJ2o3S16K7: [...DANCE_IN_PLACE, { key: "system.abilities.dex.save.roll.mode", type: "add", value: "-1" }],
+      UhFtBDEZEDpVgz9G: DANCE_IN_PLACE
+    } },
   // Forme gazeuse : « ou si elle prend une action Magie pour mettre fin au sort sur elle-même ».
   "gaseous-form": { actionEnds: { QeYsfnjEj2T9A3C8: { by: "bearer" } } },
   // Tremblement de terre, « Buried in Rubble » : « un test de Force (Athlétisme) DD 20 par une action pour s'en extraire ».
@@ -198,6 +207,9 @@ export const SPELL_RULES = Object.freeze({
   // §263 : « chaque créature de votre choix » dans la zone — la donnée ne le dit pas (`affects.choice` absent) : les alliés du
   // lanceur sont épargnés, comme pour les Esprits gardiens (§16.23). Audit CAT / CPR : Vague destructrice touchait aussi les alliés.
   "destructive-wave": { zoneAffects: "enemy" },
+  // §286 : Chaîne d'éclairs — « vers un maximum de trois autres cibles, que vous choisissez, distantes de 9 m ou moins de la première »
+  // (le nombre, « @item.level - 2 », est dans la donnée).
+  "chain-lightning": { chain: { radius: 30, units: "ft" } },
   "word-of-radiance": { zoneAffects: "enemy" },
   "conjure-barrage": { zoneAffects: "enemy" },
   "conjure-volley": { zoneAffects: "enemy" },
@@ -312,6 +324,9 @@ export const SPELL_RULES = Object.freeze({
   // immunisée contre tous les dégâts (l'effet « Enclosed in Sphere » est vide). §232 : « une créature dans la sphère ne peut rien
   // endommager dehors » ni être atteinte du dehors (`encloses`) ; « une créature non consentante doit réussir » la sauvegarde — une
   // consentante l'enferme sans jet (`willingFails`).
+  // §283 : Sphère glacée d'Otiluke, `phbsplOtilukesFr` — « 10d6 Cold damage » ; la donnée (« Cast and Fire », « Throw Held Globe »)
+  // laisse ses dégâts sans type.
+  "otilukes-freezing-sphere": { untypedDamage: "cold" },
   "otilukes-resilient-sphere": { encloses: true, willingFails: true, effectChanges: { U5UciD171a5jcc7s: ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"].map(t => ({ key: "system.traits.di.value", type: "add", value: t })) } },
   // Globe d'invulnérabilité : « un sort de niveau 5 ou moins lancé de l'extérieur ne peut affecter quoi que ce soit dans l'Émanation de
   // 3 m » (la montée d'emplacement du globe : non reprise).
@@ -383,6 +398,19 @@ export const SPELL_RULES = Object.freeze({
   // Grêle d'épines : « immédiatement après avoir touché une créature avec une arme à distance » ; la cible et chaque créature à 1,50 m
   // d'elle font la sauvegarde.
   "hail-of-thorns": { smite: { save: "dnd5eactivity000", ranged: true, burst: { radius: 5, units: "ft" } } },
+  // §288 : Flèche de foudre — « au moment où votre attaque touche ou rate la cible […] au lieu de subir les dégâts et les autres effets de
+  // l'attaque, la cible subit 4d8 dégâts de foudre si l'attaque touche, la moitié si elle rate. Chaque créature dans un rayon de 3 m de la
+  // cible effectue ensuite un jet de sauvegarde de Dextérité » (2d8, moitié). La donnée : une sauvegarde sans caractéristique (les 4d8) et
+  // une activité de dégâts sans sauvegarde (les 2d8).
+  "lightning-arrow": { smite: { damage: "dnd5eactivity000", ranged: true, replaces: true, onMiss: "half",
+    blast: { activity: "dnd5eactivity200", radius: 10, units: "ft", ability: "dex" } } },
+  // §288 : Dissipation du mal et du bien — l'effet de « Cast » (RMeb9TUrFdhXMTzz) manque à la donnée : une trace sur le lanceur porte le
+  // Désavantage (content/triggers.mjs) ; Renvoi et Rupture d'enchantement mettent fin au sort ; Rupture fait cesser Charmé ou Effrayé.
+  "dispel-evil-and-good": { trace: { activity: "0vS3We98acymzUXC" }, endsOnUse: ["dnd5eactivity000", "eBbyE0du7mEJWDbZ"],
+    cures: ["charmed", "frightened"], curesOn: "eBbyE0du7mEJWDbZ" },
+  // §288 : Dédale — l'effet « Banished » (vide) transporte la cible (§265) ; « elle peut entreprendre l'action Étude pour tenter de
+  // s'évader : test d'Intelligence (Investigation) DD 20 ; réussi, elle s'évade et le sort prend fin » — proposé au début de son tour.
+  "maze": { banishes: ["y7cYsJ0DCzXt4Tvy"], actionEnds: { y7cYsJ0DCzXt4Tvy: { by: "bearer", roll: "check", spell: true, turnStart: true } } },
   "antimagic-field": { globe: { radius: 10, units: "ft", maxLevel: 9, everywhere: true } },
   "antilife-shell": { barrier: { radius: 10, units: "ft", exceptTypes: ["construct", "undead"] } },
   "arcane-gate": { pointWall: false },

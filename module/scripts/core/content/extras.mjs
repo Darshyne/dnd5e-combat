@@ -138,7 +138,8 @@ export function validateExtras(entry, at, errors) {
         && (!("roll" in rule) || ACTION_END_ROLLS.includes(rule.roll)) && !((rule.by === "other") && (rule.roll === "save"))
         && (!("verb" in rule) || ACTION_END_VERBS.includes(rule.verb))
         && (!("status" in rule) || ((rule.by === "bearer") && ACTION_END_STATUSES.includes(rule.status)))
-        && Object.keys(rule).every(k => ["by", "roll", "verb", "status"].includes(k));
+        && (!("spell" in rule) || (rule.spell === true)) && (!("turnStart" in rule) || ((rule.turnStart === true) && (rule.by === "bearer")))
+        && Object.keys(rule).every(k => ["by", "roll", "verb", "status", "spell", "turnStart"].includes(k));
       if ( !ok ) errors.push(`${at}actionEnds.${id}: { by: ${ACTION_END_BY.join(" | ")}, roll?: ${ACTION_END_ROLLS.join(" | ")} (not "save" for "other"), verb?: ${ACTION_END_VERBS.join(" | ")}, status?: ${ACTION_END_STATUSES.join(" | ")} (bearer) }`);
     }
   }
@@ -155,7 +156,12 @@ export function validateExtras(entry, at, errors) {
     && (!("ranged" in entry.smite) || (entry.smite.ranged === true))
     && (!("saveAtMostHp" in entry.smite) || (Number.isInteger(entry.smite.saveAtMostHp) && (entry.smite.saveAtMostHp > 0)))
     && (!("burst" in entry.smite) || (isObject(entry.smite.burst) && Number.isFinite(entry.smite.burst.radius) && (typeof entry.smite.burst.units === "string")))
-    && Object.keys(entry.smite).every(k => ["damage", "fiends", "save", "effect", "ranged", "any", "burst", "saveAtMostHp"].includes(k))) ) errors.push(`${at}smite: { damage, fiends?, save?, effect?, ranged?, any?, burst? } (activity ids, effect id)`);
+    && (!("replaces" in entry.smite) || (entry.smite.replaces === true))
+    && (!("onMiss" in entry.smite) || (entry.smite.onMiss === "half"))
+    && (!("blast" in entry.smite) || (isObject(entry.smite.blast) && isId(entry.smite.blast.activity) && Number.isFinite(entry.smite.blast.radius)
+      && (entry.smite.blast.radius > 0) && (typeof entry.smite.blast.units === "string") && (typeof entry.smite.blast.ability === "string")
+      && Object.keys(entry.smite.blast).every(k => ["activity", "radius", "units", "ability"].includes(k))))
+    && Object.keys(entry.smite).every(k => ["damage", "fiends", "save", "effect", "ranged", "any", "burst", "saveAtMostHp", "replaces", "onMiss", "blast"].includes(k))) ) errors.push(`${at}smite: { damage, fiends?, save?, effect?, ranged?, any?, burst?, replaces?, onMiss?: "half", blast?: { activity, radius, units, ability } } (activity ids, effect id)`);
   if ( ("metamagic" in entry) && !(isObject(entry.metamagic) && isId(entry.metamagic.activity) && METAMAGIC_KINDS.includes(entry.metamagic.kind)
     && Object.keys(entry.metamagic).every(k => ["activity", "kind"].includes(k))) ) errors.push(`${at}metamagic: { activity, kind: ${METAMAGIC_KINDS.join(" | ")} }`);
   // Relevé des trous : `reroll` — sans activité, le d20 relancé avec ce bonus, le nouveau jet imposé, une fois par effet de `during`.

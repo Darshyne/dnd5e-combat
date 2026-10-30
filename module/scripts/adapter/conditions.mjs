@@ -119,7 +119,7 @@ export function statusesOf(token, observer=null) {
   const statuses = Array.from(token?.actor?.statuses ?? []);
   // §16.36 : « ne peut pas bénéficier de l'état Invisible » (Poussière d'étoile, Lueurs féeriques) ; §161 : l'autre partie de
   // l'attaque voit l'Invisible (Détection de l'invisibilité).
-  const visible = revealedInvisible(token?.actor) || seesInvisible(observer?.actor);
+  const visible = revealedInvisible(token?.actor, observer?.actor) || seesInvisible(observer?.actor);
   return visible ? statuses.filter(s => s !== "invisible") : statuses;
 }
 

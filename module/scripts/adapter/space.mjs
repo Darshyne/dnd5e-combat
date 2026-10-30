@@ -20,7 +20,7 @@
  * (scene.mjs:793) — un plancher est un plancher, quel que soit le niveau où il est affiché.
  */
 
-import { regionElevationFor, originPointOfShapes, withinSphere } from "../core/space.mjs";
+import { regionElevationFor, originPointOfShapes, withinSphere, rectOfShape, pointInRect, anyShapeTakes } from "../core/space.mjs";
 import { committedPosition, tokenCenter } from "./turn.mjs";
 import { readUnitFactors, lengthIn } from "./units.mjs";
 import { eyeElevation } from "./cover.mjs";
@@ -120,10 +120,15 @@ export async function ensureRegionElevation(region) {
  * @returns {{x: number, y: number, elevation: number}|null}
  */
 export function areaOriginOf(region, originToken=null) {
+  return originOfShapes(region, region.shapes.map(s => s.toObject?.() ?? s), originToken);
+}
+
+/** Le point d'origine élevé de ces formes de la région (la première ; §286 : une seule, pour une zone de plusieurs formes). */
+function originOfShapes(region, shapes, originToken) {
   const attached = region.attachment?.token ? region.parent.tokens.get(region.attachment.token) : null;
   const anchor = attached ?? originToken;
   const fallback = anchor ? tokenCenter(anchor) : null;
-  const point = originPointOfShapes(region.shapes.map(s => s.toObject?.() ?? s), fallback);
+  const point = originPointOfShapes(shapes, fallback);
   if ( !point ) return null;
   const { bottom, top } = region.elevation;
   const elevation = (Number.isFinite(bottom) && Number.isFinite(top)) ? (bottom + top) / 2
@@ -143,12 +148,37 @@ export function sphereOf(region, activity, originToken=null) {
   if ( !available ) return null;
   const type = templateOf(activity)?.type;
   if ( (type !== "sphere") && (type !== "circle") ) return null;
+  return sphereAt(region, activity, areaOriginOf(region, originToken));
+}
+
+/** La sphère de la zone autour de ce point d'origine élevé. */
+function sphereAt(region, activity, origin) {
   const scene = region.parent;
   const area = areaOf(activity, scene, region.getFlag("dnd5e", "dimensions") ?? null);
-  const origin = areaOriginOf(region, originToken);
   if ( !area?.size || !origin ) return null;
   const pxPerUnit = scene.grid.size / scene.grid.distance;
   return { x: origin.x, y: origin.y, z: origin.elevation * pxPerUnit, radius: area.size * pxPerUnit };
+}
+
+/**
+ * §286 : une zone de plusieurs formes (Nuée de météores, Tempête de feu — dnd5e pose les `count` gabarits dans UNE région,
+ * canvas/template-placement.mjs:104,132) — chaque forme a son origine et sa sphère : la créature est prise si une forme la contient
+ * et l'atteint, une seule fois (`anyShapeTakes`). `{ inVolume, lineOfEffect }`, comme pour une forme seule.
+ * @param {RegionDocument} region
+ * @param {Activity} activity
+ * @param {TokenDocument|null} originToken
+ * @param {TokenDocument} token
+ */
+export function shapesReach(region, activity, originToken, token) {
+  const round = (templateOf(activity)?.type === "sphere") || (templateOf(activity)?.type === "circle");
+  const center = tokenCenter(token);
+  return anyShapeTakes(region.shapes.map(s => s.toObject?.() ?? s).map(shape => {
+    const origin = originOfShapes(region, [shape], originToken);
+    const sphere = (available && round) ? sphereAt(region, activity, origin) : null;
+    const rect = rectOfShape(shape);
+    const inShape = sphere ? insideSphere(sphere, token) : (rect ? pointInRect(center, rect) : null);
+    return { inShape, lineOfEffect: reachesFromPoint(origin, token) };
+  }));
 }
 
 /** La créature est-elle dans la sphère (et pas seulement dans le cylindre de la région) ? null sans sphère. */

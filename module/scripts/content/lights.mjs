@@ -20,7 +20,9 @@
 export const REVEALS_INVISIBLE = Object.freeze(["starry-wisp", "faerie-fire"]);
 
 export const LIGHTS = Object.freeze({
-  "darkness": { on: "area", darkness: true },
+  // §287 : Ténèbres — « si une partie de la zone recouvre une Lumière vive ou faible créée par un sort de niveau 2 ou inférieur, ce
+  // sort est dissipé ».
+  "darkness": { on: "area", darkness: true, dispels: 2 },
   // §158 : Faim de Hadar — « la Sphère est emplie de Ténèbres magiques » (qui y est entièrement ne voit rien : la vision le juge).
   "hunger-of-hadar": { on: "area", darkness: true },
   "daylight": { on: "area", bright: 60, dim: 120, units: "ft", dispels: 3 },
@@ -39,6 +41,9 @@ export const LIGHTS = Object.freeze({
   "wall-of-fire": { on: "wall", bright: 10, dim: 20, units: "ft", color: "#ff8a2b", animation: { type: "torch", speed: 3, intensity: 3 } },
   // §173 : Mur prismatique — « Lumière vive dans un rayon de 30 m et Lumière faible sur 30 m de plus ».
   "prismatic-wall": { on: "wall", bright: 100, dim: 200, units: "ft" },
+  // §287 : Rayon de soleil — « un point de rayonnement éclatant brille au-dessus de vous : Lumière vive dans un rayon de 9 m et Lumière
+  // faible sur 9 m de plus. Cette lumière est la lumière du soleil » — à l'« Initial Cast » (o3kffaumfNGjVvg9), pas au nouveau rayon.
+  "sunbeam": { on: "caster", activity: "o3kffaumfNGjVvg9", bright: 30, dim: 60, units: "ft", color: "#fff1c4" },
   "light": { on: "summon", carried: true, single: true },
   "continual-flame": { on: "summon", carried: true }
 });

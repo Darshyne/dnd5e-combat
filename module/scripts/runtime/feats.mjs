@@ -37,6 +37,17 @@ function onPreRollDamage(config, dialog, message) {
   const activity = config.subject;
   const actor = activity?.actor;
   if ( !actor || !config.rolls?.length ) return true;
+  // §283 : des dégâts que la donnée laisse sans type (Sphère glacée d'Otiluke) prennent celui que le contenu de l'item déclare.
+  const untyped = activity.item ? contentOf(activity.item).entry?.untypedDamage : null;
+  if ( untyped ) {
+    for ( const roll of config.rolls ) {
+      roll.options ??= {};
+      if ( roll.options.type || roll.options.types?.length ) continue;
+      roll.options.type = untyped;
+      roll.options.types = [untyped];
+      log(`${activity.item.name}: untyped damage rolled as ${untyped}`);
+    }
+  }
   // Relevé des trous : Inspiration de combat, Attaque — le dé déjà lancé (adapter/messages.mjs), en part fixe du type de l'attaque.
   const inspired = Number(config[MODULE_ID]?.combatInspiration) || 0;
   if ( inspired ) {
@@ -185,9 +196,11 @@ export async function fortifiedExtra(actor) {
   const item = ruleItem(actor, "fortifiedHealing");
   const con = Number(actor?.system?.abilities?.con?.mod) || 0;
   if ( !item || !(con > 0) ) return 0;
-  const turn = turnOf(actor);
-  if ( turn && (actor.getFlag(MODULE_ID, "fortifiedHealing") === turn) ) return 0;
-  if ( turn ) await actor.setFlag(MODULE_ID, "fortifiedHealing", turn);
+  // §289 : « vous ne pouvez plus y recourir jusqu'au début de votre tour suivant » — en combat, le drapeau tombe au début du tour du
+  // porteur (comme Visée sans pareille), pas à chaque tour d'un autre combattant. Hors combat : pas de tours, pas de limite.
+  const inCombat = !!combatantFor(actor)?.parent?.started;
+  if ( inCombat && actor.getFlag(MODULE_ID, "fortifiedHealing") ) return 0;
+  if ( inCombat ) await actor.setFlag(MODULE_ID, "fortifiedHealing", true);
   log(`${item.name}: +${con} HP for ${actor.name}`);
   return con;
 }
@@ -410,6 +423,7 @@ function onTurnChange(combat, prior, current) {
   return enqueue(`feats-turn:${actor.uuid}`, async () => {
     await dropMarks(actor.uuid);
     if ( actor.getFlag(MODULE_ID, "peerlessAim") ) await actor.unsetFlag(MODULE_ID, "peerlessAim");   // §135 : Visée sans pareille
+    if ( actor.getFlag(MODULE_ID, "fortifiedHealing") ) await actor.unsetFlag(MODULE_ID, "fortifiedHealing");   // §289 : Santé fortifiée
     if ( (actor.system.attributes?.hp?.value ?? 0) > 0 ) await grappleDamage(actor, combatant.token);
     await endOwnCondition(actor, "turnStart");   // §278
   });

@@ -35,6 +35,19 @@ async function onDeleteEffect(effect) {
   const actor = effect.parent;
   if ( actor?.documentName !== "Actor" ) return;
   const item = originItemOf(effect);
+  // §289 : la table que la fin de l'effet fait tirer (Ombre vivante : « Volonté de l'ombre »).
+  const draws = item ? contentOf(item).entry?.drawsOnEnd : null;
+  const drawn = draws ? Object.keys(draws).find(id => comesFromItemEffect(effect, id)) : null;
+  if ( drawn && ((actor.system?.attributes?.hp?.value ?? 0) > 0) ) {
+    enqueue(`drawsOnEnd:${actor.uuid}`, async () => {
+      const table = await fromUuid(draws[drawn]).catch(() => null);
+      if ( !table?.draw ) return;
+      const token = actor.getActiveTokens?.(false, true)?.[0] ?? null;
+      if ( token ) notice(token, { key: "Retour.TableTiree", data: { table: table.name } }, "refused", { all: true });
+      await table.draw({ displayChat: true });
+      log(`${item.name}: "${effect.name}" ends on ${actor.name}, table "${table.name}" drawn`);
+    }).catch(err => console.error(`${MODULE_ID} | drawsOnEnd`, err));
+  }
   // §53 : le sort qu'une potion a fait lancer n'a pas de suite (Rapidité : « sans la vague de léthargie » de Hâte).
   const rules = (item && !potionOfCast(item)) ? contentOf(item).entry?.effectThen : null;
   if ( !rules ) return;
@@ -247,6 +260,21 @@ async function onResolution(resolution) {
     { ended: { item: item.uuid, actor: item.actor.uuid, reason: "unaffected" } });
 }
 
+/**
+ * §288 : « vous pouvez mettre un terme prématuré au sort en recourant à l'une des fonctions spéciales » (Dissipation du mal et du bien :
+ * Renvoi, Rupture d'enchantement) — l'utilisation faite, la concentration du lanceur sur l'item tombe (dnd5e retire ce qui en dépend).
+ */
+async function onUsedEnding(activity) {
+  const ids = contentOf(activity?.item).entry?.endsOnUse;
+  if ( !ids?.includes(activity.id) || !activity.actor?.isOwner ) return;
+  const concentration = concentrationOn(activity.item);
+  if ( !concentration ) return;
+  await activity.actor.endConcentration(concentration);
+  const token = activity.actor.getActiveTokens?.(false, true)?.[0] ?? null;
+  if ( token ) notice(token, { key: "Retour.FinEffet", data: { item: activity.item.name } }, "ended", { all: true, action: "spellEnds", outcome: "success" });
+  log(`${activity.item.name}: ${activity.name || activity.id} used, the spell ends`);
+}
+
 export function registerEndings() {
   game.settings.register(MODULE_ID, END_UNAFFECTED_SETTING, {
     name: `DND5ECOMBAT.Reglage.${END_UNAFFECTED_SETTING}.Nom`, hint: `DND5ECOMBAT.Reglage.${END_UNAFFECTED_SETTING}.Aide`,
@@ -258,6 +286,7 @@ export function registerEndings() {
   route("createChatMessage", onUsage, { executor: true, label: "effect end when the caster targets another creature: not judged" });
   route("moveToken", onMoveToken, { executor: true, label: "effect end by distance: not judged" });
   route("combatTurnChange", onTurnChange, { executor: true, label: "effect end by distance at turn end: not judged" });
+  route("dnd5e.postUseActivity", activity => onUsedEnding(activity), { label: "spell ended by a special function: not ended" });
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`endsWhen:resolution:${resolution?.id}`, () => onResolution(resolution)),
     { executor: true, label: "concentration end when nobody is affected: not played" });
 }

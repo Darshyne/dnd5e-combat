@@ -25,6 +25,7 @@ export const SOURCE_IDENTIFIERS = Object.freeze({
   rhwSymbioticBein: "symbiotic-being",
   rhwWatchersGH8OL: "watchers",
   rhwGatheredWhisp: "gathered-whispers",
+  rhwSecondSkinkc1: "second-skin",
   // §94 : dons et traits d'espèce.
   rhwSurvivor2zrM3: "survivor-ravenloft",
   rhwMistWalkerlge: "mist-walker",

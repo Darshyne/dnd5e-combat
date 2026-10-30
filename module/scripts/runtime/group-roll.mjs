@@ -30,6 +30,7 @@ import { rollerFor } from "../adapter/concentration.mjs";
 import { closeRollDialogAfter } from "../adapter/dialogs.mjs";
 import { aidsFor, isGuided } from "../adapter/skill-aid.mjs";
 import { inspirationOf, offerInspiration, offerRollBonus, keptD20 } from "../adapter/inspiration.mjs";
+import { offerHeroicD20 } from "./heroic.mjs";
 import { requestSkillAid } from "./skill-aid.mjs";
 import { levelAtLeast } from "./levels.mjs";
 import { route } from "./router.mjs";
@@ -173,16 +174,21 @@ async function decideBonus(message, actor, posted) {
   if ( !request || !Number.isFinite(roll?.total) || posted.getFlag(MODULE_ID, "groupRollBonus") ) return none;
   const dc = request.dc;
   const shownDc = request.hideDc ? null : dc;
-  if ( (dc !== null) && (roll.total >= dc) ) return none;
   const what = keyLabel(request);
   const parts = [];
   let added = 0;
+  // §282 : l'Inspiration héroïque d'abord, avant l'issue — un d20 relancé ; ce qui change (en plus ou en moins) compte dans la demande.
+  // DD caché : l'issue est connue du moteur, pas dite au joueur.
+  const heroic = await offerHeroicD20(actor, { roll, what: (request.type === "save") ? testTitle(request) : what, needed: shownDc,
+    failed: (dc === null) ? null : (roll.total < dc) });
+  if ( heroic?.delta ) { added += heroic.delta; parts.push({ kind: "heroic", value: heroic.delta, img: actor.img ?? null }); }
+  if ( (dc !== null) && ((roll.total + added) >= dc) ) return finish();
   // Hors combat, le joueur a le temps de lire : le délai de la demande (au moins 20 s), pas celui des fenêtres de combat (10 s — vu par
   // l'utilisateur : la question se refermait avant qu'il puisse s'en servir).
   const seconds = Math.max(20, answerSeconds() || 60);
   if ( request.type !== "save" ) {
-    const n = await offerRollBonus(actor, { kind: "check", what, total: roll.total, needed: shownDc,
-      skill: request.type === "skill" ? request.key : null, d20: keptD20(roll), seconds });
+    const n = await offerRollBonus(actor, { kind: "check", what, total: roll.total + added, needed: shownDc,
+      skill: request.type === "skill" ? request.key : null, d20: heroic?.kept ?? keptD20(roll), seconds });
     if ( n ) { added += n; parts.push({ kind: "feature", value: n }); }
   }
   if ( (dc === null) || ((roll.total + added) < dc) ) {
@@ -195,10 +201,14 @@ async function decideBonus(message, actor, posted) {
       parts.push({ kind: "inspiration", value: n, helper: inspiration?.bard ?? "", img: inspiration?.source?.img ?? null });
     }
   }
-  if ( !added ) return none;
-  await posted.setFlag(MODULE_ID, "groupRollBonus", { total: added, parts });
-  log(`group roll: ${actor.name} adds ${added} after the roll (${parts.map(p => p.kind).join(", ")}), ${roll.total} → ${roll.total + added}`);
-  return { added, parts };
+  return finish();
+
+  async function finish() {
+    if ( !parts.length ) return none;
+    await posted.setFlag(MODULE_ID, "groupRollBonus", { total: added, parts });
+    log(`group roll: ${actor.name} adds ${added} after the roll (${parts.map(p => p.kind).join(", ")}), ${roll.total} → ${roll.total + added}`);
+    return { added, parts };
+  }
 }
 
 /* -------------------------------------------- */

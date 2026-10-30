@@ -6,9 +6,10 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { lightUpRegion, followRegion, extinguishRegion, addEffectLight, placeLightObject, lightRuleOf, lightChoiceOf,
-  summonSizeOf, lightCaster, colorSummonedToken, extinguishLights, carriedLightOf, carriedLightEffect, setCarriedLight,
+  summonSizeOf, lightCaster, lightCasterFor, colorSummonedToken, extinguishLights, carriedLightOf, carriedLightEffect, setCarriedLight,
   dropCarriedLight, carriedSourceOf, remainingOf, burnOut, rememberBurn } from "../adapter/lights.mjs";
 import { burnParts } from "../core/light.mjs";
+import { concentrationEffectOf } from "../adapter/concentration.mjs";
 import { tokenOf } from "../adapter/facts.mjs";
 import { invalidateVision } from "../adapter/vision.mjs";
 import { veilOnCreate, veilExisting, unveil, isRevealEffect } from "../adapter/reveal.mjs";
@@ -116,15 +117,31 @@ async function onBurnOut(effect) {
   log(`${actor?.name}: ${done.item} burnt out${done.consumed ? (done.gone ? " (last one, removed)" : " (one fewer)") : " (empty)"}`);
 }
 
+/**
+ * §287 : Ténèbres ont dissipé des lumières de sort — chacun le voit au-dessus du token qui brillait, l'entend (son de fin de sort), et
+ * la carte de chat le dit. MJ actif.
+ */
+async function tellDispelled(region, dispelled) {
+  const darkness = fromUuidSync(region.getFlag("dnd5e", "item") ?? "", { strict: false });
+  const origin = fromUuidSync(region.getFlag("dnd5e", "origin") ?? "", { strict: false });
+  for ( const { item, token } of dispelled ) {
+    if ( token ) notice(token, { key: "Retour.LumiereDissipee", data: { item } }, "ended", { all: true, action: "spellEnds", outcome: "success" });
+  }
+  await say(origin ? { token: origin } : { alias: darkness?.name ?? "" },
+    dispelled.map(({ item }) => locEsc("Lumiere.Dissipee", { item, by: darkness?.name ?? "" })),
+    { lightDispelled: { by: darkness?.uuid ?? null, items: dispelled.map(d => d.item) } });
+}
+
 export function registerLights() {
   // À la file par région : la création et un redessin aussitôt après (l'anneau du Mur de feu, §170) ne posent pas deux fois.
   const queued = (region, task) => enqueue(`light:${region.id}`, task);
   route("createRegion", region => queued(region, async () => {
     const done = await lightUpRegion(region);
     if ( !done ) return;
-    const { light, dispelled } = done;
+    const { light, dispelled, lightsDispelled=[] } = done;
     log(`zone: ${light.config.negative ? `darkness (${light.config.dim} ${region.parent.grid.units})`
-      : `light ${light.config.bright}/${light.config.dim} ${region.parent.grid.units}`}${dispelled ? `, ${dispelled} darkness zone(s) dispelled` : ""}`);
+      : `light ${light.config.bright}/${light.config.dim} ${region.parent.grid.units}`}${dispelled ? `, ${dispelled} ${light.config.negative ? "light spell(s)" : "darkness zone(s)"} dispelled` : ""}`);
+    if ( lightsDispelled.length ) await tellDispelled(region, lightsDispelled);
   }), { executor: true, label: "zone light not placed" });
 
   route("updateRegion", (region, changes) => {
@@ -189,6 +206,12 @@ export function registerLights() {
     if ( (ours?.lightChoice !== "self") || !lightChoiceOf(activity) ) return;
     if ( await lightCaster(activity, ours.lightColor ?? null) ) log(`${activity.actor.name} holds ${activity.item.name}: it sheds light`);
   }, { label: "light object: the caster does not shed light" });
+
+  // §287 : Rayon de soleil — le lanceur brille tant que dure sa concentration (sur le client qui lance : son personnage est à lui).
+  route("dnd5e.postUseActivity", async (activity, usageConfig, results) => {
+    const effect = await lightCasterFor(activity, concentrationEffectOf(results?.message));
+    if ( effect ) log(`${activity.actor.name}: ${activity.item.name} shines above them`);
+  }, { label: "caster light: not lit" });
 
   CONFIG.queries[EXTINGUISH_QUERY] = handleExtinguish;
 

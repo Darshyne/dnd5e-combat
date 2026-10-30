@@ -128,7 +128,7 @@ function testsFor(target, observer=null) {
   const level = canvas.scene.levels?.get?.(target.level) ?? canvas.level;
   const tests = target.getVisibilityTestPoints(pos).map(point => ({ point, level, los: new Map() }));
   // §161 : l'observateur qui voit l'Invisible (Détection de l'invisibilité) la voit comme une autre.
-  return { object: (revealedInvisible(target.actor) || seesInvisible(observer?.actor)) ? unveiled(target.object) : target.object, level, tests };
+  return { object: (revealedInvisible(target.actor, observer?.actor) || seesInvisible(observer?.actor)) ? unveiled(target.object) : target.object, level, tests };
 }
 
 /**
@@ -275,7 +275,7 @@ function seesThroughBlock(observer, target, source, config, blocked) {
   }
   if ( blocked.darkness && !blocked.fog ) {
     const range = devilsSightRange(observer);
-    const invisible = target.hasStatusEffect?.(CONFIG.specialStatusEffects.INVISIBLE) && !revealedInvisible(target.actor) && !seesInvisible(observer.actor);
+    const invisible = target.hasStatusEffect?.(CONFIG.specialStatusEffects.INVISIBLE) && !revealedInvisible(target.actor, observer.actor) && !seesInvisible(observer.actor);
     const blind = observer.hasStatusEffect?.(CONFIG.specialStatusEffects.BLIND);
     if ( range && !invisible && !blind && (distance <= range) && inSight() ) return true;
   }

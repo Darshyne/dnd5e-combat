@@ -82,7 +82,9 @@ export function readBudget(combatant) {
   const budget = combatant.getFlag(MODULE_ID, "turn") ?? freshBudgetFor(combatant);
   // §158 : Nuage nauséabond — « ne peut prendre ni action ni action Bonus » tant qu'il porte l'effet. Lu ici, pas écrit : la remise
   // du budget au changement de tour pouvait arriver APRÈS l'effet posé au début du tour et le défaire (vu le 2026-10-12).
-  return carriesRuleEffect(combatant.actor, "noActions") ? { ...budget, action: 0, bonus: 0, limited: 0 } : budget;
+  if ( carriesRuleEffect(combatant.actor, "noActions") ) return { ...budget, action: 0, bonus: 0, limited: 0 };
+  // §285 : Confusion — « ne peut pas prendre d'action Bonus ».
+  return carriesRuleEffect(combatant.actor, "noBonus") ? { ...budget, bonus: 0 } : budget;
 }
 
 export async function writeBudget(combatant, budget) {

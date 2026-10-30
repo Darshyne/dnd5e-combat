@@ -1,197 +1,156 @@
 /**
- * Sorts de Clerc et de Druide de niveau 1 à 3 couverts mais jamais rejoués (SPEC §37.6), second lot : invocations, objets pilotés,
- * zones, monde `dnd-6`. Le Clerc reçoit les sorts (Manuel des joueurs, à volonté, rien de consommé) ; colonne libre de Restored Keep :
- * Clerc 3080 × 4900, Zombi 3080 × 5180, Guerrier 2800 × 5180. Invocations par `api.mcp.summonAt` (le placement interactif de dnd5e
- * remplacé par une case). Contrôles :
- *  - Convocation de bêtes : l'esprit entre au combat juste après le Clerc ; la concentration retirée, il disparaît ;
- *  - Arme spirituelle : posée au contact du Zombi, le lancement offre sa commande (« vous pouvez immédiatement faire une attaque » :
- *    `onCast: "use"`, sans action Bonus) ; juste après le Clerc au combat ;
- *  - Sphère de feu : posée sous le Zombi (hors de portée du Clerc — le lanceur y serait pris aussi, conforme), le Zombi finit son tour
- *    à 1,50 m → sauvegarde de Dextérité (areaTick `pulse`) ;
- *  - Invocation d'animaux : le Zombi finit son tour à 3 m de la meute → sauvegarde (areaTick `pulse`) ;
- *  - Appel de la foudre : l'éclair frappe 1,50 m autour du point — le Zombi sauvegarde, le Guerrier à 3 cases non ;
- *  - Nappe de brouillard : le Zombi dans la brume, le Guerrier dehors l'attaque sans le voir (raison `target.unseen`).
- * Remet positions, PV, effets, zones, combat ; retire les invocations et les items prêtés.
+ * §284 : chantiers du 2026-10-30, lot 2 (effets vides dans la donnée), monde `dnd-6`, Arène de test. Le Clerc reçoit les sorts du
+ * Manuel des joueurs (à volonté, rien de consommé). Vérifie :
+ *  - Danse irrésistible d'Otto : sauvegarde ratée → Vitesses à 0, Désavantage aux attaques du Zombi, Avantage contre lui, Dex en
+ *    Désavantage dans les changements ; sauvegarde réussie → danse courte, Vitesses à 0, aucune raison d'attaque ;
+ *  - Épine mentale : sauvegarde ratée → le Zombi Invisible ou caché reste vu du Clerc, et l'Invisible ne gêne plus l'attaque du Clerc ;
+ *  - Aliénation : sous son effet, un sort du Clerc a un souci de légalité, son arme non ;
+ *  - Prémonition : Avantage aux attaques du porteur, Désavantage aux attaques contre lui.
+ * Saut n'a rien à vérifier ici : `saut` le joue déjà (§208). Remet PV, effets, états.
  */
-const MODULE_ID = "dnd5e-combat";
 const PHB = "Compendium.dnd-players-handbook.spells.Item.";
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-const SPELLS = { beast: "phbsplSummonBeas", weapon: "phbsplSpiritualW", sphere: "phbsplFlamingSph", animals: "phbsplConjureAni",
-  lightning: "phbsplCallLightn", fog: "phbsplFogCloud00" };
+const SPELLS = { otto: "phbsplOttosIrres", spike: "phbsplMindSpike0", befuddle: "phbsplBefuddleme", foresight: "phbsplForesight0", bolt: "phbsplFireBolt00" };
+const CHARMED_DANCE = "MpToumiJ2o3S16K7";
+const SHORT_DANCE = "UhFtBDEZEDpVgz9G";
 
 export default {
-  name: "sorts, second lot — Convocation de bêtes, Arme spirituelle, Sphère de feu, Invocation d'animaux, Appel de la foudre, Nappe de brouillard",
+  name: "sorts lot 2 — Danse d'Otto, Épine mentale, Aliénation, Prémonition (effets vides dans la donnée)",
 
   async run(ctx) {
     const { tokens } = await ctx.scene();
-    const need = ["Clerc", "Guerrier", "Zombi"];
-    if ( need.some(n => !tokens.some(t => t.name === n)) ) { ctx.log(`${need.join(", ")} requis : non applicable`); return; }
+    if ( ["Clerc", "Zombi"].some(n => !tokens.some(t => t.name === n)) ) { ctx.log("Clerc et Zombi requis : non applicable"); return; }
     const cleric = await ctx.token("Clerc");
-    const fighter = await ctx.token("Guerrier");
     const zombi = await ctx.token("Zombi");
-    const grid = await ctx.gridSize();
     const ids = {};
     for ( const [k, id] of Object.entries(SPELLS) ) ids[k] = await ctx.ensureItem(cleric, PHB + id, { system: { method: "atwill" } });
-    const all = [cleric, fighter, zombi];
-    const homes = new Map();
-    const effects0 = new Map();
-    for ( const t of all ) {
-      homes.set(t.id, { pos: await ctx.position(t), hp: await ctx.hp(t) });
-      effects0.set(t.id, new Set((await ctx.effects(t)).map(e => e._id ?? e.id)));
-    }
-    const tokens0 = new Set(tokens.map(t => t.id));
-    const targetOf = async t => {
-      const { data } = await ctx.call("get-scene-object", { type: "Token", objectId: t.id });
-      const sceneId = (await ctx.scene()).sceneId;
-      return data.actorLink ? { documentType: "Actor", id: data.actorId } : { uuid: `Scene.${sceneId}.Token.${t.id}.Actor.${data.actorId}` };
-    };
-    const added = async t => (await ctx.effects(t)).filter(e => !effects0.get(t.id).has(e._id ?? e.id) && !e.flags?.["dnd5e-combat"]?.aura);
-    const clearNew = async t => {
-      const target = await targetOf(t);
-      for ( const e of await added(t) ) await ctx.call("remove-embedded-effect", { ...target, effectId: e._id ?? e.id }).catch(() => {});
-    };
-    const regions = [];
-    const endCombat = async () => {
-      if ( ctx.ownCombat ) await ctx.call("end-combat", { combatId: ctx.ownCombat }).catch(() => {});
-      ctx.ownCombat = null;
-    };
-    const reset = async () => {
-      await endCombat();
-      for ( const id of regions.splice(0) ) await ctx.call("delete-scene-object", { type: "Region", objectId: id }).catch(() => {});
-      for ( const t of all ) await clearNew(t);   // la concentration du Clerc : ses invocations partent avec
-      await pause(1500);
-      const now = await ctx.liveTokens();
-      for ( const t of now.filter(t => !tokens0.has(t.id)) ) await ctx.call("delete-scene-object", { type: "Token", objectId: t.id }).catch(() => {});
-      for ( const t of all ) {
-        const h = homes.get(t.id);
-        await ctx.call("move-token", { tokenId: t.id, x: h.pos.x, y: h.pos.y, elevation: h.pos.elevation }).catch(() => {});
-        await ctx.setHp(t, h.hp);
+    const slam = await ctx.itemId(zombi.id, "slam");
+    const zhp = await ctx.hp(zombi);
+    const { data: ctok } = await ctx.call("get-scene-object", { type: "Token", objectId: cleric.id });
+    const { data: ztok } = await ctx.call("get-scene-object", { type: "Token", objectId: zombi.id });
+    const sceneId = (await ctx.scene()).sceneId;
+    const zombiTarget = ztok.actorLink ? { documentType: "Actor", id: ztok.actorId }
+      : { uuid: `Scene.${sceneId}.Token.${zombi.id}.Actor.${ztok.actorId}` };
+    const clericTarget = { documentType: "Actor", id: ctok.actorId };
+    const before = { zombi: new Set((await ctx.effects(zombi)).map(e => e._id ?? e.id)), cleric: new Set((await ctx.effects(cleric)).map(e => e._id ?? e.id)) };
+    const clear = async () => {
+      for ( const [tok, target, keep] of [[zombi, zombiTarget, before.zombi], [cleric, clericTarget, before.cleric]] ) {
+        for ( const e of await ctx.effects(tok) ) {
+          if ( !keep.has(e._id ?? e.id) ) await ctx.call("remove-embedded-effect", { ...target, effectId: e._id ?? e.id }).catch(() => {});
+        }
       }
-      await pause(700);
+      await ctx.call("set-status", { tokenId: zombi.id, statusId: "invisible", active: false }).catch(() => {});
     };
-    ctx.restore(reset);
-    const place = async () => {
-      for ( const [t, x, y] of [[cleric, 3080, 4900], [zombi, 3080, 5180], [fighter, 2800, 5180]] ) {
-        await ctx.call("move-token", { tokenId: t.id, x, y, elevation: 0 });
-      }
-      await pause(800);
-    };
+    ctx.restore(async () => { await clear(); await ctx.setHp(zombi, zhp); });
+
     const part = async (label, fn) => {
       if ( process.env.PART && !label.includes(process.env.PART) ) return;
-      try { await reset(); await place(); await fn(); }
+      try { await clear(); await ctx.setHp(zombi, zhp); await fn(); }
       catch(err) { ctx.expect(false, `${label} : ${err.message}`); }
       await pause(600);
       const errors = await ctx.clientErrors();
       ctx.expect(!errors.length, `${label} : aucune erreur dans la console du MJ${errors.length ? ` — ${errors.map(e => e.message ?? e.text).join(" | ").slice(0, 300)}` : ""}`);
     };
-    const fight = async () => {
-      await ctx.startCombat([cleric, zombi]);
-      const c = await ctx.combat();
-      for ( const [t, value] of [[cleric, 20], [zombi, 10]] ) {
-        const cb = (c.combatants ?? []).find(x => (x.tokenId === t.id) || (x.name === t.name));
-        if ( cb ) await ctx.call("set-initiative", { combatId: ctx.ownCombat, combatantId: cb.id, value });
-      }
+    const cast = async key => {
+      const used = await ctx.use({ tokenId: cleric.id, itemId: ids[key], consume: false, targetTokenIds: [zombi.id] });
+      const r = used?.usageMessageId ? await ctx.settle(used.usageMessageId, { timeoutMs: 45000 }).catch(() => null) : null;
+      await pause(1500);
+      return r?.targets?.find(x => x.name === "Zombi") ?? null;
     };
-    const summon = async (key, x, y) => {
-      const s = await ctx.engine("summonAt", { tokenId: cleric.id, itemId: ids[key], x, y });
-      await pause(2500);
-      return s?.tokens?.[0] ?? null;
+    const reasons = (attacker, target, itemId) => ctx.engine("attackReasons", { attackerId: attacker.id, targetId: target.id, itemId });
+    /** Pose sur le Clerc l'effet d'un de ses propres sorts (origine = son item), comme un lanceur sur lui-même. */
+    const selfEffect = async (key, name) => {
+      const r = await ctx.call("upsert-embedded-effect", { ...clericTarget, effectData: {
+        name, img: "icons/svg/aura.svg", origin: `Actor.${ctok.actorId}.Item.${ids[key]}`, transfer: false } });
+      return r?.effectId ?? r?.id ?? r?.effect?._id;
     };
-    const initiativeOf = async t => ((await ctx.combat()).combatants ?? []).find(x => (x.tokenId === t.id) || (x.name === t.name))?.initiative ?? null;
-    /** Tours suivants jusqu'à une sauvegarde d'objet ou de meute (areaTick `pulse`) sur le Zombi ; rend la résolution. */
-    const pulseOnZombi = async () => {
-      for ( let i = 0; i < 6; i++ ) {
-        const since = await ctx.lastMessageId();
-        await ctx.nextTurn();
-        await pause(2500);
-        if ( process.env.DEBUG ) {
-          const cb = await ctx.combat();
-          ctx.log(`tour ${i} : ${cb?.combatant?.name ?? cb?.turn} — ${(await ctx.messagesSince(since)).map(m => `${m.type}:${JSON.stringify(m.flags?.[MODULE_ID]?.areaTick ?? null)}`).join(" | ")}`);
-          ctx.log(`trace : ${(await ctx.engineLog()).slice(-6).join(" / ")}`.slice(0, 600));
+
+    await part("Danse d'Otto", async () => {
+      const base = { zombi: await reasons(zombi, cleric, slam), cleric: await reasons(cleric, zombi, ids.bolt) };
+      const seen = { failed: false, saved: false };
+      for ( let n = 1; (n <= 15) && !(seen.failed && seen.saved); n++ ) {
+        await clear();
+        const t = await cast("otto");
+        if ( !t?.save ) continue;
+        const effects = await ctx.effects(zombi);
+        const from = id => effects.find(e => !e.disabled && String(e._stats?.compendiumSource ?? e._stats?.duplicateSource ?? "").endsWith(`.ActiveEffect.${id}`));
+        const speed = (await ctx.engine("stats", { tokenId: zombi.id }))?.speed ?? {};
+        const still = ["walk", "fly", "swim", "climb", "burrow"].every(m => speed[m] === 0);   // `jump`, `speed`, `max` : dérivés par dnd5e
+        const r = { zombi: await reasons(zombi, cleric, slam), cleric: await reasons(cleric, zombi, ids.bolt) };
+        const more = (side, kind) => r[side][kind].length - base[side][kind].length;
+        if ( t.save.success ) {
+          if ( seen.saved ) continue;
+          seen.saved = true;
+          ctx.expect(!!from(SHORT_DANCE), `sauvegarde réussie (${t.save.total}) : danse courte posée`);
+          ctx.expect(still, `danse courte : Vitesses à 0 (${JSON.stringify(speed)})`);
+          ctx.expect(!more("zombi", "disadvantage") && !more("cleric", "advantage"), "danse courte : aucune raison d'attaque ajoutée");
+        } else {
+          if ( seen.failed ) continue;
+          seen.failed = true;
+          const dance = from(CHARMED_DANCE);
+          ctx.expect(!!dance, `sauvegarde ratée (${t.save.total}) : danse sous Charmé posée`);
+          ctx.expect(still, `danse : Vitesses à 0 (${JSON.stringify(speed)})`);
+          ctx.expect((dance?.system?.changes ?? dance?.changes ?? []).some(c => c.key === "system.abilities.dex.save.roll.mode"),
+            "danse : Désavantage aux JS de Dextérité dans les changements");
+          ctx.expect(more("zombi", "disadvantage") === 1, `le Zombi attaque avec le Désavantage (${JSON.stringify(r.zombi.disadvantage)})`);
+          ctx.expect(more("cleric", "advantage") === 1, `le Clerc l'attaque avec l'Avantage (${JSON.stringify(r.cleric.advantage)})`);
         }
-        const tick = (await ctx.messagesSince(since)).find(m => (m.type === "usage") && (m.flags?.[MODULE_ID]?.areaTick?.event === "pulse")
-          && String(m.flags?.[MODULE_ID]?.areaTick?.token ?? "").endsWith(zombi.id));
-        if ( tick ) return ctx.settle(tick.id, { timeoutMs: 45000 }).catch(() => null);
       }
-      return null;
-    };
-
-    await part("Convocation de bêtes", async () => {
-      await fight();
-      const beast = await summon("beast", 3220, 4900);
-      if ( !ctx.expect(!!beast, `un esprit bestial est invoqué (${beast?.name ?? "rien"})`) ) return;
-      const init = await initiativeOf(beast);
-      ctx.expect((init !== null) && (init < 20) && (init > 10), `il entre au combat juste après le Clerc (initiative ${init})`);
-      await clearNew(cleric);
-      await pause(2500);
-      ctx.expect(!(await ctx.liveTokens()).some(t => t.id === beast.id), "fin de la concentration : l'esprit est retiré");
+      ctx.expect(seen.failed && seen.saved, `les deux issues vues (ratée : ${seen.failed}, réussie : ${seen.saved})`);
     });
 
-    await part("Arme spirituelle", async () => {
-      await fight();
-      const weapon = await summon("weapon", 3080, 5040);
-      if ( !ctx.expect(!!weapon, `l'arme spirituelle est invoquée (${weapon?.name ?? "rien"})`) ) return;
-      const offered = (await ctx.engineLog()).slice(-30).some(l => /commande offerte au lancement \(use\)|command offered on cast \(use\)/.test(l));
-      ctx.expect(offered, "le lancement offre sa commande d'attaque (onCast « use », sans action Bonus)");
-      const init = await initiativeOf(weapon);
-      ctx.expect((init !== null) && (init < 20) && (init > 10), `juste après le Clerc au combat (initiative ${init})`);
-    });
-
-    await part("Sphère de feu", async () => {
-      await fight();
-      const sphere = await summon("sphere", 3080, 5320);
-      if ( process.env.DEBUG && sphere ) {
-        const s = (await ctx.call("get-scene-object", { type: "Token", objectId: sphere.id })).data;
-        const z = (await ctx.call("get-scene-object", { type: "Token", objectId: zombi.id })).data;
-        ctx.log(`sphère ${s.x} × ${s.y} (élév. ${s.elevation}, niveau ${s.level}, ${s.width}×${s.height}) ; Zombi ${z.x} × ${z.y} (élév. ${z.elevation}, niveau ${z.level})`);
+    await part("Épine mentale", async () => {
+      let t = null;
+      for ( let n = 1; (n <= 15) && !(t?.save && !t.save.success); n++ ) { await clear(); await ctx.setHp(zombi, zhp); t = await cast("spike"); }
+      if ( !ctx.expect(t?.save?.success === false, "sauvegarde ratée obtenue") ) return;
+      const unseen = r => r.disadvantage.some(k => /unseen|invisible/i.test(k));
+      const sees = async () => (await ctx.engine("sees", { observerId: cleric.id, targetId: zombi.id }))?.sees === true;
+      /** Invisible puis caché (Furtivité du moteur, DD 30) : ce que voit le Clerc dans chaque cas. */
+      const look = async () => {
+        await ctx.call("set-status", { tokenId: zombi.id, statusId: "invisible", active: true });
+        await pause(800);
+        const out = { reasons: await reasons(cleric, zombi, ids.bolt), invisibleSeen: await sees() };
+        await ctx.call("set-status", { tokenId: zombi.id, statusId: "invisible", active: false });
+        const r = await ctx.call("upsert-embedded-effect", { ...zombiTarget, effectData: {
+          name: "Essai : caché", img: "icons/svg/cowled.svg", transfer: false, flags: { "dnd5e-combat": { hidden: { dc: 30 } } } } });
+        await pause(800);
+        out.hiddenSeen = await sees();
+        await ctx.call("remove-embedded-effect", { ...zombiTarget, effectId: r?.effectId ?? r?.id ?? r?.effect?._id }).catch(() => {});
+        return out;
+      };
+      const spiked = await look();
+      ctx.expect(!unseen(spiked.reasons), `Zombi Invisible : pas de Désavantage pour le Clerc (${JSON.stringify(spiked.reasons.disadvantage)})`);
+      ctx.expect(spiked.invisibleSeen, "Zombi Invisible : toujours vu du Clerc");
+      ctx.expect(spiked.hiddenSeen, "Zombi caché : toujours vu du Clerc");
+      // Sans l'Épine, l'Invisible et la Furtivité jouent de nouveau : la preuve que c'est bien elle.
+      for ( const e of await ctx.effects(zombi) ) {
+        if ( !before.zombi.has(e._id ?? e.id) && /Spike|Épine/i.test(e.name ?? "") ) await ctx.call("remove-embedded-effect", { ...zombiTarget, effectId: e._id ?? e.id });
       }
-      if ( !ctx.expect(!!sphere, `la sphère est invoquée (${sphere?.name ?? "rien"})`) ) return;
-      const r = await pulseOnZombi();
-      const t = r?.targets?.find(x => x.name === "Zombi");
-      if ( process.env.DEBUG ) ctx.log(`résolution : ${JSON.stringify({ step: r?.step, plan: r?.plan?.save, targets: r?.targets }).slice(0, 900)}`);
-      ctx.expect(Number.isFinite(t?.save?.total), `fin du tour du Zombi à 1,50 m : sauvegarde ${t?.save?.total} contre DD ${r?.plan?.save?.dc}`);
+      const plain = await look();
+      ctx.expect(unseen(plain.reasons) && !plain.invisibleSeen, `sans l'Épine, l'Invisible gêne de nouveau (${JSON.stringify(plain.reasons.disadvantage)})`);
+      ctx.expect(!plain.hiddenSeen, "sans l'Épine, le Zombi caché échappe au Clerc");
     });
 
-    await part("Invocation d'animaux", async () => {
-      await fight();
-      const pack = await summon("animals", 3220, 5040);
-      if ( !ctx.expect(!!pack, `la meute est invoquée (${pack?.name ?? "rien"})`) ) return;
-      const r = await pulseOnZombi();
-      const t = r?.targets?.find(x => x.name === "Zombi");
-      ctx.expect(!!t?.save, `fin du tour du Zombi à 3 m de la meute : sauvegarde ${t?.save?.total} contre DD ${r?.plan?.save?.dc}`);
+    await part("Aliénation", async () => {
+      const blank = await ctx.engine("issues", { tokenId: cleric.id, itemId: ids.bolt });
+      await selfEffect("befuddle", "Essai : Aliénation");
+      await pause(500);
+      const spell = await ctx.engine("issues", { tokenId: cleric.id, itemId: ids.bolt });
+      ctx.expect(spell.length === blank.length + 1, `un sort a un souci de plus (${spell.join(" | ")})`);
+      const mace = await ctx.itemId(cleric.id, "mace").catch(() => null);
+      if ( mace ) {
+        const weapon = await ctx.engine("issues", { tokenId: cleric.id, itemId: mace });
+        ctx.expect(!weapon.some(l => /Magi/i.test(l)), `l'arme reste permise (${weapon.join(" | ") || "aucun souci"})`);
+      }
     });
 
-    await part("Appel de la foudre", async () => {
-      // §70 : l'incantation pose le NUAGE par la pose de dnd5e (`placeRegionAt` joue le clic), qui ne résout rien ; l'éclair se
-      // vise ensuite dessous (`stormStrike`). Le paramètre `area` du connecteur créerait la zone sans cette pose : pas de visée.
-      const z = await ctx.position(zombi);
-      const center = { x: z.x + grid / 2, y: z.y + grid / 2 };
-      await ctx.call("call-module-api", { moduleId: "dnd5e-combat", fn: "use", args: { tokenId: cleric.id, itemId: ids.lightning }, waitMs: 500 });
-      await pause(1500);
-      const placed = await ctx.engine("placeRegionAt", center).catch(err => ({ error: err.message }));
-      ctx.expect(placed?.placed, `le nuage est posé (${JSON.stringify(placed)})`);
-      await pause(2500);
-      const storm = await ctx.engine("storm", { tokenId: cleric.id, itemId: ids.lightning }).catch(() => null);
-      if ( storm?.cloud?.id ) regions.push(storm.cloud.id);
-      const since = await ctx.lastMessageId();
-      const struck = await ctx.engine("stormStrike", center).catch(err => ({ error: err.message }));
-      ctx.expect(struck?.struck, `l'éclair est posé sous le nuage (${JSON.stringify(struck)})`);
-      await pause(7000);
-      const saves = (await ctx.messagesSince(since)).filter(m => /Dextérité|Dexterity/i.test(m.flavor ?? ""));
-      const names = [...new Set(saves.map(m => m.alias))];
-      ctx.expect(names.includes("Zombi") && !names.includes("Guerrier"), `l'éclair frappe 1,50 m autour du point : ${names.join(", ") || "personne"}`);
-    });
-
-    await part("Nappe de brouillard", async () => {
-      const z = await ctx.position(zombi);
-      const used = await ctx.use({ tokenId: cleric.id, itemId: ids.fog, activityType: "utility", consume: false,
-        area: { shape: "circle", x: z.x + grid / 2, y: z.y + grid / 2, radius: grid } });
-      if ( used.regionId ) regions.push(used.regionId);
-      if ( !ctx.expect(!!used.regionId, "la brume est posée sur le Zombi") ) return;
-      await pause(1500);
-      const sword = await ctx.itemId(fighter.id, "greatsword");
-      const reasons = await ctx.engine("attackReasons", { attackerId: fighter.id, targetId: zombi.id, itemId: sword });
-      ctx.expect(reasons.disadvantage.includes("target.unseen"), `le Guerrier dehors ne voit pas le Zombi dans la brume : ${JSON.stringify(reasons)}`);
+    await part("Prémonition", async () => {
+      const base = { cleric: await reasons(cleric, zombi, ids.bolt), zombi: await reasons(zombi, cleric, slam) };
+      await selfEffect("foresight", "Essai : Prémonition");
+      await pause(500);
+      const r = { cleric: await reasons(cleric, zombi, ids.bolt), zombi: await reasons(zombi, cleric, slam) };
+      ctx.expect(r.cleric.advantage.length === base.cleric.advantage.length + 1, `le porteur attaque avec l'Avantage (${JSON.stringify(r.cleric.advantage)})`);
+      ctx.expect(r.zombi.disadvantage.length === base.zombi.disadvantage.length + 1, `le Zombi l'attaque avec le Désavantage (${JSON.stringify(r.zombi.disadvantage)})`);
     });
   }
 };

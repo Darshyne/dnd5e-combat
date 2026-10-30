@@ -122,6 +122,8 @@ export function validateLight(l, at, errors) {
   if ( (l.on === "effect") && !(l.dim > 0) && !(l.bright > 0) ) errors.push(`${at}: a light effect needs a radius`);
   if ( (l.on === "area") && !l.darkness && !(l.dim > 0) && !(l.bright > 0) ) errors.push(`${at}: a light area needs a radius`);
   if ( (l.on === "wall") && !(l.dim > 0) && !(l.bright > 0) ) errors.push(`${at}: a wall light needs a radius`);
+  if ( (l.on === "caster") && !(l.dim > 0) && !(l.bright > 0) ) errors.push(`${at}: a caster light needs a radius`);
+  if ( ("activity" in l) && ((l.on !== "caster") || !isId(l.activity)) ) errors.push(`${at}.activity: an activity id (16 characters), on the caster only`);
   if ( ("color" in l) && !((typeof l.color === "string") && /^#[0-9a-fA-F]{6}$/.test(l.color)) ) errors.push(`${at}.color: "#rrggbb"`);
   if ( ("animation" in l) && (!isObject(l.animation) || (typeof l.animation.type !== "string")) ) errors.push(`${at}.animation: { type, speed?, intensity? }`);
   for ( const flag of ["darkness", "carried", "single"] ) if ( (flag in l) && (l[flag] !== true) ) errors.push(`${at}.${flag}: true or absent`);
@@ -129,7 +131,7 @@ export function validateLight(l, at, errors) {
   if ( ("dispels" in l) && !(Number.isInteger(l.dispels) && (l.dispels >= 0)) ) errors.push(`${at}.dispels: spell level (integer)`);
   if ( (l.carried || l.single) && (l.on !== "summon") ) errors.push(`${at}: carried and single only apply to a summon`);
   for ( const key of Object.keys(l) ) {
-    if ( !["on", "bright", "dim", "units", "darkness", "dispels", "carried", "single", "color", "animation"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
+    if ( !["on", "bright", "dim", "units", "darkness", "dispels", "carried", "single", "color", "animation", "activity"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
   }
 }
 

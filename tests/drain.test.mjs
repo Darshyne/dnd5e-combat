@@ -1,6 +1,6 @@
 /** M8 (SPEC §18.16) : drain du maximum de PV — lecture du texte anglais d'origine, part drainée. */
 import { describe, it, expect } from "vitest";
-import { readDrain, drainedAmount, drains, drainEffectShape } from "../module/scripts/core/drain.mjs";
+import { readDrain, drainedAmount, drains, drainEffectShape, flooredDrain } from "../module/scripts/core/drain.mjs";
 import { CONTENT } from "../module/scripts/content/index.mjs";
 import { validateEntry } from "../module/scripts/core/content.mjs";
 
@@ -19,22 +19,22 @@ const PLAIN_BITE = `<p>[[/attack extended]]. [[/damage average extended]].</p>`;
 
 describe("drain du maximum de PV (M8)", () => {
   it("lit la forme du drain", () => {
-    expect(readDrain(LIFE_DRAIN)).toEqual({ equal: true, type: null, regains: false, fixed: null, onFailedSave: false, ability: null });
-    expect(readDrain(VAMPIRE_BITE)).toEqual({ equal: true, type: "necrotic", regains: true, fixed: null, onFailedSave: false, ability: null });
-    expect(readDrain(ENERGY_DRAIN)).toEqual({ equal: false, type: null, regains: false, fixed: "4d6", onFailedSave: false, ability: null });
+    expect(readDrain(LIFE_DRAIN)).toEqual({ equal: true, type: null, regains: false, fixed: null, onFailedSave: false, ability: null, floor: null });
+    expect(readDrain(VAMPIRE_BITE)).toEqual({ equal: true, type: "necrotic", regains: true, fixed: null, onFailedSave: false, ability: null, floor: null });
+    expect(readDrain(ENERGY_DRAIN)).toEqual({ equal: false, type: null, regains: false, fixed: "4d6", onFailedSave: false, ability: null, floor: null });
   });
 
   it("une malédiction « every 24 hours » ou une morsure ordinaire ne draine pas en combat", () => {
-    expect(readDrain(ROTTING_FIST)).toEqual({ equal: false, type: null, regains: false, fixed: null, onFailedSave: false, ability: null });
-    expect(readDrain(PLAIN_BITE)).toEqual({ equal: false, type: null, regains: false, fixed: null, onFailedSave: false, ability: null });
+    expect(readDrain(ROTTING_FIST)).toEqual({ equal: false, type: null, regains: false, fixed: null, onFailedSave: false, ability: null, floor: null });
+    expect(readDrain(PLAIN_BITE)).toEqual({ equal: false, type: null, regains: false, fixed: null, onFailedSave: false, ability: null, floor: null });
   });
 
   it("§105 : caractéristique, format 2014, texte français", () => {
     expect(readDrain(DRAINING_SWIPE).ability).toEqual({ key: "str", formula: "1d4" });
     expect(readDrain(SWIPE_FR).ability).toEqual({ key: "str", formula: "1d4" });
     expect(drains(readDrain(DRAINING_SWIPE))).toBe(true);
-    expect(readDrain(MIST_FR)).toEqual({ equal: true, type: null, regains: true, fixed: null, onFailedSave: true, ability: null });
-    expect(readDrain(MIST_2014)).toEqual({ equal: true, type: null, regains: true, fixed: null, onFailedSave: true, ability: null });
+    expect(readDrain(MIST_FR)).toEqual({ equal: true, type: null, regains: true, fixed: null, onFailedSave: true, ability: null, floor: null });
+    expect(readDrain(MIST_2014)).toEqual({ equal: true, type: null, regains: true, fixed: null, onFailedSave: true, ability: null, floor: null });
     expect(readDrain(VAMPIRE_BITE).onFailedSave).toBe(false);   // 2024 : les dégâts ne tombent que sur l'échec
     expect(drains(readDrain(PLAIN_BITE))).toBe(false);
   });
@@ -58,5 +58,16 @@ describe("drain du maximum de PV (M8)", () => {
       expect(validateEntry(CONTENT[id], { at: `${id}.` })).toEqual([]);
     }
     expect(validateEntry({ drain: "oui" })).toHaveLength(1);
+  });
+
+  it("§283 : Contamination — égal aux dégâts nécrotiques, sur la sauvegarde ratée, plancher de 1", () => {
+    const harm = "<p>The target makes a Constitution saving throw. On a failed save, it takes 14d6 Necrotic damage, and its Hit Point "
+      + "maximum is reduced by an amount equal to the Necrotic damage it took. On a successful save, it takes half as much damage only. "
+      + "This spell can’t reduce a target’s Hit Point maximum below 1.</p>";
+    expect(readDrain(harm)).toMatchObject({ equal: true, type: "necrotic", onFailedSave: true, floor: 1 });
+    expect(flooredDrain(40, 30, 1)).toBe(29);
+    expect(flooredDrain(10, 30, 1)).toBe(10);
+    expect(flooredDrain(5, 1, 1)).toBe(0);
+    expect(flooredDrain(40, 30, null)).toBe(40);
   });
 });

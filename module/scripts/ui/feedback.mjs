@@ -46,7 +46,8 @@ const STYLES = {
   ended: { fill: 0x9ecbff, fontSize: 20 },      // un effet qui cesse (Renvoi, Sommeil sur dégâts)
   gain: { fill: 0x8fd18f, fontSize: 22 },       // une ressource rendue (Regain sauvage : +1 Forme sauvage)
   spend: { fill: 0xffb347, fontSize: 20 },      // la ressource dépensée pour cela (−1 emplacement niv. 2)
-  strike: { fill: 0xe0453a, fontSize: 26 }      // §223 : un coup qui porte l'Attaque sournoise ou des dégâts au choix (Frappe effroyable)
+  strike: { fill: 0xe0453a, fontSize: 26 },     // §223 : un coup qui porte l'Attaque sournoise ou des dégâts au choix (Frappe effroyable)
+  heroic: { fill: 0xffd24a, fontSize: 28 }      // §282 : l'Inspiration héroïque utilisée (un dé relancé)
 };
 
 function textOf(f) {
@@ -60,7 +61,7 @@ function textOf(f) {
     case "saveFail": return loc(f.auto ? "Retour.SauvegardeRateeOffice" : "Retour.SauvegardeRatee");
     case "duplicate": return loc("Retour.Replique");
     case "unaffected": return loc("Retour.NonAffecte");
-    case "prompt": case "refused": case "ended": case "gain": case "spend": case "strike": return f.text;
+    case "prompt": case "refused": case "ended": case "gain": case "spend": case "strike": case "heroic": return f.text;
   }
   return null;
 }
@@ -178,6 +179,46 @@ function show(feedback) {
 }
 
 /**
+ * §282 : l'éclat de l'Inspiration héroïque utilisée, sur le token, chez chaque client (l'avis voyage par `notice(…, { all: true })`) — un
+ * soleil doré qui grandit et tourne, deux anneaux qui s'élargissent, ~1,4 s. Dessiné même sans textes flottants : c'est le retour visuel
+ * de l'action.
+ */
+export async function heroicBurst(token) {
+  const placeable = (typeof token === "string") ? fromUuidSync(token)?.object : (token?.object ?? token);
+  if ( !canvas?.ready || !placeable?.visible || placeable.document?.isSecret ) return;
+  const gold = 0xffd24a;
+  const size = Math.max(placeable.w, placeable.h);
+  const box = new PIXI.Container();
+  box.position.set(placeable.center.x, placeable.center.y);
+  const rings = [0, 1].map(() => box.addChild(new PIXI.Graphics()));
+  const texture = await foundry.canvas.loadTexture("icons/svg/sun.svg").catch(() => null);
+  const sun = texture ? box.addChild(new PIXI.Sprite(texture)) : null;
+  if ( sun ) { sun.anchor.set(0.5); sun.tint = gold; }
+  layerOf().addChild(box);
+  const state = { p: 0 };
+  try {
+    await foundry.canvas.animation.CanvasAnimation.animate([{ parent: state, attribute: "p", from: 0, to: 1 }], {
+      context: box, duration: 1400,
+      ontick: () => {
+        if ( box.destroyed ) return;
+        const p = state.p;
+        rings.forEach((g, i) => {
+          const q = Math.min(1, Math.max(0, (p - (i * 0.2)) / 0.8));
+          g.clear().lineStyle(Math.max(2, size * 0.04 * (1 - q)), gold, 0.9 * (1 - q)).drawCircle(0, 0, size * (0.45 + (0.55 * q)));
+        });
+        if ( sun ) {
+          sun.alpha = (p < 0.25) ? p / 0.25 : Math.max(0, 1 - ((p - 0.25) / 0.75));
+          sun.rotation = p * Math.PI;
+          sun.width = sun.height = size * (0.6 + (0.5 * p));
+        }
+      }
+    });
+  } finally {
+    if ( !box.destroyed ) box.destroy({ children: true, texture: false });
+  }
+}
+
+/**
  * Un avis au-dessus d'un token, sur ce client : invite (« Rebond ! »), refus (« Déjà visé »), fin d'effet. Les invites et
  * refus sont ceux de qui agit — lui seul les voit, comme la visée qu'ils accompagnent.
  */
@@ -260,7 +301,10 @@ export function registerFeedback() {
   for ( const [key, value] of Object.entries(FLOAT_CATEGORY_DEFAULTS) ) world(key, { type: Boolean, default: value });
   route("updateChatMessage", onUpdateMessage, { label: "visual feedback above tokens" });
   route("deleteChatMessage", message => seen.delete(message.id), { label: "visual feedback: forget" });
-  route(`${MODULE_ID}.notice`, n => floatNotice(n.token, n.text, n.kind), { label: "visual feedback: engine notice" });
+  route(`${MODULE_ID}.notice`, n => {
+    floatNotice(n.token, n.text, n.kind);
+    if ( n.kind === "heroic" ) heroicBurst(n.token).catch(() => {});
+  }, { label: "visual feedback: engine notice" });
   // §252 : l'avis d'une action d'un autre client (runtime/shared.mjs, `notice(…, { all: true })`), dessiné ici.
   CONFIG.queries[NOTICE_QUERY] = receiveNotice;
   route("createChatMessage", onCreateMessage, { label: "visual feedback: effect ending" });

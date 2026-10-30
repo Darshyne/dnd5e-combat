@@ -6,8 +6,9 @@ import { CREATURE_TYPES } from "../eligibility.mjs";
 import { ORDERS } from "../orders.mjs";
 import { unknownFacts } from "../triggers.mjs";
 import { validateAbsorb, validateCarriedLight, validateChoice, validateEmanation, validateLight, validateSummon, validateTargets, validateTeleport } from "./annex.mjs";
-import { BASIC_ACTION_KINDS, BONUS_ATTACK_AFTER, BREAK_MOMENTS, EFFECT_EXPIRIES, ENDS_APART_AT, ENDS_ARMOR, ENDS_UNAFFECTED, ENTRY_KEYS, SIZES, WEAPON_KINDS } from "./enums.mjs";
+import { BASIC_ACTION_KINDS, BONUS_ATTACK_AFTER, BREAK_MOMENTS, EFFECT_EXPIRIES, ENDS_APART_AT, ENDS_ARMOR, ENDS_UNAFFECTED, ENTRY_KEYS, SIZES, WEAPON_KINDS, DAMAGE_TYPES } from "./enums.mjs";
 import { validateExtras } from "./extras.mjs";
+import { SPELL_COMPONENTS } from "../spell-failure.mjs";
 import { isId, isObject } from "./shared.mjs";
 import { validateAura, validateTrigger } from "./steps.mjs";
 /**
@@ -173,13 +174,21 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       if ( !kinds.length || !kinds.every(k => BASIC_ACTION_KINDS.includes(k)) ) errors.push(`${at}basicActions.${id}: ${BASIC_ACTION_KINDS.join(", ")} (or a list)`);
     }
   }
-  for ( const key of ["actionOrBonus", "singleAttack", "noAttacksOrSpells", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "noOpportunityAttacks", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails", "critMove", "combatInspiration"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
+  for ( const key of ["actionOrBonus", "singleAttack", "noAttacksOrSpells", "noSpells", "knownToOrigin", "upkeep", "keepsProne", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "noOpportunityAttacks", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails", "critMove", "combatInspiration"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
   // §225, lot 4 : passer du plan matériel à l'Éthéré ou inversement (Saut éthéré) ; `others` : les cibles désignées suivent (Foulée éthérée).
   if ( ("etherealShift" in entry) && !((entry.etherealShift === true) || (isObject(entry.etherealShift)
     && Object.keys(entry.etherealShift).every(k => k === "others") && (entry.etherealShift.others === true))) ) {
     errors.push(`${at}etherealShift: true or { others: true }`);
   }
   validateExtras(entry, at, errors);
+  if ( ("drawsOnEnd" in entry) && (!isObject(entry.drawsOnEnd) || !Object.keys(entry.drawsOnEnd).length
+    || !Object.entries(entry.drawsOnEnd).every(([id, uuid]) => isId(id) && (typeof uuid === "string") && /RollTable\.[A-Za-z0-9]{16}$/.test(uuid))) ) {
+    errors.push(`${at}drawsOnEnd: { effect id: RollTable uuid }`);
+  }
+  if ( ("catalyst" in entry) && (!isObject(entry.catalyst) || !isId(entry.catalyst.save) || !isId(entry.catalyst.cast) || !isId(entry.catalyst.effect)
+    || Object.keys(entry.catalyst).some(k => !["save", "cast", "effect"].includes(k))) ) errors.push(`${at}catalyst: { save, cast, effect } (16-character ids)`);
+  if ( ("curesOn" in entry) && !isId(entry.curesOn) ) errors.push(`${at}curesOn: an activity id (16 characters)`);
+  if ( ("endsOnUse" in entry) && (!Array.isArray(entry.endsOnUse) || !entry.endsOnUse.length || !entry.endsOnUse.every(isId)) ) errors.push(`${at}endsOnUse: [activity ids]`);
   if ( ("cures" in entry) && (!Array.isArray(entry.cures) || !entry.cures.length || !entry.cures.every(s => (typeof s === "string") && s)) ) {
     errors.push(`${at}cures: list of condition identifiers`);
   }
@@ -230,6 +239,14 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     && Object.keys(entry.extraFirstTurn).every(k => k === "minus")) ) errors.push(`${at}extraFirstTurn: { minus } (positive number)`);
   if ( ("curesAll" in entry) && (!Array.isArray(entry.curesAll) || !entry.curesAll.length || !entry.curesAll.every(s => (typeof s === "string") && s)) ) {
     errors.push(`${at}curesAll: list of condition identifiers`);
+  }
+  // §285 : sorts de contrôle.
+  for ( const key of ["confusion", "noBonus", "forcedAttack"] ) if ( (key in entry) && !isId(entry[key]) ) errors.push(`${at}${key}: effect id (16 characters)`);
+  if ( "panic" in entry ) {
+    const p = entry.panic;
+    const okEnd = e => isObject(e) && Number.isFinite(e.distance) && (e.distance > 0) && (typeof e.units === "string") && e.units && Object.keys(e).every(k => ["distance", "units"].includes(k));
+    if ( !isObject(p) || (("effect" in p) && !isId(p.effect)) || (("drop" in p) && (p.drop !== true)) || (("endsAt" in p) && !okEnd(p.endsAt))
+      || !Object.keys(p).every(k => ["effect", "drop", "endsAt"].includes(k)) ) errors.push(`${at}panic: { effect?: <effect id>, drop?: true, endsAt?: { distance, units } }`);
   }
   if ( "effectChanges" in entry ) {
     const e = entry.effectChanges;
@@ -434,7 +451,18 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   // §206 : « une créature de taille G ou supérieure a l'Avantage à ce jet » (Frappe piégeuse).
   // §212 : les effets de l'item qui valent « En feu » (feu grégeois) — ids d'effet, au format d'un `_id`.
   if ( ("burns" in entry) && !(Array.isArray(entry.burns) && entry.burns.length && entry.burns.every(id => /^[A-Za-z0-9]{16}$/.test(id))) ) errors.push(`${at}burns: [effect ids]`);
+  if ( ("untypedDamage" in entry) && !DAMAGE_TYPES.includes(entry.untypedDamage) ) errors.push(`${at}untypedDamage: one of ${DAMAGE_TYPES.join(", ")}`);
+  if ( "spellFailure" in entry ) {
+    const f = entry.spellFailure;
+    if ( !isObject(f) || !Number.isInteger(f.chance) || (f.chance < 1) || (f.chance > 100) ) errors.push(`${at}spellFailure: { chance: 1–100, component? }`);
+    else if ( ("component" in f) && !SPELL_COMPONENTS.includes(f.component) ) errors.push(`${at}spellFailure.component: one of ${SPELL_COMPONENTS.join(", ")}`);
+  }
   if ( ("saveAdvantageSize" in entry) && !SIZES.includes(entry.saveAdvantageSize) ) errors.push(`${at}saveAdvantageSize: one of ${SIZES.join(", ")}`);
+  if ( "chain" in entry ) {
+    const c = entry.chain;
+    if ( !isObject(c) || !(Number.isFinite(c.radius) && (c.radius > 0)) || (typeof c.units !== "string") || !c.units ) errors.push(`${at}chain: { radius, units }`);
+    else for ( const key of Object.keys(c) ) if ( !["radius", "units"].includes(key) ) errors.push(`${at}chain.${key}: unknown key`);
+  }
   if ( "leap" in entry ) {
     const l = entry.leap;
     if ( !isObject(l) || !(Number.isFinite(l.radius) && (l.radius > 0)) || (typeof l.units !== "string") || !l.units

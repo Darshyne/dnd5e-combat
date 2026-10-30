@@ -23,7 +23,7 @@ import { LIGHTS, REVEALS_INVISIBLE } from "./lights.mjs";
 import { TETHERS } from "./tethers.mjs";
 import { BANISHES, ENDS_WHEN, WARDS_CONDITIONS } from "./endings.mjs";
 import { DAMAGE_SHIELDS, HIT_DICE_HEALS } from "./defenses.mjs";
-import { BREAKS_ON, NO_REACTIONS, ACTION_OR_BONUS, SINGLE_ATTACK, NO_ATTACKS_OR_SPELLS, CURES, FIGHTING_ADVANTAGE, SAVED_EFFECTS, SIZE_CHANGES, ORDER_LISTS, FLEE_ON_FAILED_SAVE } from "./spells.mjs";
+import { BREAKS_ON, NO_REACTIONS, ACTION_OR_BONUS, SINGLE_ATTACK, SPELL_FAILURES, NO_ATTACKS_OR_SPELLS, NO_SPELLS, KNOWN_TO_ORIGIN, CONTROL, CURES, FIGHTING_ADVANTAGE, SAVED_EFFECTS, SIZE_CHANGES, ORDER_LISTS, FLEE_ON_FAILED_SAVE } from "./spells.mjs";
 import { RAVENLOFT } from "./ravenloft.mjs";
 import { ROGUE } from "./rogue.mjs";
 import { FIGHTER } from "./fighter.mjs";
@@ -61,7 +61,7 @@ export const BRICKS = Object.freeze([
   [DUPLICATES, "duplicates"], [SAVE_ADVANTAGES, "saveAdvantage"], [ON_FELL, "onFell"], [REACTIVE_SPELLS, "reactiveSpell"],
   [PROJECTILES, "projectiles"], [LEAPS, "leap"], [BONUS_ATTACKS, "bonusAttack"], [TURN_STARTS, "atTurnStart"],
   [TETHERS, null], [DAMAGE_SHIELDS, "damageShield"], [HIT_DICE_HEALS, "hitDiceHeal"], [BREAKS_ON, "breaksOn"],
-  [NO_REACTIONS, "noReactions"], [ACTION_OR_BONUS, "actionOrBonus"], [SINGLE_ATTACK, "singleAttack"], [NO_ATTACKS_OR_SPELLS, "noAttacksOrSpells"], [CURES, "cures"],
+  [NO_REACTIONS, "noReactions"], [ACTION_OR_BONUS, "actionOrBonus"], [SINGLE_ATTACK, "singleAttack"], [SPELL_FAILURES, "spellFailure"], [NO_ATTACKS_OR_SPELLS, "noAttacksOrSpells"], [NO_SPELLS, "noSpells"], [KNOWN_TO_ORIGIN, "knownToOrigin"], [CURES, "cures"],
   [FIGHTING_ADVANTAGE, "advantageIfFighting"], [SAVED_EFFECTS, "savedEffects"], [SIZE_CHANGES, "resize"],
   [ORDER_LISTS, "orders"], [ENDS_WHEN, "endsWhen"], [BANISHES, "banishes"], [WARDS_CONDITIONS, "wardsConditions"]
 ].map(Object.freeze));
@@ -72,7 +72,7 @@ export const BRICKS = Object.freeze([
  * règles multiples (§37), les objets (§49).
  */
 export const ENTRY_TABLES = Object.freeze([
-  FLEE_ON_FAILED_SAVE, RAVENLOFT, ROGUE, FIGHTER, BARBARIAN, CANTRIPS, MONK, PALADIN, RANGER, CLERIC, WIZARD, WARLOCK,
+  FLEE_ON_FAILED_SAVE, CONTROL, RAVENLOFT, ROGUE, FIGHTER, BARBARIAN, CANTRIPS, MONK, PALADIN, RANGER, CLERIC, WIZARD, WARLOCK,
   DRUID, SPECIES, FEATS, SORCERER, BARD, SPELL_RULES, GEAR
 ]);
 

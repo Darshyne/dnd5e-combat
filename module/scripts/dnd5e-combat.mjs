@@ -64,6 +64,8 @@ import { registerMonk } from "./runtime/monk.mjs";
 import { registerSmite } from "./runtime/smite.mjs";
 import { registerManeuverDice } from "./runtime/maneuver-dice.mjs";
 import { registerRollBonus } from "./runtime/roll-bonus.mjs";
+import { registerHeroic, setHeroic } from "./runtime/heroic.mjs";
+import { hasHeroic, heroicMode } from "./adapter/heroic.mjs";
 import { registerNaturalOne } from "./runtime/natural-one.mjs";
 import { registerRise } from "./runtime/rise.mjs";
 import { registerAfterSneak } from "./runtime/after-sneak.mjs";
@@ -105,6 +107,8 @@ import { registerTether } from "./runtime/tether.mjs";
 import { registerDefenses } from "./runtime/defenses.mjs";
 import { registerSize } from "./runtime/size.mjs";
 import { registerOrders } from "./runtime/orders.mjs";
+import { registerControl } from "./runtime/control.mjs";
+import { registerCatalyst } from "./runtime/catalyst.mjs";
 import { registerSummonHandover } from "./runtime/summon-handover.mjs";
 import { registerAutoTranslate } from "./runtime/auto-translate.mjs";
 import { registerClock } from "./runtime/clock.mjs";
@@ -220,7 +224,10 @@ const state = {
   gap: publicGap,
   // §274 : munitions d'une arme — `options(item)` : `{ options: [{ id, name, img, quantity }], current, ask }` (null si l'arme n'en tire
   // pas) ; `set(item, ammoId)` : la munition retenue pour ses prochaines attaques. Hook `dnd5e-combat.ammunition` `(item, ammoId)`.
-  ammo: { options: (item, activity=null) => ammoState(item, activity), set: setAmmo }
+  ammo: { options: (item, activity=null) => ammoState(item, activity), set: setAmmo },
+  // §282 : Inspiration héroïque — `has(actor)`, `set(actor, on)` (MJ : la donne ou la retire, carte et retour à la table), `mode()` : le
+  // réglage de ce client (« on », « failure », « off »).
+  heroic: { has: hasHeroic, set: (actor, on) => (game.user.isGM ? setHeroic(actor, on) : false), mode: heroicMode }
 };
 
 /** §196 : l'écart de deux tokens en cases (3D, et son vide vertical), pour un voisin qui juge une allonge — null s'il ne se mesure pas. */
@@ -337,6 +344,7 @@ Hooks.once("init", () => {
   gated(registerMonk);   // §24 : Frappe étourdissante, Technique de la main ouverte
   gated(registerSmite);   // §25 : sorts de châtiment (après registerSneak : les dés du châtiment suivent ceux de l'Attaque sournoise)
   gated(registerManeuverDice);   // §89, §90 : dés de manœuvre (Fente, Feinte, Jeu de jambes évasif, Balayage, Chassé-croisé, Frappe commandée)
+  gated(registerHeroic);   // §282 : Inspiration héroïque — avant les dés d'après le jet (Embuscade, Inspiration bardique), qui l'attendent
   gated(registerRollBonus);      // §90 : un dé ajouté à un test ou à l'initiative (Embuscade, Autorité naturelle, Évaluation tactique)
   gated(registerNaturalOne);     // §93 : un 1 naturel à un Test d20 (Dons sombres de Ravenloft)
   gated(registerRise);           // §95 : se relever à 0 PV (Cosse nécrotique, Force du tombeau, Courroux persistant)
@@ -386,6 +394,8 @@ Hooks.once("init", () => {
   gated(registerDefenses);
   gated(registerSize);
   gated(registerOrders);   // après le budget (registerTurn) : un ordre achève le tour que la remise à neuf vient d'ouvrir
+  gated(registerControl);   // §285 : sorts de contrôle (panique, Confusion, Couronne du dément), même place que les ordres
+  gated(registerCatalyst);   // §289 : Seconde peau, le changement involontaire
   gated(registerCompact);   // §58 : avant registerChat — le résumé des dés précède le verdict
   gated(registerChat);
   gated(registerPurge);

@@ -30,6 +30,7 @@ import { isSpellCast } from "../adapter/scrolls.mjs";
 import { antimagicAround, barrierBetween } from "../adapter/barriers.mjs";
 import { windowDisengaged } from "./reactions.mjs";
 import { samePlane } from "../adapter/plane.mjs";
+import { chainOf, chainLimit, chainOutliers } from "../adapter/chain.mjs";
 
 /* -------------------------------------------- */
 /*  Légalité, sur le client de celui qui agit   */
@@ -158,6 +159,12 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
     ? (activity.actor?.effects ?? []).map(e => (!e.disabled && !e.isSuppressed) ? originItemOf(e) : null)
       .find(item => item && (item !== activity.item) && (contentOf(item).entry?.noAttacksOrSpells === true)) ?? null
     : null;
+  // §284 : Aliénation — « ne peut pas lancer de sorts ni prendre l'action Magie » (sorts, parchemins, objets magiques).
+  const magicUse = isSpellCast(activity.item) || (activity.item?.system?.properties?.has?.("mgc") && (activity.activation?.type === "action"));
+  const befuddled = magicUse
+    ? (activity.actor?.effects ?? []).map(e => (!e.disabled && !e.isSuppressed) ? originItemOf(e) : null)
+      .find(item => item && (item !== activity.item) && (contentOf(item).entry?.noSpells === true)) ?? null
+    : null;
   // §214 : armure portée sans formation — pas de sorts.
   const unarmored = isSpellCast(activity.item) ? untrainedArmor(activity.actor) : null;
   const lines = [
@@ -166,6 +173,7 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
     ...(silenced ? [loc("Souci.silenced")] : []),
     ...(raging ? [loc("Souci.rage")] : []),
     ...(shapeless ? [loc("Souci.noAttacksOrSpells", { item: shapeless.name })] : []),
+    ...(befuddled ? [loc("Souci.noSpells", { item: befuddled.name })] : []),
     ...(unarmored ? [loc("Souci.untrainedArmor", { item: unarmored.name })] : []),
     ...(antimagic ? [loc("Souci.antimagic", { item: antimagic.item.name })] : []),
     ...limits.issues.map(i => loc(`Souci.${i}`, { item: limits.item ?? "" })),
@@ -265,9 +273,11 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   // §62 : une créature cachée, ni vue ni perçue autrement, n'a pas de position connue — pas de cible (une zone, si).
   // §163 : Coquille antivie — pas de coup au corps à corps à travers la barrière.
   const fenced = origin ? aimed.map(t => ({ name: t.name, zone: barrierBetween(origin, t.document, activity) })).filter(t => t.zone) : [];
+  // §286 : Chaîne d'éclairs — les cibles secondaires à 9 m de la première.
+  const chained = chainOutliers(activity, aimed.map(t => t.document));
   const lost = (origin && !activity.target?.template?.type) ? aimed.filter(t => !unseen.includes(t)
     && locationUnknown({ hidden: hiddenDcOf(t.actor) !== null, sees: canSee(origin, t.document) })) : [];
-  if ( !use.lines.length && !range.blocking.length && !seenBy.length && !wrongType.length && !charmed.length && !unseen.length && !lost.length && !fenced.length && !offPlane.length ) return true;
+  if ( !use.lines.length && !range.blocking.length && !seenBy.length && !wrongType.length && !charmed.length && !unseen.length && !lost.length && !fenced.length && !offPlane.length && !chained.length ) return true;
 
   const lines = [
     ...use.lines,
@@ -278,7 +288,9 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     ...offPlane.map(t => loc("Souci.otherPlane", { name: t.name })),
     ...unseen.map(t => loc("Souci.notSeen", { name: t.name })),
     ...lost.map(t => loc("Souci.hiddenTarget", { name: t.name })),
-    ...fenced.map(t => loc("Souci.barrier", { name: t.name, item: t.zone.item.name }))
+    ...fenced.map(t => loc("Souci.barrier", { name: t.name, item: t.zone.item.name })),
+    ...chained.map(t => loc("Souci.chainTooFar", { name: t.name, first: aimed[0].name, distance: chainLimit(chainOf(activity.item), aimed[0].document),
+      units: aimed[0].document.parent.grid.units }))
   ];
   // Une action tentée hors de son tour est souvent une réaction (attaque d'opportunité).
   const asReaction = !!combatant && !own && (request.cost === "action") && (budget.reaction > 0);

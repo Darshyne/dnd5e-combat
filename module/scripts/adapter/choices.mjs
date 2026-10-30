@@ -22,7 +22,7 @@ const LIST_ABOVE = 6;
 
 /**
  * Côté de celui qui choisit : une fenêtre, un bouton par option.
- * @param {{actor: string, item: string, prompt: string|null, options: Array<{id: string, label: string}>, untimed?: boolean, seconds?: number}} payload
+ * @param {{actor: string, item: string, prompt: string|null, options: Array<{id: string, label: string, icon?: string, class?: string, tooltip?: string, caption?: string}>, untimed?: boolean, seconds?: number}} payload
  *   `untimed` (§137) : pas de délai ni de compte à rebours ; fermée sans choisir, rien n'est choisi. `seconds` (§242) : un délai propre au
  *   lieu de celui des fenêtres de combat (un test demandé hors combat laisse au joueur le temps de lire). `front` (§282) : la fenêtre
  *   passe devant les autres (Inspiration héroïque, posée avant les autres questions d'après le jet). `heading` (HTML sûr), `icon`
@@ -38,7 +38,11 @@ export async function handleChoiceQuery({ actor: actorUuid, item, prompt, option
   const buttons = many
     ? [{ action: "list", label: game.i18n.localize("DND5ECOMBAT.ChoixValider"), icon: "fa-solid fa-check", default: true,
       callback: (event, button) => `pick${button.form?.elements?.pick?.value ?? 0}` }]
-    : options.map((o, i) => ({ action: `pick${i}`, label: o.label, icon: "fa-solid fa-hand-pointer", default: i === 0 }));
+    : options.map((o, i) => ({ action: `pick${i}`, label: o.label, icon: o.icon ?? "fa-solid fa-hand-pointer", default: i === 0,
+      // §282 : l'habillage d'une option (un dé à relancer) — classe, infobulle, et une légende sous l'étiquette (variable CSS, le cœur
+      // n'écrit l'étiquette qu'en texte).
+      ...(o.class ? { class: o.class } : {}), ...(o.tooltip ? { tooltip: o.tooltip } : {}),
+      ...(o.caption ? { style: { "--caption": JSON.stringify(String(o.caption)) } } : {}) }));
   const list = many ? `<select name="pick" class="dnd5e-combat-choice-list" autofocus>${options
     .map((o, i) => ({ i, label: o.label })).sort((a, b) => a.label.localeCompare(b.label, game.i18n.lang))
     .map(o => `<option value="${o.i}">${foundry.utils.escapeHTML(String(o.label))}</option>`).join("")}</select>` : "";

@@ -71,10 +71,9 @@ export function damageDice(rolls) {
  */
 export async function handleHeroicQuery(payload) {
   if ( !heroicWanted(heroicMode(), payload?.failed ?? null) ) return { id: "skip" };
-  // Reconnaissable d'un coup d'œil (retour de l'utilisateur, 2026-10-30) : étoile au titre, bandeau doré « Inspiration héroïque » et la
-  // règle en une ligne, avant la question. Pas de son à l'ouverture : le retour sonore est celui de la relance (runtime/heroic.mjs).
-  const heading = `<div class="dnd5e-combat-heroic-banner"><i class="fa-solid fa-star"></i><strong>${game.i18n.localize("DND5ECOMBAT.Heroique.Nom")}</strong>`
-    + `<i class="fa-solid fa-star"></i></div><p class="dnd5e-combat-heroic-rule">${game.i18n.localize("DND5ECOMBAT.Heroique.Regle")}</p>`;
+  // Reconnaissable sans crier (retours de l'utilisateur, 2026-10-30) : étoile au titre, un filet doré, la règle en une ligne ; les dés à
+  // relancer en grosses tuiles (runtime/heroic.mjs). Pas de son à l'ouverture : le retour sonore est celui de la relance.
+  const heading = `<p class="dnd5e-combat-heroic-rule">${game.i18n.localize("DND5ECOMBAT.Heroique.Regle")}</p>`;
   return handleChoiceQuery({ ...payload, front: true, heading, icon: "fa-solid fa-star", classes: ["dnd5e-combat-heroic"] });
 }
 

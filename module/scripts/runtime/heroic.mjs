@@ -22,7 +22,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { rerolledD20, damageDiceLow } from "../core/heroic.mjs";
+import { rerolledD20, damageDiceLow, keptOf } from "../core/heroic.mjs";
 import { HEROIC_QUERY, HEROIC_SETTING, askHeroic, d20Facts, damageDice, hasHeroic, handleHeroicQuery, spendHeroic } from "../adapter/heroic.mjs";
 import { route } from "./router.mjs";
 import { loc, log, notice, tokenOfActor, waitForDice } from "./shared.mjs";
@@ -51,6 +51,18 @@ function announce(actor, data) {
   if ( token ) notice(token, { key: "Heroique.Avis", data }, "heroic", { all: true, action: "heroic", outcome: "success" });
 }
 
+/** L'option « Garder le jet ». */
+const keepOption = () => ({ id: "keep", label: loc("Heroique.Garder"), icon: "fa-solid fa-check", class: "dnd5e-combat-heroic-keep" });
+
+/** Les icônes de dé de Font Awesome, par faces. */
+const DIE_ICONS = { 4: "fa-dice-d4", 6: "fa-dice-d6", 8: "fa-dice-d8", 10: "fa-dice-d10", 12: "fa-dice-d12", 20: "fa-dice-d20" };
+
+/** Un dé à relancer, en tuile : sa valeur en gros, une légende dessous (« gardé », « d8 Feu »), le détail en infobulle. */
+function dieOption(index, { value, faces, caption, state, tooltip }) {
+  return { id: String(index), label: String(value), icon: `fa-solid ${DIE_ICONS[faces] ?? "fa-dice"}`, caption, tooltip,
+    class: ["dnd5e-combat-heroic-die", state].filter(Boolean).join(" ") };
+}
+
 /**
  * Un jet d20 de la créature, lu sur sa carte : la question, puis la relance du d20 choisi. Rend null (pas d'Inspiration, refus, réglage) ou
  * `{ total, delta, old, kept, critical, fumble }` — le jet après la relance.
@@ -66,12 +78,17 @@ export async function offerHeroicD20(actor, { roll, what, needed=null, failed, t
   if ( Number.isFinite(total) ) facts.total = total;
   const outcome = (failed !== undefined) ? failed : (Number.isFinite(needed) ? (facts.total < needed) : null);
   const two = facts.values.length > 1;
+  // Avantage / Désavantage : le d20 qui compte est marqué « gardé », l'autre « écarté » (un seul gardé si les deux sont égaux).
+  const keptIndex = two ? facts.values.indexOf(keptOf(facts.values, facts.mode)) : 0;
   const answer = await askHeroic(actor, {
     actor: actor.uuid, item: loc("Heroique.Nom"), failed: outcome,
     prompt: loc(Number.isFinite(needed) ? "Heroique.QuestionD20DD" : "Heroique.QuestionD20", { what, total: facts.total, needed }),
-    // « Garder » d'abord : sans réponse dans le délai, la fenêtre retient la première option.
-    options: [{ id: "keep", label: loc("Heroique.Garder") },
-      ...facts.values.map((value, i) => ({ id: String(i), label: loc(two ? "Heroique.RelancerUn" : "Heroique.RelancerD20", { value }) }))]
+    // « Garder » d'abord : sans réponse dans le délai, la fenêtre retient la première option. Chaque d20 est une tuile à sa valeur.
+    options: [keepOption(),
+      ...facts.values.map((value, i) => dieOption(i, { value, faces: 20,
+        caption: two ? loc(i === keptIndex ? "Heroique.Garde" : "Heroique.Ecarte") : "d20",
+        state: two ? (i === keptIndex ? "kept" : "dropped") : "kept",
+        tooltip: loc(two ? "Heroique.RelancerUn" : "Heroique.RelancerD20", { value }) }))]
   });
   const index = Number(answer?.id);
   if ( !answer || !Number.isInteger(index) || !(index in facts.values) ) return null;
@@ -102,8 +119,11 @@ export async function offerHeroicDamage(actor, rolls) {
   const answer = await askHeroic(actor, {
     actor: actor.uuid, item: loc("Heroique.Nom"), failed: damageDiceLow(dice),
     prompt: loc("Heroique.QuestionDegats", { total }),
-    options: [{ id: "keep", label: loc("Heroique.Garder") },
-      ...dice.map((d, i) => ({ id: String(i), label: loc("Heroique.RelancerDe", { faces: d.faces, value: d.value, type: typeLabel(d.type) }) }))]
+    // Un dé à la moitié de son maximum ou moins ressort (le bon candidat à la relance).
+    options: [keepOption(),
+      ...dice.map((d, i) => dieOption(i, { value: d.value, faces: d.faces, caption: `d${d.faces} ${typeLabel(d.type)}`.trim(),
+        state: (d.value <= d.faces / 2) ? "low" : null,
+        tooltip: loc("Heroique.RelancerDe", { faces: d.faces, value: d.value, type: typeLabel(d.type) }) }))]
   });
   const die = dice[Number(answer?.id)];
   if ( !answer || (answer.id === "keep") || !die ) return null;

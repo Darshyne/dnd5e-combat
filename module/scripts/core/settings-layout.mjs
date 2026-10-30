@@ -8,7 +8,7 @@
 
 /** Les onglets, dans l'ordre. `tools` : les fenêtres qu'un bouton de l'onglet ouvre (MJ seulement). */
 export const SETTINGS_TABS = Object.freeze([
-  { id: "general", icon: "fa-solid fa-dragon", keys: ["automationLevel", "theaterOfMind", "etherealPlane", "provideBasicActions", "autoUsage", "autoTranslate", "realTimeClock", "groupRollSeconds"],
+  { id: "general", icon: "fa-solid fa-dragon", keys: ["automationLevel", "theaterOfMind", "etherealPlane", "provideBasicActions", "autoUsage", "autoTranslate", "realTimeClock", "groupRollSeconds", "sidebarButton"],
     tools: [{ id: "welcome", icon: "fa-solid fa-dragon" }, { id: "diagnostic", icon: "fa-solid fa-stethoscope" },
       { id: "reports", icon: "fa-solid fa-flag" }] },
   { id: "combat", icon: "fa-solid fa-shield-halved",
@@ -69,6 +69,11 @@ export function validateWindow(def) {
       if ( !tool?.id || (typeof tool.open !== "function") ) problems.push(`tabs[${i}].tools[${j}]: id and open() expected`);
     }
   }
+  // §291 : l'onglet du module dans la rangée du haut — `end` (à droite, après les autres), `kind: "workshop"` (un atelier : des outils
+  // en cartes), `icon`.
+  const tab = def?.tab;
+  if ( (tab !== undefined) && ((typeof tab !== "object") || (tab === null)) ) problems.push("tab: object expected");
+  else if ( tab?.kind && !["settings", "workshop"].includes(tab.kind) ) problems.push("tab.kind: \"settings\" or \"workshop\" expected");
   return problems;
 }
 
@@ -77,4 +82,26 @@ export function matchesQuery(query, ...texts) {
   const fold = s => String(s ?? "").normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
   const q = fold(query).trim();
   return !q || fold(texts.join(" ")).includes(q);
+}
+
+/**
+ * §291 : un module de la suite se reconnaît à son titre public, « DAS · … » (décision de l'utilisateur, 2026-10-05) — le moteur ne
+ * nomme aucun voisin. Le point médian peut être entouré d'espaces quelconques.
+ */
+export function isSuiteTitle(title) {
+  return /^DAS\s*·\s*\S/.test(String(title ?? ""));
+}
+
+/** Le nom court d'un module de la suite, pour son onglet : « DAS · Combat UI » → « Combat UI ». */
+export function shortTitle(title) {
+  return String(title ?? "").replace(/^DAS\s*·\s*/, "").trim() || String(title ?? "");
+}
+
+/**
+ * Les onglets de modules dans l'ordre : le moteur d'abord, puis par nom, et à la fin ceux qui le demandent (`end` : un atelier).
+ * `modules` : `[{ id, title, end? }]`.
+ */
+export function orderModules(modules, coreId) {
+  return [...modules].sort((a, b) => ((b.id === coreId) - (a.id === coreId)) || ((!!a.end) - (!!b.end))
+    || String(a.title).localeCompare(String(b.title)));
 }

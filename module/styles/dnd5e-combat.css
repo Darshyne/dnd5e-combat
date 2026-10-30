@@ -372,6 +372,30 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-settings__empty { color: var(--das-muted); text-align: center; padding: 30px 0; }
 .das-settings__footer { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--das-line); background: var(--das-surface); }
 .das-settings__footer .spacer { flex: 1; }
+/* §291 : une seule fenêtre pour la suite — un onglet par module DAS en haut ; un module sans sous-onglets n'a pas de colonne à gauche. */
+.das-settings__modules { display: flex; flex-wrap: wrap; gap: 2px; padding: 8px 10px 0; border-bottom: 1px solid var(--das-line); background: var(--das-surface); }
+.das-settings__module { display: flex; align-items: center; gap: 6px; width: auto; flex: 0 0 auto; padding: 6px 14px; margin: 0; background: none;
+  border: 1px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0; color: var(--das-muted); font-weight: 600; cursor: pointer; }
+.das-settings__module img { width: 18px; height: 18px; border: none; }
+.das-settings__module:hover { color: var(--das-ink); background: rgba(255, 255, 255, 0.04); }
+.das-settings__module.on { color: var(--das-ink); background: var(--das-bg, transparent); border-color: var(--das-line);
+  box-shadow: inset 0 3px 0 var(--das-accent); margin-bottom: -1px; }
+.das-settings__main.single { grid-template-columns: 1fr; }
+/* §291 : un atelier (Homebrew) — à droite de la rangée, contour d'accent ; ses outils en grandes cartes. */
+.das-settings__module.end { margin-left: auto; }
+.das-settings__module.workshop { color: var(--das-accent); border: 1px dashed var(--das-accent); border-bottom: none; }
+.das-settings__module.workshop.on { border-style: solid; color: var(--das-ink); }
+.das-settings__about { color: var(--das-muted); margin: 14px 0 12px; }
+.das-settings__cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.das-settings__card { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; height: auto; padding: 16px; margin: 0; text-align: left;
+  background: var(--das-surface); border: 1px solid var(--das-line); border-radius: 8px; color: var(--das-ink); cursor: pointer; line-height: 1.35; }
+.das-settings__card:hover { border-color: var(--das-accent); background: var(--das-accent-soft); }
+.das-settings__card i { font-size: 1.8em; color: var(--das-accent); margin-bottom: 4px; }
+.das-settings__card strong { font-size: 1.05em; }
+.das-settings__card span { color: var(--das-muted); font-size: 0.9em; font-weight: normal; }
+.das-settings__card em { margin-top: auto; padding-top: 6px; font-style: normal; font-weight: 600; color: var(--das-accent); }
+/* §291 : le bouton « DAS » de l'onglet Réglages de la barre latérale (réglage de poste `sidebarButton`). */
+#sidebar .das-sidebar-settings img { width: 16px; height: 16px; border: none; vertical-align: middle; margin-right: 2px; }
 /* Champs de la fenêtre de réglages : les couleurs du thème DAS, pas celles des champs du cœur (texte sombre sur fond sombre selon le
    thème de l'interface — vu par l'utilisateur le 2026-10-18). */
 .das-settings__row .ctl select, .das-settings__row .ctl input[type=text], .das-settings__row .ctl input[type=number],

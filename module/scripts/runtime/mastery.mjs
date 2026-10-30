@@ -27,6 +27,7 @@ import { conditionImmunitiesOf } from "../adapter/facts.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { rollerFor } from "../adapter/concentration.mjs";
 import { closeRollDialogAfter } from "../adapter/dialogs.mjs";
+import { queryPlayer, waitLabel } from "../adapter/player-wait.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log, loc, notice } from "./shared.mjs";
@@ -113,7 +114,8 @@ async function topple(attackMessage, source, target, weapon) {
   const userId = rollerFor(target.actor);
   const user = userId ? game.users.get(userId) : null;
   let total = null;
-  if ( user && !user.isSelf ) total = await user.query(TOPPLE_QUERY, { ...payload, configure: true }, { timeout: TOPPLE_TIMEOUT_MS }).catch(() => null);
+  if ( user && !user.isSelf ) total = await queryPlayer(user, TOPPLE_QUERY, { ...payload, configure: true },
+    { timeout: TOPPLE_TIMEOUT_MS, actor: target.actor, label: waitLabel("Renversement", { dc }) }).catch(() => null);
   if ( !Number.isFinite(total) ) total = await rollToppleSave(payload);
   if ( !Number.isFinite(total) ) return;
   const saved = total >= dc;

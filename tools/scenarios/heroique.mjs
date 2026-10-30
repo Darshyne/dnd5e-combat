@@ -7,7 +7,7 @@
  *  - dégâts : l'attaque gardée (« Garder le jet »), puis sur un coup, la question des dégâts → le premier dé relancé ; les dégâts appliqués
  *    au Zombi = total du jet de dégâts − ancien dé + nouveau dé ;
  *  - sans Inspiration : aucune question.
- * Suppose le réglage de client `heroicInspiration` du MJ sur « À chaque jet » (défaut). Remet PV et Inspiration.
+ * Met le réglage de client `heroicInspiration` du MJ sur « À chaque jet » le temps du scénario, puis le remet. Remet PV et Inspiration.
  */
 const MODULE_ID = "dnd5e-combat";
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -22,6 +22,8 @@ export default {
     const zombi = await ctx.token("Zombi");
     const sword = await ctx.itemId(fighter.id, "greatsword");
     const zhp = await ctx.hp(zombi);
+    const { before: mode } = await ctx.engine("setting", { key: "heroicInspiration", value: "on" });
+    ctx.restore(() => ctx.engine("setting", { key: "heroicInspiration", value: mode }).catch(() => {}));
     const pos = await ctx.position(fighter);
     const zpos = await ctx.position(zombi);
     const inspiredNow = async () => !!(await ctx.call("get-actor", { actorId: fighter.actorId }))?.system?.attributes?.inspiration;
@@ -62,12 +64,12 @@ export default {
       const ids = await known();
       const since = await ctx.lastMessageId();
       const u = await attack();
-      const seen = await answer(ids, /Relancer|Reroll/i);
+      const seen = await answer(ids, /^\d+$/);   // un d20 : la tuile porte sa valeur
       ctx.expect(!!seen, `attaque : la question héroïque s'ouvre${seen ? ` (${seen.buttons.join(" / ")})` : ""}`);
-      // Reconnaissable : le titre et le bandeau la nomment, la règle est rappelée.
-      ctx.expect(!!seen && /(Heroic Inspiration|Inspiration héroïque).*(Heroic Inspiration|Inspiration héroïque)/is.test(seen.text)
+      // Reconnaissable : le titre la nomme, la règle est rappelée (fenêtre sobre depuis le 2026-10-30, sans bandeau).
+      ctx.expect(!!seen && /Heroic Inspiration|Inspiration héroïque/i.test(seen.text)
         && /Reroll a die you just rolled|Relancez un dé que vous venez de lancer/i.test(seen.text),
-        `attaque : la fenêtre nomme l'Inspiration héroïque (titre et bandeau) et rappelle la règle`);
+        `attaque : la fenêtre nomme l'Inspiration héroïque et rappelle la règle`);
       // Les dégâts d'un coup posent leur propre question : garder.
       const damageIds = await known();
       const later = answer(damageIds, /Garder|Keep/i, 15000);
@@ -98,7 +100,7 @@ export default {
       const u = await attack();
       await answer(ids, /Garder|Keep/i);
       const ids2 = await known();
-      const dmg = answer(ids2, /^d\d+/i, 15000);
+      const dmg = answer(ids2, /^\d+$/, 15000);   // le premier dé : sa tuile porte sa valeur
       const r = await ctx.settle(u.usageMessageId, { timeoutMs: 45000 }).catch(() => null);
       const seen = await dmg;
       if ( !r?.targets?.[0]?.hit ) continue;

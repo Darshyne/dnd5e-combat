@@ -7,6 +7,7 @@ import { tieSummonToConcentration, removeSummonsOf, joinSummonerCombat, summonIt
 import { MODULE_ID } from "../constants.mjs";
 import { route } from "./router.mjs";
 import { log, waitForDice } from "./shared.mjs";
+import { queryPlayer, waitLabel } from "../adapter/player-wait.mjs";
 
 /**
  * Le système vient de demander une sauvegarde de concentration, ou de proposer d'y mettre fin.
@@ -34,8 +35,8 @@ async function onPrompt(message) {
   if ( userId ) {
     log(`${prompt.actor.name}: concentration saving throw DC ${prompt.dc}, asked to the player`);
     try {
-      await game.users.get(userId)?.query(CONCENTRATION_QUERY, { actor: prompt.actor.uuid, dc: prompt.dc, ability: prompt.ability ?? null,
-        prompt: message.id }, { timeout: CONCENTRATION_TIMEOUT });
+      await queryPlayer(game.users.get(userId), CONCENTRATION_QUERY, { actor: prompt.actor.uuid, dc: prompt.dc, ability: prompt.ability ?? null,
+        prompt: message.id }, { timeout: CONCENTRATION_TIMEOUT, actor: prompt.actor, label: waitLabel("Concentration", { dc: prompt.dc }) });
     } catch(err) {
       console.warn(`${MODULE_ID} | concentration of ${prompt.actor.name}: no answer from the player, the card stays`, err);
     }

@@ -10,6 +10,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { handleChoiceQuery } from "./choices.mjs";
 import { rollerFor } from "./concentration.mjs";
+import { queryPlayer, waitLabel } from "./player-wait.mjs";
 import { heroicWanted, HEROIC_MODES } from "../core/heroic.mjs";
 
 export const HEROIC_QUERY = `${MODULE_ID}.heroic`;
@@ -84,7 +85,7 @@ export async function handleHeroicQuery(payload) {
 export async function askHeroic(actor, payload) {
   const userId = rollerFor(actor);
   if ( !userId || (userId === game.user.id) ) return handleHeroicQuery(payload);
-  try { return await game.users.get(userId).query(HEROIC_QUERY, payload, { timeout: HEROIC_TIMEOUT }); }
+  try { return await queryPlayer(game.users.get(userId), HEROIC_QUERY, payload, { timeout: HEROIC_TIMEOUT, actor, label: waitLabel("Heroique") }); }
   catch(err) {
     console.warn(`${MODULE_ID} | Heroic Inspiration for ${actor.name}: no answer from the player`, err);
     return null;

@@ -19,6 +19,7 @@ import { committedPosition, usageTokenOf } from "./turn.mjs";
 import { areaOriginOf, reachesFromPoint, sphereOf, insideSphere, shapesReach } from "./space.mjs";
 import { effectOfProfile } from "./usage.mjs";
 import { timedWait, closeRollDialogAfter } from "./dialogs.mjs";
+import { queryPlayer, waitLabel } from "./player-wait.mjs";
 import { originItemOf, creatureTypeOf } from "./facts.mjs";
 import { contentOf } from "./content.mjs";
 import { grappleRulesOf } from "./grapple-rules.mjs";
@@ -315,8 +316,9 @@ export async function requestSaves(usageMessage, save, targets, { askPlayers=tru
     const userId = rollerFor(actor);
     if ( userId ) {
       // Sans attendre : les joueurs lancent en parallèle, les PNJ n'attendent personne.
-      asked.push(game.users.get(userId).query(SAVE_QUERY,
-        { usage: usageMessage.id, token: token.uuid, ability, abilities, ask: askPlayers, dc, item: activity.item.name, activity: activity.uuid, advantage, disadvantage, foretold }, { timeout: SAVE_TIMEOUT })
+      asked.push(queryPlayer(game.users.get(userId), SAVE_QUERY,
+        { usage: usageMessage.id, token: token.uuid, ability, abilities, ask: askPlayers, dc, item: activity.item.name, activity: activity.uuid, advantage, disadvantage, foretold },
+        { timeout: SAVE_TIMEOUT, actor, label: waitLabel("Sauvegarde", { item: activity.item.name }) })
         .catch(() => false)
         .then(rolled => { if ( !rolled ) requested.push({ actor: actor.uuid, user: userId }); }));
       continue;

@@ -43,6 +43,7 @@ import { down, startRecall } from "./pointer-mouse.mjs";
 import { groupRollEntry } from "./group-roll.mjs";
 import { setHeroic } from "../runtime/heroic.mjs";
 import { armCatalyst, catalystArmed, catalystOf } from "../runtime/catalyst.mjs";
+import { forceWait, waitsOf } from "../runtime/player-waits.mjs";
 
 /* -------------------------------------------- */
 /*  Menu contextuel                             */
@@ -489,6 +490,10 @@ function pushGroupRoll(entries, target) {
   const change = game.user.isGM ? catalystOf(target?.actor) : null;
   if ( change && !catalystArmed(target.actor) ) {
     entries.push({ icon: "fa-solid fa-paw-claws", label: loc("Catalyseur.Menu", { item: change.item.name }), run: () => armCatalyst(target.actor) });
+  }
+  // §290 : MJ — fenêtres sans délai : forcer la réponse que le joueur de ce personnage tarde à donner.
+  for ( const wait of game.user.isGM ? waitsOf(target?.actor) : [] ) {
+    entries.push({ icon: "fa-solid fa-forward", label: loc("Attente.Menu", { name: wait.userName, what: wait.label }), run: () => forceWait(wait.id) });
   }
 }
 

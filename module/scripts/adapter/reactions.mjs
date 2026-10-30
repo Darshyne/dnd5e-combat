@@ -19,6 +19,7 @@ import { eligibleReactions } from "../core/reaction.mjs";
 import { stepsOf } from "../core/triggers.mjs";
 import { rollerFor } from "./concentration.mjs";
 import { timedWait } from "./dialogs.mjs";
+import { queryPlayer, waitLabel } from "./player-wait.mjs";
 import { contentOf } from "./content.mjs";
 import { markReactionAdvantage, markReactionDamage, markReactionDisadvantage } from "./marks.mjs";
 import { combatantFor, readBudget, currentTurnKey } from "./turn.mjs";
@@ -224,7 +225,8 @@ export function reactiveSpellsOf(actor) {
 export async function askReaction(actor, payload) {
   const userId = rollerFor(actor) ?? game.users.activeGM?.id ?? null;
   try {
-    if ( userId && (userId !== game.user.id) ) return await game.users.get(userId).query(REACTION_QUERY, payload, { timeout: REACTION_TIMEOUT });
+    if ( userId && (userId !== game.user.id) ) return await queryPlayer(game.users.get(userId), REACTION_QUERY, payload,
+      { timeout: REACTION_TIMEOUT, actor, label: waitLabel("Reaction") });
     return await handleReactionQuery(payload);
   } catch(err) {
     console.warn(`${MODULE_ID} | reaction of ${actor.name}: no answer`, err);

@@ -18,7 +18,9 @@ export const CORE_SOUNDS = Object.freeze({
   dull: "sounds/doors/wood/lock.ogg",
   fade: "sounds/doors/magic/lock.ogg",
   // §282 : l'Inspiration héroïque utilisée — un coup de tambour épique.
-  heroicHit: "sounds/combat/epic-turn-1hit.ogg"
+  heroicHit: "sounds/combat/epic-turn-1hit.ogg",
+  // §290 : le MJ force la réponse d'un joueur.
+  nextHorn: "sounds/combat/epic-next-horn.ogg"
 });
 
 /** Le son par défaut d'une action (`action`) selon son issue (`success`, `failure`), ou null. */
@@ -39,7 +41,9 @@ const DEFAULTS = Object.freeze({
   spellFails: { success: null, failure: CORE_SOUNDS.fade },
   // §285 : un comportement imposé (panique, Confusion, Couronne du dément) ; l'entretien d'un sort par l'action Magie.
   control: { success: CORE_SOUNDS.chime, failure: CORE_SOUNDS.dull },
-  upkeep: { success: CORE_SOUNDS.chime, failure: CORE_SOUNDS.fade }
+  upkeep: { success: CORE_SOUNDS.chime, failure: CORE_SOUNDS.fade },
+  // §290 : la réponse d'un joueur forcée par le MJ (fenêtres du combat sans délai).
+  forced: { success: CORE_SOUNDS.nextHorn, failure: null }
 });
 
 /** Le son par défaut de cette action et de cette issue (null : aucun). */

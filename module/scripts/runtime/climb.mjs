@@ -35,6 +35,7 @@ import { boundsUnder, groundUnder, groundModeOf, modeRefusalFor } from "../adapt
 import { MODE_STATUSES, setStatus } from "../adapter/conditions.mjs";
 import { rollerFor } from "../adapter/concentration.mjs";
 import { closeRollDialogAfter } from "../adapter/dialogs.mjs";
+import { queryPlayer, waitLabel } from "../adapter/player-wait.mjs";
 import { actorOfEffect } from "../adapter/grapple.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { pilotOf, isIntangible } from "../adapter/pilot.mjs";
@@ -816,7 +817,8 @@ async function requestClimbCheck(token) {
     const userId = rollerFor(token.actor);
     const user = userId ? game.users.get(userId) : null;
     let result = null;
-    if ( user && !user.isSelf ) result = await user.query(CLIMB_QUERY, { token: token.uuid, dc }, { timeout: CHECK_TIMEOUT_MS }).catch(() => null);
+    if ( user && !user.isSelf ) result = await queryPlayer(user, CLIMB_QUERY, { token: token.uuid, dc },
+      { timeout: CHECK_TIMEOUT_MS, actor: token.actor, label: waitLabel("Escalade", { dc }) }).catch(() => null);
     if ( !result ) result = await handleClimbQuery({ token: token.uuid, configure: false, dc });
     if ( !isClimbing(token) ) return;
     if ( result && !result.success ) await fall(token, "check");

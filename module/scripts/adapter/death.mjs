@@ -20,6 +20,7 @@ import { contentOf } from "./content.mjs";
 import { makesDeathSaves, damageAtZero, needsDeathSave, statusAfterDeathSave, downedStatus, isDead, canStabilize } from "../core/death.mjs";
 import { rollerFor } from "./concentration.mjs";
 import { closeRollDialogAfter } from "./dialogs.mjs";
+import { queryPlayer, waitLabel } from "./player-wait.mjs";
 import { transformsAtZero, standsAtZero } from "./coven.mjs";
 import { regenerationOf } from "./regeneration.mjs";
 import { relentlessAtZero } from "./rage.mjs";
@@ -326,7 +327,8 @@ export async function handleDeathSaveQuery({ actor: actorUuid }) {
 export async function requestDeathSave(actor) {
   const userId = rollerFor(actor);
   if ( userId ) {
-    const rolled = await game.users.get(userId).query(DEATH_QUERY, { actor: actor.uuid }, { timeout: DEATH_TIMEOUT }).catch(() => false);
+    const rolled = await queryPlayer(game.users.get(userId), DEATH_QUERY, { actor: actor.uuid }, { timeout: DEATH_TIMEOUT, actor, label: waitLabel("Mort") })
+      .catch(() => false);
     if ( rolled || !deathSaveDue(actor) ) return "player";
   }
   await actor.rollDeathSave({}, { configure: false });

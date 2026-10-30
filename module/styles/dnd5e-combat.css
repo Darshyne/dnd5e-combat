@@ -578,3 +578,17 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .dnd5e-combat-heroic-die.dropped span { opacity: 0.5; text-decoration: line-through; }
 .dnd5e-combat-heroic-die.low span { color: #c0392b; }
 .dnd5e-combat-heroic .form-footer button.dnd5e-combat-heroic-keep { order: 1; flex: 1 0 100%; }
+
+/* §290 : fenêtres du combat sans délai — la ligne d'attente chez le joueur, et la fenêtre de suivi du MJ (qui il attend, forcer). */
+.dnd5e-combat-waiting { margin: 8px 0 0; font-size: 0.85em; opacity: 0.7; font-style: italic; }
+.das-player-waits .window-content { padding: 8px; }
+.das-player-waits .das-waits { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.das-player-waits .das-wait { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 4px;
+  background: rgba(127, 127, 127, 0.12); }
+.das-player-waits .das-wait img { width: 32px; height: 32px; border: none; border-radius: 4px; object-fit: cover; }
+.das-player-waits .das-wait__text { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.das-player-waits .das-wait__text small { opacity: 0.8; }
+.das-player-waits .das-wait__time { font-variant-numeric: tabular-nums; opacity: 0.75; min-width: 3em; text-align: right; }
+.das-player-waits .das-wait button { flex: 0 0 auto; width: auto; }
+.das-player-waits footer { margin-top: 8px; }
+.das-player-waits .das-muted { opacity: 0.7; }

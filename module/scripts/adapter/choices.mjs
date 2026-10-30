@@ -7,6 +7,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { timedWait } from "./dialogs.mjs";
+import { queryPlayer, waitLabel } from "./player-wait.mjs";
 import { rollerFor } from "./concentration.mjs";
 
 export const CHOICE_QUERY = `${MODULE_ID}.choice`;
@@ -72,7 +73,7 @@ export async function askChoice(actor, payload) {
   if ( userId === game.user.id ) return handleChoiceQuery(payload);
   if ( userId ) {
     const timeout = payload.untimed ? UNTIMED_TIMEOUT : (Number(payload.seconds) > 0 ? (Number(payload.seconds) + 15) * 1000 : CHOICE_TIMEOUT);
-    try { answer = await game.users.get(userId).query(CHOICE_QUERY, payload, { timeout }); }
+    try { answer = await queryPlayer(game.users.get(userId), CHOICE_QUERY, payload, { timeout, actor, label: waitLabel("Choix", { item: payload.item ?? "" }) }); }
     catch(err) { console.warn(`${MODULE_ID} | choice for ${actor.name}: no answer from the player`, err); }
     // §137 : une question sans délai reste au joueur — fermée sans choisir, le MJ n'est pas consulté à sa place.
     if ( payload.untimed ) return answer;

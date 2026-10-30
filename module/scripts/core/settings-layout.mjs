@@ -12,7 +12,7 @@ export const SETTINGS_TABS = Object.freeze([
     tools: [{ id: "welcome", icon: "fa-solid fa-dragon" }, { id: "diagnostic", icon: "fa-solid fa-stethoscope" },
       { id: "reports", icon: "fa-solid fa-flag" }] },
   { id: "combat", icon: "fa-solid fa-shield-halved",
-    keys: ["heroicInspiration", "cover", "aurasOnlyInCombat", "npcSaveChoice", "legendaryResistance", "portent", "combatWindowSeconds",
+    keys: ["heroicInspiration", "cover", "aurasOnlyInCombat", "npcSaveChoice", "legendaryResistance", "portent", "combatWindowUnlimited", "combatWindowSeconds",
       "critMargin", "criticalMode", "criticalTable", "criticalNpc", "masteryRules", "sneakAttackMode", "nonLethalMenu", "endUnaffected"] },
   { id: "movement", icon: "fa-solid fa-shoe-prints",
     keys: ["climbSystem", "climbSystemButton", "altitude", "climbRules", "autoFall", "highJumpMenu", "fireSpread", "volumes", "clickToMove",

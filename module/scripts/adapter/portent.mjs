@@ -16,6 +16,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { readPortent, canForetell, portentChoices, spendPortent } from "../core/portent.mjs";
 import { contentOf } from "./content.mjs";
 import { timedWait } from "./dialogs.mjs";
+import { queryPlayer, waitLabel } from "./player-wait.mjs";
 import { rollerFor } from "./concentration.mjs";
 import { canSee } from "./vision.mjs";
 import { currentTurnKey } from "./turn.mjs";
@@ -127,7 +128,7 @@ export async function askPortent(actor, payload) {
   const userId = rollerFor(actor) ?? game.users.activeGM?.id ?? null;
   try {
     const answer = (!userId || (userId === game.user.id)) ? await handlePortentQuery(payload)
-      : await game.users.get(userId).query(PORTENT_QUERY, payload, { timeout: PORTENT_TIMEOUT });
+      : await queryPlayer(game.users.get(userId), PORTENT_QUERY, payload, { timeout: PORTENT_TIMEOUT, actor, label: waitLabel("Presage") });
     return Number.isInteger(answer?.value) ? answer.value : null;
   } catch(err) {
     console.warn(`${MODULE_ID} | Portent for ${actor.name}: no answer`, err);

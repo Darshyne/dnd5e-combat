@@ -7,7 +7,8 @@
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
 import { rollerFor } from "./concentration.mjs";
-import { combatWindowSeconds } from "./dialogs.mjs";
+import { combatWindowSeconds, expireLater } from "./dialogs.mjs";
+import { queryPlayer, waitLabel } from "./player-wait.mjs";
 
 export const ALLOCATION_QUERY = `${MODULE_ID}.allocation`;
 const ALLOCATION_TIMEOUT = 45000;
@@ -76,17 +77,18 @@ export function targetCount(activity, { level=null }={}) {
 export async function handleAllocationQuery({ item, count, targets }) {
   const rows = targets.map((t, i) => `<div class="form-group"><label>${foundry.utils.escapeHTML(t.name)}</label>
     <input type="number" name="t${i}" min="0" max="${count}" step="1" value="${i === 0 ? count - targets.length + 1 : 1}"></div>`).join("");
-  let timer = null;
+  let disarm = null;
   const result = await foundry.applications.api.DialogV2.wait({
     window: { title: game.i18n.format("DND5ECOMBAT.Repartition.Titre", { item }) },
     content: `<p>${game.i18n.format("DND5ECOMBAT.Repartition.Texte", { count })}</p>${rows}`,
     rejectClose: false,
     buttons: [{ action: "ok", label: game.i18n.localize("DND5ECOMBAT.Repartition.Valider"), default: true,
       callback: (event, button) => Object.fromEntries(targets.map((t, i) => [t.token, Number(button.form.elements[`t${i}`]?.value) || 0])) }],
-    render: (event, dialog) => { timer ??= setTimeout(() => dialog.close(), combatWindowSeconds() * 2000); },
-    close: () => { clearTimeout(timer); return null; }
+    // §290 : sans délai, le MJ la ferme en forçant, comme au bout du délai.
+    render: (event, dialog) => { disarm ??= expireLater(() => dialog.close(), combatWindowSeconds() * 2000); },
+    close: () => { disarm?.(); return null; }
   });
-  clearTimeout(timer);
+  disarm?.();
   return (result && typeof result === "object") ? { counts: result } : null;
 }
 
@@ -94,7 +96,8 @@ export async function handleAllocationQuery({ item, count, targets }) {
 export async function askAllocation(actor, payload) {
   const userId = rollerFor(actor);
   try {
-    if ( userId ) return await game.users.get(userId).query(ALLOCATION_QUERY, payload, { timeout: ALLOCATION_TIMEOUT });
+    if ( userId ) return await queryPlayer(game.users.get(userId), ALLOCATION_QUERY, payload, { timeout: ALLOCATION_TIMEOUT, actor,
+      label: waitLabel("Repartition", { item: payload.item ?? "" }) });
     return await handleAllocationQuery(payload);
   } catch(err) {
     console.warn(`${MODULE_ID} | projectile distribution for ${actor?.name}: no answer`, err);

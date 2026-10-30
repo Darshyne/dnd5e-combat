@@ -11,7 +11,8 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { rollerFor } from "../adapter/concentration.mjs";
-import { timedWait, combatWindowSeconds } from "../adapter/dialogs.mjs";
+import { timedWait, combatWindowSeconds, windowsUnlimited } from "../adapter/dialogs.mjs";
+import { queryPlayer, waitLabel } from "../adapter/player-wait.mjs";
 import { guidanceSpellOf, guidanceEffectFor } from "../adapter/skill-aid.mjs";
 import { inspirationSourceOf, usesLeftFor } from "../adapter/inspiration.mjs";
 import { castOnTargets } from "./actions.mjs";
@@ -84,7 +85,7 @@ export async function handleSkillAidQuery(payload) {
       { action: "yes", label: loc("AideTest.Accepter"), icon: "fa-solid fa-hand-holding-heart", default: true },
       { action: "no", label: loc("AideTest.Refuser"), icon: "fa-solid fa-xmark" }
     ]
-  }, { fallback: "no", seconds: answerSeconds() });
+  }, { fallback: "no", seconds: windowsUnlimited() ? null : answerSeconds() });   // §290 : sans délai, le MJ force
   if ( answer !== "yes" ) return false;
   return perform(payload);
 }
@@ -103,7 +104,10 @@ export async function requestSkillAid({ kind, helper, tester, skill=null, tool=n
     ui.notifications.warn(loc("AideTest.Personne", { name: helper.name }));
     return false;
   }
-  try { return (await user.query(SKILL_AID_QUERY, payload, { timeout: (answerSeconds() + 15) * 1000 })) === true; }
+  try {
+    return (await queryPlayer(user, SKILL_AID_QUERY, payload, { timeout: (answerSeconds() + 15) * 1000, actor: helper,
+      label: waitLabel("Aide") })) === true;
+  }
   catch(err) {
     console.warn(`${MODULE_ID} | check aid: no answer for ${helper.name}`, err);
     return false;

@@ -94,6 +94,9 @@ import { registerSkillAidUi } from "./ui/skill-aid.mjs";
 import { registerGroupRoll, rollsApi } from "./runtime/group-roll.mjs";
 import { registerGroupRollUI, openGroupRoll } from "./ui/group-roll.mjs";
 import { registerGroupRollTracker, openTracker } from "./ui/group-roll-tracker.mjs";
+import { registerPlayerWaits, forceWait } from "./runtime/player-waits.mjs";
+import { registerPlayerWaitsUI, openPlayerWaits } from "./ui/player-waits.mjs";
+import { playerWaits } from "./adapter/player-wait.mjs";
 import { registerHelp } from "./runtime/help.mjs";
 import { registerHide } from "./runtime/hide.mjs";
 import { registerSearch } from "./runtime/search.mjs";
@@ -227,6 +230,7 @@ const state = {
   ammo: { options: (item, activity=null) => ammoState(item, activity), set: setAmmo },
   // §282 : Inspiration héroïque — `has(actor)`, `set(actor, on)` (MJ : la donne ou la retire, carte et retour à la table), `mode()` : le
   // réglage de ce client (« on », « failure », « off »).
+  waits: { list: playerWaits, force: id => forceWait(id), open: openPlayerWaits },   // §290 : fenêtres sans délai, attentes du MJ
   heroic: { has: hasHeroic, set: (actor, on) => (game.user.isGM ? setHeroic(actor, on) : false), mode: heroicMode }
 };
 
@@ -356,6 +360,7 @@ Hooks.once("init", () => {
   gated(registerBarbarian);   // §22 : Rage entretenue, Rage implacable, Témérité (après la légalité : la question vient une fois l'usage confirmé)
   gated(registerSwallow);
   gated(registerBasics);
+  gated(registerPlayerWaits);   // §290 : fenêtres du combat sans délai — le réglage, et la requête « forcer » chez chaque joueur
   gated(registerAnimations);   // §112 : l'application attend la fin de l'animation (Sequencer / BLFX)
   gated(registerFamiliars);   // §107 : vision et poche dimensionnelle des familiers (leurs actions de base : registerBasics)
   gated(registerGrapple);
@@ -412,6 +417,7 @@ Hooks.once("init", () => {
   gated(registerKindleUi);   // §52 : boîte à amadou
   gated(registerSkillAidUi);   // §113 : section « Aides » de la fenêtre de jet d'un test
   gated(registerGroupRollUI);   // §242 : fenêtre de demande, dé de la barre d'outils, HUD du token, carte
+  gated(registerPlayerWaitsUI);   // §290 : fenêtre de suivi du MJ (qui il attend, forcer)
   gated(registerGroupRollTracker);   // §242 : fenêtre de suivi du MJ (jets en cours, lancer pour un joueur qui tarde)
   gated(registerAutomation);
   gated(registerMasteryUI);   // §222 : pastille de botte sur la fiche, fenêtre des bottes

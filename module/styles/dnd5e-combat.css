@@ -178,6 +178,23 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 /* ---- §113 : choix parmi beaucoup d'options (Assistance : 18 compétences) — une liste, pas 18 boutons ---- */
 .dnd5e-combat-choice-list { width: 100%; margin: 4px 0 2px; }
 
+/* ---- §290 : châtiments en deux temps — une tuile par sort (icône, nom), puis un bouton par niveau ; les boutons du pied cachés ---- */
+.dnd5e-combat-smite .tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 6px 0 4px; }
+.dnd5e-combat-smite .tile { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 94px; }
+.dnd5e-combat-smite .tile .icon { width: 64px; height: 64px; padding: 0; border-radius: 8px; overflow: hidden; flex: none; }
+.dnd5e-combat-smite .tile .icon img { width: 100%; height: 100%; object-fit: cover; border: none; }
+.dnd5e-combat-smite .tile .icon:hover, .dnd5e-combat-smite .tile .icon:focus-visible { box-shadow: 0 0 6px var(--color-warm-1, #ff6400); }
+.dnd5e-combat-smite .tile .name { font-size: 11px; line-height: 1.15; text-align: center; min-height: 2.3em; }
+.dnd5e-combat-smite .form-footer button[data-action^="smite"] { display: none; }
+.dnd5e-combat-smite .form-footer button[data-action^="group"] { display: none; }
+.dnd5e-combat-smite.step-level .chosen { display: flex; align-items: center; gap: 10px; }
+.dnd5e-combat-smite.step-level .chosen img { width: 64px; height: 64px; border: none; border-radius: 8px; object-fit: cover; }
+.dnd5e-combat-smite.step-level .chosen .name { font-size: 1.15em; font-weight: bold; }
+.dnd5e-combat-smite.step-level .levels { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 4px 0 6px; }
+.dnd5e-combat-smite.step-level .level { width: 44px; height: 44px; flex: none; font-size: 1.3em; font-weight: bold; border-radius: 8px; }
+.dnd5e-combat-smite.step-level .level.free { border-color: #d8b24a; box-shadow: 0 0 4px #d8b24a inset; }
+.dnd5e-combat-smite.step-level .form-footer { flex-direction: row; }
+
 /* ---- §113 : section « Aides » de la fenêtre d'un test de compétence ou d'outil ---- */
 .dnd5e-combat-aids { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; padding: 4px 8px 8px; }
 .dnd5e-combat-aids legend { font-weight: bold; }

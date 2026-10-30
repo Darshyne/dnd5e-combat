@@ -231,22 +231,54 @@ export async function spendSmite(actor, option) {
 }
 
 /**
- * La question, sur le client de l'auteur : un bouton par châtiment possible, et « pas de châtiment ». Sans réponse : aucun.
+ * La question, sur le client de l'auteur : le sort, puis son niveau (§290), et « pas de châtiment ». Sans réponse : aucun.
  * @returns {Promise<object|null>}  L'option choisie.
  */
 export async function askSmite(actor, target, options) {
   if ( !options.length ) return null;
   const riders = options.every(o => o.rider);
-  const picked = await timedWait({
-    window: { title: t(riders ? "TitreFaveur" : "Titre", { name: actor.name }) },
-    content: `<p>${t(riders ? "QuestionFaveur" : "Question", { name: target?.name ?? "" })}</p>`,
-    buttons: [
-      ...options.map((o, i) => ({ action: `smite${i}`, label: o.label, icon: "fa-solid fa-sun", default: i === 0 })),
-      { action: "none", label: t(riders ? "AucuneFaveur" : "Aucun") }
-    ]
-  }, { fallback: "none" });
-  const i = Number(String(picked ?? "").replace("smite", ""));
-  return (typeof picked === "string") && picked.startsWith("smite") ? (options[i] ?? null) : null;
+  // §290 : en deux temps — le sort (une tuile par sort : icône, nom), puis son niveau (un bouton par niveau disponible ; un seul : pris
+  // d'emblée) ; « Autre sort » revient au premier temps. Un bouton par sort et par niveau faisait dix boutons pour un paladin (retour de
+  // table). Les boutons du pied restent, cachés : DialogV2 y cherche ses actions.
+  const groups = [];
+  options.forEach((o, i) => {
+    let group = groups.find(g => g.item === o.item);
+    if ( !group ) groups.push(group = { item: o.item, picks: [] });
+    group.picks.push({ i, o });
+  });
+  const esc = foundry.utils.escapeHTML;
+  const title = t(riders ? "TitreFaveur" : "Titre", { name: actor.name });
+  const none = { action: "none", label: t(riders ? "AucuneFaveur" : "Aucun") };
+  for ( ;; ) {
+    const tiles = groups.map((g, n) => `<div class="tile">
+      <button type="button" class="icon" data-action="group${n}" data-tooltip="${esc(g.item.name)}"><img src="${esc(g.item.img ?? "")}" alt=""></button>
+      <span class="name">${esc(g.item.name)}</span></div>`).join("");
+    const first = await timedWait({
+      window: { title }, classes: ["dnd5e-combat-smite"],
+      position: { width: Math.min(640, 140 + (Math.min(groups.length, 5) * 104)) },
+      content: `<p>${t(riders ? "QuestionFaveur" : "Question", { name: target?.name ?? "" })}</p><div class="tiles">${tiles}</div>`,
+      // Les boutons cachés de chaque option (sort et niveau) d'abord : un choix fait d'un coup (scénarios, `answer-dialog`) saute le second
+      // temps.
+      buttons: [...options.map((o, i) => ({ action: `smite${i}`, label: o.label })),
+        ...groups.map((g, n) => ({ action: `group${n}`, label: g.item.name, default: n === 0 })), none]
+    }, { fallback: "none" });
+    if ( String(first ?? "").startsWith("smite") ) return options[Number(first.replace("smite", ""))] ?? null;
+    const group = String(first ?? "").startsWith("group") ? groups[Number(first.replace("group", ""))] : null;
+    if ( !group ) return null;
+    if ( group.picks.length === 1 ) return group.picks[0].o;
+    const levels = group.picks.map(({ i, o }) => `<button type="button" class="level${o.free ? " free" : ""}" data-action="smite${i}"
+      data-tooltip="${esc(o.label)}">${esc(o.level ? String(o.level) : t("PastilleUtiliser"))}</button>`).join("");
+    const second = await timedWait({
+      window: { title }, classes: ["dnd5e-combat-smite", "step-level"], position: { width: 360 },
+      content: `<div class="chosen"><img src="${esc(group.item.img ?? "")}" alt=""><span class="name">${esc(group.item.name)}</span></div>
+        <p>${t("QuestionNiveau")}</p><div class="levels">${levels}</div>`,
+      buttons: [...group.picks.map(({ i, o }) => ({ action: `smite${i}`, label: o.label })),
+        { action: "back", label: t("AutreSort"), icon: "fa-solid fa-arrow-left" }, none]
+    }, { fallback: "none" });
+    if ( second === "back" ) continue;
+    const i = Number(String(second ?? "").replace("smite", ""));
+    return String(second ?? "").startsWith("smite") ? (options[i] ?? null) : null;
+  }
 }
 
 /**

@@ -118,9 +118,23 @@ export function readConcentrationSave(message) {
 }
 
 /** Même effet que le bouton « Rompre la concentration » de la carte de sauvegarde. */
+const breaking = new Map();
+
 export async function breakConcentration(actor, saveMessage) {
+  // §303 : une rupture à la fois par créature — deux chemins (carte « fin », sauvegarde ratée, fin sur Neutralisé) arrivaient ensemble.
+  const key = actor?.uuid ?? "";
+  const previous = breaking.get(key) ?? Promise.resolve();
+  const run = previous.catch(() => {}).then(() => endNow(actor, saveMessage));
+  breaking.set(key, run);
+  try { return await run; } finally { if ( breaking.get(key) === run ) breaking.delete(key); }
+}
+
+async function endNow(actor, saveMessage) {
   // Le lanceur tombé à 0 PV : sa concentration peut partir par un autre chemin au même moment (vu le 2026-10-12 : « ActiveEffect …
   // does not exist! ») — elle est terminée, c'est ce qu'on voulait.
+  // §303 : déjà terminée par l'autre chemin (la carte « fin » de dnd5e et la sauvegarde ratée des mêmes dégâts) — rien à retirer, pas
+  // d'erreur « does not exist » dans la console.
+  if ( !actor?.concentration?.effects?.size ) return [];
   const ended = await actor.endConcentration().catch(err => {
     if ( /does not exist/i.test(String(err?.message ?? err)) ) return [];
     throw err;

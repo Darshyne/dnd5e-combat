@@ -213,6 +213,8 @@
  *                                               Nature : Empoisonné) — dans l'effet tenu de `grantsSpeeds` (runtime/speed-grants.mjs)
  *     quietPose?: true                          §300 : la zone qui dure n'agit pas à sa pose — seulement aux moments déclarés
  *                                               (Tempête de neige, Nuage nauséabond : ceux qui sont déjà dedans sauvegardent au début de leur tour)
+ *     effectsFirst?: true                       §303 : les effets de l'activité posés avant ses dégâts ou son soin (Aide : PV max relevés
+ *                                               d'abord, sinon le soin est plafonné aux PV max d'avant)
  *     zoneBound?: true                          §300 : les effets de l'item ne tiennent que dans une de ses zones (Esprits gardiens : la
  *                                               Vitesse divisée par deux tombe à la sortie de l'émanation ; runtime/areas.mjs)
  *     duringRage?: { enable?, post?, disable?, copiesEnd?, cures?, onStart? }  §299 : effets de l'item tenus par la Rage du porteur —
@@ -553,7 +555,7 @@
  *                                               test en opposition (§72, Combat perspicace) : l'auteur jette `skill`, la cible la
  *                                               meilleure de `against` (chez son joueur s'il est connecté) ; gagné, l'effet `effect`
  *                                               de l'activité est posé sur elle (`exclusive` : ceux posés ailleurs tombent)
- *     zoneCharges?: n                           la zone qui dure tombe après n déclenchements (§75, Cordon de flèches : 4)
+ *     zoneCharges?: n                           la zone qui dure tombe après n déclenchements (§75) ; §303 : ou une formule du niveau de lancement (Cordon de flèches : « 2 * @item.level »)
  *     pendingDie?: { activity, against: "melee"|"target" }  §89 : l'activité promet son dé au prochain jet de dégâts d'une
  *                                               attaque de l'auteur ce tour-ci, au corps à corps ou contre la cible désignée (Fente,
  *                                               Feinte du Maître de guerre ; runtime/maneuver-dice.mjs)

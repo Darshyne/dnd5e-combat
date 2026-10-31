@@ -152,7 +152,7 @@ describe("contenu livré", () => {
   it("réunit déclencheurs et auras par identifiant", () => {
     expect(Object.keys(CONTENT).sort()).toEqual([
       "aberrant-anatomy", "abjure-foes", "absorb-elements", "acid-arrow", "acrobatic-movement", "action-surge", "adrenaline-rush", "agile",
-      "air-element", "air-form", "alchemists-fire", "alert", "ambush", "ancient-might", "animal-friendship", "animate-objects",
+      "aid", "air-element", "air-form", "alchemists-fire", "alert", "ambush", "ancient-might", "animal-friendship", "animate-objects",
       "antilife-shell", "antimagic-field", "arcane-eye", "arcane-gate", "arcane-hand", "arcane-recovery", "arcane-sword", "arcane-vigor",
       "arcane-ward", "armor-of-agathys", "arms-of-hadar", "aspect-of-the-wilds", "assassinate", "athlete", "aura-of-authority",
       "aura-of-bravery", "aura-of-courage", "aura-of-devotion", "aura-of-life", "aura-of-protection", "aura-of-purity", "aura-of-vitality",
@@ -983,5 +983,20 @@ describe("§302 : repasse, lot C7 (Avantage et Désavantage oubliés)", () => {
     for ( const id of ["contagion", "beguiling-twist", "hypnotic-pattern", "sleep", "clairvoyant-combatant", "ray-of-enfeeblement"] ) {
       expect(validateEntry(CONTENT[id], { facts })).toEqual([]);
     }
+  });
+});
+
+describe("§303 : repasse, lot C8 (sorts à logique propre)", () => {
+  it("les déclarations du lot", () => {
+    expect(CONTENT["aid"].effectsFirst).toBe(true);
+    expect(CONTENT["cordon-of-arrows"].zoneCharges).toBe("2 * @item.level");
+    expect(CONTENT["death-ward"].wardsAtZero).toBe(true);
+    for ( const id of ["aid", "cordon-of-arrows", "death-ward"] ) expect(validateEntry(CONTENT[id], { facts })).toEqual([]);
+  });
+  it("les nouvelles clés sont vérifiées", () => {
+    expect(validateEntry({ effectsFirst: "oui" })).toHaveLength(1);
+    expect(validateEntry({ zoneCharges: 0 })).toHaveLength(1);
+    expect(validateEntry({ zoneCharges: " " })).toHaveLength(1);
+    expect(validateEntry({ zoneCharges: 4 })).toEqual([]);
   });
 });

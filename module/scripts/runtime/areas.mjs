@@ -62,7 +62,10 @@ function tick(region, token, event, turnKey=currentTurnKey(), { times=1 }={}) {
     const noSave = !!(wallSideRuleOf(region) || region.getFlag(MODULE_ID, "sideOf"));
     await replayAgainst(usageMessage, token, { region: region.uuid, event, ...(times > 1 ? { times } : {}), ...(noSave ? { noSave } : {}) }, { activity: chosen });
     // §75 : une zone à nombre de déclenchements (`zoneCharges` : Cordon de flèches, 4 projectiles) tombe au dernier.
-    const charges = contentOf(usageMessage.getAssociatedActivity?.()?.item).entry?.zoneCharges;
+    // §303 : ou une formule du niveau de lancement (Cordon de flèches : « 2 × niveau », données de l'activité mise à l'échelle).
+    const declared = contentOf(usageMessage.getAssociatedActivity?.()?.item).entry?.zoneCharges;
+    const scaled = (typeof declared === "string") ? usageMessage.getAssociatedActivity?.({ scaled: true }) : null;
+    const charges = scaled ? (Number(Roll.safeEval(Roll.replaceFormulaData(declared, scaled.getRollData?.() ?? {}))) || 0) : declared;
     if ( charges ) {
       const fired = (Number(readAreaState(region)?.fired) || 0) + 1;
       if ( fired >= charges ) {

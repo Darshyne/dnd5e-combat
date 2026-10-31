@@ -24,6 +24,14 @@ async function onPrompt(message) {
     await message.delete();
     return;
   }
+  // §303 : les dégâts qui font tomber à 0 PV demandent aussi une sauvegarde ; la concentration tombe de toute façon (Inconscient, Mort) —
+  // pas de jet, qui la rompait une seconde fois.
+  const hp = prompt.actor.system?.attributes?.hp?.value;
+  if ( (Number.isFinite(hp) && (hp <= 0)) || prompt.actor.statuses?.has("dead") ) {
+    log(`${prompt.actor.name}: at 0 HP, no concentration saving throw (it ends anyway)`);
+    await message.delete();
+    return;
+  }
   // Relevé des trous : « subir des dégâts ne peut pas rompre votre concentration sur la Marque du chasseur » (Chasseur implacable).
   const kept = concentrationKeptBy(prompt.actor);
   if ( kept ) {

@@ -4,6 +4,8 @@
  * runtime/engine.mjs.
  */
 
+import { deathWardOf } from "../adapter/ward.mjs";
+import { contentOf } from "../adapter/content.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
 import { retaliationsFor, retaliate, inflict, saveRetaliation } from "../adapter/retaliation.mjs";
@@ -157,6 +159,10 @@ export const COMMANDS = {
       if ( ward?.item ) log(`${ward.reactor}: Projected Ward, their Arcane Ward takes ${entry.token}'s damage`);
       // §78 : Interposition — les dégâts passent sur le réacteur ; les effets restent à la cible.
       if ( ward?.interpose ) log(`${ward.reactor} interposes: takes ${entry.token}'s damage`);
+      // §303 (repasse C8) : Aide — l'effet (PV maximum relevés) passe avant le soin, sinon dnd5e plafonne le soin aux PV maximum d'avant
+      // et une cible à pleins PV ne gagnait rien (`effectsFirst`). Les effets sans condition seulement.
+      const first = (entry.multiplier > 0) && (contentOf(activity?.item).entry?.effectsFirst === true) && (entry.effects ?? []).some(e => !e.if);
+      const early = first ? await applyEffectsToToken(carrier, entry.token, entry.effects.filter(e => !e.if)) : [];
       const hp = (entry.multiplier > 0)
         ? await applyDamageToToken(ward?.interpose ?? entry.token, rolled, damageMessage, { multiplier: entry.multiplier, reduction: entry.reduction ?? 0, absorbInto: ward?.item ?? null,
           ignoreResistance: resistanceIgnoredBy(source?.actor ?? activity?.actor, activity) })   // §134
@@ -172,7 +178,7 @@ export const COMMANDS = {
       // Un effet sous condition (M3, §18.4 : « si la cible est de taille G ou inférieure ») ne passe que si elle tient.
       const facts = factsFor({ source: source?.actor ?? null, target: target?.actor ?? null, activity, sourceToken: source, targetToken: target });
       const allowed = (entry.effects ?? []).filter(e => {
-        if ( !e.if ) return true;
+        if ( !e.if ) return !first;
         const ok = holds((typeof e.if === "string") ? JSON.parse(e.if) : e.if, facts);
         if ( !ok ) log(`effect ${e.id}: condition not met for ${target?.name ?? entry.token}, not applied`);
         return ok;
@@ -180,9 +186,9 @@ export const COMMANDS = {
       // « Repoussé » (Bousculade) n'est pas un effet : c'est un déplacement subi, loin de l'auteur.
       const { effects: toApply, pushes } = await splitPushes(carrier, allowed);
       for ( const push of pushes ) await forcedMove(source, target, { mode: "push", ...push });
-      const effects = await applyEffectsToToken(carrier, entry.token, toApply);
-      if ( toApply.length > effects.length ) log(`${target?.name ?? entry.token}: ${toApply.length - effects.length} planned effect(s) not applied (${toApply.map(e => e.id).join(", ")})`);
-      else if ( (entry.effects ?? []).length && !toApply.length && !pushes.length ) log(`${target?.name ?? entry.token}: no effect to apply (${(entry.effects ?? []).length} planned)`);
+      const effects = [...early, ...await applyEffectsToToken(carrier, entry.token, toApply)];
+      if ( toApply.length > effects.length - early.length ) log(`${target?.name ?? entry.token}: ${toApply.length - effects.length} planned effect(s) not applied (${toApply.map(e => e.id).join(", ")})`);
+      else if ( (entry.effects ?? []).length && !toApply.length && !pushes.length && !early.length ) log(`${target?.name ?? entry.token}: no effect to apply (${(entry.effects ?? []).length} planned)`);
       // Étapes d'issue du contenu (SPEC §16) : poussée, traction, état — si leur condition tient pour cette cible.
       for ( const step of entry.steps ?? [] ) {
         const condition = (typeof step.if === "string") ? JSON.parse(step.if) : step.if;   // JSON dans le plan (adapter/usage.mjs)
@@ -234,6 +240,10 @@ export const COMMANDS = {
         }
       }
       for ( const status of tier?.statuses ?? [] ) {
+        // §303 (repasse C8) : Protection contre la mort — « un effet qui la tuerait sur le coup sans infliger de dégâts est annulé » : la
+        // garde tombe à la place de la mort (Mot de pouvoir mortel, Parole divine).
+        const ward = (status === "dead") ? deathWardOf(target?.actor) : null;
+        if ( ward ) { await ward.delete(); log(`${activity?.item?.name}: ${target?.name} is not killed, ${ward.name} ends instead`); continue; }
         // L'état d'abord, les PV ensuite : à 0 PV, dnd5e et le moteur posent eux-mêmes Mort (même id, `dnd5edead0000000`) — deux
         // créations croisées faisaient échouer la résolution (vu le 2026-10-12, Parole divine).
         const uuid = await applyStatusToToken(carrier, entry.token, status);

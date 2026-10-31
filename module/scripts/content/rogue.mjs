@@ -21,6 +21,9 @@ const DEVIOUS_STRIKES = Object.freeze({
 });
 
 export const ROGUE = Object.freeze({
+  // §299 : Voile psychique (Âme acérée 13) — l'invisibilité « prend fin aussitôt après que vous avez infligé des dégâts à une créature ou
+  // forcé une créature à faire un jet de sauvegarde » (un jet d'attaque compte : il inflige les dégâts du coup).
+  "psychic-veil": { breaksOn: ["attack", "damage", "forcesSave"] },
   // Attaque sournoise : les dés de l'item (`@scale.rogue.sneak-attack`), une fois par tour (core/sneak.mjs).
   "sneak-attack": { sneakAttack: true },
   // §208 : Monte-en-l'air (Voleur 3), Sauteur — « la distance de saut avec la Dextérité au lieu de la Force ».

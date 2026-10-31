@@ -18,7 +18,8 @@ import { markData, marksOn } from "../adapter/mastery.mjs";
 import { combatantFor, isOwnTurn, readBudget, currentTurnKey, usageTokenOf, speakerTokenOf, turnKeyAt } from "../adapter/turn.mjs";
 import { ensureDowned, AFTER_ZERO_HP_MS } from "../adapter/death.mjs";
 import { contentOf } from "../adapter/content.mjs";
-import { tokenOf } from "../adapter/facts.mjs";
+import { tokenOf, originItemOf } from "../adapter/facts.mjs";
+import { placeItemEffect } from "../adapter/effects.mjs";
 import { timedWait } from "../adapter/dialogs.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
@@ -161,7 +162,67 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   return false;
 }
 
+/**
+ * §299 (repasse C4) : les aptitudes tenues par la Rage (`duringRage`). Le MJ actif rapproche, à chaque changement d'effet de l'acteur,
+ * ce qu'elles portent de l'état de Rage :
+ *  - `enable` : effets transférés de l'item, actifs pendant la Rage seulement (Rage aveugle : immunité à Charmé et Effrayé) ;
+ *  - `post` : effets de l'item posés sur le barbare pendant la Rage, retirés à sa fin (Savoir primal) ;
+ *  - `copiesEnd` : les copies que les activités de l'item ont posées sur lui tombent avec la Rage (Rage du prédateur : l'Ours, le Loup) ;
+ *  - `disable` : effets transférés que la donnée laisse actifs à tort (Rage de l'Ours, toujours active hors Rage) ;
+ *  - `cures` : à l'entrée en Rage, ces états cessent (Rage aveugle) ;
+ *  - `onStart` : l'activité de l'item jouée à l'entrée en Rage (Vitalité de l'Arbre : PV temporaires).
+ */
+const DURING_RAGE_FLAG = "duringRage";
+
+async function syncDuringRage(actor) {
+  if ( (actor?.documentName !== "Actor") || !game.users.activeGM?.isSelf ) return;
+  const raging = isRaging(actor);
+  const was = !!actor.getFlag(MODULE_ID, DURING_RAGE_FLAG);
+  // Plus aucune aptitude tenue par la Rage (retirée pendant une Rage) : la marque d'entrée ne doit pas survivre, sinon la prochaine entrée
+  // en Rage ne serait pas vue comme telle.
+  if ( !actor.items.some(i => contentOf(i).entry?.duringRage) ) {
+    if ( was ) await actor.unsetFlag(MODULE_ID, DURING_RAGE_FLAG);
+    return;
+  }
+  for ( const item of actor.items ) {
+    const rule = contentOf(item).entry?.duringRage;
+    if ( !rule ) continue;
+    const toggles = [...(rule.enable ?? []).map(id => [id, !raging]), ...(rule.disable ?? []).map(id => [id, true])]
+      .map(([id, disabled]) => ({ effect: item.effects.get(id), disabled }))
+      // L'état de la donnée (`_source`) : dnd5e 6.0.6 prépare un effet porté par une activité comme actif (voir adapter/rage.mjs).
+      .filter(t => t.effect && (t.effect._source.disabled !== t.disabled));
+    if ( toggles.length ) await item.updateEmbeddedDocuments("ActiveEffect", toggles.map(t => ({ _id: t.effect.id, disabled: t.disabled })));
+    for ( const id of rule.post ?? [] ) {
+      const source = item.effects.get(id);
+      const copies = actor.effects.filter(e => source && ((e._stats?.duplicateSource === source.uuid) || (e._stats?.compendiumSource === source.uuid)));
+      if ( raging && !copies.length && source ) await placeItemEffect(item, id, actor);
+      if ( !raging && copies.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", copies.map(e => e.id));
+    }
+    if ( !raging && rule.copiesEnd ) {
+      const copies = actor.effects.filter(e => !e.transfer && (originItemOf(e) === item)).map(e => e.id);
+      if ( copies.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", copies);
+    }
+    if ( raging && !was ) {
+      for ( const status of rule.cures ?? [] ) if ( actor.statuses?.has(status) ) await actor.toggleStatusEffect(status, { active: false });
+      const start = rule.onStart ? item.system.activities?.get(rule.onStart) : null;
+      if ( start ) await start.use({ [MODULE_ID]: { confirmed: true, cost: "free" } }, { configure: false }).catch(err => console.error(`${MODULE_ID} | ${item.name}`, err));
+    }
+    if ( toggles.length || (raging !== was) ) log(`${actor.name}: ${item.name} ${raging ? "with" : "without"} Rage`);
+  }
+  if ( raging !== was ) await actor.setFlag(MODULE_ID, DURING_RAGE_FLAG, raging);
+}
+
+const laterDuringRage = actor => (actor?.documentName === "Actor")
+  && (actor.items.some(i => contentOf(i).entry?.duringRage) || actor.getFlag(MODULE_ID, DURING_RAGE_FLAG))
+  ? enqueue(`duringRage:${actor.uuid}`, () => syncDuringRage(actor)) : null;
+
 export function registerBarbarian() {
+  // Un item retiré ou ajouté (une aptitude tenue par la Rage) : la même mise en accord.
+  for ( const hook of ["createItem", "deleteItem"] ) route(hook, item => laterDuringRage(item.parent), { executor: true, label: "features held by Rage not synced" });
+  for ( const hook of ["createActiveEffect", "updateActiveEffect", "deleteActiveEffect"] ) {
+    route(hook, effect => laterDuringRage((effect.parent?.documentName === "Item") ? effect.parent.parent : effect.parent),
+      { executor: true, label: "features held by Rage not synced" });
+  }
   route("createChatMessage", message => (["usage", "attack"].includes(message.type) ? onMessage(message) : null),
     { executor: true, label: "Rage: upkeep not recorded" });
   route("combatTurnChange", onTurnEnd, { executor: true, label: "Rage: end not evaluated" });

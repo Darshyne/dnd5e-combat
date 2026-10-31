@@ -65,7 +65,8 @@ export const CLERIC = Object.freeze({
   // (portée 30 ft, cibles à cliquer une à une). Une fenêtre liste les créatures à 9 m, le joueur coche ; avec Calcination des
   // morts-vivants (niveau 5), une case la propose à la place — son activité (même sauvegarde, même effet, plus les dégâts radiants,
   // la même utilisation de Conduit divin) part alors sur les mêmes cibles, sans sa zone.
-  "channel-divinity": { pickTargets: TURN_UNDEAD },
-  "channel-divinity-cleric": { pickTargets: TURN_UNDEAD },
-  "sear-undead": { pickTargets: { activities: [SEAR_UNDEAD], radius: 30, units: "ft" } }
+  // §299 : le renvoi « prend fin si vous avez l'état Neutralisé ou si vous mourez ».
+  "channel-divinity": { pickTargets: TURN_UNDEAD, endsWhen: { incapacitated: "caster" } },
+  "channel-divinity-cleric": { pickTargets: TURN_UNDEAD, endsWhen: { incapacitated: "caster" } },
+  "sear-undead": { pickTargets: { activities: [SEAR_UNDEAD], radius: 30, units: "ft" }, endsWhen: { incapacitated: "caster" } }
 });

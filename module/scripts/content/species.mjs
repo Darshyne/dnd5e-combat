@@ -38,6 +38,8 @@ export const SPECIES = Object.freeze({
   // Révélation céleste (Aasimar 3) : pendant la transformation, une fois par tour de l'aasimar, une cible de son attaque ou de son
   // sort subit en plus son bonus de maîtrise en dégâts — radiants (nécrotiques pour
   // le Linceul nécrotique : au joueur).
+  // §299 : Vol draconique — « l'effet prend fin si vous avez l'état Neutralisé ».
+  "draconic-flight": { endsWhen: { incapacitated: "bearer" } },
   "celestial-revelation": { triggers: [{ on: "preDamageRoll", oncePerTurn: true,
     if: { "source.hasEffect": "celestial-revelation", any: [{ "activity.isAttack": true }, { "activity.isSpell": true }] },
     do: [{ type: "damage", formula: "@prof", damageType: "radiant" }] }],

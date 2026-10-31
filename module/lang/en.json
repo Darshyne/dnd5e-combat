@@ -1800,6 +1800,7 @@
   "DND5ECOMBAT.Souci.chainTooFar": "{name} is too far from the first target, {first}: {distance} {units} at most.",
   "DND5ECOMBAT.Souci.noAttacksOrSpells": "Under {item}, you can't attack or cast spells.",
   "DND5ECOMBAT.FinGenerique.casterTargetsOther": "{item} ends: the caster turned on another creature.",
+  "DND5ECOMBAT.FinGenerique.incapacitated": "{item} ends: {name} or its source is Incapacitated.",
   "DND5ECOMBAT.FinGenerique.allyDamages": "{item} ends: an ally of the caster hurt {name}.",
   "DND5ECOMBAT.Minuterie.Secondes": "s",
   "DND5ECOMBAT.Reglage.timerHideSeconds.Nom": "Timers without seconds",

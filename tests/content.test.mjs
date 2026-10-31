@@ -175,20 +175,20 @@ describe("contenu livré", () => {
       "defensive-duelist", "deflect-attacks", "delayed-blast-fireball", "demiplane", "destructive-wave", "devious-strikes",
       "dimension-door", "disarming-attack", "disciple-of-life", "dispel-evil-and-good", "dispel-magic", "dissonant-whispers",
       "distant-spell", "distracting-strike", "divine-fury", "divine-smite", "divine-word", "dominate-beast", "dominate-monster",
-      "dominate-person", "draining-kiss", "draining-swipe", "dread-ambusher", "dreadful-strikes", "dueling", "dwarven-resilience",
-      "earth-element", "earthquake", "echoing-soul", "elder-champion", "eldritch-blast", "eldritch-smite", "elemental-adept",
-      "elemental-affinity", "elemental-fury", "elemental-fury-potent-spellcasting", "elemental-weapon", "elixir-of-health", "elusive",
-      "empowered-channeling", "empowered-evocation", "energy-drain", "engulf", "enhance-ability", "enlarge-reduce", "ensnaring-strike",
-      "entangle", "entangling-trail", "ethereal-jaunt", "ethereal-stride", "evards-black-tentacles", "evasion", "evasive-footwork",
-      "expeditious-retreat", "eyebite", "faerie-fire", "faithful-hound", "fanatical-focus", "fear", "fear-aura", "feign-death",
-      "feinting-attack", "fell-word", "feral-pounce", "feral-strike", "fetid-aura", "fetid-cloud", "fey-ancestry", "find-familiar",
-      "find-steed", "fire-aura", "fire-element", "fire-form", "fire-shield", "fires-burn", "flame-aura", "flame-blade", "flaming-sphere",
-      "flask-of-holy-water", "fleet-step", "flesh-to-stone", "flyby", "foe-slayer", "fog-cloud", "forbiddance", "forcecage",
-      "forceful-hand", "foresight", "form-of-dread", "fortune-teller-spirit", "frenzied-rush", "frenzy", "friends", "frosts-chill",
-      "gaseous-form", "gate", "gathered-whispers", "geas", "ghost-walk", "giant-insect", "gibbering", "globe-of-invulnerability",
-      "goading-attack", "grappler", "grasping-hand", "grasping-vine", "grease", "great-weapon-fighting", "great-weapon-master",
-      "greater-portent", "greater-restoration", "guardian-of-faith", "guidance", "guiding-bolt", "gust-of-wind", "hail-of-thorns",
-      "hand-of-healing", "hand-of-ultimate-mercy", "haste", "heal", "healer", "healers-kit", "heat-aura", "heat-metal",
+      "dominate-person", "draconic-flight", "draining-kiss", "draining-swipe", "dread-ambusher", "dreadful-strikes", "dueling",
+      "dwarven-resilience", "earth-element", "earthquake", "echoing-soul", "elder-champion", "eldritch-blast", "eldritch-smite",
+      "elemental-adept", "elemental-affinity", "elemental-fury", "elemental-fury-potent-spellcasting", "elemental-weapon",
+      "elixir-of-health", "elusive", "empowered-channeling", "empowered-evocation", "energy-drain", "engulf", "enhance-ability",
+      "enlarge-reduce", "ensnaring-strike", "entangle", "entangling-trail", "ethereal-jaunt", "ethereal-stride", "evards-black-tentacles",
+      "evasion", "evasive-footwork", "expeditious-retreat", "eyebite", "faerie-fire", "faithful-hound", "fanatical-focus", "fear",
+      "fear-aura", "feign-death", "feinting-attack", "fell-word", "feral-pounce", "feral-strike", "fetid-aura", "fetid-cloud",
+      "fey-ancestry", "find-familiar", "find-steed", "fire-aura", "fire-element", "fire-form", "fire-shield", "fires-burn", "flame-aura",
+      "flame-blade", "flaming-sphere", "flask-of-holy-water", "fleet-step", "flesh-to-stone", "flyby", "foe-slayer", "fog-cloud",
+      "forbiddance", "forcecage", "forceful-hand", "foresight", "form-of-dread", "fortune-teller-spirit", "frenzied-rush", "frenzy",
+      "friends", "frosts-chill", "gaseous-form", "gate", "gathered-whispers", "geas", "ghost-walk", "giant-insect", "gibbering",
+      "globe-of-invulnerability", "goading-attack", "grappler", "grasping-hand", "grasping-vine", "grease", "great-weapon-fighting",
+      "great-weapon-master", "greater-portent", "greater-restoration", "guardian-of-faith", "guidance", "guiding-bolt", "gust-of-wind",
+      "hail-of-thorns", "hand-of-healing", "hand-of-ultimate-mercy", "haste", "heal", "healer", "healers-kit", "heat-aura", "heat-metal",
       "heavy-armor-master", "heightened-focus", "heightened-spell", "hellish-rebuke", "heroic-warrior", "heroism", "hex",
       "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-aura", "holy-nimbus", "holy-water", "hunger-of-hadar",
       "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "ice-storm", "illusory-self", "imprisonment",
@@ -199,19 +199,20 @@ describe("contenu livré", () => {
       "light", "lightning-arrow", "living-shadow", "lucky", "lunar-form", "lunging-attack", "lupin-howl", "mage-armor", "mage-hand",
       "mage-slayer", "magic-missile", "magic-resistance", "magnificent-mansion", "maneuvering-attack", "marshal-undead", "martial-arts",
       "mass-heal", "mass-suggestion", "maze", "medium-armor-master", "melfs-acid-arrow", "menacing-attack", "mind-sliver", "mind-spike",
-      "minor-illusion", "mirror-image", "mislead", "mist-walker", "misty-escape", "misty-form", "misty-step", "monks-focus", "moonbeam",
-      "moonlight-step", "mordenkainens-faithful-hound", "mordenkainens-magnificent-mansion", "mordenkainens-sword", "natures-ward",
-      "natures-wrath", "necrotic-husk", "nimble-escape", "observant", "oil", "open-hand-technique", "otilukes-freezing-sphere",
-      "otilukes-resilient-sphere", "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade", "pact-of-the-chain", "parry",
-      "parry-maneuver", "pass-without-trace", "path-to-the-grave", "persistent-rage", "phantasmal-force", "phantasmal-killer",
-      "phantom-steed", "physicians-touch", "piercer", "poisoner", "polearm-master", "polymorph", "portent", "potent-cantrip",
-      "potion-of-animal-friendship", "potion-of-climbing", "potion-of-diminution", "potion-of-flying", "potion-of-growth",
-      "potion-of-heroism", "potion-of-invisibility", "potion-of-resistance", "potion-of-vitality", "power-of-shadow", "power-word-fortify",
-      "power-word-heal", "power-word-kill", "power-word-stun", "prayer-of-healing", "precise-hunter", "precision-attack", "preserve-life",
-      "priest-spirit", "prismatic-spray", "prismatic-wall", "proboscis", "produce-flame", "project-image", "projected-ward", "protection",
-      "protection-from-energy", "protection-from-evil-and-good", "protection-from-poison", "prowl", "psionic-power", "psychic-defenses",
-      "psychic-spells", "pushing-attack", "quickened-spell", "radiant-soul", "rage", "raise-dead", "rally", "ray-of-enfeeblement",
-      "ray-of-frost", "reckless-attack", "regenerate", "regeneration", "relentless-endurance", "relentless-hunter", "relentless-rage",
+      "mindless-rage", "minor-illusion", "mirror-image", "mislead", "mist-walker", "misty-escape", "misty-form", "misty-step",
+      "monks-focus", "moonbeam", "moonlight-step", "mordenkainens-faithful-hound", "mordenkainens-magnificent-mansion",
+      "mordenkainens-sword", "natures-ward", "natures-wrath", "necrotic-husk", "nimble-escape", "observant", "oil", "open-hand-technique",
+      "otilukes-freezing-sphere", "otilukes-resilient-sphere", "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade",
+      "pact-of-the-chain", "parry", "parry-maneuver", "pass-without-trace", "path-to-the-grave", "persistent-rage", "phantasmal-force",
+      "phantasmal-killer", "phantom-steed", "physicians-touch", "piercer", "poisoner", "polearm-master", "polymorph", "portent",
+      "potent-cantrip", "potion-of-animal-friendship", "potion-of-climbing", "potion-of-diminution", "potion-of-flying",
+      "potion-of-growth", "potion-of-heroism", "potion-of-invisibility", "potion-of-resistance", "potion-of-vitality", "power-of-shadow",
+      "power-word-fortify", "power-word-heal", "power-word-kill", "power-word-stun", "prayer-of-healing", "precise-hunter",
+      "precision-attack", "preserve-life", "priest-spirit", "primal-knowledge", "prismatic-spray", "prismatic-wall", "proboscis",
+      "produce-flame", "project-image", "projected-ward", "protection", "protection-from-energy", "protection-from-evil-and-good",
+      "protection-from-poison", "prowl", "psionic-power", "psychic-defenses", "psychic-spells", "psychic-veil", "pushing-attack",
+      "quickened-spell", "radiant-soul", "rage", "rage-of-the-wilds", "raise-dead", "rally", "ray-of-enfeeblement", "ray-of-frost",
+      "reckless-attack", "regenerate", "regeneration", "relentless-endurance", "relentless-hunter", "relentless-rage",
       "remarkable-athlete", "remove-curse", "rend-mind", "resilient-sphere", "resistance", "resurrection", "reverse-gravity", "revivify",
       "riposte", "ritual-adept", "rumbling-movement", "sacred-weapon", "sanctuary", "sanguine-drain", "savage-attacker", "scorching-ray",
       "sculpt-spells", "sear-undead", "searing-smite", "second-skin", "second-story-work", "see-invisibility", "self-restoration",
@@ -229,10 +230,11 @@ describe("contenu livré", () => {
       "thorn-whip", "thrown-weapon-fighting", "thunderous-smite", "thunderwave", "tinderbox", "toll-the-dead", "torch", "trampling-charge",
       "tricksters-transposition", "trip-attack", "true-resurrection", "true-strike", "tsunami", "twinned-spell", "umbral-dagger",
       "unarmed-fighting", "unarmed-strike", "uncanny-dodge", "undead-fortitude", "unseen-servant", "valor-extra-attack", "vampiric-bite",
-      "vampiric-touch", "vicious-mockery", "vile-appearance", "vitriolic-sphere", "vow-of-enmity", "wails-from-the-grave", "wall-of-fire",
-      "wall-of-force", "wall-of-ice", "wall-of-stone", "wall-of-thorns", "war-caster", "war-magic", "war-priest", "warding-bond",
-      "warding-flare", "watchers", "water-element", "water-form", "watery-rush", "web", "weird", "wild-companion", "wild-resurgence",
-      "wind-wall", "witch-bolt", "word-of-radiance", "wrath-of-the-sea", "wrath-of-the-wild", "wrathful-smite", "yolandes-regal-presence"
+      "vampiric-touch", "vicious-mockery", "vile-appearance", "vitality-of-the-tree", "vitriolic-sphere", "vow-of-enmity",
+      "wails-from-the-grave", "wall-of-fire", "wall-of-force", "wall-of-ice", "wall-of-stone", "wall-of-thorns", "war-caster", "war-magic",
+      "war-priest", "warding-bond", "warding-flare", "watchers", "water-element", "water-form", "watery-rush", "web", "weird",
+      "wild-companion", "wild-resurgence", "wind-wall", "witch-bolt", "word-of-radiance", "wrath-of-the-sea", "wrath-of-the-wild",
+      "wrathful-smite", "yolandes-regal-presence", "zealous-presence"
     ]);
     expect(CONTENT["aura-of-protection"].aura.radius).toBe(10);
     expect(CONTENT.hex.triggers).toHaveLength(1);
@@ -898,5 +900,26 @@ describe("§298 : repasse, lot C3 (coût d'action et budget du tour)", async () 
     expect(validateEntry({ usageLimits: { Ew70lNTD8dR3vREt: { cost: "gratis" } } })).toHaveLength(1);
     expect(validateEntry({ spellsInAttack: { maxLevel: -1 } })).toHaveLength(1);
     expect(validateEntry({ spellsInAttack: { maxLevel: 0, attacks: 0 } })).toHaveLength(1);
+  });
+});
+
+describe("§299 : repasse, lot C4 (aptitudes tenues par la Rage, fins sur Neutralisé)", () => {
+  it("les déclarations du lot", () => {
+    expect(CONTENT["mindless-rage"].duringRage).toEqual({ enable: ["Y9LOXK6Q4vot2cxi"], cures: ["charmed", "frightened"] });
+    expect(CONTENT["rage-of-the-wilds"].duringRage).toEqual({ copiesEnd: true });
+    expect(CONTENT["primal-knowledge"].duringRage.post).toEqual(["ufbJRsGGW3REMmJm"]);
+    expect(CONTENT["vitality-of-the-tree"].duringRage.onStart).toBe("HA6qXLiCmMuEq6r1");
+    for ( const id of ["channel-divinity", "channel-divinity-cleric", "sear-undead"] ) expect(CONTENT[id].endsWhen.incapacitated).toBe("caster");
+    for ( const id of ["draconic-flight", "form-of-dread"] ) expect(CONTENT[id].endsWhen.incapacitated).toBe("bearer");
+    expect(CONTENT["psychic-veil"].breaksOn).toEqual(["attack", "damage", "forcesSave"]);
+    expect(CONTENT["zealous-presence"].triggers[0]).toMatchObject({ on: "preAttackRoll", via: "effect", do: [{ type: "advantage" }] });
+    for ( const id of ["mindless-rage", "rage-of-the-wilds", "primal-knowledge", "vitality-of-the-tree", "draconic-flight", "psychic-veil", "zealous-presence"] ) {
+      expect(validateEntry(CONTENT[id], { facts })).toEqual([]);
+    }
+  });
+  it("les nouvelles clés sont vérifiées", () => {
+    expect(validateEntry({ endsWhen: { incapacitated: "both" } })).toHaveLength(1);
+    expect(validateEntry({ duringRage: { enable: ["court"], copiesEnd: 1 } })).toHaveLength(1);
+    expect(validateEntry({ breaksOn: ["forcesSave"] })).toEqual([]);
   });
 });

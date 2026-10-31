@@ -145,7 +145,8 @@ export const RAVENLOFT = Object.freeze({
   // Patron Mort-vivant, Forme d'effroi — Avatar terrifiant : « une fois par tour, quand vous touchez une créature d'un jet d'attaque,
   // vous pouvez la forcer à un JS de Sagesse ; Effrayée jusqu'à la fin de votre prochain tour » — sous la Forme (son effet sur vous).
   // Les PV temporaires, l'immunité à Effrayé : l'activité et l'effet de la donnée.
-  "form-of-dread": { hitRider: { save: "Oqz9j7aHHPnRKdD9", oncePerTurn: true, whileActive: true } },
+  // §299 : la forme « prend fin si vous avez l'état Neutralisé ».
+  "form-of-dread": { hitRider: { save: "Oqz9j7aHHPnRKdD9", oncePerTurn: true, whileActive: true }, endsWhen: { incapacitated: "bearer" } },
   // Cosse nécrotique, Résurrection impie : à 0 PV sans mourir, « chaque créature de votre choix dans une émanation de 9 m fait un JS de
   // Constitution (2d10 + Charisme nécrotiques, moitié si réussi) ; vos PV deviennent 2 × votre niveau d'Occultiste ; 1 niveau
   // d'Épuisement » — l'activité de la donnée, dont les consommations fixent les PV et l'Épuisement.

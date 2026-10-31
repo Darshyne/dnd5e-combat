@@ -211,6 +211,9 @@
  *                                               s'il y a quelque chose à regagner)
  *     grantsConditionImmunities?: string[]      §295 : immunités d'état que l'item donne sans effet dans ses données (Protégé de dame
  *                                               Nature : Empoisonné) — dans l'effet tenu de `grantsSpeeds` (runtime/speed-grants.mjs)
+ *     duringRage?: { enable?, post?, disable?, copiesEnd?, cures?, onStart? }  §299 : effets de l'item tenus par la Rage du porteur —
+ *                                               activés / posés à l'entrée, retirés à la fin, états guéris, activité jouée à l'entrée
+ *                                               (Rage aveugle, Rage du prédateur, Savoir primal, Vitalité de l'Arbre) — runtime/barbarian.mjs
  *     spellsInAttack?: { maxLevel, class?, attacks? }  §298 : un sort d'une action, de niveau `maxLevel` au plus (et de cette classe),
  *                                               se lance à la place de `attacks` attaques (1 par défaut) de l'action Attaquer (Magie
  *                                               de guerre, Attaque supplémentaire de la Vaillance, Magie de guerre améliorée : 2)

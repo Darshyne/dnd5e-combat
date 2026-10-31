@@ -17,6 +17,7 @@ import { damagedByOriginSide } from "../core/triggers.mjs";
 import { areEnemies, sideOf } from "../adapter/factions.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { ARMOR_WEIGHTS, armorEnds, isReplayUsage, nobodyAffected, tooFarApart } from "../core/endings.mjs";
+import { INCAPACITATING } from "../core/conditions.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
@@ -154,6 +155,29 @@ function hurtByCasterAlly(actor, caster, scene) {
     originDisposition: ct?.disposition ?? null, damagerSide: dt ? sideOf(dt) : null, originSide: ct ? sideOf(ct) : null });
 }
 
+/**
+ * §299 (repasse C4) : un état qui neutralise (Neutralisé, et ce qui le donne : Étourdi, Paralysé, Inconscient, mort…) vient d'être posé —
+ * les effets dont la règle `endsWhen.incapacitated` vise ce porteur (`bearer` : Vol draconique, Forme d'effroi) ou ce lanceur (`caster` :
+ * Renvoi des morts-vivants, Calcination ; « si vous avez l'état Neutralisé ou si vous mourez ») prennent fin.
+ */
+async function onIncapacitated(effect) {
+  const actor = effect.parent;
+  if ( (actor?.documentName !== "Actor") || !Array.from(effect.statuses ?? []).some(s => INCAPACITATING.includes(s)) ) return;
+  const scene = actor.isToken ? actor.token?.parent : (actor.getActiveTokens?.(false, true)?.[0]?.parent ?? canvas?.scene);
+  const entries = endingEffects(actorsOf(scene)).filter(e => {
+    const who = e.rule.incapacitated;
+    if ( !who ) return false;
+    const bearer = (e.actor === actor) && ["bearer", "either"].includes(who);
+    const caster = (e.item.actor === actor) && ["caster", "either"].includes(who);
+    return bearer || caster;
+  });
+  if ( !entries.length ) return;
+  return enqueue(`endsWhen:${actor.uuid}`, async () => {
+    const done = new Set();
+    for ( const e of entries ) await endEntry(e, "incapacitated", scene, done);
+  });
+}
+
 /** 0 PV : le porteur, ou le lanceur dont les effets courent sur d'autres (Lien de garde) ; §270 : blessé par un allié du lanceur. */
 async function onUpdateActor(actor, changes) {
   const hp = foundry.utils.getProperty(changes, "system.attributes.hp.value");
@@ -283,6 +307,7 @@ export function registerEndings() {
   route("deleteActiveEffect", onDeleteEffect, { executor: true, label: "effect end: next effect not applied" });
   route("updateItem", onUpdateItem, { executor: true, label: "effect end on armor: not played" });
   route("updateActor", onUpdateActor, { executor: true, label: "effect end at 0 HP: not played" });
+  route("createActiveEffect", onIncapacitated, { executor: true, label: "effect end when Incapacitated: not played" });
   route("createChatMessage", onUsage, { executor: true, label: "effect end when the caster targets another creature: not judged" });
   route("moveToken", onMoveToken, { executor: true, label: "effect end by distance: not judged" });
   route("combatTurnChange", onTurnChange, { executor: true, label: "effect end by distance at turn end: not judged" });

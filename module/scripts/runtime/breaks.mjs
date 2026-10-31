@@ -47,6 +47,9 @@ export function registerBreaks() {
   route("dnd5e.postUseActivity", activity => {
     if ( !activity?.actor || (activity.type === "attack") ) return;
     const moments = breakMoments({ attack: false, damage: (activity.damage?.parts?.length ?? 0) > 0, spell: isSpellCast(activity.item) });
+    // §299 : « forcesSave » — l'utilisation impose un jet de sauvegarde (Voile psychique : « ou forcez une créature à faire un jet de
+    // sauvegarde »).
+    if ( activity.type === "save" ) moments.push("forcesSave");
     breakEffects(activity.actor, moments, activity.item).catch(err => console.error(`${MODULE_ID} | effect end`, err));
   }, { label: "effect ending on spell or damage not removed" });
 }

@@ -31,6 +31,16 @@ export const BARBARIAN = Object.freeze({
   // §236 : Puissance indomptable (niveau 18) — « si votre total pour un test ou un jet de sauvegarde de Force est inférieur à votre valeur
   // de Force, vous pouvez utiliser cette valeur à la place » (runtime/feats.mjs : le minimum du d20).
   "indomitable-might": { scoreFloor: ["str"] },
+  // §299 (repasse C4) — aptitudes tenues par la Rage (`duringRage`, runtime/barbarian.mjs) :
+  // Rage aveugle (Berserker) : « immunité à Charmé et Effrayé en Rage ; un tel état cesse quand vous entrez en Rage ».
+  "mindless-rage": { duringRage: { enable: ["Y9LOXK6Q4vot2cxi"], cures: ["charmed", "frightened"] } },
+  // Rage du prédateur (Cœur sauvage) : l'option choisie ne vaut que pendant la Rage — les copies que ses activités posent tombent avec elle.
+  // (L'effet « Rage of the Bear » de l'item est un effet d'activité : dnd5e 6.0.6 ne le transfère jamais, malgré la donnée active.)
+  "rage-of-the-wilds": { duringRage: { copiesEnd: true } },
+  // Savoir primal : « en Rage, ces tests se font avec la Force ».
+  "primal-knowledge": { duringRage: { post: ["ufbJRsGGW3REMmJm"] } },
+  // Vitalité de l'Arbre (Arbre-monde) : « quand vous entrez en Rage, vous gagnez des PV temporaires égaux à votre niveau de Barbare ».
+  "vitality-of-the-tree": { duringRage: { onStart: "HA6qXLiCmMuEq6r1" } },
   // §295 (repasse) : Présence intimidante — Effrayée « pendant 1 minute » (la donnée : un round), la sauvegarde rejouée à la fin de
   // chacun de ses tours (content/triggers.mjs).
   "intimidating-presence": { effectDurations: { "3LofAPFLZJMQJirN": { seconds: 60 } } },

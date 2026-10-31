@@ -26,6 +26,16 @@ export function validateExtras(entry, at, errors) {
     && entry.grantsConditionImmunities.every(s => (typeof s === "string") && /^[a-z]+$/.test(s))) ) {
     errors.push(`${at}grantsConditionImmunities: list of condition ids`);
   }
+  // §299 : aptitudes tenues par la Rage.
+  if ( "duringRage" in entry ) {
+    const d = entry.duringRage;
+    const ids = k => !(k in d) || (Array.isArray(d[k]) && d[k].length && d[k].every(isId));
+    if ( !isObject(d) || !ids("enable") || !ids("post") || !ids("disable") || (("copiesEnd" in d) && (d.copiesEnd !== true))
+      || (("cures" in d) && !(Array.isArray(d.cures) && d.cures.every(s => typeof s === "string"))) || (("onStart" in d) && !isId(d.onStart))
+      || !Object.keys(d).every(k => ["enable", "post", "disable", "copiesEnd", "cures", "onStart"].includes(k)) ) {
+      errors.push(`${at}duringRage: { enable?, post?, disable?, copiesEnd?: true, cures?, onStart? }`);
+    }
+  }
   // §298 : un sort lancé à la place d'attaques de l'action Attaquer (Magie de guerre).
   if ( "spellsInAttack" in entry ) {
     const s = entry.spellsInAttack;

@@ -26,13 +26,20 @@ export function rageOf(actor) {
   return null;
 }
 
-/** Les effets actifs de la Rage : la copie sur l'acteur, et l'effet de l'item s'il est activé. */
+/**
+ * Les effets actifs de la Rage : la copie sur l'acteur, et l'effet de l'item s'il est vraiment activé.
+ * §299 (repasse C4) : dnd5e 6.0.6 prépare un effet d'item que porte une activité (« effet d'activité » : celui de Rage, que pose « Expend
+ * Rage ») comme `transfer = disabled = false` en mémoire, quel que soit l'état de la donnée (dnd5e.mjs:6929, `isOnActivity`) — il n'est
+ * jamais transféré à l'acteur. Lire `effect.disabled` faisait voir tout barbare en Rage en permanence (« pas de sorts en Rage », Rage
+ * aveugle active…). L'effet de l'item ne compte donc que si sa donnée le dit actif et qu'il n'est pas un effet d'activité.
+ */
 function rageEffects(actor) {
   const rage = rageOf(actor);
   if ( !rage ) return [];
   const copies = Array.from(actor.effects ?? []).filter(e => !e.disabled
     && (comesFromItemEffect(e, rage.rule.effect) || (originItemOf(e) === rage.item)));
-  return rage.effect.disabled ? copies : [...copies, rage.effect];
+  const ownActive = (rage.effect._source?.disabled === false) && (rage.effect.system?.isOnActivity !== true);
+  return ownActive ? [...copies, rage.effect] : copies;
 }
 
 /** L'acteur est-il en Rage ? */

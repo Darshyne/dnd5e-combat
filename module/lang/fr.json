@@ -1800,6 +1800,7 @@
   "DND5ECOMBAT.Souci.chainTooFar": "{name} est trop loin de la première cible, {first} : {distance} {units} au plus.",
   "DND5ECOMBAT.Souci.noAttacksOrSpells": "Sous {item}, vous ne pouvez ni attaquer ni lancer de sorts.",
   "DND5ECOMBAT.FinGenerique.casterTargetsOther": "{item} prend fin : le lanceur s'en est pris à une autre créature.",
+  "DND5ECOMBAT.FinGenerique.incapacitated": "{item} prend fin : {name} ou celui qui l'a posé est Neutralisé.",
   "DND5ECOMBAT.FinGenerique.allyDamages": "{item} prend fin : un allié du lanceur a blessé {name}.",
   "DND5ECOMBAT.Minuterie.Secondes": "s",
   "DND5ECOMBAT.Reglage.timerHideSeconds.Nom": "Minuteries sans les secondes",

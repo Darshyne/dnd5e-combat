@@ -233,6 +233,9 @@ export const TRIGGERS = Object.freeze({
   // Renvoi des morts-vivants (§16.25) : « pendant 1 minute ou jusqu'à ce qu'il subisse des dégâts » — l'effet « Turned »
   // (iUeSbfduM7K8XrCF) ; Calcination (OftTd0Eiwnls76cX) : « ces dégâts ne mettent pas fin au renvoi » — §294 : l'effet peut être
   // posé avant que les dégâts soient écrits (vu en jeu le 2026-10-31), seuls les dégâts d'une autre activité le font tomber.
+  // §299 : Présence zélée (Zélateur) — « Avantage aux jets d'attaque et de sauvegarde jusqu'au début de votre prochain tour » : la
+  // donnée ne porte que les sauvegardes.
+  "zealous-presence": [{ on: "preAttackRoll", via: "effect", if: { "source.hasEffect": "zealous-presence" }, do: [{ type: "advantage" }] }],
   "channel-divinity": [{ on: "isDamaged", via: "effect", fromEffect: "iUeSbfduM7K8XrCF", do: [{ type: "remove" }] }],
   "channel-divinity-cleric": [{ on: "isDamaged", via: "effect", fromEffect: "iUeSbfduM7K8XrCF", do: [{ type: "remove" }] }],
   "sear-undead": [{ on: "isDamaged", via: "effect", fromEffect: "OftTd0Eiwnls76cX", by: "otherActivity", do: [{ type: "remove" }] }],

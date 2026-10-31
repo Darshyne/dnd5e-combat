@@ -20,6 +20,7 @@ import { alliedSides } from "../core/factions.mjs";
 import { lengthIn } from "../adapter/units.mjs";
 import { burnTick } from "./flammable.mjs";
 import { samePlane } from "../adapter/plane.mjs";
+import { originItemOf } from "../adapter/facts.mjs";
 const currentTurnKey = () => turnKeyOf(game.combat?.started ? game.combat.round : null, game.combat?.turn);
 
 /** Le token peut-il subir la zone ? Pas celui qui l'a posée depuis lui-même, pas un mort. */
@@ -260,10 +261,59 @@ function onPreRollDamage(config) {
   return true;
 }
 
-/** La zone elle-même se déplace (Rayon de lune) : elle « entre » sur ceux qu'elle recouvre désormais. */
+/**
+ * La zone elle-même se déplace (Rayon de lune) : elle « entre » sur ceux qu'elle recouvre désormais.
+ * §300 (repasse C5) : pas sur ceux qu'elle recouvrait déjà — Esprits gardiens suit son lanceur : à chaque pas, toute créature restée dans
+ * l'émanation refaisait sa sauvegarde (« quand l'émanation entre dans l'espace d'une créature »). Le centre de la zone est noté dans son
+ * état (`at`) ; un token qui, ramené du même déplacement, était déjà dedans n'y entre pas. Sans centre noté (zone d'avant), comme avant.
+ */
 function onUpdateRegion(region, changes) {
-  if ( !readAreaState(region)?.usage || !(("shapes" in changes) || ("attachment" in changes)) ) return;
-  for ( const token of region.parent.tokens ) if ( isInside(token, region) ) tick(region, token, "enter");
+  const state = readAreaState(region);
+  if ( !state?.usage || !(("shapes" in changes) || ("attachment" in changes)) ) return;
+  const now = zoneCenter(region);
+  const before = state.at ?? null;
+  for ( const token of region.parent.tokens ) {
+    if ( !isInside(token, region) ) continue;
+    if ( before && now ) {
+      const p = committedPosition(token);
+      const shifted = { ...p, x: p.x - (now.x - before.x), y: p.y - (now.y - before.y) };
+      if ( isInside(token, region, shifted) ) continue;   // déjà dedans avant le déplacement de la zone
+    }
+    tick(region, token, "enter");
+  }
+  if ( now ) enqueue(`area:${region.id}`, async () => {
+    const current = readAreaState(region);
+    if ( current?.usage ) await writeAreaState(region, { ...current, at: now });
+  });
+  releaseZoneBound(region.parent);
+}
+
+/**
+ * §300 (repasse C5) : un effet d'un item `zoneBound` ne tient que dans une zone de cet item — Esprits gardiens : « la Vitesse d'une
+ * créature est divisée par deux dans l'émanation ». L'effet posé par la sauvegarde est retiré à la créature qui n'est plus dans aucune
+ * zone de l'item (elle sort, la zone s'éloigne, la zone finit) ; y revenir rejoue la zone, qui le repose. MJ actif.
+ */
+function releaseZoneBound(scene, tokens=null) {
+  if ( !scene ) return;
+  return enqueue(`zone-bound:${scene.id}`, async () => {
+    const zones = lastingRegions(scene).map(r => ({ region: r, item: game.messages.get(readAreaState(r).usage)?.getAssociatedActivity?.()?.item?.uuid }));
+    for ( const token of tokens ?? scene.tokens ) {
+      const actor = token.actor;
+      if ( !actor ) continue;
+      const gone = [];
+      for ( const effect of actor.effects ) {
+        const item = originItemOf(effect);
+        // Pas l'item du lanceur sur lui-même (sa Concentration), seulement ce que la zone a posé sur une autre créature.
+        if ( !item || (item.actor === actor) || (contentOf(item).entry?.zoneBound !== true) ) continue;
+        if ( zones.some(z => (z.item === item.uuid) && isInside(token, z.region)) ) continue;
+        gone.push(effect.id);
+      }
+      if ( !gone.length ) continue;
+      const left = gone.filter(id => actor.effects.has(id));
+      if ( left.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", left);
+      log(`${token.name}: out of the area, ${left.length} effect(s) bound to it removed`);
+    }
+  });
 }
 
 /** Une invocation renvoyée : ses combattants, puis son token. MJ actif. */
@@ -307,6 +357,13 @@ export function registerAreas() {
   }, { executor: true, label: "area: difficult terrain not applied" });
   route("updateWorldTime", onWorldTime, { executor: true, label: "area: duration elapsed, not removed" });
   route("deleteRegion", onZoneEnd, { executor: true, label: "area: ended without its activity (zoneEnd)" });
+  // §300 : les effets tenus par une zone (`zoneBound`) tombent hors d'elle.
+  route("deleteRegion", region => releaseZoneBound(region.parent), { executor: true, label: "area: bound effects not removed" });
+  route("moveToken", token => {
+    if ( (token.movement?.state === "pending") || !lastingRegions(token.parent).length ) return;
+    // Comme `syncZoneEffects` : une seconde plus tard, le déplacement est tout à fait posé.
+    setTimeout(() => releaseZoneBound(token.parent, [token])?.catch(err => console.error(`${MODULE_ID} | bound effects`, err)), 1000);
+  }, { executor: true, label: "area: bound effects not removed" });
   route("createToken", async tokenDoc => {
     const at = await noteSummonExpiry(tokenDoc);
     if ( at !== null ) log(`${tokenDoc.name}: dismissed at world time ${at} (in ${at - game.time.worldTime} s)`);

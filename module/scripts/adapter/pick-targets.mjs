@@ -55,7 +55,10 @@ export function pickCandidates(activity, { seen=() => true }={}) {
   const caster = usageTokenOf(activity);
   if ( !rule || !caster?.parent ) return { caster: caster ?? null, radius: 0, units: "", creatures: [] };
   const units = caster.parent.grid.units;
-  const radius = lengthIn(rule.radius, rule.units, units);
+  // §300 : un rayon en formule (échelle de classe) se lit dans les données de jet de l'activité.
+  const raw = (typeof rule.radius === "string")
+    ? (Number(globalThis.dnd5e?.utils?.simplifyBonus?.(rule.radius, activity.getRollData?.() ?? {})) || 0) : rule.radius;
+  const radius = lengthIn(raw, rule.units, units);
   const creatures = [];
   for ( const token of caster.parent.tokens ) {
     // §296 : `self` — le lanceur aussi (Lueur d'espoir, Survivance : « vous compris »).

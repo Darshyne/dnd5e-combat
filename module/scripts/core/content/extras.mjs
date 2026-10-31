@@ -59,7 +59,8 @@ export function validateExtras(entry, at, errors) {
     if ( !isObject(p) ) errors.push(`${at}pickTargets: { activities, radius, units, upgrade? }`);
     else {
       if ( !Array.isArray(p.activities) || !p.activities.length || !p.activities.every(isId) ) errors.push(`${at}pickTargets.activities: a list of activity ids`);
-      if ( !(Number.isFinite(p.radius) && (p.radius > 0)) ) errors.push(`${at}pickTargets.radius: positive number`);
+      // §300 : ou une formule de données de jet (Courroux des mers : « @scale.sea.wrath-range »).
+      if ( !((Number.isFinite(p.radius) && (p.radius > 0)) || ((typeof p.radius === "string") && p.radius.trim())) ) errors.push(`${at}pickTargets.radius: positive number or formula`);
       if ( !["ft", "m"].includes(p.units) ) errors.push(`${at}pickTargets.units: ft, m`);
       if ( ("upgrade" in p) && !(isObject(p.upgrade) && (typeof p.upgrade.item === "string") && p.upgrade.item && isId(p.upgrade.activity)) ) {
         errors.push(`${at}pickTargets.upgrade: { item: identifier, activity: activity id }`);

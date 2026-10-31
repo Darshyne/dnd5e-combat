@@ -175,7 +175,11 @@ export const SPELL_RULES = Object.freeze({
     slippery: true,
     triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }, { on: "failedSave", do: [{ type: "status", status: "prone" }] }]
   },
-  "sleet-storm": { difficultTerrain: {} },
+  // §300 : « pénètre dans le Cylindre pour la première fois d'un tour ou y commence son tour » — rien à l'incantation.
+  "sleet-storm": { difficultTerrain: {}, quietPose: true },
+  // §300 : « Croissance » — la zone devient un terrain où chaque mètre coûte 4 mètres de déplacement ; elle reste (durée instantanée).
+  // Embroussaillement : « temps d'incantation : action » — la donnée laisse l'activation « spéciale » (rien n'était dépensé).
+  "plant-growth": { difficultTerrain: { cost: 4 }, usageLimits: { dnd5eactivity000: { cost: "action" } } },
   // §261 : Tempête de grêle — « la zone devient un terrain difficile jusqu'à la fin de votre prochain tour ».
   "ice-storm": { difficultTerrain: { lingers: "casterNextTurnEnd" } },
   // Tentacules noirs d'Evard : « … qui y entre pour la première fois d'un tour ou y termine son tour » rejoue la sauvegarde ; « une action
@@ -204,7 +208,10 @@ export const SPELL_RULES = Object.freeze({
   "hunger-of-hadar": { difficultTerrain: {} },
   // Nuage nauséabond : « Empoisonnée jusqu'à la fin du tour en cours ; ainsi Empoisonnée, elle ne peut prendre ni action ni action
   // Bonus » (l'effet « Stinking Poison »).
-  "stinking-cloud": { noActions: "gFid0DG5HydORpr3" },
+  // §300 : seule une créature qui COMMENCE son tour dans le nuage sauvegarde — rien à l'incantation.
+  "stinking-cloud": { noActions: "gFid0DG5HydORpr3", quietPose: true },
+  // §300 : « la Vitesse d'une créature est divisée par deux dans l'émanation » — l'effet tombe à sa sortie.
+  "spirit-guardians": { zoneBound: true },
   // §86 : Présence royale de Yolande — « Surround Self » (OJHRKWz8JvLzyl9R) n'a pas d'émanation dans la donnée : 10 ft sur soi,
   // posée d'office ; « une créature que vous voyez… vous pouvez la forcer » : les alliés épargnés. Qui y entre (ou que
   // l'émanation recouvre) ou y finit son tour : « Emanation Save » (dzeoGwKOPG7PHbyE, Sagesse, 4d6 psychiques), une fois par tour ;
@@ -438,6 +445,11 @@ export const SPELL_RULES = Object.freeze({
   // §296 (lot C2) — Lenteur : « jusqu'à six créatures de votre choix dans un cube de 12 m » ; Lueur d'espoir : « autant de créatures que
   // vous voulez à portée (9 m) », vous compris. (Soins de groupe, soin d'une zone : reporté, le jet de dnd5e part avant la zone.)
   "slow": { zoneAffects: "enemy", zoneMax: 6 },
+  // §300 : « jusqu'à six créatures » — au choix dans la liste, à portée (60 ft). Simplification : la sphère de 9 m autour d'un point
+  // n'est pas contrôlée.
+  // §300 : « Create Aura » — le soin de l'incantation va à UNE créature de l'aura (30 ft), au choix.
+  "aura-of-vitality": { pickTargets: { activities: ["dnd5eactivity000"], radius: 30, units: "ft", self: true, check: "allies", max: 1 } },
+  "mass-cure-wounds": { pickTargets: { activities: ["dnd5eactivity000"], radius: 60, units: "ft", self: true, check: "allies", max: 6 } },
   "beacon-of-hope": { pickTargets: { activities: ["dnd5eactivity000"], radius: 30, units: "ft", self: true, check: "allies" } },
   // Agrandissement/rapetissement (et Lévitation, plus haut) : seule une créature NON consentante sauvegarde — un allié rate d'office.
   "enlarge-reduce": { willingFails: true },

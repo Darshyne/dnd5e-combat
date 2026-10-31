@@ -198,13 +198,13 @@ describe("contenu livré", () => {
       "lantern-hooded", "large-form", "lay-on-hands", "leading-evasion", "lesser-restoration", "levitate", "life-drain", "lifedrinker",
       "light", "lightning-arrow", "living-shadow", "lucky", "lunar-form", "lunging-attack", "lupin-howl", "mage-armor", "mage-hand",
       "mage-slayer", "magic-missile", "magic-resistance", "magnificent-mansion", "maneuvering-attack", "marshal-undead", "martial-arts",
-      "mass-heal", "mass-suggestion", "maze", "medium-armor-master", "melfs-acid-arrow", "menacing-attack", "mind-sliver", "mind-spike",
+      "mass-cure-wounds", "mass-heal", "mass-suggestion", "maze", "medium-armor-master", "melfs-acid-arrow", "menacing-attack", "mind-sliver", "mind-spike",
       "mindless-rage", "minor-illusion", "mirror-image", "mislead", "mist-walker", "misty-escape", "misty-form", "misty-step",
       "monks-focus", "moonbeam", "moonlight-step", "mordenkainens-faithful-hound", "mordenkainens-magnificent-mansion",
       "mordenkainens-sword", "natures-ward", "natures-wrath", "necrotic-husk", "nimble-escape", "observant", "oil", "open-hand-technique",
       "otilukes-freezing-sphere", "otilukes-resilient-sphere", "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade",
       "pact-of-the-chain", "parry", "parry-maneuver", "pass-without-trace", "path-to-the-grave", "persistent-rage", "phantasmal-force",
-      "phantasmal-killer", "phantom-steed", "physicians-touch", "piercer", "poisoner", "polearm-master", "polymorph", "portent",
+      "phantasmal-killer", "phantom-steed", "physicians-touch", "piercer", "plant-growth", "poisoner", "polearm-master", "polymorph", "portent",
       "potent-cantrip", "potion-of-animal-friendship", "potion-of-climbing", "potion-of-diminution", "potion-of-flying",
       "potion-of-growth", "potion-of-heroism", "potion-of-invisibility", "potion-of-resistance", "potion-of-vitality", "power-of-shadow",
       "power-word-fortify", "power-word-heal", "power-word-kill", "power-word-stun", "prayer-of-healing", "precise-hunter",
@@ -921,5 +921,30 @@ describe("§299 : repasse, lot C4 (aptitudes tenues par la Rage, fins sur Neutra
     expect(validateEntry({ endsWhen: { incapacitated: "both" } })).toHaveLength(1);
     expect(validateEntry({ duringRage: { enable: ["court"], copiesEnd: 1 } })).toHaveLength(1);
     expect(validateEntry({ breaksOn: ["forcesSave"] })).toEqual([]);
+  });
+});
+
+describe("§300 : repasse, lot C5 (zones, émanations, entrées)", () => {
+  it("les déclarations du lot", () => {
+    expect(CONTENT["spirit-guardians"].zoneBound).toBe(true);
+    for ( const id of ["sleet-storm", "stinking-cloud"] ) expect(CONTENT[id].quietPose).toBe(true);
+    expect(CONTENT["plant-growth"].difficultTerrain).toEqual({ cost: 4 });
+    expect(CONTENT["plant-growth"].usageLimits.dnd5eactivity000.cost).toBe("action");
+    for ( const id of ["wrath-of-the-sea", "stormborn"] ) {
+      expect(CONTENT[id].pickTargets).toMatchObject({ radius: "@scale.sea.wrath-range", max: 1, check: "enemies" });
+      expect(CONTENT[id].triggers[0].on).toBe("failedSave");
+    }
+    expect(CONTENT["aura-of-vitality"].pickTargets).toMatchObject({ radius: 30, max: 1, self: true });
+    expect(CONTENT["aura-of-vitality"].atTurnStart).toEqual({ activity: "0vYjMbBcXaMfGWR2" });
+    expect(CONTENT["mass-cure-wounds"].pickTargets).toMatchObject({ radius: 60, max: 6, check: "allies" });
+    for ( const id of ["spirit-guardians", "sleet-storm", "stinking-cloud", "plant-growth", "wrath-of-the-sea", "stormborn", "aura-of-vitality", "mass-cure-wounds"] ) {
+      expect(validateEntry(CONTENT[id], { facts })).toEqual([]);
+    }
+  });
+  it("les nouvelles clés sont vérifiées", () => {
+    expect(validateEntry({ quietPose: 1 })).toHaveLength(1);
+    expect(validateEntry({ zoneBound: "oui" })).toHaveLength(1);
+    expect(validateEntry({ pickTargets: { activities: ["dnd5eactivity000"], radius: " ", units: "ft" } })).toHaveLength(1);
+    expect(validateEntry({ pickTargets: { activities: ["dnd5eactivity000"], radius: "@scale.x.y", units: "ft" } })).toEqual([]);
   });
 });

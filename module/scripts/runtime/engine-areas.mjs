@@ -7,10 +7,11 @@ import { selectAreaTargets, openArea, turnKeyOf, actsOnPose } from "../core/area
 import { readActivityRegion, repairSaveAbility, showTargetsTo } from "../adapter/saves.mjs";
 import { readUsage } from "../adapter/usage.mjs";
 import { concentrationEffectOf, tieRegionToConcentration } from "../adapter/concentration.mjs";
-import { areaRulesOf, isInstantaneous, writeAreaState, markTransient, shrinkToBolt, removeTransientRegions, hideRegion } from "../adapter/areas.mjs";
+import { areaRulesOf, isInstantaneous, writeAreaState, markTransient, shrinkToBolt, removeTransientRegions, hideRegion, zoneCenter } from "../adapter/areas.mjs";
 import { ensureRegionElevation } from "../adapter/space.mjs";
 import { stormOf, isBoltRegion } from "../adapter/storm.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
+import { contentOf } from "../adapter/content.mjs";
 import { leaveDifficultTerrain } from "../adapter/zone-effects.mjs";
 import { scatterOf, scatterState } from "./scatter.mjs";
 import { flammableOf, groundFlammableState, igniteUnder } from "./flammable.mjs";
@@ -88,9 +89,14 @@ export async function onRegionCreated(region) {
       // Zone qui dure : elle rejouera son activité (runtime/areas.mjs). Ceux qu'elle touche à la
       // pose l'ont été pour ce tour de jeu — sauf si c'est une sœur qui agit et que la pose ne fait rien.
       const key = turnKeyOf(game.combat?.started ? game.combat.round : null, game.combat?.turn);
+      // §300 (repasse C5) : une zone dont le texte ne prévoit rien à l'incantation (`quietPose` : Tempête de neige, Nuage nauséabond)
+      // n'agit qu'aux moments déclarés — ceux qui sont déjà dedans sauvegardent en commençant leur tour.
+      const quiet = contentOf(activity.item).entry?.quietPose === true;
       await writeAreaState(region, {
-        ...openArea(rules.on, key, (usage?.area && actsOnPose(rules.on) && !scatter) ? targets.map(t => t.token) : []),
+        ...openArea(rules.on, key, (usage?.area && actsOnPose(rules.on) && !scatter && !quiet) ? targets.map(t => t.token) : []),
         usage: message.id,
+        // §300 : son centre à la pose — un déplacement de la zone ne fait « entrer » que ceux qu'elle recouvre en plus (runtime/areas.mjs).
+        at: zoneCenter(region),
         activity: rules.activity ?? null,
         ...(rules.activities ? { activities: rules.activities } : {}),
         exclude: area.excludeOrigin ? area.origin : null,
@@ -105,7 +111,7 @@ export async function onRegionCreated(region) {
       // Une zone qui n'agit qu'au déplacement (Croissance d'épines) ne fait rien à sa pose.
       // §91 : une zone qui n'agit qu'au tour de son lanceur (`casterPulse`, aucun moment) résout sa pose comme une autre.
       // §187 : un objet répandu n'agit pas sur ceux qui sont déjà là — seulement sur qui y entre.
-      if ( !usage?.area || scatter || ground || (rules.on.length && !actsOnPose(rules.on)) ) return null;
+      if ( !usage?.area || scatter || ground || quiet || (rules.on.length && !actsOnPose(rules.on)) ) return null;
     } else if ( isInstantaneous(activity) || bolt ) {
       await markTransient(region, message.id);
       // §261 : Tempête de grêle — le terrain difficile reste quand la zone part.

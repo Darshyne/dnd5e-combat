@@ -211,6 +211,10 @@
  *                                               s'il y a quelque chose à regagner)
  *     grantsConditionImmunities?: string[]      §295 : immunités d'état que l'item donne sans effet dans ses données (Protégé de dame
  *                                               Nature : Empoisonné) — dans l'effet tenu de `grantsSpeeds` (runtime/speed-grants.mjs)
+ *     quietPose?: true                          §300 : la zone qui dure n'agit pas à sa pose — seulement aux moments déclarés
+ *                                               (Tempête de neige, Nuage nauséabond : ceux qui sont déjà dedans sauvegardent au début de leur tour)
+ *     zoneBound?: true                          §300 : les effets de l'item ne tiennent que dans une de ses zones (Esprits gardiens : la
+ *                                               Vitesse divisée par deux tombe à la sortie de l'émanation ; runtime/areas.mjs)
  *     duringRage?: { enable?, post?, disable?, copiesEnd?, cures?, onStart? }  §299 : effets de l'item tenus par la Rage du porteur —
  *                                               activés / posés à l'entrée, retirés à la fin, états guéris, activité jouée à l'entrée
  *                                               (Rage aveugle, Rage du prédateur, Savoir primal, Vitalité de l'Arbre) — runtime/barbarian.mjs

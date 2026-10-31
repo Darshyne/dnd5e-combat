@@ -304,6 +304,10 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     "source.wildShaped": want => (!!source?.isPolymorphed === want),
     // §26 : « le dé de votre Marque du chasseur passe à d10 » (Tueur implacable) — l'acteur a-t-il un item de cet identifiant ?
     "source.hasFeature": id => (source?.items ?? []).some(i => identifierOf(i).id === id),
+    // §302 : la cible a un item de cet identifiant (Transe : « ne dort pas »).
+    "target.hasFeature": id => (target?.items ?? []).some(i => identifierOf(i).id === id),
+    // §302 : la caractéristique de l'attaque (dnd5e : `activity.ability`, la meilleure pour une arme de Finesse) — Rayon affaiblissant.
+    "activity.ability": id => [id].flat().includes(activity?.ability ?? null),
     "target.hasStatus": id => target?.statuses?.has(id) === true,
     "target.hasEffect": id => hasEffectFrom(target, id),
     "target.hasEffectFrom": id => hasEffectFrom(target, id, source),

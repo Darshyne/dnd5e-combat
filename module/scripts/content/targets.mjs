@@ -29,7 +29,10 @@ export const TARGETS = Object.freeze({
   "animal-friendship": { types: ["beast"] },
   // Sommeil 2024 : « les créatures qui ne dorment pas, comme les elfes, ou qui ont l'immunité à l'état Épuisement
   // réussissent automatiquement leurs sauvegardes contre ce sort ». L'immunité se lit ; « ne dort pas » (elfes) non.
-  "sleep": { unaffectedIf: { "target.immuneTo": "exhaustion" } },
+  // §302 : les elfes (Transe, Elfe éternel) se lisent par leur trait.
+  "sleep": { unaffectedIf: { any: [{ "target.immuneTo": "exhaustion" }, { "target.hasFeature": "trance" }] } },
+  // §302 : Motif hypnotique — « chaque créature dans le cube qui voit le motif » : une créature Aveuglée n'est pas affectée.
+  "hypnotic-pattern": { unaffectedIf: { "target.hasStatus": "blinded" } },
   // §16.47 : Stabilisation — « une créature à 0 point de vie et qui n'est pas morte ».
   "spare-the-dying": { unaffectedIf: { any: [{ "target.atZero": false }, { "target.isDead": true }] } },
   // Renvoi des morts-vivants (§16.25) : « chaque Mort-vivant de votre choix dans un rayon de 9 m ». Conduit divin du clerc

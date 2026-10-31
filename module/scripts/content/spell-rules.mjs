@@ -212,6 +212,15 @@ export const SPELL_RULES = Object.freeze({
   "stinking-cloud": { noActions: "gFid0DG5HydORpr3", quietPose: true },
   // §300 : « la Vitesse d'une créature est divisée par deux dans l'émanation » — l'effet tombe à sa sortie.
   "spirit-guardians": { zoneBound: true },
+  // §302 : Contagion — « Désavantage aux sauvegardes de la caractéristique choisie » (les effets de la donnée ne posent qu'Empoisonné).
+  "contagion": { effectChanges: {
+    S8jxTZQbT8KKSg5V: [{ key: "system.abilities.str.save.roll.mode", type: "add", value: "-1" }],
+    pqGQCk5wZx196HuY: [{ key: "system.abilities.dex.save.roll.mode", type: "add", value: "-1" }],
+    "5aPQT5DlL6Igaxh4": [{ key: "system.abilities.con.save.roll.mode", type: "add", value: "-1" }],
+    EruTLG8AjsLULgHj: [{ key: "system.abilities.int.save.roll.mode", type: "add", value: "-1" }],
+    J77AMHW5tROddZQg: [{ key: "system.abilities.wis.save.roll.mode", type: "add", value: "-1" }],
+    xewLYmHBxPTEKPlU: [{ key: "system.abilities.cha.save.roll.mode", type: "add", value: "-1" }]
+  } },
   // §301 : Fontaine de lune — « quand vous subissez des dégâts d'une créature visible à 18 m, votre Réaction : sa sauvegarde de Constitution
   // ou Aveuglée » ; seulement sous le sort (l'effet « Wreathed in Light »).
   "fount-of-moonlight": { triggers: [{ on: "isDamaged", if: { "target.hasEffect": "fount-of-moonlight", "target.seesSource": true, "target.within": { distance: 60, units: "ft" } },

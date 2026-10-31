@@ -38,6 +38,15 @@ export const WARLOCK = Object.freeze({
   // §92 : Foulée des fées — après chaque Foulée brumeuse, un effet de plus au choix : Foulée revigorante (1d10 PV temporaires, sur
   // soi ; « ou une créature que vous voyez à 3 m » : au MJ) ou Foulée narquoise (Sagesse pour les créatures à 1,50 m de la case
   // quittée, sinon « Narguée » : Désavantage aux attaques contre d'autres que vous, jusqu'au début de votre tour suivant).
+  // §302 : Combattant clairvoyant (Grand Ancien 10) — sauvegarde ratée : « Désavantage à ses jets d'attaque contre vous, Avantage aux vôtres
+  // contre elle, pendant le lien ». Durée : 10 minutes (le lien d'Esprit éveillé dure autant de minutes que le niveau ; à partir de 10).
+  "clairvoyant-combatant": {
+    effectDurations: { HMegeL0quWtCaUFV: { seconds: 600 } },
+    triggers: [
+      { on: "preAttackRoll", via: "effect", fromEffect: "HMegeL0quWtCaUFV", if: { "target.hasEffectFrom": "clairvoyant-combatant" }, do: [{ type: "advantage" }] },
+      { on: "preAttackRoll", via: "effect", fromEffect: "HMegeL0quWtCaUFV", if: { "source.hasEffectFromTarget": "clairvoyant-combatant" }, do: [{ type: "disadvantage" }] }
+    ]
+  },
   "steps-of-the-fey": {
     afterTeleport: { spells: ["misty-step"], options: [{ activity: "QUbshQXhUDQqlu2s" }, { activity: "48TdRWDqCVcC9mh4", around: "left" }] },
     triggers: [{ on: "preAttackRoll", via: "effect", fromEffect: "sERUxQRn17lzEQbl", if: { "source.hasEffect": "steps-of-the-fey", not: { "source.hasEffectFromTarget": "steps-of-the-fey" } },

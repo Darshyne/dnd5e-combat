@@ -13,6 +13,7 @@ import { armorHampers } from "./armor-training.mjs";
 import { rangeIssue } from "../core/range.mjs";
 import { verbalSpellBlocked, hampersRangedAttack, forbiddenAgainstCharmer, requiresSight, INCAPACITATING } from "../core/conditions.mjs";
 import { distanceBetween, rangeOf } from "./turn.mjs";
+import { lengthIn } from "./units.mjs";
 import { visionFacts, isVisionAvailable, canSee, tokenOnViewedScene } from "./vision.mjs";
 import { originItemOf, revealedInvisible, seesInvisible } from "./facts.mjs";
 import { grappledElsewhere } from "./grapple.mjs";
@@ -119,8 +120,22 @@ export function statusesOf(token, observer=null) {
   const statuses = Array.from(token?.actor?.statuses ?? []);
   // §16.36 : « ne peut pas bénéficier de l'état Invisible » (Poussière d'étoile, Lueurs féeriques) ; §161 : l'autre partie de
   // l'attaque voit l'Invisible (Détection de l'invisibilité).
-  const visible = revealedInvisible(token?.actor, observer?.actor) || seesInvisible(observer?.actor);
+  const visible = revealedInvisible(token?.actor, observer?.actor) || seesInvisible(observer?.actor) || truesees(observer, token);
   return visible ? statuses.filter(s => s !== "invisible") : statuses;
+}
+
+/**
+ * §302 (repasse C7) : la Vision véritable voit les créatures Invisibles à sa portée (Vision suprême, sens des monstres) — l'observateur
+ * a `senses.ranges.truesight` et la créature est à cette distance ou moins (distance 3D du moteur, unités converties).
+ */
+function truesees(observer, token) {
+  const senses = observer?.actor?.system?.attributes?.senses;
+  const range = Number(senses?.ranges?.truesight ?? 0);
+  if ( !(range > 0) || !token?.parent || (observer.parent !== token.parent) ) return false;
+  const units = token.parent.grid?.units ?? "ft";
+  const reach = lengthIn(range, senses.units ?? "ft", units);
+  const d = distanceBetween(observer, token)?.value;
+  return Number.isFinite(d) && (d <= reach + 1e-6);
 }
 
 /** Deux tokens sont-ils à 5 ft ou moins l'un de l'autre ? */

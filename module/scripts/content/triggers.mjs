@@ -277,7 +277,10 @@ export const TRIGGERS = Object.freeze({
   "ray-of-enfeeblement": [
     { on: "endOfTurn", via: "effect", fromEffect: "uaHZaHEalgWa6eoC", do: [{ type: "resave" }] },
     { on: "preAttackRoll", via: "effect", fromEffect: "yril8uhQgO1dR507", if: { "source.hasEffect": "ray-of-enfeeblement" },
-      do: [{ type: "disadvantage" }, { type: "consume", side: "source" }] }
+      do: [{ type: "disadvantage" }, { type: "consume", side: "source" }] },
+    // §302 : Affaibli — « Désavantage aux tests de Force… et aux jets d'attaque utilisant la Force » (la donnée ne fait que les tests).
+    { on: "preAttackRoll", via: "effect", fromEffect: "uaHZaHEalgWa6eoC", if: { "source.hasEffect": "ray-of-enfeeblement", "activity.ability": "str" },
+      do: [{ type: "disadvantage" }] }
   ],
   // Flèche acide de Melf : « 2d4 dégâts d'acide à la fin de son prochain tour » — l'effet « Lingering Acid »
   // (NgglkyjzTbDh5Loa) posé au toucher, l'activité « Dégâts d'acide persistants » (uAyE5DrJp0YpElcw, au niveau de lancement).

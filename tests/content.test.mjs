@@ -4,7 +4,7 @@ import { CONTENT, SHIPPED, SOURCES, registerTable, unregisterTable, registeredTa
 
 const facts = Object.fromEntries(["activity.type", "activity.isAttack", "activity.isSpell", "activity.isWeapon", "activity.identifier", "activity.id",
   "activity.hasProperty", "source.hasStatus", "source.hasEffect", "source.creatureType", "source.allyNearTarget", "source.summonNearTarget", "source.seesTarget",
-  "target.hasStatus", "target.hasEffect", "target.hasEffectFrom", "hit.stoppableBy", "damage.resisted", "target.grappledBySource", "target.wieldsProperty", "target.isSelf", "self.hasShield", "self.wieldsWeapon", "target.sizeAtMost", "target.within", "target.seesSource", "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "target.atZero", "target.isDead", "damage.hasType", "target.hpAtMost", "condition.gained",
+  "target.hasStatus", "target.hasEffect", "target.hasEffectFrom", "hit.stoppableBy", "damage.resisted", "target.grappledBySource", "target.wieldsProperty", "target.isSelf", "self.hasShield", "self.wieldsWeapon", "target.hasFeature", "activity.ability", "target.sizeAtMost", "target.within", "target.seesSource", "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "target.atZero", "target.isDead", "damage.hasType", "target.hpAtMost", "condition.gained",
   "target.wounded", "target.bloodied", "source.classLevelAtLeast", "target.nearSelf", "self.seesTarget", "target.hasNotActed", "source.onOwnTurn", "activity.dealsType", "source.hasFeature", "activity.cantripOf", "activity.school", "activity.enchantedBy", "source.wildShaped", "activity.classSpell", "source.resists", "source.nearSelf", "self.seesSource", "source.hasEffectFromTarget", "source.hasSense", "target.allied"].map(k => [k, true]));
 const MOMENTS_LIST = "isHit, isDamaged, leavesReach, enemyDisengages, enter, turnStart, turnEnd, moves, preDamageRoll, hit, failedSave, startOfTurn, endOfTurn, preAttackRoll, castsSpell, isMissed, enemyTurnEnd, isTargeted, isAttacked, enemyAttacks, allyAttacks, gainsCondition, allyIsHit, allyIsDamaged, enemyAttacked, falls, allyFalls";
 
@@ -157,17 +157,17 @@ describe("contenu livré", () => {
       "arcane-ward", "armor-of-agathys", "arms-of-hadar", "aspect-of-the-wilds", "assassinate", "athlete", "aura-of-authority",
       "aura-of-bravery", "aura-of-courage", "aura-of-devotion", "aura-of-life", "aura-of-protection", "aura-of-purity", "aura-of-vitality",
       "avatar-of-battle", "avenger-spirit", "avenging-angel", "bait-and-switch", "ball-bearings", "banishing-smite", "banishment",
-      "bastion-of-law", "beacon-of-hope", "befuddlement", "beguiling-defenses", "beguiling-magic", "bestow-curse", "bigbys-hand", "bite",
-      "black-tentacles", "blade-barrier", "blade-ward", "blazing-movement", "blessed-healer", "blessed-strikes",
+      "bastion-of-law", "beacon-of-hope", "befuddlement", "beguiling-defenses", "beguiling-magic", "beguiling-twist", "bestow-curse",
+      "bigbys-hand", "bite", "black-tentacles", "blade-barrier", "blade-ward", "blazing-movement", "blessed-healer", "blessed-strikes",
       "blessed-strikes-potent-spellcasting", "blessing-of-the-trickster", "blinding-smite", "blindness-deafness", "blink", "blur",
       "boon-of-combat-prowess", "boon-of-dimensional-travel", "boon-of-energy-resistance", "boon-of-fate", "boon-of-fortitude",
       "boon-of-irresistible-offense", "boon-of-recovery", "boon-of-speed", "boon-of-spell-recall", "boon-of-the-night-spirit",
       "boots-of-striding-and-springing", "brave", "breath-weapon", "brute-spirit", "bubble-dash", "bullseye-lantern", "call-lightning",
       "calm-emotions", "caltrops", "candle", "careful-spell", "cause-fear", "celestial-revelation", "chain-lightning", "channel-divinity",
       "channel-divinity-cleric", "charger", "charging-horn", "charm-monster", "charm-person", "chill-touch", "chromatic-orb",
-      "circle-of-mortality", "circle-of-power", "cloak-of-arachnida", "clockwork-cavalcade", "cloud-of-daggers", "cloudkill",
-      "clouds-jaunt", "combat-inspiration", "command", "commanders-strike", "commanding-presence", "compelled-duel", "compulsion",
-      "confusion", "conjure-animals", "conjure-barrage", "conjure-celestial", "conjure-elemental", "conjure-fey",
+      "circle-of-mortality", "circle-of-power", "clairvoyant-combatant", "cloak-of-arachnida", "clockwork-cavalcade", "cloud-of-daggers",
+      "cloudkill", "clouds-jaunt", "combat-inspiration", "command", "commanders-strike", "commanding-presence", "compelled-duel",
+      "compulsion", "confusion", "conjure-animals", "conjure-barrage", "conjure-celestial", "conjure-elemental", "conjure-fey",
       "conjure-minor-elementals", "conjure-volley", "conjure-woodland-beings", "contact-other-plane", "contagion", "continual-flame",
       "cordon-of-arrows", "corrosive-form", "cosmic-omen", "countercharm", "counterspell", "coward-spirit", "crossbow-expert",
       "crown-of-madness", "crusaders-mantle", "crusher", "cunning-action", "cunning-strike", "cutting-words", "dancing-lights",
@@ -968,5 +968,20 @@ describe("§301 : repasse, lot C6 (réactions et fenêtres jamais proposées)", 
     expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "use" }, { type: "cancel" }] }] })).toHaveLength(1);
     expect(validateEntry({ triggers: [{ on: "falls", do: [{ type: "use" }, { type: "reduce" }] }] })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "falls", do: [{ type: "reduce" }] }] })).toHaveLength(1);
+  });
+});
+
+describe("§302 : repasse, lot C7 (Avantage et Désavantage oubliés)", () => {
+  it("les déclarations du lot", () => {
+    expect(Object.keys(CONTENT["contagion"].effectChanges)).toHaveLength(6);
+    expect(CONTENT["contagion"].effectChanges.S8jxTZQbT8KKSg5V).toEqual([{ key: "system.abilities.str.save.roll.mode", type: "add", value: "-1" }]);
+    expect(CONTENT["beguiling-twist"].saveAdvantage).toEqual(["charmed", "frightened"]);
+    expect(CONTENT["hypnotic-pattern"].targets.unaffectedIf).toEqual({ "target.hasStatus": "blinded" });
+    expect(CONTENT["sleep"].targets.unaffectedIf.any).toContainEqual({ "target.hasFeature": "trance" });
+    expect(CONTENT["clairvoyant-combatant"].triggers.map(t => t.do[0].type)).toEqual(["advantage", "disadvantage"]);
+    expect(CONTENT["ray-of-enfeeblement"].triggers.at(-1).if["activity.ability"]).toBe("str");
+    for ( const id of ["contagion", "beguiling-twist", "hypnotic-pattern", "sleep", "clairvoyant-combatant", "ray-of-enfeeblement"] ) {
+      expect(validateEntry(CONTENT[id], { facts })).toEqual([]);
+    }
   });
 });

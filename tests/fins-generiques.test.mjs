@@ -79,7 +79,8 @@ describe("fins génériques — contenu livré", () => {
   it("les sorts de sauvegarde à concentration finissent quand personne n'est affecté", () => {
     for ( const id of ["hold-person", "banishment", "slow", "hypnotic-pattern", "polymorph"] ) {
       expect(CONTENT[id].endsWhen?.unaffected).toBe("failedSave");
-      expect(validateEntry(CONTENT[id])).toEqual([]);
+      // §302 : Motif hypnotique épargne une créature Aveuglée (`target.hasStatus`).
+      expect(validateEntry(CONTENT[id], { facts: { "target.hasStatus": true } })).toEqual([]);
     }
   });
 });

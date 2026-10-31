@@ -91,7 +91,7 @@ describe("contenu livré", () => {
     const provided = ["activity.type", "activity.isAttack", "activity.isSpell", "activity.isWeapon", "activity.identifier", "activity.id", "activity.hasProperty",
       "source.hasStatus", "source.hasEffect", "source.creatureType", "source.allyNearTarget", "source.summonNearTarget", "source.seesTarget",
       "target.hasStatus", "target.hasEffect", "target.hasEffectFrom", "target.sizeAtMost", "target.within", "target.seesSource",
-      "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "damage.hasType", "target.hpAtMost", "hit.stoppableBy"];
+      "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "damage.hasType", "target.hpAtMost", "hit.stoppableBy", "activity.ability"];
     const known = Object.fromEntries(provided.map(k => [k, true]));
     for ( const d of all ) expect(unknownFacts(d.if, known), d.id).toEqual([]);
   });

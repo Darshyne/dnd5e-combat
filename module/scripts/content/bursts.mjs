@@ -42,7 +42,9 @@ export const DUPLICATES = Object.freeze(["mirror-image"]);
 export const SAVE_ADVANTAGES = Object.freeze({ "fey-ancestry": ["charmed"], "magic-resistance": ["magic"],
   // Protection contre le poison : « Avantage aux jets de sauvegarde pour éviter ou faire cesser l'état Empoisonné » — le porteur
   // de l'effet du sort, pas le lanceur (adapter/saves.mjs, saveAdvantageAgainst).
-  "protection-from-poison": ["poisoned"] });
+  "protection-from-poison": ["poisoned"],
+  // §302 : Fascination détournée (Traqueur des ténèbres 11) — « Avantage aux sauvegardes pour éviter ou faire cesser Charmé ou Effrayé ».
+  "beguiling-twist": ["charmed", "frightened"] });
 
 /**
  * Ennemi tombé (§16.25, `onFell`) : Bénédiction du Ténébreux — « quand vous réduisez un ennemi à 0 PV […], ou si quelqu'un

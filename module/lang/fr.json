@@ -1686,6 +1686,8 @@
   "DND5ECOMBAT.Choisir.Aide": "Créatures que vous voyez dans un rayon de {radius} {units} : cochez celles qui sont affectées.",
   "DND5ECOMBAT.Choisir.Personne": "Aucune créature à portée.",
   "DND5ECOMBAT.Choisir.Ajouter": "Ajouter {item}",
+  "DND5ECOMBAT.Choisir.Max": "{max} au plus.",
+  "DND5ECOMBAT.Choisir.Reserve": "{item} : {total} PV répartis — {detail}",
   "DND5ECOMBAT.Choisir.Valider": "Utiliser",
   "DND5ECOMBAT.Choisir.Annuler": "Annuler",
   "DND5ECOMBAT.Choisir.Aucune": "Aucune créature choisie : rien n'est utilisé.",

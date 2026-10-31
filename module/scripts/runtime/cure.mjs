@@ -9,6 +9,7 @@ import { route } from "./router.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
 import { usageTokenOf } from "../adapter/turn.mjs";
+import { splitPool } from "../core/pools.mjs";
 import { log, loc, notice, viaOwnerOrGM } from "./shared.mjs";
 
 export const CURE_QUERY = `${MODULE_ID}.cure`;
@@ -66,6 +67,42 @@ export async function cureStatus(target, status) {
 }
 
 /**
+ * §296 : la réserve de l'activité (le jet de soin que dnd5e vient de lancer — son message `healing`, sinon la formule) répartie entre les
+ * créatures choisies : en PV (`hp`), plafonnés à la moitié des PV maximum (`cap: "halfMax"` : Survivance) ou au maximum, ou en PV
+ * temporaires (`temp` : Châtiment exaltant). Le jet de dnd5e n'est pas appliqué tel quel (adapter/usage.mjs, plan sans soin).
+ */
+async function sharePool(activity, pool, targets, results) {
+  const usage = results?.message?.id ?? null;
+  let total = 0;
+  for ( let waited = 0; usage && !total && (waited < 4000); waited += 200 ) {
+    const roll = game.messages.contents.findLast(m => (m.type === "healing") && (m._source.system?.origin === usage));
+    total = (roll?.rolls ?? []).reduce((sum, r) => sum + (r.total ?? 0), 0);
+    if ( !total ) await new Promise(resolve => setTimeout(resolve, 200));
+  }
+  if ( !total ) {
+    const formula = pool.formula ?? activity.healing?.formula ?? "0";
+    total = (await new Roll(formula, activity.getRollData?.() ?? {}).evaluate()).total ?? 0;
+  }
+  const caps = targets.map(t => {
+    if ( pool.temp ) return Infinity;
+    const hp = t.actor.system.attributes?.hp ?? {};
+    const max = hp.effectiveMax ?? hp.max ?? 0;
+    const ceiling = (pool.cap === "halfMax") ? Math.floor(max / 2) : max;
+    return Math.max(0, ceiling - (hp.value ?? 0));
+  });
+  const shares = splitPool(total, caps.map(c => (Number.isFinite(c) ? c : total)));
+  for ( const [i, target] of targets.entries() ) {
+    if ( !shares[i] ) continue;
+    if ( pool.temp ) await onTarget(target, "temphp", shares[i]);
+    else await onTarget(target, "hp", (target.actor.system.attributes.hp.value ?? 0) + shares[i]);
+  }
+  const detail = targets.map((t, i) => `${t.name} ${shares[i]}`).join(", ");
+  log(`${activity.item.name}: pool of ${total} — ${detail}`);
+  await ChatMessage.implementation.create({ speaker: ChatMessage.implementation.getSpeaker({ actor: activity.actor }),
+    content: `<p>${foundry.utils.escapeHTML(loc("Choisir.Reserve", { item: activity.item.name, total, detail }))}</p>` });
+}
+
+/**
  * §53 : `curesAll` — tous les états listés cessent sur la cible (Élixir de santé : Aveuglé, Assourdi, Paralysé, Empoisonné ;
  * Potion de vitalité : Épuisement et Empoisonné). La cible : la première du message, sinon l'utilisateur (une potion bue).
  */
@@ -81,6 +118,9 @@ async function onPostUseAll(activity, usageConfig, results) {
     const n = await onTarget(target, "curses", entry.endsCurses);
     log(`${activity.item.name}: ${n} curse effect(s) end on ${target.name}`);
   }
+  // §296 : une réserve à répartir (`healPool` : Survivance, Guérison de groupe, Cavalcade mécanique, Châtiment exaltant).
+  const pool = entry.healPool;
+  if ( pool?.activities?.includes(activity.id) && targets.length ) await sharePool(activity, pool, targets, results);
   // §160 : Mot de pouvoir fortifiant — « 120 PV temporaires répartis à parts égales entre les créatures choisies ».
   if ( entry.tempHpPool && targets.length ) {
     const share = Math.floor(entry.tempHpPool / targets.length);

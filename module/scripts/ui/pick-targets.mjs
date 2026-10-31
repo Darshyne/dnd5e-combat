@@ -10,11 +10,11 @@ import { loc } from "../runtime/shared.mjs";
 const esc = s => foundry.utils.escapeHTML(String(s ?? ""));
 
 export async function askPickTargets(activity) {
-  const { creatures, radius, units } = pickCandidates(activity, { seen: t => t.object?.visible !== false });
+  const { creatures, radius, units, max } = pickCandidates(activity, { seen: t => t.object?.visible !== false });
   const upgrade = upgradeOf(activity);
-  const rows = creatures.map(({ token, distance, enemy }, i) => `
+  const rows = creatures.map(({ token, distance }, i) => `
     <label class="dnd5e-combat-pick-row">
-      <input type="checkbox" name="pick" value="${i}" ${enemy ? "checked" : ""}>
+      <input type="checkbox" name="pick" value="${i}" ${creatures[i].checked ? "checked" : ""}>
       <img src="${esc(token.texture?.src)}" alt="">
       <span class="name">${esc(token.name)}</span>
       <span class="distance">${esc(`${Math.round(distance * 10) / 10} ${units}`)}</span>
@@ -24,7 +24,8 @@ export async function askPickTargets(activity) {
       <input type="checkbox" name="upgrade" checked>
       <span>${esc(loc("Choisir.Ajouter", { item: upgrade.item.name }))}</span>
     </label>` : "";
-  const content = `<p class="hint">${esc(loc("Choisir.Aide", { radius: Math.round(radius * 10) / 10, units }))}</p>
+  const limit = Number.isInteger(max) ? `<p class="hint">${esc(loc("Choisir.Max", { max }))}</p>` : "";
+  const content = `<p class="hint">${esc(loc("Choisir.Aide", { radius: Math.round(radius * 10) / 10, units }))}</p>${limit}
     <div class="dnd5e-combat-pick-list">${rows || `<p>${esc(loc("Choisir.Personne"))}</p>`}</div>${extra}`;
   const answer = await foundry.applications.api.DialogV2.wait({
     window: { title: activity.item?.name ?? activity.name, icon: "fa-solid fa-sun" },
@@ -35,7 +36,9 @@ export async function askPickTargets(activity) {
       { action: "ok", label: loc("Choisir.Valider"), icon: "fa-solid fa-check", default: true,
         callback: (event, button) => {
           const form = button.form;
-          const picked = Array.from(form.querySelectorAll('input[name="pick"]:checked')).map(i => creatures[Number(i.value)]?.token).filter(Boolean);
+          // §296 : au-delà de `max`, les plus proches cochées seulement.
+          const picked = Array.from(form.querySelectorAll('input[name="pick"]:checked')).map(i => creatures[Number(i.value)]?.token).filter(Boolean)
+            .slice(0, Number.isInteger(max) ? max : undefined);
           return { tokens: picked, upgrade: form.querySelector('input[name="upgrade"]')?.checked ? upgrade : null };
         } },
       { action: "cancel", label: loc("Choisir.Annuler"), icon: "fa-solid fa-xmark", callback: () => null }

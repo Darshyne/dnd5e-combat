@@ -375,9 +375,9 @@ function activityOn({ tokenId, itemId, activityId }) {
 function pickTargets(args) {
   const activity = activityOn(args);
   if ( !activity ) return { error: "activity not found" };
-  const { radius, units, creatures } = pickCandidates(activity);
-  return { radius, units, upgrade: upgradeOf(activity)?.item?.name ?? null,
-    creatures: creatures.map(c => ({ id: c.token.id, name: c.token.name, enemy: c.enemy, distance: c.distance })) };
+  const { radius, units, creatures, max } = pickCandidates(activity);
+  return { radius, units, max: max ?? null, upgrade: upgradeOf(activity)?.item?.name ?? null,
+    creatures: creatures.map(c => ({ id: c.token.id, name: c.token.name, enemy: c.enemy, checked: !!c.checked, distance: c.distance })) };
 }
 
 /** §293 : ce que fait « Utiliser » de la fenêtre — `targetIds` cochés, `upgrade` : la case de l'activité qui remplace. */

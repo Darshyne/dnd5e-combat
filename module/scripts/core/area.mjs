@@ -28,8 +28,8 @@ import { alliedSides } from "./factions.mjs";
  * @param {string} [options.affects]         `target.affects.type` de l'activité : "ally", "enemy", ou tout autre = tout le monde.
  * @returns {AreaCandidate[]}
  */
-export function selectAreaTargets(candidates, { origin, originDisposition, originSide=null, excludeOrigin, affects }) {
-  return candidates.filter(c => {
+export function selectAreaTargets(candidates, { origin, originDisposition, originSide=null, excludeOrigin, affects, max=null }) {
+  const chosen = candidates.filter(c => {
     if ( c.defeated || (c.lineOfEffect === false) || (c.inVolume === false) || (c.offPlane === true) ) return false;   // §225
     if ( c.token === origin ) return !excludeOrigin && (affects !== "enemy");
     if ( (affects !== "ally") && (affects !== "enemy") ) return true;
@@ -38,6 +38,9 @@ export function selectAreaTargets(candidates, { origin, originDisposition, origi
     const sameSide = alliedSides(c, originSide ?? { disposition: originDisposition });   // §181 : factions, sinon dispositions
     return affects === "ally" ? sameSide : !sameSide;
   });
+  // §296 (repasse C2) : « jusqu'à six créatures de votre choix » (Lenteur, Soins de groupe) — `max`, les plus proches du centre de la zone.
+  if ( !(Number.isInteger(max) && (max > 0)) || (chosen.length <= max) ) return chosen;
+  return [...chosen].sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity)).slice(0, max);
 }
 
 /* -------------------------------------------- */

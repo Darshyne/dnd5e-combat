@@ -15,7 +15,7 @@
 import { isThinWall, touchesWallRegion } from "./wall-side.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { rollerFor } from "./concentration.mjs";
-import { committedPosition, usageTokenOf } from "./turn.mjs";
+import { committedPosition, usageTokenOf, tokenCenter } from "./turn.mjs";
 import { areaOriginOf, reachesFromPoint, sphereOf, insideSphere, shapesReach } from "./space.mjs";
 import { effectOfProfile } from "./usage.mjs";
 import { timedWait, closeRollDialogAfter } from "./dialogs.mjs";
@@ -84,6 +84,8 @@ export async function readActivityRegion(region) {
     // « Vous pouvez désigner des créatures qui ne sont pas affectées » (`affects.choice`, Esprits gardiens) : par défaut,
     // les alliés du lanceur sont épargnés — le moteur ne pose pas la question (§16.23).
     affects: areaAffects(activity),
+    // §296 : le plafond de créatures de la zone (`zoneMax`), et la distance de chacune au centre pour le départager.
+    max: (activity?.item ? contentOf(activity.item).entry?.zoneMax : null) ?? null,
     // Appartenance calculée par le cœur (TokenDocument#testInsideRegion, client/documents/token.mjs:3236).
     // §169, §173 : un mur fin, posé entre les cases — « dans sa zone » à l'apparition : l'espace touche le mur.
     candidates: region.parent.tokens.filter(t => t.actor && !isObjectToken(t)
@@ -96,7 +98,8 @@ export async function readActivityRegion(region) {
       defeated: t.actor.statuses?.has(CONFIG.specialStatusEffects.DEFEATED) === true,
       // §286 : plusieurs formes (Nuée de météores, Tempête de feu) — chacune son origine ; prise une seule fois.
       ...(several ? shapesReach(region, activity, originToken, t) : { lineOfEffect: reachesFromPoint(areaOrigin, t), inVolume: insideSphere(sphere, t) }),
-      offPlane: originToken ? !samePlane(originToken, t) : false   // §225 : la zone est sur le plan de son lanceur
+      offPlane: originToken ? !samePlane(originToken, t) : false,   // §225 : la zone est sur le plan de son lanceur
+      distance: areaOrigin ? Math.hypot(tokenCenter(t).x - areaOrigin.x, tokenCenter(t).y - areaOrigin.y) : null
     }))
   };
 }

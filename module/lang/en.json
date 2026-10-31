@@ -1686,6 +1686,8 @@
   "DND5ECOMBAT.Choisir.Aide": "Creatures you can see within {radius} {units}: tick those affected.",
   "DND5ECOMBAT.Choisir.Personne": "No creature in range.",
   "DND5ECOMBAT.Choisir.Ajouter": "Add {item}",
+  "DND5ECOMBAT.Choisir.Max": "{max} at most.",
+  "DND5ECOMBAT.Choisir.Reserve": "{item}: {total} HP shared out — {detail}",
   "DND5ECOMBAT.Choisir.Valider": "Use",
   "DND5ECOMBAT.Choisir.Annuler": "Cancel",
   "DND5ECOMBAT.Choisir.Aucune": "No creature chosen: nothing is used.",

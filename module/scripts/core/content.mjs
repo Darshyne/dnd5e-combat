@@ -210,6 +210,12 @@
  *                                               s'il y a quelque chose à regagner)
  *     grantsConditionImmunities?: string[]      §295 : immunités d'état que l'item donne sans effet dans ses données (Protégé de dame
  *                                               Nature : Empoisonné) — dans l'effet tenu de `grantsSpeeds` (runtime/speed-grants.mjs)
+ *     zoneMax?: number                          §296 : au plus ce nombre de créatures dans la zone de l'item, les plus proches de son
+ *                                               centre (Lenteur, Soins de groupe : « jusqu'à six ») — core/area.mjs
+ *     healPool?: { activities, cap?: "halfMax", temp?: true, formula? }
+ *                                               §296 : le jet de soin de ces activités est une réserve répartie à parts égales entre les
+ *                                               cibles choisies (Survivance : plafond à la moitié des PV max ; `temp` : en PV temporaires,
+ *                                               Châtiment exaltant) — runtime/cure.mjs, core/pools.mjs
  *     flurryStrikes?: number                    §295 : le porteur de l'item frappe ce nombre de fois au Déluge de coups (Credo accru : 3)
  *     effectDurations?: { <id d'effet>: { seconds } }  §295 : la durée d'un effet de l'item à sa pose, quand la donnée se trompe
  *                                               (Présence intimidante : une minute, pas un round)

@@ -293,7 +293,8 @@ function casterRules(activity, plan, message=null) {
   if ( plan.damage && (level === 0) && has("potentCantrip") ) out.potent = true;
   // §157 : l'item lui-même fait la moitié des dégâts sur un raté (Flèche acide de Melf) — même règle, pour lui seul.
   if ( plan.damage && plan.attack && (contentOf(item).entry?.halfOnMiss === true) ) out.potent = true;
-  if ( plan.save && (spellSchoolOf(item) === "evo") && has("sculptSpells") ) out.sculpt = 1 + level;
+  // §296 : « 1 + le niveau du sort » — le niveau auquel il est lancé (dnd5e note la montée d'emplacement : `flags.dnd5e.scaling`).
+  if ( plan.save && (spellSchoolOf(item) === "evo") && has("sculptSpells") ) out.sculpt = 1 + level + (Number(message?.getFlag?.("dnd5e", "scaling")) || 0);
   // §32 : Métamagie portée par la carte — Sort prévenant : autant d'alliés que le modificateur de Charisme (au moins un) réussissent
   // d'office, comme le Façonneur de sorts ; Sort intensifié : la première cible hostile a le Désavantage (adapter/saves.mjs).
   const meta = usageMetamagic(message);
@@ -387,6 +388,11 @@ function readPlan(message) {
       // §24 : Parade — le « soin » n'est qu'un montant retiré aux dégâts (adapter/reactions.mjs) : rien à appliquer.
       if ( message.getFlag?.(MODULE_ID, "reduceOnly") ) return null;
       // §164 : rejouée par une zone (Lumière guérisseuse d'Invocation de céleste), personne n'a cliqué — le moteur lance les soins.
+      // §296 : une réserve à répartir (`healPool` : Survivance, Guérison de groupe) — runtime/cure.mjs l'applique, pas le jet de dnd5e.
+      if ( contentOf(activity.item).entry?.healPool?.activities?.includes(activity.id) ) {
+        const effects = effectsOf(activity, () => "always");
+        return effects.length ? { ...common, targets, plan: { effects } } : null;
+      }
       return { ...common, targets, plan: { damage: message.getFlag?.(MODULE_ID, "areaTick") ? "author" : "system", heal: true, effects: effectsOf(activity, () => "always") } };
     case "utility":
       // §226 : Silence — ses effets n'existent que dans sa zone (`effectsOf` n'en rend aucun) : rien à résoudre.

@@ -14,6 +14,10 @@ import { samePlane } from "./plane.mjs";
 import { areEnemies } from "./factions.mjs";
 import { excludedByRule } from "./eligibility.mjs";
 
+/** En sang : à la moitié de ses PV maximum ou moins (et pas à 0 : Survivance ne relève personne). */
+const isBloodied = actor => { const hp = actor?.system?.attributes?.hp ?? {}; const max = hp.effectiveMax ?? hp.max ?? 0;
+  return (max > 0) && (hp.value > 0) && (hp.value <= max / 2); };
+
 /**
  * Les cibles d'un message d'utilisation, comme dnd5e les écrit (`TargetsField.getDescriptors`, data/chat-message/fields/targets-field.mjs:32).
  * Le message d'une utilisation suspendue (la fenêtre de choix) les a déjà prises, vides : la relance les pose elle-même.
@@ -54,12 +58,19 @@ export function pickCandidates(activity, { seen=() => true }={}) {
   const radius = lengthIn(rule.radius, rule.units, units);
   const creatures = [];
   for ( const token of caster.parent.tokens ) {
-    if ( (token === caster) || !token.actor || token.hidden || isObjectToken(token) || isDefeated(token) ) continue;
+    // §296 : `self` — le lanceur aussi (Lueur d'espoir, Survivance : « vous compris »).
+    if ( ((token === caster) && !rule.self) || !token.actor || token.hidden || isObjectToken(token) || isDefeated(token) ) continue;
     if ( !samePlane(caster, token) || !seen(token) || excludedByRule(activity, token) ) continue;
-    const distance = distanceBetween(caster, token).value;
+    // §296 : `filter: "bloodied"` — seulement les créatures En sang, à la moitié de leurs PV ou moins (Survivance).
+    if ( (rule.filter === "bloodied") && !isBloodied(token.actor) ) continue;
+    const distance = (token === caster) ? 0 : distanceBetween(caster, token).value;
     if ( distance > radius + 1e-6 ) continue;
-    creatures.push({ token, distance, enemy: areEnemies(caster, token) });
+    const enemy = (token !== caster) && areEnemies(caster, token);
+    creatures.push({ token, distance, enemy, checked: (rule.check === "allies") ? !enemy : enemy });
   }
   creatures.sort((a, b) => (a.distance - b.distance) || a.token.name.localeCompare(b.token.name));
-  return { caster, radius, units, creatures };
+  // §296 : `max` — « une créature de votre choix », « jusqu'à six » : pas plus de cochées d'avance que permis.
+  let left = Number.isInteger(rule.max) ? rule.max : Infinity;
+  for ( const c of creatures ) if ( c.checked ) { if ( left > 0 ) left--; else c.checked = false; }
+  return { caster, radius, units, creatures, max: Number.isInteger(rule.max) ? rule.max : null };
 }

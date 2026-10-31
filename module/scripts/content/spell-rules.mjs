@@ -99,7 +99,8 @@ export const SPELL_RULES = Object.freeze({
   },
   // Secouer un dormeur : « quelqu'un prend une action pour la secouer » — Sommeil (à 1,50 m), Motif hypnotique, Mauvais œil
   // (« Asleep »), Symbole (« Sleeping »).
-  "sleep": { actionEnds: { "04Wa4xUzjA31kPno": { by: "other", verb: "wake" } } },
+  // §296 : « chaque créature de votre choix dans la sphère » — les alliés épargnés.
+  "sleep": { actionEnds: { "04Wa4xUzjA31kPno": { by: "other", verb: "wake" } }, zoneAffects: "enemy" },
   "hypnotic-pattern": { actionEnds: { mjAs8ssQlgp0AQOp: { by: "other", verb: "wake" } } },
   "eyebite": { actionEnds: { "5btX5iwwleMMzkvj": { by: "other", verb: "wake" } } },
   // §91 : Symbole, Discorde — « ses tests de caractéristique s'effectuent avec le Désavantage » (l'effet de la donnée est vide).
@@ -283,7 +284,9 @@ export const SPELL_RULES = Object.freeze({
   // de groupe : idem, sur chaque cible (la réserve de 700 PV à répartir : au MJ — chaque cible regagne jusqu'à 700) ; Mot de pouvoir
   // guérisseur : « Charmé, Effrayé, Paralysé, Empoisonné, Étourdi prennent fin » (se relever par sa Réaction : au joueur).
   "heal": { curesAll: ["blinded", "deafened", "poisoned"] },
-  "mass-heal": { curesAll: ["blinded", "deafened", "poisoned"] },
+  // §296 : « jusqu'à 700 PV répartis entre autant de créatures que vous voulez à portée (18 m) » — la liste, puis la réserve partagée.
+  "mass-heal": { curesAll: ["blinded", "deafened", "poisoned"], healPool: { activities: ["eCa5jzMXR0Pgp3ZV"] },
+    pickTargets: { activities: ["eCa5jzMXR0Pgp3ZV"], radius: 60, units: "ft", self: true, check: "allies" } },
   "power-word-heal": { curesAll: ["charmed", "frightened", "paralyzed", "poisoned", "stunned"] },
   // Délivrance des malédictions : « toutes les malédictions qui affectent une créature prennent fin » — celles des sorts.
   "remove-curse": { endsCurses: ["bestow-curse", "hex"] },
@@ -432,6 +435,10 @@ export const SPELL_RULES = Object.freeze({
   // Bouclier : « jusqu'au début de votre prochain tour » ; lancé en Réaction au tour d'un ennemi, la durée « 1 round » de la donnée se
   // comptait depuis ce combattant.
   "shield": { effectEnds: { Bv3EoHGfYCprLdG1: "casterTurnStart" } },
+  // §296 (lot C2) — Lenteur : « jusqu'à six créatures de votre choix dans un cube de 12 m » ; Lueur d'espoir : « autant de créatures que
+  // vous voulez à portée (9 m) », vous compris. (Soins de groupe, soin d'une zone : reporté, le jet de dnd5e part avant la zone.)
+  "slow": { zoneAffects: "enemy", zoneMax: 6 },
+  "beacon-of-hope": { pickTargets: { activities: ["dnd5eactivity000"], radius: 30, units: "ft", self: true, check: "allies" } },
   // Agrandissement/rapetissement (et Lévitation, plus haut) : seule une créature NON consentante sauvegarde — un allié rate d'office.
   "enlarge-reduce": { willingFails: true },
   // Aura sacrée : l'attaquant Fiélon ou Mort-vivant est Aveuglé « jusqu'à la fin de son prochain tour ».

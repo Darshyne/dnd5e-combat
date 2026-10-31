@@ -22,6 +22,9 @@ const LAY_ON_HANDS = ["gXZh9aGHcywV9huC", "K6UeXQwTyDHWvis8"];
 export const PALADIN = Object.freeze({
   // §123 : Imposition des mains — « touchez une créature (vous y compris) » ; les données du Manuel des joueurs disent « personnelle »,
   // et le moteur soignait toujours le paladin. Au contact : la visée s'ouvre, on clique la créature (soi compris).
+  // §296 : Châtiment exaltant — « 2d8 + niveau de Paladin PV temporaires répartis entre des créatures de votre choix à 9 m, vous compris ».
+  "inspiring-smite": { pickTargets: { activities: ["oBkPCmC2KsH2WUJp"], radius: 30, units: "ft", self: true, check: "allies" },
+    healPool: { activities: ["oBkPCmC2KsH2WUJp"], temp: true } },
   // §295 : « 5 points de la réserve pour retirer l'état Empoisonné » — l'activité « Remove Poison » paie sans rien retirer.
   "lay-on-hands": { ranges: Object.fromEntries(LAY_ON_HANDS.map(id => [id, { value: 5, units: "ft" }])), cures: ["poisoned"], curesOn: "K6UeXQwTyDHWvis8" },
   // §124 : Champion ancestral et Nimbe sacré — « imprégnez votre Aura de protection » : la transformation (son effet) est pour le

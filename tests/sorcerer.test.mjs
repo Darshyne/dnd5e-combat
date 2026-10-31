@@ -5,7 +5,7 @@ import { CONTENT } from "../module/scripts/content/index.mjs";
 describe("§32 Ensorceleur : schéma et contenu", () => {
   it("la clé metamagic", () => {
     expect(validateEntry({ metamagic: { activity: "leFbHb9SZwDix2TU", kind: "quickened" } })).toEqual([]);
-    expect(validateEntry({ metamagic: { activity: "leFbHb9SZwDix2TU", kind: "twinned" } }))
+    expect(validateEntry({ metamagic: { activity: "leFbHb9SZwDix2TU", kind: "empowered" } }))
       .toEqual([`metamagic: { activity, kind: ${METAMAGIC_KINDS.join(" | ")} }`]);
   });
   it("les options de Métamagie livrées", () => {

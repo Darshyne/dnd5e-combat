@@ -26,6 +26,7 @@ import { concentrationOn } from "../adapter/summons.mjs";
 import { engage, castOnTargets, lineDashOf } from "../runtime/actions.mjs";
 import { movableZoneOf, moveZone, tooFarForZone } from "../runtime/zones.mjs";
 import { castWithPicks } from "../runtime/projectiles.mjs";
+import { pendingMetamagic } from "../adapter/metamagic.mjs";
 import { castLight, putOutLight } from "../runtime/lights.mjs";
 import { lightChoiceOf } from "../adapter/lights.mjs";
 import { askLightChoice } from "./light.mjs";
@@ -746,7 +747,9 @@ async function startGroup(token, activity, usageConfig, dialogConfig, messageCon
   const chosen = await configureFirst(activity, usageConfig, dialogConfig);
   if ( !chosen ) return;
   const usage = [chosen.config, noDialog(dialogConfig), messageConfig];
-  const count = targetCount(activity, { level: chosen.level });
+  // §296 : Sort jumeau — « augmente de 1 le niveau effectif du sort » : une cible de plus que l'emplacement dépensé.
+  const twinned = pendingMetamagic(activity.actor).includes("twinned");
+  const count = targetCount(activity, { level: twinned ? ((chosen.level ?? Number(activity.item?.system?.level) ?? 0) + 1) : chosen.level });
   clearTargets();
   markTargeting();
   if ( count <= 1 ) {

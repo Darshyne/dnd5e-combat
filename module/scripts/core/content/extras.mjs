@@ -26,6 +26,16 @@ export function validateExtras(entry, at, errors) {
     && entry.grantsConditionImmunities.every(s => (typeof s === "string") && /^[a-z]+$/.test(s))) ) {
     errors.push(`${at}grantsConditionImmunities: list of condition ids`);
   }
+  // §296 : plafond de créatures d'une zone ; réserve de soins ou de PV temporaires à répartir.
+  if ( ("zoneMax" in entry) && !(Number.isInteger(entry.zoneMax) && (entry.zoneMax > 0)) ) errors.push(`${at}zoneMax: positive integer`);
+  if ( "healPool" in entry ) {
+    const h = entry.healPool;
+    if ( !isObject(h) || !Array.isArray(h.activities) || !h.activities.length || !h.activities.every(isId)
+      || (("cap" in h) && (h.cap !== "halfMax")) || (("temp" in h) && (h.temp !== true)) || (("formula" in h) && (typeof h.formula !== "string"))
+      || !Object.keys(h).every(k => ["activities", "cap", "temp", "formula"].includes(k)) ) {
+      errors.push(`${at}healPool: { activities, cap?: "halfMax", temp?: true, formula? }`);
+    }
+  }
   if ( "pickTargets" in entry ) {
     const p = entry.pickTargets;
     if ( !isObject(p) ) errors.push(`${at}pickTargets: { activities, radius, units, upgrade? }`);
@@ -36,7 +46,12 @@ export function validateExtras(entry, at, errors) {
       if ( ("upgrade" in p) && !(isObject(p.upgrade) && (typeof p.upgrade.item === "string") && p.upgrade.item && isId(p.upgrade.activity)) ) {
         errors.push(`${at}pickTargets.upgrade: { item: identifier, activity: activity id }`);
       }
-      for ( const key of Object.keys(p) ) if ( !["activities", "radius", "units", "upgrade"].includes(key) ) errors.push(`${at}pickTargets.${key}: unknown key`);
+      // §296 : `max` (nombre de créatures), `self` (le lanceur aussi), `check` (qui est coché d'avance), `filter` (« bloodied »).
+      if ( ("max" in p) && !(Number.isInteger(p.max) && (p.max > 0)) ) errors.push(`${at}pickTargets.max: positive integer`);
+      if ( ("self" in p) && (p.self !== true) ) errors.push(`${at}pickTargets.self: true or absent`);
+      if ( ("check" in p) && !["enemies", "allies"].includes(p.check) ) errors.push(`${at}pickTargets.check: enemies, allies`);
+      if ( ("filter" in p) && (p.filter !== "bloodied") ) errors.push(`${at}pickTargets.filter: bloodied`);
+      for ( const key of Object.keys(p) ) if ( !["activities", "radius", "units", "upgrade", "max", "self", "check", "filter"].includes(key) ) errors.push(`${at}pickTargets.${key}: unknown key`);
     }
   }
   // §188 : une activité qui remplace une attaque — tout l'item (`true`) ou certaines activités (l'Huile : le lancer, pas l'étalage).

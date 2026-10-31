@@ -50,19 +50,14 @@ export default {
     const before = await granted();
     ctx.expect(before >= 2, `sans Lenteur : l'action Attaquer ouvre ${before} attaques`);
 
-    await ctx.ensureItem(mage, "Compendium.dnd-players-handbook.spells.Item.phbsplSlow000000", { system: { method: "atwill" } });
-    let slowed = false;
-    for ( let i = 0; (i < 20) && !slowed; i++ ) {
-      await drop(); await pause(500);
-      const b = await ctx.box(guerrier);
-      const used = await ctx.use({ tokenId: mage.id, identifier: "slow", activityType: "save", targetTokenIds: [guerrier.id],
-        area: { shape: "rectangle", x: b.x, y: b.y, width: grid, height: grid } });
-      if ( used.regionId ) ctx.restore(() => ctx.call("delete-scene-object", { type: "Region", objectId: used.regionId }).catch(() => {}));
-      await ctx.settle(used.usageMessageId).catch(() => null);
-      await pause(1500);
-      slowed = (await ctx.effectsFrom(guerrier, "slow")).length > 0;
-    }
-    if ( !ctx.expect(slowed, "le Paladin est ralenti (20 essais au plus)") ) return;
+    // §296 : Lenteur épargne désormais les alliés du lanceur (« jusqu'à six créatures de votre choix ») — le Magicien ne peut plus
+    // ralentir le Paladin par le sort : l'effet « Slowed » du sort est posé directement, comme si le Paladin avait raté sa sauvegarde.
+    const slowId = await ctx.ensureItem(mage, "Compendium.dnd-players-handbook.spells.Item.phbsplSlow000000", { system: { method: "atwill" } });
+    await drop(); await pause(500);
+    await ctx.engine("placeItemEffect", { tokenId: guerrier.id, casterId: mage.id, itemId: slowId, effectId: "z1lkguBohjqXRSHm" });
+    await pause(1500);
+    const slowed = (await ctx.effectsFrom(guerrier, "slow")).length > 0;
+    if ( !ctx.expect(slowed, "le Paladin porte l'effet de Lenteur") ) return;
     const after = await granted();
     ctx.expect(after === 1, `ralenti : une seule attaque (${after})`);
   }

@@ -12,6 +12,20 @@ import { isId, isObject } from "./shared.mjs";
 export function validateExtras(entry, at, errors) {
   // §293 : « chaque créature de votre choix dans un rayon de… » — la liste des créatures à portée, cochées par le joueur, devient les cibles
   // de l'activité ; `upgrade` : une autre activité (d'un autre item du lanceur) qui peut la remplacer, proposée par une case.
+  // §295 : le Déluge de coups ouvre plus de frappes (Credo accru) ; la durée d'un effet de l'item (la donnée se trompe) ; des
+  // immunités d'état sans effet dans la donnée (Protégé de dame Nature).
+  if ( ("flurryStrikes" in entry) && !(Number.isInteger(entry.flurryStrikes) && (entry.flurryStrikes > 0)) ) errors.push(`${at}flurryStrikes: positive integer`);
+  if ( "effectDurations" in entry ) {
+    const d = entry.effectDurations;
+    if ( !isObject(d) || !Object.keys(d).length || !Object.entries(d).every(([id, v]) => isId(id) && isObject(v)
+      && Number.isInteger(v.seconds) && (v.seconds > 0) && Object.keys(v).every(k => k === "seconds")) ) {
+      errors.push(`${at}effectDurations: { effect id: { seconds } }`);
+    }
+  }
+  if ( ("grantsConditionImmunities" in entry) && !(Array.isArray(entry.grantsConditionImmunities) && entry.grantsConditionImmunities.length
+    && entry.grantsConditionImmunities.every(s => (typeof s === "string") && /^[a-z]+$/.test(s))) ) {
+    errors.push(`${at}grantsConditionImmunities: list of condition ids`);
+  }
   if ( "pickTargets" in entry ) {
     const p = entry.pickTargets;
     if ( !isObject(p) ) errors.push(`${at}pickTargets: { activities, radius, units, upgrade? }`);

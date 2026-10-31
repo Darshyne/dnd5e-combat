@@ -36,7 +36,8 @@ async function sync(actor) {
   const facts = effectFacts(actor);
   for ( const { item, effect, rule } of list ) {
     const update = {};
-    const disabled = !effectHolds(rule.if ?? {}, facts);
+    // §295 : sans `if`, l'effet garde l'état que le joueur lui donne (choix de l'Aspect des fauves) ; seuls ses changements sont réécrits.
+    const disabled = rule.if ? !effectHolds(rule.if, facts) : effect.disabled;
     if ( effect.disabled !== disabled ) update.disabled = disabled;
     if ( rule.changes && !sameChanges(effect.system?.changes ?? effect.changes ?? [], rule.changes) ) update["system.changes"] = rule.changes;
     if ( !Object.keys(update).length ) continue;

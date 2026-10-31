@@ -50,9 +50,10 @@ async function resolveCatalyst(actor) {
     log(`${item.name}: ${actor.name} resists the change (${result.total} vs DC ${dc})`);
     return { success: true };
   }
-  // Le lancement gratuit, s'il reste : l'activité de Forme alternative (elle dépense l'utilisation de l'item).
+  // Le lancement gratuit, s'il reste : l'activité de Forme alternative. §295 : son utilisation (« une fois par Repos long ») est comptée
+  // sur l'activité dans la donnée de Ravenloft, l'item n'en a pas — l'item seulement à défaut.
   const cast = item.system.activities?.get(rule.cast);
-  const uses = item.system.uses;
+  const uses = Number(cast?.uses?.max) ? cast.uses : item.system.uses;
   const left = Number(uses?.max) ? (Number(uses.value) || 0) : 0;
   let outcome = "stunned";
   if ( cast && (left > 0) ) {

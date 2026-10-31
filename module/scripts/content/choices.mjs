@@ -38,5 +38,8 @@ export const CHOICES = Object.freeze({
   // Apaisement des émotions — « choisissez l'un des deux effets » (Apaisé, Indifférence).
   "calm-emotions": { effects: "one" },
   // Contagion — « choisissez une caractéristique » (six effets Infecté).
-  "contagion": { effects: "one" }
+  "contagion": { effects: "one" },
+  // §295 : Magie envoûtante (Collège du savoir) — « Charmé ou Effrayé (au choix) » ; Emprisonnement — « l'un des effets suivants ».
+  "beguiling-magic": { effects: "one" },
+  "imprisonment": { effects: "one" }
 });

@@ -15,6 +15,9 @@ export const FEATS = Object.freeze({
   // Sauvagerie martiale : « une fois par tour, quand vous touchez avec une arme, lancez ses dés de dégâts deux fois, gardez l'un ou
   // l'autre » (runtime/feats.mjs).
   "savage-attacker": { savageAttacker: true },
+  // §295 : l'aptitude d'historique Soldat (Heroes of the Borderlands) — « une fois par tour, au coup d'une arme, ses dés lancés deux
+  // fois » : la même règle que Sauvagerie martiale.
+  "soldier-feature": { savageAttacker: true },
   // Chanceux : « quand vous lancez un d20 pour un Test d20, 1 point de chance pour l'Avantage » — proposé après le jet (attaque ratée,
   // sauvegarde ratée demandée par le moteur, test de caractéristique) : le d20 relancé, le meilleur gardé. « Quand une créature lance un
   // d20 pour une attaque contre vous, 1 point pour lui imposer le Désavantage » — avant son jet, sans coûter la Réaction (`free`).

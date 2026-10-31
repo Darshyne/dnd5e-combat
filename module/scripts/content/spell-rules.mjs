@@ -16,6 +16,8 @@
  *    nécrotiques de plus » — sur l'item du lanceur, comme Maléfice.
  */
 const BESTOW_CURSE = {
+  // §295 : « Curse Resilience » porte 1d8 nécrotiques sur sa sauvegarde dans la donnée ; ces dés ne tombent qu'aux coups suivants.
+  noDamage: ["fkQUKM8bxHgAUcg5"],
   choice: {
     effects: "one",
     pool: { PYFPZ4aLWjKJ1tLZ: ["m5aRx9iXnJi2WWPU", "pG5HdDpW8VELR1O3", "BXWN6AGeNbxrRBUZ", "eA7PgIuucNGqZ1AS", "qLBTtRHOpGfv4IAb", "2Xjz5PKhyDferpZ7"] }
@@ -47,7 +49,9 @@ export const SPELL_RULES = Object.freeze({
       UhFtBDEZEDpVgz9G: DANCE_IN_PLACE
     } },
   // Forme gazeuse : « ou si elle prend une action Magie pour mettre fin au sort sur elle-même ».
-  "gaseous-form": { actionEnds: { QeYsfnjEj2T9A3C8: { by: "bearer" } } },
+  // §295 : « le sort prend fin si la cible tombe à 0 PV » ; « son seul mode de déplacement est une vitesse de vol de 3 m ».
+  "gaseous-form": { actionEnds: { QeYsfnjEj2T9A3C8: { by: "bearer" } }, endsWhen: { zeroHp: true },
+    effectChanges: { QeYsfnjEj2T9A3C8: ["walk", "swim", "climb", "burrow"].map(m => ({ key: `system.attributes.movement.${m}`, type: "override", value: "0" })) } },
   // Tremblement de terre, « Buried in Rubble » : « un test de Force (Athlétisme) DD 20 par une action pour s'en extraire ».
   // §91 : « à l'incantation et à la fin de chacun de vos tours, chaque créature au contact du sol de la zone fait un JS de Dextérité ;
   // en cas d'échec, À terre et sa Concentration rompue » — la sauvegarde de l'incantation rejouée à la fin des tours du lanceur, sur
@@ -381,7 +385,9 @@ export const SPELL_RULES = Object.freeze({
   // Lévitation : la cible s'élève de 6 m ; « quand le sort prend fin, elle redescend doucement jusqu'au sol si elle est encore en l'air »
   // (se déplacer par une action Magie : au MJ). §195 : tant qu'elle lévite, elle ne tombe pas — l'effet porte l'immunité à « En chute »
   // de dnd5e, qui sinon la ferait chuter dès qu'elle s'élève ; l'effet fini, elle se pose sur le sol que dnd5e trouve sous elle, sans dégâts.
+  // §295 : seule une créature non consentante sauvegarde.
   "levitate": {
+    willingFails: true,
     levitate: { effect: "axhLHcJQHprSpHRD", height: 20, units: "ft" },
     effectChanges: { axhLHcJQHprSpHRD: [{ key: "system.traits.ci.value", type: "add", value: "falling" }] }
   },
@@ -421,5 +427,17 @@ export const SPELL_RULES = Object.freeze({
     selfZone: { dnd5eactivity000: { type: "radius", size: 10, units: "ft" } },
     zoneAffects: "enemy",
     triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay", activity: "UkXLSgFbCBI9CHMf" }] }]
-  }
+  },
+  // §295 (repasse terme par terme, lot C1) —
+  // Bouclier : « jusqu'au début de votre prochain tour » ; lancé en Réaction au tour d'un ennemi, la durée « 1 round » de la donnée se
+  // comptait depuis ce combattant.
+  "shield": { effectEnds: { Bv3EoHGfYCprLdG1: "casterTurnStart" } },
+  // Agrandissement/rapetissement (et Lévitation, plus haut) : seule une créature NON consentante sauvegarde — un allié rate d'office.
+  "enlarge-reduce": { willingFails: true },
+  // Aura sacrée : l'attaquant Fiélon ou Mort-vivant est Aveuglé « jusqu'à la fin de son prochain tour ».
+  "holy-aura": { effectEnds: { wqBjgsd2xRnmSm8Z: "bearerTurnEnd" } },
+  // Contact avec les plans : 6d6 psychiques « sur un échec » seulement (la donnée : la moitié sur une réussite).
+  "contact-other-plane": { saveDamage: { dnd5eactivity000: "none" } },
+  // Quête : les 5d10 ne tombent que si la cible désobéit (au MJ, dégâts de l'effet) — pas au lancement.
+  "geas": { noDamage: ["dnd5eactivity000"] }
 });

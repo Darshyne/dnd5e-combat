@@ -31,6 +31,12 @@ export const BARBARIAN = Object.freeze({
   // §236 : Puissance indomptable (niveau 18) — « si votre total pour un test ou un jet de sauvegarde de Force est inférieur à votre valeur
   // de Force, vous pouvez utiliser cette valeur à la place » (runtime/feats.mjs : le minimum du d20).
   "indomitable-might": { scoreFloor: ["str"] },
+  // §295 (repasse) : Présence intimidante — Effrayée « pendant 1 minute » (la donnée : un round), la sauvegarde rejouée à la fin de
+  // chacun de ses tours (content/triggers.mjs).
+  "intimidating-presence": { effectDurations: { "3LofAPFLZJMQJirN": { seconds: 60 } } },
+  // §295 : Aspect des fauves, Hibou — la clé de la donnée n'a pas le préfixe `system.` : pas de vision dans le noir. L'aspect reste au
+  // choix du joueur (effet activé à la main) ; seul le changement est réécrit.
+  "aspect-of-the-wilds": { effectWhile: { CKLB1VHUlPsgOJxp: { changes: [{ key: "system.attributes.senses.ranges.darkvision", type: "add", value: "60" }] } } },
   // Concentration fanatique (Zélateur 6) : « une fois par Rage active, si vous ratez un jet de sauvegarde, vous pouvez le relancer avec
   // un bonus égal à vos dégâts de Rage, et vous devez utiliser le nouveau jet » — les sauvegardes que le moteur lit.
   "fanatical-focus": { rollBonus: { on: ["save"], reroll: { bonus: "@scale.barbarian.rage-damage", during: "rage" } } },

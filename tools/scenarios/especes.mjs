@@ -4,7 +4,7 @@
  *  - Acharnement (Orc) : tombé à 0 PV, le Guerrier reste à 1 PV, l'utilisation dépensée ; la fois suivante, il tombe ;
  *  - Brûlure ignée (Goliath) : la question au coup, « Brûlure ignée » → +1d10 feu, une utilisation dépensée ;
  *    Renversement des coteaux → le Bandit À terre ;
- *  - Endurance de la pierre (Goliath) : le Bandit touche → réaction, dégâts réduits du jet + Constitution ;
+ *  - Endurance de la pierre (Goliath) : le Bandit touche → réaction, dégâts réduits du jet (1d12 + Constitution, §295) ;
  *  - Tonnerre des cieux (Goliath) : le Bandit blesse le Guerrier → réaction, le Bandit subit des dégâts de tonnerre ;
  *  - Révélation céleste (Aasimar) : transformé, + bonus de maîtrise radiants au premier coup du tour ;
  *  - Poussée d'adrénaline (Orc) : Foncer par une action Bonus ;
@@ -192,7 +192,8 @@ export default {
       const dealt = (res.msgs.find(m => (m.type === "damage") && (m.alias === "Bandit"))?.rolls ?? []).reduce((s, x) => s + (x.total ?? 0), 0);
       const rolled = (res.msgs.find(m => (m.type === "healing") || ((m.type === "damage") && (m.alias !== "Bandit")))?.rolls ?? []).reduce((s, x) => s + (x.total ?? 0), 0);
       const lost = homes.get(hero.id).hp - (await ctx.hp(hero));
-      ctx.expect(!!res.t.reaction && (lost === Math.max(0, dealt - (rolled + con))), `« ${res.t.reaction} » : ${dealt} dégâts, réduits de ${rolled} + ${con} → ${lost} PV perdus`);
+      // §295 : le jet de l'activité porte déjà la Constitution (« 1d12 + @abilities.con.mod ») — elle n'est plus ajoutée une seconde fois.
+      ctx.expect(!!res.t.reaction && (lost === Math.max(0, dealt - rolled)), `« ${res.t.reaction} » : ${dealt} dégâts, réduits de ${rolled} (Constitution ${con} comprise) → ${lost} PV perdus`);
       await unlend(item);
     });
 

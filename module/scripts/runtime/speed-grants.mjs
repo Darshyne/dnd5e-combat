@@ -40,10 +40,12 @@ function wantedOf(actor) {
   const out = new Map();
   for ( const item of actor?.items ?? [] ) {
     const entry = contentOf(item).entry;
-    if ( !(entry?.grantsSpeeds || entry?.grantsResistances) || !worn(item) ) continue;
+    if ( !(entry?.grantsSpeeds || entry?.grantsResistances || entry?.grantsConditionImmunities) || !worn(item) ) continue;
     // §236 : les Résistances accordées (Avatar de la bataille) — la forme des données de dnd5e (Rage : `system.traits.dr.value`, « add »).
     const changes = [...grantedSpeedChanges(entry.grantsSpeeds ?? {}, walk),
-      ...(entry.grantsResistances ?? []).map(type => ({ key: "system.traits.dr.value", type: "add", value: type }))];
+      ...(entry.grantsResistances ?? []).map(type => ({ key: "system.traits.dr.value", type: "add", value: type })),
+      // §295 : immunités d'état (Protégé de dame Nature : Empoisonné).
+      ...(entry.grantsConditionImmunities ?? []).map(status => ({ key: "system.traits.ci.value", type: "add", value: status }))];
     if ( changes.length ) out.set(item.id, { item, changes, speed: !!entry.grantsSpeeds });
   }
   return out;

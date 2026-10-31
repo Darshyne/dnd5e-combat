@@ -65,16 +65,18 @@ export function beatsAcBy(target, roll, margin) {
  * est gardé ; un lancer ou une main secondaire ne changent pas.
  * §151 : une arme dont les dégâts à deux mains sont vides (formule personnalisée activée mais vide — la Lance des personnages
  * pré-tirés du Manuel, celle des gardes du Bestiaire) reste à une main : à deux mains, dnd5e ne lancerait aucun dé.
- * @param {{mode: string|null, modes: string[], explicit: boolean, otherHandBusy: boolean, twoHandedDamage?: boolean}} data
+ * §295 : avec le style Duel (+2 aux dégâts d'une arme de corps à corps tenue à une main, et à une main seulement), la prise à une main
+ * (`prefersOneHand`) : 1d8 + 2 vaut mieux que 1d10, et l'effet de Duel ne s'appliquerait plus à deux mains.
+ * @param {{mode: string|null, modes: string[], explicit: boolean, otherHandBusy: boolean, twoHandedDamage?: boolean, prefersOneHand?: boolean}} data
  *   `mode` : le mode en vigueur (demandé, repris de la mémoire de dnd5e, ou rien) ; `modes` : ceux de l'arme ; `explicit` : choisi ;
  *   `twoHandedDamage` : la prise à deux mains a des dégâts.
  * @returns {string|null}  « twoHanded » (l'autre main libre) ou « oneHanded » (prise), ou null pour laisser le jet tel quel.
  */
-export function versatileGrip({ mode, modes, explicit, otherHandBusy, twoHandedDamage=true }) {
+export function versatileGrip({ mode, modes, explicit, otherHandBusy, twoHandedDamage=true, prefersOneHand=false }) {
   if ( explicit || !modes?.includes("twoHanded") || !modes.includes("oneHanded") ) return null;
   if ( mode && !["oneHanded", "twoHanded"].includes(mode) ) return null;
   // L'autre main prise (bouclier, autre arme) : à une main — même si dnd5e se souvenait d'une prise à deux mains.
-  const want = (otherHandBusy || !twoHandedDamage) ? "oneHanded" : "twoHanded";
+  const want = (otherHandBusy || !twoHandedDamage || prefersOneHand) ? "oneHanded" : "twoHanded";
   return (mode === want) ? null : want;
 }
 

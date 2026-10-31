@@ -168,6 +168,13 @@ export const TRIGGERS = Object.freeze({
   "slow": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }] }],
   "confusion": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }] }],
   "sunburst": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }] }],
+  // §295 (repasse terme par terme) : même sauvegarde répétée, oubliée — Courroux de la nature (Serment des Anciens), Rupture
+  // spirituelle (Âme acérée), Perturbations synaptiques, Présence intimidante (Berserker), Magie envoûtante (Collège du savoir).
+  "natures-wrath": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }] }],
+  "rend-mind": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }] }],
+  "synaptic-static": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }] }],
+  "intimidating-presence": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }] }],
+  "beguiling-magic": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }] }],
   // §43.1 : Contagion — « la cible réitère le JS à la fin de chacun de ses tours jusqu'à obtenir trois réussites ou trois
   // échecs : trois réussites, le sort prend fin ; trois échecs, il dure 7 jours » (la durée de l'effet). Compteur.
   "contagion": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave", tally: { successes: 3, failures: 3 } }] }],
@@ -213,6 +220,8 @@ export const TRIGGERS = Object.freeze({
   "hypnotic-pattern": [{ on: "isDamaged", via: "effect", do: [{ type: "remove" }] }],
   // §65 : Suggestion — « la suggestion prend fin si vous ou vos alliés infligez des dégâts à la cible » : seulement ces dégâts-là.
   "suggestion": [{ on: "isDamaged", via: "effect", by: "originSide", do: [{ type: "remove" }] }],
+  // §295 : Suggestion de groupe — même fin (« ou jusqu'à ce que vous ou vos alliés infligiez des dégâts à la cible »).
+  "mass-suggestion": [{ on: "isDamaged", via: "effect", by: "originSide", do: [{ type: "remove" }] }],
   // §79 : même fin pour Charme-personne et Charme-monstre (« jusqu'à ce que vous ou vos alliés lui infligiez des dégâts ») et
   // Amitié avec les animaux (« si vous ou l'un de vos alliés infligez des dégâts à la cible, le sort prend fin »).
   "charm-person": [{ on: "isDamaged", via: "effect", by: "originSide", do: [{ type: "remove" }] }],

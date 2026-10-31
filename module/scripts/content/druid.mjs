@@ -40,6 +40,8 @@ export const DRUID = Object.freeze({
       do: [{ type: "use", activity: "nu3AqVu9lyqeFwr3" }, { type: "bonus", formula: "1d6" }] }
   ] },
   "wrath-of-the-sea": seaPush,
+  // §295 : Protégé de dame Nature (Cercle de la terre 10) — « immunité à l'état Empoisonné » ; la donnée ne porte que les Résistances.
+  "natures-ward": { grantsConditionImmunities: ["poisoned"] },
   "stormborn": seaPush,
   // Fureur élémentaire (niveau 7), option Attaques primitives : « une fois à chacun de vos tours, 1d8 dégâts de feu, de foudre, de
   // froid ou de tonnerre » — feu d'office (le choix n'est pas demandé) ; 2d8 avec Fureur élémentaire améliorée (niveau 15).

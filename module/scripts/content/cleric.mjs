@@ -41,6 +41,8 @@ export const CLERIC = Object.freeze({
   "blessed-strikes-potent-spellcasting": potentSpellcasting("cleric"),
   // Guérison suprême (niveau 17) : « prenez la valeur maximale pour chaque dé » d'un sort ou d'une Conduit divin qui soigne.
   "supreme-healing": { supremeHealing: true },
+  // §295 : Faveur du filou (Domaine de la ruse) — « jusqu'à ce que vous terminiez un Repos long » (la donnée : un round).
+  "blessing-of-the-trickster": { effectDurations: { "1PrZ25K0vYo5oLtP": { seconds: 86400 } }, effectsExpire: "longRest" },
   // §236 : Avatar de la bataille (Guerre 17) — « Résistance aux dégâts contondants, perforants et tranchants » : aucun effet dans les
   // données, l'effet est tenu sur l'acteur (runtime/speed-grants.mjs).
   "avatar-of-battle": { grantsResistances: ["bludgeoning", "piercing", "slashing"] },

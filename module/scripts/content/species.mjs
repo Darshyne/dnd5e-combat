@@ -28,8 +28,9 @@ export const SPECIES = Object.freeze({
   "frosts-chill": { hitRider: { damage: "6goWQaWLexUqgig8", effect: "YHKgdj2KIbQRBZWW" }, effectEnds: { YHKgdj2KIbQRBZWW: "casterTurnStart" } },
   "hills-tumble": { hitRider: { status: "prone", sizeAtMost: "lg" } },
   // Endurance de la pierre : « quand vous subissez des dégâts, votre Réaction : 1d12 + votre modificateur de Constitution de moins »
-  // — le jet de l'activité (1d12 dans les données) plus la Constitution ; le moteur le propose quand une attaque vous touche.
-  "stones-endurance": { triggers: [{ on: "isHit", do: [{ type: "use", activity: "vrWhAQ6Bj4gznxHq" }, { type: "reduce", bonus: "@abilities.con.mod" }] }] },
+  // — le jet de l'activité, qui porte déjà la Constitution (« 1d12 + @abilities.con.mod » : §295, elle était comptée deux fois) ; le
+  // moteur le propose quand une attaque vous touche.
+  "stones-endurance": { triggers: [{ on: "isHit", do: [{ type: "use", activity: "vrWhAQ6Bj4gznxHq" }, { type: "reduce" }] }] },
   // Tonnerre des cieux : « quand vous subissez des dégâts de la part d'une créature dans un rayon de 18 m, votre Réaction : 1d8
   // dégâts de tonnerre à cette créature ».
   "storms-thunder": { triggers: [{ on: "isDamaged", if: { "target.within": { distance: 60, units: "ft" } },
@@ -39,5 +40,7 @@ export const SPECIES = Object.freeze({
   // le Linceul nécrotique : au joueur).
   "celestial-revelation": { triggers: [{ on: "preDamageRoll", oncePerTurn: true,
     if: { "source.hasEffect": "celestial-revelation", any: [{ "activity.isAttack": true }, { "activity.isSpell": true }] },
-    do: [{ type: "damage", formula: "@prof", damageType: "radiant" }] }] }
+    do: [{ type: "damage", formula: "@prof", damageType: "radiant" }] }],
+    // §295 : Linceul nécrotique — « Effrayé jusqu'à la fin de votre prochain tour » (la donnée : une minute).
+    effectEnds: { "33dHubd4zYAkSAbE": "casterTurnEnd" } }
 });

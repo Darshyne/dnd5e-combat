@@ -566,7 +566,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     const okChanges = list => Array.isArray(list) && list.length && list.every(c => isObject(c) && (typeof c.key === "string") && c.key
       && (typeof c.type === "string") && c.type && ("value" in c));
     if ( !isObject(entry.effectWhile) || !Object.keys(entry.effectWhile).length || !Object.entries(entry.effectWhile).every(([id, r]) => isId(id)
-      && isObject(r) && okIf(r.if) && (!("changes" in r) || okChanges(r.changes)) && Object.keys(r).every(k => ["if", "changes"].includes(k))) ) {
+      && isObject(r) && (okIf(r.if) || (!("if" in r) && ("changes" in r))) && (!("changes" in r) || okChanges(r.changes)) && Object.keys(r).every(k => ["if", "changes"].includes(k))) ) {
       errors.push(`${at}effectWhile: { <effect id>: { if: { armor?: [light|medium|heavy], oneHanded?: true, inCombat?: true, abilityAtLeast? }, changes? } }`);
     }
   }

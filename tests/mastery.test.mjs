@@ -122,7 +122,7 @@ describe("§23 tours de magie : schéma et contenu", () => {
     expect(CONTENT["shocking-grasp"].noOpportunityAttacks).toBe(true);
     // Moquerie cruelle garde sa marque consommée (§16.12) et reçoit sa fin de durée.
     expect(CONTENT["vicious-mockery"].triggers[0].do.map(s => s.type)).toEqual(["disadvantage", "consume"]);
-    expect(CONTENT["vicious-mockery"].effectEnds).toEqual({ suEeAQQXl0X2JqzF: "casterTurnEnd" });
+    expect(CONTENT["vicious-mockery"].effectEnds).toEqual({ suEeAQQXl0X2JqzF: "bearerTurnEnd" });
     expect(CONTENT.friends.targets.types).toEqual(["humanoid"]);
     expect(CONTENT["true-strike"]).toMatchObject({ enchantTarget: "ownWeapon", oneAttack: true });
   });

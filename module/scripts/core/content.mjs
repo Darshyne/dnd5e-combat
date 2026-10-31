@@ -171,7 +171,8 @@
  *     healingRerolls?: true                     §129 : aux dés de soins d'un sort de la créature, un 1 est relancé une fois (Guérisseur)
  *     effectWhile?: { <id d'effet>: { if: { armor?, oneHanded?, inCombat?, abilityAtLeast? }, changes? } }
  *                                               §130 : l'effet transféré de l'item n'est actif que si la condition tient pour le porteur
- *                                               (Défense, Duel…) ; `changes` réécrit les changements de l'effet (données cassées) —
+ *                                               (Défense, Duel…) ; `changes` réécrit les changements de l'effet (données cassées) ; sans
+ *                                               `if` (§295), seuls les changements sont réécrits, l'effet reste actif ou non au choix du joueur —
  *                                               runtime/effect-while.mjs
  *     rangedFeat?: { kind, cover?, closeCombat?, longRange?, offhandModifier?, spellRange? }
  *                                               §131 : dons de tir — pour un genre d'attaque (`kind` : "weapon" = attaque à distance
@@ -207,6 +208,11 @@
  *                                               (Inspiration supérieure) ; §278 : `items` (identifiants : toutes leurs utilisations
  *                                               reviennent), `exhaustion` (niveaux retirés), `uses` (une utilisation de l'item, seulement
  *                                               s'il y a quelque chose à regagner)
+ *     grantsConditionImmunities?: string[]      §295 : immunités d'état que l'item donne sans effet dans ses données (Protégé de dame
+ *                                               Nature : Empoisonné) — dans l'effet tenu de `grantsSpeeds` (runtime/speed-grants.mjs)
+ *     flurryStrikes?: number                    §295 : le porteur de l'item frappe ce nombre de fois au Déluge de coups (Credo accru : 3)
+ *     effectDurations?: { <id d'effet>: { seconds } }  §295 : la durée d'un effet de l'item à sa pose, quand la donnée se trompe
+ *                                               (Présence intimidante : une minute, pas un round)
  *     grantsResistances?: string[]              §236 : les Résistances que l'item donne sans effet dans ses données (Avatar de la
  *                                               bataille) — un effet tenu sur l'acteur, comme `grantsSpeeds`
  *     scoreFloor?: string[]                     §236 : un test ou une sauvegarde de ces caractéristiques vaut au moins leur valeur

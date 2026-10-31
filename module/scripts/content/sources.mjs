@@ -52,5 +52,11 @@ export const SOURCE_IDENTIFIERS = Object.freeze({
   rhwCSEmpoweredtO: "empowered-channeling",
   // §88 : la Parade du Maître de guerre (Manuel des joueurs) porte l'identifiant « parry » de la Parade du Monster Manual (§74), dont la
   // règle diffère (CA + maîtrise contre réduction des dégâts) : reconnue par sa source.
-  phbmnvParry00000: "parry-maneuver"
+  phbmnvParry00000: "parry-maneuver",
+  // §295 (repasse) : le Maléfice du protecteur Grand Ancien (pack de classes, identifiant « great-old-one-hex ») est le sort Maléfice —
+  // mêmes activités, mêmes six effets (avec le Désavantage aux sauvegardes de Maléfice occulte) : reconnu comme « hex » (1d6, choix d'un
+  // effet, Délivrance des malédictions). La copie d'Assassinat de Heroes of the Borderlands porte l'identifiant « assasinate » sous le
+  // même id que celle du Manuel.
+  n2qsI3p9HBVQIjeK: "hex",
+  phbrgeAssasinate: "assassinate"
 });

@@ -56,7 +56,14 @@ function removedAtTurn(effect) {
  * provided to the database operation must be a Document instance », vu le 2026-09-28).
  */
 function onPreCreateEffect(effect) {
-  if ( (effect.parent?.documentName !== "Actor") || !game.combat?.started ) return true;
+  if ( effect.parent?.documentName !== "Actor" ) return true;
+  // §295 : `effectDurations` — la durée que la règle donne à cet effet de l'item (Présence intimidante : une minute, la donnée dit un
+  // round), en combat comme hors combat. Une règle `effectEnds` du même effet, plus bas, garde la main sur sa fin.
+  const item = originItemOf(effect);
+  const durations = item ? contentOf(item).entry?.effectDurations : null;
+  const wanted = durations ? Object.entries(durations).find(([id]) => comesFromItemEffect(effect, id))?.[1] : null;
+  if ( wanted ) effect.updateSource({ duration: { value: wanted.seconds, units: "seconds", expiry: null } });
+  if ( !game.combat?.started ) return true;
   if ( !endRuleOf(effect) && !removedAtTurn(effect) ) return true;
   effect.updateSource({ [`flags.${MODULE_ID}.placedOn`]: currentTurnKey(), duration: { value: 60, units: "seconds", expiry: null } });
   return true;

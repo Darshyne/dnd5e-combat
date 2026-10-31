@@ -118,6 +118,8 @@ export function stats({ tokenId }) {
   return {
     ac: a.ac?.value ?? null, hp: { value: a.hp?.value ?? null, max: a.hp?.max ?? null, tempmax: a.hp?.tempmax ?? 0 },
     speed: Object.fromEntries(Object.entries(a.movement ?? {}).filter(([, v]) => typeof v === "number")),
+    // dnd5e 6 range les vitesses préparées sous `movement.speeds` (§295 : Forme gazeuse).
+    speeds: { ...(a.movement?.speeds ?? {}) },
     bonuses: { mwak: attack("mwak"), rwak: attack("rwak"), msak: attack("msak"), rsak: attack("rsak"),
       save: rolls.ability?.save?.bonus ?? "" },
     size: actor?.system?.traits?.size ?? null,

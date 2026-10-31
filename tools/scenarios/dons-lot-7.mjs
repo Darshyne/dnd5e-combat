@@ -125,7 +125,8 @@ export default {
 
     await part("Seconde peau", async () => {
       // Forme alternative déjà dépensée, et la sauvegarde de Charisme ratée à coup sûr (essai).
-      await ctx.call("upsert-actor-item", { actorId: pal.actorId, itemData: { "system.uses.spent": 1 }, match: { path: "_id", value: ids.skin } });
+      // §295 : l'usage gratuit de la Forme alternative est compté sur son activité (ZrjtFFSbJZTj8Cfm) dans la donnée de Ravenloft.
+      await ctx.call("upsert-actor-item", { actorId: pal.actorId, itemData: { "system.uses.spent": 1, "system.activities.ZrjtFFSbJZTj8Cfm.uses.spent": 1 }, match: { path: "_id", value: ids.skin } });
       await ctx.call("upsert-embedded-effect", { ...palTarget, effectData: { name: "Essai : âme vacillante", img: "icons/svg/daze.svg", transfer: false,
         changes: [{ key: "system.abilities.cha.bonuses.save", value: "-40", type: "add" }] } });
       await fight();

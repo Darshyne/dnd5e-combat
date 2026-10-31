@@ -324,7 +324,8 @@ function gripVersatile(config, activity, { explicit }) {
   const versatile = item._source?.system?.damage?.versatile;
   const twoHandedDamage = !(versatile?.custom?.enabled && !versatile.custom.formula?.trim());   // §151
   const mode = versatileGrip({ mode: config.attackMode ?? null, modes: (item.system.attackModes ?? []).map(m => m.value),
-    explicit, otherHandBusy: otherHandBusy(item), twoHandedDamage });
+    explicit, otherHandBusy: otherHandBusy(item), twoHandedDamage,
+    prefersOneHand: Array.from(item.actor?.items ?? []).some(i => identifierOf(i).id === "dueling") });   // §295 : style Duel
   if ( !mode ) return;
   config.attackMode = mode;
   if ( config.rolls?.[0]?.options ) config.rolls[0].options.attackMode = mode;
@@ -478,7 +479,11 @@ async function onUsageMessage(message) {
   if ( message.getFlag(MODULE_ID, "readiedRelease") ) after = { ...after, readied: false };
   // §24 : Déluge de coups — les frappes à mains nues qu'il ouvre.
   const flurry = contentOf(activity.item).entry?.flurry;
-  if ( flurry && (flurry.activity === activity.id) ) after = { ...after, flurry: flurry.strikes, flurryAny: flurry.weapons === true };
+  if ( flurry && (flurry.activity === activity.id) ) {
+    // §295 : Credo accru (Moine 10) — « trois frappes à mains nues au lieu de deux » : le plus grand `flurryStrikes` des items du porteur.
+    const strikes = Math.max(flurry.strikes, ...Array.from(combatant.actor?.items ?? []).map(i => contentOf(i).entry?.flurryStrikes ?? 0));
+    after = { ...after, flurry: strikes, flurryAny: flurry.weapons === true };
+  }
   // §20 : « votre Vitesse est de 0 jusqu'à la fin du tour » (Visée stable) — plus un pas, le reste du budget intact.
   if ( contentOf(activity.item).entry?.holdsStill === true ) after = { ...after, stopped: true };
   // §21 : Décalage tactique — Second souffle par une action Bonus : la moitié de la Vitesse en plus, sans attaque d'opportunité.

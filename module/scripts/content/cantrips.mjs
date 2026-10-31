@@ -24,10 +24,15 @@ export const CANTRIPS = Object.freeze({
   // Poigne électrique : « elle ne peut pas faire d'attaque d'opportunité jusqu'au début de son prochain tour » — effet « Shocked ».
   "shocking-grasp": { noOpportunityAttacks: true, effectEnds: { DQCAm67ck1GEKHtE: "bearerTurnStart" } },
   // Moquerie cruelle (§16.12) : « … sa prochaine attaque avant la fin de votre prochain tour » — l'effet « Mocked ».
-  "vicious-mockery": { effectEnds: { suEeAQQXl0X2JqzF: "casterTurnEnd" } },
+  // §295 (repasse) : « sa prochaine attaque avant la fin de SON prochain tour » — le tour de la cible, pas celui du lanceur.
+  "vicious-mockery": { effectEnds: { suEeAQQXl0X2JqzF: "bearerTurnEnd" } },
   // Glas : 1d8 nécrotiques, ou 1d12 contre une cible déjà blessée — les deux activités de l'item ; la
   // bonne est jouée d'après la cible, quelle que soit celle choisie.
-  "toll-the-dead": { byWounds: { healthy: "LFXYm5sLg6D3ZilN", wounded: "w9KUTNVoj3K8XSlv" } },
+  // §295 : la copie de Heroes of the Borderlands dit « personnelle » sur les deux activités (même ids que le Manuel) : 18 m, comme le texte.
+  "toll-the-dead": { byWounds: { healthy: "LFXYm5sLg6D3ZilN", wounded: "w9KUTNVoj3K8XSlv" },
+    ranges: { LFXYm5sLg6D3ZilN: { value: 60, units: "ft" }, w9KUTNVoj3K8XSlv: { value: 60, units: "ft" } } },
+  // §295 : Poussière d'étoile — « jusqu'à la fin de votre prochain tour » (la donnée : un tour, au début d'un tour quelconque).
+  "starry-wisp": { effectEnds: { T9kBIL7LS3j0Upwz: "casterTurnEnd" } },
   // Amitié : sans effet sur une cible qui n'est pas Humanoïde ; des dégâts subis par la cible mettent fin au sort.
   // (L'Avantage quand on la combat, et la fin quand le lanceur attaque, blesse ou impose une sauvegarde : au MJ.)
   "friends": { targets: { types: ["humanoid"] }, triggers: [{ on: "isDamaged", via: "effect", do: [{ type: "remove" }] }] },

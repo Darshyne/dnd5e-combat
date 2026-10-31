@@ -22,6 +22,8 @@ export const MONK = Object.freeze({
   "self-restoration": { endsOwnConditions: ["charmed", "frightened", "poisoned"] },
   // §236 : Pas véloce (Main ouverte 11) — « quand vous prenez une action Bonus autre que Pas du vent, vous pouvez aussi utiliser Pas du
   // vent juste après » : gratuit une fois ce tour-là (simplification : jusqu'à la fin du tour, pas seulement « juste après »).
+  // §295 : Credo accru (Moine 10) — « trois frappes à mains nues au Déluge de coups au lieu de deux ».
+  "heightened-focus": { flurryStrikes: 3 },
   "fleet-step": { fleetStep: { item: "monks-focus", activity: "0MuRZ0Ur95xQTKFq" } },
   "monks-focus": {
     flurry: { activity: "2ghJTBhilLrFn9xT", strikes: 2 },

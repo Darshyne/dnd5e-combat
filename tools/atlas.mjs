@@ -154,6 +154,12 @@ if ( existsSync("prive/balayages") ) {
     }
   }
 }
+// Repasse terme par terme (2026-10-31, `prive/repasse/verdicts.json`) : verdict par item (uuid), écarts, termes paraphrasés.
+const review = new Map();
+if ( existsSync("prive/repasse/verdicts.json") ) {
+  for ( const v of JSON.parse(readFileSync("prive/repasse/verdicts.json", "utf8")).items ?? [] ) review.set(v.uuid, v);
+}
+const REVIEW_LABEL = { conforme: "conforme", "corrigé": "corrigé", partiel: "partiel", faux: "faux", mj: "MJ", "hors-combat": "hors combat", progression: "progression" };
 const scenarioFiles = readdirSync("tools/scenarios", { recursive: true }).filter(f => f.endsWith(".mjs"));
 const scenarioText = scenarioFiles.map(f => [f.replace(/\.mjs$/, "").replace(/\\/g, "/"), readFileSync(join("tools/scenarios", f), "utf8")]);
 const scenariosOf = ident => scenarioText.filter(([, t]) => t.includes(`"${ident}"`)).map(([n]) => n);
@@ -433,10 +439,21 @@ function describe({ item, tab, mod, version, pack, owner, actorId, frEntry, effe
     rd: rd ? rd.status : "", rdm: rd?.missing ?? "",
     sw: sweep ? `${sweep.ok ? "✓" : "✗"} ${sweep.at}${sweep.note ? ` — ${sweep.note}` : ""}` : "",
     sn: scen.length, sl: scen.slice(0, 8).join(", "),
+    ...reviewFields(review.get(actorId ? null : `Compendium.${mod.id}.${pack}.Item.${item._id}`)),
     cm: commits[0] ?? "", cn: commits.length,
     h: dataHash, eh: entry ? hash(entryText) : "",
     d: (frDesc || desc).slice(0, 2500), dl: frDesc ? "fr" : "en"
   };
+}
+
+// Repasse : `rp` verdict, `rpg` gravité la plus haute, `rpm` écarts (une ligne chacun), `rpt` termes à impact (JSON compact), `rpl` lot.
+function reviewFields(v) {
+  if ( !v ) return { rp: "", rpg: "", rpm: "", rpt: "", rpl: "" };
+  const order = ["haute", "moyenne", "basse"];
+  const worst = order.find(g => (v.ecarts ?? []).some(e => e.gravite === g)) ?? "";
+  return { rp: REVIEW_LABEL[v.verdict] ?? v.verdict, rpg: worst, rpl: `${v.lot ?? ""}${v.verdictInitial ? ` · était ${v.verdictInitial}` : ""}`,
+    rpm: (v.ecarts ?? []).map(e => `[${e.gravite}] ${e.quoi}${e.chantier ? ` (${e.chantier})` : ""}`).join("\n"),
+    rpt: JSON.stringify((v.termes ?? []).filter(t => t.impact).map(t => [t.t, t.ok, t.moteur])) };
 }
 
 /* ---- historique (empreintes et statuts seulement) ---- */
@@ -476,6 +493,9 @@ for ( const tab of TABS ) {
   const byEnd = {};
   for ( const r of list ) for ( const e of r.fe ) byEnd[e] = (byEnd[e] ?? 0) + 1;
   for ( const [key, n] of Object.entries(byEnd) ) summary.push({ tab, kind: "fin", key, n });
+  const byReview = {};
+  for ( const r of list ) if ( r.rp ) byReview[r.rp] = (byReview[r.rp] ?? 0) + 1;
+  for ( const [key, n] of Object.entries(byReview) ) summary.push({ tab, kind: "repasse", key, n });
 }
 // Le tableau de bord ne lit que des lignes : les métadonnées du relevé en sont aussi.
 const meta = [["date", TODAY], ["engine", ENGINE_VERSION], ["previous", previous ?? ""], ["rows", String(rows.length)],
@@ -508,6 +528,12 @@ for ( const e of END_EVENTS ) {
     const n = st => l.filter(r => r.fe.includes(`${e.id}:${st}`)).length;
     return [n("das") && `${n("das")} DAS`, n("sys") && `${n("sys")} sys`, n("man") && `${n("man")} man`].filter(Boolean).join(" · ") || "";
   }).join(" | ")} |`);
+}
+md.push("", "## Repasse terme par terme (`prive/repasse/`)", "", "| Onglet | Relus | " + Object.values(REVIEW_LABEL).join(" | ") + " | écart haut |",
+  "|---|---|" + Object.keys(REVIEW_LABEL).map(() => "---|").join("") + "---|");
+for ( const tab of TABS ) {
+  const list = rows.filter(r => (r.t === tab) && r.rp);
+  if ( list.length ) md.push(`| ${tab} | ${list.length} | ${Object.values(REVIEW_LABEL).map(l => list.filter(r => r.rp === l).length || "").join(" | ")} | ${list.filter(r => r.rpg === "haute").length || ""} |`);
 }
 md.push("", "## Défauts de données", "");
 for ( const r of rows.filter(r => r.bad.length).slice(0, 400) ) md.push(`- ${r.t} · ${r.o ? `${r.o} · ` : ""}${r.f ?? r.n} \`${r.i}\` (${r.m}) : ${r.bad.join(" ; ")}`);

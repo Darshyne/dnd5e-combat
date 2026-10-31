@@ -14,7 +14,15 @@ export const BARD = Object.freeze({
   // Mots cinglants (Savoir 3) : « quand une créature que vous voyez à 18 m réussit un jet d'attaque, votre Réaction et une
   // Inspiration : lancez le dé et soustrayez le résultat du jet » — proposé quand l'attaque touche le barde ou un allié ; l'attaque
   // est rejugée (le dé vaut autant de CA). Les tests et les jets de dégâts restent au joueur.
-  "cutting-words": { triggers: [{ on: ["isHit", "allyIsHit"], do: [{ type: "use" }, { type: "penalty", formula: "@scale.bard.inspiration" }] }] },
+  // §301 : « une créature que vous voyez à 18 m » — l'attaquant, vu et à portée du barde (touché lui-même : `target` = le barde).
+  "cutting-words": { triggers: [
+    { on: "isHit", if: { "target.within": { distance: 60, units: "ft" }, "target.seesSource": true }, do: [{ type: "use" }, { type: "penalty", formula: "@scale.bard.inspiration" }] },
+    { on: "allyIsHit", if: { "source.nearSelf": { distance: 60, units: "ft" }, "self.seesSource": true }, do: [{ type: "use" }, { type: "penalty", formula: "@scale.bard.inspiration" }] }
+  ] },
+  // §301 : Contre-charme (niveau 7) — « vous ratez une sauvegarde contre un effet qui inflige Charmé ou Effrayé : votre Réaction, relancez-la »
+  // (proposé sur une sauvegarde ratée pour éviter ou finir l'un de ces états). Simplifications : la relance n'a pas l'Avantage, et une créature
+  // à 9 m qui rate la sienne n'est pas couverte.
+  "countercharm": { rollBonus: { activity: "dnd5eactivity000", on: ["save"], statuses: ["charmed", "frightened"], reroll: {} } },
   // Esquive cavalière (Danse 14) : l'Esquive totale (§20) ; la partager avec une créature à 1,50 m reste au joueur.
   "leading-evasion": { evasion: true },
   // Inspiration de combat (Vaillance 3) : la créature inspirée par ce barde ajoute le dé aux dégâts d'un coup, ou à sa CA par sa Réaction

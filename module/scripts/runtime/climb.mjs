@@ -53,6 +53,7 @@ import { climbSystemOn, whileClimbSystem } from "../core/climb-system.mjs";
 import { setClimbSystem } from "./climb-system.mjs";
 import { enqueue } from "./queue.mjs";
 import { esc, isExecutor, loc, locEsc, log, notice, say, waitForDice } from "./shared.mjs";
+import { askFallReactions } from "./reactions.mjs";
 import { isEthereal } from "../adapter/plane.mjs";
 
 export const CLIMB_QUERY = `${MODULE_ID}.climbCheck`;
@@ -776,8 +777,16 @@ async function onFallCard(message) {
     const doc = fromUuidSync(target.uuid ?? target.token ?? "", { strict: false });
     const actor = (doc?.documentName === "Actor") ? doc : (doc?.actor ?? null);
     if ( !actor ) continue;
-    await actor.applyDamage(damages, { origin: message });
-    log(`${actor.name}: fall damage applied (${damages.map(d => d.value).join(" + ")})`);
+    // §301 : avant les dégâts, les réactions de chute (Chute ralentie : réduits ; Feuille morte : annulés, pas d'À terre).
+    const token = (doc?.documentName === "Token") ? doc : (actor.getActiveTokens?.(false, true)?.[0] ?? null);
+    const total = damages.reduce((sum, d) => sum + d.value, 0);
+    const reacted = token ? await askFallReactions(token, total) : { reduce: 0, cancel: false, by: [] };
+    if ( reacted.cancel ) { log(`${actor.name}: no fall damage (${reacted.by.join(", ")})`); continue; }
+    const left = Math.max(0, total - reacted.reduce);
+    const applied = reacted.reduce ? [{ value: left, type: damages[0].type }] : damages;
+    if ( reacted.reduce ) log(`${actor.name}: fall damage reduced by ${reacted.reduce} (${reacted.by.join(", ")})`);
+    await actor.applyDamage(applied, { origin: message });
+    log(`${actor.name}: fall damage applied (${applied.map(d => d.value).join(" + ")})`);
   }
 }
 

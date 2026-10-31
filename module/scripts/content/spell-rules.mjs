@@ -212,6 +212,14 @@ export const SPELL_RULES = Object.freeze({
   "stinking-cloud": { noActions: "gFid0DG5HydORpr3", quietPose: true },
   // §300 : « la Vitesse d'une créature est divisée par deux dans l'émanation » — l'effet tombe à sa sortie.
   "spirit-guardians": { zoneBound: true },
+  // §301 : Fontaine de lune — « quand vous subissez des dégâts d'une créature visible à 18 m, votre Réaction : sa sauvegarde de Constitution
+  // ou Aveuglée » ; seulement sous le sort (l'effet « Wreathed in Light »).
+  "fount-of-moonlight": { triggers: [{ on: "isDamaged", if: { "target.hasEffect": "fount-of-moonlight", "target.seesSource": true, "target.within": { distance: 60, units: "ft" } },
+    do: [{ type: "use", activity: "dnd5eactivity000", target: "source" }] }] },
+  // §301 : Feuille morte — « Réaction quand vous ou une créature à 18 m tombez : jusqu'à cinq créatures descendent lentement, sans dégâts de
+  // chute » — avant l'application, la chute annulée (une créature par carte de chute).
+  "feather-fall": { triggers: [{ on: ["falls", "allyFalls"], if: { "target.nearSelf": { distance: 60, units: "ft" } },
+    do: [{ type: "use", activity: "dnd5eactivity000", target: "target" }, { type: "cancel" }] }] },
   // §86 : Présence royale de Yolande — « Surround Self » (OJHRKWz8JvLzyl9R) n'a pas d'émanation dans la donnée : 10 ft sur soi,
   // posée d'office ; « une créature que vous voyez… vous pouvez la forcer » : les alliés épargnés. Qui y entre (ou que
   // l'émanation recouvre) ou y finit son tour : « Emanation Save » (dzeoGwKOPG7PHbyE, Sagesse, 4d6 psychiques), une fois par tour ;

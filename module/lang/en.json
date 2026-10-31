@@ -895,6 +895,8 @@
   "DND5ECOMBAT.Dissipation.Resiste": "{spell} (level {level}) holds: check {total} vs DC {dc}.",
   "DND5ECOMBAT.Dissipation.Rien": "No ongoing spell on the target.",
   "DND5ECOMBAT.ReactionAllieBlesse": "{name} is about to take damage ({attacker}). React?",
+  "DND5ECOMBAT.ReactionChute": "You are about to take {damage} falling damage. React?",
+  "DND5ECOMBAT.ReactionAllieChute": "{name} is about to take {damage} falling damage. React?",
   "DND5ECOMBAT.BonusJet.Question": "{what}: {total} vs {needed}. Add {formula} ({item}, {left} left)?",
   "DND5ECOMBAT.BonusJet.Oui": "Add {formula}",
   "DND5ECOMBAT.BonusJet.Non": "Keep the roll",

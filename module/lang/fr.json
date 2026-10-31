@@ -895,6 +895,8 @@
   "DND5ECOMBAT.Dissipation.Resiste": "{spell} (niveau {level}) résiste : test {total} contre DD {dc}.",
   "DND5ECOMBAT.Dissipation.Rien": "Aucun sort en cours sur la cible.",
   "DND5ECOMBAT.ReactionAllieBlesse": "{name} va subir des dégâts ({attacker}). Réagir ?",
+  "DND5ECOMBAT.ReactionChute": "Vous allez subir {damage} dégâts de chute. Réagir ?",
+  "DND5ECOMBAT.ReactionAllieChute": "{name} va subir {damage} dégâts de chute. Réagir ?",
   "DND5ECOMBAT.BonusJet.Question": "{what} : {total} contre {needed}. Ajouter {formula} ({item}, {left} restante(s)) ?",
   "DND5ECOMBAT.BonusJet.Oui": "Ajouter {formula}",
   "DND5ECOMBAT.BonusJet.Non": "Garder le jet",

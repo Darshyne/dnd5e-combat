@@ -4,9 +4,11 @@
 /** Version du schéma. Une surcouche d'une autre version est ignorée avec un avertissement. */
 export const CONTENT_VERSION = 1;
 
-export const STEP_TYPES = Object.freeze(["lift", "disarm", "use", "replay", "damage", "move", "status", "resave", "remove", "halve", "uncrit", "consume", "advantage", "disadvantage", "ward", "attackBonus", "endCondition", "reduce", "miss", "penalty", "bonus", "absorb", "interpose", "mark", "save", "breakConcentration"]);
+export const STEP_TYPES = Object.freeze(["lift", "disarm", "use", "replay", "damage", "move", "status", "resave", "remove", "halve", "uncrit", "consume", "advantage", "disadvantage", "ward", "attackBonus", "endCondition", "reduce", "miss", "penalty", "bonus", "absorb", "interpose", "mark", "save", "breakConcentration", "cancel"]);
 /** Les fenêtres « touché » : la créature touchée elle-même, ou une autre qui réagit pour elle (Sentinelle au seuil de la mort). */
 export const HIT_WINDOWS = Object.freeze(["isHit", "allyIsHit"]);
+/** §301 : les fenêtres de chute, où une réaction réduit (`reduce`) ou annule (`cancel`) les dégâts de chute. */
+export const FALL_WINDOWS = Object.freeze(["falls", "allyFalls"]);
 /** Les actions de base qu'une activité peut prendre au coût de son activation (`basicActions`). */
 export const BASIC_ACTION_KINDS = Object.freeze(["dash", "disengage", "dodge", "hide", "help"]);   // §72 : « help » (Maître des tactiques)
 /** Les tailles de dnd5e, de la plus petite à la plus grande (`actorSizes`). */

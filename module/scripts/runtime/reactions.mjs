@@ -123,7 +123,8 @@ export async function askHitReactions(resolution, tokens, drained, { auto=null }
           auto: auto === "first"
         });
         if ( help?.message ) await drained(help.message);
-        if ( !help?.halve && !help?.penalty ) continue;
+        // §301 : ou réduit (Interception, Champ protecteur).
+        if ( !help?.halve && !help?.penalty && !help?.reduce ) continue;
         answer = help;
         break;
       }
@@ -186,6 +187,39 @@ export async function askDamageGuardians(targetUuid, sourceUuid, activity, { aut
     if ( answer?.interpose ) return { interpose: other.uuid, reactor: other.name };
   }
   return null;
+}
+
+/**
+ * §301 : fenêtres de chute, avant l'application des dégâts (carte de chute de dnd5e, runtime/climb.mjs) — d'abord la créature qui tombe
+ * (`falls` : Chute ralentie réduit les dégâts du jet de son activité), puis les créatures de la scène qui ne lui sont pas hostiles, autres
+ * qu'elle, vivantes (`allyFalls` : Feuille morte, qui les annule). La première qui annule l'emporte ; les réductions s'ajoutent.
+ * MJ actif.
+ * @returns {Promise<{reduce: number, cancel: boolean, by: string[]}>}
+ */
+export async function askFallReactions(fallToken, damage) {
+  const out = { reduce: 0, cancel: false, by: [] };
+  const target = fallToken?.actor;
+  if ( !target || !fallToken.parent || !(damage > 0) ) return out;
+  const asked = async (actor, window, context, prompt) => {
+    const options = reactionsOf(actor, window, context, { publish: true });
+    if ( !options.length ) return null;
+    log(`${fallToken.name} is about to take ${damage} falling damage: ${actor.name} can react (${options.map(o => o.name).join(", ")})`);
+    return askReaction(actor, { actor: actor.uuid, prompt, options, target: fallToken.uuid });
+  };
+  const own = await asked(target, "falls", { target, self: target, selfToken: fallToken, targetToken: fallToken },
+    { key: "ReactionChute", data: { damage } });
+  if ( own?.cancel ) return { ...out, cancel: true, by: [own.name] };
+  if ( own?.reduce ) { out.reduce += Number(own.reduce) || 0; out.by.push(own.name); }
+  for ( const other of fallToken.parent.tokens ) {
+    const actor = other.actor;
+    if ( !actor || (other === fallToken) || isObjectToken(other) || areEnemies(other, fallToken) ) continue;
+    if ( (actor.system.attributes?.hp?.value ?? 0) <= 0 ) continue;
+    const help = await asked(actor, "allyFalls", { target, self: actor, selfToken: other, targetToken: fallToken },
+      { key: "ReactionAllieChute", data: { name: fallToken.name, damage } });
+    if ( help?.cancel ) return { ...out, cancel: true, by: [...out.by, help.name] };
+    if ( help?.reduce ) { out.reduce += Number(help.reduce) || 0; out.by.push(help.name); }
+  }
+  return out;
 }
 
 /**

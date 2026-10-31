@@ -4,7 +4,7 @@
 
 import { CREATURE_TYPES } from "../eligibility.mjs";
 import { MOMENTS, OUTCOME_MOMENTS, RESAVE_MOMENTS, BEARER_MOMENTS, TURN_MOMENTS, unknownFacts, normalize, PRE_ATTACK_WINDOWS, DAMAGED_BY } from "../triggers.mjs";
-import { ATTACK_STEPS, AURA_AFFECTS, DAMAGE_ON_SAVE, DAMAGE_TO, HIT_WINDOWS, MOVE_MODES, OUTCOME_STEPS, RESAVE_ON_FAIL, STEP_TYPES, VIA } from "./enums.mjs";
+import { ATTACK_STEPS, AURA_AFFECTS, DAMAGE_ON_SAVE, DAMAGE_TO, FALL_WINDOWS, HIT_WINDOWS, MOVE_MODES, OUTCOME_STEPS, RESAVE_ON_FAIL, STEP_TYPES, VIA } from "./enums.mjs";
 import { isId, isObject } from "./shared.mjs";
 function validateStep(step, at, errors) {
   if ( !isObject(step) ) return errors.push(`${at}: a step is an object`);
@@ -128,7 +128,10 @@ export function validateTrigger(declaration, at, facts, errors) {
       if ( isObject(s) && (s.type === "damage") && (s.to === "origin") && ((d.on.length !== 1) || (d.on[0] !== "isDamaged") || (d.via !== "effect")) ) errors.push(`${at}.do: a damage share (to: "origin") requires isDamaged as the only moment and via: "effect"`);
       if ( isObject(s) && (s.type === "damage") && (s.to === "bearer") && (!d.on.length || !d.on.every(m => TURN_MOMENTS.includes(m)) || (d.via !== "effect")) ) errors.push(`${at}.do: the bearer's damage (to: "bearer") requires moments among ${TURN_MOMENTS.join(", ")} and via: "effect"`);
       if ( isObject(s) && (s.type === "damage") && ("onSave" in s) && ((d.on.length !== 1) || (d.on[0] !== "failedSave") || ("to" in s)) ) errors.push(`${at}.do: "onSave" requires failedSave as the only moment, without "to"`);
-      if ( isObject(s) && ["halve", "uncrit", "reduce", "miss", "penalty"].includes(s.type) && !((s.type === "penalty") && preAttackReaction) && (!d.on.some(m => HIT_WINDOWS.includes(m)) || !d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "${s.type}" requires the isHit or allyIsHit moment and a "use" reaction`);
+      // §301 : `reduce` aussi aux fenêtres de chute (Chute ralentie), comme `cancel` (Feuille morte).
+      const fallReaction = d.on.some(m => FALL_WINDOWS.includes(m)) && d.do.some(x => isObject(x) && (x.type === "use"));
+      if ( isObject(s) && ["halve", "uncrit", "reduce", "miss", "penalty"].includes(s.type) && !((s.type === "penalty") && preAttackReaction) && !((s.type === "reduce") && fallReaction) && (!d.on.some(m => HIT_WINDOWS.includes(m)) || !d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "${s.type}" requires the isHit or allyIsHit moment and a "use" reaction`);
+      if ( isObject(s) && (s.type === "cancel") && !fallReaction ) errors.push(`${at}.do: "cancel" requires the falls or allyFalls moment and a "use" reaction`);
       if ( isObject(s) && (s.type === "absorb") && !(d.on.includes("allyIsDamaged") && d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "absorb" requires the allyIsDamaged moment and a "use" reaction`);
       if ( isObject(s) && (s.type === "interpose") && !(d.on.includes("allyIsDamaged") && d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "interpose" requires the allyIsDamaged moment and a "use" reaction`);
       if ( isObject(s) && (s.type === "bonus") && !(d.on.includes("allyAttacks") && preAttackReaction) ) errors.push(`${at}.do: "bonus" requires the allyAttacks moment and a "use" reaction`);

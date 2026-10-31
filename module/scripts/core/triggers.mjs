@@ -71,7 +71,12 @@ export const MOMENTS = Object.freeze({
   allyIsDamaged: "another creature is about to take damage (Projected Ward: reaction window, before application)",
   // §236 : une créature hostile au réacteur vient de faire un jet d'attaque, touché ou raté, contre qui que ce soit (Âme de la vengeance).
   // Les faits voient le réacteur en `target`, l'attaquant en `source`. Fenêtre sans attente, comme « raté ».
-  enemyAttacked: "a hostile creature just made an attack roll, hit or miss, against anyone (Soul of Vengeance: reaction window; it is the source)"
+  enemyAttacked: "a hostile creature just made an attack roll, hit or miss, against anyone (Soul of Vengeance: reaction window; it is the source)",
+  // §301 : la créature va subir les dégâts d'une chute (carte de chute de dnd5e, avant leur application) — Chute ralentie : le réacteur
+  // est la créature qui tombe (`self` = `target`). `allyFalls` : une AUTRE créature non hostile tombe (Feuille morte) — le réacteur en
+  // `self`, celle qui tombe en `target`.
+  falls: "the creature is about to take falling damage (Slow Fall: reaction window, before application)",
+  allyFalls: "another creature is about to take falling damage (Feather Fall: reaction window, before application)"
 });
 
 /** Les moments dont les déclarations sont portées par les EFFETS de la créature concernée (`via: "effect"`). */

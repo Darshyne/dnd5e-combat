@@ -15,7 +15,14 @@ export const FIGHTER = Object.freeze({
   // §123 : Ralliement (Chevalier du dragon pourpre) — « un allié à 9 m ou moins » ; Interception (style de combat) — « une autre
   // créature à 1,50 m de vous ». « Personnelles » dans les données du Manuel des joueurs.
   "rally": { ranges: { uyAnJsUHU2Aek9Lk: { value: 30, units: "ft" } } },
-  "interception": { ranges: { Hjm3PZRt6NdVXiFa: { value: 5, units: "ft" } } },
+  // §301 : Interception — « quand une créature que vous voyez touche une autre créature à 1,50 m de vous d'un jet d'attaque, votre Réaction
+  // réduit les dégâts de 1d10 + votre bonus de maîtrise ; vous maniez un bouclier ou une arme courante ou de guerre » — avant les dégâts.
+  "interception": { ranges: { Hjm3PZRt6NdVXiFa: { value: 5, units: "ft" } },
+    triggers: [{ on: "allyIsHit", if: { "target.nearSelf": { distance: 5, units: "ft" }, "target.isSelf": false, "self.seesSource": true,
+      any: [{ "self.hasShield": true }, { "self.wieldsWeapon": true }] },
+      do: [{ type: "use", activity: "Hjm3PZRt6NdVXiFa", target: "target" }, { type: "reduce" }] }] },
+  // §301 : Sens tactique (niveau 2) — un test raté : dépenser Second souffle pour ajouter 1d10 ; s'il reste raté, l'utilisation revient.
+  "tactical-mind": { rollBonus: { activity: "VVEGPoQePVprCF9A", on: ["check"], failRefund: true } },
   // Fougue : « à votre tour, vous pouvez effectuer une action supplémentaire, hors action Magie » ; au niveau 17, deux utilisations
   // mais une seule par tour. L'activité (activation « spéciale ») ne coûte rien au budget ; le moteur y ajoute l'action.
   "action-surge": { grantsAction: true, usageLimits: { jtpVG47zPBUI0CZ5: { oncePerTurn: true } } },
@@ -32,8 +39,16 @@ export const FIGHTER = Object.freeze({
   "improved-war-magic": { spellsInAttack: { maxLevel: 2, class: "wizard", attacks: 2 } },
   // Énergie psionique, Frappe psionique (Guerrier psi 3) : « une fois à chacun de vos tours, juste après avoir touché une cible avec une
   // arme » — proposée au coup, payée par un dé d'énergie psionique, sans coût d'action (la donnée dit « action »).
+  // §301 : Champ protecteur — « quand vous ou une créature visible à 9 m subissez des dégâts, votre Réaction et un dé : réduits du dé + Int »
+  // — proposé quand l'attaque touche, avant les dégâts (les dégâts sans jet d'attaque restent au joueur). Le Roublard Âme acérée partage
+  // l'identifiant : sans cette activité, rien ne lui est proposé.
   "psionic-power": { hitRider: { pays: "psionic-power", damage: "FxJXB4BPlBnJLF7q", oncePerTurn: true },
-    usageLimits: { FxJXB4BPlBnJLF7q: { cost: "free" } } },
+    usageLimits: { FxJXB4BPlBnJLF7q: { cost: "free" } },
+    triggers: [
+      { on: "isHit", do: [{ type: "use", activity: "IasIclPwvvEjwvzf" }, { type: "reduce" }] },
+      { on: "allyIsHit", if: { "target.nearSelf": { distance: 30, units: "ft" }, "target.isSelf": false, "self.seesTarget": true },
+        do: [{ type: "use", activity: "IasIclPwvvEjwvzf", target: "target" }, { type: "reduce" }] }
+    ] },
   // Attaques avisées (niveau 13) : « si vous ratez une créature d'un jet d'attaque, vous avez l'Avantage à votre prochain jet
   // d'attaque contre elle avant la fin de votre prochain tour » — une marque, comme l'Ouverture (runtime/mastery.mjs).
   "studied-attacks": { studiedAttacks: true },

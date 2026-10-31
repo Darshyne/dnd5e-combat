@@ -47,6 +47,8 @@ export const WARLOCK = Object.freeze({
   // jusqu'à une attaque, des dégâts, un sort : `breaksOn`) et Foulée effroyable (Sagesse ou 2d10 psychiques, à 1,50 m de la case
   // quittée OU d'arrivée, au choix). La Foulée brumeuse par une Réaction aux dégâts : l'activité « cast » de la donnée.
   "misty-escape": {
+    // §301 : « quand vous subissez des dégâts, Foulée brumeuse par une Réaction » — l'activité « cast » de la donnée.
+    triggers: [{ on: "isDamaged", do: [{ type: "use", activity: "2ceGTpBbBclN3qF9" }] }],
     afterTeleport: { spells: ["misty-step"], options: [{ activity: "KMyLMOnvFbMuoRYa" }, { activity: "kj8zIhPbjs4UIHtc", around: "left" }, { activity: "kj8zIhPbjs4UIHtc", around: "arrival" }] },
     breaksOn: ["attack", "damage", "spell"],
     saveDamage: { kj8zIhPbjs4UIHtc: "none" }

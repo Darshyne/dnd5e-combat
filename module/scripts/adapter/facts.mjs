@@ -323,6 +323,8 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     "damage.resisted": want => ((damageTypes ?? []).some(t => target?.system?.traits?.dr?.value?.has?.(t) === true) === want),
     "target.wieldsProperty": prop => (target?.items ?? []).some(i => (i.type === "weapon") && i.system.equipped && i.system.properties?.has?.(prop)),
     "target.isSelf": want => (!!self && !!target && (self === target)) === want,
+    // §301 : une arme (pas une arme naturelle) en main — Interception : « vous maniez un bouclier ou une arme courante ou de guerre ».
+    "self.wieldsWeapon": want => (self?.items ?? []).some(i => (i.type === "weapon") && i.system.equipped && ["simpleM", "simpleR", "martialM", "martialR"].includes(i.system.type?.value)) === want,
     "self.hasShield": want => (self?.items ?? []).some(i => (i.type === "equipment") && (i.system.type?.value === "shield") && i.system.equipped) === want,
     // §132 : la cible est Agrippée par l'attaquant (Lutteur : « l'Avantage aux jets d'attaque contre une créature que vous agrippez »).
     "target.grappledBySource": want => ((target?.effects ?? []).some(e => e.statuses?.has?.("grappled") && (grapplerOf(e) === source)) === want),

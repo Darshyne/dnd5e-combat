@@ -73,6 +73,7 @@ export function reactionOptions(actor, window, declarations) {
     endCondition: stepsOf(d, "endCondition").length > 0,
     uncrit: stepsOf(d, "uncrit").length > 0,
     reduce: stepsOf(d, "reduce").length > 0,
+    cancel: stepsOf(d, "cancel").length > 0,   // §301 : Feuille morte
     reduceBonus: stepsOf(d, "reduce")[0]?.bonus ?? null,
     miss: stepsOf(d, "miss").length > 0,
     penalty: stepsOf(d, "penalty")[0]?.formula ?? null,
@@ -99,6 +100,8 @@ export function reactionOptions(actor, window, declarations) {
  */
 function affordable(activityUuid) {
   const activity = fromUuidSync(activityUuid, { strict: false });
+  // §301 : une activité nommée que l'item n'a pas (deux items de même identifiant : l'Énergie psionique du guerrier et du roublard).
+  if ( !activity && /\.Activity\./.test(activityUuid ?? "") && fromUuidSync(activityUuid.split(".Activity.")[0], { strict: false }) ) return false;
   const item = activity?.item;
   if ( !item ) return true;
   const linked = (item.type === "spell") ? (item.system.linkedActivity ?? null) : null;
@@ -353,7 +356,7 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
   const counter = (results && (castLevel !== null)) ? await resolveCounter(actor, activity.item, castLevel) : null;
   return results ? { counter, reduce, penalty, bonus, disadvantage: option.disadvantage === true, used: option.activity, name: option.name, message: results.message?.id ?? null, halve: option.halve === true,
     uncrit: option.uncrit === true, miss: option.miss === true, absorb: option.absorb === true, interpose: option.interpose === true,
-    endCondition: option.endCondition === true } : null;
+    endCondition: option.endCondition === true, cancel: option.cancel === true } : null;
 }
 
 /** §88 : dépense ce que l'activité consomme d'utilisations d'items (Riposte : un dé de supériorité), sans l'utiliser. */

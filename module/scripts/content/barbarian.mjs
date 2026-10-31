@@ -19,6 +19,9 @@ export const BARBARIAN = Object.freeze({
   // Rage : l'effet de l'item (G5XZTi4zYTFiHVll), activé par « Expend Rage ». « Elle dure jusqu'à la fin de votre tour suivant » ;
   // on l'entretient en attaquant un ennemi, en imposant une sauvegarde à un ennemi ou par une action Bonus.
   "rage": { rage: { effect: "G5XZTi4zYTFiHVll" } },
+  // §301 : Représailles (niveau 14) — « quand vous subissez des dégâts d'une créature à 1,50 m, votre Réaction : une attaque au corps à corps
+  // avec une arme ou à mains nues contre elle ».
+  "retaliation": { triggers: [{ on: "isDamaged", if: { "target.within": { distance: 5, units: "ft" } }, do: [{ type: "use", target: "source", weapon: true }] }] },
   // Rage persistante (niveau 15) : « elle dure 10 minutes sans que vous ayez rien à faire pour l'entretenir ; elle prend fin plus
   // tôt si vous avez l'état Inconscient (pas seulement Neutralisé) ».
   "persistent-rage": { persistentRage: true },

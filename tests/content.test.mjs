@@ -4,9 +4,9 @@ import { CONTENT, SHIPPED, SOURCES, registerTable, unregisterTable, registeredTa
 
 const facts = Object.fromEntries(["activity.type", "activity.isAttack", "activity.isSpell", "activity.isWeapon", "activity.identifier", "activity.id",
   "activity.hasProperty", "source.hasStatus", "source.hasEffect", "source.creatureType", "source.allyNearTarget", "source.summonNearTarget", "source.seesTarget",
-  "target.hasStatus", "target.hasEffect", "target.hasEffectFrom", "hit.stoppableBy", "damage.resisted", "target.grappledBySource", "target.wieldsProperty", "target.isSelf", "self.hasShield", "target.sizeAtMost", "target.within", "target.seesSource", "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "target.atZero", "target.isDead", "damage.hasType", "target.hpAtMost", "condition.gained",
+  "target.hasStatus", "target.hasEffect", "target.hasEffectFrom", "hit.stoppableBy", "damage.resisted", "target.grappledBySource", "target.wieldsProperty", "target.isSelf", "self.hasShield", "self.wieldsWeapon", "target.sizeAtMost", "target.within", "target.seesSource", "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "target.atZero", "target.isDead", "damage.hasType", "target.hpAtMost", "condition.gained",
   "target.wounded", "target.bloodied", "source.classLevelAtLeast", "target.nearSelf", "self.seesTarget", "target.hasNotActed", "source.onOwnTurn", "activity.dealsType", "source.hasFeature", "activity.cantripOf", "activity.school", "activity.enchantedBy", "source.wildShaped", "activity.classSpell", "source.resists", "source.nearSelf", "self.seesSource", "source.hasEffectFromTarget", "source.hasSense", "target.allied"].map(k => [k, true]));
-const MOMENTS_LIST = "isHit, isDamaged, leavesReach, enemyDisengages, enter, turnStart, turnEnd, moves, preDamageRoll, hit, failedSave, startOfTurn, endOfTurn, preAttackRoll, castsSpell, isMissed, enemyTurnEnd, isTargeted, isAttacked, enemyAttacks, allyAttacks, gainsCondition, allyIsHit, allyIsDamaged, enemyAttacked";
+const MOMENTS_LIST = "isHit, isDamaged, leavesReach, enemyDisengages, enter, turnStart, turnEnd, moves, preDamageRoll, hit, failedSave, startOfTurn, endOfTurn, preAttackRoll, castsSpell, isMissed, enemyTurnEnd, isTargeted, isAttacked, enemyAttacks, allyAttacks, gainsCondition, allyIsHit, allyIsDamaged, enemyAttacked, falls, allyFalls";
 
 describe("validation d'une entrée", () => {
   it("accepte une entrée complète et bien formée", () => {
@@ -26,7 +26,7 @@ describe("validation d'une entrée", () => {
     const errors = validateEntry({ triggers: [{ on: "onHit", if: { "moon.phase": "full" }, do: [{ type: "smite" }] }] }, { facts });
     expect(errors).toEqual([
       `triggers[0].on: unknown moment "onHit" (${MOMENTS_LIST})`,
-      "triggers[0].do[0].type: unknown \"smite\" (lift, disarm, use, replay, damage, move, status, resave, remove, halve, uncrit, consume, advantage, disadvantage, ward, attackBonus, endCondition, reduce, miss, penalty, bonus, absorb, interpose, mark, save, breakConcentration)",
+      "triggers[0].do[0].type: unknown \"smite\" (lift, disarm, use, replay, damage, move, status, resave, remove, halve, uncrit, consume, advantage, disadvantage, ward, attackBonus, endCondition, reduce, miss, penalty, bonus, absorb, interpose, mark, save, breakConcentration, cancel)",
       "triggers[0].if: unknown fact \"moon.phase\""
     ]);
     expect(validateEntry({ triggers: [{ on: "isHit" }] }, { facts })).toEqual(["triggers[0].do: at least one step"]);
@@ -169,10 +169,10 @@ describe("contenu livré", () => {
       "clouds-jaunt", "combat-inspiration", "command", "commanders-strike", "commanding-presence", "compelled-duel", "compulsion",
       "confusion", "conjure-animals", "conjure-barrage", "conjure-celestial", "conjure-elemental", "conjure-fey",
       "conjure-minor-elementals", "conjure-volley", "conjure-woodland-beings", "contact-other-plane", "contagion", "continual-flame",
-      "cordon-of-arrows", "corrosive-form", "cosmic-omen", "counterspell", "coward-spirit", "crossbow-expert", "crown-of-madness",
-      "crusaders-mantle", "crusher", "cunning-action", "cunning-strike", "cutting-words", "dancing-lights", "dark-ones-blessing",
-      "dark-ones-own-luck", "darkness", "daylight", "death-burst", "death-throes", "death-ward", "deathless-agility", "defense",
-      "defensive-duelist", "deflect-attacks", "delayed-blast-fireball", "demiplane", "destructive-wave", "devious-strikes",
+      "cordon-of-arrows", "corrosive-form", "cosmic-omen", "countercharm", "counterspell", "coward-spirit", "crossbow-expert",
+      "crown-of-madness", "crusaders-mantle", "crusher", "cunning-action", "cunning-strike", "cutting-words", "dancing-lights",
+      "dark-ones-blessing", "dark-ones-own-luck", "darkness", "daylight", "death-burst", "death-throes", "death-ward", "deathless-agility",
+      "defense", "defensive-duelist", "deflect-attacks", "delayed-blast-fireball", "demiplane", "destructive-wave", "devious-strikes",
       "dimension-door", "disarming-attack", "disciple-of-life", "dispel-evil-and-good", "dispel-magic", "dissonant-whispers",
       "distant-spell", "distracting-strike", "divine-fury", "divine-smite", "divine-word", "dominate-beast", "dominate-monster",
       "dominate-person", "draconic-flight", "draining-kiss", "draining-swipe", "dread-ambusher", "dreadful-strikes", "dueling",
@@ -181,53 +181,54 @@ describe("contenu livré", () => {
       "elixir-of-health", "elusive", "empowered-channeling", "empowered-evocation", "energy-drain", "engulf", "enhance-ability",
       "enlarge-reduce", "ensnaring-strike", "entangle", "entangling-trail", "ethereal-jaunt", "ethereal-stride", "evards-black-tentacles",
       "evasion", "evasive-footwork", "expeditious-retreat", "eyebite", "faerie-fire", "faithful-hound", "fanatical-focus", "fear",
-      "fear-aura", "feign-death", "feinting-attack", "fell-word", "feral-pounce", "feral-strike", "fetid-aura", "fetid-cloud",
-      "fey-ancestry", "find-familiar", "find-steed", "fire-aura", "fire-element", "fire-form", "fire-shield", "fires-burn", "flame-aura",
-      "flame-blade", "flaming-sphere", "flask-of-holy-water", "fleet-step", "flesh-to-stone", "flyby", "foe-slayer", "fog-cloud",
-      "forbiddance", "forcecage", "forceful-hand", "foresight", "form-of-dread", "fortune-teller-spirit", "frenzied-rush", "frenzy",
-      "friends", "frosts-chill", "gaseous-form", "gate", "gathered-whispers", "geas", "ghost-walk", "giant-insect", "gibbering",
-      "globe-of-invulnerability", "goading-attack", "grappler", "grasping-hand", "grasping-vine", "grease", "great-weapon-fighting",
-      "great-weapon-master", "greater-portent", "greater-restoration", "guardian-of-faith", "guidance", "guiding-bolt", "gust-of-wind",
-      "hail-of-thorns", "hand-of-healing", "hand-of-ultimate-mercy", "haste", "heal", "healer", "healers-kit", "heat-aura", "heat-metal",
-      "heavy-armor-master", "heightened-focus", "heightened-spell", "hellish-rebuke", "heroic-warrior", "heroism", "hex",
-      "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-aura", "holy-nimbus", "holy-water", "hunger-of-hadar",
-      "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "ice-storm", "illusory-self", "imprisonment",
-      "improved-cunning-strike", "improved-elemental-fury", "improved-war-magic", "incendiary-cloud", "indomitable", "indomitable-might",
-      "innate-sorcery", "insect-plague", "inspiring-smite", "instinctive-pounce", "interception", "intimidating-presence", "invisibility",
-      "invoke-duplicity", "jallarzis-storm-of-radiance", "jump", "knowledge-from-a-past-life", "lamp", "lantern-bullseye",
-      "lantern-hooded", "large-form", "lay-on-hands", "leading-evasion", "lesser-restoration", "levitate", "life-drain", "lifedrinker",
-      "light", "lightning-arrow", "living-shadow", "lucky", "lunar-form", "lunging-attack", "lupin-howl", "mage-armor", "mage-hand",
-      "mage-slayer", "magic-missile", "magic-resistance", "magnificent-mansion", "maneuvering-attack", "marshal-undead", "martial-arts",
-      "mass-cure-wounds", "mass-heal", "mass-suggestion", "maze", "medium-armor-master", "melfs-acid-arrow", "menacing-attack", "mind-sliver", "mind-spike",
-      "mindless-rage", "minor-illusion", "mirror-image", "mislead", "mist-walker", "misty-escape", "misty-form", "misty-step",
-      "monks-focus", "moonbeam", "moonlight-step", "mordenkainens-faithful-hound", "mordenkainens-magnificent-mansion",
-      "mordenkainens-sword", "natures-ward", "natures-wrath", "necrotic-husk", "nimble-escape", "observant", "oil", "open-hand-technique",
-      "otilukes-freezing-sphere", "otilukes-resilient-sphere", "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade",
-      "pact-of-the-chain", "parry", "parry-maneuver", "pass-without-trace", "path-to-the-grave", "persistent-rage", "phantasmal-force",
-      "phantasmal-killer", "phantom-steed", "physicians-touch", "piercer", "plant-growth", "poisoner", "polearm-master", "polymorph", "portent",
-      "potent-cantrip", "potion-of-animal-friendship", "potion-of-climbing", "potion-of-diminution", "potion-of-flying",
-      "potion-of-growth", "potion-of-heroism", "potion-of-invisibility", "potion-of-resistance", "potion-of-vitality", "power-of-shadow",
-      "power-word-fortify", "power-word-heal", "power-word-kill", "power-word-stun", "prayer-of-healing", "precise-hunter",
-      "precision-attack", "preserve-life", "priest-spirit", "primal-knowledge", "prismatic-spray", "prismatic-wall", "proboscis",
-      "produce-flame", "project-image", "projected-ward", "protection", "protection-from-energy", "protection-from-evil-and-good",
-      "protection-from-poison", "prowl", "psionic-power", "psychic-defenses", "psychic-spells", "psychic-veil", "pushing-attack",
-      "quickened-spell", "radiant-soul", "rage", "rage-of-the-wilds", "raise-dead", "rally", "ray-of-enfeeblement", "ray-of-frost",
-      "reckless-attack", "regenerate", "regeneration", "relentless-endurance", "relentless-hunter", "relentless-rage",
-      "remarkable-athlete", "remove-curse", "rend-mind", "resilient-sphere", "resistance", "resurrection", "reverse-gravity", "revivify",
-      "riposte", "ritual-adept", "rumbling-movement", "sacred-weapon", "sanctuary", "sanguine-drain", "savage-attacker", "scorching-ray",
-      "sculpt-spells", "sear-undead", "searing-smite", "second-skin", "second-story-work", "see-invisibility", "self-restoration",
-      "sentinel", "sentinel-at-deaths-door", "shade-spirit", "shadow-stealth", "shadow-walk", "shadowy-dodge", "sharp-eye-ravenloft",
-      "sharpshooter", "shatter", "shield", "shield-master", "shillelagh", "shining-smite", "shocking-grasp", "sickening-vapors", "silence",
-      "skulker", "slam", "slasher", "sleep", "sleet-storm", "slippers-of-spider-climbing", "slow", "smelting-charge",
-      "smite-of-protection", "sneak-attack", "soldier-feature", "soul-of-vengeance", "spare-the-dying", "speedy", "spell-resistance",
-      "spell-sniper", "spider-climb", "spike-growth", "spirit-guardians", "spirit-shroud", "spiritual-weapon", "staggering-smite",
-      "starry-wisp", "steady-aim", "stench", "steps-of-the-fey", "stinking-cloud", "stomp", "stones-endurance", "storm-of-vengeance",
-      "stormborn", "storms-thunder", "studied-attacks", "stunning-strike", "subtle-spell", "suggestion", "summon-aberration",
-      "summon-beast", "summon-celestial", "summon-construct", "summon-dragon", "summon-elemental", "summon-fey", "summon-fiend",
-      "summon-undead", "sunbeam", "sunburst", "superior-inspiration", "supreme-healing", "supreme-sneak", "survivor-ravenloft", "swallow",
-      "swarm", "sweeping-attack", "swift-quiver", "swoop", "symbiotic-being", "symbol", "synaptic-static", "tactical-assessment",
-      "tactical-charge", "tactical-shift", "tashas-hideous-laughter", "tavern-brawler", "telekinesis", "telekinetic", "thiefs-reflexes",
-      "thorn-whip", "thrown-weapon-fighting", "thunderous-smite", "thunderwave", "tinderbox", "toll-the-dead", "torch", "trampling-charge",
+      "fear-aura", "feather-fall", "feign-death", "feinting-attack", "fell-word", "feral-pounce", "feral-strike", "fetid-aura",
+      "fetid-cloud", "fey-ancestry", "find-familiar", "find-steed", "fire-aura", "fire-element", "fire-form", "fire-shield", "fires-burn",
+      "flame-aura", "flame-blade", "flaming-sphere", "flask-of-holy-water", "fleet-step", "flesh-to-stone", "flyby", "foe-slayer",
+      "fog-cloud", "forbiddance", "forcecage", "forceful-hand", "foresight", "form-of-dread", "fortune-teller-spirit", "fount-of-moonlight",
+      "frenzied-rush", "frenzy", "friends", "frosts-chill", "gaseous-form", "gate", "gathered-whispers", "geas", "ghost-walk",
+      "giant-insect", "gibbering", "globe-of-invulnerability", "goading-attack", "grappler", "grasping-hand", "grasping-vine", "grease",
+      "great-weapon-fighting", "great-weapon-master", "greater-portent", "greater-restoration", "guardian-of-faith", "guidance",
+      "guiding-bolt", "gust-of-wind", "hail-of-thorns", "hand-of-healing", "hand-of-ultimate-mercy", "haste", "heal", "healer",
+      "healers-kit", "heat-aura", "heat-metal", "heavy-armor-master", "heightened-focus", "heightened-spell", "hellish-rebuke",
+      "heroic-warrior", "heroism", "hex", "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-aura", "holy-nimbus",
+      "holy-water", "hunger-of-hadar", "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "ice-storm", "illusory-self",
+      "imprisonment", "improved-cunning-strike", "improved-elemental-fury", "improved-war-magic", "incendiary-cloud", "indomitable",
+      "indomitable-might", "innate-sorcery", "insect-plague", "inspiring-smite", "instinctive-pounce", "interception",
+      "intimidating-presence", "invisibility", "invoke-duplicity", "jallarzis-storm-of-radiance", "jump", "knowledge-from-a-past-life",
+      "lamp", "lantern-bullseye", "lantern-hooded", "large-form", "lay-on-hands", "leading-evasion", "lesser-restoration", "levitate",
+      "life-drain", "lifedrinker", "light", "lightning-arrow", "living-shadow", "lucky", "lunar-form", "lunging-attack", "lupin-howl",
+      "mage-armor", "mage-hand", "mage-slayer", "magic-missile", "magic-resistance", "magnificent-mansion", "maneuvering-attack",
+      "marshal-undead", "martial-arts", "mass-cure-wounds", "mass-heal", "mass-suggestion", "maze", "medium-armor-master",
+      "melfs-acid-arrow", "menacing-attack", "mind-sliver", "mind-spike", "mindless-rage", "minor-illusion", "mirror-image", "mislead",
+      "mist-walker", "misty-escape", "misty-form", "misty-step", "monks-focus", "moonbeam", "moonlight-step",
+      "mordenkainens-faithful-hound", "mordenkainens-magnificent-mansion", "mordenkainens-sword", "natures-ward", "natures-wrath",
+      "necrotic-husk", "nimble-escape", "observant", "oil", "open-hand-technique", "otilukes-freezing-sphere", "otilukes-resilient-sphere",
+      "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade", "pact-of-the-chain", "parry", "parry-maneuver", "pass-without-trace",
+      "path-to-the-grave", "persistent-rage", "phantasmal-force", "phantasmal-killer", "phantom-steed", "physicians-touch", "piercer",
+      "plant-growth", "poisoner", "polearm-master", "polymorph", "portent", "potent-cantrip", "potion-of-animal-friendship",
+      "potion-of-climbing", "potion-of-diminution", "potion-of-flying", "potion-of-growth", "potion-of-heroism", "potion-of-invisibility",
+      "potion-of-resistance", "potion-of-vitality", "power-of-shadow", "power-word-fortify", "power-word-heal", "power-word-kill",
+      "power-word-stun", "prayer-of-healing", "precise-hunter", "precision-attack", "preserve-life", "priest-spirit", "primal-knowledge",
+      "prismatic-spray", "prismatic-wall", "proboscis", "produce-flame", "project-image", "projected-ward", "protection",
+      "protection-from-energy", "protection-from-evil-and-good", "protection-from-poison", "prowl", "psionic-power", "psychic-defenses",
+      "psychic-spells", "psychic-veil", "pushing-attack", "quickened-spell", "radiant-soul", "rage", "rage-of-the-wilds", "raise-dead",
+      "rally", "ray-of-enfeeblement", "ray-of-frost", "reckless-attack", "regenerate", "regeneration", "relentless-endurance",
+      "relentless-hunter", "relentless-rage", "remarkable-athlete", "remove-curse", "rend-mind", "resilient-sphere", "resistance",
+      "resurrection", "retaliation", "reverse-gravity", "revivify", "riposte", "ritual-adept", "rumbling-movement", "sacred-weapon",
+      "sanctuary", "sanguine-drain", "savage-attacker", "scorching-ray", "sculpt-spells", "sear-undead", "searing-smite", "second-skin",
+      "second-story-work", "see-invisibility", "self-restoration", "sentinel", "sentinel-at-deaths-door", "shade-spirit", "shadow-stealth",
+      "shadow-walk", "shadowy-dodge", "sharp-eye-ravenloft", "sharpshooter", "shatter", "shield", "shield-master", "shillelagh",
+      "shining-smite", "shocking-grasp", "sickening-vapors", "silence", "skulker", "slam", "slasher", "sleep", "sleet-storm",
+      "slippers-of-spider-climbing", "slow", "slow-fall", "smelting-charge", "smite-of-protection", "sneak-attack", "soldier-feature",
+      "soul-of-vengeance", "spare-the-dying", "speedy", "spell-resistance", "spell-sniper", "spider-climb", "spike-growth",
+      "spirit-guardians", "spirit-shroud", "spiritual-weapon", "staggering-smite", "starry-wisp", "steady-aim", "stench",
+      "steps-of-the-fey", "stinking-cloud", "stomp", "stones-endurance", "storm-of-vengeance", "stormborn", "storms-thunder",
+      "studied-attacks", "stunning-strike", "subtle-spell", "suggestion", "summon-aberration", "summon-beast", "summon-celestial",
+      "summon-construct", "summon-dragon", "summon-elemental", "summon-fey", "summon-fiend", "summon-undead", "sunbeam", "sunburst",
+      "superior-inspiration", "supreme-healing", "supreme-sneak", "survivor-ravenloft", "swallow", "swarm", "sweeping-attack",
+      "swift-quiver", "swoop", "symbiotic-being", "symbol", "synaptic-static", "tactical-assessment", "tactical-charge", "tactical-mind",
+      "tactical-shift", "tashas-hideous-laughter", "tavern-brawler", "telekinesis", "telekinetic", "thiefs-reflexes", "thorn-whip",
+      "thrown-weapon-fighting", "thunderous-smite", "thunderwave", "tinderbox", "toll-the-dead", "torch", "trampling-charge",
       "tricksters-transposition", "trip-attack", "true-resurrection", "true-strike", "tsunami", "twinned-spell", "umbral-dagger",
       "unarmed-fighting", "unarmed-strike", "uncanny-dodge", "undead-fortitude", "unseen-servant", "valor-extra-attack", "vampiric-bite",
       "vampiric-touch", "vicious-mockery", "vile-appearance", "vitality-of-the-tree", "vitriolic-sphere", "vow-of-enmity",
@@ -893,7 +894,7 @@ describe("§298 : repasse, lot C3 (coût d'action et budget du tour)", async () 
     expect(CONTENT["pact-of-the-chain"].usageLimits.uehA2kfgOCKRIqAs.cost).toBe("action");
     expect(CONTENT["pact-of-the-chain"].summon).toBeTruthy();
     for ( const id of ["indomitable", "war-magic", "improved-war-magic", "psionic-power", "sacred-weapon", "valor-extra-attack", "pact-of-the-chain"] ) {
-      expect(validateEntry(CONTENT[id])).toEqual([]);
+      expect(validateEntry(CONTENT[id], { facts })).toEqual([]);
     }
   });
   it("les nouvelles clés sont vérifiées", () => {
@@ -946,5 +947,26 @@ describe("§300 : repasse, lot C5 (zones, émanations, entrées)", () => {
     expect(validateEntry({ zoneBound: "oui" })).toHaveLength(1);
     expect(validateEntry({ pickTargets: { activities: ["dnd5eactivity000"], radius: " ", units: "ft" } })).toHaveLength(1);
     expect(validateEntry({ pickTargets: { activities: ["dnd5eactivity000"], radius: "@scale.x.y", units: "ft" } })).toEqual([]);
+  });
+});
+
+describe("§301 : repasse, lot C6 (réactions et fenêtres jamais proposées)", () => {
+  it("les déclarations du lot", () => {
+    expect(CONTENT["interception"].triggers[0]).toMatchObject({ on: "allyIsHit", do: [{ type: "use", target: "target" }, { type: "reduce" }] });
+    expect(CONTENT["psionic-power"].triggers.map(t => t.on)).toEqual(["isHit", "allyIsHit"]);
+    expect(CONTENT["cutting-words"].triggers.map(t => Object.keys(t.if))).toEqual([["target.within", "target.seesSource"], ["source.nearSelf", "self.seesSource"]]);
+    expect(CONTENT["retaliation"].triggers[0].do[0]).toEqual({ type: "use", target: "source", weapon: true });
+    expect(CONTENT["slow-fall"].triggers[0].on).toBe("falls");
+    expect(CONTENT["feather-fall"].triggers[0].on).toEqual(["falls", "allyFalls"]);
+    expect(CONTENT["tactical-mind"].rollBonus).toEqual({ activity: "VVEGPoQePVprCF9A", on: ["check"], failRefund: true });
+    expect(CONTENT["countercharm"].rollBonus.statuses).toEqual(["charmed", "frightened"]);
+    for ( const id of ["interception", "psionic-power", "cutting-words", "retaliation", "slow-fall", "feather-fall", "tactical-mind", "countercharm", "fount-of-moonlight", "misty-escape"] ) {
+      expect(validateEntry(CONTENT[id], { facts })).toEqual([]);
+    }
+  });
+  it("les nouvelles étapes sont contrôlées", () => {
+    expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "use" }, { type: "cancel" }] }] })).toHaveLength(1);
+    expect(validateEntry({ triggers: [{ on: "falls", do: [{ type: "use" }, { type: "reduce" }] }] })).toEqual([]);
+    expect(validateEntry({ triggers: [{ on: "falls", do: [{ type: "reduce" }] }] })).toHaveLength(1);
   });
 });

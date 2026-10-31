@@ -93,8 +93,21 @@ export const RESAVE_MOMENTS = Object.freeze([...TURN_MOMENTS, "isDamaged"]);
  * Une déclaration sous forme canonique : `on` toujours en liste, `if` et `do` toujours présents,
  * `via` : null (les items de l'acteur) ou "effect" (les effets que l'item a posés sur la créature).
  */
-/** Les déclarations `via: "effect"` qu'on peut restreindre à l'auteur des dégâts (`by`, §65 : Suggestion). */
-export const DAMAGED_BY = Object.freeze(["originSide"]);
+/**
+ * Les déclarations `via: "effect"` qu'on peut restreindre selon la source des dégâts (`by`) : §65 `originSide`, le lanceur ou ses
+ * alliés (Suggestion) ; §294 `otherActivity`, pas l'activité qui a posé l'effet (Calcination : « ces dégâts ne mettent pas fin au
+ * renvoi »).
+ */
+export const DAMAGED_BY = Object.freeze(["originSide", "otherActivity"]);
+
+/**
+ * §294 : deux références d'activité désignent-elles la même ? UUID complets, ou un UUID et un id nu (`system.origin.activity` d'un
+ * effet peut être l'un ou l'autre). Inconnue d'un côté : non.
+ */
+export function sameActivity(a, b) {
+  if ( !a || !b ) return false;
+  return String(a).split(".").at(-1) === String(b).split(".").at(-1);
+}
 
 /**
  * §65 : des dégâts viennent-ils du lanceur de l'effet ou d'un de ses alliés ? Même acteur, ou tokens de même disposition

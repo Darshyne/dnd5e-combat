@@ -15,12 +15,13 @@ export const FLOAT_CATEGORIES = Object.freeze({
   prompt: "floatPrompts", refused: "floatPrompts",
   ended: "floatEffects", unaffected: "floatEffects", duplicate: "floatEffects",
   gain: "floatResources", spend: "floatResources",
-  strike: "floatStrikes"
+  strike: "floatStrikes",
+  check: "floatChecks", checkSuccess: "floatChecks", checkFail: "floatChecks"
 });
 
 /** Les réglages de catégorie, dans l'ordre de la fenêtre, avec leur valeur par défaut. */
 export const FLOAT_CATEGORY_DEFAULTS = Object.freeze({
-  floatAttacks: true, floatHits: false, floatAdvantage: true, floatSaves: true, floatCover: true, floatReactions: true, floatStrikes: true,
+  floatAttacks: true, floatHits: false, floatAdvantage: true, floatSaves: true, floatChecks: true, floatCover: true, floatReactions: true, floatStrikes: true,
   floatEffects: true, floatResources: true, floatPrompts: true
 });
 
@@ -28,7 +29,21 @@ export const FLOAT_CATEGORY_DEFAULTS = Object.freeze({
 export const FLOAT_DEFAULTS = Object.freeze({ duration: 4, spacing: 1, distance: 1.5, scale: 100, direction: "down" });
 
 /** Les sortes dont le pictogramme est celui d'un dé (le résultat du jet, réglage `floatDice`). */
-const ROLLED = new Set(["hit", "critical", "miss", "saveSuccess", "saveFail"]);
+const ROLLED = new Set(["hit", "critical", "miss", "saveSuccess", "saveFail", "check", "checkSuccess", "checkFail"]);
+
+/**
+ * §292 : la sorte du texte d'un test de caractéristique, de compétence ou d'outil lancé par dnd5e, d'après son d20 — réussi ou raté
+ * quand le jet porte un DD (`options.target`, dice/d20-roll.mjs `isSuccess` / `isFailure`), sinon le seul total.
+ * @param {{total: number, target?: number|null, isSuccess?: boolean, isFailure?: boolean}} roll
+ * @returns {"check"|"checkSuccess"|"checkFail"}
+ */
+export function checkKind(roll) {
+  const target = roll?.target;
+  if ( (target === null) || (target === undefined) || (target === "") || !Number.isFinite(Number(target)) ) return "check";
+  if ( roll.isSuccess === true ) return "checkSuccess";
+  if ( roll.isFailure === true ) return "checkFail";
+  return (Number(roll.total) >= Number(roll.target)) ? "checkSuccess" : "checkFail";
+}
 
 /**
  * Ce qu'une ligne affiche : son texte, le nombre du jet et les pictogrammes — ou null si sa catégorie est coupée. Un coup qui touche

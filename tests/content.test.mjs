@@ -740,3 +740,32 @@ describe("§277 : sources enregistrées avec une table", () => {
     expect(SOURCES).toEqual(shipped);
   });
 });
+
+describe("§293 : créatures de votre choix dans un rayon (pickTargets)", () => {
+  it("le Renvoi des morts-vivants déclare sa liste et la Calcination à la place", () => {
+    expect(CONTENT["channel-divinity"].pickTargets).toMatchObject({ activities: ["aOptL5pMaj3WtR8S"], radius: 30, units: "ft",
+      upgrade: { item: "sear-undead", activity: "fW3U8L8Ca9a6O9Wx" } });
+    expect(CONTENT["sear-undead"].pickTargets.activities).toEqual(["fW3U8L8Ca9a6O9Wx"]);
+  });
+  it("la déclaration est vérifiée", () => {
+    expect(validateEntry({ pickTargets: { activities: ["aOptL5pMaj3WtR8S"], radius: 30, units: "ft" } })).toEqual([]);
+    expect(validateEntry({ pickTargets: { activities: [], radius: 0, units: "km", upgrade: { item: "" }, extra: 1 } })).toHaveLength(5);
+  });
+});
+
+describe("§294 : Calcination des morts-vivants — ses propres dégâts ne mettent pas fin au renvoi", async () => {
+  const { sameActivity, DAMAGED_BY } = await import("../module/scripts/core/triggers.mjs");
+  it("la déclaration ne réagit qu'aux dégâts d'une autre activité", () => {
+    expect(CONTENT["sear-undead"].triggers).toEqual([{ on: "isDamaged", via: "effect", fromEffect: "OftTd0Eiwnls76cX", by: "otherActivity", do: [{ type: "remove" }] }]);
+    expect(DAMAGED_BY).toContain("otherActivity");
+    expect(validateEntry({ triggers: [{ on: "isDamaged", via: "effect", by: "otherActivity", do: [{ type: "remove" }] }] })).toEqual([]);
+    expect(validateEntry({ triggers: [{ on: "endOfTurn", via: "effect", by: "otherActivity", do: [{ type: "remove" }] }] }).length).toBeGreaterThan(0);
+  });
+  it("compare un UUID d'activité et un id nu", () => {
+    const uuid = "Actor.y5Aji4lrsSLuq0TB.Item.GL3bjGsn60rEKt4U.Activity.fW3U8L8Ca9a6O9Wx";
+    expect(sameActivity(uuid, uuid)).toBe(true);
+    expect(sameActivity(uuid, "fW3U8L8Ca9a6O9Wx")).toBe(true);
+    expect(sameActivity(uuid, "aOptL5pMaj3WtR8S")).toBe(false);
+    expect(sameActivity(null, uuid)).toBe(false);
+  });
+});

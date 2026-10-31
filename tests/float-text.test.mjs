@@ -43,3 +43,26 @@ describe("textes flottants (§228)", () => {
     expect(floatLine({ kind: "cover", mode: "advantage" }, "Abri", { modeText }).mode).toBeNull();
   });
 });
+
+describe("§292 : tests de caractéristique et de compétence", async () => {
+  const { checkKind, floatLine, floatLabel } = await import("../module/scripts/core/float-text.mjs");
+  const modeText = { advantage: "Avantage", disadvantage: "Désavantage" };
+
+  it("sans DD, le seul total ; avec un DD, réussite ou échec", () => {
+    expect(checkKind({ total: 15 })).toBe("check");
+    expect(checkKind({ total: 15, target: null })).toBe("check");
+    expect(checkKind({ total: 15, target: 12, isSuccess: true })).toBe("checkSuccess");
+    expect(checkKind({ total: 9, target: 12, isFailure: true })).toBe("checkFail");
+    expect(checkKind({ total: 12, target: 12 })).toBe("checkSuccess");
+    expect(checkKind({ total: 11, target: "12" })).toBe("checkFail");
+  });
+
+  it("la ligne : total, mode, compétence et verdict ; coupée par sa catégorie", () => {
+    const line = floatLine({ kind: "checkSuccess", roll: 15, mode: "advantage" }, "Athlétisme · Réussite", { modeText });
+    expect(floatLabel(line, modeText, "avec")).toBe("15 avec Avantage · Athlétisme · Réussite");
+    expect(line.dieIcon).toBe(true);
+    expect(floatLabel(floatLine({ kind: "check", roll: 8 }, "Force", { modeText }), modeText)).toBe("8 · Force");
+    expect(floatLine({ kind: "check", roll: 8 }, "Force", { show: { floatChecks: false } })).toBeNull();
+    expect(floatLabel(floatLine({ kind: "checkFail", roll: 4 }, "Discrétion · Échec", { dice: false }))).toBe("Discrétion · Échec");
+  });
+});

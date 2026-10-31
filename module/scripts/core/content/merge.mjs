@@ -32,7 +32,7 @@ export const MERGE = Object.freeze({
   effectsExpire: "replace", usageLimits: "shallow", healMax: "replace", duplicates: "replace", reactiveSpell: "replace",
   saveAdvantage: "list", onFell: "shallow", bonusAttack: "shallow", projectiles: "shallow", leap: "shallow", chain: "replace", curesOn: "replace", endsOnUse: "replace", drawsOnEnd: "shallow", catalyst: "replace",
   bolt: "shallow", light: "shallow", atTurnStart: "shallow", breaksOn: "list", noReactions: "replace",
-  actionOrBonus: "replace", cures: "list", curesAll: "list", potionEffect: "replace", castTargets: "replace",
+  actionOrBonus: "replace", pickTargets: "replace", cures: "list", curesAll: "list", potionEffect: "replace", castTargets: "replace",
   effectChanges: "shallow", advantageIfFighting: "replace", emanation: "shallow", regeneration: "replace",
   fortitude: "replace", noOpportunity: "replace", sharesSpace: "replace", placesSummons: "replace", drain: "replace",
   swallow: "replace", savedEffects: "list", ignoresCloseCombat: "replace", sharedHp: "replace", failMargins: "shallow",

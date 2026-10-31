@@ -29,6 +29,9 @@ import { castWithPicks } from "../runtime/projectiles.mjs";
 import { castLight, putOutLight } from "../runtime/lights.mjs";
 import { lightChoiceOf } from "../adapter/lights.mjs";
 import { askLightChoice } from "./light.mjs";
+import { pickTargetsOf } from "../adapter/pick-targets.mjs";
+import { castOnPicked } from "../runtime/pick-targets.mjs";
+import { askPickTargets } from "./pick-targets.mjs";
 import { askWildForm } from "./wildshape.mjs";
 import { isWildShape } from "../adapter/wildshape.mjs";
 import { enchantTargetOf } from "../adapter/enchant.mjs";
@@ -322,6 +325,16 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     askLightChoice(activity).then(choice => !choice ? null
       : exclusive(() => (choice.where === "off") ? putOutLight(activity) : castLight(activity, usage, choice)))
       .catch(err => console.error(`${MODULE_ID} | light choice`, err));
+    return false;
+  }
+  // §293 : « chaque créature de votre choix dans un rayon » (Renvoi des morts-vivants) — la liste des créatures à portée, cochées, et
+  // la case de l'activité qui le remplace (Calcination) ; puis l'activité part sur les cochées, sans zone ni visée au clic.
+  if ( pickTargetsOf(activity) && !ours.picked && !ours.confirmed && canvas.ready && activity.actor?.isOwner ) {
+    closeSheetFor(activity);
+    stopTargeting();
+    const usage = [usageConfig, dialogConfig, messageConfig];
+    askPickTargets(activity).then(choice => !choice ? null : exclusive(() => castOnPicked(activity, usage, choice)))
+      .catch(err => console.error(`${MODULE_ID} | creatures of your choice`, err));
     return false;
   }
   // §16.41 : Arme élémentaire — le niveau et l'élément (fenêtre de dnd5e), puis la créature (visée), puis son arme.

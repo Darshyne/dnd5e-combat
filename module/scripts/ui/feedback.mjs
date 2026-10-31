@@ -18,10 +18,12 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { feedbackBetween } from "../core/feedback.mjs";
-import { FLOAT_CATEGORY_DEFAULTS, FLOAT_DEFAULTS, floatLine, floatLabel, floatFrame, floatDelays } from "../core/float-text.mjs";
+import { FLOAT_CATEGORY_DEFAULTS, FLOAT_DEFAULTS, floatLine, floatLabel, floatFrame, floatDelays, checkKind } from "../core/float-text.mjs";
 import { route } from "../runtime/router.mjs";
-import { loc, NOTICE_QUERY, receiveNotice } from "../runtime/shared.mjs";
+import { loc, NOTICE_QUERY, receiveNotice, waitForDice } from "../runtime/shared.mjs";
 import { resourceChangesOf } from "../adapter/limits.mjs";
+import { keyLabel } from "../adapter/group-roll.mjs";
+import { d20Mode } from "../adapter/messages.mjs";
 
 /** Dernier état vu, par message. */
 const seen = new Map();
@@ -47,7 +49,10 @@ const STYLES = {
   gain: { fill: 0x8fd18f, fontSize: 22 },       // une ressource rendue (Regain sauvage : +1 Forme sauvage)
   spend: { fill: 0xffb347, fontSize: 20 },      // la ressource dépensée pour cela (−1 emplacement niv. 2)
   strike: { fill: 0xe0453a, fontSize: 26 },     // §223 : un coup qui porte l'Attaque sournoise ou des dégâts au choix (Frappe effroyable)
-  heroic: { fill: 0xffd24a, fontSize: 28 }      // §282 : l'Inspiration héroïque utilisée (un dé relancé)
+  heroic: { fill: 0xffd24a, fontSize: 28 },     // §282 : l'Inspiration héroïque utilisée (un dé relancé)
+  check: { fill: 0xf0e6c8, fontSize: 22 },      // §292 : un test de caractéristique, de compétence ou d'outil, sans DD connu
+  checkSuccess: { fill: 0x8fd18f, fontSize: 22 },
+  checkFail: { fill: 0xe07a6a, fontSize: 22 }
 };
 
 function textOf(f) {
@@ -61,7 +66,8 @@ function textOf(f) {
     case "saveFail": return loc(f.auto ? "Retour.SauvegardeRateeOffice" : "Retour.SauvegardeRatee");
     case "duplicate": return loc("Retour.Replique");
     case "unaffected": return loc("Retour.NonAffecte");
-    case "prompt": case "refused": case "ended": case "gain": case "spend": case "strike": case "heroic": return f.text;
+    case "prompt": case "refused": case "ended": case "gain": case "spend": case "strike": case "heroic":
+    case "check": case "checkSuccess": case "checkFail": return f.text;
   }
   return null;
 }
@@ -246,6 +252,7 @@ function onCreateMessage(message) {
     if ( token ) show(changes.map(c => ({ token: token.uuid, kind: c.kind, text: resourceText(c) })));
   }
   if ( message.type === "damage" ) showStrikes(message);
+  if ( message.type === "check" ) showCheck(message).catch(() => {});
   const ended = message.getFlag?.(MODULE_ID, "ended");
   if ( !ended?.actor || !game.settings.get(MODULE_ID, "feedbackText") || !canvas?.ready ) return;
   if ( (Date.now() - (message.timestamp ?? 0)) > FRESH_MS ) return;
@@ -270,6 +277,28 @@ function showStrikes(message) {
   if ( sneak ) texts.push(loc("Retour.AttaqueSournoise", { n: sneak.dice, faces: sneak.faces }));
   for ( const b of chosen ) texts.push(loc("Retour.DegatsChoisis", { name: b.name }));
   show(texts.map(text => ({ token: target, kind: "strike", text })));
+}
+
+/**
+ * §292 : chez tout le monde, un test de caractéristique, de compétence ou d'outil lancé par dnd5e (message `check`, check-message-data.mjs
+ * — l'initiative exceptée) : « 15 · Athlétisme », et avec un DD connu du jet (`options.target` : un DD caché aux joueurs n'en pose pas,
+ * adapter/group-roll.mjs) « 15 · Athlétisme · Réussite ». Au-dessus du token qui a lancé, après les dés 3D ; un jet privé ou aveugle ne
+ * s'affiche que chez qui peut le lire (`isContentVisible`).
+ */
+async function showCheck(message) {
+  if ( !game.settings.get(MODULE_ID, "feedbackText") || !canvas?.ready || ((Date.now() - (message.timestamp ?? 0)) > FRESH_MS) ) return;
+  const data = message.system ?? {};
+  const roll = message.rolls?.[0];
+  if ( (data.type === "initiative") || !roll || !message.isContentVisible ) return;
+  const actor = message.getAssociatedActor?.();
+  const token = message.getAssociatedToken?.() ?? actor?.token ?? actor?.getActiveTokens?.(false, true)?.[0];
+  if ( !token ) return;
+  const label = data.skill ? keyLabel({ type: "skill", key: data.skill })
+    : data.tool ? keyLabel({ type: "tool", key: data.tool }) : keyLabel({ type: "check", key: data.ability });
+  const kind = checkKind({ total: roll.total, target: roll.options?.target, isSuccess: roll.isSuccess, isFailure: roll.isFailure });
+  const verdict = { checkSuccess: loc("Retour.TestReussi"), checkFail: loc("Retour.TestRate") }[kind];
+  await waitForDice(message);
+  show([{ token: token.uuid, kind, roll: roll.total, mode: d20Mode(roll), text: [label, verdict].filter(Boolean).join(" · ") }]);
 }
 
 function onUpdateMessage(message, changes) {

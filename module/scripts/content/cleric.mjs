@@ -24,6 +24,11 @@ const divineStrike = (formula, improved) => ({ on: "preDamageRoll", oncePerTurn:
  * Strikes: Potent Spellcasting », `blessed-strikes-potent-spellcasting`) posé sur la fiche porte la règle et retire l'Impact divin.
  */
 
+/** §293 : Calcination des morts-vivants (`phbclcSearUndead`), son activité « Channel Divinity: Turn Undead ». */
+const SEAR_UNDEAD = "fW3U8L8Ca9a6O9Wx";
+/** §293 : l'activité « Turn Undead » du Conduit divin (`phbclcChannelDiv`). */
+const TURN_UNDEAD = Object.freeze({ activities: ["aOptL5pMaj3WtR8S"], radius: 30, units: "ft", upgrade: { item: "sear-undead", activity: SEAR_UNDEAD } });
+
 export const CLERIC = Object.freeze({
   // Éclat protecteur (Lumière 3) : en Réaction, le clerc donne le Désavantage au jet d'attaque d'une créature qu'il voit à 9 m ou
   // moins — contre lui ou un allié (§34 : fenêtre avant le jet). Les PV temporaires de l'Éclat
@@ -49,5 +54,12 @@ export const CLERIC = Object.freeze({
   // Troc du filou (Duperie 6, `phbclcTricksters`) : quand l'action Bonus crée ou déplace l'illusion d'Invoquer la duplicité, le
   // clerc peut aussi prendre sa place par téléportation, l'illusion venant à la sienne (§38.2) — une entrée du menu
   // contextuel de l'illusion et du lanceur ; l'activité « Transpose » de l'item (action Bonus de suivi) n'est pas utilisée.
-  "tricksters-transposition": { transpose: { summon: "invoke-duplicity" } }
+  "tricksters-transposition": { transpose: { summon: "invoke-duplicity" } },
+  // §293 : Renvoi des morts-vivants — « chaque Mort-vivant de votre choix dans un rayon de 9 m » : la donnée ne pose ni zone ni liste
+  // (portée 30 ft, cibles à cliquer une à une). Une fenêtre liste les créatures à 9 m, le joueur coche ; avec Calcination des
+  // morts-vivants (niveau 5), une case la propose à la place — son activité (même sauvegarde, même effet, plus les dégâts radiants,
+  // la même utilisation de Conduit divin) part alors sur les mêmes cibles, sans sa zone.
+  "channel-divinity": { pickTargets: TURN_UNDEAD },
+  "channel-divinity-cleric": { pickTargets: TURN_UNDEAD },
+  "sear-undead": { pickTargets: { activities: [SEAR_UNDEAD], radius: 30, units: "ft" } }
 });

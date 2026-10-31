@@ -52,6 +52,18 @@ export function wrongTypeFor(activity, actor) {
   return typeAllowed(types, creatureTypeOf(actor)) ? null : types;
 }
 
+/**
+ * §293 : la règle du contenu (`targets` : type exigé, `unaffectedIf`) écarte-t-elle cette créature ? Synchrone, sans plan ni immunités :
+ * ce que la liste « créatures de votre choix » ne propose pas (Renvoi des morts-vivants : un humanoïde).
+ */
+export function excludedByRule(activity, token) {
+  const actor = token?.actor;
+  if ( !actor || !activity ) return false;
+  if ( wrongTypeFor(activity, actor) ) return true;
+  const rule = targetRuleOf(activity);
+  return !!(rule?.unaffectedIf && holds(rule.unaffectedIf, factsFor({ source: activity.actor ?? null, target: actor, activity, targetToken: token })));
+}
+
 /** « un humanoïde », « une bête ou un humanoïde » : les types en clair, par les libellés de dnd5e. */
 export function typesLabel(types) {
   return (types ?? []).map(t => game.i18n.localize(CONFIG.DND5E.creatureTypes?.[t]?.label ?? t).toLowerCase())

@@ -88,7 +88,8 @@ export function validateTrigger(declaration, at, facts, errors) {
     if ( !isId(declaration.fromEffect) ) errors.push(`${at}.fromEffect: effect id (16 characters)`);
     if ( d.via !== "effect" ) errors.push(`${at}.fromEffect: requires via: "effect"`);
   }
-  // §65 : `by: "originSide"` — l'effet ne réagit qu'aux dégâts du lanceur ou de ses alliés (Suggestion).
+  // §65 : `by: "originSide"` — l'effet ne réagit qu'aux dégâts du lanceur ou de ses alliés (Suggestion) ; §294 `by: "otherActivity"` —
+  // pas à ceux de l'activité qui l'a posé (Calcination des morts-vivants).
   if ( "by" in declaration ) {
     if ( !DAMAGED_BY.includes(declaration.by) ) errors.push(`${at}.by: ${DAMAGED_BY.join(", ")}`);
     if ( (d.via !== "effect") || (d.on.length !== 1) || (d.on[0] !== "isDamaged") ) errors.push(`${at}.by: requires via: "effect" and isDamaged as the only moment`);

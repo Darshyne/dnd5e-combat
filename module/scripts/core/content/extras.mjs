@@ -10,6 +10,21 @@ import { isId, isObject } from "./shared.mjs";
  * rusées), puis toutes celles ajoutées depuis (murs, globes, paliers de PV, rappel de sort…).
  */
 export function validateExtras(entry, at, errors) {
+  // §293 : « chaque créature de votre choix dans un rayon de… » — la liste des créatures à portée, cochées par le joueur, devient les cibles
+  // de l'activité ; `upgrade` : une autre activité (d'un autre item du lanceur) qui peut la remplacer, proposée par une case.
+  if ( "pickTargets" in entry ) {
+    const p = entry.pickTargets;
+    if ( !isObject(p) ) errors.push(`${at}pickTargets: { activities, radius, units, upgrade? }`);
+    else {
+      if ( !Array.isArray(p.activities) || !p.activities.length || !p.activities.every(isId) ) errors.push(`${at}pickTargets.activities: a list of activity ids`);
+      if ( !(Number.isFinite(p.radius) && (p.radius > 0)) ) errors.push(`${at}pickTargets.radius: positive number`);
+      if ( !["ft", "m"].includes(p.units) ) errors.push(`${at}pickTargets.units: ft, m`);
+      if ( ("upgrade" in p) && !(isObject(p.upgrade) && (typeof p.upgrade.item === "string") && p.upgrade.item && isId(p.upgrade.activity)) ) {
+        errors.push(`${at}pickTargets.upgrade: { item: identifier, activity: activity id }`);
+      }
+      for ( const key of Object.keys(p) ) if ( !["activities", "radius", "units", "upgrade"].includes(key) ) errors.push(`${at}pickTargets.${key}: unknown key`);
+    }
+  }
   // §188 : une activité qui remplace une attaque — tout l'item (`true`) ou certaines activités (l'Huile : le lancer, pas l'étalage).
   if ( ("replacesAttack" in entry) && (entry.replacesAttack !== true)
     && !(Array.isArray(entry.replacesAttack) && entry.replacesAttack.length && entry.replacesAttack.every(isId)) ) {

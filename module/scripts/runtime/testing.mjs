@@ -10,6 +10,8 @@
 
 import { playerWaits } from "../adapter/player-wait.mjs";
 import { forceWait } from "./player-waits.mjs";
+import { pickCandidates, upgradeOf } from "../adapter/pick-targets.mjs";
+import { castOnPicked } from "./pick-targets.mjs";
 import { clockState } from "./clock.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { perfApi } from "./perf.mjs";
@@ -363,6 +365,30 @@ async function diagnosticForget({ uuids=[], dropPack=false, actors=[] }={}) {
 const diagnosticRestore = ({ uuid }) => diagRestore(uuid);
 
 
+/** §293 : l'activité d'un item d'un token de la scène vue. */
+function activityOn({ tokenId, itemId, activityId }) {
+  const item = canvas.scene?.tokens.get(tokenId)?.actor?.items.get(itemId);
+  return item?.system?.activities?.get(activityId) ?? null;
+}
+
+/** §293 : la liste « créatures de votre choix dans un rayon » qu'aurait la fenêtre (sans ce que voit l'utilisateur). */
+function pickTargets(args) {
+  const activity = activityOn(args);
+  if ( !activity ) return { error: "activity not found" };
+  const { radius, units, creatures } = pickCandidates(activity);
+  return { radius, units, upgrade: upgradeOf(activity)?.item?.name ?? null,
+    creatures: creatures.map(c => ({ id: c.token.id, name: c.token.name, enemy: c.enemy, distance: c.distance })) };
+}
+
+/** §293 : ce que fait « Utiliser » de la fenêtre — `targetIds` cochés, `upgrade` : la case de l'activité qui remplace. */
+async function castPicked({ targetIds=[], upgrade=false, ...args }) {
+  const activity = activityOn(args);
+  if ( !activity ) return { error: "activity not found" };
+  const tokens = targetIds.map(id => canvas.scene.tokens.get(id)).filter(Boolean);
+  const results = await castOnPicked(activity, [{ [MODULE_ID]: { confirmed: true } }, { configure: false }, {}], { tokens, upgrade: upgrade ? upgradeOf(activity) : null });
+  return { used: !!results, usageMessageId: results?.message?.id ?? null };
+}
+
 /** Ce que `api.mcp` expose. */
 /** §290 : les attentes du MJ (fenêtres du combat sans délai) — `{ waits: [...], window: bool }`. */
 function waits() {
@@ -375,4 +401,4 @@ async function forcePlayerWait({ id=null }={}) {
   return { forced: target ? await forceWait(target) : false };
 }
 
-export const testApi = Object.freeze({ controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, waits, forcePlayerWait });
+export const testApi = Object.freeze({ controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, waits, forcePlayerWait, pickTargets, castPicked });

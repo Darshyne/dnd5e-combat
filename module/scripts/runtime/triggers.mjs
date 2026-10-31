@@ -5,7 +5,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { select, stepsOf, BEARER_MOMENTS, damagedByOriginSide } from "../core/triggers.mjs";
+import { select, stepsOf, BEARER_MOMENTS, damagedByOriginSide, sameActivity } from "../core/triggers.mjs";
 import { declarationsOf, declarationsOfEffects, factsFor, tokenOf, consumedMarks, bonusTurnKey, bonusSpent, bonusKeyOf } from "../adapter/triggers.mjs";
 import { identifierOf } from "../adapter/content.mjs";
 import { comesFromItemEffect, originItemOf } from "../adapter/facts.mjs";
@@ -256,7 +256,9 @@ function recordDamager(actor, amount, updates, options) {
   if ( !(amount > 0) || !actor ) return;
   const message = [options?.origin, options?.originatingMessage].find(m => m instanceof ChatMessage) ?? null;
   const damager = message?.getAssociatedActor?.() ?? null;
-  updates[`flags.${MODULE_ID}.damagedBy`] = { uuid: damager?.uuid ?? null, at: Date.now() };
+  // §294 : l'activité d'où viennent les dégâts, pour `by: "otherActivity"`.
+  const activity = message?.getAssociatedActivity?.()?.uuid ?? null;
+  updates[`flags.${MODULE_ID}.damagedBy`] = { uuid: damager?.uuid ?? null, activity, at: Date.now() };
 }
 
 /** La disposition du token d'un acteur sur la scène affichée, ou null. */
@@ -282,6 +284,13 @@ function byOriginSide(actor, d) {
     damagerSide: sideOfActor(damager), originSide: sideOfActor(origin) });
 }
 
+/** §294 : les dégâts que l'acteur vient de subir viennent-ils d'une autre activité que celle qui a posé l'effet ? Inconnue : oui. */
+function byOtherActivity(actor, d) {
+  const noted = actor.getFlag(MODULE_ID, "damagedBy");
+  if ( !noted?.activity || ((Date.now() - (noted.at ?? 0)) > DAMAGER_FRESH_MS) ) return true;
+  return !sameActivity(noted.activity, d.activity);
+}
+
 function onDamaged(actor, changes) {
   if ( !(changes?.total < 0) || !actor ) return;
   const token = tokenOf(actor);
@@ -289,7 +298,8 @@ function onDamaged(actor, changes) {
   const declarations = matching("isDamaged", { actor, target: actor, source: null, targetToken: tokenDocument })
     .filter(d => (d.via === "effect") && d.effect)
     // §65 : « si vous ou vos alliés lui infligez des dégâts » (Suggestion) — les autres dégâts ne comptent pas.
-    .filter(d => (d.by !== "originSide") || byOriginSide(actor, d));
+    .filter(d => (d.by !== "originSide") || byOriginSide(actor, d))
+    .filter(d => (d.by !== "otherActivity") || byOtherActivity(actor, d));
   if ( !declarations.length ) return;
   return enqueue(`damaged:${actor.uuid}`, async () => {
     for ( const d of declarations ) {

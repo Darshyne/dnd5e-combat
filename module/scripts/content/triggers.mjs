@@ -222,11 +222,11 @@ export const TRIGGERS = Object.freeze({
   // « Indifference » (cb3KFq1j9UkOUV2l) ; l'autre option (Charmé et Effrayé supprimés) ne cesse pas sur dégâts.
   "calm-emotions": [{ on: "isDamaged", via: "effect", fromEffect: "cb3KFq1j9UkOUV2l", do: [{ type: "remove" }] }],
   // Renvoi des morts-vivants (§16.25) : « pendant 1 minute ou jusqu'à ce qu'il subisse des dégâts » — l'effet « Turned »
-  // (iUeSbfduM7K8XrCF) ; Calcination (OftTd0Eiwnls76cX) : « ces dégâts ne mettent pas fin au renvoi » — ils sont appliqués
-  // avant que l'effet soit posé, la déclaration ne le voit pas encore (runtime/triggers.mjs, `onDamaged`).
+  // (iUeSbfduM7K8XrCF) ; Calcination (OftTd0Eiwnls76cX) : « ces dégâts ne mettent pas fin au renvoi » — §294 : l'effet peut être
+  // posé avant que les dégâts soient écrits (vu en jeu le 2026-10-31), seuls les dégâts d'une autre activité le font tomber.
   "channel-divinity": [{ on: "isDamaged", via: "effect", fromEffect: "iUeSbfduM7K8XrCF", do: [{ type: "remove" }] }],
   "channel-divinity-cleric": [{ on: "isDamaged", via: "effect", fromEffect: "iUeSbfduM7K8XrCF", do: [{ type: "remove" }] }],
-  "sear-undead": [{ on: "isDamaged", via: "effect", fromEffect: "OftTd0Eiwnls76cX", do: [{ type: "remove" }] }],
+  "sear-undead": [{ on: "isDamaged", via: "effect", fromEffect: "OftTd0Eiwnls76cX", by: "otherActivity", do: [{ type: "remove" }] }],
 
   // Riposte (SPEC §16.9, B9) : « si une créature vous touche avec une attaque au corps à corps… ».
   // Bouclier de feu (spells24 et PHB, mêmes ids d'effets) : « située dans un rayon de 1,50 m », 2d8 — de feu avec le

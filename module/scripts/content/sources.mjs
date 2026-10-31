@@ -61,5 +61,7 @@ export const SOURCE_IDENTIFIERS = Object.freeze({
   phbrgeAssasinate: "assassinate",
   // §298 : l'Attaque supplémentaire du Collège de la vaillance porte l'identifiant commun « extra-attack » ; elle permet en plus un tour
   // de magie à la place d'une attaque. Reconnue à part (adapter/turn.mjs lui garde ses deux attaques).
-  phbbrdExtraAttac: "valor-extra-attack"
+  phbbrdExtraAttac: "valor-extra-attack",
+  // §305 : le Compagnon réanimé de Ravenloft (sans identifiant propre).
+  rhwRECompanionqV: "reanimated-companion"
 });

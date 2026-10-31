@@ -47,7 +47,17 @@ export const SUMMONS = Object.freeze({
   "pact-of-the-chain": { initiative: "own", familiar: true },
   // Compagnon sauvage (druide, PHB 2024, §16.39) : « vous lancez Appel de familier sans composantes matérielles » ; « le
   // familier dure un nombre d'heures égal à la moitié de votre niveau de druide » — pas d'autre fin (dnd5e : `inst`).
-  "wild-companion": { initiative: "own", familiar: true, lasts: { value: "floor(@classes.druid.levels / 2)", units: "hour" } },
+  // §305 : règle 2024 — « le familier dure jusqu'à la fin de votre prochain Repos long » (la durée en heures était celle de 2014).
+  "wild-companion": { initiative: "own", familiar: true, endsOnLongRest: true },
+  // §305 : Engagement du maître des chaînes — ses activités d'invocation du familier : un familier comme celui du Pacte.
+  "investment-of-the-chain-master": { initiative: "own", familiar: true },
+  // §305 : Créatures fantasmagoriques (Illusionniste 6) — l'invocation lancée par l'aptitude suit la règle du sort (après le lanceur,
+  // disparition à 0 PV).
+  "phantasmal-creatures": vanishing,
+  // §305 : Compagnon primitif (Seigneur des bêtes 3) et Compagnon réanimé (Ravenloft) — « agit à votre tour, juste après vous » ; une
+  // nouvelle convocation remplace l'ancienne ; « s'il… vous mourez, il disparaît ». Les ordres en action Bonus restent au joueur.
+  "primal-companion": { initiative: "after", replaces: true, vanishesWithCaster: true },
+  "reanimated-companion": { initiative: "after", replaces: true, vanishesWithCaster: true },
   "spiritual-weapon": piloted(20, "use"),
   "flaming-sphere": piloted(30, null, { summon: { pulse: { item: "flames", radius: 5, units: "ft" } } }),
   "bigbys-hand": hand,
@@ -75,7 +85,8 @@ export const SUMMONS = Object.freeze({
   // level 4+ spell) », note Foundry : activité « Summon Flying Steed » à partir d'un emplacement de niveau 4) — l'incantation gratuite
   // de Fidèle destrier (paladin niveau 5, au niveau 2 du sort) ne la donne pas.
   // §259 : « la monture disparaît si elle tombe à 0 point de vie ».
-  "find-steed": { ...vanishing, replaces: true, minLevels: { o4YsONnsS8rOOEaS: 4 } },
+  // §305 : « le destrier disparaît… si vous mourez ».
+  "find-steed": { ...vanishing, replaces: true, vanishesWithCaster: true, minLevels: { o4YsONnsS8rOOEaS: 4 } },
   // §164 : Invocation d'élémentaire — « quand une créature entre dans l'espace de l'esprit ou commence son tour à 1,50 m de lui », la
   // sauvegarde de l'élément (8d8, Entravée) ; un item par élément (air, terre, feu, eau). L'esprit n'agit pas. (« Une seule créature
   // Entravée à la fois » : au MJ.)

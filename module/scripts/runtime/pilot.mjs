@@ -367,6 +367,35 @@ async function onIncapacitated(actor) {
   }
 }
 
+/**
+ * §305 (repasse C10) : le lanceur mort, ses invocations `vanishesWithCaster` disparaissent (Appel de destrier, Compagnon primitif,
+ * Compagnon réanimé). MJ actif.
+ */
+async function onCasterDead(actor) {
+  if ( !actor?.statuses?.has("dead") ) return;
+  for ( const token of summonsOfWith(actor, "vanishesWithCaster") ) {
+    log(`${token.name}: ${actor.name} is dead, the summon vanishes`);
+    await vanish(token);
+  }
+}
+
+export const REST_QUERY = `${MODULE_ID}.restSummons`;
+
+/** §305 : côté MJ actif — au Repos long de l'acteur, ses invocations `endsOnLongRest` partent (Compagnon sauvage). */
+async function handleRestSummons({ actor: actorUuid }) {
+  const actor = await fromUuid(actorUuid ?? "");
+  for ( const token of summonsOfWith(actor, "endsOnLongRest") ) {
+    log(`${token.name}: ${actor.name} finished a Long Rest, the summon leaves`);
+    await vanish(token);
+  }
+  return true;
+}
+
+function onRestCompleted(actor, result) {
+  if ( !result?.longRest || !actor?.isOwner ) return;
+  return viaActiveGM(REST_QUERY, handleRestSummons, { actor: actor.uuid }, { fallback: false });
+}
+
 /* ---- tour sauté ---- */
 
 const skipsOf = combat => combat.turns.map(isPilotedCombatant);
@@ -411,4 +440,8 @@ export function registerPilot() {
   route("createActiveEffect", effect => onIncapacitated(effect.parent), { executor: true, label: "summon: ends on Incapacitated" });
   route("updateActiveEffect", effect => onIncapacitated(effect.parent), { executor: true, label: "summon: ends on Incapacitated" });
   CONFIG.queries[DISMISS_QUERY] = handleDismiss;
+  // §305 : invocations qui suivent leur lanceur dans la mort, ou partent au Repos long.
+  route("createActiveEffect", effect => onCasterDead(effect.parent), { executor: true, label: "summon: not removed with its dead caster" });
+  CONFIG.queries[REST_QUERY] = handleRestSummons;
+  route("dnd5e.restCompleted", onRestCompleted, { label: "summon: not dismissed at a Long Rest" });
 }

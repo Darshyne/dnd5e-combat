@@ -35,6 +35,8 @@ function ownDurationOf(tokenDoc, item) {
  */
 export async function noteSummonExpiry(tokenDoc, now=game.time.worldTime) {
   const item = summonItemOf(tokenDoc);
+  // §305 : une invocation qui part au Repos long (Compagnon sauvage) n'a pas d'heure de fin.
+  if ( item && (contentOf(item).entry?.summon?.endsOnLongRest === true) ) return null;
   const lasts = item ? (contentOf(item).entry?.summon?.lasts ?? ownDurationOf(tokenDoc, item)) : null;
   if ( !lasts ) return null;
   // §107 : un familier rappelé de sa poche dimensionnelle garde l'heure de fin notée à son invocation.

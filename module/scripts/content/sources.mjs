@@ -58,5 +58,8 @@ export const SOURCE_IDENTIFIERS = Object.freeze({
   // effet, Délivrance des malédictions). La copie d'Assassinat de Heroes of the Borderlands porte l'identifiant « assasinate » sous le
   // même id que celle du Manuel.
   n2qsI3p9HBVQIjeK: "hex",
-  phbrgeAssasinate: "assassinate"
+  phbrgeAssasinate: "assassinate",
+  // §298 : l'Attaque supplémentaire du Collège de la vaillance porte l'identifiant commun « extra-attack » ; elle permet en plus un tour
+  // de magie à la place d'une attaque. Reconnue à part (adapter/turn.mjs lui garde ses deux attaques).
+  phbbrdExtraAttac: "valor-extra-attack"
 });

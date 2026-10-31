@@ -47,12 +47,28 @@ export default {
       await ctx.ensureItem(zombi, "Compendium.dnd5e.spells24.Item.phbsplCounterspe", { system: { method: "atwill" } });
       ctx.log("contre-lanceur : Zombi (Contresort à volonté, pas de Mage sur la scène)");
     }
+    // §298 : en combat, au tour du Magicien, le premier sort dissipé lui coûte son action (Contresort 2024 : « l'action utilisée pour
+    // le lancer est perdue »). Le combat se termine après ce constat ; les lancers suivants se font hors combat.
+    const counterer = mageNpc ? await ctx.token("Mage") : zombi;
+    await ctx.startCombat([mage, counterer]);
+    {
+      const s = await ctx.combat(); const c = s.combat ?? s.combats?.[0] ?? s;
+      await ctx.call("set-initiative", { combatantId: c.combatants.find(x => x.tokenId === mage.id).id, value: 25, combatId: ctx.ownCombat });
+      await ctx.call("set-initiative", { combatantId: c.combatants.find(x => x.tokenId === counterer.id).id, value: 5, combatId: ctx.ownCombat });
+      for ( let i = 0; i < 4; i++ ) {
+        const now = (await ctx.combat()).combat ?? (await ctx.combat());
+        if ( now.combatants?.find(x => x.id === now.currentCombatantId)?.tokenId === mage.id ) break;
+        await ctx.call("previous-turn", { combatId: ctx.ownCombat }); await new Promise(r => setTimeout(r, 1200));
+      }
+    }
+    let budgetChecked = false;
     // Le Magicien n'a pas Trait de feu : Rayon de givre, un sort d'attaque aussi.
     const seen = { dissipated: false, passed: false };
     for ( let i = 0; i < 20 && !(seen.dissipated && seen.passed); i++ ) {
       await ctx.setHp(zombi, hp0);
       if ( refill ) await refill();
       const before = await ctx.lastMessageId();
+      const budgetBefore = ctx.ownCombat ? await ctx.engine("budget", { tokenId: mage.id }) : null;
       // Le connecteur rend la main dès que `use()` est annulé par la porte : on lit la suite dans le chat.
       await ctx.use({ tokenId: mage.id, identifier: "ray-of-frost", activityType: "attack", targetTokenIds: [zombi.id], usageConfig: { "dnd5e-combat": { autoReact: true } } });
       let gate = null;
@@ -68,9 +84,23 @@ export default {
       ctx.expect(gate.dissipated === (t?.save?.success === false), `carte de porte cohérente : ${gate.dissipated ? "sort dissipé" : "le sort passe"}`);
       await new Promise(r => setTimeout(r, 2500));
       const attack = (await ctx.messagesSince(before)).find(m => m.type === "attack");
-      if ( gate.dissipated ) { ctx.expect(!attack, "sort dissipé : aucun jet d'attaque"); seen.dissipated = true; }
-      else { ctx.expect(!!attack, "sort tenu : le jet d'attaque a eu lieu"); seen.passed = true; }
+      if ( gate.dissipated ) {
+        ctx.expect(!attack, "sort dissipé : aucun jet d'attaque"); seen.dissipated = true;
+        if ( ctx.ownCombat && !budgetChecked && (budgetBefore?.action === 1) ) {
+          const after = await ctx.engine("budget", { tokenId: mage.id });
+          ctx.expect(after?.action === 0, `sort contré au tour du Magicien : son action est perdue (action ${budgetBefore.action} → ${after?.action})`);
+          budgetChecked = true;
+          await ctx.call("end-combat", { combatId: ctx.ownCombat }).catch(() => {}); ctx.ownCombat = null;
+        }
+      }
+      else {
+        ctx.expect(!!attack, "sort tenu : le jet d'attaque a eu lieu"); seen.passed = true;
+        // En combat, le sort passé a coûté l'action : un tour complet rend un budget neuf au Magicien pour le lancer suivant.
+        if ( ctx.ownCombat ) for ( let k = 0; k < 2; k++ ) { await ctx.call("next-turn", { combatId: ctx.ownCombat }); await new Promise(r => setTimeout(r, 2500)); }
+      }
     }
+    if ( ctx.ownCombat ) { await ctx.call("end-combat", { combatId: ctx.ownCombat }).catch(() => {}); ctx.ownCombat = null; }
+    ctx.expect(budgetChecked || !seen.dissipated, "l'action perdue a été vérifiée au tour du Magicien");
     ctx.expect(seen.dissipated && seen.passed, `les deux issues vues (dissipé : ${seen.dissipated}, tenu : ${seen.passed})`);
   }
 };

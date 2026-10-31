@@ -85,7 +85,8 @@
  *                                               limites d'utilisation que dnd5e ne contrôle pas (§16.40, core/limits.mjs) :
  *                                               une fois à chacun de vos tours ; seulement si l'item `whenEmpty` n'a plus
  *                                               d'utilisation ; `lowestSlot` : l'emplacement le plus bas, sans fenêtre ;
- *                                               `noDialog` : sans la fenêtre de dnd5e ; `cost` : le coût de la règle 2024
+ *                                               `noDialog` : sans la fenêtre de dnd5e ; `cost` : le coût de la règle 2024 (« free » :
+ *                                               aucun, §298 : Arme sacrée)
  *                                               quand les données de dnd5e disent autre chose (Flammes : action Bonus)
  *                                               (Regain sauvage) ; `unmoved` : seulement sans s'être déplacé ce tour (Visée
  *                                               stable, §20)
@@ -210,6 +211,9 @@
  *                                               s'il y a quelque chose à regagner)
  *     grantsConditionImmunities?: string[]      §295 : immunités d'état que l'item donne sans effet dans ses données (Protégé de dame
  *                                               Nature : Empoisonné) — dans l'effet tenu de `grantsSpeeds` (runtime/speed-grants.mjs)
+ *     spellsInAttack?: { maxLevel, class?, attacks? }  §298 : un sort d'une action, de niveau `maxLevel` au plus (et de cette classe),
+ *                                               se lance à la place de `attacks` attaques (1 par défaut) de l'action Attaquer (Magie
+ *                                               de guerre, Attaque supplémentaire de la Vaillance, Magie de guerre améliorée : 2)
  *     zoneMax?: number                          §296 : au plus ce nombre de créatures dans la zone de l'item, les plus proches de son
  *                                               centre (Lenteur, Soins de groupe : « jusqu'à six ») — core/area.mjs
  *     healPool?: { activities, cap?: "halfMax", temp?: true, formula? }

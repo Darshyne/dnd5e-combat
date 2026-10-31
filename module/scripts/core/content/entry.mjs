@@ -422,7 +422,8 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       if ( !isObject(rule) ) { errors.push(`${at}usageLimits.${id}: an object`); continue; }
       for ( const flag of ["oncePerTurn", "lowestSlot", "noDialog", "unmoved"] ) if ( (flag in rule) && (rule[flag] !== true) ) errors.push(`${at}usageLimits.${id}.${flag}: true or absent`);
       if ( ("whenEmpty" in rule) && ((typeof rule.whenEmpty !== "string") || !rule.whenEmpty) ) errors.push(`${at}usageLimits.${id}.whenEmpty: item identifier`);
-      if ( ("cost" in rule) && !["action", "bonus", "reaction"].includes(rule.cost) ) errors.push(`${at}usageLimits.${id}.cost: action, bonus, reaction`);
+      // §298 : « free » — l'utilisation ne coûte rien au budget (Arme sacrée : « lorsque vous prenez l'action Attaque »).
+      if ( ("cost" in rule) && !["action", "bonus", "reaction", "free"].includes(rule.cost) ) errors.push(`${at}usageLimits.${id}.cost: action, bonus, reaction, free`);
       for ( const key of Object.keys(rule) ) if ( !["oncePerTurn", "whenEmpty", "lowestSlot", "noDialog", "cost", "unmoved"].includes(key) ) errors.push(`${at}usageLimits.${id}.${key}: unknown key`);
     }
   }

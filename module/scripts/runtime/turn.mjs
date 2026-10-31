@@ -25,7 +25,7 @@ import { freesMovement } from "../adapter/opportunity.mjs";
 import { takePendingAttack } from "./actions.mjs";
 import { pilotUsage, refundCommand, spellCommandUsage } from "./pilot.mjs";
 import { route } from "./router.mjs";
-import { log, loc, sleep } from "./shared.mjs";
+import { log, loc, sleep, viaActiveGM } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { antimagicAround, barrierBetween } from "../adapter/barriers.mjs";
 import { windowDisengaged } from "./reactions.mjs";
@@ -429,6 +429,31 @@ function onPostAttackRollConfiguration(rolls, config, dialogConfig, messageConfi
 /*  Dépense et remise à zéro, par le MJ actif   */
 /* -------------------------------------------- */
 
+const WASTE_QUERY = `${MODULE_ID}.wasteUse`;
+
+/**
+ * §298 (repasse C3) : une utilisation qui ne part pas mais dont l'action est perdue — un sort contré (Contresort 2024 : « l'action,
+ * l'action Bonus ou la Réaction utilisée pour le lancer est perdue ; l'emplacement n'est pas dépensé »), un sort raté sous Lenteur.
+ * Le coût de l'activité est débité au budget de son lanceur (sans emplacement, sans « un sort à emplacement par tour »). MJ actif.
+ */
+async function handleWasteUse({ activity: uuid }) {
+  const activity = await fromUuid(uuid ?? "");
+  const combatant = combatantFor(activity?.actor);
+  if ( !activity || !combatant || !game.combat?.started ) return false;
+  const before = readBudget(combatant);
+  const request = { ...requestFor(activity), usesSpellSlot: false };
+  if ( !request.cost || (request.cost === "free") ) return false;
+  const after = spendUse(before, request, { isOwnTurn: isOwnTurn(combatant), attacksPerAction: attacksPerAction(combatant.actor), turnKey: currentTurnKey() });
+  await writeBudget(combatant, after);
+  log(`${combatant.name}: ${activity.item?.name ?? activity.name} wasted — ${request.cost} spent`);
+  return true;
+}
+
+/** §298 : l'action d'une utilisation qui n'a pas eu lieu est perdue (Contresort, échec sous Lenteur). */
+export function wasteUse(activity) {
+  return viaActiveGM(WASTE_QUERY, handleWasteUse, { activity: activity.uuid }, { fallback: false });
+}
+
 async function onUsageMessage(message) {
   if ( message.getFlag(MODULE_ID, "areaTick") ) return;   // zone qui rejoue son activité : personne n'agit
   if ( message.getFlag(MODULE_ID, "resave") ) return;     // sauvegarde répétée (SPEC §16) : personne n'agit non plus
@@ -559,6 +584,7 @@ async function resetBudget(combatant) {
 /* -------------------------------------------- */
 
 export function registerTurn() {
+  CONFIG.queries[WASTE_QUERY] = handleWasteUse;
   route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "use legality" });
   route("dnd5e.postUseActivity", activity => markUsedThisTurn(activity), { label: "\"once per turn\" limit not recorded" });
   route("dnd5e.preRollAttackV2", onPreRollAttack, { cancellable: true, label: "attack mode preselected" });

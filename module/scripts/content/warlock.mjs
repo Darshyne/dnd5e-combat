@@ -9,6 +9,9 @@
  */
 
 export const WARLOCK = Object.freeze({
+  // §298 (repasse C3) : Pacte de la chaîne — « vous pouvez lancer Appel de familier par une action Magie » (la donnée dit « 1 heure » :
+  // en combat, l'invocation ne coûtait rien).
+  "pact-of-the-chain": { usageLimits: { uehA2kfgOCKRIqAs: { cost: "action" }, "5W78W2Opzhax0Jcf": { cost: "action" } } },
   // Frappe occulte : au plus une fois par tour, un coup de l'arme de pacte peut coûter un emplacement de Magie de pacte pour
   // ajouter des dégâts de force (1d8, plus 1d8 par niveau d'emplacement) et, au choix, renverser une cible de taille TG au plus —
   // proposée au jet de dégâts du coup (§47 bis) ; l'activité

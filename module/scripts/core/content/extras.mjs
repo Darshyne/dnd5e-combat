@@ -26,6 +26,14 @@ export function validateExtras(entry, at, errors) {
     && entry.grantsConditionImmunities.every(s => (typeof s === "string") && /^[a-z]+$/.test(s))) ) {
     errors.push(`${at}grantsConditionImmunities: list of condition ids`);
   }
+  // §298 : un sort lancé à la place d'attaques de l'action Attaquer (Magie de guerre).
+  if ( "spellsInAttack" in entry ) {
+    const s = entry.spellsInAttack;
+    if ( !isObject(s) || !Number.isInteger(s.maxLevel) || (s.maxLevel < 0) || (("attacks" in s) && !(Number.isInteger(s.attacks) && (s.attacks > 0)))
+      || (("class" in s) && (typeof s.class !== "string")) || !Object.keys(s).every(k => ["maxLevel", "class", "attacks"].includes(k)) ) {
+      errors.push(`${at}spellsInAttack: { maxLevel, class?, attacks? }`);
+    }
+  }
   // §296 : plafond de créatures d'une zone ; réserve de soins ou de PV temporaires à répartir.
   if ( ("zoneMax" in entry) && !(Number.isInteger(entry.zoneMax) && (entry.zoneMax > 0)) ) errors.push(`${at}zoneMax: positive integer`);
   if ( "healPool" in entry ) {

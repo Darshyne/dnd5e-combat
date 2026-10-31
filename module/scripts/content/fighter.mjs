@@ -22,6 +22,18 @@ export const FIGHTER = Object.freeze({
   // Décalage tactique (niveau 5) : « chaque fois que vous activez Second souffle par une action Bonus, vous pouvez vous déplacer
   // jusqu'à la moitié de votre Vitesse sans provoquer d'attaque d'opportunité ».
   "tactical-shift": { movesAfter: "second-wind" },
+  // §298 (repasse C3) — Inflexible (Guerrier 9) : « relancer une sauvegarde ratée, avec un bonus égal à votre niveau de Guerrier, et
+  // utiliser le nouveau jet » ; proposé après la sauvegarde ratée, sans coût d'action (la donnée dit « action », sans consommation).
+  "indomitable": { rollBonus: { activity: "84EBzlT1nDmNqhqM", on: ["save"], reroll: { bonus: "@classes.fighter.levels" } },
+    usageLimits: { "84EBzlT1nDmNqhqM": { cost: "free" } } },
+  // Magie de guerre (Chevalier occulte 7) : « remplacer une des attaques de l'action Attaquer par un tour de magie de Magicien » ;
+  // Magie de guerre améliorée (18) : « deux des attaques par un sort de Magicien de niveau 1 ou 2 ».
+  "war-magic": { spellsInAttack: { maxLevel: 0, class: "wizard" } },
+  "improved-war-magic": { spellsInAttack: { maxLevel: 2, class: "wizard", attacks: 2 } },
+  // Énergie psionique, Frappe psionique (Guerrier psi 3) : « une fois à chacun de vos tours, juste après avoir touché une cible avec une
+  // arme » — proposée au coup, payée par un dé d'énergie psionique, sans coût d'action (la donnée dit « action »).
+  "psionic-power": { hitRider: { pays: "psionic-power", damage: "FxJXB4BPlBnJLF7q", oncePerTurn: true },
+    usageLimits: { FxJXB4BPlBnJLF7q: { cost: "free" } } },
   // Attaques avisées (niveau 13) : « si vous ratez une créature d'un jet d'attaque, vous avez l'Avantage à votre prochain jet
   // d'attaque contre elle avant la fin de votre prochain tour » — une marque, comme l'Ouverture (runtime/mastery.mjs).
   "studied-attacks": { studiedAttacks: true },

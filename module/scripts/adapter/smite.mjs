@@ -118,6 +118,9 @@ export function riderOptions(actor, target, activity=null, attackMode=null) {
     // §87 : la faveur se paie avec une utilisation d'un AUTRE item (les manœuvres : les dés de Supériorité martiale).
     const payer = rule.pays ? (actor.items.find(i => identifierOf(i).id === rule.pays) ?? null) : null;
     if ( rule.pays && !payer ) continue;
+    // §298 : l'activité de dégâts manque sur cet item (le « psionic-power » de l'Âme acérée porte le même identifiant que celui du
+    // Guerrier psi, sans Frappe psionique) : rien à proposer.
+    if ( rule.damage && !item.system.activities?.get(rule.damage) ) continue;
     if ( payer ) {
       const uses = payer.system.uses ?? {};
       left = Number.isFinite(Number(uses.value)) ? Number(uses.value) : (Number(uses.max) || 0) - (Number(uses.spent) || 0);

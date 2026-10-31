@@ -65,6 +65,7 @@ export function costOf(activationType) {
  * @property {"action"|"bonus"|"reaction"|"free"|null} cost   `free` : un geste que l'intention déclare gratuit (§16.27).
  * @property {boolean} weaponAttack   Attaque d'arme ou à mains nues : relève de l'action Attaquer (attaques multiples).
  * @property {boolean} usesSpellSlot  Dépense un emplacement de sort (règle 2024 : un seul par tour).
+ * @property {number} [attackCost]    §298 : attaques de l'action Attaquer que l'utilisation prend (défaut 1 ; Magie de guerre améliorée : 2).
  * @property {boolean} [lightWeapon]  Arme à la propriété Légère.
  * @property {boolean} [offhand]      Attaque de la main secondaire (mode `offhand` de dnd5e) : coûte l'action Bonus.
  * @property {boolean} [nick]         Le combattant maîtrise la botte Coup double de cette arme.
@@ -100,7 +101,8 @@ function coveredByLimitedAction(budget, request) {
 
 /** Cette attaque d'arme est-elle couverte par une action Attaquer déjà payée ? */
 function coveredByAttackAction(budget, request) {
-  return request.weaponAttack && (request.cost === "action") && (budget.attacks.used < budget.attacks.granted);
+  // §298 : `attackCost` — un sort lancé à la place de deux attaques (Magie de guerre améliorée) en demande deux.
+  return request.weaponAttack && (request.cost === "action") && (budget.attacks.used + (request.attackCost ?? 1) <= budget.attacks.granted);
 }
 
 /**
@@ -167,7 +169,7 @@ export function spendUse(budget, request, { isOwnTurn, attacksPerAction, turnKey
     next.multi = { plan, used: request.opensMultiattack ? [] : [request.keys] };
     next.attacks = { granted: attackCount(plan), used: opening.attacks };
   }
-  else if ( coveredByAttackAction(budget, request) ) next.attacks.used += 1;
+  else if ( coveredByAttackAction(budget, request) ) next.attacks.used += (request.attackCost ?? 1);
   // §157 : l'action limitée de Hâte — une seule attaque, même avec Attaque supplémentaire.
   else if ( coveredByLimitedAction(budget, request) ) {
     next.limited = 0;
@@ -177,7 +179,9 @@ export function spendUse(budget, request, { isOwnTurn, attacksPerAction, turnKey
     next[request.cost] = Math.max(0, budget[request.cost] - 1);
     if ( request.cost === "reaction" ) next.reactedAt = turnKey;
     // Au-delà d'Attaques multiples ouvertes (confirmé malgré tout), leur compteur reste celui du plan.
-    if ( request.weaponAttack && (request.cost === "action") && !budget.multi ) next.attacks = { granted: Math.max(1, attacksPerAction), used: 1 };
+    if ( request.weaponAttack && (request.cost === "action") && !budget.multi ) {
+      next.attacks = { granted: Math.max(1, attacksPerAction), used: Math.min(Math.max(1, attacksPerAction), request.attackCost ?? 1) };
+    }
   }
   if ( request.usesSpellSlot && isOwnTurn ) next.slotCast = true;
   // §236 : Pas véloce — une action Bonus (pas Pas du vent lui-même) ouvre Pas du vent gratuit pour ce tour.

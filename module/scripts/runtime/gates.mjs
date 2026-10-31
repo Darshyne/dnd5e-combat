@@ -21,7 +21,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { stepsOf } from "../core/triggers.mjs";
 import { rangeIssue } from "../core/range.mjs";
-import { usageTokenOf as usageToken, distanceBetween, rangeOf } from "../adapter/turn.mjs";
+import { usageTokenOf as usageToken, distanceBetween, rangeOf, currentTurnKey } from "../adapter/turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { reactionOptions, askReaction } from "../adapter/reactions.mjs";
 import { spellCommandOf } from "../adapter/pilot.mjs";
@@ -33,6 +33,7 @@ import { route } from "./router.mjs";
 import { log, loc, say, locEsc, notice, waitForDice } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { castLevelFor } from "../adapter/counter.mjs";
+import { wasteUse } from "./turn.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { settledResolution } from "../adapter/messages.mjs";
 import { identifierOf, contentOf } from "../adapter/content.mjs";
@@ -69,6 +70,16 @@ function wardsAgainst(activity, origin, targets) {
 /** L'attaquant fait la sauvegarde de chaque protection ; false dès qu'il en rate une. */
 async function passWards(activity, origin, wards) {
   for ( const { declaration, step, token } of wards ) {
+    // §298 (repasse C3) : Sanctuaire — « la créature doit choisir une nouvelle cible ou perdre l'attaque ou le sort ». Ratée contre cette
+    // cible, une nouvelle tentative contre elle dans le même tour est perdue d'office (l'action avec), sans nouvelle sauvegarde. En combat
+    // seulement : hors combat, il n'y a pas de tour qui remette la marque à zéro.
+    const mark = game.combat?.started ? `${token.uuid}|${currentTurnKey()}` : null;
+    if ( mark && (origin.actor.getFlag(MODULE_ID, "wardFailed") === mark) ) {
+      await tell(origin.actor, "PorteAttaquePerdue", { name: origin.name, target: token.name, item: declaration.name },
+        { kind: "ward", item: declaration.identifier, attacker: origin.uuid, target: token.uuid, passed: false, again: true });
+      await wasteUse(activity);
+      return false;
+    }
     const item = await fromUuid(declaration.item ?? "");
     const save = (step.activity ? item?.system.activities?.get(step.activity) : null)
       ?? item?.system.activities?.find(a => a.type === "save") ?? null;
@@ -80,6 +91,7 @@ async function passWards(activity, origin, wards) {
     const success = (total !== null) && (total >= dc);
     log(`${declaration.name}: ${origin.name} attacks ${token.name}, ${ability} saving throw ${total} vs DC ${dc}: ${success ? "succeeded" : "failed"}`);
     if ( !success ) {
+      if ( mark ) await origin.actor.setFlag(MODULE_ID, "wardFailed", mark);
       await tell(origin.actor, "PorteAttaquePerdue", { name: origin.name, target: token.name, item: declaration.name },
         { kind: "ward", item: declaration.identifier, attacker: origin.uuid, target: token.uuid, total, dc, passed: false });
       return false;
@@ -255,9 +267,10 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   // les deux) les a remplacées par les siennes (vu le 2026-09-24 : le Rayon relancé sans cible, ou sur le lanceur).
   const chosen = Array.from(game.user.targets).map(t => t.id);
   (async () => {
-    if ( failure && !(await passFailure(activity, origin, failure)) ) return;
+    // §298 : le sort raté (Lenteur) ou contré ne part pas, mais son action est perdue.
+    if ( failure && !(await passFailure(activity, origin, failure)) ) return wasteUse(activity);
     if ( wards.length && !(await passWards(activity, origin, wards)) ) return;
-    if ( candidates.length && !(await passCounters(activity, origin, candidates, { auto, castLevel: castLevelFor(activity, usageConfig) })) ) return;
+    if ( candidates.length && !(await passCounters(activity, origin, candidates, { auto, castLevel: castLevelFor(activity, usageConfig) })) ) return wasteUse(activity);
     if ( targeted.length ) await passTargeted(activity, origin, targeted, { auto });
     let mods = reactors.length ? await askAttackReactions(activity, origin, reactors, { auto }) : null;
     const foretold = seers.length ? await foretellFor(origin, { kind: "attack", item: activity.item.name, auto }) : null;

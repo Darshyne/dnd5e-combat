@@ -25,6 +25,9 @@ export const PALADIN = Object.freeze({
   // §296 : Châtiment exaltant — « 2d8 + niveau de Paladin PV temporaires répartis entre des créatures de votre choix à 9 m, vous compris ».
   "inspiring-smite": { pickTargets: { activities: ["oBkPCmC2KsH2WUJp"], radius: 30, units: "ft", self: true, check: "allies" },
     healPool: { activities: ["oBkPCmC2KsH2WUJp"], temp: true } },
+  // §298 : Arme sacrée — « lorsque vous prenez l'action Attaque, vous pouvez dépenser une utilisation de Conduit divin » : sans coût
+  // d'action (la donnée dit « action », le paladin ne pouvait plus attaquer ce tour-là).
+  "sacred-weapon": { usageLimits: { Ew70lNTD8dR3vREt: { cost: "free" } } },
   // §295 : « 5 points de la réserve pour retirer l'état Empoisonné » — l'activité « Remove Poison » paie sans rien retirer.
   "lay-on-hands": { ranges: Object.fromEntries(LAY_ON_HANDS.map(id => [id, { value: 5, units: "ft" }])), cures: ["poisoned"], curesOn: "K6UeXQwTyDHWvis8" },
   // §124 : Champion ancestral et Nimbe sacré — « imprégnez votre Aura de protection » : la transformation (son effet) est pour le

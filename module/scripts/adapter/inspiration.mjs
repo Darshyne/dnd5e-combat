@@ -250,6 +250,10 @@ export async function offerRollBonus(actor, { kind, what, total, needed=null, sk
       if ( answer?.id !== "yes" ) continue;
       const used = await activity.use({ [MODULE_ID]: { confirmed: true } }, { configure: false }, { create: false }).catch(() => null);
       if ( !used ) return 0;
+      // §298 : une activité qui ne consomme rien dans la donnée (Inflexible) — l'utilisation de son item est dépensée ici.
+      if ( !(activity.consumption?.targets ?? []).some(t => ["itemUses", "activityUses"].includes(t.type)) && Number(item.system.uses?.max) ) {
+        await item.update({ "system.uses.spent": (Number(item.system.uses.spent) || 0) + 1 });
+      }
       const roll = await new Roll(`1d20 + ${bonus}`, actor.getRollData()).evaluate();
       const added = roll.total - d20;
       await roll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }),

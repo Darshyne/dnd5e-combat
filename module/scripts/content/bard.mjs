@@ -9,6 +9,8 @@
  */
 
 export const BARD = Object.freeze({
+  // §298 : Attaque supplémentaire (Collège de la vaillance 6) — « un de vos tours de magie d'une action à la place d'une des attaques ».
+  "valor-extra-attack": { spellsInAttack: { maxLevel: 0 } },
   // Mots cinglants (Savoir 3) : « quand une créature que vous voyez à 18 m réussit un jet d'attaque, votre Réaction et une
   // Inspiration : lancez le dé et soustrayez le résultat du jet » — proposé quand l'attaque touche le barde ou un allié ; l'attaque
   // est rejugée (le dé vaut autant de CA). Les tests et les jets de dégâts restent au joueur.

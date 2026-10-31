@@ -98,6 +98,27 @@ function replacesAttack(item, activity) {
 }
 
 /**
+ * §298 (repasse C3) : un sort lancé à la place d'attaques de l'action Attaquer — Magie de guerre (Chevalier occulte 3 : un tour de magie
+ * de Magicien), Attaque supplémentaire du Collège de la vaillance (un tour de magie), Magie de guerre améliorée (Chevalier occulte 18 : un
+ * sort de Magicien de niveau 1 ou 2, pour deux attaques). Clé `spellsInAttack: { maxLevel, class?, attacks? }` sur l'aptitude ; le sort
+ * doit se lancer par une action. Rend le nombre d'attaques qu'il prend, ou 0.
+ */
+export function spellAttackCost(activity) {
+  const item = activity?.item;
+  if ( (item?.type !== "spell") || (activity.activation?.type !== "action") || !activity.actor ) return 0;
+  const level = Number(item.system?.level ?? 0);
+  let best = 0;
+  for ( const feature of activity.actor.items ) {
+    const rule = contentOf(feature).entry?.spellsInAttack;
+    if ( !rule || (level > rule.maxLevel) ) continue;
+    if ( rule.class && (spellClassOf(item) !== rule.class) ) continue;
+    const attacks = rule.attacks ?? 1;
+    if ( !best || (attacks < best) ) best = attacks;
+  }
+  return best;
+}
+
+/**
  * Le coût d'une activité au budget du tour (§137 : aussi lu par l'interface, `api.ui.cost`) : l'activation de la donnée, sauf règle.
  */
 export function costFor(activity) {
@@ -140,9 +161,18 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
     // ne lui fait jamais dépenser d'emplacement (activity/mixin.mjs : `consume.spellSlot = !linked && …`) — ni la règle « un sort à
     // emplacement par tour ».
     && !item.getFlag?.("dnd5e", "cachedFor");
-  const replaces = replacesAttack(item, activity);
+  // §298 : un sort lancé dans l'action Attaquer (Magie de guerre : « remplacer une des attaques ») — compté comme des attaques quand
+  // l'action Attaquer en a assez : celles qui restent, ou, l'action pas encore prise, celles qu'elle ouvrirait. Sinon c'est l'action
+  // Magie ordinaire.
+  const spellAttacks = spellAttackCost(activity);
+  const inAttack = spellAttacks > 0 && (() => { const c = combatantFor(activity.actor); const b = c ? readBudget(c) : null;
+    if ( !b ) return false;
+    if ( (b.attacks?.used ?? 0) > 0 ) return b.attacks.used + spellAttacks <= b.attacks.granted;
+    return (b.action >= 1) && (attacksPerAction(activity.actor) >= spellAttacks); })();
+  const replaces = replacesAttack(item, activity) || inAttack;
   return {
     cost: costOverride ?? costFor(activity),
+    ...(inAttack ? { attackCost: spellAttacks } : {}),
     weaponAttack: ((activity.type === "attack") && ["weapon", "unarmed"].includes(activity.attack?.type?.classification)) || replaces
       || isUnarmedOption(activity),
     usesSpellSlot: spellSlot,
@@ -211,7 +241,8 @@ export function attacksPerAction(actor) {
   // pas jugée (le budget ne connaît pas l'arme de la seconde attaque).
   // Lame dévorante (occultiste 12, §29) : l'attaque de plus devient deux.
   if ( has("devouring-blade") ) return 3;
-  return (has("extra-attack") || has("thirsting-blade")) ? 2 : 1;
+  // §298 : « valor-extra-attack » — l'Attaque supplémentaire du Collège de la vaillance, reconnue par sa source.
+  return (has("extra-attack") || has("valor-extra-attack") || has("thirsting-blade")) ? 2 : 1;
 }
 
 /**

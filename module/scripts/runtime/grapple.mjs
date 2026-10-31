@@ -235,7 +235,10 @@ async function attemptEscape(actor) {
   // §281 : Inexorable — l'agrippeur impose le Désavantage aux tests contre sa prise.
   const disadvantage = grappleRulesOf(grapplerOf(effect)).inescapable;
   if ( disadvantage ) log(`${actor.name}: Disadvantage on the escape check (${grapplerOf(effect)?.name})`);
-  const rolls = await rolledAndShown(() => actor.rollSkill({ skill, target: dc, ...(disadvantage ? { disadvantage: true } : {}) }, { configure: false }));
+  // §304 (repasse C9) : Forte carrure du goliath — « Avantage aux tests pour mettre fin à l'état Agrippé » (drapeau de dnd5e posé par le trait).
+  const advantage = actor.flags?.dnd5e?.powerfulBuild === true;
+  if ( advantage ) log(`${actor.name}: Advantage on the escape check (Powerful Build)`);
+  const rolls = await rolledAndShown(() => actor.rollSkill({ skill, target: dc, ...(disadvantage ? { disadvantage: true } : {}), ...(advantage ? { advantage: true } : {}) }, { configure: false }));
   const total = rolls?.[0]?.total;
   if ( !Number.isFinite(total) ) return false;
   escapeNotice(actor, total >= dc);

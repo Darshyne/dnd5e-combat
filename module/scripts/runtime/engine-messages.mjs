@@ -50,6 +50,14 @@ async function inspiredAttack(message, roll, targets) {
   const actor = (await fromUuid(speakerTokenUuid(message) ?? ""))?.actor ?? message.getAssociatedActor?.() ?? null;
   // §282 : l'Inspiration héroïque d'abord, sur tout jet (un 1 naturel aussi) — le nouveau d20 refait le critique et l'échec automatique.
   roll = await heroicAttack(message, roll, targets, actor);
+  // §304 (repasse C9) : Visée sans pareille vaut aussi sur un 1 naturel — un raté comme un autre ; le coup touche, sans critique.
+  if ( roll.isFumble && actor ) {
+    const acs = targets.filter(t => !t.unaffected).map(t => t.ac).filter(Number.isFinite);
+    const needed = acs.length ? Math.min(...acs) : null;
+    if ( (needed !== null) && await offerPeerlessAim(actor, { total: roll.total, needed }) ) {
+      return { ...roll, isFumble: false, total: Math.max(roll.total, needed), inspired: Math.max(0, needed - roll.total) };
+    }
+  }
   if ( roll.isFumble || roll.isCritical ) return roll;
   const missed = resolveAttack(roll, targets.filter(t => !t.unaffected)).filter(t => t.reason === "miss");
   if ( !missed.length ) return roll;

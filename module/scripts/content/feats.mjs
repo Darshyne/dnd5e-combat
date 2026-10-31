@@ -146,7 +146,8 @@ export const FEATS = Object.freeze({
   "boon-of-energy-resistance": { triggers: [{ on: "isDamaged", if: { "damage.resisted": true }, do: [{ type: "use", activity: "gAfgFNKzMbpNdfae", target: "source" }] }] },
   // Destin, Améliorer le destin : 2d4 ajoutés à son propre test d20 raté (attaque, sauvegarde demandée par le moteur, test) — une fois
   // par initiative ou repos ; le malus à un autre et le bonus à un allié restent au MJ.
-  "boon-of-fate": { rollBonus: { activity: "BSFYZ98EvNknWsaE", on: ["attack", "save", "check"] } },
+  // §304 : « vous regagnez cette utilisation quand vous lancez l'Initiative ».
+  "boon-of-fate": { rollBonus: { activity: "BSFYZ98EvNknWsaE", on: ["attack", "save", "check"] }, regainOnInitiative: { item: "boon-of-fate", upTo: 1 } },
   // Vigueur : + Con aux PV regagnés, une fois par tour (le +40 au maximum : l'effet du Manuel).
   "boon-of-fortitude": { fortifiedHealing: true },
   // Attaque irrésistible : les dégâts contondants, perforants et tranchants ignorent la résistance ; Frappe écrasante sur un critique.

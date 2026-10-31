@@ -5,14 +5,14 @@
  */
 
 import { deathWardOf } from "../adapter/ward.mjs";
-import { contentOf } from "../adapter/content.mjs";
+import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
 import { retaliationsFor, retaliate, inflict, saveRetaliation } from "../adapter/retaliation.mjs";
 import { applyDamageToToken, maximizedHealing } from "../adapter/messages.mjs";
 import { requestSaves, applyEffectsToToken, applyStatusToToken, applyMarkToToken, splitPushes } from "../adapter/saves.mjs";
 import { holds } from "../core/triggers.mjs";
-import { factsFor } from "../adapter/facts.mjs";
+import { factsFor, originItemOf } from "../adapter/facts.mjs";
 import { removeTransientRegions } from "../adapter/areas.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { askAllocation } from "../adapter/projectiles.mjs";
@@ -199,7 +199,10 @@ export const COMMANDS = {
         if ( step.type === "move" ) await forcedMove(source, target, step);
         else if ( step.type === "disarm" ) {
           // §19.6 : « l'ennemi lâche l'objet » — son arme de corps à corps équipée (la première), dés-équipée.
-          const weapon = target?.actor?.items.find(i => (i.type === "weapon") && i.system.equipped
+          // §304 : Lien occulte — « on ne peut vous désarmer de l'arme liée tant que vous n'êtes pas Neutralisé ».
+          const incapacitated = target?.actor?.statuses?.has("incapacitated");
+          const bonded = i => !incapacitated && i.effects.some(e => !e.disabled && (identifierOf(originItemOf(e) ?? {}).id === "war-bond"));
+          const weapon = target?.actor?.items.find(i => (i.type === "weapon") && i.system.equipped && !bonded(i)
             && Array.from(i.system.activities ?? []).some(a => (a.type === "attack") && (a.attack?.type?.value === "melee")));
           if ( weapon ) {
             await weapon.update({ "system.equipped": false });

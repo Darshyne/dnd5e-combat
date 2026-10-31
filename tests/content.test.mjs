@@ -1000,3 +1000,10 @@ describe("§303 : repasse, lot C8 (sorts à logique propre)", () => {
     expect(validateEntry({ zoneCharges: 4 })).toEqual([]);
   });
 });
+
+describe("§304 : repasse, lot C9 (dons : clauses secondaires)", () => {
+  it("les déclarations du lot", () => {
+    expect(CONTENT["boon-of-fate"].regainOnInitiative).toEqual({ item: "boon-of-fate", upTo: 1 });
+    expect(validateEntry(CONTENT["boon-of-fate"], { facts })).toEqual([]);
+  });
+});

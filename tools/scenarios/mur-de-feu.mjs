@@ -54,6 +54,12 @@ export default {
       return (await current()) === token.id;
     };
     if ( !ctx.expect(await turnOf(mage), "tour du Magicien") ) return;
+    // La fin de tour passe par la résolution du MJ actif (jet, carte, animation) : attendre les dégâts, 15 s au plus.
+    const burnt = async before => {
+      let hp = await ctx.hp(zombi);
+      for ( const stop = Date.now() + 15000; (hp >= before) && (Date.now() < stop); hp = await ctx.hp(zombi) ) await pause(500);
+      return hp;
+    };
 
     // 1. En L, un point hors de l'axe.
     await ctx.engineLog();
@@ -98,9 +104,10 @@ export default {
     const noSave = cards.map(m => m.flags?.[MODULE_ID]?.resolution).filter(r => r?.targets?.length)
       .flatMap(r => r.targets).filter(t => t.save?.auto === "noSave");
     ctx.expect(noSave.length > 0, `la traversée : sans sauvegarde, dégâts pleins (${noSave.map(t => t.damage?.applied).join(", ")})`);
+    let t0 = Date.now();
     await ctx.nextTurn();
-    await pause(4500);
-    hp = await ctx.hp(zombi);
+    hp = await burnt(before);
+    ctx.log(`fin de tour : dégâts lus après ${Date.now() - t0} ms`);
     const ended = await hits(/face brûlante|burning side.*Zombi \(turnEnd\)|Zombi \(turnEnd\)/);
     ctx.expect(ended.length && (hp < before), `fin de tour du côté brûlant : dégâts (${before - hp} PV)`);
 
@@ -151,9 +158,10 @@ export default {
     await pause(3000);
     if ( !ctx.expect(await turnOf(zombi), "tour du Zombi (anneau)") ) return;
     before = await ctx.hp(zombi);
+    t0 = Date.now();
     await ctx.nextTurn();
-    await pause(4500);
-    hp = await ctx.hp(zombi);
+    hp = await burnt(before);
+    ctx.log(`anneau, fin de tour : dégâts lus après ${Date.now() - t0} ms`);
     ctx.expect(hp < before, `anneau : le Zombi finit son tour dedans — dégâts (${before - hp} PV)`);
   }
 };

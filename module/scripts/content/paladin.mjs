@@ -29,6 +29,9 @@ export const PALADIN = Object.freeze({
   // d'action (la donnée dit « action », le paladin ne pouvait plus attaquer ce tour-là).
   "sacred-weapon": { usageLimits: { Ew70lNTD8dR3vREt: { cost: "free" } } },
   // §295 : « 5 points de la réserve pour retirer l'état Empoisonné » — l'activité « Remove Poison » paie sans rien retirer.
+  // C12-g : Toucher restaurateur (Paladin 14) — « vous pouvez aussi mettre fin à un ou plusieurs de ces états : Aveuglé, Charmé, Assourdi,
+  // Effrayé, Paralysé, Étourdi » : un au choix (plusieurs, au joueur, pour 5 points chacun).
+  "restoring-touch": { ranges: { PgTPWedvQHDlQ7LQ: { value: 5, units: "ft" } }, cures: ["blinded", "charmed", "deafened", "frightened", "paralyzed", "stunned"], curesOn: "PgTPWedvQHDlQ7LQ" },
   "lay-on-hands": { ranges: Object.fromEntries(LAY_ON_HANDS.map(id => [id, { value: 5, units: "ft" }])), cures: ["poisoned"], curesOn: "K6UeXQwTyDHWvis8" },
   // §124 : Champion ancestral et Nimbe sacré — « imprégnez votre Aura de protection » : la transformation (son effet) est pour le
   // paladin, même si les données disent « une créature ». Pas de visée.

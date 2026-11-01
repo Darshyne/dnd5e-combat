@@ -205,7 +205,7 @@ describe("contenu livré", () => {
       "mordenkainens-faithful-hound", "mordenkainens-magnificent-mansion", "mordenkainens-sword", "natures-ward", "natures-wrath",
       "necrotic-husk", "nimble-escape", "observant", "oil", "open-hand-technique", "otilukes-freezing-sphere", "otilukes-resilient-sphere",
       "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade", "pact-of-the-chain", "parry", "parry-maneuver", "pass-without-trace",
-      "path-to-the-grave", "persistent-rage", "phantasmal-creatures", "phantasmal-force", "phantasmal-killer", "phantom-steed",
+      "path-to-the-grave", "perfect-focus", "persistent-rage", "phantasmal-creatures", "phantasmal-force", "phantasmal-killer", "phantom-steed",
       "physicians-touch", "piercer", "plant-growth", "poisoner", "polearm-master", "polymorph", "portent", "potent-cantrip",
       "potion-of-animal-friendship", "potion-of-climbing", "potion-of-diminution", "potion-of-flying", "potion-of-growth",
       "potion-of-heroism", "potion-of-invisibility", "potion-of-resistance", "potion-of-vitality", "power-of-shadow", "power-word-fortify",
@@ -215,9 +215,9 @@ describe("contenu livré", () => {
       "prowl", "psionic-power", "psychic-defenses", "psychic-spells", "psychic-veil", "pushing-attack", "quickened-spell", "radiant-soul",
       "rage", "rage-of-the-wilds", "raise-dead", "rally", "ray-of-enfeeblement", "ray-of-frost", "reanimated-companion", "reckless-attack",
       "regenerate", "regeneration", "relentless-endurance", "relentless-hunter", "relentless-rage", "remarkable-athlete", "remove-curse",
-      "rend-mind", "resilient-sphere", "resistance", "resurrection", "retaliation", "reverse-gravity", "revivify", "riposte",
+      "rend-mind", "resilient-sphere", "resistance", "restoring-touch", "resurrection", "retaliation", "reverse-gravity", "revivify", "riposte",
       "ritual-adept", "rumbling-movement", "sacred-weapon", "sanctuary", "sanguine-drain", "savage-attacker", "scorching-ray",
-      "sculpt-spells", "sear-undead", "searing-smite", "second-skin", "second-story-work", "see-invisibility", "self-restoration",
+      "sculpt-spells", "sear-undead", "searing-smite", "searing-vengeance", "second-skin", "second-story-work", "see-invisibility", "self-restoration",
       "sentinel", "sentinel-at-deaths-door", "shade-spirit", "shadow-stealth", "shadow-walk", "shadowy-dodge", "sharp-eye-ravenloft",
       "sharpshooter", "shatter", "shield", "shield-master", "shillelagh", "shining-smite", "shocking-grasp", "sickening-vapors", "silence",
       "skulker", "slam", "slasher", "sleep", "sleet-storm", "slippers-of-spider-climbing", "slow", "slow-fall", "smelting-charge",
@@ -1113,5 +1113,15 @@ describe("§312 : repasse, lot C12-d (budget du tour, coûts)", () => {
     expect(CONTENT["dragons-breath"].grants).toEqual({ from: "dnd5eactivity000", activity: "61nfYLT1M7MOTibf" });
     expect(CONTENT["abjure-foes"].actionOrBonus).toBe(true);
     expect(validateEntry({ grants: { from: "court", activity: "61nfYLT1M7MOTibf" } })).toHaveLength(1);
+  });
+});
+
+describe("§313 : repasse, lot C12-g (états, durées, fins d'effet)", () => {
+  it("les déclarations du lot", () => {
+    for ( const id of ["mislead", "hand-of-ultimate-mercy", "perfect-focus", "searing-vengeance", "restoring-touch"] ) expect(validateEntry(CONTENT[id], { facts }), id).toEqual([]);
+    expect(CONTENT["mislead"].summonEffectsOnCaster).toBe(true);
+    expect(CONTENT["hand-of-ultimate-mercy"].curesAll).toContain("dead");
+    expect(CONTENT["perfect-focus"].regainOnInitiative).toEqual({ item: "monks-focus", upTo: 4 });
+    expect(validateEntry({ summonEffectsOnCaster: "oui" })).toHaveLength(1);
   });
 });

@@ -220,6 +220,8 @@
  *                                               (Tempête de neige, Nuage nauséabond : ceux qui sont déjà dedans sauvegardent au début de leur tour)
  *     brutalStrike?: { options?, count? }       C12-e : Coup brutal — options offertes avec Témérité (`push` : poussée ; `effect` :
  *                                               effet de l'item posé sur la cible touchée), nombre d'options par coup (runtime/barbarian.mjs)
+ *     summonEffectsOnCaster?: true              C12-g : les effets de l'activité d'invocation vont au lanceur, liés à sa concentration,
+ *                                               pas à la créature invoquée (Double illusoire : le lanceur devient Invisible)
  *     grants?: { from, activity }               C12-d : les cibles de l'activité `from` reçoivent une copie de l'item réduite à
  *                                               `activity`, au DD et au niveau du lanceur, jusqu'à la fin de sa concentration
  *                                               (Souffle du dragon, runtime/grants.mjs)

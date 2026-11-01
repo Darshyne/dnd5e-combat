@@ -21,7 +21,11 @@ export const MONK = Object.freeze({
   "elemental-epitome": {
     effectChanges: { ZgNs0IRUKwUrZGn9: [{ key: "system.traits.dr.value", type: "add", value: "lightning" }], rajbPA9Inl0nYnlP: [{ key: "system.traits.dr.value", type: "add", value: "thunder" }] }
   },
-  "hand-of-ultimate-mercy": { ranges: { XtgmW9115BzcLiFr: { value: 5, units: "ft" } } },
+  // C12-g : « elle revient à la vie […] et les états Aveuglé, Assourdi, Paralysé, Empoisonné et Étourdi cessent » — Mort compris.
+  "hand-of-ultimate-mercy": { ranges: { XtgmW9115BzcLiFr: { value: 5, units: "ft" } }, curesAll: ["dead", "blinded", "deafened", "paralyzed", "poisoned", "stunned"] },
+  // C12-g : Concentration parfaite (Moine 15) — « quand vous jouez l'initiative et avez 3 points de concentration ou moins, vous remontez à 4 »
+  // (la condition « sans Métabolisme surnaturel » reste au joueur).
+  "perfect-focus": { regainOnInitiative: { item: "monks-focus", upTo: 4 } },
   // Arts martiaux : « vous pouvez faire une frappe à mains nues par une action Bonus ».
   "martial-arts": { martialArts: true },
   // Concentration du moine : Déluge de coups (2ghJTBhilLrFn9xT) — « 1 point : deux frappes à mains nues par une action Bonus » ;

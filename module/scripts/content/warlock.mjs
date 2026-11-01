@@ -31,6 +31,8 @@ export const WARLOCK = Object.freeze({
     do: [{ type: "damage", formula: "@abilities.cha.mod", damageType: "weapon" }] }] },
   // Défenses envoûtantes (Archifée 10) : touché par un attaquant visible, l'occultiste peut, en Réaction, diviser les dégâts par
   // deux et soumettre l'attaquant à une sauvegarde de Sagesse — l'activité vise l'attaquant.
+  // C12-g : Vengeance ardente (Céleste 14) — les créatures Aveuglées le sont « jusqu'à la fin du tour en cours » (le tour de l'occultiste).
+  "searing-vengeance": { effectEnds: { KOXCayzftTFF9Kam: "casterTurnEnd" } },
   // C12-f : « sur un échec, l'attaquant subit des dégâts psychiques égaux aux dégâts que vous avez subis » (`retort`).
   "beguiling-defenses": { retort: { damageType: "psychic" }, triggers: [{ on: "isHit", if: { "target.seesSource": true },
     do: [{ type: "use", activity: "Y2cMdoDnGTyEqs0l", target: "source" }, { type: "halve" }] }] },

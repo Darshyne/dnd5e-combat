@@ -340,6 +340,10 @@ export const SPELL_RULES = Object.freeze({
   "power-word-kill": { hpTiers: [{ atMost: 100, damage: false, statuses: ["dead"] }, {}] },
   // Mot de pouvoir étourdissant : « 150 PV ou moins : Étourdie ; sinon, Vitesse 0 jusqu'au début de votre prochain tour ». C12-e :
   // « à la fin de chacun de ses tours, elle réitère un JS de Constitution » — la donnée n'a pas d'activité de sauvegarde : déclarée ici.
+  // C12-g : Double illusoire — « vous devenez Invisible au moment où un double illusoire de vous apparaît » : l'effet « Invisible » de
+  // l'activité d'invocation va au lanceur (dnd5e le posait sur le double) ; il tombe quand le lanceur attaque, inflige des dégâts ou lance
+  // un sort (`breaksOn`, content/spells.mjs).
+  "mislead": { summonEffectsOnCaster: true },
   // C12-d : Souffle du dragon — « touchez une créature consentante » : la créature touchée reçoit « Exhale », qu'elle utilise par sa propre
   // action Magie, au DD et au niveau du lanceur, jusqu'à la fin de la concentration (`grants`, runtime/grants.mjs). « Cast » se donne au
   // contact (portée « personnelle » dans la donnée).

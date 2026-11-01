@@ -13,6 +13,8 @@ import { contentOf } from "../adapter/content.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log } from "./shared.mjs";
+import { placeItemEffect } from "../adapter/effects.mjs";
+import { concentrationOn } from "../adapter/summons.mjs";
 
 /** La copie de l'item donnée à la cible : la seule activité donnée, au DD et au niveau du lanceur. */
 function grantedData(item, rule, { dc, scaling }) {
@@ -78,7 +80,33 @@ async function onConcentrationEnds(effect) {
   }
 }
 
+/**
+ * C12-g : Double illusoire — « vous devenez Invisible au moment où un double illusoire apparaît » : dnd5e pose les effets d'une activité
+ * d'invocation sur la créature invoquée (documents/activity/summon.mjs) ; `summonEffectsOnCaster` les remet sur le lanceur, liés à sa
+ * concentration. Sur le client qui invoque.
+ */
+async function onPostSummon(activity, profile, tokens) {
+  const item = activity?.item;
+  const caster = item?.actor;
+  if ( !caster || (contentOf(item).entry?.summonEffectsOnCaster !== true) ) return;
+  const ids = (activity.effects ?? []).map(e => e._id).filter(Boolean);
+  if ( !ids.length ) return;
+  for ( const token of tokens ?? [] ) {
+    const actor = token.actor ?? token.document?.actor;
+    const copies = (actor?.effects ?? []).filter(e => ids.some(id => String(e._stats?.compendiumSource ?? e._stats?.duplicateSource ?? e.origin ?? "").includes(id) || (e.name === item.effects.get(id)?.name)));
+    if ( copies.length && actor.isOwner ) await actor.deleteEmbeddedDocuments("ActiveEffect", copies.map(e => e.id));
+  }
+  const concentration = concentrationOn(item);
+  for ( const id of ids ) {
+    const placed = await placeItemEffect(item, id, caster);
+    if ( placed && concentration?.addDependent ) await concentration.addDependent(placed);
+    log(`${item.name}: "${item.effects.get(id)?.name ?? id}" on ${caster.name}, not on the summoned creature`);
+  }
+}
+
 export function registerGrants() {
+  route("dnd5e.postSummon", (activity, profile, tokens) => { onPostSummon(activity, profile, tokens).catch(err => console.error(`${MODULE_ID} | summon effects`, err)); },
+    { label: "summon effects not moved to the caster" });
   route("createChatMessage", message => enqueue(`grants:${message.id}`, () => onUsage(message)), { executor: true, label: "granted activity not given" });
   route("deleteActiveEffect", effect => enqueue(`grants-end:${effect.id}`, () => onConcentrationEnds(effect)), { executor: true, label: "granted activity not removed" });
 }

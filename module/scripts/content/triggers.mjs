@@ -182,6 +182,10 @@ export const TRIGGERS = Object.freeze({
   // de chacun de ses tours ; trois réussites, le sort prend fin ; trois échecs, elle est Pétrifiée ».
   "flesh-to-stone": [{ on: "endOfTurn", via: "effect", fromEffect: "Xt8AUh0PfYhGYBvY",
     do: [{ type: "resave", tally: { successes: 3, failures: 3, status: "petrified" } }] }],
+  // C12-e : Embruns prismatiques, Indigo (cCQh7iXKnT8PKmc1, Entravé) — « un JS de Constitution à la fin de chacun de ses tours ; trois
+  // réussites, l'état cesse ; trois échecs, Pétrifiée ».
+  "prismatic-spray": [{ on: "endOfTurn", via: "effect", fromEffect: "cCQh7iXKnT8PKmc1",
+    do: [{ type: "resave", ability: "con", tally: { successes: 3, failures: 3, status: "petrified" } }] }],
   "wrathful-smite": [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }] }],
   // Assassin imaginaire : « un JS de Sagesse à la fin de chacun de ses tours ; raté, elle subit de nouveau les dégâts
   // psychiques ; réussi, le sort prend fin » — les dégâts sont ceux de l'activité du sort, au niveau lancé.

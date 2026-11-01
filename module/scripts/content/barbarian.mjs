@@ -28,6 +28,30 @@ export const BARBARIAN = Object.freeze({
   // Témérité (niveau 2) : choisie au premier jet d'attaque du tour ; jusqu'au début du tour suivant du barbare, ses attaques
   // fondées sur la Force ont l'Avantage, et celles qui le visent aussi.
   "reckless-attack": { reckless: true },
+  // C12-e : Coup brutal (niveau 9) — avec Témérité, renoncer à l'Avantage sur une attaque de Force : sur un coup, 1d10 (2d10 au niveau 17 :
+  // l'échelle de la sous-classe) du type de l'arme et un effet. Coup puissant : poussée de 4,50 m (le déplacement du barbare vers elle
+  // reste au joueur) ; Coup handicapant : -4,50 m de Vitesse jusqu'au début de votre prochain tour (« Hamstrung »). La question, la marque
+  // et les effets : runtime/barbarian.mjs.
+  "brutal-strike": {
+    brutalStrike: { options: { forceful: { push: { distance: 15, units: "ft" } }, hamstring: { effect: "bg9jWpPRIJ0Q2vPY" } } },
+    effectEnds: { bg9jWpPRIJ0Q2vPY: "casterTurnStart" },
+    triggers: [{ on: "preDamageRoll", if: { "activity.isAttack": true, "source.hasEffect": "brutal-strike" },
+      do: [{ type: "damage", formula: "@scale.barbarian.brutal-strike", damageType: "weapon" }] }]
+  },
+  // Coup brutal amélioré (13) : Coup chancelant — Désavantage à la prochaine sauvegarde, pas d'attaque d'opportunité, jusqu'au début de
+  // votre prochain tour (« Staggered », vide dans la donnée : toutes ses sauvegardes jusque-là, simplification) ; Coup fendant — +5 à la
+  // prochaine attaque d'une autre créature contre elle (« Sundered », consommé).
+  "improved-brutal-strike": {
+    brutalStrike: { options: { staggering: { effect: "L9N4evZo1jt46dap" }, sundering: { effect: "tUyuyTQGmpUqMcFe" } } },
+    effectEnds: { L9N4evZo1jt46dap: "casterTurnStart", tUyuyTQGmpUqMcFe: "casterTurnStart" },
+    effectChanges: { L9N4evZo1jt46dap: ["str", "dex", "con", "int", "wis", "cha"].map(a => ({ key: `system.abilities.${a}.save.roll.mode`, type: "add", value: "-1" })) },
+    noOpportunityAttacks: ["L9N4evZo1jt46dap"],
+    triggers: [{ on: "preAttackRoll", via: "effect", fromEffect: "tUyuyTQGmpUqMcFe",
+      if: { "target.hasEffect": "improved-brutal-strike", not: { "target.hasEffectFrom": "improved-brutal-strike" } },
+      do: [{ type: "attackBonus", formula: "5" }, { type: "consume", side: "target" }] }]
+  },
+  // Coup brutal amélioré (17) : deux effets différents par Coup brutal.
+  "improved-brutal-strike-2": { brutalStrike: { count: 2 } },
   // Bond instinctif (niveau 7) : « dans le cadre de l'action Bonus pour entrer en Rage, vous pouvez vous déplacer de la moitié de
   // votre Vitesse » — sans rien dire des attaques d'opportunité.
   "instinctive-pounce": { movesAfter: { item: "rage", disengage: false } },

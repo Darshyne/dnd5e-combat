@@ -18,7 +18,7 @@ import { attackDamageTypes } from "../adapter/smite.mjs";
 import { inflict } from "../adapter/retaliation.mjs";
 import { victimsOf } from "../adapter/grapple.mjs";
 import { enqueue } from "./queue.mjs";
-import { contentOf } from "../adapter/content.mjs";
+import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { combatantFor, readBudget, writeBudget, movementOf } from "../adapter/turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { askChoice } from "../adapter/choices.mjs";
@@ -148,6 +148,8 @@ async function onResolution(resolution) {
   if ( !source || !activity ) return;
   await halt(resolution, source);   // §133
   await critMove(resolution, source);
+  await hitDefense(resolution, source);   // C12-e
+  await eldritchStrike(resolution, source, activity);   // C12-e
   const rules = source.items.map(i => ({ item: i, rule: contentOf(i).entry?.critMark })).filter(r => r.rule);
   if ( !rules.length ) return;
   const types = attackDamageTypes(activity);
@@ -344,6 +346,54 @@ async function halt(resolution, source) {
   }
 }
 
+/**
+ * C12-e : Tactiques défensives, Défense multiattaque — « quand une créature vous touche avec un jet d'attaque, elle a le Désavantage à
+ * ses autres jets d'attaque contre vous pendant ce tour » (`hitDefense`). Une marque sur l'attaquant, retirée au changement de tour.
+ */
+async function hitDefense(resolution, source) {
+  for ( const t of resolution.targets ?? [] ) {
+    if ( !t.hit ) continue;
+    const target = fromUuidSync(t.token, { strict: false })?.actor;
+    if ( !target || (target === source) ) continue;
+    const item = Array.from(target.items).find(i => contentOf(i).entry?.hitDefense === true);
+    if ( !item ) continue;
+    if ( source.effects.some(e => e.getFlag(MODULE_ID, "hitDefense")?.against === target.uuid) ) continue;
+    await source.createEmbeddedDocuments("ActiveEffect", [{ name: loc("DefenseMultiattaque", { item: item.name, name: target.name }), img: item.img,
+      origin: item.uuid, transfer: false, disabled: false, changes: [], showIcon: CONST.ACTIVE_EFFECT_SHOW_ICON.ALWAYS,
+      flags: { [MODULE_ID]: { hitDefense: { against: target.uuid, item: item.uuid } } } }]);
+    log(`${item.name}: ${source.name} hit ${target.name}, Disadvantage on its other attacks against it this turn`);
+  }
+}
+
+/**
+ * C12-e : Fragilisation occulte — un coup d'arme du Chevalier occulte marque la cible ; sa prochaine sauvegarde contre un sort de
+ * l'auteur, avant la fin de son prochain tour, a le Désavantage (adapter/saves.mjs). Une marque par auteur, renouvelée.
+ */
+async function eldritchStrike(resolution, source, activity) {
+  const item = Array.from(source.items).find(i => identifierOf(i).id === "eldritch-strike");
+  if ( !item || (activity.type !== "attack") || (activity.item?.type !== "weapon") ) return;
+  for ( const t of resolution.targets ?? [] ) {
+    if ( !t.hit ) continue;
+    const target = fromUuidSync(t.token, { strict: false })?.actor;
+    if ( !target || (target === source) ) continue;
+    const old = target.effects.filter(e => e.getFlag(MODULE_ID, "eldritchStrike")?.source === source.uuid).map(e => e.id);
+    if ( old.length ) await target.deleteEmbeddedDocuments("ActiveEffect", old);
+    await target.createEmbeddedDocuments("ActiveEffect", [{ name: loc("Fragilisation", { item: item.name }), img: item.img, origin: item.uuid,
+      transfer: false, disabled: false, changes: [], showIcon: CONST.ACTIVE_EFFECT_SHOW_ICON.ALWAYS,
+      flags: { [MODULE_ID]: { eldritchStrike: { source: source.uuid, round: game.combat?.round ?? null } } } }]);
+    log(`${item.name}: ${target.name} has Disadvantage on its next saving throw against ${source.name}'s spells`);
+  }
+}
+
+/** C12-e : les marques de Défense multiattaque tombent au changement de tour. */
+async function dropHitDefense() {
+  for ( const token of canvas?.scene?.tokens ?? [] ) {
+    const actor = token.actor;
+    const ids = (actor?.effects ?? []).filter(e => e.getFlag(MODULE_ID, "hitDefense")).map(e => e.id);
+    if ( ids.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", ids);
+  }
+}
+
 /** Retire les marques qu'un auteur a posées (au début de son tour, à la fin du combat). */
 async function dropMarks(sourceUuid) {
   for ( const token of canvas?.scene?.tokens ?? [] ) {
@@ -415,6 +465,7 @@ function onPreRollD20(config) {
 }
 
 function onTurnChange(combat, prior, current) {
+  enqueue("hitDefense", dropHitDefense);
   const ended = combat.combatants.get(prior?.combatantId)?.actor;
   if ( ended ) enqueue(`feats-turn:${ended.uuid}`, () => endOwnCondition(ended, "turnEnd"));
   const combatant = combat.combatants.get(current?.combatantId);

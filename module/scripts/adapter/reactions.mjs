@@ -23,7 +23,7 @@ import { queryPlayer, waitLabel } from "./player-wait.mjs";
 import { contentOf } from "./content.mjs";
 import { markReactionAdvantage, markReactionDamage, markReactionDisadvantage } from "./marks.mjs";
 import { combatantFor, readBudget, currentTurnKey } from "./turn.mjs";
-import { originItemOf } from "./facts.mjs";
+import { originItemOf, comesFromItemEffect } from "./facts.mjs";
 import { resolveCounter } from "./counter.mjs";
 import { polearmFits } from "../core/feats.mjs";
 import { spendItemUses } from "./uses.mjs";
@@ -45,7 +45,12 @@ export function actionOrBonusOnly(actor) {
 
 /** §23 : le porteur d'un effet d'item `noOpportunityAttacks` (Poigne électrique) ne fait pas d'attaque d'opportunité. */
 export function opportunityBlocked(actor) {
-  return (actor?.effects ?? []).some(e => !e.disabled && !e.isSuppressed && (contentOf(originItemOf(e))?.entry?.noOpportunityAttacks === true));
+  // C12-e : une liste d'effets de l'item — seuls ceux-là (Coup chancelant, pas Coup fendant).
+  return (actor?.effects ?? []).some(e => {
+    if ( e.disabled || e.isSuppressed ) return false;
+    const rule = contentOf(originItemOf(e))?.entry?.noOpportunityAttacks;
+    return (rule === true) || (Array.isArray(rule) && rule.some(id => comesFromItemEffect(e, id)));
+  });
 }
 
 /** Hors combat la réaction est toujours disponible ; en combat, c'est le budget qui le dit. */

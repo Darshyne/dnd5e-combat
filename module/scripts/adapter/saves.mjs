@@ -21,7 +21,8 @@ import { effectOfProfile } from "./usage.mjs";
 import { timedWait, closeRollDialogAfter } from "./dialogs.mjs";
 import { queryPlayer, waitLabel } from "./player-wait.mjs";
 import { originItemOf, creatureTypeOf } from "./facts.mjs";
-import { contentOf } from "./content.mjs";
+import { contentOf, identifierOf } from "./content.mjs";
+import { hiddenFrom } from "./stealth.mjs";
 import { grappleRulesOf } from "./grapple-rules.mjs";
 import { fightingAdvantage } from "../core/conditions.mjs";
 import { sizeAtLeast } from "../core/content/enums.mjs";
@@ -126,7 +127,7 @@ const SAVE_TIMEOUT = 40000;   // deux fenêtres possibles (choix, jet), chacune 
 
 /** Paramètres du jet, les mêmes que le bouton « Sauvegarde » de la carte (save.mjs:122-134). */
 function saveRollArguments(activity, actor, token, usageMessage, { ability, dc, advantage=false, disadvantage=false, foretold=null }) {
-  const bonus = CONFIG.Dice.BasicRoll.constructParts({ activityBonus: activity.save.bonus }, activity.getRollData());
+  const bonus = CONFIG.Dice.BasicRoll.constructParts({ activityBonus: activity.save?.bonus }, activity.getRollData());
   const rollConfig = { ability, target: dc };
   // §16.25 : Ascendance féerique — l'avantage contre une activité qui pose un état que l'un de ses items désigne.
   if ( saveAdvantageAgainst(actor, activity) || fightingAdvantageFor(activity, token) || sizeAdvantageFor(actor, activity) ) rollConfig.advantage = true;
@@ -167,6 +168,34 @@ export function fightingAdvantageFor(activity, token) {
   const caster = usageTokenOf(activity);
   const targetInCombat = game.combats.some(c => c.started && c.combatants.some(x => x.tokenId === token.id));
   return fightingAdvantage({ targetInCombat, hostile: !!caster && areEnemies(caster, token) });
+}
+
+/**
+ * C12-e : le Désavantage qu'un lanceur impose à la sauvegarde contre son sort — rend le nom de la règle, ou null.
+ *  - Embuscade magique (Roublard Arnaqueur arcanique 9) : « si vous avez l'état Invisible quand vous lancez un sort sur une créature, elle a
+ *    le Désavantage à toute sauvegarde contre lui ce tour-ci » — Invisible, ou caché d'elle (la Furtivité du moteur) ; pas les
+ *    sauvegardes rejouées les tours suivants.
+ *  - Fragilisation occulte (Chevalier occulte 10) : « quand vous touchez une créature d'une attaque avec une arme, elle a le Désavantage
+ *    à la prochaine sauvegarde qu'elle fait contre un de vos sorts avant la fin de votre prochain tour » — la marque posée au coup
+ *    (runtime/feats.mjs), consommée ici. MJ actif.
+ */
+function casterImposedDisadvantage(activity, token) {
+  const caster = activity?.actor;
+  if ( !caster || (activity.item?.type !== "spell") || !token?.actor ) return null;
+  if ( caster.items.some(i => identifierOf(i).id === "magical-ambush") ) {
+    const casterToken = usageTokenOf(activity);
+    if ( casterToken && (casterToken.hasStatusEffect?.("invisible") || hiddenFrom(token, casterToken)) ) return "Magical Ambush";
+  }
+  const round = game.combat?.round ?? null;
+  const mark = token.actor.effects.find(e => {
+    const m = e.getFlag(MODULE_ID, "eldritchStrike");
+    return (m?.source === caster.uuid) && ((m.round === null) || (round === null) || (round - m.round <= 1));
+  });
+  if ( mark ) {
+    mark.delete().catch(err => console.warn(`${MODULE_ID} | Eldritch Strike mark`, err));
+    return "Eldritch Strike";
+  }
+  return null;
 }
 
 /**
@@ -307,7 +336,10 @@ export async function requestSaves(usageMessage, save, targets, { askPlayers=tru
     const inescapable = unarmedSave(activity) && grappleRulesOf(activity.actor).inescapable;
     if ( inescapable ) console.log(`${MODULE_ID} | ${activity.item.name}: ${token.name} has Disadvantage against the grapple or shove`);
     const mode = saveModeFor(given, token.uuid);
-    const disadvantage = (token.uuid === heightened) || byType || inescapable || mode.disadvantage;
+    // C12-e : Embuscade magique, Fragilisation occulte — le Désavantage que le lanceur impose.
+    const imposed = usageMessage.getFlag(MODULE_ID, "resave") ? null : casterImposedDisadvantage(activity, token);
+    if ( imposed ) console.log(`${MODULE_ID} | ${imposed}: ${token.name} has Disadvantage on its saving throw against ${activity.item.name}`);
+    const disadvantage = (token.uuid === heightened) || byType || inescapable || !!imposed || mode.disadvantage;
     const advantage = mode.advantage;
     if ( given?.[token.uuid] ) console.log(`${MODULE_ID} | ${activity.item.name}: ${token.name} has ${given[token.uuid]} on its saving throw (given by the user)`);
     if ( token.uuid === heightened ) console.log(`${MODULE_ID} | Heightened Spell: ${token.name} has Disadvantage on its saving throw`);

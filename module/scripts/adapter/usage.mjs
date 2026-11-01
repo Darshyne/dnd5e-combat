@@ -222,7 +222,9 @@ function saveEffectsOf(activity) {
 
 /** Sauvegarde répétée (brique « resave ») : le message ne demande que la sauvegarde, rien n'est appliqué. */
 function resavePlan(message, activity, common, targets) {
-  const save = saveOf(activity);
+  // C12-e : la sauvegarde déclarée par le contenu (`resave.ability`), quand l'activité n'en a pas.
+  const declared = message.getFlag(MODULE_ID, "resave")?.save;
+  const save = declared ? { ability: declared.ability, abilities: [declared.ability], dc: declared.dc, onSave: "none", activity: activity.uuid } : saveOf(activity);
   if ( !save ) return null;
   return { ...common, targets, plan: { save: { ...save, chained: false }, damage: null, effects: [], steps: [] } };
 }

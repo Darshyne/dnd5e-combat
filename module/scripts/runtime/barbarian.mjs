@@ -17,7 +17,7 @@ import { isRaging, barbarianRule, statusEndsRage, endRage, keepRage, rageKeptOn,
 import { markData, marksOn } from "../adapter/mastery.mjs";
 import { combatantFor, isOwnTurn, readBudget, currentTurnKey, usageTokenOf, speakerTokenOf, turnKeyAt } from "../adapter/turn.mjs";
 import { ensureDowned, AFTER_ZERO_HP_MS } from "../adapter/death.mjs";
-import { contentOf } from "../adapter/content.mjs";
+import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { tokenOf, originItemOf } from "../adapter/facts.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
 import { timedWait } from "../adapter/dialogs.mjs";
@@ -26,6 +26,9 @@ import { enqueue } from "./queue.mjs";
 import { log, loc, notice, sleep, say, locEsc } from "./shared.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { spendItemUses } from "../adapter/uses.mjs";
+import { pushAway } from "../adapter/movement.mjs";
+import { readUnitFactors } from "../adapter/units.mjs";
+import { STEPS } from "../core/action.mjs";
 
 /** Une des cibles du message est-elle hostile à ce token ? */
 function hostileTarget(message, token) {
@@ -140,9 +143,9 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     .then(() => (reckless ? beReckless(actor, token) : null));
   if ( typeof decided === "boolean" ) {
     if ( recklessChoice(actor) === null ) record(decided).catch(err => console.error(`${MODULE_ID} | Reckless Attack`, err));
-    return true;
+    return askBrutal(activity, token, decided, usageConfig, dialogConfig, messageConfig);
   }
-  if ( recklessChoice(actor) !== null ) return true;   // déjà décidé à ce tour
+  if ( recklessChoice(actor) !== null ) return askBrutal(activity, token, recklessChoice(actor), usageConfig, dialogConfig, messageConfig);   // déjà décidé à ce tour
   // Les cibles de l'utilisation suspendue repartent avec la relance (un appelant peut les avoir relâchées entre-temps).
   const targets = Array.from(game.user.targets);
   timedWait({
@@ -160,6 +163,113 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     activity.use(config, dialogConfig, messageConfig);
   }).catch(err => console.error(`${MODULE_ID} | Reckless Attack`, err));
   return false;
+}
+
+/* -------------------------------------------- */
+/*  Coup brutal (C12-e)                          */
+/* -------------------------------------------- */
+
+/**
+ * Coup brutal (Barbare 9) : « si vous utilisez Témérité, vous pouvez renoncer à tout Avantage sur un jet d'attaque fondé sur la Force de votre
+ * choix, à votre tour ; s'il touche, la cible subit 1d10 dégâts supplémentaires du type de l'arme, et vous causez un effet de Coup brutal ».
+ * Une fois par tour. Coup brutal amélioré (13) ajoute deux effets ; (17) : 2d10 (l'échelle de la sous-classe), deux effets différents.
+ * Les options, leur poussée ou leur effet : le contenu (`brutalStrike`), réuni sur tous les items de l'acteur.
+ * Le choix pose une marque sur le barbare, liée à l'activité : l'Avantage est abandonné au jet (runtime/conditions.mjs), les dégâts
+ * ajoutés par sa déclaration (content/barbarian.mjs), les effets posés à la résolution par le MJ actif, puis la marque tombe.
+ */
+function brutalRules(actor) {
+  const options = new Map();
+  let count = 0;
+  for ( const item of actor?.items ?? [] ) {
+    const rule = contentOf(item).entry?.brutalStrike;
+    if ( !rule ) continue;
+    for ( const [name, option] of Object.entries(rule.options ?? {}) ) options.set(name, { item, ...option });
+    count = Math.max(count, rule.count ?? 1);
+  }
+  return options.size ? { options, count } : null;
+}
+
+/** Les choix offerts : une option, ou deux différentes (Coup brutal amélioré, niveau 17). */
+function brutalChoices(names, count) {
+  if ( count < 2 ) return names.map(n => [n]);
+  const out = [];
+  for ( let i = 0; i < names.length; i++ ) for ( let j = i + 1; j < names.length; j++ ) out.push([names[i], names[j]]);
+  return out;
+}
+
+const brutalLabel = names => names.map(n => loc(`CoupBrutal.Option.${n}`)).join(" + ");
+
+async function markBrutal(actor, activity, options) {
+  const item = actor.items.find(i => contentOf(i).entry?.brutalStrike && (identifierOf(i).id === "brutal-strike")) ?? actor.items.find(i => contentOf(i).entry?.brutalStrike);
+  const created = actor.createEmbeddedDocuments("ActiveEffect", [{ name: loc("CoupBrutal.Marque", { options: brutalLabel(options) }), img: item.img, origin: item.uuid,
+    transfer: false, disabled: false, changes: [], flags: { [MODULE_ID]: { brutalStrike: { activity: activity.uuid, options } } } }]);
+  await actor.setFlag(MODULE_ID, "brutalTurn", currentTurnKey());
+  await created;
+  log(`${actor.name}: Brutal Strike (${options.join(", ")}) — no Advantage on this attack`);
+}
+
+function askBrutal(activity, token, reckless, usageConfig, dialogConfig, messageConfig) {
+  const actor = activity.actor;
+  if ( !reckless ) return true;
+  const rules = brutalRules(actor);
+  if ( !rules ) return true;
+  const decided = usageConfig?.[MODULE_ID]?.brutal;
+  // Décidé d'avance par une intention (`brutal: ["forceful"]`) : la marque part avant le message d'utilisation (le serveur traite les
+  // demandes dans l'ordre), donc avant le jet d'attaque.
+  if ( Array.isArray(decided) ) {
+    if ( decided.length && (actor.getFlag(MODULE_ID, "brutalTurn") !== currentTurnKey()) ) markBrutal(actor, activity, decided).catch(err => console.error(`${MODULE_ID} | Brutal Strike`, err));
+    return true;
+  }
+  if ( (decided === false) || (decided === "marked") ) return true;   // « marked » : la marque est posée (relance après la question)
+  if ( actor.getFlag(MODULE_ID, "brutalTurn") === currentTurnKey() ) return true;   // une fois par tour
+  const choices = brutalChoices([...rules.options.keys()], rules.count);
+  const targets = Array.from(game.user.targets);
+  timedWait({
+    window: { title: loc("CoupBrutal.Titre", { name: actor.name }) },
+    content: `<p>${loc("CoupBrutal.Question")}</p>`,
+    buttons: [
+      ...choices.map((names, i) => ({ action: `b${i}`, label: brutalLabel(names) })),
+      { action: "no", label: loc("CoupBrutal.Non"), default: true }
+    ]
+  }, { fallback: "no" }).then(async choice => {
+    const picked = (choice && (choice !== "no")) ? (choices[Number(choice.slice(1))] ?? []) : [];
+    if ( picked.length ) await markBrutal(actor, activity, picked);
+    if ( !game.user.targets.size ) for ( const t of targets ) t.setTarget(true, { releaseOthers: false });
+    const config = { ...usageConfig, [MODULE_ID]: { ...(usageConfig?.[MODULE_ID] ?? {}), reckless, brutal: picked.length ? "marked" : false } };
+    activity.use(config, dialogConfig, messageConfig);
+  }).catch(err => console.error(`${MODULE_ID} | Brutal Strike`, err));
+  return false;
+}
+
+/** MJ actif : l'attaque marquée est résolue — sur un coup, les effets choisis ; puis la marque tombe. */
+async function onBrutalResolution(resolution) {
+  if ( (resolution?.step !== STEPS.DONE) || !resolution.plan?.attack ) return;
+  const from = fromUuidSync(resolution.source ?? "", { strict: false });
+  const actor = (from?.documentName === "Actor") ? from : (from?.actor ?? null);
+  const marker = actor?.effects?.find(e => e.getFlag(MODULE_ID, "brutalStrike")?.activity === resolution.activity);
+  if ( !marker ) return;
+  const { options } = marker.getFlag(MODULE_ID, "brutalStrike");
+  const rules = brutalRules(actor);
+  const source = tokenOf(actor);
+  for ( const t of resolution.targets ?? [] ) {
+    if ( !t.hit ) continue;
+    const target = fromUuidSync(t.token, { strict: false });
+    if ( !target?.actor ) continue;
+    for ( const name of options ) {
+      const option = rules?.options.get(name);
+      if ( !option ) continue;
+      if ( option.push && source ) {
+        const { cells } = await pushAway(source, target, option.push, readUnitFactors());
+        log(`Brutal Strike, ${name}: ${target.name} pushed ${cells} square(s)`);
+      }
+      if ( option.effect ) {
+        await placeItemEffect(option.item, option.effect, target.actor);
+        log(`Brutal Strike, ${name}: effect placed on ${target.name}`);
+      }
+      notice(target, loc(`CoupBrutal.Option.${name}`), "loss");
+    }
+  }
+  await marker.delete();
 }
 
 /**
@@ -234,4 +344,5 @@ export function registerBarbarian() {
     if ( foundry.utils.getProperty(changed, "delta.system.attributes.hp.value") === 0 ) return onZero(token.actor);
   }, { executor: true, label: "Relentless Rage not played (unlinked token)" });
   route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "Reckless Attack: prompt" });
+  route(`${MODULE_ID}.resolution`, resolution => enqueue(`brutal:${resolution?.id}`, () => onBrutalResolution(resolution)), { executor: true, label: "Brutal Strike: effects not applied" });
 }

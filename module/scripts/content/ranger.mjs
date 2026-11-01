@@ -30,6 +30,11 @@ export const RANGER = Object.freeze({
   "hunters-prey": { triggers: [{ on: "preDamageRoll", oncePerTurn: true, if: { "activity.isWeapon": true, "target.wounded": true },
     do: [{ type: "damage", formula: "1d8", damageType: "weapon" }] }] },
 
+  // C12-e : Tactiques défensives (Chasseur 7), option Défense multiattaque — celle dont l'item porte l'activité : « quand une créature
+  // vous touche avec un jet d'attaque, elle a le Désavantage à tous ses autres jets d'attaque contre vous pendant ce tour ». (Cauchemar
+  // de la horde, l'autre option, reste au joueur : rien dans les données ne dit laquelle est retenue.)
+  "defensive-tactics": { hitDefense: true },
+
   // Embuscade effrayante (Traqueur des ténèbres 3), Frappe effroyable : « vous pouvez » ajouter 2d6 psychiques à un coup d'arme, au
   // plus une fois par tour (2d8 avec Rafale du traqueur : l'échelle de la sous-classe), autant de fois que le modificateur de Sagesse
   // par repos long — §223 (#12) : proposée avant le jet de dégâts, une utilisation de l'activité dépensée.

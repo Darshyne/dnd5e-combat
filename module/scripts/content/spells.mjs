@@ -80,9 +80,9 @@ export const CURES = Object.freeze({
   "true-resurrection": ["dead"]
 });
 
-/** « Elle a l'Avantage au jet de sauvegarde si vous ou vos alliés la combattez. » */
+/** « Elle a l'Avantage au jet de sauvegarde si vous ou vos alliés la combattez. » C12-e : Modification de mémoire (« si vous la combattez »). */
 export const FIGHTING_ADVANTAGE = Object.freeze([
-  "charm-person", "charm-monster", "dominate-beast", "dominate-person", "dominate-monster"
+  "charm-person", "charm-monster", "dominate-beast", "dominate-person", "dominate-monster", "modify-memory"
 ]);
 
 /**

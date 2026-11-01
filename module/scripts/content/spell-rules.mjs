@@ -316,6 +316,12 @@ export const SPELL_RULES = Object.freeze({
     pickTargets: { activities: ["eCa5jzMXR0Pgp3ZV"], radius: 60, units: "ft", self: true, check: "allies" } },
   "power-word-heal": { curesAll: ["charmed", "frightened", "paralyzed", "poisoned", "stunned"] },
   // Délivrance des malédictions : « toutes les malédictions qui affectent une créature prennent fin » — celles des sorts.
+  // C12-e : Maléfice occulte (Occultiste du Grand Ancien 10) — « la cible a aussi le Désavantage aux jets de sauvegarde de la
+  // caractéristique choisie », sur l'effet de Maléfice choisi quand le lanceur porte l'aptitude.
+  "hex": {
+    effectChanges: Object.fromEntries([["ljMTBKPVmEnLPX1b", "str"], ["Mmss2SPIy7wtt2PV", "dex"], ["XVQwGWbC0A1svBNm", "con"], ["FfVB2Yyb7wfgpsQB", "int"],
+      ["k2569xtIeXKRReLU", "wis"], ["sC2IXWDs07oTt5JN", "cha"]].map(([id, a]) => [id, [{ key: `system.abilities.${a}.save.roll.mode`, type: "add", value: "-1", ifCaster: "eldritch-hex" }]]))
+  },
   "remove-curse": { endsCurses: ["bestow-curse", "hex"] },
   // Régénération : « la cible regagne 1 PV au début de chacun de ses tours » (l'effet « Regenerating » est vide).
   "regenerate": { triggers: [{ on: "startOfTurn", via: "effect", fromEffect: "O73gdwM6cCbr9LXn", do: [{ type: "damage", to: "bearer", formula: "1", damageType: "healing" }] }] },
@@ -326,9 +332,12 @@ export const SPELL_RULES = Object.freeze({
   "true-resurrection": { revivesFull: true },
   // Mot de pouvoir mortel : « 100 PV ou moins : elle meurt ; sinon, 12d12 dégâts psychiques ».
   "power-word-kill": { hpTiers: [{ atMost: 100, damage: false, statuses: ["dead"] }, {}] },
-  // Mot de pouvoir étourdissant : « 150 PV ou moins : Étourdie ; sinon, Vitesse 0 jusqu'au début de votre prochain tour ». (La
-  // sauvegarde de Constitution en fin de tour de l'Étourdie : la donnée n'a pas d'activité de sauvegarde — au MJ.)
-  "power-word-stun": { hpTiers: [{ atMost: 150, effects: ["o7XJceFSBTiIIPFo"] }, { effects: ["B5dLPDfw1fDtfRW1"] }], effectEnds: { B5dLPDfw1fDtfRW1: "casterTurnStart" } },
+  // Mot de pouvoir étourdissant : « 150 PV ou moins : Étourdie ; sinon, Vitesse 0 jusqu'au début de votre prochain tour ». C12-e :
+  // « à la fin de chacun de ses tours, elle réitère un JS de Constitution » — la donnée n'a pas d'activité de sauvegarde : déclarée ici.
+  "power-word-stun": {
+    hpTiers: [{ atMost: 150, effects: ["o7XJceFSBTiIIPFo"] }, { effects: ["B5dLPDfw1fDtfRW1"] }], effectEnds: { B5dLPDfw1fDtfRW1: "casterTurnStart" },
+    triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "o7XJceFSBTiIIPFo", do: [{ type: "resave", ability: "con" }] }]
+  },
   // Parole divine, sur une sauvegarde ratée : 20 PV ou moins, morte ; 30, Aveuglée, Assourdie, Étourdie ; 40, Aveuglée et Assourdie ;
   // 50, Assourdie ; au-delà, rien. Deux effets de la donnée n'ont pas leurs états. (Durées propres à chaque palier, bannissement des
   // Célestes, Élémentaires, Fées, Fiélons : au MJ.)

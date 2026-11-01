@@ -162,7 +162,7 @@ describe("contenu livré", () => {
       "blessed-strikes-potent-spellcasting", "blessing-of-the-trickster", "blinding-smite", "blindness-deafness", "blink", "blur",
       "boon-of-combat-prowess", "boon-of-dimensional-travel", "boon-of-energy-resistance", "boon-of-fate", "boon-of-fortitude",
       "boon-of-irresistible-offense", "boon-of-recovery", "boon-of-speed", "boon-of-spell-recall", "boon-of-the-night-spirit",
-      "boots-of-striding-and-springing", "brave", "breath-weapon", "brute-spirit", "bubble-dash", "bullseye-lantern", "call-lightning",
+      "boots-of-striding-and-springing", "brave", "breath-weapon", "brutal-strike", "brute-spirit", "bubble-dash", "bullseye-lantern", "call-lightning",
       "calm-emotions", "caltrops", "candle", "careful-spell", "cause-fear", "celestial-revelation", "chain-lightning", "channel-divinity",
       "channel-divinity-cleric", "charger", "charging-horn", "charm-monster", "charm-person", "chill-touch", "chromatic-orb",
       "circle-of-mortality", "circle-of-power", "clairvoyant-combatant", "cloak-of-arachnida", "clockwork-cavalcade", "cloud-of-daggers",
@@ -172,12 +172,12 @@ describe("contenu livré", () => {
       "cordon-of-arrows", "corrosive-form", "cosmic-omen", "countercharm", "counterspell", "coward-spirit", "crossbow-expert",
       "crown-of-madness", "crusaders-mantle", "crusher", "cunning-action", "cunning-strike", "cutting-words", "dancing-lights",
       "dark-ones-blessing", "dark-ones-own-luck", "darkness", "daylight", "death-burst", "death-throes", "death-ward", "deathless-agility",
-      "defense", "defensive-duelist", "deflect-attacks", "delayed-blast-fireball", "demiplane", "destructive-wave", "devious-strikes",
+      "defense", "defensive-duelist", "defensive-tactics", "deflect-attacks", "delayed-blast-fireball", "demiplane", "destructive-wave", "devious-strikes",
       "dimension-door", "disarming-attack", "disciple-of-life", "dispel-evil-and-good", "dispel-magic", "dissonant-whispers",
       "distant-spell", "distracting-strike", "divine-fury", "divine-smite", "divine-word", "dominate-beast", "dominate-monster",
       "dominate-person", "draconic-flight", "draining-kiss", "draining-swipe", "dread-ambusher", "dreadful-strikes", "dueling",
       "dwarven-resilience", "earth-element", "earthquake", "echoing-soul", "elder-champion", "eldritch-blast", "eldritch-smite",
-      "elemental-adept", "elemental-affinity", "elemental-fury", "elemental-fury-potent-spellcasting", "elemental-weapon",
+      "elemental-adept", "elemental-affinity", "elemental-attunement", "elemental-fury", "elemental-fury-potent-spellcasting", "elemental-weapon",
       "elixir-of-health", "elusive", "empowered-channeling", "empowered-evocation", "energy-drain", "engulf", "enhance-ability",
       "enlarge-reduce", "ensnaring-strike", "entangle", "entangling-trail", "ethereal-jaunt", "ethereal-stride", "evards-black-tentacles",
       "evasion", "evasive-footwork", "expeditious-retreat", "eyebite", "faerie-fire", "faithful-hound", "fanatical-focus", "fear",
@@ -192,7 +192,7 @@ describe("contenu livré", () => {
       "healers-kit", "heat-aura", "heat-metal", "heavy-armor-master", "heightened-focus", "heightened-spell", "hellish-rebuke",
       "heroic-warrior", "heroism", "hex", "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-aura", "holy-nimbus",
       "holy-water", "hunger-of-hadar", "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "ice-storm", "illusory-self",
-      "imprisonment", "improved-cunning-strike", "improved-elemental-fury", "improved-illusions", "improved-war-magic", "incendiary-cloud",
+      "imprisonment", "improved-brutal-strike", "improved-brutal-strike-2", "improved-cunning-strike", "improved-elemental-fury", "improved-illusions", "improved-war-magic", "incendiary-cloud",
       "indomitable", "indomitable-might", "innate-sorcery", "insect-plague", "inspiring-smite", "instinctive-pounce", "interception",
       "intimidating-presence", "investment-of-the-chain-master", "invisibility", "invoke-duplicity", "jallarzis-storm-of-radiance", "jump",
       "knowledge-from-a-past-life", "lamp", "lantern-bullseye", "lantern-hooded", "large-form", "lay-on-hands", "leading-evasion",
@@ -200,7 +200,7 @@ describe("contenu livré", () => {
       "lunging-attack", "lupin-howl", "mage-armor", "mage-hand", "mage-slayer", "magic-missile", "magic-resistance", "magnificent-mansion",
       "maneuvering-attack", "marshal-undead", "martial-arts", "mass-cure-wounds", "mass-heal", "mass-suggestion", "maze",
       "medium-armor-master", "melfs-acid-arrow", "menacing-attack", "mind-sliver", "mind-spike", "mindless-rage", "minor-illusion",
-      "mirror-image", "mislead", "mist-walker", "misty-escape", "misty-form", "misty-step", "monks-focus", "moonbeam", "moonlight-step",
+      "mirror-image", "mislead", "mist-walker", "misty-escape", "misty-form", "misty-step", "modify-memory", "monks-focus", "moonbeam", "moonlight-step",
       "mordenkainens-faithful-hound", "mordenkainens-magnificent-mansion", "mordenkainens-sword", "natures-ward", "natures-wrath",
       "necrotic-husk", "nimble-escape", "observant", "oil", "open-hand-technique", "otilukes-freezing-sphere", "otilukes-resilient-sphere",
       "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade", "pact-of-the-chain", "parry", "parry-maneuver", "pass-without-trace",
@@ -1027,5 +1027,29 @@ describe("§306 : repasse, lot C11 (Métamagie, magie des sous-classes)", () => 
     expect(CONTENT["improved-illusions"].rangedFeat).toEqual({ kind: "spell", spellRange: { value: 60, units: "ft", school: "ill" } });
     expect(validateEntry(CONTENT["improved-illusions"], { facts })).toEqual([]);
     expect(validateEntry({ rangedFeat: { kind: "spell", spellRange: { value: 60, units: "ft", school: "" } } })).toHaveLength(1);
+  });
+});
+
+describe("§308 : repasse, lot C12-e (sauvegardes, Avantage, dés ajoutés)", () => {
+  it("les déclarations du lot", () => {
+    for ( const id of ["brutal-strike", "improved-brutal-strike", "improved-brutal-strike-2", "defensive-tactics", "hex", "power-word-stun"] ) {
+      expect(validateEntry(CONTENT[id], { facts }), id).toEqual([]);
+    }
+    expect(Object.keys(CONTENT["brutal-strike"].brutalStrike.options)).toEqual(["forceful", "hamstring"]);
+    expect(CONTENT["improved-brutal-strike-2"].brutalStrike.count).toBe(2);
+    expect(CONTENT["defensive-tactics"].hitDefense).toBe(true);
+    expect(CONTENT["hex"].effectChanges.k2569xtIeXKRReLU).toEqual([{ key: "system.abilities.wis.save.roll.mode", type: "add", value: "-1", ifCaster: "eldritch-hex" }]);
+    expect(CONTENT["power-word-stun"].triggers[0].do).toEqual([{ type: "resave", ability: "con" }]);
+    expect(CONTENT["modify-memory"].advantageIfFighting).toBe(true);
+    expect(validateEntry(CONTENT["prismatic-spray"], { facts })).toEqual([]);
+    expect(validateEntry(CONTENT["elemental-attunement"], { facts })).toEqual([]);
+  });
+  it("les schémas refusent ce qui ne va pas", () => {
+    expect(validateEntry({ brutalStrike: { options: { x: {} } } })).toHaveLength(1);
+    expect(validateEntry({ brutalStrike: { count: 0 } })).toHaveLength(1);
+    expect(validateEntry({ noOpportunityAttacks: ["court"] })).toHaveLength(1);
+    expect(validateEntry({ noOpportunityAttacks: ["L9N4evZo1jt46dap"] })).toEqual([]);
+    expect(validateEntry({ effectChanges: { L9N4evZo1jt46dap: [{ key: "a", type: "add", value: "1", ifCaster: "" }] } })).toHaveLength(1);
+    expect(validateEntry({ triggers: [{ on: "endOfTurn", via: "effect", do: [{ type: "resave", ability: "luck" }] }] })).toHaveLength(1);
   });
 });

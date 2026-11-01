@@ -4,7 +4,7 @@
 
 import { CREATURE_TYPES } from "../eligibility.mjs";
 import { MOMENTS, OUTCOME_MOMENTS, RESAVE_MOMENTS, BEARER_MOMENTS, TURN_MOMENTS, unknownFacts, normalize, PRE_ATTACK_WINDOWS, DAMAGED_BY } from "../triggers.mjs";
-import { ATTACK_STEPS, AURA_AFFECTS, DAMAGE_ON_SAVE, DAMAGE_TO, FALL_WINDOWS, HIT_WINDOWS, MOVE_MODES, OUTCOME_STEPS, RESAVE_ON_FAIL, STEP_TYPES, VIA } from "./enums.mjs";
+import { ABILITIES, ATTACK_STEPS, AURA_AFFECTS, DAMAGE_ON_SAVE, DAMAGE_TO, FALL_WINDOWS, HIT_WINDOWS, MOVE_MODES, OUTCOME_STEPS, RESAVE_ON_FAIL, STEP_TYPES, VIA } from "./enums.mjs";
 import { isId, isObject } from "./shared.mjs";
 function validateStep(step, at, errors) {
   if ( !isObject(step) ) return errors.push(`${at}: a step is an object`);
@@ -69,6 +69,9 @@ function validateStep(step, at, errors) {
       || !Object.keys(t).every(k => ["successes", "failures", "status"].includes(k)) ) errors.push(`${at}.tally: { successes, failures, status? } (positive integers, condition)`);
     if ( step.keep === true ) errors.push(`${at}.tally: not applicable with keep`);
   }
+  // C12-e : une sauvegarde que la donnée n'a pas (Mot de pouvoir étourdissant : activité utilitaire) — sa caractéristique, au DD de
+  // sorts du lanceur.
+  if ( (step.type === "resave") && ("ability" in step) && !ABILITIES.includes(step.ability) ) errors.push(`${at}.ability: ${ABILITIES.join(", ")}`);
   if ( (step.type === "resave") && ("onFail" in step) && !RESAVE_ON_FAIL.includes(step.onFail) ) errors.push(`${at}.onFail: ${RESAVE_ON_FAIL.join(", ")}`);
   if ( (step.type === "attackBonus") && ((typeof step.formula !== "string") || !step.formula.trim()) ) errors.push(`${at}.formula: formula required`);
   // §31 : ce qui s'ajoute au jet de l'activité de réduction (Endurance de la pierre : « ajoutez votre modificateur de Constitution »).

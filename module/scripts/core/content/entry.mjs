@@ -174,7 +174,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       if ( !kinds.length || !kinds.every(k => BASIC_ACTION_KINDS.includes(k)) ) errors.push(`${at}basicActions.${id}: ${BASIC_ACTION_KINDS.join(", ")} (or a list)`);
     }
   }
-  for ( const key of ["actionOrBonus", "singleAttack", "noAttacksOrSpells", "noSpells", "knownToOrigin", "upkeep", "keepsProne", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "noOpportunityAttacks", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails", "critMove", "combatInspiration", "quietPose", "zoneBound", "effectsFirst"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
+  for ( const key of ["actionOrBonus", "singleAttack", "noAttacksOrSpells", "noSpells", "knownToOrigin", "upkeep", "keepsProne", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails", "critMove", "combatInspiration", "quietPose", "zoneBound", "effectsFirst", "hitDefense"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
   // §225, lot 4 : passer du plan matériel à l'Éthéré ou inversement (Saut éthéré) ; `others` : les cibles désignées suivent (Foulée éthérée).
   if ( ("etherealShift" in entry) && !((entry.etherealShift === true) || (isObject(entry.etherealShift)
     && Object.keys(entry.etherealShift).every(k => k === "others") && (entry.etherealShift.others === true))) ) {
@@ -248,13 +248,31 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     if ( !isObject(p) || (("effect" in p) && !isId(p.effect)) || (("drop" in p) && (p.drop !== true)) || (("endsAt" in p) && !okEnd(p.endsAt))
       || !Object.keys(p).every(k => ["effect", "drop", "endsAt"].includes(k)) ) errors.push(`${at}panic: { effect?: <effect id>, drop?: true, endsAt?: { distance, units } }`);
   }
+  // C12-e : `noOpportunityAttacks` — tous les effets de l'item, ou ceux-là (Coup chancelant).
+  if ( ("noOpportunityAttacks" in entry) && (entry.noOpportunityAttacks !== true)
+    && !(Array.isArray(entry.noOpportunityAttacks) && entry.noOpportunityAttacks.length && entry.noOpportunityAttacks.every(isId)) ) {
+    errors.push(`${at}noOpportunityAttacks: true or a list of effect ids`);
+  }
+  // C12-e : Coup brutal — ses options (poussée ou effet de l'item), le nombre d'options par coup.
+  if ( "brutalStrike" in entry ) {
+    const b = entry.brutalStrike;
+    const okOption = o => isObject(o) && Object.keys(o).every(k => ["push", "effect"].includes(k)) && (("push" in o) || ("effect" in o))
+      && (!("effect" in o) || isId(o.effect))
+      && (!("push" in o) || (isObject(o.push) && Number.isFinite(o.push.distance) && (o.push.distance > 0) && (typeof o.push.units === "string")));
+    if ( !isObject(b) || !Object.keys(b).every(k => ["options", "count"].includes(k))
+      || (("options" in b) && !(isObject(b.options) && Object.values(b.options).every(okOption)))
+      || (("count" in b) && !(Number.isInteger(b.count) && (b.count > 0))) ) {
+      errors.push(`${at}brutalStrike: { options?: { <name>: { push?: { distance, units }, effect?: <effect id> } }, count?: integer }`);
+    }
+  }
   if ( "effectChanges" in entry ) {
     const e = entry.effectChanges;
     const okChange = c => isObject(c) && (typeof c.key === "string") && c.key && (typeof c.type === "string") && c.type
       && ["string", "number", "boolean"].includes(typeof c.value) && (!("replace" in c) || (c.replace === true))
-      && Object.keys(c).every(k => ["key", "type", "value", "replace"].includes(k));
+      && (!("ifCaster" in c) || ((typeof c.ifCaster === "string") && c.ifCaster))
+      && Object.keys(c).every(k => ["key", "type", "value", "replace", "ifCaster"].includes(k));
     if ( !isObject(e) || !Object.entries(e).every(([id, list]) => isId(id) && Array.isArray(list) && list.length && list.every(okChange)) ) {
-      errors.push(`${at}effectChanges: { <effect id>: [{ key, type, value, replace? }] }`);
+      errors.push(`${at}effectChanges: { <effect id>: [{ key, type, value, replace?, ifCaster? }] }`);
     }
   }
   if ( "grantsSpeeds" in entry ) {

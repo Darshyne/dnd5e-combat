@@ -33,6 +33,8 @@ import { outsideCone } from "./cone.mjs";
 import { hiddenFrom } from "./stealth.mjs";
 import { lengthIn } from "./units.mjs";
 import { perceivesPlane } from "./plane.mjs";
+import { lightOnToken } from "./illumination.mjs";
+import { LIGHT } from "../core/illumination.mjs";
 
 const SOURCE_PREFIX = "dnd5e-combat";
 
@@ -180,6 +182,10 @@ export function canSee(observer, target, { ignoreHidden=false }={}) {
 
   const modes = CONFIG.Canvas.detectionModes;
   const own = detectionModesOf(observer);
+  // C12-e : Vision ombreuse — « entièrement dans les ténèbres, vous êtes Invisible pour qui compte sur la vision dans le noir pour vous
+  // voir » : la vue de base (la vision dans le noir de dnd5e) ne la trouve pas ; la lumière, la vision aveugle, la vision véritable si.
+  const umbral = umbralTo(target);
+  if ( umbral ) delete own.basicSight;
   if ( !source.isBlinded ) {
     for ( const id of ["basicSight", "lightPerception"] ) {
       const mode = own[id];
@@ -191,6 +197,13 @@ export function canSee(observer, target, { ignoreHidden=false }={}) {
     if ( modes[id]?.testVisibility(source, mode, config) === true ) return true;
   }
   return false;
+}
+
+/** C12-e : la cible porte Vision ombreuse et se tient dans les ténèbres. */
+function umbralTo(target) {
+  if ( !Array.from(target.actor?.items ?? []).some(i => identifierOf(i).id === "umbral-sight") ) return false;
+  const light = lightOnToken(target);
+  return !!light && (light.level === LIGHT.DARK);
 }
 
 /**

@@ -31,6 +31,15 @@ export function saveActivityOf(activity) {
   return activity.item?.system?.activities?.find?.(a => a.type === "save") ?? activity;
 }
 
+/**
+ * C12-e : la sauvegarde qu'une étape `resave` déclare elle-même (`ability`) — au DD de sorts du lanceur de l'activité.
+ * @returns {{ability: string, dc: number}|null}
+ */
+function declaredSave(activity, ability) {
+  const dc = Number(activity?.item?.actor?.system?.attributes?.spell?.dc);
+  return Number.isFinite(dc) ? { ability, dc } : null;
+}
+
 /** Fait connaître un moment aux consommateurs passifs (SPEC §5.6). */
 export function announce(moment, context) {
   Hooks.callAll(`${MODULE_ID}.${moment}`, context);
@@ -158,8 +167,12 @@ function turnMoment(moment, combatant, turnKey=null) {
       const resaves = stepsOf(d, "resave");
       for ( const step of resaves ) {
         const effect = await fromUuid(d.effect ?? "");
-        const activity = saveActivityOf(await fromUuid(d.activity ?? ""));
-        if ( !effect || (activity?.type !== "save") ) { log(`${d.name}: repeated saving throw impossible (effect or save activity not found)`); continue; }
+        // Un effet posé par un palier de PV (`hpTiers`) peut ne pas nommer son activité : celle de l'item.
+        const origin = (await fromUuid(d.activity ?? "")) ?? (step.ability ? (await fromUuid(d.item ?? ""))?.system?.activities?.contents?.[0] : null);
+        const activity = saveActivityOf(origin);
+        // C12-e : `ability` — la sauvegarde que la donnée n'a pas (Mot de pouvoir étourdissant), au DD de sorts du lanceur.
+        const declared = step.ability ? declaredSave(activity, step.ability) : null;
+        if ( !effect || ((activity?.type !== "save") && !declared) ) { log(`${d.name}: repeated saving throw impossible (effect or save activity not found)`); continue; }
         // §43.1 : le seuil d'échecs du compteur est atteint — plus de sauvegarde.
         if ( step.tally && tallySettled(effect.getFlag(MODULE_ID, "tally")) ) continue;
         // §42.2 : Terreur — la sauvegarde n'est rejouée que si la créature finit son tour sans voir le lanceur.
@@ -173,7 +186,7 @@ function turnMoment(moment, combatant, turnKey=null) {
             steps: bearerDamage.map(({ formula, damageType, activity: id }) => ({ formula, damageType, activity: id })) }
           : null;
         // §37 : `keep` (réussie, l'effet reste) et `onFail: "dodge"` (ratée, l'action Esquiver) — Malédiction, « Cursed Actions ».
-        await resaveAgainst(effect, activity, token, moment, { onFail, keep: step.keep === true, dodge: step.onFail === "dodge", tally: step.tally ?? null });
+        await resaveAgainst(effect, activity, token, moment, { onFail, keep: step.keep === true, dodge: step.onFail === "dodge", tally: step.tally ?? null, save: declared });
       }
       if ( resaves.length && bearerDamage.length ) continue;
       for ( const step of bearerDamage ) {

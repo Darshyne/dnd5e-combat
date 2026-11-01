@@ -201,7 +201,8 @@ export default {
       await enrage();
       const hit = await until(() => attack(hero, sword, bandit, { reckless: false }));
       if ( !ctx.expect(!!hit, "coup (20 essais au plus)") ) return;
-      ctx.expect(/1d6\+5|1d6\+floor/.test(hit.damage.replace(/\s/g, "")) || /1d6 \+ 5/.test(hit.damage), `Fureur divine : 1d6 + 5 « ${hit.damage} »`);
+      // 1d6, doublé (2d6) sur un coup critique.
+      ctx.expect(/[12]d6\+5|[12]d6\+floor/.test(hit.damage.replace(/\s/g, "")), `Fureur divine : 1d6 + 5 « ${hit.damage} »`);
     });
 
     await part("Rage implacable", async () => {

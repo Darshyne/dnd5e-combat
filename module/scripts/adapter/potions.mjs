@@ -85,7 +85,10 @@ export function completeEffectChanges(effect) {
   // §195 : `replace` retire d'abord le changement de même clé que l'effet porte déjà (Pattes d'araignée : sa formule ne donne pas la Vitesse).
   const replaced = new Set(rules[key].filter(c => c.replace).map(c => c.key));
   const current = (effect._source.system?.changes ?? []).filter(x => !replaced.has(x.key));
-  const added = rules[key].filter(c => !current.some(x => x.key === c.key))
+  // C12-e : `ifCaster` — un changement que seul un lanceur doté d'une aptitude donne (Maléfice occulte).
+  const caster = originItemOf(effect)?.actor ?? null;
+  const owns = id => !!caster?.items?.some?.(i => identifierOf(i).id === id);
+  const added = rules[key].filter(c => !current.some(x => x.key === c.key) && (!c.ifCaster || owns(c.ifCaster)))
     .map(c => ({ key: c.key, type: c.type, value: String(c.value === "@walk" ? walk : c.value) }));
   if ( added.length ) effect.updateSource({ "system.changes": [...current, ...added] });
   return added.length;

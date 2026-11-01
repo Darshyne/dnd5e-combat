@@ -53,6 +53,9 @@ export const MONK = Object.freeze({
     effectEnds: { uQ474o5Wsv3sEAJK: "bearerTurnStart" },
     triggers: [{ on: "failedSave", if: { "activity.id": "XoaS0RtDCGAqrQsf" }, do: [{ type: "move", mode: "push", distance: 15, units: "ft" }] }]
   },
+  // C12-e : Harmonisation élémentaire (Moine des Éléments 3), Frappe élémentaire — « sur un JS de Force raté, vous pouvez la pousser ou
+  // l'attirer de 3 m » : poussée de 3 m (l'attirer reste au joueur).
+  "elemental-attunement": { triggers: [{ on: "failedSave", if: { "activity.id": "vUWH2QBMG6gewncl" }, do: [{ type: "move", mode: "push", distance: 10, units: "ft" }] }] },
   // Parade (Deflect Attacks, niveau 3) : « quand un jet d'attaque vous touche et que ses dégâts comptent des dégâts contondants,
   // perforants ou tranchants, votre Réaction réduit les dégâts totaux de 1d10 + Dextérité + niveau de Moine » — l'activité « Reduce »
   // (un soin dans les données) donne le montant, qui est retiré des dégâts de l'attaque au lieu de soigner.

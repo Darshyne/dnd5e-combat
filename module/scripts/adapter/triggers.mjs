@@ -132,6 +132,8 @@ export function declaredAttackModifiers(sourceToken, targetToken, activity) {
   // §132 : les marques de coup critique (Cogneur : Avantage contre la créature marquée ; Trancheur : Désavantage à ses attaques).
   for ( const e of target.effects ?? [] ) if ( (e.getFlag?.(MODULE_ID, "critMark")?.side === "against") && !out.advantage.includes(e.name) ) out.advantage.push(e.name);
   for ( const e of source.effects ?? [] ) if ( (e.getFlag?.(MODULE_ID, "critMark")?.side === "by") && !out.disadvantage.includes(e.name) ) out.disadvantage.push(e.name);
+  // C12-e : Défense multiattaque — l'attaquant qui a touché ce porteur pendant ce tour.
+  for ( const e of source.effects ?? [] ) if ( (e.getFlag?.(MODULE_ID, "hitDefense")?.against === target.uuid) && !out.disadvantage.includes(e.name) ) out.disadvantage.push(e.name);
   // §21 : les marques des bottes d'arme — Sape (Désavantage de l'attaquant), Coup vexant (Avantage contre cette cible).
   const marks = markModifiers(sourceToken, targetToken, activity);
   for ( const type of ["advantage", "disadvantage"] ) for ( const name of marks[type] ) if ( !out[type].includes(name) ) out[type].push(name);

@@ -216,6 +216,10 @@
  *                                               Nature : Empoisonné) — dans l'effet tenu de `grantsSpeeds` (runtime/speed-grants.mjs)
  *     quietPose?: true                          §300 : la zone qui dure n'agit pas à sa pose — seulement aux moments déclarés
  *                                               (Tempête de neige, Nuage nauséabond : ceux qui sont déjà dedans sauvegardent au début de leur tour)
+ *     brutalStrike?: { options?, count? }       C12-e : Coup brutal — options offertes avec Témérité (`push` : poussée ; `effect` :
+ *                                               effet de l'item posé sur la cible touchée), nombre d'options par coup (runtime/barbarian.mjs)
+ *     hitDefense?: true                         C12-e : qui touche le porteur d'un jet d'attaque a le Désavantage à ses autres jets
+ *                                               contre lui pendant ce tour (Tactiques défensives : Défense multiattaque)
  *     effectsFirst?: true                       §303 : les effets de l'activité posés avant ses dégâts ou son soin (Aide : PV max relevés
  *                                               d'abord, sinon le soin est plafonné aux PV max d'avant)
  *     zoneBound?: true                          §300 : les effets de l'item ne tiennent que dans une de ses zones (Esprits gardiens : la
@@ -304,7 +308,8 @@
  *                                               changements ajoutés à cet effet de l'item quand il est posé (§53 : Vol, Escalade —
  *                                               les données ne donnent pas la vitesse) ; `value: "@walk"` = la vitesse au sol du porteur ;
  *                                               `replace` : remplace le changement de même clé que porte déjà l'effet (§195 : Pattes
- *                                               d'araignée, dont la formule ne donne pas la Vitesse)
+ *                                               d'araignée, dont la formule ne donne pas la Vitesse) ; `ifCaster` : seulement si le
+ *                                               lanceur porte un item de cet identifiant (C12-e : Maléfice occulte)
  *     castTargets?: true                        le sort que la potion fait lancer vise normalement (§53 : Amitié avec les animaux —
  *                                               « vous pouvez lancer le sort » sur une bête), au lieu du buveur
  *     curesAll?: string[]                       l'utilisation fait cesser TOUS ces états sur la cible (§53 : Élixir de santé,
@@ -523,7 +528,8 @@
  *                                               quand le premier effet de l'item cesse sur une créature, le second y est posé
  *                                               (Hâte : « quand le sort prend fin, la cible est Neutralisée… », §42.2)
  *     blocksHealing?: true                      le porteur d'un effet de l'item ne regagne pas de PV (Contact glacial, §23)
- *     noOpportunityAttacks?: true               le porteur d'un effet de l'item ne fait pas d'attaque d'opportunité (Poigne électrique)
+ *     noOpportunityAttacks?: true|string[]      le porteur d'un effet de l'item (ou de ces effets : Coup chancelant) ne fait pas
+ *                                               d'attaque d'opportunité (Poigne électrique)
  *     byWounds?: { healthy, wounded }           deux activités (ids) : les dégâts sont ceux de `wounded` contre une cible blessée,
  *                                               de `healthy` sinon, quelle que soit celle utilisée (Glas, §23)
  *     oneAttack?: true                          l'enchantement de l'item vaut pour une attaque : l'attaque est offerte aussitôt, et

@@ -33,6 +33,20 @@ function onPreRollAttack(config, dialogConfig, messageConfig) {
     if ( c.vision ) log(`vision: ${origin.name} ${c.vision.attackerSees ? "sees" : "does not see"} ${targets[i].name}, who ${c.vision.targetSees ? "sees them" : "does not see them"}`);
   }
   const perTarget = contexts.map(attackModifiers);
+  // C12-e : Coup brutal — « vous renoncez à tout Avantage sur ce jet », qui « ne doit pas avoir le Désavantage » : avec un Désavantage,
+  // le Coup brutal ne vaut pas (la marque tombe, l'Avantage reste).
+  const brutal = (activity.actor?.effects ?? []).find(e => e.getFlag(MODULE_ID, "brutalStrike")?.activity === activity.uuid);
+  if ( brutal ) {
+    if ( perTarget.some(p => p.disadvantage.length) || roll.options?.disadvantage ) {
+      log("attack: Brutal Strike not possible (Disadvantage on the roll)");
+      brutal.delete().catch(err => console.warn(`${MODULE_ID} | Brutal Strike mark`, err));
+    } else {
+      for ( const p of perTarget ) p.advantage = [];
+      roll.options ??= {};
+      roll.options.advantage = false;
+      log("attack: Brutal Strike, Advantage forgone");
+    }
+  }
   // §34 : ce que les réactions d'avant le jet ont décidé (Esquive des ombres, Éclat protecteur : Désavantage ; dé retiré).
   const reacted = takeAttackMods(activity.uuid);
   if ( reacted?.disadvantage ) for ( const p of perTarget ) p.disadvantage = [...p.disadvantage, { who: "reaction", key: reacted.names.join(", ") }];

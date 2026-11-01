@@ -220,6 +220,9 @@
  *                                               (Tempête de neige, Nuage nauséabond : ceux qui sont déjà dedans sauvegardent au début de leur tour)
  *     brutalStrike?: { options?, count? }       C12-e : Coup brutal — options offertes avec Témérité (`push` : poussée ; `effect` :
  *                                               effet de l'item posé sur la cible touchée), nombre d'options par coup (runtime/barbarian.mjs)
+ *     grants?: { from, activity }               C12-d : les cibles de l'activité `from` reçoivent une copie de l'item réduite à
+ *                                               `activity`, au DD et au niveau du lanceur, jusqu'à la fin de sa concentration
+ *                                               (Souffle du dragon, runtime/grants.mjs)
  *     killsAtZero?: true                        C12-f : une créature que les dégâts de l'item réduisent à 0 PV meurt (Désintégration)
  *     retort?: { damageType }                   C12-f : la réaction de l'item ratée par l'attaquant lui renvoie les dégâts que le
  *                                               porteur subit (Défenses envoûtantes, runtime/reactions.mjs)

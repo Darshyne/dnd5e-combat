@@ -16,5 +16,8 @@ export const TELEPORTS = Object.freeze({
   // Goliath, ascendance des géants des nuages : « jusqu'à 9 m dans un espace inoccupé que vous voyez ».
   "clouds-jaunt": { distance: 30, units: "ft" },
   // Don du voyage dimensionnel, Pas clignotants : « …après l'action Attaque ou Magie, jusqu'à 9 m ».
-  "boon-of-dimensional-travel": { distance: 30, units: "ft" }
+  "boon-of-dimensional-travel": { distance: 30, units: "ft" },
+  // C12-d : Voyage au gré de l'Arbre (Arbre-monde 10) — « par une action Bonus, téléportez-vous jusqu'à 18 m dans un espace inoccupé que
+  // vous voyez » (l'activité courte ; la longue, 45 m avec six passagers, reste au joueur).
+  "travel-along-the-tree": { distance: 60, units: "ft", activity: "4e13OzT2UzbhQICL" }
 });

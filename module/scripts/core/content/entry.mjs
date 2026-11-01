@@ -248,6 +248,9 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     if ( !isObject(p) || (("effect" in p) && !isId(p.effect)) || (("drop" in p) && (p.drop !== true)) || (("endsAt" in p) && !okEnd(p.endsAt))
       || !Object.keys(p).every(k => ["effect", "drop", "endsAt"].includes(k)) ) errors.push(`${at}panic: { effect?: <effect id>, drop?: true, endsAt?: { distance, units } }`);
   }
+  // C12-d : `grants` — l'activité `activity` de l'item donnée aux cibles de l'activité `from` (Souffle du dragon).
+  if ( ("grants" in entry) && !(isObject(entry.grants) && isId(entry.grants.from) && isId(entry.grants.activity)
+    && Object.keys(entry.grants).every(k => ["from", "activity"].includes(k))) ) errors.push(`${at}grants: { from, activity } (activity ids)`);
   // C12-f : `retort` — les dégâts subis renvoyés à l'attaquant qui rate la sauvegarde de la réaction (Défenses envoûtantes).
   if ( ("retort" in entry) && !(isObject(entry.retort) && DAMAGE_TYPES.includes(entry.retort.damageType) && Object.keys(entry.retort).every(k => k === "damageType")) ) {
     errors.push(`${at}retort: { damageType }`);

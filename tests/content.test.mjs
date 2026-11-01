@@ -176,7 +176,7 @@ describe("contenu livré", () => {
       "defense", "defensive-duelist", "defensive-tactics", "deflect-attacks", "delayed-blast-fireball", "demiplane", "destructive-wave", "devious-strikes",
       "dimension-door", "disarming-attack", "disciple-of-life", "disintegrate", "dispel-evil-and-good", "dispel-magic", "dissonant-whispers",
       "distant-spell", "distracting-strike", "divine-fury", "divine-smite", "divine-word", "dominate-beast", "dominate-monster",
-      "dominate-person", "draconic-flight", "draining-kiss", "draining-swipe", "dread-ambusher", "dreadful-strikes", "dueling",
+      "dominate-person", "draconic-flight", "dragons-breath", "draining-kiss", "draining-swipe", "dread-ambusher", "dreadful-strikes", "dueling",
       "dwarven-resilience", "earth-element", "earthquake", "echoing-soul", "elder-champion", "eldritch-blast", "eldritch-smite",
       "elemental-adept", "elemental-affinity", "elemental-attunement", "elemental-epitome", "elemental-fury", "elemental-fury-potent-spellcasting", "elemental-weapon",
       "elixir-of-health", "elusive", "empowered-channeling", "empowered-evocation", "energy-drain", "engulf", "enhance-ability",
@@ -230,7 +230,7 @@ describe("contenu livré", () => {
       "swarm", "sweeping-attack", "swift-quiver", "swoop", "symbiotic-being", "symbol", "synaptic-static", "tactical-assessment",
       "tactical-charge", "tactical-mind", "tactical-shift", "tashas-hideous-laughter", "tavern-brawler", "telekinesis", "telekinetic",
       "thiefs-reflexes", "thorn-whip", "thrown-weapon-fighting", "thunderous-smite", "thunderwave", "tinderbox", "toll-the-dead", "torch",
-      "trampling-charge", "tricksters-transposition", "trip-attack", "true-resurrection", "true-strike", "tsunami", "twinned-spell",
+      "trampling-charge", "travel-along-the-tree", "tricksters-transposition", "trip-attack", "true-resurrection", "true-strike", "tsunami", "twinned-spell",
       "umbral-dagger", "unarmed-fighting", "unarmed-strike", "uncanny-dodge", "undead-fortitude", "unseen-servant", "valor-extra-attack",
       "vampiric-bite", "vampiric-touch", "vicious-mockery", "vile-appearance", "vitality-of-the-tree", "vitriolic-sphere", "vow-of-enmity",
       "wails-from-the-grave", "wall-of-fire", "wall-of-force", "wall-of-ice", "wall-of-stone", "wall-of-thorns", "war-caster", "war-magic",
@@ -1104,5 +1104,14 @@ describe("§311 : repasse, lot C12-c (invocations, compagnons, formes)", () => {
     expect(effectHolds({ hasEffect: "starry-form" }, { effectsFrom: new Set(["starry-form"]) })).toBe(true);
     expect(validateEntry({ effectWhile: { Z3dPVHxaYqTIvLPg: { if: { wildShaped: "oui" } } } })).toHaveLength(1);
     expect(validateEntry({ summon: { initiative: "after", commanded: { activity: "court" } } })).toHaveLength(1);
+  });
+});
+
+describe("§312 : repasse, lot C12-d (budget du tour, coûts)", () => {
+  it("les déclarations du lot", () => {
+    for ( const id of ["dragons-breath", "travel-along-the-tree", "abjure-foes"] ) expect(validateEntry(CONTENT[id], { facts }), id).toEqual([]);
+    expect(CONTENT["dragons-breath"].grants).toEqual({ from: "dnd5eactivity000", activity: "61nfYLT1M7MOTibf" });
+    expect(CONTENT["abjure-foes"].actionOrBonus).toBe(true);
+    expect(validateEntry({ grants: { from: "court", activity: "61nfYLT1M7MOTibf" } })).toHaveLength(1);
   });
 });

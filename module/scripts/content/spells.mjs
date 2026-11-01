@@ -19,7 +19,9 @@ export const BREAKS_ON = Object.freeze({
 export const NO_REACTIONS = Object.freeze(["arms-of-hadar", "confusion", "fetid-cloud", "slow"]);
 
 /** §77 : « une action ou une action Bonus lors de son tour, pas les deux » — Nuage fétide (Dretch, Monster Manual 2024), Lenteur. */
-export const ACTION_OR_BONUS = Object.freeze(["fetid-cloud", "slow"]);
+// C12-d : Abjuration d'ennemis — « la créature Effrayée ne peut, à chacun de ses tours, que se déplacer, ou prendre une action, ou une action
+// Bonus » : l'action OU l'action Bonus (le déplacement en plus reste au MJ).
+export const ACTION_OR_BONUS = Object.freeze(["fetid-cloud", "slow", "abjure-foes"]);
 /** §267 : « elle ne peut faire qu'une attaque si elle prend l'action Attaquer » (Lenteur). */
 export const SINGLE_ATTACK = Object.freeze(["slow"]);
 /** §283 : « si elle lance un sort avec une composante somatique, il y a 25 % de chances que le sort échoue » (Lenteur). */

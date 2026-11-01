@@ -173,11 +173,11 @@ describe("contenu livré", () => {
       "crown-of-madness", "crusaders-mantle", "crusher", "cunning-action", "cunning-strike", "cutting-words", "dancing-lights",
       "dark-ones-blessing", "dark-ones-own-luck", "darkness", "daylight", "death-burst", "death-throes", "death-ward", "deathless-agility",
       "defense", "defensive-duelist", "defensive-tactics", "deflect-attacks", "delayed-blast-fireball", "demiplane", "destructive-wave", "devious-strikes",
-      "dimension-door", "disarming-attack", "disciple-of-life", "dispel-evil-and-good", "dispel-magic", "dissonant-whispers",
+      "dimension-door", "disarming-attack", "disciple-of-life", "disintegrate", "dispel-evil-and-good", "dispel-magic", "dissonant-whispers",
       "distant-spell", "distracting-strike", "divine-fury", "divine-smite", "divine-word", "dominate-beast", "dominate-monster",
       "dominate-person", "draconic-flight", "draining-kiss", "draining-swipe", "dread-ambusher", "dreadful-strikes", "dueling",
       "dwarven-resilience", "earth-element", "earthquake", "echoing-soul", "elder-champion", "eldritch-blast", "eldritch-smite",
-      "elemental-adept", "elemental-affinity", "elemental-attunement", "elemental-fury", "elemental-fury-potent-spellcasting", "elemental-weapon",
+      "elemental-adept", "elemental-affinity", "elemental-attunement", "elemental-epitome", "elemental-fury", "elemental-fury-potent-spellcasting", "elemental-weapon",
       "elixir-of-health", "elusive", "empowered-channeling", "empowered-evocation", "energy-drain", "engulf", "enhance-ability",
       "enlarge-reduce", "ensnaring-strike", "entangle", "entangling-trail", "ethereal-jaunt", "ethereal-stride", "evards-black-tentacles",
       "evasion", "evasive-footwork", "expeditious-retreat", "eyebite", "faerie-fire", "faithful-hound", "fanatical-focus", "fear",
@@ -1070,5 +1070,20 @@ describe("§309 : repasse, lot C12-b (zones, émanations, auras)", () => {
     expect(validateEntry({ burst: { activity: "hTK04U7m016p6lf6", radius: 10, units: "ft", affects: "ally" } })).toHaveLength(1);
     expect(validateEntry({ triggers: [{ on: "failedSave", do: [{ type: "disarm", elseEffect: "court" }] }] })).toHaveLength(1);
     expect(validateEntry({ teleport: { distance: 30, units: "ft", unseen: "oui" } })).toHaveLength(1);
+  });
+});
+
+describe("§310 : repasse, lot C12-f (dégâts, soins, PV)", () => {
+  it("les déclarations du lot", () => {
+    for ( const id of ["beguiling-defenses", "disintegrate", "physicians-touch", "elemental-epitome", "modify-memory"] ) {
+      expect(validateEntry(CONTENT[id], { facts }), id).toEqual([]);
+    }
+    expect(CONTENT["beguiling-defenses"].retort).toEqual({ damageType: "psychic" });
+    expect(CONTENT["disintegrate"].killsAtZero).toBe(true);
+    expect(CONTENT["elemental-epitome"].choice).toEqual({ effects: "one" });
+  });
+  it("les schémas refusent ce qui ne va pas", () => {
+    expect(validateEntry({ retort: { damageType: "rien" } })).toHaveLength(1);
+    expect(validateEntry({ killsAtZero: 1 })).toHaveLength(1);
   });
 });

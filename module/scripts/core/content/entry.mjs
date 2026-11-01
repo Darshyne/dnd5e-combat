@@ -174,7 +174,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       if ( !kinds.length || !kinds.every(k => BASIC_ACTION_KINDS.includes(k)) ) errors.push(`${at}basicActions.${id}: ${BASIC_ACTION_KINDS.join(", ")} (or a list)`);
     }
   }
-  for ( const key of ["actionOrBonus", "singleAttack", "noAttacksOrSpells", "noSpells", "knownToOrigin", "upkeep", "keepsProne", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails", "critMove", "combatInspiration", "quietPose", "zoneBound", "effectsFirst", "hitDefense", "enterOnPose"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
+  for ( const key of ["actionOrBonus", "singleAttack", "noAttacksOrSpells", "noSpells", "knownToOrigin", "upkeep", "keepsProne", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails", "critMove", "combatInspiration", "quietPose", "zoneBound", "effectsFirst", "hitDefense", "enterOnPose", "killsAtZero"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
   // §225, lot 4 : passer du plan matériel à l'Éthéré ou inversement (Saut éthéré) ; `others` : les cibles désignées suivent (Foulée éthérée).
   if ( ("etherealShift" in entry) && !((entry.etherealShift === true) || (isObject(entry.etherealShift)
     && Object.keys(entry.etherealShift).every(k => k === "others") && (entry.etherealShift.others === true))) ) {
@@ -247,6 +247,10 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     const okEnd = e => isObject(e) && Number.isFinite(e.distance) && (e.distance > 0) && (typeof e.units === "string") && e.units && Object.keys(e).every(k => ["distance", "units"].includes(k));
     if ( !isObject(p) || (("effect" in p) && !isId(p.effect)) || (("drop" in p) && (p.drop !== true)) || (("endsAt" in p) && !okEnd(p.endsAt))
       || !Object.keys(p).every(k => ["effect", "drop", "endsAt"].includes(k)) ) errors.push(`${at}panic: { effect?: <effect id>, drop?: true, endsAt?: { distance, units } }`);
+  }
+  // C12-f : `retort` — les dégâts subis renvoyés à l'attaquant qui rate la sauvegarde de la réaction (Défenses envoûtantes).
+  if ( ("retort" in entry) && !(isObject(entry.retort) && DAMAGE_TYPES.includes(entry.retort.damageType) && Object.keys(entry.retort).every(k => k === "damageType")) ) {
+    errors.push(`${at}retort: { damageType }`);
   }
   // C12-e : `noOpportunityAttacks` — tous les effets de l'item, ou ceux-là (Coup chancelant).
   if ( ("noOpportunityAttacks" in entry) && (entry.noOpportunityAttacks !== true)

@@ -340,6 +340,10 @@ export const SPELL_RULES = Object.freeze({
   "power-word-kill": { hpTiers: [{ atMost: 100, damage: false, statuses: ["dead"] }, {}] },
   // Mot de pouvoir étourdissant : « 150 PV ou moins : Étourdie ; sinon, Vitesse 0 jusqu'au début de votre prochain tour ». C12-e :
   // « à la fin de chacun de ses tours, elle réitère un JS de Constitution » — la donnée n'a pas d'activité de sauvegarde : déclarée ici.
+  // C12-f : Désintégration — « une créature réduite à 0 PV par ce sort est désintégrée » : morte, sans jets contre la mort.
+  "disintegrate": { killsAtZero: true },
+  // C12-f : Modification de mémoire — « le sort prend fin si la cible subit des dégâts ».
+  "modify-memory": { triggers: [{ on: "isDamaged", via: "effect", fromEffect: "ayfixWGhTtaIUusk", do: [{ type: "remove" }] }] },
   "power-word-stun": {
     hpTiers: [{ atMost: 150, effects: ["o7XJceFSBTiIIPFo"] }, { effects: ["B5dLPDfw1fDtfRW1"] }], effectEnds: { B5dLPDfw1fDtfRW1: "casterTurnStart" },
     triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "o7XJceFSBTiIIPFo", do: [{ type: "resave", ability: "con" }] }]

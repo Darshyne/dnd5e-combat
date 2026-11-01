@@ -14,7 +14,13 @@ export const MONK = Object.freeze({
   // §123 : « touchez une créature » — Main guérisseuse (Guerrier de la miséricorde), Toucher du médecin (sa Main guérisseuse),
   // Ultime miséricorde (« touchez le cadavre ») : « personnelles » dans les données du Manuel des joueurs, au contact en vrai.
   "hand-of-healing": { ranges: { iDDZmeoYTIdWukLQ: { value: 5, units: "ft" } } },
-  "physicians-touch": { ranges: { stWL2fvcxsh0HFw2: { value: 5, units: "ft" } } },
+  // C12-f : Toucher du médecin — la Main guérisseuse « met aussi fin à l'un de ces états : Aveuglé, Assourdi, Paralysé, Empoisonné, Étourdi ».
+  "physicians-touch": { ranges: { stWL2fvcxsh0HFw2: { value: 5, units: "ft" } }, cures: ["blinded", "deafened", "paralyzed", "poisoned", "stunned"], curesOn: "stWL2fvcxsh0HFw2" },
+  // C12-f : Incarnation élémentaire — « la Résistance à l'un de ces types, au choix » (la donnée pose les cinq) ; les clés de la foudre et du
+  // tonnerre de la donnée (`system.traits.dr`, sans `.value`) ne donnent rien : complétées.
+  "elemental-epitome": {
+    effectChanges: { ZgNs0IRUKwUrZGn9: [{ key: "system.traits.dr.value", type: "add", value: "lightning" }], rajbPA9Inl0nYnlP: [{ key: "system.traits.dr.value", type: "add", value: "thunder" }] }
+  },
   "hand-of-ultimate-mercy": { ranges: { XtgmW9115BzcLiFr: { value: 5, units: "ft" } } },
   // Arts martiaux : « vous pouvez faire une frappe à mains nues par une action Bonus ».
   "martial-arts": { martialArts: true },

@@ -73,6 +73,22 @@ function guardiansOf(hitToken, attackerToken, activity, { publish=false, resolut
   return out;
 }
 
+/** C12-f : la sauvegarde de la réaction ratée par l'attaquant, sous une règle `retort` de son item — la riposte est notée sur le porteur. */
+async function noteRetort(actor, resolution, messageId, source) {
+  const message = game.messages.get(messageId);
+  const item = message?.getAssociatedActivity?.()?.item;
+  const rule = item ? contentOf(item).entry?.retort : null;
+  if ( !rule ) return;
+  // La résolution de la réaction peut être rendue avant que la sauvegarde soit jetée : on attend son résultat (10 s au plus).
+  const saves = () => (game.messages.get(messageId)?.getFlag(MODULE_ID, "resolution")?.targets ?? []).filter(t => typeof t.save?.success === "boolean");
+  for ( let n = 0; (n < 40) && !saves().length; n++ ) await sleep(250);
+  if ( !saves().length ) { log(`${item.name}: the attacker's saving throw was not read, no damage back`); return; }
+  const failed = saves().some(t => t.save.success === false);
+  if ( !failed ) { log(`${item.name}: the attacker made its saving throw, no damage back`); return; }
+  await actor.setFlag(MODULE_ID, "retort", { resolution: resolution.id, source: tokenOf(source)?.uuid ?? null, type: rule.damageType, item: item.name });
+  log(`${item.name}: the attacker failed its saving throw, it will take the damage ${actor.name} takes`);
+}
+
 /**
  * Commande `askReactions` de la machine d'action, fenêtre « touché » : chaque cible touchée qui a
  * de quoi réagir (Bouclier) est consultée, l'une après l'autre. La résolution est déjà écrite
@@ -107,6 +123,9 @@ export async function askHitReactions(resolution, tokens, drained, { auto=null }
       });
     }
     if ( answer?.message ) await drained(answer.message);
+    // C12-f : Défenses envoûtantes (`retort`) — l'attaquant qui a raté la sauvegarde de la réaction subira, à l'application, des dégâts égaux
+    // à ceux que le porteur aura subis (après la moitié) : noté sur le porteur pour cette résolution (runtime/engine-commands.mjs).
+    if ( answer?.message && actor ) await noteRetort(actor, resolution, answer.message, source);
     // §19.9 : si elle n'a pas elle-même réduit les dégâts, un allié peut le faire pour elle (Sentinelle au seuil de la mort) —
     // le premier qui accepte ; sa réaction, ses utilisations.
     if ( !answer?.halve && !answer?.reduce && (auto !== "none") ) {

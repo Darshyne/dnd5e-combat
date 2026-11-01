@@ -220,6 +220,9 @@
  *                                               (Tempête de neige, Nuage nauséabond : ceux qui sont déjà dedans sauvegardent au début de leur tour)
  *     brutalStrike?: { options?, count? }       C12-e : Coup brutal — options offertes avec Témérité (`push` : poussée ; `effect` :
  *                                               effet de l'item posé sur la cible touchée), nombre d'options par coup (runtime/barbarian.mjs)
+ *     killsAtZero?: true                        C12-f : une créature que les dégâts de l'item réduisent à 0 PV meurt (Désintégration)
+ *     retort?: { damageType }                   C12-f : la réaction de l'item ratée par l'attaquant lui renvoie les dégâts que le
+ *                                               porteur subit (Défenses envoûtantes, runtime/reactions.mjs)
  *     enterOnPose?: true                        C12-b : une zone qui dure, posée par une activité qui ne résout rien elle-même : les
  *                                               créatures qu'elle recouvre en apparaissant y entrent (Invocation de céleste)
  *     hitDefense?: true                         C12-e : qui touche le porteur d'un jet d'attaque a le Désavantage à ses autres jets

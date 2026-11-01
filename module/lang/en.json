@@ -717,6 +717,7 @@
   "DND5ECOMBAT.CoupBrutal.Option.staggering": "Staggering Blow",
   "DND5ECOMBAT.CoupBrutal.Option.sundering": "Sundering Blow",
   "DND5ECOMBAT.Fragilisation": "{item}: Disadvantage on its next saving throw against a spell",
+  "DND5ECOMBAT.DegatsRenvoyes": "{item}: {name} returns the damage",
   "DND5ECOMBAT.CoupCritique.against": "{item}: Advantage against it",
   "DND5ECOMBAT.CoupCritique.by": "{item}: Disadvantage on its attacks",
   "DND5ECOMBAT.CoupCritique.Empoignade": "{item}: damage to {name}, grappled",

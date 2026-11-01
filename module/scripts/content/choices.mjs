@@ -12,6 +12,8 @@
 export const CHOICES = Object.freeze({
   // Une caractéristique au choix : six effets « Hexed <caractéristique> » sur l'activité Place Curse.
   "hex": { effects: "one" },
+  // C12-f : Incarnation élémentaire, « Damage Resistance » — une résistance au choix parmi cinq.
+  "elemental-epitome": { effects: "one" },
   // Attaque à mains nues 2024, sauvegarde ratée : Lutte (agrippé) OU Bousculade (à terre, ou repoussé de 1,50 m).
   // L'item du Barbare et du Moine (classes24, même identifiant) n'a que les deux premiers.
   "unarmed-strike": { effects: "one" },

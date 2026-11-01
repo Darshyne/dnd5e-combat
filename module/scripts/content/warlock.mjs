@@ -31,7 +31,8 @@ export const WARLOCK = Object.freeze({
     do: [{ type: "damage", formula: "@abilities.cha.mod", damageType: "weapon" }] }] },
   // Défenses envoûtantes (Archifée 10) : touché par un attaquant visible, l'occultiste peut, en Réaction, diviser les dégâts par
   // deux et soumettre l'attaquant à une sauvegarde de Sagesse — l'activité vise l'attaquant.
-  "beguiling-defenses": { triggers: [{ on: "isHit", if: { "target.seesSource": true },
+  // C12-f : « sur un échec, l'attaquant subit des dégâts psychiques égaux aux dégâts que vous avez subis » (`retort`).
+  "beguiling-defenses": { retort: { damageType: "psychic" }, triggers: [{ on: "isHit", if: { "target.seesSource": true },
     do: [{ type: "use", activity: "Y2cMdoDnGTyEqs0l", target: "source" }, { type: "halve" }] }] },
   // Chance du ténébreux (Fiélon 6) : « quand vous faites un test de caractéristique ou un jet de sauvegarde, ajoutez 1d10 ; après avoir
   // vu le jet, avant ses effets » (§38) — proposé sur une sauvegarde ratée que le moteur lit ; l'activité « Luck » dépense l'utilisation.

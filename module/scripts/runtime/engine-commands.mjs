@@ -170,6 +170,23 @@ export const COMMANDS = {
         : null;
       // §133 : Tueur de mages — la créature concentrée que l'auteur vient de blesser aura le Désavantage à son jet de concentration.
       if ( hp && hurting ) await markConcentrationBreaker(source?.actor ?? activity?.actor, hp.actor);
+      // C12-f : Défenses envoûtantes — l'attaquant qui a raté la sauvegarde subit les dégâts que le porteur vient de subir.
+      const retort = hp ? patient?.getFlag?.(MODULE_ID, "retort") : null;
+      if ( retort && (retort.resolution === resolution.id) ) {
+        await patient.unsetFlag(MODULE_ID, "retort");
+        const dealt = (hp.before.value + (hp.before.temp ?? 0)) - (hp.after.value + (hp.after.temp ?? 0));
+        if ( (dealt > 0) && retort.source ) {
+          const logged = await inflict({ step: { formula: String(dealt), damageType: retort.type }, targetUuid: retort.source,
+            speaker: ChatMessage.implementation.getSpeaker({ actor: patient }),
+            flavor: loc("DegatsRenvoyes", { item: retort.item, name: patient.name }), flags: { retort: { item: retort.item } } });
+          if ( logged ) { extra.push({ ...logged, name: retort.item }); log(`${retort.item}: ${dealt} ${retort.type} damage back to the attacker`); }
+        }
+      }
+      // C12-f : Désintégration — « une créature réduite à 0 PV par ce sort est désintégrée » : morte, sans jets contre la mort (`killsAtZero`).
+      if ( hp && hurting && (hp.after.value <= 0) && (contentOf(activity?.item).entry?.killsAtZero === true) && patient && !patient.statuses?.has("dead") ) {
+        await applyStatusToToken(carrier, entry.token, "dead");
+        log(`${activity.item.name}: ${patient.name} reduced to 0 HP — disintegrated`);
+      }
       const target = await fromUuid(entry.token);
       // §16.46 : ce qu'une défense (Résistance) a retiré aux dégâts.
       for ( const s of hp?.shields ?? [] ) {

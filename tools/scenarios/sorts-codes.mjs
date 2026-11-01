@@ -6,8 +6,7 @@
  *     BLFX, s'il en pose un, est retiré de l'effet pour que ce soit le moteur qui partage).
  *  3. Cécité/surdité sur le Zombi, Cécité choisie : un seul effet (Aveuglé) ; au combat, sauvegarde répétée à la fin de
  *     chacun de ses tours, l'effet tombe sur une réussite.
- *  4. Tempête de neige sur le Zombi : sauvegarde de Dextérité à la pose, À terre sur un échec ; au début de son tour, le
- *     sort rejoue (message marqué `areaTick`).
+ *  4. Tempête de neige sur le Zombi : rien à la pose (§300) ; au début de son tour, le sort rejoue (message marqué `areaTick`).
  *  5. Aura de vitalité, « Soins de début de tour » sur le Guerrier blessé : le soin lancé est appliqué.
  *  6. Convocation de fée, au combat : l'esprit entre juste après le Clerc (initiative entre le Clerc et le suivant) ; la fin
  *     de la concentration le retire. Placement à une case fixe (`api.mcp.summonAt`).
@@ -136,6 +135,8 @@ export default {
         ctx.log("drapeau BLFX retiré de l'effet : c'est le moteur qui partage");
       }
       await nextTo(fighter);
+      // Des PV temporaires laissés par un scénario précédent absorberaient la part du Clerc : retirés le temps de la lecture.
+      await ctx.call("update-actor", { actorId: cleric.actorId, actorData: { "system.attributes.hp.temp": 0 } }).catch(() => {});
       const clericBefore = await ctx.hp(cleric);
       const hit = await strike(fighter, { untilHit: true });
       if ( !ctx.expect(!!hit, "le Zombi touche le Guerrier (20 essais au plus)") ) return;
@@ -181,27 +182,18 @@ export default {
       await endCombat();
     });
 
-    // 4. Tempête de neige : pose, À terre sur un échec, rejeu au début du tour du Zombi.
+    // 4. Tempête de neige : rien à la pose (§300, texte 2024 : sauvegarde à l'entrée et au début du tour), rejeu au début du tour du Zombi.
     await part("Tempête de neige", async () => {
-      // Posée jusqu'à une sauvegarde ratée (au plus 10 fois) : on veut voir À terre posé, pas seulement son absence.
-      let failed = false;
-      for ( let n = 1; (n <= 10) && !failed; n++ ) {
-        for ( const id of regions.splice(0) ) await ctx.call("delete-scene-object", { type: "Region", objectId: id }).catch(() => {});
-        await ctx.removeEffectsNamed(cleric, /concentr/i);
-        await ctx.removeStatusEffects(zombi, "prone");
-        const box = await ctx.box(zombi);
-        const used = await ctx.use({ tokenId: cleric.id, identifier: "sleet-storm", activityType: "save", consume: false,
-          area: { shape: "circle", x: box.x + (box.width / 2), y: box.y + (box.height / 2), radius: Math.round(grid * 0.9) } });
-        if ( used.regionId ) regions.push(used.regionId);
-        const r = await ctx.settle(used.usageMessageId).catch(() => null);
-        await pause(1500);
-        const t = r?.targets?.find(x => x.name === "Zombi");
-        if ( !ctx.expect(!!t?.save, `Tempête de neige : sauvegarde du Zombi à la pose (${t?.save?.total ?? "aucune"} contre DD ${r?.plan?.save?.dc})`) ) return;
-        ctx.expect((await statuses(zombi)).includes("prone") === !t.save.success, `À terre ⇔ sauvegarde ratée (${t.save.success ? "réussie, debout" : "ratée, À terre"})`);
-        failed = !t.save.success;
-      }
-      ctx.expect(failed, "au moins une sauvegarde ratée vue (10 poses au plus)");
       await ctx.removeStatusEffects(zombi, "prone");
+      const box = await ctx.box(zombi);
+      const used = await ctx.use({ tokenId: cleric.id, identifier: "sleet-storm", activityType: "save", consume: false,
+        area: { shape: "circle", x: box.x + (box.width / 2), y: box.y + (box.height / 2), radius: Math.round(grid * 0.9) } });
+      if ( used.regionId ) regions.push(used.regionId);
+      const r = await ctx.settle(used.usageMessageId).catch(() => null);
+      await pause(1500);
+      const t = r?.targets?.find(x => x.name === "Zombi");
+      ctx.expect(!t?.save, `Tempête de neige : pas de sauvegarde à la pose (${t?.save?.total ?? "aucune"})`);
+      ctx.expect(!(await statuses(zombi)).includes("prone"), "le Zombi reste debout à la pose");
       await combatWith([cleric, zombi], [[cleric, 20], [zombi, 10]]);
       const since = await ctx.lastMessageId();
       await ctx.nextTurn();   // Clerc → Zombi : début de son tour dans la zone

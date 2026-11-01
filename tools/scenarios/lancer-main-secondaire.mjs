@@ -96,7 +96,11 @@ export default {
     // §241 : sans arme équipée, l'attaque de base est l'attaque à mains nues (les autres armes déséquipées le temps de la lecture).
     const armed = ((await ctx.call("get-actor", { actorId: mage.actorId })).items ?? [])
       .filter(i => (i.type === "weapon") && i.system?.equipped && (i.system.identifier !== "unarmed-strike"));
-    ctx.expect((await ctx.engine("reachCheck", { tokenId: mage.id, targetId: zombi.id })).weapon === name, `attaque de base : la Dague équipée`);
+    // La fiche peut avoir une autre arme équipée (le Bâton focaliseur du Magicien) : déséquipée le temps de la lecture.
+    const others = armed.filter(i => i._id !== d0._id);
+    for ( const i of others ) await ctx.call("upsert-actor-item", { actorId: mage.actorId, itemData: { "system.equipped": false }, match: { path: "_id", value: i._id } });
+    const alone = await ctx.engine("reachCheck", { tokenId: mage.id, targetId: zombi.id });
+    ctx.expect(alone.weapon === name, `attaque de base : la Dague équipée (${alone.weapon})`);
     for ( const i of armed ) await ctx.call("upsert-actor-item", { actorId: mage.actorId, itemData: { "system.equipped": false }, match: { path: "_id", value: i._id } });
     const unarmed = ((await ctx.call("get-actor", { actorId: mage.actorId })).items ?? []).find(i => i.system?.identifier === "unarmed-strike");
     const empty = await ctx.engine("reachCheck", { tokenId: mage.id, targetId: zombi.id });

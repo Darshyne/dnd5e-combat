@@ -161,7 +161,8 @@ export default {
       await settled(await ctx.use({ tokenId: cleric.id, itemId: id, activityId: "VjKltnyiWXZ0xDGZ", consume: false, area: await tiny(fighter) }));
       const before = await ctx.hp(fighter);
       await next(); await next();   // fin du tour du Guerrier
-      await pause(2000);
+      // Le soin de fin de tour passe par une résolution (jet, carte) : attendu jusqu'à 10 s plutôt qu'une pause fixe.
+      for ( let n = 0; (n < 20) && ((await ctx.hp(fighter)) <= before); n++ ) await pause(500);
       const log = (await ctx.engineLog()).filter(l => /Healing Light|Searing Light/.test(l)).slice(-2);
       ctx.expect((await ctx.hp(fighter)) > before, `Céleste : le Guerrier (allié) finit son tour dans le Cylindre → ${before} → ${await ctx.hp(fighter)} PV ${log.join(" / ")}`);
     });

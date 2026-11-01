@@ -118,7 +118,12 @@ export default {
     ctx.expect(s.behaviors.some(b => b.type === "dnd5e.difficultTerrain"), "terrain difficile");
     const cover = await ctx.engine("cover", { attackerId: fighter.id, targetId: bandit.id });
     ctx.expect(cover?.degree === "threeQuarters", `le Bandit derrière la Barrière : abri ${cover?.degree ?? "aucun"} (+${cover?.bonus ?? 0})`);
-    await place(bandit, 22, 33);
+    // Une case libre de la Barrière (l'Arène de test peut avoir un autre token sur la ligne : Alara Dhampir en 22, 33).
+    const { tokens: here } = await ctx.scene();
+    const taken = new Set(here.filter(t => t.id !== bandit.id).map(t => `${Math.round(t.x / grid)},${Math.round(t.y / grid)}`));
+    const gx = [22, 21, 23, 20, 24, 19, 25].find(x => !taken.has(`${x},33`)) ?? 22;
+    await place(bandit, gx, 33);
+    ctx.expect((await ctx.position(bandit)).y === 33 * grid, `le Bandit posé dans la Barrière (${gx}, 33)`);
     const inside = await ctx.engine("cover", { attackerId: fighter.id, targetId: bandit.id });
     ctx.expect(!inside || (inside.degree !== "threeQuarters"), `le Bandit dans la Barrière : pas d'abri par elle (${inside?.degree ?? "aucun"})`);
   }

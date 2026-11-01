@@ -261,15 +261,19 @@ export default {
       const a0 = await ctx.call("get-actor", { actorId: ally.actorId });
       const temp0 = a0.system?.attributes?.hp?.temp ?? 0;
       ctx.restore(() => ctx.call("update-actor", { actorId: ally.actorId, actorData: { "system.attributes.hp.temp": temp0 } }).catch(() => {}));
+      // Les PV temporaires ne se cumulent pas : sans remise à 0, un reste plus haut que le jet masquerait le Ralliement.
+      await ctx.call("update-actor", { actorId: ally.actorId, actorData: { "system.attributes.hp.temp": 0 } }).catch(() => {});
       const before = await spent();
       // `consume: true` : le dé se dépense comme au clic ; le jet de soin est lancé par la carte (le connecteur coupe l'enchaînement
       // de dnd5e : `subsequentActions: false`), comme `sorts-lot-1`.
       const u = await ctx.use({ tokenId: fighter.id, itemId: await ctx.itemId(fighter.id, "rally"), targetTokenIds: [ally.id], consume: true });
       await pause(800);
       if ( u.usageMessageId ) await ctx.engine("rollCard", { messageId: u.usageMessageId }).catch(() => null);
-      await pause(3500);
-      const temp1 = (await ctx.call("get-actor", { actorId: ally.actorId })).system?.attributes?.hp?.temp ?? 0;
-      ctx.expect(temp1 > temp0, `Ralliement : PV temporaires du Clerc ${temp0} → ${temp1}`);
+      // Attendus jusqu'à 12 s (jet de soin par la carte, puis application par le MJ actif) plutôt qu'une pause fixe.
+      const tempNow = async () => (await ctx.call("get-actor", { actorId: ally.actorId })).system?.attributes?.hp?.temp ?? 0;
+      for ( let n = 0; (n < 24) && !((await tempNow()) > 0); n++ ) await pause(500);
+      const temp1 = await tempNow();
+      ctx.expect(temp1 > 0, `Ralliement : PV temporaires du Clerc 0 → ${temp1}`);
       ctx.expect((await spent()) === before + 1, "Ralliement : un dé de supériorité dépensé");
     }
   }

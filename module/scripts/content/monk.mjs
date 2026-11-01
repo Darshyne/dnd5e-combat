@@ -26,6 +26,9 @@ export const MONK = Object.freeze({
   // C12-g : Concentration parfaite (Moine 15) — « quand vous jouez l'initiative et avez 3 points de concentration ou moins, vous remontez à 4 »
   // (la condition « sans Métabolisme surnaturel » reste au joueur).
   "perfect-focus": { regainOnInitiative: { item: "monks-focus", upTo: 4 } },
+  // C12-a : Survivant discipliné (Moine 14) — « si vous ratez une sauvegarde, vous pouvez dépenser 1 point de concentration pour la relancer,
+  // et vous devez utiliser le nouveau jet » (l'activité dépense le point).
+  "disciplined-survivor": { rollBonus: { activity: "P38SXEOizo5QaG8h", on: ["save"], reroll: {} } },
   // Arts martiaux : « vous pouvez faire une frappe à mains nues par une action Bonus ».
   "martial-arts": { martialArts: true },
   // Concentration du moine : Déluge de coups (2ghJTBhilLrFn9xT) — « 1 point : deux frappes à mains nues par une action Bonus » ;
@@ -73,6 +76,7 @@ export const MONK = Object.freeze({
   // liquides pendant votre tour sans tomber pendant ce déplacement » : « Courir sur le mur » (runtime/climb.mjs), sans test, sans
   // vitesse d'escalade ni plafond ; le moine qui finit son tour au mur tombe. Les liquides : non joués.
   "acrobatic-movement": { climbsOnTurn: true },
-  "deflect-attacks": { triggers: [{ on: "isHit", if: { "activity.dealsType": ["bludgeoning", "piercing", "slashing"] },
+  // C12-a : Parade d'énergie (Moine 13) — « contre des attaques de tout type de dégâts », pas seulement contondant, perforant, tranchant.
+  "deflect-attacks": { triggers: [{ on: "isHit", if: { any: [{ "activity.dealsType": ["bludgeoning", "piercing", "slashing"] }, { "target.hasFeature": "deflect-energy" }] },
     do: [{ type: "use", activity: "rQwRKkuZ7WhnB7v7" }, { type: "reduce" }] }] }
 });

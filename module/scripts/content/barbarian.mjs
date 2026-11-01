@@ -24,7 +24,9 @@ export const BARBARIAN = Object.freeze({
   "retaliation": { triggers: [{ on: "isDamaged", if: { "target.within": { distance: 5, units: "ft" } }, do: [{ type: "use", target: "source", weapon: true }] }] },
   // Rage persistante (niveau 15) : « elle dure 10 minutes sans que vous ayez rien à faire pour l'entretenir ; elle prend fin plus
   // tôt si vous avez l'état Inconscient (pas seulement Neutralisé) ».
-  "persistent-rage": { persistentRage: true },
+  // C12-a : « quand vous jouez l'initiative, vous pouvez regagner toutes les utilisations de Rage dépensées » — une fois par repos long (l'utilisation
+  // de l'item).
+  "persistent-rage": { persistentRage: true, regainOnInitiative: { items: ["rage"], uses: true } },
   // Témérité (niveau 2) : choisie au premier jet d'attaque du tour ; jusqu'au début du tour suivant du barbare, ses attaques
   // fondées sur la Force ont l'Avantage, et celles qui le visent aussi.
   "reckless-attack": { reckless: true },

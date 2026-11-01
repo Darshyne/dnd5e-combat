@@ -153,7 +153,7 @@ describe("contenu livré", () => {
   it("réunit déclencheurs et auras par identifiant", () => {
     expect(Object.keys(CONTENT).sort()).toEqual([
       "aberrant-anatomy", "abjure-foes", "absorb-elements", "acid-arrow", "acrobatic-movement", "action-surge", "adrenaline-rush", "agile",
-      "aid", "air-element", "air-form", "alchemists-fire", "alert", "ambush", "ancient-might", "animal-friendship", "animate-objects",
+      "aid", "air-element", "air-form", "alchemists-fire", "alert", "alter-self", "ambush", "ancient-might", "animal-friendship", "animate-objects",
       "antilife-shell", "antimagic-field", "arcane-eye", "arcane-gate", "arcane-hand", "arcane-recovery", "arcane-sword", "arcane-vigor",
       "arcane-ward", "armor-of-agathys", "arms-of-hadar", "aspect-of-the-wilds", "assassinate", "athlete", "aura-of-alacrity", "aura-of-authority",
       "aura-of-bravery", "aura-of-courage", "aura-of-devotion", "aura-of-life", "aura-of-protection", "aura-of-purity", "aura-of-vitality", "aura-of-warding",
@@ -174,7 +174,7 @@ describe("contenu livré", () => {
       "crown-of-madness", "crusaders-mantle", "crusher", "cunning-action", "cunning-strike", "cutting-words", "dancing-lights",
       "dark-ones-blessing", "dark-ones-own-luck", "darkness", "daylight", "death-burst", "death-throes", "death-ward", "deathless-agility",
       "defense", "defensive-duelist", "defensive-tactics", "deflect-attacks", "delayed-blast-fireball", "demiplane", "destructive-wave", "devious-strikes",
-      "dimension-door", "disarming-attack", "disciple-of-life", "disintegrate", "dispel-evil-and-good", "dispel-magic", "dissonant-whispers",
+      "dimension-door", "disarming-attack", "disciple-of-life", "disciplined-survivor", "disintegrate", "dispel-evil-and-good", "dispel-magic", "dissonant-whispers",
       "distant-spell", "distracting-strike", "divine-fury", "divine-smite", "divine-word", "dominate-beast", "dominate-monster",
       "dominate-person", "draconic-flight", "dragons-breath", "draining-kiss", "draining-swipe", "dread-ambusher", "dreadful-strikes", "dueling",
       "dwarven-resilience", "earth-element", "earthquake", "echoing-soul", "elder-champion", "eldritch-blast", "eldritch-smite",
@@ -198,7 +198,7 @@ describe("contenu livré", () => {
       "intimidating-presence", "investment-of-the-chain-master", "invisibility", "invoke-duplicity", "jallarzis-storm-of-radiance", "jolt-to-life", "jump",
       "knowledge-from-a-past-life", "lamp", "lantern-bullseye", "lantern-hooded", "large-form", "lay-on-hands", "leading-evasion",
       "lesser-restoration", "levitate", "life-drain", "lifedrinker", "light", "lightning-arrow", "living-shadow", "lucky", "lunar-form",
-      "lunging-attack", "lupin-howl", "mage-armor", "mage-hand", "mage-slayer", "magic-missile", "magic-resistance", "magnificent-mansion",
+      "lunging-attack", "lupin-howl", "mage-armor", "mage-hand", "mage-slayer", "magic-missile", "magic-resistance", "magic-weapon", "magnificent-mansion",
       "maneuvering-attack", "marshal-undead", "martial-arts", "mass-cure-wounds", "mass-heal", "mass-suggestion", "maze",
       "medium-armor-master", "melfs-acid-arrow", "menacing-attack", "mind-sliver", "mind-spike", "mindless-rage", "minor-illusion",
       "mirror-image", "mislead", "mist-walker", "misty-escape", "misty-form", "misty-step", "modify-memory", "monks-focus", "moonbeam", "moonlight-step",
@@ -1139,5 +1139,16 @@ describe("§315 : repasse, lot C12-i (vision, furtivité)", () => {
     expect(validateEntry(CONTENT["skulker"], { facts })).toEqual([]);
     expect(CONTENT["skulker"].sniper).toBe(true);
     expect(validateEntry({ sniper: 1 })).toHaveLength(1);
+  });
+});
+
+describe("§316 : repasse, lot C12-a (réactions et fenêtres)", () => {
+  it("les déclarations du lot", () => {
+    for ( const id of ["magic-weapon", "alter-self", "persistent-rage", "deflect-attacks", "disciplined-survivor", "phantasmal-force"] ) {
+      expect(validateEntry(CONTENT[id], { facts }), id).toEqual([]);
+    }
+    expect(CONTENT["magic-weapon"].enchantTarget).toBe("weapon");
+    expect(CONTENT["alter-self"].recast).toBe(true);
+    expect(CONTENT["persistent-rage"].regainOnInitiative).toEqual({ items: ["rage"], uses: true });
   });
 });

@@ -20,7 +20,8 @@ export const BURSTS = Object.freeze({
  * de vos tours par une action Magie ». Carreau ensorcelé et Métal brûlant n'en ont pas
  * besoin : dnd5e 6 leur donne une activité à l'action Bonus, sans emplacement.
  */
-export const RECASTS = Object.freeze(["call-lightning", "vampiric-touch"]);
+// C12-a : Modification d'apparence — « par une action Magie, vous pouvez changer d'option » sans nouvel emplacement ni nouvelle concentration.
+export const RECASTS = Object.freeze(["call-lightning", "vampiric-touch", "alter-self"]);
 
 /** « Chaque créature à 1,50 m du point » (§16.21, `bolt`) : Appel de la foudre, dont dnd5e fait poser le nuage (60 ft). */
 export const BOLTS = Object.freeze({ "call-lightning": { radius: 5, units: "ft" } });

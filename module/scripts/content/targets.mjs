@@ -73,7 +73,8 @@ export const USAGE_LIMITS = Object.freeze({
  * arme non magique touchée — activité « enchant » de dnd5e (15 profils : 5 éléments × +1/+2/+3 selon le
  * niveau), que dnd5e applique par un glisser-déposer de l'arme sur la carte.
  */
-export const ENCHANT_TARGETS = Object.freeze({ "elemental-weapon": "weapon", "pact-of-the-blade": "ownWeapon" });
+// C12-a : Arme magique — « une arme non magique » au contact, la sienne ou celle d'un allié (comme Arme élémentaire).
+export const ENCHANT_TARGETS = Object.freeze({ "elemental-weapon": "weapon", "magic-weapon": "weapon", "pact-of-the-blade": "ownWeapon" });
 
 /**
  * Pacte de la lame (§16.45, `pact`). PHB 2024 : en action Bonus, l'occultiste fait apparaître en main une arme de corps à corps

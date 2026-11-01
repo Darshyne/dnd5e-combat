@@ -30,5 +30,7 @@ export const BARD = Object.freeze({
   "combat-inspiration": { combatInspiration: true },
   // §236 : Inspiration supérieure (niveau 18) — « quand vous jouez l'initiative, vous regagnez des utilisations d'Inspiration bardique
   // jusqu'à en avoir deux ».
+  // C12-j : Source d'inspiration (Barde 5) — « vous regagnez toutes vos Inspirations bardiques dépensées après un Repos court ou long ».
+  "font-of-inspiration": { regainOnShortRest: ["bardic-inspiration"] },
   "superior-inspiration": { regainOnInitiative: { item: "bardic-inspiration", upTo: 2 } }
 });

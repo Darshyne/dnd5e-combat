@@ -33,6 +33,8 @@ export const CLERIC = Object.freeze({
   // Éclat protecteur (Lumière 3) : en Réaction, le clerc donne le Désavantage au jet d'attaque d'une créature qu'il voit à 9 m ou
   // moins — contre lui ou un allié (§34 : fenêtre avant le jet). Les PV temporaires de l'Éclat
   // protecteur amélioré restent au joueur.
+  // C12-j : Éclat protecteur amélioré (Lumière 6) — « vous regagnez toutes les utilisations d'Éclat protecteur après un Repos court ou long ».
+  "improved-warding-flare": { regainOnShortRest: ["warding-flare"] },
   "warding-flare": { triggers: [{ on: "enemyAttacks", if: { "source.nearSelf": { distance: 30, units: "ft" }, "self.seesSource": true },
     do: [{ type: "use", activity: "dnd5eactivity000" }, { type: "disadvantage" }] }] },
   // Impacts bénis (niveau 7), option Impact divin : 1d8 radiants (au choix nécrotiques ou radiants : radiants d'office) ;

@@ -185,7 +185,7 @@ describe("contenu livré", () => {
       "fear-aura", "feather-fall", "feign-death", "feinting-attack", "fell-word", "feral-pounce", "feral-strike", "fetid-aura",
       "fetid-cloud", "fey-ancestry", "find-familiar", "find-steed", "fire-aura", "fire-element", "fire-form", "fire-shield", "fires-burn",
       "flame-aura", "flame-blade", "flaming-sphere", "flask-of-holy-water", "fleet-step", "flesh-to-stone", "flyby", "foe-slayer",
-      "fog-cloud", "forbiddance", "forcecage", "forceful-hand", "foresight", "form-of-dread", "fortune-teller-spirit", "fount-of-moonlight",
+      "fog-cloud", "font-of-inspiration", "forbiddance", "forcecage", "forceful-hand", "foresight", "form-of-dread", "fortune-teller-spirit", "fount-of-moonlight",
       "frenzied-rush", "frenzy", "friends", "frosts-chill", "full-of-stars", "gaseous-form", "gate", "gathered-whispers", "geas", "ghost-walk",
       "giant-insect", "gibbering", "globe-of-invulnerability", "goading-attack", "grappler", "grasping-hand", "grasping-vine", "grease",
       "great-weapon-fighting", "great-weapon-master", "greater-portent", "greater-restoration", "guardian-of-faith", "guidance",
@@ -193,7 +193,7 @@ describe("contenu livré", () => {
       "healers-kit", "heat-aura", "heat-metal", "heavy-armor-master", "heightened-focus", "heightened-spell", "hellish-rebuke",
       "heroic-warrior", "heroism", "hex", "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-aura", "holy-nimbus",
       "holy-water", "hunger-of-hadar", "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "ice-storm", "illusory-self",
-      "imprisonment", "improved-brutal-strike", "improved-brutal-strike-2", "improved-circle-forms", "improved-cunning-strike", "improved-elemental-fury", "improved-illusions", "improved-war-magic", "incendiary-cloud",
+      "imprisonment", "improved-brutal-strike", "improved-brutal-strike-2", "improved-circle-forms", "improved-cunning-strike", "improved-elemental-fury", "improved-illusions", "improved-war-magic", "improved-warding-flare", "incendiary-cloud",
       "indomitable", "indomitable-might", "innate-sorcery", "insect-plague", "inspiring-smite", "instinctive-pounce", "interception",
       "intimidating-presence", "investment-of-the-chain-master", "invisibility", "invoke-duplicity", "jallarzis-storm-of-radiance", "jolt-to-life", "jump",
       "knowledge-from-a-past-life", "lamp", "lantern-bullseye", "lantern-hooded", "large-form", "lay-on-hands", "leading-evasion",
@@ -223,7 +223,7 @@ describe("contenu livré", () => {
       "skulker", "slam", "slasher", "sleep", "sleet-storm", "slippers-of-spider-climbing", "slow", "slow-fall", "smelting-charge",
       "smite-of-protection", "sneak-attack", "soldier-feature", "soul-of-vengeance", "spare-the-dying", "speedy", "spell-resistance",
       "spell-sniper", "spider-climb", "spike-growth", "spirit-guardians", "spirit-shroud", "spiritual-weapon", "staggering-smite",
-      "starry-wisp", "steady-aim", "stench", "steps-of-the-fey", "stinking-cloud", "stomp", "stones-endurance", "storm-of-vengeance",
+      "starry-wisp", "steady-aim", "steel-wind-strike", "stench", "steps-of-the-fey", "stinking-cloud", "stomp", "stones-endurance", "storm-of-vengeance",
       "stormborn", "storms-thunder", "studied-attacks", "stunning-strike", "subtle-spell", "suggestion", "summon-aberration",
       "summon-beast", "summon-celestial", "summon-construct", "summon-dragon", "summon-elemental", "summon-fey", "summon-fiend",
       "summon-undead", "sunbeam", "sunburst", "superior-inspiration", "supreme-healing", "supreme-sneak", "survivor-ravenloft", "swallow",
@@ -1150,5 +1150,16 @@ describe("§316 : repasse, lot C12-a (réactions et fenêtres)", () => {
     expect(CONTENT["magic-weapon"].enchantTarget).toBe("weapon");
     expect(CONTENT["alter-self"].recast).toBe(true);
     expect(CONTENT["persistent-rage"].regainOnInitiative).toEqual({ items: ["rage"], uses: true });
+  });
+});
+
+describe("§317 : repasse, lot C12-j (divers)", () => {
+  it("les déclarations du lot", () => {
+    for ( const id of ["font-of-inspiration", "improved-warding-flare", "steel-wind-strike", "protection-from-evil-and-good"] ) {
+      expect(validateEntry(CONTENT[id], { facts }), id).toEqual([]);
+    }
+    expect(CONTENT["font-of-inspiration"].regainOnShortRest).toEqual(["bardic-inspiration"]);
+    expect(CONTENT["steel-wind-strike"].projectiles).toEqual({ count: "5", attack: true });
+    expect(validateEntry({ regainOnShortRest: [""] })).toHaveLength(1);
   });
 });

@@ -220,6 +220,8 @@
  *                                               (Tempête de neige, Nuage nauséabond : ceux qui sont déjà dedans sauvegardent au début de leur tour)
  *     brutalStrike?: { options?, count? }       C12-e : Coup brutal — options offertes avec Témérité (`push` : poussée ; `effect` :
  *                                               effet de l'item posé sur la cible touchée), nombre d'options par coup (runtime/barbarian.mjs)
+ *     regainOnShortRest?: string[]              C12-j : au Repos court, les utilisations de ces items (identifiants) reviennent (Source
+ *                                               d'inspiration, Éclat protecteur amélioré ; runtime/grimoire.mjs)
  *     sniper?: true                             C12-i : caché, un jet d'attaque raté ne révèle pas le porteur (Discret, runtime/hide.mjs)
  *     summonEffectsOnCaster?: true              C12-g : les effets de l'activité d'invocation vont au lanceur, liés à sa concentration,
  *                                               pas à la créature invoquée (Double illusoire : le lanceur devient Invisible)

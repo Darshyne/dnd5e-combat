@@ -15,6 +15,7 @@ import { askChoice } from "../adapter/choices.mjs";
 import { route } from "./router.mjs";
 import { log, loc, notice } from "./shared.mjs";
 import { spendItemUses } from "../adapter/uses.mjs";
+import { contentOf, identifierOf } from "../adapter/content.mjs";
 
 const tokenOfActor = actor => actor?.getActiveTokens?.(false, true)?.[0] ?? null;
 
@@ -53,6 +54,21 @@ function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
   return false;
 }
 
+/**
+ * C12-j : `regainOnShortRest` — les utilisations de ces items (identifiants) reviennent toutes au Repos court (Source d'inspiration :
+ * Inspiration bardique ; Éclat protecteur amélioré : Éclat protecteur), là où la donnée ne les rend qu'au Repos long.
+ */
+async function shortRestRegain(actor, result, config) {
+  if ( (config?.type !== "short") || !actor?.isOwner ) return;
+  const ids = new Set(Array.from(actor.items).flatMap(i => contentOf(i).entry?.regainOnShortRest ?? []));
+  if ( !ids.size ) return;
+  for ( const item of actor.items ) {
+    if ( !ids.has(identifierOf(item).id) || !(Number(item.system?.uses?.spent) > 0) ) continue;
+    await item.update({ "system.uses.spent": 0 });
+    log(`${actor.name}: ${item.name} regained on a Short Rest`);
+  }
+}
+
 async function onRestCompleted(actor, result, config) {
   if ( (config?.type !== "short") || !actor?.isOwner ) return;
   const recovery = slotRecoveryOf(actor);
@@ -89,4 +105,5 @@ export function registerGrimoire() {
   route("dnd5e.preUseActivity", onPreUse, { cancellable: true, label: "Ritual: cast without a spell slot" });
   // Sur le client qui a lancé le repos (documents/actor/actor.mjs) : propriétaire de l'acteur ; la question va à son joueur.
   route("dnd5e.restCompleted", onRestCompleted, { label: "Arcane Recovery not offered" });
+  route("dnd5e.restCompleted", shortRestRegain, { label: "uses not regained on a Short Rest" });
 }

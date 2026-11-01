@@ -72,7 +72,9 @@ export const REACTIVE_SPELLS = Object.freeze(["war-caster"]);
 export const PROJECTILES = Object.freeze({
   "magic-missile": { count: "2 + @item.level", attack: false },
   "scorching-ray": { count: "@item.level + 1", attack: true },
-  "eldritch-blast": { count: "floor((@details.level + 1) / 6) + 1", attack: true }
+  "eldritch-blast": { count: "floor((@details.level + 1) / 6) + 1", attack: true },
+  // C12-j : Frappe du vent d'acier — « jusqu'à cinq créatures : un jet d'attaque de sort au corps à corps contre chacune ».
+  "steel-wind-strike": { count: "5", attack: true }
 });
 
 /**

@@ -36,7 +36,7 @@ describe("chargement du module", () => {
       "flammable", "flight", "follow", "followState", "forcePlayerWait", "foreignSetting", "fortified", "grab", "groupRoll", "groupRollBreakdown", "groupRollForce", "groupRollMode", "groupRollState", "heal", "hoist", "hurt", "identify", "inventory", "issues", "jump",
       "lightState", "lock", "longRest", "masteries", "menu", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "pickTargets", "placeItemEffect", "placeMenu", "placeRegionAt",
       "plan", "planning", "portent", "range", "rangedPlacement", "rawMove", "reachCheck", "ready", "reload", "reports", "restoreItem", "rollCard",
-      "rollCheck", "rollSave", "runMacro", "saveChance", "scatter", "sees", "sequencer", "setting", "settingsChanged", "skillAid", "skillAids",
+      "rollCheck", "rollSave", "runMacro", "saveChance", "scatter", "sees", "sequencer", "setting", "settingsChanged", "shortRest", "skillAid", "skillAids",
       "stairs", "stairsAt", "stand", "stats", "status", "stealth", "storm", "stormStrike", "summonAt", "takeStairs", "teleport",
       "teleportPick", "threats", "timer", "toggleLight", "tokenLight", "transpose", "unfollow", "upkeep", "use", "view", "viewScene", "waits", "wall", "wallSide", "windows"]);
     expect(Object.isFrozen(api.api.mcp)).toBe(true);

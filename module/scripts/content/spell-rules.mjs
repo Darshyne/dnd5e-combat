@@ -340,6 +340,9 @@ export const SPELL_RULES = Object.freeze({
   "power-word-kill": { hpTiers: [{ atMost: 100, damage: false, statuses: ["dead"] }, {}] },
   // Mot de pouvoir étourdissant : « 150 PV ou moins : Étourdie ; sinon, Vitesse 0 jusqu'au début de votre prochain tour ». C12-e :
   // « à la fin de chacun de ses tours, elle réitère un JS de Constitution » — la donnée n'a pas d'activité de sauvegarde : déclarée ici.
+  // C12-j : Protection contre le mal et le bien — la copie de Heroes of the Borderlands donne à l'activité une portée « personnelle » pour un
+  // sort de contact : la visée d'une autre créature, au contact.
+  "protection-from-evil-and-good": { ranges: { zFTMr0vFdY214UIY: { value: 5, units: "ft" } } },
   // C12-a : Force fantasmagorique — « la cible peut prendre l'action Étudier : un test d'Intelligence (Investigation) contre votre DD ; réussi,
   // le sort prend fin » (l'activité « Study », proposée à la cible).
   "phantasmal-force": { actionEnds: { QyPQcXhcl8sTDQ3d: { by: "bearer", roll: "check", spell: true } } },

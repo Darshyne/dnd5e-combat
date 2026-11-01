@@ -476,6 +476,8 @@ export const SPELL_RULES = Object.freeze({
   "demiplane": { pointWall: false },
   "mordenkainens-magnificent-mansion": { pointWall: false },
   "conjure-woodland-beings": {
+    // C12-c : « Disengage » — l'action Bonus de l'activité donne l'action Se désengager.
+    basicActions: { GAQKUmYcWR3SjxiV: "disengage" },
     selfZone: { dnd5eactivity000: { type: "radius", size: 10, units: "ft" } },
     zoneAffects: "enemy",
     triggers: [{ on: ["enter", "turnEnd"], do: [{ type: "replay", activity: "UkXLSgFbCBI9CHMf" }] }]

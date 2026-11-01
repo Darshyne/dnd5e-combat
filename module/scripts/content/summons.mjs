@@ -55,8 +55,10 @@ export const SUMMONS = Object.freeze({
   // disparition à 0 PV).
   "phantasmal-creatures": vanishing,
   // §305 : Compagnon primitif (Seigneur des bêtes 3) et Compagnon réanimé (Ravenloft) — « agit à votre tour, juste après vous » ; une
-  // nouvelle convocation remplace l'ancienne ; « s'il… vous mourez, il disparaît ». Les ordres en action Bonus restent au joueur.
-  "primal-companion": { initiative: "after", replaces: true, vanishesWithCaster: true },
+  // nouvelle convocation remplace l'ancienne ; « s'il… vous mourez, il disparaît ». C12-c : « la seule action qu'elle prend est Esquiver, à
+  // moins que vous ne la commandiez par une action Bonus » — l'activité « Command » (`commanded`). (Sacrifier une attaque pour la commander :
+  // au joueur.)
+  "primal-companion": { initiative: "after", replaces: true, vanishesWithCaster: true, commanded: { activity: "Jtr7GXnCHb85xHg8" } },
   "reanimated-companion": { initiative: "after", replaces: true, vanishesWithCaster: true },
   "spiritual-weapon": piloted(20, "use"),
   "flaming-sphere": piloted(30, null, { summon: { pulse: { item: "flames", radius: 5, units: "ft" } } }),

@@ -67,6 +67,16 @@ export function registerEffectWhile() {
   route("updateCombat", (combat, changes) => (("round" in (changes ?? {})) ? Promise.all(combat.combatants.map(c => later(c.actor))) : null), opts);
   route("deleteCombat", combat => Promise.all(combat.combatants.map(c => later(c.actor))), opts);
   route("createCombatant", combatant => later(combatant.actor), opts);
+  // C12-c : un effet qui dépend d'un autre effet (Forme stellaire) ou de la Forme sauvage — recalculé quand les effets de l'acteur changent
+  // (pas nos propres écritures, faites sur les effets des items).
+  const byEffects = effect => {
+    const actor = (effect.parent?.documentName === "Actor") ? effect.parent : effect.parent?.parent;
+    if ( (actor?.documentName !== "Actor") || !watched(actor).some(w => w.rule.if?.hasEffect || w.rule.if?.wildShaped) ) return null;
+    return later(actor);
+  };
+  for ( const hook of ["createActiveEffect", "deleteActiveEffect"] ) route(hook, byEffects, opts);
+  route("updateActiveEffect", (effect, changes, options) => (options?.[MODULE_ID]?.effectWhile ? null : byEffects(effect)), opts);
+  route("createToken", token => (token.actor?.isPolymorphed ? later(token.actor) : null), opts);
   // §135 : un effet qui dépend de la lumière (Faveur de l'esprit nocturne) — recalculé quand le token bouge.
   route("updateToken", (token, changes) => ((["x", "y", "elevation"].some(k => k in (changes ?? {})) && watched(token.actor).some(w => w.rule.if?.light))
     ? later(token.actor) : null), opts);

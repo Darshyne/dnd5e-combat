@@ -830,6 +830,8 @@
   "DND5ECOMBAT.Rage.Temerite.Oui": "Témérité",
   "DND5ECOMBAT.Rage.Temerite.Non": "Attaque normale",
   "DND5ECOMBAT.Souci.rage": "En Rage, vous ne pouvez pas lancer de sorts.",
+  "DND5ECOMBAT.Souci.familiarAttack": "Un familier ne peut pas attaquer.",
+  "DND5ECOMBAT.Souci.notCommanded": "Il n'agit que sur ordre (action Bonus de son maître) : sinon, seulement l'action Esquiver.",
   "DND5ECOMBAT.Souci.rageHeavyArmor": "Pas de Rage en armure lourde.",
   "DND5ECOMBAT.Prisme.1": "Rouge (feu)",
   "DND5ECOMBAT.Prisme.2": "Orange (acide)",

@@ -29,6 +29,12 @@ export const potentSpellcasting = cls => ({ triggers: [{ on: "preDamageRoll", if
 const seaPush = { triggers: [{ on: "failedSave", if: { "target.sizeAtMost": "lg" }, do: [{ type: "move", mode: "push", distance: 15, units: "ft" }] }] };
 
 export const DRUID = Object.freeze({
+  // C12-c : Formes du cercle améliorées (Lune 6) — « sous une Forme sauvage, ajoutez votre modificateur de Sagesse à vos sauvegardes de
+  // Constitution » : l'effet de la donnée, éteint, n'est allumé que sous la Forme sauvage.
+  "improved-circle-forms": { effectWhile: { yvjaO9R5qoRxtDKY: { if: { wildShaped: true } } } },
+  // C12-c : Plénitude stellaire (Étoiles 14) — « sous votre Forme stellaire, Résistance aux dégâts contondants, perforants et tranchants » :
+  // l'effet de la donnée, allumé tant qu'un effet de la Forme stellaire est actif.
+  "full-of-stars": { effectWhile: { Z3dPVHxaYqTIvLPg: { if: { hasEffect: "starry-form" } } } },
   // Présage cosmique (Astres 6) : en Réaction, face au Test d20 d'une créature visible à 9 m ou moins, le druide lance un d6 et
   // le soustrait (Péril, contre le jet d'attaque d'un ennemi, §34) ou ajoutez-le (Fortune, au jet
   // d'attaque d'un allié, §36). La fiche ne garde pas le présage du jour (pair ou impair) : chaque fenêtre propose l'activité qui

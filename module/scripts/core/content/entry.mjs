@@ -583,7 +583,8 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   // §130 : effets de don conditionnels.
   if ( "effectWhile" in entry ) {
     const ARMORS = ["light", "medium", "heavy"];
-    const okIf = c => isObject(c) && Object.keys(c).every(k => ["armor", "oneHanded", "inCombat", "abilityAtLeast", "light"].includes(k))
+    const okIf = c => isObject(c) && Object.keys(c).every(k => ["armor", "oneHanded", "inCombat", "abilityAtLeast", "light", "wildShaped", "hasEffect"].includes(k))
+      && (!("wildShaped" in c) || (c.wildShaped === true)) && (!("hasEffect" in c) || ((typeof c.hasEffect === "string") && c.hasEffect))
       && (!("light" in c) || (Array.isArray(c.light) && c.light.length && c.light.every(l => ["dark", "dim", "bright"].includes(l))))
       && (!("armor" in c) || (Array.isArray(c.armor) && c.armor.length && c.armor.every(a => ARMORS.includes(a))))
       && (!("oneHanded" in c) || (c.oneHanded === true)) && (!("inCombat" in c) || (c.inCombat === true))

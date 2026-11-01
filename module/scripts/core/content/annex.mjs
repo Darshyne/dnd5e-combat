@@ -60,7 +60,11 @@ export function validateSummon(summon, at, errors) {
       errors.push(`${at}.minLevels: { activity id: level }`);
     }
   }
-  for ( const key of Object.keys(summon) ) if ( !["initiative", "pilot", "endsSpell", "endsAtZero", "vanishesAtZero", "vanishesAfterDamage", "pulse", "mimic", "endsIfIncapacitated", "castFrom", "lasts", "familiar", "replaces", "minLevels", "vanishesWithCaster", "endsOnLongRest"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
+  // C12-c : `commanded` — l'invocation n'agit (hors Esquiver) que commandée à ce round par cette activité de l'item.
+  if ( ("commanded" in summon) && !(isObject(summon.commanded) && isId(summon.commanded.activity) && (Object.keys(summon.commanded).length === 1)) ) {
+    errors.push(`${at}.commanded: { activity }`);
+  }
+  for ( const key of Object.keys(summon) ) if ( !["initiative", "pilot", "endsSpell", "endsAtZero", "vanishesAtZero", "vanishesAfterDamage", "pulse", "mimic", "endsIfIncapacitated", "castFrom", "lasts", "familiar", "replaces", "minLevels", "vanishesWithCaster", "endsOnLongRest", "commanded"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 export function validateAbsorb(absorb, at, errors) {

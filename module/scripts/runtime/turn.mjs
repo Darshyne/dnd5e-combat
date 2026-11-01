@@ -165,6 +165,12 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
     ? (activity.actor?.effects ?? []).map(e => (!e.disabled && !e.isSuppressed) ? originItemOf(e) : null)
       .find(item => item && (item !== activity.item) && (contentOf(item).entry?.noSpells === true)) ?? null
     : null;
+  // C12-c : une invocation qui n'agit pas librement — le familier n'attaque pas (§107 ne retirait que l'attaque de base) ; le Compagnon
+  // primitif ne prend que l'action Esquiver, sauf si son maître le commande (action Bonus « Command ») à ce round.
+  const summonRule = summonRuleOf(activity.actor);
+  const familiarAttack = !!summonRule?.familiar && (activity.type === "attack");
+  const uncommanded = !!summonRule?.commanded && !!combatant && (activity.activation?.type === "action")
+    && (basicActionOfActivity(activity) !== "dodge") && (activity.actor.getFlag(MODULE_ID, "commanded") !== (game.combat?.round ?? null));
   // C12-b : « vous ne pouvez pas entrer en Rage si vous portez une armure lourde » (la fin à l'enfilage : runtime/endings.mjs).
   const heavyRage = !!contentOf(activity.item).entry?.rage
     && (activity.actor?.items ?? []).some(i => (i.type === "equipment") && i.system?.equipped && (i.system?.type?.value === "heavy"));
@@ -176,6 +182,8 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
     ...(silenced ? [loc("Souci.silenced")] : []),
     ...(raging ? [loc("Souci.rage")] : []),
     ...(heavyRage ? [loc("Souci.rageHeavyArmor")] : []),
+    ...(familiarAttack ? [loc("Souci.familiarAttack")] : []),
+    ...(uncommanded ? [loc("Souci.notCommanded")] : []),
     ...(shapeless ? [loc("Souci.noAttacksOrSpells", { item: shapeless.name })] : []),
     ...(befuddled ? [loc("Souci.noSpells", { item: befuddled.name })] : []),
     ...(unarmored ? [loc("Souci.untrainedArmor", { item: unarmored.name })] : []),
@@ -587,7 +595,33 @@ async function resetBudget(combatant) {
 
 /* -------------------------------------------- */
 
+/** C12-c : la règle `summon` de l'item qui a invoqué cet acteur, ou null. */
+function summonRuleOf(actor) {
+  const origin = actor?.getFlag?.("dnd5e", "summon.origin");
+  const item = origin ? fromUuidSync(origin, { strict: false }) : null;
+  return item ? (contentOf(item).entry?.summon ?? null) : null;
+}
+
+/**
+ * C12-c : l'ordre donné à une invocation (`summon.commanded.activity` : « Command » du Compagnon primitif) — ses invocations de cet item
+ * sont commandées pour ce round (`flags.dnd5e-combat.commanded`). Sur le client de l'auteur, qui possède la bête.
+ */
+async function markCommanded(activity) {
+  const item = activity?.item;
+  const rule = item ? contentOf(item).entry?.summon?.commanded : null;
+  if ( !rule || (rule.activity !== activity.id) ) return;
+  const round = game.combat?.round ?? null;
+  // Par l'id de l'item d'origine : un lanceur non lié (token) a un acteur synthétique, l'origine de l'invocation peut nommer l'acteur du monde.
+  for ( const token of canvas?.scene?.tokens ?? [] ) {
+    const origin = token.actor?.getFlag("dnd5e", "summon.origin") ?? "";
+    if ( !origin.endsWith(`Item.${item.id}`) ) continue;
+    if ( token.actor?.isOwner ) await token.actor.setFlag(MODULE_ID, "commanded", round);
+    log(`${item.name}: ${token.name} is commanded this round`);
+  }
+}
+
 export function registerTurn() {
+  route("dnd5e.postUseActivity", activity => markCommanded(activity), { label: "summon command not recorded" });
   CONFIG.queries[WASTE_QUERY] = handleWasteUse;
   route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "use legality" });
   route("dnd5e.postUseActivity", activity => markUsedThisTurn(activity), { label: "\"once per turn\" limit not recorded" });

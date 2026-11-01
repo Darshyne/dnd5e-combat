@@ -78,6 +78,10 @@ export function effectHolds(rule, facts) {
   if ( rule.inCombat && !facts.inCombat ) return false;
   // §135 : `light` — la lumière là où se tient le porteur (Faveur de l'esprit nocturne : « dans une lumière faible ou les ténèbres »).
   if ( rule.light && !rule.light.includes(facts.light) ) return false;
+  // C12-c : `wildShaped` — sous une Forme sauvage (Formes du cercle améliorées) ; `hasEffect` — un effet actif de cet item (Plénitude
+  // stellaire : sous la Forme stellaire).
+  if ( rule.wildShaped && !facts.wildShaped ) return false;
+  if ( rule.hasEffect && !(facts.effectsFrom?.has?.(rule.hasEffect)) ) return false;
   for ( const [ability, min] of Object.entries(rule.abilityAtLeast ?? {}) ) {
     if ( !((facts.abilities?.[ability] ?? 0) >= min) ) return false;
   }

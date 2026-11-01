@@ -81,7 +81,9 @@ export default {
     await part("Main de l'ultime miséricorde", async () => {
       const mercy = await lend(caster, `${PHB}.classes.Item.phbmnkHandOfUlti`, { "system.uses.spent": 0 });
       await ctx.setHp(ally, 0);
-      await ctx.call("set-status", { tokenId: ally.id, statusId: "dead", active: true });
+      // À 0 PV, le moteur pose lui-même Mort sur un PNJ : ne le poser que s'il manque.
+      await pause(1200);
+      if ( !(await statuses(ally)).includes("dead") ) await ctx.call("set-status", { tokenId: ally.id, statusId: "dead", active: true });
       await ctx.call("set-status", { tokenId: ally.id, statusId: "poisoned", active: true });
       await pause(1200);
       await cast({ tokenId: caster.id, itemId: mercy, activityId: "XtgmW9115BzcLiFr", targetTokenIds: [ally.id], consume: false });

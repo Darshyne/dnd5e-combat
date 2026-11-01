@@ -83,12 +83,16 @@ export default {
       const mods = attack?.flags?.[MODULE_ID]?.modifiers ?? attack?.flags?.modifiers ?? null;
       return (mods?.disadvantage ?? []).map(r => `${r.who}.${r.key}`);
     }
+    // Le Magicien n'a que 7 PV : tombé inconscient sous un coup du Zombi, il lâcherait sa prise. Des PV temporaires le temps des deux attaques.
+    await ctx.call("update-actor", { actorId: mage.actorId, actorData: { "system.attributes.hp.temp": 50 } });
+    ctx.restore(() => ctx.call("update-actor", { actorId: mage.actorId, actorData: { "system.attributes.hp.temp": 0 } }).catch(() => {}));
     const vsSorc = await reasonsAgainst(sorc);
     ctx.expect(vsSorc.includes("attacker.grappled"), `Zombi agrippé contre l'Ensorceleur : désavantage (${vsSorc.join(", ") || "aucun"})`);
     const vsMage = await reasonsAgainst(mage);
     ctx.expect(!vsMage.includes("attacker.grappled"), `Zombi agrippé contre le Magicien, son agrippeur : pas ce désavantage (${vsMage.join(", ") || "aucun"})`);
     // Les coups du Zombi peuvent mettre le Magicien (7 PV) à terre, inconscient : on le remet sur pied avant qu'il marche.
     const mageHp = hpBefore.get(mage.id);
+    await ctx.call("update-actor", { actorId: mage.actorId, actorData: { "system.attributes.hp.temp": 0 } });
     await ctx.setHp(mage, mageHp);
     for ( const status of ["unconscious", "prone"] ) await ctx.removeStatusEffects(mage, status);
     await sleep(500);

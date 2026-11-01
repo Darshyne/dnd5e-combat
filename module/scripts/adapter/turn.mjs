@@ -283,8 +283,12 @@ export function rangeOf(activity, attackMode=null) {
  * 18 m ». La règle `rangedFeat.spellRange` d'un item du lanceur (lue ici : adapter/conditions.mjs importe ce fichier).
  */
 function spellSniperRange(activity, range) {
-  if ( (activity.type !== "attack") || (activity.item?.type !== "spell") || !Number.isFinite(range.value) || !range.units ) return range;
-  const rule = Array.from(activity.actor?.items ?? []).map(i => contentOf(i).entry?.rangedFeat).find(r => (r?.kind === "spell") && r.spellRange);
+  if ( (activity.item?.type !== "spell") || !Number.isFinite(range.value) || !range.units ) return range;
+  // §306 : `spellRange.school` — les sorts de cette école, avec ou sans jet d'attaque (Illusions améliorées : +18 m aux Illusions) ;
+  // sans école, ceux qui demandent un jet d'attaque (Sniper de sorts).
+  const school = activity.item.system?.school;
+  const rule = Array.from(activity.actor?.items ?? []).map(i => contentOf(i).entry?.rangedFeat)
+    .find(r => (r?.kind === "spell") && r.spellRange && (r.spellRange.school ? (r.spellRange.school === school) : (activity.type === "attack")));
   if ( !rule ) return range;
   const factors = readUnitFactors();
   let add, least;

@@ -53,6 +53,8 @@ export const FEATS = Object.freeze({
   "crossbow-expert": { rangedFeat: { kind: "crossbow", closeCombat: true, offhandModifier: true } },
   // Sniper de sorts : les jets d'attaque des sorts ignorent l'abri partiel et aux trois quarts, pas de Désavantage au contact, et +18 m à
   // la portée d'un sort d'au moins 3 m qui demande un jet d'attaque.
+  // §306 : Illusions améliorées (Illusionniste 3) — « la portée de vos sorts d'Illusion d'au moins 3 m augmente de 18 m ».
+  "improved-illusions": { rangedFeat: { kind: "spell", spellRange: { value: 60, units: "ft", school: "ill" } } },
   "spell-sniper": { rangedFeat: { kind: "spell", cover: true, closeCombat: true, spellRange: { value: 60, units: "ft" } } },
 
   // §132 — coups. Cogneur : « une fois par tour, quand vous touchez une créature d'une attaque qui inflige des dégâts contondants, vous

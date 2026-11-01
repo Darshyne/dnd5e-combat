@@ -11,6 +11,7 @@ import { spellsOn, endSpell, castingAbilityOf, castingCheck } from "../adapter/d
 import { contentOf } from "../adapter/content.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
+import { identifierOf } from "../adapter/content.mjs";
 
 async function onUsage(message) {
   if ( (message.type !== "usage") || message.getFlag(MODULE_ID, "areaTick") || message.getFlag(MODULE_ID, "resave") ) return;
@@ -33,7 +34,10 @@ async function onUsage(message) {
       let ends = step.auto;
       let total = null;
       if ( !ends ) {
-        total = await castingCheck(caster, castingAbilityOf(item, caster), step.dc);
+        // §306 (repasse C11) : Briseur de sorts (Abjurateur 10) — « vous ajoutez votre bonus de maîtrise au test » de Dissipation de la magie.
+        const breaker = (identifierOf(item).id === "dispel-magic") && caster.items.some(i => identifierOf(i).id === "spell-breaker");
+        total = await castingCheck(caster, castingAbilityOf(item, caster), step.dc, { bonus: breaker ? (Number(caster.system.attributes?.prof) || 0) : 0 });
+        if ( breaker ) log(`${caster.name}: Spell Breaker, proficiency bonus added to the check (${total})`);
         ends = (total !== null) && (total >= step.dc);
       }
       if ( ends ) { await endSpell(spell); ended.push({ name: spell.name, level: spell.level, total }); }

@@ -119,6 +119,8 @@ export function knownTo(actor, observer) {
  * Invisibles comme s'ils étaient visibles ») — un effet actif d'un item au contenu `seesInvisible` ?
  */
 export function seesInvisible(actor) {
+  // §306 : un sens spécial qui nomme les créatures Invisibles (Troisième œil, option Détection de l'invisibilité : « Invisible creatures »).
+  if ( /invisib/i.test(actor?.system?.attributes?.senses?.special ?? "") ) return true;
   for ( const effect of actor?.appliedEffects ?? actor?.effects ?? [] ) {
     if ( effect.disabled || effect.isSuppressed ) continue;
     const item = originItemOf(effect);

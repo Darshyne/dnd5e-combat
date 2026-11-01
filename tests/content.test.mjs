@@ -192,8 +192,8 @@ describe("contenu livré", () => {
       "healers-kit", "heat-aura", "heat-metal", "heavy-armor-master", "heightened-focus", "heightened-spell", "hellish-rebuke",
       "heroic-warrior", "heroism", "hex", "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-aura", "holy-nimbus",
       "holy-water", "hunger-of-hadar", "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "ice-storm", "illusory-self",
-      "imprisonment", "improved-cunning-strike", "improved-elemental-fury", "improved-war-magic", "incendiary-cloud", "indomitable",
-      "indomitable-might", "innate-sorcery", "insect-plague", "inspiring-smite", "instinctive-pounce", "interception",
+      "imprisonment", "improved-cunning-strike", "improved-elemental-fury", "improved-illusions", "improved-war-magic", "incendiary-cloud",
+      "indomitable", "indomitable-might", "innate-sorcery", "insect-plague", "inspiring-smite", "instinctive-pounce", "interception",
       "intimidating-presence", "investment-of-the-chain-master", "invisibility", "invoke-duplicity", "jallarzis-storm-of-radiance", "jump",
       "knowledge-from-a-past-life", "lamp", "lantern-bullseye", "lantern-hooded", "large-form", "lay-on-hands", "leading-evasion",
       "lesser-restoration", "levitate", "life-drain", "lifedrinker", "light", "lightning-arrow", "living-shadow", "lucky", "lunar-form",
@@ -1019,5 +1019,13 @@ describe("§305 : repasse, lot C10 (invocations, compagnons, familiers)", () => 
     for ( const id of ["find-steed", "wild-companion", "investment-of-the-chain-master", "phantasmal-creatures", "primal-companion", "reanimated-companion"] ) {
       expect(validateEntry(CONTENT[id], { facts })).toEqual([]);
     }
+  });
+});
+
+describe("§306 : repasse, lot C11 (Métamagie, magie des sous-classes)", () => {
+  it("les déclarations du lot", () => {
+    expect(CONTENT["improved-illusions"].rangedFeat).toEqual({ kind: "spell", spellRange: { value: 60, units: "ft", school: "ill" } });
+    expect(validateEntry(CONTENT["improved-illusions"], { facts })).toEqual([]);
+    expect(validateEntry({ rangedFeat: { kind: "spell", spellRange: { value: 60, units: "ft", school: "" } } })).toHaveLength(1);
   });
 });

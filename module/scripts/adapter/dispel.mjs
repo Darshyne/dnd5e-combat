@@ -51,7 +51,8 @@ export function castingAbilityOf(item, actor) {
 }
 
 /** Le test de caractéristique du lanceur contre ce DD ; son total, ou null s'il n'a pas eu lieu. */
-export async function castingCheck(actor, ability, dc) {
+export async function castingCheck(actor, ability, dc, { bonus=0 }={}) {
   const rolls = await actor.rollAbilityCheck({ ability, target: dc }, { configure: false });
-  return rolls?.[0]?.total ?? null;
+  const total = rolls?.[0]?.total ?? null;
+  return (total === null) ? null : total + bonus;
 }

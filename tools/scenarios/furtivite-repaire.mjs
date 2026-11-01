@@ -21,9 +21,19 @@ export default {
 
   async run(ctx) {
     const { tokens } = await ctx.scene();
-    const bandits = tokens.filter(t => t.name === "Bandit");
+    // §319 : les deux Bandits du poste, placés par le scénario sous la porte sud — un Bandit resté DANS la pièce sombre (vu le 2026-11-01,
+    // déplacé par un autre essai) refusait la mise en furtivité et faisait croire que les Bandits voyaient dans le noir. Le troisième
+    // (« En sang », à l'est) reste où il est.
+    const posts = [[1200, 1400], [1300, 1300]];
+    const near = t => Math.hypot(t.x - 1250, t.y - 1350);
+    const bandits = tokens.filter(t => t.name === "Bandit").sort((a, b) => near(a) - near(b)).slice(0, 2);
     const mage = tokens.find(t => t.name === "Magicien");
     if ( !mage || (bandits.length < 2) ) { ctx.log("Magicien ou les deux Bandits absents : non applicable"); return; }
+    for ( const [i, b] of bandits.entries() ) {
+      const { data } = await ctx.call("get-scene-object", { type: "Token", objectId: b.id });
+      ctx.restore(() => ctx.call("move-token", { tokenId: b.id, x: data.x, y: data.y, elevation: data.elevation ?? 0 }));
+      await ctx.call("move-token", { tokenId: b.id, x: posts[i][0], y: posts[i][1], elevation: 0 });
+    }
     for ( const [key, value] of [["visionCones", true], ["stealthRules", "bg3"]] ) {
       const r = await ctx.engine("setting", { key, value });
       ctx.restore(() => ctx.engine("setting", { key, value: r.before }));

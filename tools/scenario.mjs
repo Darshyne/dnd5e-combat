@@ -534,6 +534,26 @@ async function snapshotScene(mcp) {
   return { sceneId, tokens, regions: new Set((objects.Region ?? []).map(r => r.id)), tiles: new Set((objects.Tile ?? []).map(t => t.id)) };
 }
 
+/**
+ * §319 : un token resté à 0 PV dans le monde (Mort, Inconscient) — le filet de sécurité remet les PV relevés avant chaque scénario, 0
+ * compris, si bien qu'un token tombé hors du filet restait mort d'un scénario à l'autre (le Bandit de `dnd-6`, du 2026-10-30 au
+ * 2026-11-01 : Sommeil et Hurlement le tenaient pour « non affecté », deux défauts ouverts à tort ; le Magicien à 0 PV : `empoignade`).
+ * Signalé avec le scénario d'avant, puis relevé à son maximum, sans Mort ni Inconscient, AVANT le relevé du filet : c'est le monde
+ * qui est réparé, pas seulement le scénario.
+ */
+async function standUpDowned(mcp, ctx, previousName) {
+  const { objects } = await mcp.call("list-scene-objects", { types: ["Token"] }).catch(() => ({ objects: {} }));
+  for ( const t of objects.Token ?? [] ) {
+    if ( !t.actorId ) continue;
+    const stats = await ctx.engine("stats", { tokenId: t.id }).catch(() => null);
+    const max = stats?.hp?.max;
+    if ( !Number.isFinite(max) || (max <= 0) || !(Number(stats.hp.value) <= 0) ) continue;
+    await ctx.setHp(t, max).catch(() => {});
+    for ( const status of ["dead", "unconscious"] ) await ctx.removeStatusEffects(t, status).catch(() => {});
+    console.log(`    ⚠ ${t.name} était à 0 PV dans le monde${previousName ? ` (après « ${previousName} »)` : ""} : relevé à ${max} PV`);
+  }
+}
+
 async function restoreScene(mcp, snap) {
   const fixed = [];
   const seenActors = new Set();
@@ -750,6 +770,7 @@ for ( const file of files ) {
       await restoreScene(mcp, previous.snap).catch(err => console.log(`    ! filet de sécurité : ${err.message}`));
     }
   }
+  await standUpDowned(mcp, ctx, previous?.name ?? null);
   const snap = await snapshotScene(mcp);
   // Les effets et sons Sequencer d'avant le scénario : ceux qui naissent pendant (animations de BLFX, sons en boucle) sont terminés
   // après la remise en état.

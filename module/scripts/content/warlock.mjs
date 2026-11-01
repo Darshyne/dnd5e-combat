@@ -18,8 +18,9 @@ export const WARLOCK = Object.freeze({
   // « Frappe » de l'item reste là pour un usage à la main (son déclencheur pose À terre, content/triggers.mjs).
   "eldritch-smite": { hitRider: { damage: "CXJlzDUkMYU9w9i9", status: "prone", sizeAtMost: "huge", slot: "pact", weapon: "pact-of-the-blade", oncePerTurn: true } },
   // Décharge répulsive : chaque rayon qui touche une cible de taille G au plus peut l'éloigner de 3 m en ligne droite — le tour
-  // de magie porte l'enchantement « Répulsive » ; la poussée, facultative dans la règle, est toujours appliquée.
-  "eldritch-blast": { triggers: [{ on: "hit", if: { "activity.enchantedBy": "repelling-blast", "target.sizeAtMost": "lg" },
+  // de magie porte l'enchantement « Répulsive » ; la poussée, facultative dans la règle, est toujours appliquée. C12-h : déclarée sur
+  // l'invocation elle-même — elle vaut pour le tour de magie qu'elle enchante, quel qu'il soit (Contact glacial, Aspersion empoisonnée…).
+  "repelling-blast": { triggers: [{ on: "hit", if: { "activity.enchantedBy": "repelling-blast", "target.sizeAtMost": "lg" },
     do: [{ type: "move", mode: "push", distance: 10, units: "ft" }] }] },
   // Buveuse de vie (niveau 9) : au plus une fois par tour, un coup de l'arme de pacte ajoute 1d6, au choix nécrotique, psychique
   // ou radiant — nécrotiques d'office ; le soin par un dé de vie reste au joueur.

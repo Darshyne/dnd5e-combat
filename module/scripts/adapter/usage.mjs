@@ -29,6 +29,7 @@ import { variantPlanOf, useTimeVariant, advantageVariantOf } from "./variants.mj
 import { contentOf, castItemOf, entryOfIdentifier, rangeUnitsOf } from "./content.mjs";
 import { projectilesOf } from "./projectiles.mjs";
 import { declarationsOfItem } from "./triggers.mjs";
+import { originItemOf } from "./facts.mjs";
 import { isSpellCast, spellLevelOf, spellSchoolOf } from "./scrolls.mjs";
 import { templateOf } from "./template.mjs";
 import { isPotion, potionOfCast } from "./potions.mjs";
@@ -191,7 +192,10 @@ function outcomeStepsOf(item, moment, when) {
   // Une copie de sort porte aussi ce que déclare la capacité qui l'a lancée (`castItemOf`) : les dégâts « en plus » des
   // créatures d'un module tiers (un sort lancé avec des dégâts en plus) valent pour leur copie, pas pour le sort de tout le monde.
   const cast = castItemOf(item);
-  for ( const d of [...declarationsOfItem(item), ...(cast ? declarationsOfItem(cast) : [])] ) {
+  // C12-h : et ce que déclare l'item qui l'enchante (Décharge répulsive posée sur n'importe quel tour de magie de l'occultiste).
+  const enchanters = Array.from(item.effects?.values?.() ?? []).filter(e => !e.disabled && (e.isAppliedEnchantment ?? (e.type === "enchantment")))
+    .map(e => originItemOf(e)).filter(i => (i?.documentName === "Item") && (i !== item));   // l'origine d'un enchantement est l'activité
+  for ( const d of [...declarationsOfItem(item), ...(cast ? declarationsOfItem(cast) : []), ...enchanters.flatMap(i => declarationsOfItem(i))] ) {
     if ( !d.on.includes(moment) ) continue;
     // La condition voyage en JSON : écrite telle quelle dans un flag, Foundry éclaterait ses clés à points
     // (`"target.sizeAtMost"` → `{ target: { sizeAtMost } }`), vu en jeu le 2026-09-24 (scénario `traction`).

@@ -14,6 +14,8 @@ const affinity = type => ({ on: "preDamageRoll", if: { "activity.isSpell": true,
   do: [{ type: "damage", formula: "@abilities.cha.mod", damageType: type }] });
 
 export const SORCERER = Object.freeze({
+  // C12-h : Révélation charnelle (Aberrant 14), Envol scintillant — « une Vitesse de vol égale à votre Vitesse » (la donnée : le double).
+  "revelation-in-flesh": { effectChanges: { CxuVthyUWdT2ARMn: [{ key: "system.attributes.movement.fly", type: "upgrade", value: "@walk", replace: true }] } },
   // §124 : Bastion de la loi (Magie de l'horloge) — « vous ou une autre créature que vous voyez à 9 m ou moins » ; « personnelle »
   // dans les données du Manuel des joueurs.
   "bastion-of-law": { ranges: { DucJ5vspZD8Yv0gi: { value: 30, units: "ft" } } },

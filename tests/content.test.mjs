@@ -215,7 +215,7 @@ describe("contenu livré", () => {
       "prowl", "psionic-power", "psychic-defenses", "psychic-spells", "psychic-veil", "pushing-attack", "quickened-spell", "radiant-soul",
       "rage", "rage-of-the-wilds", "raise-dead", "rally", "ray-of-enfeeblement", "ray-of-frost", "reanimated-companion", "reckless-attack",
       "regenerate", "regeneration", "relentless-endurance", "relentless-hunter", "relentless-rage", "remarkable-athlete", "remove-curse",
-      "rend-mind", "resilient-sphere", "resistance", "restoring-touch", "resurrection", "retaliation", "reverse-gravity", "revivify", "riposte",
+      "rend-mind", "repelling-blast", "resilient-sphere", "resistance", "restoring-touch", "resurrection", "retaliation", "revelation-in-flesh", "reverse-gravity", "revivify", "riposte",
       "ritual-adept", "rumbling-movement", "sacred-weapon", "sanctuary", "sanguine-drain", "savage-attacker", "scorching-ray",
       "sculpt-spells", "sear-undead", "searing-smite", "searing-vengeance", "second-skin", "second-story-work", "see-invisibility", "self-restoration",
       "sentinel", "sentinel-at-deaths-door", "shade-spirit", "shadow-stealth", "shadow-walk", "shadowy-dodge", "sharp-eye-ravenloft",
@@ -1123,5 +1123,13 @@ describe("§313 : repasse, lot C12-g (états, durées, fins d'effet)", () => {
     expect(CONTENT["hand-of-ultimate-mercy"].curesAll).toContain("dead");
     expect(CONTENT["perfect-focus"].regainOnInitiative).toEqual({ item: "monks-focus", upTo: 4 });
     expect(validateEntry({ summonEffectsOnCaster: "oui" })).toHaveLength(1);
+  });
+});
+
+describe("§314 : repasse, lot C12-h (déplacement)", () => {
+  it("les déclarations du lot", () => {
+    for ( const id of ["repelling-blast", "revelation-in-flesh"] ) expect(validateEntry(CONTENT[id], { facts }), id).toEqual([]);
+    expect(CONTENT["eldritch-blast"]?.triggers ?? []).toEqual([]);
+    expect(CONTENT["repelling-blast"].triggers[0].do).toEqual([{ type: "move", mode: "push", distance: 10, units: "ft" }]);
   });
 });

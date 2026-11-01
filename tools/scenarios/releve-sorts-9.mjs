@@ -5,7 +5,7 @@
  *  - Embruns prismatiques : une couleur tirée par cible (journal du moteur) ;
  *  - Vif carquois (combat, le Rôdeur) : deux attaques gratuites ouvertes ;
  *  - Invocation d'élémentaire : l'esprit à côté du Zombi ; au début du tour du Zombi, sa sauvegarde (areaTick `pulse`) ;
- *  - Invocation de céleste : le Cylindre sur le Guerrier ; à la fin de son tour, la Lumière guérisseuse (un allié) le soigne ;
+ *  - Invocation de céleste : le Cylindre sur le Guerrier — soigné à son apparition (§309), puis à la fin de son tour (Lumière guérisseuse) ;
  *  - Grêle d'épines : le Rôdeur touche le Zombi à l'arc, la question du châtiment y répond ; le Zombi et le Bandit à côté sauvegardent.
  * Remet positions, élévations, PV, effets, emplacements, combat.
  */
@@ -159,6 +159,11 @@ export default {
       if ( !ctx.expect(await fight([cleric, fighter]), "Céleste : tour du Clerc") ) return;
       await ctx.setHp(fighter, 1);
       await settled(await ctx.use({ tokenId: cleric.id, itemId: id, activityId: "VjKltnyiWXZ0xDGZ", consume: false, area: await tiny(fighter) }));
+      // §309 : déjà dans le Cylindre à son apparition, il est soigné tout de suite.
+      for ( let n = 0; (n < 20) && ((await ctx.hp(fighter)) <= 1); n++ ) await pause(500);
+      ctx.expect((await ctx.hp(fighter)) > 1, `Céleste : le Guerrier, dans le Cylindre à son apparition, est soigné (${await ctx.hp(fighter)} PV)`);
+      await ctx.setHp(fighter, 1);
+      await pause(800);
       const before = await ctx.hp(fighter);
       await next(); await next();   // fin du tour du Guerrier
       // Le soin de fin de tour passe par une résolution (jet, carte) : attendu jusqu'à 10 s plutôt qu'une pause fixe.

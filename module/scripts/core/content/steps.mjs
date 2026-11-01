@@ -58,6 +58,8 @@ function validateStep(step, at, errors) {
     if ( (typeof step.label !== "string") || !step.label ) errors.push(`${at}.label: translation key required`);
     if ( ("seconds" in step) && !(Number.isFinite(step.seconds) && (step.seconds > 0)) ) errors.push(`${at}.seconds: positive number`);
   }
+  // C12-b : `disarm` — l'effet de l'item posé à la place quand la cible n'a rien à lâcher (Métal brûlant).
+  if ( (step.type === "disarm") && ("elseEffect" in step) && !isId(step.elseEffect) ) errors.push(`${at}.elseEffect: effect id`);
   if ( (step.type === "consume") && !["target", "source"].includes(step.side) ) errors.push(`${at}.side: "target" or "source"`);
   if ( (step.type === "resave") && ("keep" in step) && (step.keep !== true) ) errors.push(`${at}.keep: true or absent`);
   if ( (step.type === "resave") && ("unlessSeesOrigin" in step) && (step.unlessSeesOrigin !== true) ) errors.push(`${at}.unlessSeesOrigin: true or absent`);

@@ -284,11 +284,17 @@ export const SPELL_RULES = Object.freeze({
     effectEnds: { "status:stunned": "casterTurnEnd" }
   },
   // Métal brûlant : qui garde l'objet a « le Désavantage aux jets d'attaque et aux tests de caractéristique jusqu'au début de votre
-  // prochain tour » — l'effet « Heated Metal » (VVQbCUE5W44bF4QU) est vide.
+  // prochain tour » — l'effet « Heated Metal » (VVQbCUE5W44bF4QU) est vide. C12-b : la donnée le pose sur un échec ; la règle fait
+  // LÂCHER l'objet sur un échec (son arme tenue) et laisse le Désavantage à qui le garde — sur une réussite (`savedEffects`), ou sur un
+  // échec quand rien ne se lâche (armure portée : `elseEffect`).
   "heat-metal": {
+    savedEffects: ["VVQbCUE5W44bF4QU"],
     effectChanges: { VVQbCUE5W44bF4QU: ["str", "dex", "con", "int", "wis", "cha"].map(a => ({ key: `system.abilities.${a}.check.roll.mode`, type: "add", value: "-1" })) },
     effectEnds: { VVQbCUE5W44bF4QU: "casterTurnStart" },
-    triggers: [{ on: "preAttackRoll", via: "effect", fromEffect: "VVQbCUE5W44bF4QU", if: { "source.hasEffect": "heat-metal" }, do: [{ type: "disadvantage" }] }]
+    triggers: [
+      { on: "failedSave", do: [{ type: "disarm", elseEffect: "VVQbCUE5W44bF4QU" }] },
+      { on: "preAttackRoll", via: "effect", fromEffect: "VVQbCUE5W44bF4QU", if: { "source.hasEffect": "heat-metal" }, do: [{ type: "disadvantage" }] }
+    ]
   },
   // Repli expéditif : « vous effectuez l'action Foncer, et jusqu'à la fin du sort vous pouvez la refaire par une action Bonus » —
   // l'utilisation prend Foncer ; la relancer pendant la concentration ne dépense pas d'emplacement.
@@ -397,7 +403,9 @@ export const SPELL_RULES = Object.freeze({
   "prismatic-wall": { walls: { move: false, sight: true, activities: ["5f0JerdDSOQQXiTe", "fOYr1bgsB1VXROcm"] }, thinWall: true, zoneAffects: "enemy",
     coverThrough: "total", prismatic: { indigo: "CbAuJQPoOViKebWs", violet: "EIaFpuWAfQKSkFyp", all: true, activities: ["fxEIn0sNwZReZJhV"] },
     wallAura: { distance: 20, units: "ft", activity: "Pm0Re9Gt8pJNaF1C", on: ["enter", "turnStart"] },
-    triggers: [{ on: ["enter"], do: [{ type: "replay", activity: "fxEIn0sNwZReZJhV" }] }] },
+    triggers: [{ on: ["enter"], do: [{ type: "replay", activity: "fxEIn0sNwZReZJhV" }] },
+      // C12-b : la couche indigo (Entravé) — même règle que les Embruns : Constitution en fin de tour, trois réussites ou trois échecs.
+      { on: "endOfTurn", via: "effect", fromEffect: "CbAuJQPoOViKebWs", do: [{ type: "resave", ability: "con", tally: { successes: 3, failures: 3, status: "petrified" } }] }] },
   // §173 : « les flèches, carreaux et autres projectiles ordinaires lancés sur des cibles derrière le mur […] ratent automatiquement ».
   "wind-wall": { thinWall: true, coverThrough: { degree: "total", against: "rangedWeapon" } },
   // §172 : posé sur une rangée de cases ; « pour chaque tranche de 30 cm parcourue dans le mur, il faut dépenser 1,20 m » : ×4.
@@ -412,8 +420,9 @@ export const SPELL_RULES = Object.freeze({
   "fire-element": { choice: { pool: { kKPSUm9WDEDhhQtt: ["BWZxm9qxlXDSF6Dy"] } }, triggers: [{ on: "startOfTurn", via: "effect", fromEffect: "BWZxm9qxlXDSF6Dy", do: [{ type: "resave" }, { type: "damage", to: "bearer", activity: "5PCXGij7otAlYyL2" }] }] },
   "water-element": { triggers: [{ on: "startOfTurn", via: "effect", fromEffect: "fwIobATMREr7g26x", do: [{ type: "resave" }, { type: "damage", to: "bearer", activity: "K1lCqatPi2PsSDio" }] }] },
   // Invocation de céleste : le Cylindre rejoue, une fois par tour, quand une créature y entre ou y finit son tour — Lumière guérisseuse
-  // pour un allié, Lumière brûlante pour un ennemi (déplaçable : content/movables.mjs).
-  "conjure-celestial": { triggers: [
+  // pour un allié, Lumière brûlante pour un ennemi (déplaçable : content/movables.mjs). C12-b : aussi sur celles qu'il recouvre en
+  // apparaissant (`enterOnPose`).
+  "conjure-celestial": { enterOnPose: true, triggers: [
     { on: ["enter", "turnEnd"], if: { "target.allied": true }, do: [{ type: "replay", activity: "ke8eykrnAdAq5nfZ" }] },
     { on: ["enter", "turnEnd"], if: { "target.allied": false }, do: [{ type: "replay", activity: "naMU3mLP7jLZu1IG" }] }
   ] },

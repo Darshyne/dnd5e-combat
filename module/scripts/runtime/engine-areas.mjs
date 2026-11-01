@@ -16,6 +16,7 @@ import { leaveDifficultTerrain } from "../adapter/zone-effects.mjs";
 import { scatterOf, scatterState } from "./scatter.mjs";
 import { flammableOf, groundFlammableState, igniteUnder } from "./flammable.mjs";
 import { log } from "./shared.mjs";
+import { enterAllInside } from "./areas.mjs";
 import { LOOKBACK, TRANSIENT_LINGER_MS, dispatcher, openingFor } from "./engine.mjs";
 
 /* -------------------------------------------- */
@@ -108,6 +109,12 @@ export async function onRegionCreated(region) {
         ...(ground ? await groundFlammableState(region, activity) : {})
       });
       log(`lasting area: acts on ${rules.on.join(", ")}, once per turn${rules.activity ? ` (replays activity ${rules.activity})` : ""}`);
+      // C12-b : ceux qu'elle recouvre en apparaissant y entrent (`enterOnPose` : Invocation de céleste).
+      if ( contentOf(activity.item).entry?.enterOnPose === true ) {
+        enterAllInside(region);
+        log(`${activity.item.name}: the creatures already inside enter the area`);
+        return null;
+      }
       // Une zone qui n'agit qu'au déplacement (Croissance d'épines) ne fait rien à sa pose.
       // §91 : une zone qui n'agit qu'au tour de son lanceur (`casterPulse`, aucun moment) résout sa pose comme une autre.
       // §187 : un objet répandu n'agit pas sur ceux qui sont déjà là — seulement sur qui y entre.

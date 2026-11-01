@@ -75,10 +75,12 @@
  *                                               casterTurnStart : au début du tour du lanceur, contre UN ennemi à portée (§159) ;
  *                                               moves : l'objet arrive à portée d'elle), une fois par tour et par
  *                                               créature ; `affects: "enemy"` : seulement les ennemis du lanceur
- *     burst?: { activity, radius, units, from? } après le jet d'attaque, touché ou raté, le moteur joue l'activité sœur
+ *     burst?: { activity, radius, units, from?, affects? } après le jet d'attaque, touché ou raté, le moteur joue l'activité sœur
  *                                               `activity` sur la cible et chaque créature à `radius` d'elle (§16.19 :
  *                                               l'explosion du Couteau de glace) ; `from` : après ces activités-là
- *                                               (ids), et sur une cible qui a subi des dégâts (Métal brûlant, §16.21)
+ *                                               (ids), et sur une cible qui a subi des dégâts (Métal brûlant, §16.21) — ou qui a été
+ *                                               soignée, après un soin (C12-b : Choc de vie) ; `affects: "enemy"` : les ennemis du
+ *                                               lanceur seulement, la cible exclue
  *     recast?: true                             relancer le sort tant que sa concentration tient le réutilise, sans
  *                                               emplacement ni nouvelle concentration (Appel de la foudre, §16.21)
  *     obscures?: true                           la zone posée par l'item obscurcit fortement (Nappe de brouillard, §16.24) :
@@ -218,6 +220,8 @@
  *                                               (Tempête de neige, Nuage nauséabond : ceux qui sont déjà dedans sauvegardent au début de leur tour)
  *     brutalStrike?: { options?, count? }       C12-e : Coup brutal — options offertes avec Témérité (`push` : poussée ; `effect` :
  *                                               effet de l'item posé sur la cible touchée), nombre d'options par coup (runtime/barbarian.mjs)
+ *     enterOnPose?: true                        C12-b : une zone qui dure, posée par une activité qui ne résout rien elle-même : les
+ *                                               créatures qu'elle recouvre en apparaissant y entrent (Invocation de céleste)
  *     hitDefense?: true                         C12-e : qui touche le porteur d'un jet d'attaque a le Désavantage à ses autres jets
  *                                               contre lui pendant ce tour (Tactiques défensives : Défense multiattaque)
  *     effectsFirst?: true                       §303 : les effets de l'activité posés avant ses dégâts ou son soin (Aide : PV max relevés

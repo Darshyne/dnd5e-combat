@@ -64,6 +64,15 @@ export const PALADIN = Object.freeze({
   // §262 : « si l'attaque réduit la cible à 50 points de vie ou moins, celle-ci doit réussir un jet de sauvegarde de Charisme ».
   "banishing-smite": { smite: { damage: "CXmmXBTfen6D6LXY", save: "dnd5eactivity000", saveAtMostHp: 50 } },
 
+  // C12-b : Aura de protection contre la magie (Serment des anciens 7) — « vous et vos alliés dans votre Aura de protection avez la
+  // Résistance aux dégâts nécrotiques, psychiques et radiants » : la donnée ne la donne qu'au paladin (effet transféré) ; une copie aux
+  // alliés de l'aura.
+  "aura-of-warding": { aura: { includeSelf: false, affects: "ally", radiusFormula: "@scale.paladin.aura", radius: 10, units: "ft", effect: "eJVeoCZ0lno8xK6O" } },
+  // C12-b : Aura d'alacrité (Serment de gloire 7) — « votre Vitesse augmente de 3 m ; un allié qui entre dans votre Aura de protection ou
+  // y commence son tour gagne 3 m de Vitesse jusqu'à la fin de son prochain tour » : +3 m tant qu'il est dans l'aura (simplification),
+  // vous compris (la clé de la donnée, `movement.speed`, est une valeur dérivée que dnd5e réécrit : sans effet).
+  "aura-of-alacrity": { aura: { includeSelf: true, affects: "ally", radiusFormula: "@scale.paladin.aura", radius: 10, units: "ft",
+    changes: [{ key: "system.attributes.movement.walk", value: "10", type: "add" }] } },
   // Aura de courage (niveau 10) : immunité à Effrayé ; Aura de dévotion (Serment de dévotion 7) : immunité à Charmé.
   "aura-of-courage": { aura: auraImmunity("frightened") },
   "aura-of-devotion": { aura: auraImmunity("charmed") },

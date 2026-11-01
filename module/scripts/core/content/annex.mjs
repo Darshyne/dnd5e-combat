@@ -88,7 +88,8 @@ export function validateTeleport(teleport, at, errors) {
       for ( const key of Object.keys(p) ) if ( !["count", "within", "units"].includes(key) ) errors.push(`${at}.passengers.${key}: unknown key`);
     }
   }
-  for ( const key of Object.keys(teleport) ) if ( !["distance", "units", "activity", "then", "passengers"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
+  if ( ("unseen" in teleport) && (teleport.unseen !== true) ) errors.push(`${at}.unseen: true or absent`);
+  for ( const key of Object.keys(teleport) ) if ( !["distance", "units", "activity", "then", "passengers", "unseen"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 export function validateTargets(targets, at, facts, errors) {

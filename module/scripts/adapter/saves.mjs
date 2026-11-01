@@ -160,6 +160,23 @@ function heightenedTarget(activity, usageMessage, targets) {
 }
 
 /**
+ * C12-b : Sort intensifié sur la durée. Au lancement, la cible intensifiée reçoit une marque par item (`flags.dnd5e-combat.heightened`),
+ * une autre cible du même lancement la perd ; une sauvegarde rejouée (carte `resave`) ou d'une zone qui agit de nouveau (`areaTick`) lit la marque. Rend vrai si cette sauvegarde a
+ * le Désavantage du Sort intensifié. MJ actif.
+ */
+async function heightenedMark(usageMessage, activity, token, heightened) {
+  const actor = token.actor;
+  const key = activity.item?.uuid?.replaceAll(".", "_");
+  if ( !actor || !key ) return token.uuid === heightened;
+  // Sauvegarde rejouée, ou zone qui agit de nouveau (Esprits gardiens, Rayon de lune : carte `areaTick`).
+  if ( usageMessage.getFlag(MODULE_ID, "resave") || usageMessage.getFlag(MODULE_ID, "areaTick") ) return !!actor.getFlag(MODULE_ID, `heightened.${key}`);
+  const marked = !!actor.getFlag(MODULE_ID, `heightened.${key}`);
+  if ( (token.uuid === heightened) && !marked ) await actor.setFlag(MODULE_ID, `heightened.${key}`, true);
+  else if ( (token.uuid !== heightened) && marked ) await actor.unsetFlag(MODULE_ID, `heightened.${key}`);
+  return token.uuid === heightened;
+}
+
+/**
  * §16.47 : « avantage si vous ou vos alliés la combattez » (`advantageIfFighting` : Charme-personne) — la cible est dans un
  * combat commencé et hostile au lanceur.
  */
@@ -339,10 +356,13 @@ export async function requestSaves(usageMessage, save, targets, { askPlayers=tru
     // C12-e : Embuscade magique, Fragilisation occulte — le Désavantage que le lanceur impose.
     const imposed = usageMessage.getFlag(MODULE_ID, "resave") ? null : casterImposedDisadvantage(activity, token);
     if ( imposed ) console.log(`${MODULE_ID} | ${imposed}: ${token.name} has Disadvantage on its saving throw against ${activity.item.name}`);
-    const disadvantage = (token.uuid === heightened) || byType || inescapable || !!imposed || mode.disadvantage;
+    // C12-b : le Sort intensifié vaut pour toutes les sauvegardes du sort, rejouées comprises (Immobilisation de personne) — la cible est
+    // notée sur son acteur au lancement (par item), lue à chaque sauvegarde rejouée, oubliée au lancement suivant sans l'option.
+    const heightenedNow = await heightenedMark(usageMessage, activity, token, heightened);
+    const disadvantage = heightenedNow || byType || inescapable || !!imposed || mode.disadvantage;
     const advantage = mode.advantage;
     if ( given?.[token.uuid] ) console.log(`${MODULE_ID} | ${activity.item.name}: ${token.name} has ${given[token.uuid]} on its saving throw (given by the user)`);
-    if ( token.uuid === heightened ) console.log(`${MODULE_ID} | Heightened Spell: ${token.name} has Disadvantage on its saving throw`);
+    if ( heightenedNow ) console.log(`${MODULE_ID} | Heightened Spell: ${token.name} has Disadvantage on its saving throw`);
     else if ( byType ) console.log(`${MODULE_ID} | ${activity.item.name}: ${token.name} (${creatureTypeOf(actor)}) has Disadvantage on its saving throw`);
     // §36 : Présage — « à décider avant le jet » : un devin qui voit la cible peut remplacer son d20 par un jet noté. La question
     // retient la demande (jusqu'à la réponse ou au délai de la fenêtre) : c'est le prix de « avant le jet ».

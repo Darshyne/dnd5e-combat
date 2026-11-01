@@ -829,6 +829,7 @@
   "DND5ECOMBAT.Rage.Temerite.Oui": "Reckless",
   "DND5ECOMBAT.Rage.Temerite.Non": "Normal attack",
   "DND5ECOMBAT.Souci.rage": "While raging, you can't cast spells.",
+  "DND5ECOMBAT.Souci.rageHeavyArmor": "You can't enter a Rage while wearing Heavy armor.",
   "DND5ECOMBAT.Prisme.1": "Red (fire)",
   "DND5ECOMBAT.Prisme.2": "Orange (acid)",
   "DND5ECOMBAT.Prisme.3": "Yellow (lightning)",

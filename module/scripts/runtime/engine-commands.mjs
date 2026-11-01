@@ -25,6 +25,7 @@ import { askHitReactions, windowIsDamaged, windowIsMissed, windowEnemyAttacked, 
 import { markConcentrationBreaker, resistanceIgnoredBy, fortifiedExtra } from "./feats.mjs";
 import { liftToken } from "./elevation-spells.mjs";
 import { duplicateEffectsOf } from "../adapter/duplicates.mjs";
+import { placeItemEffect } from "../adapter/effects.mjs";
 import { log, loc, waitForDice, notice } from "./shared.mjs";
 import { waitForAnimations } from "./animations.mjs";
 import { TRANSIENT_LINGER_MS, deserializeDamages, dispatcher, healsDownedToMax, healsMax, hpTierFor, prismaticFor, slotHealBonus, speakerTokenUuid } from "./engine.mjs";
@@ -208,6 +209,10 @@ export const COMMANDS = {
             await weapon.update({ "system.equipped": false });
             notice(target, loc("Retour.Desarme", { item: weapon.name }), "ended");
             log(`${step.name ?? "disarm"}: ${target.name} drops ${weapon.name}`);
+          } else if ( step.elseEffect && target?.actor && activity?.item ) {
+            // C12-b : rien à lâcher (Métal brûlant sur une armure portée) — l'effet de l'item à la place (Désavantage).
+            await placeItemEffect(activity.item, step.elseEffect, target.actor);
+            log(`${step.name ?? "disarm"}: ${target.name} has nothing to drop, "${step.elseEffect}" placed`);
           }
         }
         else if ( step.type === "damage" ) {

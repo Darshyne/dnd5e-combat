@@ -26,6 +26,16 @@ const pullOfDeath = (formula, atLeast11) => ({
 const sentinel = [{ type: "use" }, { type: "halve" }, { type: "uncrit" }];
 
 export const RAVENLOFT = Object.freeze({
+  /* Artificier réanimateur */
+
+  // C12-b : Choc de vie — « touchez une créature à 0 PV » : le soin (portée personnelle dans la donnée) se donne au contact ; puis la
+  // foudre jaillit de la créature ranimée, pas du lanceur (l'émanation de la donnée est centrée sur lui) : la sauvegarde de Dextérité de
+  // « Lightning Emanation » joue sur les ennemis à 3 m d'elle. (L'exigence de 0 PV reste au joueur.)
+  "jolt-to-life": {
+    ranges: { xg84KvaBJVjFZQpV: { value: 5, units: "ft" } },
+    burst: { activity: "hTK04U7m016p6lf6", radius: 10, units: "ft", from: ["xg84KvaBJVjFZQpV"], affects: "enemy" }
+  },
+
   /* Dhampir */
 
   // Morsure vampirique : mordre une cible vivante (ni Créature artificielle ni Mort-vivant) permet au dhampir soit de récupérer

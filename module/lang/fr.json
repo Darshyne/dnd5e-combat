@@ -829,6 +829,7 @@
   "DND5ECOMBAT.Rage.Temerite.Oui": "Témérité",
   "DND5ECOMBAT.Rage.Temerite.Non": "Attaque normale",
   "DND5ECOMBAT.Souci.rage": "En Rage, vous ne pouvez pas lancer de sorts.",
+  "DND5ECOMBAT.Souci.rageHeavyArmor": "Pas de Rage en armure lourde.",
   "DND5ECOMBAT.Prisme.1": "Rouge (feu)",
   "DND5ECOMBAT.Prisme.2": "Orange (acide)",
   "DND5ECOMBAT.Prisme.3": "Jaune (foudre)",

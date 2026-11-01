@@ -80,6 +80,14 @@ function tick(region, token, event, turnKey=currentTurnKey(), { times=1 }={}) {
 }
 
 /**
+ * C12-b : la zone vient d'apparaître (`enterOnPose`) — chaque créature qu'elle recouvre y « entre » (Invocation de céleste : soignée ou
+ * brûlée dès l'apparition du Cylindre, pas à sa première fin de tour). Une fois par tour, comme toute entrée.
+ */
+export function enterAllInside(region) {
+  for ( const token of region.parent?.tokens ?? [] ) if ( isInside(token, region) ) tick(region, token, "enter");
+}
+
+/**
  * Au sol (Tremblement de terre : « au contact du sol ») : pas plus haut que le bas de son niveau (V14), 0 sur une scène sans niveaux.
  * La zone, elle, a reçu une tranche d'élévation (runtime/space.mjs) qui descend sous le sol : son bas ne dit rien.
  */

@@ -35,6 +35,8 @@ export const BARBARIAN = Object.freeze({
   "brutal-strike": {
     brutalStrike: { options: { forceful: { push: { distance: 15, units: "ft" } }, hamstring: { effect: "bg9jWpPRIJ0Q2vPY" } } },
     effectEnds: { bg9jWpPRIJ0Q2vPY: "casterTurnStart" },
+    // « Hamstrung » écrit sur `movement.speed`, valeur dérivée que dnd5e réécrit : la Vitesse au sol.
+    effectChanges: { bg9jWpPRIJ0Q2vPY: [{ key: "system.attributes.movement.walk", type: "add", value: "-15" }] },
     triggers: [{ on: "preDamageRoll", if: { "activity.isAttack": true, "source.hasEffect": "brutal-strike" },
       do: [{ type: "damage", formula: "@scale.barbarian.brutal-strike", damageType: "weapon" }] }]
   },

@@ -58,7 +58,9 @@ export function onTeleport(activity, plans) {
       return false;
     }
     const center = doc.getCenterPoint ? doc.getCenterPoint(to) : { x: to.x, y: to.y };
-    if ( isVisionAvailable() && (canSeePoint(doc, { ...center, elevation: to.elevation ?? 0 }) === false) ) {
+    // C12-b : Porte dimensionnelle — « un lieu que vous voyez, ou que vous décrivez » (`teleport.unseen`) : pas d'exigence de vue.
+    const unseen = activity?.item ? contentOf(activity.item).entry?.teleport?.unseen === true : false;
+    if ( !unseen && isVisionAvailable() && (canSeePoint(doc, { ...center, elevation: to.elevation ?? 0 }) === false) ) {
       ui.notifications.warn(loc("Teleport.NonVue"));
       notice(doc, loc("Retour.NonVue"));
       refusedTeleports.add(doc.uuid);

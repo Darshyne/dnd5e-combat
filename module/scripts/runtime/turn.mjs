@@ -165,6 +165,9 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
     ? (activity.actor?.effects ?? []).map(e => (!e.disabled && !e.isSuppressed) ? originItemOf(e) : null)
       .find(item => item && (item !== activity.item) && (contentOf(item).entry?.noSpells === true)) ?? null
     : null;
+  // C12-b : « vous ne pouvez pas entrer en Rage si vous portez une armure lourde » (la fin à l'enfilage : runtime/endings.mjs).
+  const heavyRage = !!contentOf(activity.item).entry?.rage
+    && (activity.actor?.items ?? []).some(i => (i.type === "equipment") && i.system?.equipped && (i.system?.type?.value === "heavy"));
   // §214 : armure portée sans formation — pas de sorts.
   const unarmored = isSpellCast(activity.item) ? untrainedArmor(activity.actor) : null;
   const lines = [
@@ -172,6 +175,7 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
     ...(outOfAmmunition(activity, attackMode) ? [loc("Souci.noAmmunition", { item: activity.item.name })] : []),
     ...(silenced ? [loc("Souci.silenced")] : []),
     ...(raging ? [loc("Souci.rage")] : []),
+    ...(heavyRage ? [loc("Souci.rageHeavyArmor")] : []),
     ...(shapeless ? [loc("Souci.noAttacksOrSpells", { item: shapeless.name })] : []),
     ...(befuddled ? [loc("Souci.noSpells", { item: befuddled.name })] : []),
     ...(unarmored ? [loc("Souci.untrainedArmor", { item: unarmored.name })] : []),

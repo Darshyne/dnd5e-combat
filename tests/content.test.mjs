@@ -154,8 +154,8 @@ describe("contenu livré", () => {
       "aberrant-anatomy", "abjure-foes", "absorb-elements", "acid-arrow", "acrobatic-movement", "action-surge", "adrenaline-rush", "agile",
       "aid", "air-element", "air-form", "alchemists-fire", "alert", "ambush", "ancient-might", "animal-friendship", "animate-objects",
       "antilife-shell", "antimagic-field", "arcane-eye", "arcane-gate", "arcane-hand", "arcane-recovery", "arcane-sword", "arcane-vigor",
-      "arcane-ward", "armor-of-agathys", "arms-of-hadar", "aspect-of-the-wilds", "assassinate", "athlete", "aura-of-authority",
-      "aura-of-bravery", "aura-of-courage", "aura-of-devotion", "aura-of-life", "aura-of-protection", "aura-of-purity", "aura-of-vitality",
+      "arcane-ward", "armor-of-agathys", "arms-of-hadar", "aspect-of-the-wilds", "assassinate", "athlete", "aura-of-alacrity", "aura-of-authority",
+      "aura-of-bravery", "aura-of-courage", "aura-of-devotion", "aura-of-life", "aura-of-protection", "aura-of-purity", "aura-of-vitality", "aura-of-warding",
       "avatar-of-battle", "avenger-spirit", "avenging-angel", "bait-and-switch", "ball-bearings", "banishing-smite", "banishment",
       "bastion-of-law", "beacon-of-hope", "befuddlement", "beguiling-defenses", "beguiling-magic", "beguiling-twist", "bestow-curse",
       "bigbys-hand", "bite", "black-tentacles", "blade-barrier", "blade-ward", "blazing-movement", "blessed-healer", "blessed-strikes",
@@ -194,7 +194,7 @@ describe("contenu livré", () => {
       "holy-water", "hunger-of-hadar", "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "ice-storm", "illusory-self",
       "imprisonment", "improved-brutal-strike", "improved-brutal-strike-2", "improved-cunning-strike", "improved-elemental-fury", "improved-illusions", "improved-war-magic", "incendiary-cloud",
       "indomitable", "indomitable-might", "innate-sorcery", "insect-plague", "inspiring-smite", "instinctive-pounce", "interception",
-      "intimidating-presence", "investment-of-the-chain-master", "invisibility", "invoke-duplicity", "jallarzis-storm-of-radiance", "jump",
+      "intimidating-presence", "investment-of-the-chain-master", "invisibility", "invoke-duplicity", "jallarzis-storm-of-radiance", "jolt-to-life", "jump",
       "knowledge-from-a-past-life", "lamp", "lantern-bullseye", "lantern-hooded", "large-form", "lay-on-hands", "leading-evasion",
       "lesser-restoration", "levitate", "life-drain", "lifedrinker", "light", "lightning-arrow", "living-shadow", "lucky", "lunar-form",
       "lunging-attack", "lupin-howl", "mage-armor", "mage-hand", "mage-slayer", "magic-missile", "magic-resistance", "magnificent-mansion",
@@ -1051,5 +1051,24 @@ describe("§308 : repasse, lot C12-e (sauvegardes, Avantage, dés ajoutés)", ()
     expect(validateEntry({ noOpportunityAttacks: ["L9N4evZo1jt46dap"] })).toEqual([]);
     expect(validateEntry({ effectChanges: { L9N4evZo1jt46dap: [{ key: "a", type: "add", value: "1", ifCaster: "" }] } })).toHaveLength(1);
     expect(validateEntry({ triggers: [{ on: "endOfTurn", via: "effect", do: [{ type: "resave", ability: "luck" }] }] })).toHaveLength(1);
+  });
+});
+
+describe("§309 : repasse, lot C12-b (zones, émanations, auras)", () => {
+  it("les déclarations du lot", () => {
+    for ( const id of ["conjure-celestial", "heat-metal", "jolt-to-life", "aura-of-warding", "aura-of-alacrity", "prismatic-wall", "dimension-door"] ) {
+      expect(validateEntry(CONTENT[id], { facts }), id).toEqual([]);
+    }
+    expect(CONTENT["conjure-celestial"].enterOnPose).toBe(true);
+    expect(CONTENT["heat-metal"].savedEffects).toContain("VVQbCUE5W44bF4QU");
+    expect(CONTENT["heat-metal"].triggers.some(d => d.do.some(s => (s.type === "disarm") && (s.elseEffect === "VVQbCUE5W44bF4QU")))).toBe(true);
+    expect(CONTENT["jolt-to-life"].burst).toMatchObject({ activity: "hTK04U7m016p6lf6", from: ["xg84KvaBJVjFZQpV"], affects: "enemy" });
+    expect(CONTENT["dimension-door"].teleport.unseen).toBe(true);
+  });
+  it("les schémas refusent ce qui ne va pas", () => {
+    expect(validateEntry({ enterOnPose: "oui" })).toHaveLength(1);
+    expect(validateEntry({ burst: { activity: "hTK04U7m016p6lf6", radius: 10, units: "ft", affects: "ally" } })).toHaveLength(1);
+    expect(validateEntry({ triggers: [{ on: "failedSave", do: [{ type: "disarm", elseEffect: "court" }] }] })).toHaveLength(1);
+    expect(validateEntry({ teleport: { distance: 30, units: "ft", unseen: "oui" } })).toHaveLength(1);
   });
 });

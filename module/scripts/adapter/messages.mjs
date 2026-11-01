@@ -22,6 +22,10 @@ import { criticalChoice, drawCriticalTable } from "./criticals.mjs";
 import { current, STEPS } from "../core/action.mjs";
 import { contentOf } from "./content.mjs";
 import { spellClassOf } from "./spell-class.mjs";
+import { weaponKind } from "./facts.mjs";
+
+// §279 : déplacé dans facts.mjs (fait `activity.weaponKind`) ; réexporté pour les appelants existants.
+export { weaponKind };
 import { offerCombatInspirationDamage } from "./inspiration.mjs";
 
 const SETTLED_STEPS = new Set([STEPS.DONE, STEPS.MISSED, STEPS.UNDONE]);
@@ -229,14 +233,6 @@ export function spellRetypes(activity) {
   return Array.from(out);
 }
 
-/**
- * §279 : le genre d'une attaque d'arme, pour les règles qui en nomment une liste — « unarmed » (frappe à mains nues, classée ainsi par
- * dnd5e : `attack.type.classification`), sinon le type d'arme de dnd5e (`simpleM`, `martialM`, `natural`, `improv`…).
- */
-export function weaponKind(activity) {
-  if ( activity?.attack?.type?.classification === "unarmed" ) return "unarmed";
-  return activity?.item?.system?.type?.value ?? null;
-}
 
 /** §279 : `weaponDamageTypes` — les types qu'un item de l'auteur permet de donner aux dégâts d'une attaque de ces genres d'arme. */
 function weaponRetypes(activity) {

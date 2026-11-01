@@ -261,6 +261,15 @@ export function conditionImmunitiesAgainst(actor, source) {
 }
 
 /**
+ * §279 : le genre d'une attaque d'arme, pour les règles qui en nomment une liste — « unarmed » (frappe à mains nues, classée ainsi par
+ * dnd5e : `attack.type.classification`), sinon le type d'arme de dnd5e (`simpleM`, `martialM`, `natural`, `improv`…).
+ */
+export function weaponKind(activity) {
+  if ( activity?.attack?.type?.classification === "unarmed" ) return "unarmed";
+  return activity?.item?.system?.type?.value ?? null;
+}
+
+/**
  * Les faits d'un moment. `source` : qui agit ; `target` : qui subit ; `activity` : ce qui est utilisé ;
  * `sourceToken` / `targetToken` : leurs tokens quand le moment les connaît (sinon retrouvés par l'acteur).
  * Une clé absente ici est inconnue du cœur, et une condition qui l'emploie ne tient jamais.
@@ -277,6 +286,8 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     "activity.isSpell": isSpellCast(activity?.item),   // §48 : un parchemin aussi
     "activity.isWeapon": activity?.item?.type === "weapon",
     "activity.isMelee": isMelee,
+    // §279 : le genre d'arme (`weaponKind` : "unarmed", "simpleM", "martialM", "improv"…), null hors arme — { "activity.weaponKind": ["unarmed", "simpleM"] }.
+    "activity.weaponKind": weaponKind(activity),
     "activity.identifier": activity?.item ? identifierOf(activity.item).id : null,
     "activity.id": activity?.id ?? null,
     // §32 : un sort de cette classe (Sorcellerie innée : « sorts d'Ensorceleur ») — la classe du sort (`spellClassOf`), ou celle de l'acteur.

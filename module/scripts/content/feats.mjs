@@ -43,7 +43,8 @@ export const FEATS = Object.freeze({
     changes: [{ key: "system.attributes.ac.bonus", type: "add", value: "1" }] } } },
   // Rôdeur furtif, Brouillard de guerre : « l'Avantage aux tests de Dextérité (Discrétion) de l'action Se cacher pendant un combat » —
   // en combat (le moteur ne sait pas quel test est celui de Se cacher).
-  "skulker": { effectWhile: { "6moNnOl0izLMgVNl": { if: { inCombat: true } } } },
+  // C12-i : Tireur embusqué — « si vous êtes caché et ratez un jet d'attaque, l'attaque ne vous révèle pas » (`sniper`, runtime/hide.mjs).
+  "skulker": { effectWhile: { "6moNnOl0izLMgVNl": { if: { inCombat: true } } }, sniper: true },
 
   // §131 — dons de tir. Tireur d'élite : « vos attaques à distance avec une arme ignorent l'abri partiel et l'abri aux trois quarts ;
   // être à 1,50 m d'un ennemi ne vous impose pas le Désavantage ; attaquer à longue portée non plus ».

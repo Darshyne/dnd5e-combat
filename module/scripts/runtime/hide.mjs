@@ -21,6 +21,7 @@ import { contentOf } from "../adapter/content.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { coverFor } from "../adapter/cover.mjs";
 import { enqueue } from "./queue.mjs";
+import { STEPS } from "../core/action.mjs";
 
 /** DD du test de Discrétion (règle 2024). */
 const HIDE_DC = 15;
@@ -39,7 +40,7 @@ export async function endHiding(actor, why) {
   const effects = hiddenEffectsOf(actor);
   if ( !effects.length || !actor.isOwner ) return;
   // §236 : Faufilement suprême — l'état retiré par un jet d'attaque est gardé, pour que l'Attaque furtive le rende (runtime/sneak.mjs).
-  if ( (why === "attack roll") && hasStealthAttack(actor) ) {
+  if ( (why === "attack roll") && (hasStealthAttack(actor) || hasSniper(actor)) ) {
     await actor.setFlag(MODULE_ID, "hiddenBeforeAttack", effects.map(e => { const { _id, ...data } = e.toObject(); return data; }));
   }
   await actor.deleteEmbeddedDocuments("ActiveEffect", effects.map(e => e.id));
@@ -52,12 +53,18 @@ export async function endHiding(actor, why) {
 /** §236 : la créature connaît-elle l'Attaque furtive (une Frappe rusée `keepsHidden`) ? */
 const hasStealthAttack = actor => actor.items.some(i => Object.values(contentOf(i).entry?.cunningStrikes ?? {}).some(s => s.keepsHidden));
 
-/** §236 : rend l'état caché qu'un jet d'attaque a retiré (Attaque furtive) ; la fin du tour jugera l'abri. Rend true si rendu. */
-export async function restoreHiding(actor) {
+/** C12-i : Discret, Tireur embusqué — « si vous êtes caché et ratez un jet d'attaque, l'attaque ne vous révèle pas » (`sniper`). */
+const hasSniper = actor => actor.items.some(i => contentOf(i).entry?.sniper === true);
+
+/**
+ * §236 : rend l'état caché qu'un jet d'attaque a retiré (Attaque furtive) ; la fin du tour jugera l'abri. Rend true si rendu.
+ * C12-i : `plain` — rendu tel quel, sans jugement d'abri en fin de tour (Tireur embusqué : le tir a raté).
+ */
+export async function restoreHiding(actor, { plain=false }={}) {
   const kept = actor.getFlag(MODULE_ID, "hiddenBeforeAttack");
   if ( !Array.isArray(kept) || !kept.length ) return false;
   await actor.unsetFlag(MODULE_ID, "hiddenBeforeAttack");
-  await actor.createEmbeddedDocuments("ActiveEffect", kept.map(e => foundry.utils.mergeObject(e, { [`flags.${MODULE_ID}.stealthAttack`]: true })));
+  await actor.createEmbeddedDocuments("ActiveEffect", plain ? kept : kept.map(e => foundry.utils.mergeObject(e, { [`flags.${MODULE_ID}.stealthAttack`]: true })));
   Hooks.callAll(`${MODULE_ID}.sneak`, tokensOf(actor)[0] ?? null, true);
   return true;
 }
@@ -154,7 +161,20 @@ async function onPostUse(activity, usageConfig) {
   if ( isSpellCast(activity.item) && activity.item.system.properties?.has("vocal") ) await endHiding(actor, "spell with a Verbal component");
 }
 
+/** C12-i : MJ actif — l'attaque d'un Tireur embusqué tranchée : ratée (toutes cibles), il reste caché ; touchée, la cachette gardée est oubliée. */
+async function sniperOutcome(resolution) {
+  if ( !resolution?.plan?.attack || ![STEPS.DONE, STEPS.MISSED].includes(resolution.step) ) return;
+  const from = fromUuidSync(resolution.source ?? "", { strict: false });
+  const actor = (from?.documentName === "Actor") ? from : (from?.actor ?? null);
+  if ( !actor || !hasSniper(actor) || !actor.getFlag(MODULE_ID, "hiddenBeforeAttack") ) return;
+  const missed = (resolution.targets ?? []).every(t => !t.hit);
+  if ( missed && await restoreHiding(actor, { plain: true }) ) { log(`hide: ${actor.name} missed from hiding — still hidden (Skulker)`); return; }
+  // Touchée : l'Attaque furtive (Roublard) peut encore la rendre ; sinon, la cachette gardée ne sert plus.
+  if ( !hasStealthAttack(actor) ) await actor.unsetFlag(MODULE_ID, "hiddenBeforeAttack");
+}
+
 export function registerHide() {
+  route(`${MODULE_ID}.resolution`, resolution => enqueue(`sniper:${resolution?.id}`, () => sniperOutcome(resolution)), { executor: true, label: "Skulker: hiding not kept" });
   route("dnd5e.postUseActivity", (activity, usageConfig) => { onPostUse(activity, usageConfig).catch(err => console.error(`${MODULE_ID} | hide`, err)); },
     { label: "hide" });
   // « Vous cessez d'être caché aussitôt après… un jet d'attaque » : après le jet, qui a profité de l'invisibilité.

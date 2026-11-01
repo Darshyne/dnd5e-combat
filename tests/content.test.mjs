@@ -1133,3 +1133,11 @@ describe("§314 : repasse, lot C12-h (déplacement)", () => {
     expect(CONTENT["repelling-blast"].triggers[0].do).toEqual([{ type: "move", mode: "push", distance: 10, units: "ft" }]);
   });
 });
+
+describe("§315 : repasse, lot C12-i (vision, furtivité)", () => {
+  it("les déclarations du lot", () => {
+    expect(validateEntry(CONTENT["skulker"], { facts })).toEqual([]);
+    expect(CONTENT["skulker"].sniper).toBe(true);
+    expect(validateEntry({ sniper: 1 })).toHaveLength(1);
+  });
+});

@@ -114,7 +114,10 @@ export default {
       await pause(1500);
       const effects = await ctx.effects(target);
       ctx.expect(effects.some(e => changesOf(e).includes("system.attributes.movement.speed") || /Hamstrung|handicap/i.test(e.name)), `la Cible porte « Hamstrung » (${effects.map(e => e.name).join(", ")})`);
-      ctx.expect(!(await ctx.effects(hero)).some(e => e.flags?.[MODULE_ID]?.brutalStrike), "la marque du Coup brutal tombe après l'attaque");
+      // La marque tombe à la résolution, sur le MJ actif : attendue (6 s au plus) plutôt qu'une pause fixe.
+      let dropped = false;
+      for ( let n = 0; (n < 12) && !dropped; n++ ) { dropped = !(await ctx.effects(hero)).some(e => e.flags?.[MODULE_ID]?.brutalStrike); if ( !dropped ) await pause(500); }
+      ctx.expect(dropped, "la marque du Coup brutal tombe après l'attaque");
       // Sans Coup brutal, la Témérité donne bien l'Avantage.
       const b = await attack(hero, axe, target, { reckless: true, brutal: false });
       ctx.expect(b.mode === 1, `attaque suivante, sans Coup brutal : Avantage de la Témérité (mode ${b.mode})`);

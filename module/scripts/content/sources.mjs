@@ -25,6 +25,7 @@ export const SOURCE_IDENTIFIERS = Object.freeze({
   "mmHomunculus0000.mmBite0000000000": "mm-homunculus-bite",
   "mmPseudodragon00.mmSting000000000": "mm-pseudodragon-sting",
   "mmWereboar000000.mmGore0000000000": "mm-wereboar-gore",
+  "mmWight000000000.mmLifeDrain00000": "mm-wight-life-drain",
   // Espèce Dhampir (Ravenloft: The Horrors Within).
   rhwVampiricBitnE: "vampiric-bite",
   rhwSpiderClimb7F: "spider-climb",

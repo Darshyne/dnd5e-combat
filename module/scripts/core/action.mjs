@@ -119,8 +119,10 @@ function readyToApply(resolution) {
 
 /** Un effet ou une étape d'issue passe-t-il pour cette cible ? « saved » : seulement sur une réussite. */
 /** Esquive totale (§20) : une sauvegarde de Dextérité seule (pas au choix), non enchaînée à une attaque, pour la moitié des dégâts. */
-const evasionApplies = plan => !!plan.damage && !!plan.save && !plan.save.chained && (plan.save.ability === "dex")
-  && ((plan.save.abilities ?? ["dex"]).every(a => a === "dex")) && ((plan.save.onSave ?? "half") === "half");
+// §334 : `evasion: "any"` (Esquive de la Bête éclipsante) — toute sauvegarde à moitié des dégâts, pas seulement de Dextérité.
+const evasionApplies = (plan, kind) => !!plan.damage && !!plan.save && !plan.save.chained
+  && ((kind === "any") || ((plan.save.ability === "dex") && ((plan.save.abilities ?? ["dex"]).every(a => a === "dex"))))
+  && ((plan.save.onSave ?? "half") === "half");
 
 const passes = (when, saved) => (when === "always") || ((when === "saved") ? saved : !saved);
 
@@ -156,7 +158,7 @@ export function applicationPlan(resolution) {
     if ( t.sculpted ) multiplier = 0;
     // §20 : Esquive totale — une sauvegarde de Dextérité « pour ne subir que la moitié des dégâts » : rien sur une réussite, la
     // moitié sur un échec.
-    if ( t.evasion && evasionApplies(plan) ) multiplier = saved ? 0 : 0.5;
+    if ( t.evasion && evasionApplies(plan, t.evasion) ) multiplier = saved ? 0 : 0.5;
     if ( saved && (t.save?.interposed === true) && plan.damage ) multiplier = 0;   // §133 : Interposer le bouclier
     if ( t.halved ) multiplier *= 0.5;   // Esquive instinctive (§16.11) : la moitié des dégâts de l'attaque, arrondie par dnd5e
     multiplier *= (t.times ?? 1);         // Projectile magique (§16.27) : autant de fois les dégâts que de projectiles reçus

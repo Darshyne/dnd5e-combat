@@ -35,6 +35,10 @@ export const MONSTERS = Object.freeze({
   "shadow-veil": { breaksOn: ["damage"], effectEnds: { "3FJI2gtOiaXvSxrs": "bearerTurnStart" } },
   // Aiguille d'argent (Carrionette) : la malédiction ne vise qu'un Humanoïde.
   "silver-needle": { effectsIf: { "target.creatureType": "humanoid" } },
+  // Esquive (Bête éclipsante) : rien sur une réussite, la moitié sur un échec, pour toute sauvegarde à moitié des dégâts.
+  "avoidance": { avoidance: true },
+  // Absorption de vie (Nécrophage) : la donnée laisse les dégâts sans type ; nécrotiques.
+  "mm-wight-life-drain": { untypedDamage: "necrotic" },
   // Disparition (Feu follet, Esprit frappeur) : l'Invisibilité tombe après un jet d'attaque.
   "vanish": { breaksOn: ["attack"] },
   // Ravenloft. Protection ésotérique (Gennifer) : Étourdi seulement pour un Mort-vivant.

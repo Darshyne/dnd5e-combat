@@ -43,7 +43,7 @@ export const MERGE = Object.freeze({
   rerollInitiative: "copy", effectStatuses: "deep", atZero: "deep", afterSneak: "copy", saveDamage: "shallow",
   afterTeleport: "deep", effectsIf: "replace", contest: "copy", forOneAttack: "replace", basicActions: "shallow",
   secondPhase: "shallow", changesForm: "shallow", empower: "shallow", discharge: "shallow", healsDownedMax: "replace",
-  sneakAttack: "replace", evasion: "replace", elusive: "replace", holdsStill: "replace", cunningStrikeMax: "replace",
+  sneakAttack: "replace", evasion: "replace", avoidance: "replace", elusive: "replace", holdsStill: "replace", cunningStrikeMax: "replace",
   grantsAction: "replace", movesAfter: "replace", studiedAttacks: "replace", heroicWarrior: "replace",
   greatWeaponFighting: "replace", thrownDamage: "replace", rage: "replace", persistentRage: "replace", reckless: "replace",
   relentless: "replace", blocksHealing: "replace", noOpportunityAttacks: "replace", byWounds: "replace",

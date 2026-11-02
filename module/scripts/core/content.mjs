@@ -469,6 +469,7 @@
  *     cunningStrikeMax?: number                 nombre de Frappes rusées par Attaque sournoise (Frappe rusée améliorée : 2)
  *     evasion?: true                            Dérobade (§20) : sauvegarde de Dextérité pour la moitié des dégâts — rien sur une
  *                                               réussite, la moitié sur un échec ; pas si le porteur est Neutralisé
+ *     avoidance?: true                          §334 : Esquive (Bête éclipsante) — comme `evasion`, pour toute sauvegarde à moitié des dégâts
  *     elusive?: true                            Insaisissable (§20) : aucun jet d'attaque n'a l'Avantage contre le porteur, sauf
  *                                               s'il est Neutralisé
  *     holdsStill?: true                         après l'utilisation, la Vitesse de l'utilisateur est 0 jusqu'à la fin du tour (Visée

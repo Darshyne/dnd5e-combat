@@ -572,7 +572,12 @@ async function onUsageMessage(message) {
     log(`${combatant.name}: one more action (${activity.item.name})`);
     return;
   }
-  if ( request && (!request.cost || (request.cost === "free")) ) return;   // §16.27 : un projectile enchaîné ne coûte rien
+  if ( request && (!request.cost || (request.cost === "free")) ) {   // §16.27 : un projectile enchaîné ne coûte rien
+    // K5 (§334) : une action légendaire (hors budget) qui « se déplace sans provoquer d'attaque d'opportunité » libère quand même le
+    // trajet (Corne chargeante de la Licorne, Charge du Loup-garou).
+    if ( !before.disengaged && freesMovement(activity.item) ) await writeBudget(combatant, { ...before, disengaged: true });
+    return;
+  }
   if ( request && message.getFlag(MODULE_ID, "recast") ) {
     request.usesSpellSlot = false;
     const recastCost = contentOf(activity.item).entry?.recastCost;

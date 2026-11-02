@@ -174,6 +174,9 @@ function activeRule(actor, key) {
 /** §20 : Esquive totale — « vous ne pouvez pas utiliser cette aptitude si vous avez l'état Neutralisé ». */
 export const evades = actor => activeRule(actor, "evasion");
 
+/** §334 : Esquive (Bête éclipsante) — la Dérobade pour toute sauvegarde à moitié des dégâts, pas seulement de Dextérité. */
+export const avoids = actor => activeRule(actor, "avoidance");
+
 /** §20 : Insaisissable — « aucun jet d'attaque ne peut avoir l'Avantage contre vous si vous ne subissez pas l'état Neutralisé ». */
 export const isElusive = token => activeRule(token?.actor, "elusive");
 

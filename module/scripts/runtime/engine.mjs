@@ -15,7 +15,7 @@ import { maximizeDice } from "../core/max-dice.mjs";
 import { unaffectedBy } from "../adapter/eligibility.mjs";
 import { restoreHp, rollDamageFor } from "../adapter/messages.mjs";
 import { removeEffects, TARGETS_QUERY, handleTargetsQuery, SAVE_QUERY, handleSaveQuery } from "../adapter/saves.mjs";
-import { statusesOf, areAdjacent, evades, coverAgainst } from "../adapter/conditions.mjs";
+import { statusesOf, areAdjacent, evades, avoids, coverAgainst } from "../adapter/conditions.mjs";
 import { currentAc } from "../adapter/reactions.mjs";
 import { CHOICE_QUERY, handleChoiceQuery, askChoice } from "../adapter/choices.mjs";
 import { ALLOCATION_QUERY, handleAllocationQuery } from "../adapter/projectiles.mjs";
@@ -226,7 +226,7 @@ export async function enrich(targets, plan, originUuid, activityUuid=null, attac
       canReact: plan.attack ? await canReactToHit(target.token, { activity, source: origin?.actor ?? null }) : false,
       duplicates: plan.attack ? duplicatesAgainst(token?.actor, origin?.actor) : 0,
       // §20 : Esquive totale (Roublard, Moine, monstres) — jugée à l'application (core/action.mjs, `applicationPlan`).
-      evasion: !!plan.save && evades(token?.actor),
+      evasion: !!plan.save && (evades(token?.actor) || (avoids(token?.actor) ? "any" : false)),
       sculpted: (sculpts > 0) && !!token && !!casterToken && (token.actor !== caster) && areAllies(token, casterToken)
         && (sculpts-- > 0),
       unaffected

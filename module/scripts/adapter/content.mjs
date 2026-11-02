@@ -166,6 +166,8 @@ function textLayer(item) {
   if ( saveDamage ) recurringRest.saveDamage = saveDamage;
   // K12 (§333) : plus d'attaque d'opportunité, Foncer / Se désengager / Se cacher, drain du maximum de PV dit par le texte.
   if ( monsterNoOpportunity(html, effects) ) recurringRest.noOpportunityAttacks = true;
+  // §334 : « moves up to (half) its Speed without provoking Opportunity Attacks » — le reste du tour sans attaque d'opportunité.
+  if ( /\bmoves? up to (?:half )?its (?:\w+ )?Speed without provoking\b/i.test(html.replace(/<[^>]+>/g, " ").replace(/&Reference\[([^\]]*)\]/g, "$1")) ) recurringRest.noOpportunity = "afterUse";
   const basics = monsterBasicActions(html, acts);
   if ( basics ) recurringRest.basicActions = basics;
   if ( drains(readDrain(html)) ) recurringRest.drain = true;

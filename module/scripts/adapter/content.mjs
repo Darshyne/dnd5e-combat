@@ -16,7 +16,7 @@ import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { monsterChoice, monsterDeaths, monsterEndings, monsterPushes, monsterReactions, monsterRecurring, monsterTypeGate, monsterAdvantage, monsterSaveDamage, monsterMissingStatus, monsterNoOpportunity,
-  monsterBasicActions, monsterSightGate, monsterImmunity, monsterEffectDurations, monsterReactionWindow, monsterActivationAdvantage, monsterDefense, monsterChargeGate } from "../core/monster-text.mjs";
+  monsterBasicActions, monsterSightGate, monsterImmunity, monsterEffectDurations, monsterReactionWindow, monsterActivationAdvantage, monsterDefense, monsterChargeGate, monsterLightSensitivity } from "../core/monster-text.mjs";
 import { readDrain, drains } from "../core/drain.mjs";
 
 export const OVERRIDES_SETTING = "contentOverrides";
@@ -165,7 +165,7 @@ function textLayer(item) {
   const outward = Array.from(item.system?.activities ?? []).some(a => (a.activation?.type === "reaction") && ["save", "attack", "damage"].includes(a.type));
   const window = (reactionConditions.length && !reacts.triggers?.length) ? monsterReactionWindow(html, reactionConditions, outward,
     Array.from(item.system?.activities ?? []).find(a => a.activation?.type === "reaction")?.id ?? null) : [];
-  const allTriggers = [...triggers, ...monsterDefense(html), ...(reacts.triggers ?? []), ...window, ...(recurring.triggers ?? []), ...pushes, ...advantage, ...missing];
+  const allTriggers = [...triggers, ...monsterDefense(html), ...monsterLightSensitivity(html), ...(reacts.triggers ?? []), ...window, ...(recurring.triggers ?? []), ...pushes, ...advantage, ...missing];
   // §334 : les durées en tours que le texte donne aux effets, Réactions perdues et soins bloqués par effet.
   const durations = monsterEffectDurations(html, { activities: acts, effects });
   if ( durations.effectEnds ) recurring.effectEnds = { ...durations.effectEnds, ...(recurring.effectEnds ?? {}) };

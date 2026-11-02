@@ -639,3 +639,19 @@ export function monsterChargeGate(html, activities=[]) {
   const m = text.match(/\bmoved (\d+)\+? feet (?:straight )?toward (?:it|the target|them) immediately before the hit\b/i);
   return m ? { "source.chargedFeet": Number(m[1]) } : null;
 }
+
+/**
+ * §334 : « While in sunlight, the drider has Disadvantage on ability checks and attack rolls », « While in Bright Light, the cloaker has
+ * Disadvantage on attack rolls » → Désavantage aux jets d'attaque de la créature au soleil (`source.inSunlight` : la lumière globale de
+ * la scène, pas une torche) ou en lumière vive (`source.inBrightLight`). Les tests de caractéristique restent au MJ.
+ * @param {string} html
+ * @returns {object[]} déclarations `triggers`
+ */
+export function monsterLightSensitivity(html) {
+  const text = plainText(html);
+  if ( !text || (segments(text).length > 1) ) return [];
+  const m = text.match(/\bWhile (?:it is )?in (sunlight|Bright Light)\b[^.]*\bDisadvantage on (?:[^.]*\b)?attack rolls\b/i);
+  if ( !m ) return [];
+  const fact = /^sunlight$/i.test(m[1]) ? "source.inSunlight" : "source.inBrightLight";
+  return [{ on: "preAttackRoll", if: { [fact]: true }, do: [{ type: "disadvantage" }] }];
+}

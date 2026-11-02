@@ -106,6 +106,18 @@ function inBright(source, p) {
 /** Le centre d'un token à sa position validée, à hauteur de ses pieds (`tokenCenter`). */
 export const tokenPoint = doc => tokenCenter(doc);
 
+/**
+ * §334 : ce token est-il au soleil ? La lumière globale de la scène (le jour) l'éclaire vivement là où il se tient — régions « Ajuster
+ * l'obscurité » et crépuscule compris ; une torche ou un sort de lumière n'est pas le soleil (Sensibilité au soleil, faiblesses du vampire).
+ */
+export function inSunlight(doc) {
+  const globalSource = canvas?.ready ? canvas.environment.globalLightSource : null;
+  if ( !doc?.parent || !globalSource ) return false;
+  const p = tokenPoint(doc);
+  return globalLightLevel({ active: globalSource.active, bright: globalSource.data.bright, darkness: globalSource.data.darkness },
+    darknessLevelAt({ x: p.x, y: p.y, elevation: p.elevation ?? 0 }), twilightThreshold()) === 2;
+}
+
 /** Le niveau de lumière là où se tient ce token. */
 export function lightOnToken(doc) {
   return doc?.parent ? lightAt(tokenPoint(doc)) : null;

@@ -16,7 +16,7 @@ import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { monsterChoice, monsterDeaths, monsterEndings, monsterPushes, monsterReactions, monsterRecurring, monsterTypeGate, monsterAdvantage, monsterSaveDamage, monsterMissingStatus, monsterNoOpportunity,
-  monsterBasicActions, monsterSightGate, monsterImmunity, monsterEffectDurations, monsterReactionWindow, monsterActivationAdvantage, monsterDefense } from "../core/monster-text.mjs";
+  monsterBasicActions, monsterSightGate, monsterImmunity, monsterEffectDurations, monsterReactionWindow, monsterActivationAdvantage, monsterDefense, monsterChargeGate } from "../core/monster-text.mjs";
 import { readDrain, drains } from "../core/drain.mjs";
 
 export const OVERRIDES_SETTING = "contentOverrides";
@@ -176,6 +176,9 @@ function textLayer(item) {
   // K11 (§332) : pas de moitié des dégâts sur une réussite quand le texte n'en donne pas.
   const saveDamage = monsterSaveDamage(html, Array.from(item.system?.activities ?? []).map(a => ({ id: a.id, type: a.type, onSave: a.damage?.onSave ?? null })));
   if ( saveDamage ) recurringRest.saveDamage = saveDamage;
+  // §334 : l'état de l'attaque ne vient qu'après une charge (« moved 20+ feet straight toward it immediately before the hit »).
+  const charge = monsterChargeGate(html, acts);
+  if ( charge ) recurringRest.effectsIf = charge;
   // K12 (§333) : plus d'attaque d'opportunité, Foncer / Se désengager / Se cacher, drain du maximum de PV dit par le texte.
   if ( monsterNoOpportunity(html, effects) ) recurringRest.noOpportunityAttacks = true;
   // §334 : « moves up to (half) its Speed without provoking Opportunity Attacks » — le reste du tour sans attaque d'opportunité.

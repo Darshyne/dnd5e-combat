@@ -11,6 +11,7 @@
  */
 
 import { seesBetween, canSee } from "./vision.mjs";
+import { chargedFeet } from "./variants.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
 import { distanceBetween } from "./turn.mjs";
 import { readUnitFactors } from "./units.mjs";
@@ -346,6 +347,8 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     "self.wieldsWeapon": want => (self?.items ?? []).some(i => (i.type === "weapon") && i.system.equipped && ["simpleM", "simpleR", "martialM", "martialR"].includes(i.system.type?.value)) === want,
     "self.hasShield": want => (self?.items ?? []).some(i => (i.type === "equipment") && (i.system.type?.value === "shield") && i.system.equipped) === want,
     // §132 : la cible est Agrippée par l'attaquant (Lutteur : « l'Avantage aux jets d'attaque contre une créature que vous agrippez »).
+    // §334 : l'attaquant a chargé la cible d'au moins tant de pieds en ligne droite juste avant (Défenses de l'Éléphant).
+    "source.chargedFeet": feet => !!sourceToken && !!targetToken && (chargedFeet(sourceToken, targetToken) >= (Number(feet) || 0)),
     "target.grappledBySource": want => ((target?.effects ?? []).some(e => e.statuses?.has?.("grappled") && (grapplerOf(e) === source)) === want),
     // §281 : l'inverse — la source est Agrippée par la cible (un ennemi agrippé par le réacteur finit son tour : Prise finale).
     "source.grappledByTarget": want => ((source?.effects ?? []).some(e => e.statuses?.has?.("grappled") && (grapplerOf(e) === target)) === want),

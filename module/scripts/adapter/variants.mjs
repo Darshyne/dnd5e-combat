@@ -37,7 +37,7 @@ function centerCells(p, size) {
 }
 
 /** Pieds parcourus en ligne droite vers la cible juste avant l'attaque (core/variants.mjs, `straightChargeFeet`). */
-function chargedFeet(attacker, target) {
+export function chargedFeet(attacker, target) {
   const scene = attacker?.parent;
   const grid = scene?.grid;
   if ( !grid?.size || !target ) return 0;

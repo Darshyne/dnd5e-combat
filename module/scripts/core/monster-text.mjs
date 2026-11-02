@@ -623,3 +623,19 @@ export function monsterDefense(html) {
   const incapacitated = /\bIncapacitated\b/i.test(text);
   return [{ on: "preAttackRoll", defends: true, ...(incapacitated ? { if: { not: { "target.hasStatus": "incapacitated" } } } : {}), do: [{ type: "disadvantage" }] }];
 }
+
+/**
+ * §334 : « If the target is a Huge or smaller creature and the elephant moved 20+ feet straight toward it immediately before the hit,
+ * the target has the Prone condition » sur une attaque à UNE activité (sans variante de charge, M5) → `effectsIf` : les effets de
+ * l'attaque ne passent qu'après une charge de cette longueur (fait `source.chargedFeet`).
+ * @param {string} html
+ * @param {Array<{type: string}>} [activities]
+ * @returns {object|null}  condition `effectsIf`
+ */
+export function monsterChargeGate(html, activities=[]) {
+  if ( activities.filter(a => a.type === "attack").length !== 1 ) return null;
+  const text = plainText(html);
+  if ( !text || (segments(text).length > 1) ) return null;
+  const m = text.match(/\bmoved (\d+)\+? feet (?:straight )?toward (?:it|the target|them) immediately before the hit\b/i);
+  return m ? { "source.chargedFeet": Number(m[1]) } : null;
+}

@@ -40,7 +40,14 @@ export default {
       const target = r.targets.find(t => t.name === "Guerrier");
       if ( !target?.hit ) continue;
       await new Promise(res => setTimeout(res, 1500));
-      hit = { target, death: await deathOf(ctx, guerrier), messages: await ctx.messagesSince(since) };
+      const messages = await ctx.messagesSince(since);
+      // Un critique au moins égal aux PV max tue sur le coup (règle 2024) : cas non vérifié ici, coup rejoué.
+      if ( messages.some(m => m.flags?.["dnd5e-combat"]?.death?.kind === "massive") ) {
+        for ( const s of ["dead", "unconscious", "incapacitated", "prone"] ) await ctx.removeStatusEffects(guerrier, s);
+        await ctx.setHp(guerrier, 0);
+        continue;
+      }
+      hit = { target, death: await deathOf(ctx, guerrier), messages };
     }
     if ( !ctx.expect(!!hit, "le Rayon de givre touche le Guerrier (20 essais au plus)") ) return;
     const expected = hit.target.critical ? 2 : 1;

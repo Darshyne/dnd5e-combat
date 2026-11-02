@@ -116,7 +116,9 @@ export function declaredAttackModifiers(sourceToken, targetToken, activity) {
   const target = targetToken?.actor ?? null;
   const out = { advantage: [], disadvantage: [] };
   if ( !source || !target ) return out;
-  const declarations = [...declarationsOf(source), ...declarationsOfEffects(source), ...declarationsOfEffects(target)];
+  // §334 : et les déclarations `defends` des items de la cible (Déplacement de la Bête éclipsante : Désavantage contre elle).
+  const declarations = [...declarationsOf(source).filter(d => d.defends !== true), ...declarationsOfEffects(source), ...declarationsOfEffects(target),
+    ...declarationsOf(target).filter(d => d.defends === true)];
   const facts = factsFor({ source, target, activity, sourceToken, targetToken });
   for ( const d of select(declarations, "preAttackRoll", facts) ) {
     for ( const type of ["advantage", "disadvantage"] ) {

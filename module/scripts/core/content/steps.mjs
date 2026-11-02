@@ -113,6 +113,8 @@ export function validateTrigger(declaration, at, facts, errors) {
   }
   // §129 : `free` — une fenêtre de réaction qui ne coûte pas la Réaction (Chanceux : un point de chance), proposée même si elle est prise.
   if ( ("free" in declaration) && (declaration.free !== true) ) errors.push(`${at}.free: true or absent`);
+  // §334 : `defends` — une déclaration `preAttackRoll` de l'item de la cible (Déplacement).
+  if ( ("defends" in declaration) && ((declaration.defends !== true) || !(declaration.on ?? []).includes?.("preAttackRoll") && (declaration.on !== "preAttackRoll")) ) errors.push(`${at}.defends: true, with preAttackRoll`);
   if ( !Array.isArray(d.do) || !d.do.length ) errors.push(`${at}.do: at least one step`);
   else {
     d.do.forEach((s, i) => validateStep(s, `${at}.do[${i}]`, errors));

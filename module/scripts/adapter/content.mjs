@@ -16,7 +16,7 @@ import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { monsterChoice, monsterDeaths, monsterEndings, monsterPushes, monsterReactions, monsterRecurring, monsterTypeGate, monsterAdvantage, monsterSaveDamage, monsterMissingStatus, monsterNoOpportunity,
-  monsterBasicActions, monsterSightGate, monsterImmunity, monsterEffectDurations, monsterReactionWindow } from "../core/monster-text.mjs";
+  monsterBasicActions, monsterSightGate, monsterImmunity, monsterEffectDurations, monsterReactionWindow, monsterActivationAdvantage, monsterDefense } from "../core/monster-text.mjs";
 import { readDrain, drains } from "../core/drain.mjs";
 
 export const OVERRIDES_SETTING = "contentOverrides";
@@ -148,6 +148,8 @@ function textLayer(item) {
   const pushes = monsterPushes(html, kinds);
   // K10 (§331) : Avantage conditionnel lu dans le texte.
   const advantage = monsterAdvantage(html, identifierOf(item).id);
+  // §334 : l'Avantage que donne la condition d'activation d'une attaque.
+  advantage.push(...monsterActivationAdvantage(Array.from(item.system?.activities ?? []).filter(a => a.type === "attack").map(a => a.activation?.condition ?? ""), identifierOf(item).id));
   // K12 (§333) : l'état que la donnée oublie de poser.
   const acts = Array.from(item.system?.activities ?? []).map(a => ({ id: a.id, type: a.type, effects: (a.effects ?? []).map(e => e._id ?? e.id) }));
   // §334 : un état lu avec sa durée d'un tour la reçoit par `effectEnds` « status:<état> ».
@@ -163,7 +165,7 @@ function textLayer(item) {
   const outward = Array.from(item.system?.activities ?? []).some(a => (a.activation?.type === "reaction") && ["save", "attack", "damage"].includes(a.type));
   const window = (reactionConditions.length && !reacts.triggers?.length) ? monsterReactionWindow(html, reactionConditions, outward,
     Array.from(item.system?.activities ?? []).find(a => a.activation?.type === "reaction")?.id ?? null) : [];
-  const allTriggers = [...triggers, ...(reacts.triggers ?? []), ...window, ...(recurring.triggers ?? []), ...pushes, ...advantage, ...missing];
+  const allTriggers = [...triggers, ...monsterDefense(html), ...(reacts.triggers ?? []), ...window, ...(recurring.triggers ?? []), ...pushes, ...advantage, ...missing];
   // §334 : les durées en tours que le texte donne aux effets, Réactions perdues et soins bloqués par effet.
   const durations = monsterEffectDurations(html, { activities: acts, effects });
   if ( durations.effectEnds ) recurring.effectEnds = { ...durations.effectEnds, ...(recurring.effectEnds ?? {}) };

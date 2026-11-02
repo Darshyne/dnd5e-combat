@@ -587,3 +587,39 @@ export function monsterReactionWindow(html, conditions=[], outward=false, activi
   }
   return [];
 }
+
+/**
+ * §334 : l'Avantage que la condition d'activation d'une attaque donne (« with Advantage if the target doesn't have all its Hit Points »,
+ * « … if the target is Grappled by the bugbear ») — le texte du bloc ne le dit que par `[[lookup @activation.condition]]`. Pour les
+ * attaques de l'item seulement.
+ * @param {string[]} conditions   conditions d'activation des activités d'attaque
+ * @param {string|null} identifier
+ * @returns {object[]} déclarations `triggers`
+ */
+export function monsterActivationAdvantage(conditions=[], identifier=null) {
+  if ( !identifier ) return [];
+  for ( const raw of conditions ) {
+    const c = plainText(raw ?? "");
+    if ( !/\bwith Advantage if\b/i.test(c) ) continue;
+    let condition = null;
+    if ( /\bdoesn['’]t have all (?:of )?its Hit Points?\b/i.test(c) ) condition = { "target.wounded": true };
+    else if ( /\bis Grappled by (?:the \S+|it|him|her)\b/i.test(c) ) condition = { "target.grappledBySource": true };
+    if ( condition ) return [{ on: "preAttackRoll", if: { all: [condition, { "activity.identifier": identifier }] }, do: [{ type: "advantage" }] }];
+  }
+  return [];
+}
+
+/**
+ * §334 : « Attack rolls against the displacer beast have Disadvantage » (Déplacement, Forme floue, Forme incompréhensible) — une
+ * déclaration `preAttackRoll` portée par l'item de la CIBLE (`defends: true`) : Désavantage, sauf si elle est Neutralisée quand le texte
+ * le dit (« suppressed while … Incapacitated », « unless … has the Incapacitated condition »).
+ * @param {string} html
+ * @returns {object[]} déclarations `triggers`
+ */
+export function monsterDefense(html) {
+  const text = plainText(html);
+  if ( !text || (segments(text).length > 1) ) return [];
+  if ( !/\bAttack rolls against (?:the \S+|it|him|her) (?:have|are made with) Disadvantage\b/i.test(text) ) return [];
+  const incapacitated = /\bIncapacitated\b/i.test(text);
+  return [{ on: "preAttackRoll", defends: true, ...(incapacitated ? { if: { not: { "target.hasStatus": "incapacitated" } } } : {}), do: [{ type: "disadvantage" }] }];
+}

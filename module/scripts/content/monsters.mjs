@@ -39,6 +39,24 @@ export const MONSTERS = Object.freeze({
   "avoidance": { avoidance: true },
   // Absorption de vie (Nécrophage) : la donnée laisse les dégâts sans type ; nécrotiques.
   "mm-wight-life-drain": { untypedDamage: "necrotic" },
+  // Rayons oculaires (Tyrannœil, Tyran de la mort ; identifiant propre, content/sources.mjs) : chaque rayon par son effet ou son
+  // activité. Charme et sommeil tombent aux dégâts ; paralysie rejouée en fin de tour ; pétrification : Entravé au premier échec,
+  // Pétrifié au second (l'effet « Restrained » de la donnée porte Pétrifié, son double Pétrifié est écarté) ; ralentissement : ni
+  // Réaction ni « action et action Bonus » (sa copie de vitesse écartée) ; énervation : pas de soins tant qu'Empoisonné ; durées
+  // « jusqu'à la fin de son prochain tour » ; le rayon de sommeil épargne Artificiels et Morts-vivants.
+  "mm-beholder-eye-rays": {
+    triggers: [
+      { on: "isDamaged", via: "effect", fromEffect: "OZBZrDI0m8zZSCxq", do: [{ type: "remove" }] },
+      { on: "endOfTurn", via: "effect", fromEffect: "uqejMIv7S1xZmEcD", do: [{ type: "resave" }] },
+      { on: "isDamaged", via: "effect", fromEffect: "TlR4l9cSFcUEbsJW", do: [{ type: "remove" }] },
+      { on: "endOfTurn", via: "effect", fromEffect: "K1dTJYj98PUwPBTZ", do: [{ type: "resave", tally: { successes: 1, failures: 1, status: "petrified" } }] }
+    ],
+    dropsEffects: ["l6MomayhxYuMYQR3", "DDygZ3FWo4nRabwO"],
+    effectStatuses: { K1dTJYj98PUwPBTZ: { set: ["restrained"] } },
+    noReactions: ["1zE4l88npB9r24MV"], actionOrBonus: ["1zE4l88npB9r24MV"], blocksHealing: ["XvZO30AwVhzcboC7"],
+    effectEnds: { okGmSea9t9idzzrp: "bearerTurnEnd", XvZO30AwVhzcboC7: "bearerTurnEnd", "1zE4l88npB9r24MV": "bearerTurnEnd", "5tr2oDlFLN7khXBT": "casterTurnStart" },
+    targets: { unaffectedIf: { "activity.id": "CSKrXM1Pkhlf23et", any: [{ "target.creatureType": "construct" }, { "target.creatureType": "undead" }] } }
+  },
   // Disparition (Feu follet, Esprit frappeur) : l'Invisibilité tombe après un jet d'attaque.
   "vanish": { breaksOn: ["attack"] },
   // Ravenloft. Protection ésotérique (Gennifer) : Étourdi seulement pour un Mort-vivant.

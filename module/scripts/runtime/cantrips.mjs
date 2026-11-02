@@ -97,7 +97,12 @@ async function expire(combat, prior, current) {
 /** Contact glacial : pas de PV regagnés tant que l'effet tient. */
 function onPreApplyDamage(actor, amount, updates) {
   if ( !(amount < 0) || !actor?.effects ) return true;
-  const blocked = actor.effects.some(e => !e.disabled && !e.isSuppressed && (contentOf(originItemOf(e)).entry?.blocksHealing === true));
+  // §334 : `blocksHealing` — tous les effets de l'item, ou ceux de la liste (Rayon énervant : son Empoisonné seul).
+  const blocked = actor.effects.some(e => {
+    if ( e.disabled || e.isSuppressed ) return false;
+    const rule = contentOf(originItemOf(e)).entry?.blocksHealing;
+    return (rule === true) || (Array.isArray(rule) && rule.some(id => comesFromItemEffect(e, id)));
+  });
   if ( !blocked ) return true;
   const hp = actor.system.attributes?.hp?.value;
   if ( Number.isFinite(hp) && (updates["system.attributes.hp.value"] > hp) ) {

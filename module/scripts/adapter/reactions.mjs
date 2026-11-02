@@ -35,12 +35,15 @@ const REACTION_TIMEOUT = 20000;   // au-delà du délai de la fenêtre (adapter/
 
 /** §16.47 : l'acteur porte-t-il un effet d'un sort qui interdit les Réactions (`noReactions` : Tentacules de Hadar) ? */
 export function reactionsBlocked(actor) {
-  return (actor?.effects ?? []).some(e => !e.disabled && !e.isSuppressed && (contentOf(originItemOf(e))?.entry?.noReactions === true));
+  return (actor?.effects ?? []).some(e => !e.disabled && !e.isSuppressed && effectRule(e, contentOf(originItemOf(e))?.entry?.noReactions));
 }
+
+/** §334 : une règle d'effet vraie pour tous les effets de l'item (`true`), ou pour ceux de la liste (Rayon ralentissant). */
+const effectRule = (e, rule) => (rule === true) || (Array.isArray(rule) && rule.some(id => comesFromItemEffect(e, id)));
 
 /** §77 : l'acteur porte-t-il un effet qui ne laisse qu'une action OU une action Bonus par tour (`actionOrBonus` : Nuage fétide) ? */
 export function actionOrBonusOnly(actor) {
-  return (actor?.effects ?? []).some(e => !e.disabled && !e.isSuppressed && (contentOf(originItemOf(e))?.entry?.actionOrBonus === true));
+  return (actor?.effects ?? []).some(e => !e.disabled && !e.isSuppressed && effectRule(e, contentOf(originItemOf(e))?.entry?.actionOrBonus));
 }
 
 /** §23 : le porteur d'un effet d'item `noOpportunityAttacks` (Poigne électrique) ne fait pas d'attaque d'opportunité. */

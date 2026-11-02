@@ -183,7 +183,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       && (!("activities" in k) || (Array.isArray(k.activities) && k.activities.length && k.activities.every(isId)));
     if ( !ok ) errors.push(`${at}killsAtZero: true or { types?, sizeAtMost?, activities? }`);
   }
-  for ( const key of ["actionOrBonus", "singleAttack", "noAttacksOrSpells", "noSpells", "knownToOrigin", "upkeep", "keepsProne", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "noReactions", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "avoidance", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "blocksHealing", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails", "critMove", "combatInspiration", "quietPose", "zoneBound", "effectsFirst", "hitDefense", "enterOnPose", "summonEffectsOnCaster", "sniper"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
+  for ( const key of ["singleAttack", "noAttacksOrSpells", "noSpells", "knownToOrigin", "upkeep", "keepsProne", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "avoidance", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails", "critMove", "combatInspiration", "quietPose", "zoneBound", "effectsFirst", "hitDefense", "enterOnPose", "summonEffectsOnCaster", "sniper"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
   // §225, lot 4 : passer du plan matériel à l'Éthéré ou inversement (Saut éthéré) ; `others` : les cibles désignées suivent (Foulée éthérée).
   if ( ("etherealShift" in entry) && !((entry.etherealShift === true) || (isObject(entry.etherealShift)
     && Object.keys(entry.etherealShift).every(k => k === "others") && (entry.etherealShift.others === true))) ) {
@@ -269,6 +269,10 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   // C12-f : `retort` — les dégâts subis renvoyés à l'attaquant qui rate la sauvegarde de la réaction (Défenses envoûtantes).
   if ( ("retort" in entry) && !(isObject(entry.retort) && DAMAGE_TYPES.includes(entry.retort.damageType) && Object.keys(entry.retort).every(k => k === "damageType")) ) {
     errors.push(`${at}retort: { damageType }`);
+  }
+  // §334 : `noReactions`, `actionOrBonus` — de même, tous les effets ou ceux-là (Rayon ralentissant).
+  for ( const key of ["noReactions", "actionOrBonus", "blocksHealing"] ) {
+    if ( (key in entry) && (entry[key] !== true) && !(Array.isArray(entry[key]) && entry[key].length && entry[key].every(isId)) ) errors.push(`${at}${key}: true or list of effect ids`);
   }
   // C12-e : `noOpportunityAttacks` — tous les effets de l'item, ou ceux-là (Coup chancelant).
   if ( ("noOpportunityAttacks" in entry) && (entry.noOpportunityAttacks !== true)
@@ -545,8 +549,9 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   if ( ("saveDamage" in entry) && !(isObject(entry.saveDamage) && Object.keys(entry.saveDamage).length
     && Object.entries(entry.saveDamage).every(([id, v]) => isId(id) && ["none", "half"].includes(v))) ) errors.push(`${at}saveDamage: { <activity id>: none|half }`);
   if ( ("effectStatuses" in entry) && !(isObject(entry.effectStatuses) && Object.keys(entry.effectStatuses).length
-    && Object.entries(entry.effectStatuses).every(([id, list]) => isId(id) && Array.isArray(list) && list.length && list.every(s => (typeof s === "string") && s))) ) {
-    errors.push(`${at}effectStatuses: { <effect id>: [conditions] }`);
+    && Object.entries(entry.effectStatuses).every(([id, list]) => isId(id) && Array.isArray(list?.set ?? list) && (list?.set ?? list).length
+      && (list?.set ?? list).every(s => (typeof s === "string") && s))) ) {
+    errors.push(`${at}effectStatuses: { <effect id>: [conditions] | { set: [conditions] } }`);
   }
   if ( ("atZero" in entry) && !(isObject(entry.atZero) && isId(entry.atZero.activity)
     && (!("save" in entry.atZero) || (isObject(entry.atZero.save) && (typeof entry.atZero.save.ability === "string") && (typeof entry.atZero.save.dc === "string")))

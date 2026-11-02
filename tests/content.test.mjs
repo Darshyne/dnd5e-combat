@@ -201,7 +201,7 @@ describe("contenu livré", () => {
       "lunging-attack", "lupin-howl", "mage-armor", "mage-hand", "mage-slayer", "magic-missile", "magic-resistance", "magic-weapon", "magnificent-mansion",
       "maneuvering-attack", "marshal-undead", "martial-arts", "mass-cure-wounds", "mass-heal", "mass-suggestion", "maze",
       "medium-armor-master", "melfs-acid-arrow", "menacing-attack", "mind-sliver", "mind-spike", "mindless-rage", "minor-illusion",
-      "mirror-image", "mislead", "mist-walker", "misty-escape", "misty-form", "misty-step", "mm-homunculus-bite", "mm-pseudodragon-sting", "mm-wereboar-gore", "mm-wight-life-drain", "modify-memory", "monks-focus", "moonbeam", "moonlight-step",
+      "mirror-image", "mislead", "mist-walker", "misty-escape", "misty-form", "misty-step", "mm-beholder-eye-rays", "mm-homunculus-bite", "mm-pseudodragon-sting", "mm-wereboar-gore", "mm-wight-life-drain", "modify-memory", "monks-focus", "moonbeam", "moonlight-step",
       "mordenkainens-faithful-hound", "mordenkainens-magnificent-mansion", "mordenkainens-sword", "natures-ward", "natures-wrath",
       "necrotic-husk", "nimble-escape", "noxious-miasma", "observant", "oil", "open-hand-technique", "otilukes-freezing-sphere", "otilukes-resilient-sphere",
       "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade", "pact-of-the-chain", "parry", "parry-maneuver", "pass-without-trace",

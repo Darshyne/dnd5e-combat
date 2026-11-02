@@ -323,8 +323,9 @@
  *                                               tour, pas les deux (§77 : Nuage fétide du Dretch, Lenteur)
  *     potionEffect?: <id d'effet>                le sort que la potion fait lancer ne pose que cet effet (§53 : Croissance →
  *                                               « agrandir » d'Agrandissement/rapetissement, Rapetissement → « rapetisser »)
- *     effectStatuses?: { <id d'effet>: string[] }  §96 : états ajoutés à cet effet de l'item quand il est posé (Esprit couard :
- *                                               l'effet « Frightened » de la donnée n'a pas l'état)
+ *     effectStatuses?: { <id d'effet>: string[] | { set: string[] } }  §96 : états ajoutés à cet effet de l'item quand il est posé
+ *                                               (Esprit couard : l'effet « Frightened » de la donnée n'a pas l'état) ; §334 : `set`
+ *                                               les remplace (Rayon pétrifiant : l'effet « Restrained » porte Pétrifié)
  *     effectChanges?: { <id d'effet>: [{ key, type, value, replace? }] }
  *                                               changements ajoutés à cet effet de l'item quand il est posé (§53 : Vol, Escalade —
  *                                               les données ne donnent pas la vitesse) ; `value: "@walk"` = la vitesse au sol du porteur ;

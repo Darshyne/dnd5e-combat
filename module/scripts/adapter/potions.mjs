@@ -70,6 +70,11 @@ export function completeEffectStatuses(effect) {
   const key = rules ? Object.keys(rules).find(id => comesFromItemEffect(effect, id)) : null;
   if ( !key ) return 0;
   const current = Array.from(effect._source.statuses ?? []);
+  // §334 : `{ set }` remplace les états de la donnée.
+  if ( Array.isArray(rules[key]?.set) ) {
+    effect.updateSource({ statuses: [...rules[key].set] });
+    return rules[key].set.length;
+  }
   const added = rules[key].filter(s => !current.includes(s));
   if ( added.length ) effect.updateSource({ statuses: [...current, ...added] });
   return added.length;

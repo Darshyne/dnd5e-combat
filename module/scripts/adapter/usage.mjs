@@ -220,7 +220,9 @@ function saveEffectsOf(activity) {
   // le Cylindre ».
   const saved = new Set(entry?.savedEffects ?? []);
   const margins = entry?.failMargins ?? {};
-  return effectsOf(activity, e => saved.has(effectKey(e)) ? "saved" : (e.onSave === true ? "always" : "failedSave"))
+  // K9 (§330) : la porte de taille (M3) vaut aussi pour les effets d'une sauvegarde (Coup de bouclier, Constriction : « si la cible est
+  // de taille G ou inférieure ») — elle ne valait que pour ceux d'une attaque.
+  return effectsOf(activity, e => saved.has(effectKey(e)) ? "saved" : (e.onSave === true ? "always" : "failedSave"), sizeGate(activity))
     .map(e => (margins[e.id] ? { ...e, margin: margins[e.id] } : e));
 }
 

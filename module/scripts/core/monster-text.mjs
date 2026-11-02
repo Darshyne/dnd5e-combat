@@ -249,6 +249,86 @@ export function monsterRecurring(html, effects=[]) {
 }
 
 /**
+ * K8 (SPEC §329) : poussées et tractions d'une capacité de monstre — « the target is pushed up to 10 feet straight away from the X »,
+ * « pulled up to 15 feet straight toward the X » → `{ on: failedSave|hit, do: [{ type: "move", mode, distance, units: "ft" }] }` ; « If the
+ * target is a Huge or smaller creature » / « Large or smaller » → `if: { "target.sizeAtMost" }`. Sur une sauvegarde : après « Failure » ;
+ * sinon sur une attaque : au toucher. Pas une distance renvoyée à une valeur calculée (« pushed up to … »), ni « into the X's space ».
+ * @param {string} html
+ * @param {{save?: boolean, attack?: boolean}} [kinds]  les activités de l'item
+ * @returns {object[]} déclarations `triggers`
+ */
+export function monsterPushes(html, { save=false, attack=false }={}) {
+  const text = plainText(html);
+  if ( !text || (segments(text).length > 1) ) return [];
+  const out = [];
+  for ( const sentence of text.split(/(?<=\.)\s+/) ) {
+    const m = sentence.match(/\b(pushed|pulled) up to (\d+) feet(?: straight)? (?:away from|toward)\b/i);
+    // Ni « pushed or pulled » (au choix), ni une traction vers le centre d'une zone (Implosion) : pas vers la créature.
+    if ( !m || /\bor (?:pushed|pulled)\b/i.test(sentence) || /\bcenter\b/i.test(sentence) ) continue;
+    const before = text.slice(0, text.indexOf(sentence));
+    const failure = /\bFailure\s*:/i.test(sentence) || (/\bFailure\s*:[^]*$/i.test(before) && !/\bSuccess\s*:[^]*$/i.test(before.split(/\bFailure\s*:/i).at(-1)));
+    const on = (save && failure) ? "failedSave" : (attack ? "hit" : null);
+    if ( !on ) continue;
+    const size = sentence.match(/\bIf the target is an? (Tiny|Small|Medium|Large|Huge|Gargantuan) or smaller\b/i)?.[1]
+      ?? before.split(/(?<=\.)\s+/).at(-1)?.match(/\bIf the target is an? (Tiny|Small|Medium|Large|Huge) or smaller\b/i)?.[1];
+    const sizeAtMost = size ? { tiny: "tiny", small: "sm", medium: "med", large: "lg", huge: "huge", gargantuan: "grg" }[size.toLowerCase()] : null;
+    out.push({ on, ...(sizeAtMost ? { if: { "target.sizeAtMost": sizeAtMost } } : {}),
+      do: [{ type: "move", mode: /^pushed$/i.test(m[1]) ? "push" : "pull", distance: Number(m[2]), units: "ft" }] });
+  }
+  return out;
+}
+
+/**
+ * K9 (SPEC §330) : la porte de type d'une capacité de monstre — « (Constructs and Undead succeed automatically) », « the target succeeds
+ * automatically if it is a Construct or an Undead » → `targets.unaffectedIf` (un des types). Pas « a creature that isn't a Construct », qui
+ * sert souvent à une autre clause (PV temporaires de la Morsure du Souverain lézard). Pas une capacité à rayons numérotés.
+ * @param {string} html
+ * @returns {{unaffectedIf: object}|null}
+ */
+export function monsterTypeGate(html) {
+  const text = plainText(html);
+  if ( !text || (segments(text).length > 1) ) return null;
+  const m = text.match(/\(([A-Za-z ,]+?) succeed automatically\)/i) ?? text.match(/\bsucceeds automatically if it is an? ([A-Za-z ,]+?(?: or an? [A-Za-z]+)?)\)?(?:[.;,]|$)/i);
+  if ( !m ) return null;
+  const TYPES = ["aberration", "beast", "celestial", "construct", "dragon", "elemental", "fey", "fiend", "giant", "humanoid", "monstrosity", "ooze", "plant", "undead"];
+  const types = TYPES.filter(t => new RegExp(`\\b${t}s?\\b`, "i").test(m[1]));
+  if ( !types.length ) return null;
+  return { unaffectedIf: (types.length === 1) ? { "target.creatureType": types[0] } : { any: types.map(t => ({ "target.creatureType": t })) } };
+}
+
+/**
+ * K10 (SPEC §331) : l'Avantage conditionnel d'une capacité de monstre, déclaré comme la Tactique de meute (`preAttackRoll`, `advantage`) :
+ *  - « Advantage on attack rolls against any creature that doesn't have all its Hit Points » (Frénésie sanguinaire) → `target.wounded` ;
+ *  - « While Bloodied, the X has Advantage on attack rolls » (Fureur du péril) → `source.hasStatus: bloodied` ;
+ *  - « Advantage on … against a creature Grappled by it / it is grappling » → `target.grappledBySource` ;
+ *  - « Advantage on attack rolls against a creature that has the Frightened condition » → `target.hasStatus`.
+ * « this attack » (la Morsure de l'Ankheg contre celle qu'il agrippe) : seulement pour les attaques de l'item (`activity.identifier`).
+ * @param {string} html
+ * @param {string|null} [identifier]  identifiant de l'item, pour « this attack »
+ * @returns {object[]} déclarations `triggers`
+ */
+export function monsterAdvantage(html, identifier=null) {
+  const text = plainText(html);
+  if ( !text || (segments(text).length > 1) ) return [];
+  const out = [];
+  for ( const sentence of text.split(/(?<=\.)\s+/) ) {
+    if ( !/\bhas Advantage on (?:attack rolls|this attack|the attack|its attack)/i.test(sentence) && !/\bAdvantage on attack rolls\b/i.test(sentence) ) continue;
+    let condition = null;
+    if ( /\bdoesn(?:'|’)t have all (?:its|of its) Hit Points\b/i.test(sentence) ) condition = { "target.wounded": true };
+    else if ( /\bWhile (?:it is )?Bloodied\b/i.test(sentence) ) condition = { "source.hasStatus": "bloodied" };
+    else if ( /\b(?:Grappled by it|it is grappling|it has Grappled)\b/i.test(sentence) ) condition = { "target.grappledBySource": true };
+    else {
+      const status = sentence.match(/\bagainst (?:(?:a|any) (?:creature|target)|targets|creatures) (?:that (?:has|have)|with) the ([A-Za-z]+) condition\b/i)?.[1];
+      if ( status && conditionsIn(status).length ) condition = { "target.hasStatus": status.toLowerCase() };
+    }
+    if ( !condition ) continue;
+    const own = /\b(?:this|the) attack\b/i.test(sentence) && identifier;
+    out.push({ on: "preAttackRoll", if: own ? { all: [condition, { "activity.identifier": identifier }] } : condition, do: [{ type: "advantage" }] });
+  }
+  return out;
+}
+
+/**
  * Les déclarations de fin d'une capacité de monstre, d'après son texte anglais.
  * @param {string} html                                         description anglaise d'origine
  * @param {Array<{id: string, statuses: string[]}>} effects     effets de l'item (pour rattacher une règle à son issue)

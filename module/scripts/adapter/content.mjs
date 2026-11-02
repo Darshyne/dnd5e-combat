@@ -15,7 +15,7 @@ import { CONTENT, SOURCES } from "../content/index.mjs";
 import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
-import { monsterChoice, monsterDeaths, monsterEndings, monsterReactions, monsterRecurring } from "../core/monster-text.mjs";
+import { monsterChoice, monsterDeaths, monsterEndings, monsterPushes, monsterReactions, monsterRecurring, monsterTypeGate, monsterAdvantage } from "../core/monster-text.mjs";
 
 export const OVERRIDES_SETTING = "contentOverrides";
 
@@ -138,11 +138,18 @@ function textLayer(item) {
   // K7 (§328) : dégâts récurrents au porteur, soins bloqués, absorption — pas pour une capacité que la brique Avaler joue déjà.
   const recurring = monsterRecurring(html, effects);
   if ( CONTENT[identifierOf(item).id]?.swallow ) delete recurring.triggers;
-  const allTriggers = [...triggers, ...(reacts.triggers ?? []), ...(recurring.triggers ?? [])];
+  // K8 (§329) : poussées et tractions lues dans le texte.
+  const kinds = { save: activities.some(a => item.system.activities.get(a.id)?.type === "save"), attack: activities.some(a => item.system.activities.get(a.id)?.type === "attack") };
+  const pushes = monsterPushes(html, kinds);
+  // K10 (§331) : Avantage conditionnel lu dans le texte.
+  const advantage = monsterAdvantage(html, identifierOf(item).id);
+  const allTriggers = [...triggers, ...(reacts.triggers ?? []), ...(recurring.triggers ?? []), ...pushes, ...advantage];
   const { triggers: _r, ...recurringRest } = recurring;
   const { triggers: _t, ...restrictions } = reacts;
-  const layer = (allTriggers.length || Object.keys(deaths).length || choice || Object.keys(restrictions).length || Object.keys(recurringRest).length)
-    ? { ...(allTriggers.length ? { triggers: allTriggers } : {}), ...deaths, ...restrictions, ...recurringRest, ...(choice ? { choice } : {}) } : null;
+  // K9 (§330) : porte de type (« Constructs and Undead succeed automatically »).
+  const gate = monsterTypeGate(html);
+  const layer = (allTriggers.length || Object.keys(deaths).length || choice || Object.keys(restrictions).length || Object.keys(recurringRest).length || gate)
+    ? { ...(allTriggers.length ? { triggers: allTriggers } : {}), ...deaths, ...restrictions, ...recurringRest, ...(choice ? { choice } : {}), ...(gate ? { targets: gate } : {}) } : null;
   if ( textCache.size > 2000 ) textCache.clear();
   textCache.set(key, layer);
   return layer;

@@ -74,7 +74,7 @@ async function onCreateEffect(effect) {
  * résistances et immunités, ces dégâts deviennent un soin (`dnd5e.preCalculateDamage`, documents/actor/actor.mjs:870).
  */
 function onPreCalculateDamage(actor, damages) {
-  const types = new Set((actor?.items ?? []).flatMap(i => contentOf(i).entry?.absorbsDamage ?? []));
+  const types = new Set(Array.from(actor?.items ?? []).flatMap(i => contentOf(i).entry?.absorbsDamage ?? []));
   if ( !types.size ) return;
   for ( const d of damages ) {
     if ( !types.has(d.type) || !(d.value > 0) ) continue;

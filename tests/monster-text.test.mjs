@@ -149,3 +149,35 @@ describe("K7 : dégâts récurrents, soins bloqués, absorption", () => {
     expect(validateEntry({ absorbsDamage: ["fire"] })).toEqual([]);
   });
 });
+
+describe("K8 : poussées et tractions lues dans le texte", () => {
+  it("échec de sauvegarde ou toucher, porte de taille", async () => {
+    const { monsterPushes } = await import("../module/scripts/core/monster-text.mjs");
+    expect(monsterPushes("Failure: 9 damage, and the target is pushed up to 30 feet straight away from the dragon.", { save: true }))
+      .toEqual([{ on: "failedSave", do: [{ type: "move", mode: "push", distance: 30, units: "ft" }] }]);
+    expect(monsterPushes("Hit: 9 damage. If the target is a Huge or smaller creature, it is pushed up to 20 feet straight away from the demon.", { attack: true }))
+      .toEqual([{ on: "hit", if: { "target.sizeAtMost": "huge" }, do: [{ type: "move", mode: "push", distance: 20, units: "ft" }] }]);
+    expect(monsterPushes("Failure: the target is pulled up to 10 feet straight toward the knight.", { save: true })[0].do[0].mode).toBe("pull");
+    expect(monsterPushes("Failure: the target is pushed or pulled up to 10 feet.", { save: true })).toEqual([]);
+  });
+});
+
+describe("K9 : porte de type lue dans le texte", () => {
+  it("« succeed automatically »", async () => {
+    const { monsterTypeGate } = await import("../module/scripts/core/monster-text.mjs");
+    expect(monsterTypeGate("Wisdom Saving Throw: DC 12, one creature (Constructs and Undead succeed automatically). Failure: Unconscious."))
+      .toEqual({ unaffectedIf: { any: [{ "target.creatureType": "construct" }, { "target.creatureType": "undead" }] } });
+    expect(monsterTypeGate("If the target is a creature that isn't a Construct or an Undead, the beast gains temporary hit points.")).toBe(null);
+  });
+});
+
+describe("K10 : Avantage conditionnel lu dans le texte", () => {
+  it("cible blessée, porteur En sang, cible Effrayée", async () => {
+    const { monsterAdvantage } = await import("../module/scripts/core/monster-text.mjs");
+    expect(monsterAdvantage("The shark has Advantage on attack rolls against any creature that doesn't have all its Hit Points."))
+      .toEqual([{ on: "preAttackRoll", if: { "target.wounded": true }, do: [{ type: "advantage" }] }]);
+    expect(monsterAdvantage("While Bloodied, the boar has Advantage on attack rolls.")[0].if).toEqual({ "source.hasStatus": "bloodied" });
+    expect(monsterAdvantage("The knight has Advantage on attack rolls against targets that have the Frightened condition.")[0].if).toEqual({ "target.hasStatus": "frightened" });
+    expect(monsterAdvantage("The wolf has Advantage on Wisdom (Perception) checks.")).toEqual([]);
+  });
+});

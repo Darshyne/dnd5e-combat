@@ -16,7 +16,7 @@ import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { monsterChoice, monsterDeaths, monsterEndings, monsterPushes, monsterReactions, monsterRecurring, monsterTypeGate, monsterAdvantage, monsterSaveDamage, monsterMissingStatus, monsterNoOpportunity,
-  monsterBasicActions, monsterSightGate, monsterImmunity } from "../core/monster-text.mjs";
+  monsterBasicActions, monsterSightGate, monsterImmunity, monsterEffectDurations } from "../core/monster-text.mjs";
 import { readDrain, drains } from "../core/drain.mjs";
 
 export const OVERRIDES_SETTING = "contentOverrides";
@@ -159,6 +159,11 @@ function textLayer(item) {
   const immunity = monsterImmunity(html, identifierOf(item).id, acts);
   if ( immunity ) missing.push(immunity.trigger);
   const allTriggers = [...triggers, ...(reacts.triggers ?? []), ...(recurring.triggers ?? []), ...pushes, ...advantage, ...missing];
+  // §334 : les durées en tours que le texte donne aux effets, Réactions perdues et soins bloqués par effet.
+  const durations = monsterEffectDurations(html, { activities: acts, effects });
+  if ( durations.effectEnds ) recurring.effectEnds = { ...durations.effectEnds, ...(recurring.effectEnds ?? {}) };
+  if ( durations.noReactions && !reacts.noReactions ) recurring.noReactions = durations.noReactions;
+  if ( durations.blocksHealing && !recurring.blocksHealing ) recurring.blocksHealing = durations.blocksHealing;
   const { triggers: _r, ...recurringRest } = recurring;
   const { triggers: _t, ...restrictions } = reacts;
   // K11 (§332) : pas de moitié des dégâts sur une réussite quand le texte n'en donne pas.

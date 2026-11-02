@@ -426,7 +426,9 @@ export function monsterMissingStatus(html, { activities=[], effects=[] }={}) {
   const out = [];
   const sentences = text.split(/(?<=\.)\s+/);
   for ( const [i, sentence] of sentences.entries() ) {
-    const m = sentence.match(/\b(?:it|the target) has the (Prone|Restrained|Blinded|Deafened|Frightened|Poisoned|Stunned|Incapacitated|Paralyzed) condition\b/i);
+    // §334 : aussi « it starts burning » (Contact du magmin) — l'état En feu de dnd5e.
+    const m = sentence.match(/\b(?:it|the target) has the (Prone|Restrained|Blinded|Deafened|Frightened|Poisoned|Stunned|Incapacitated|Paralyzed) condition\b/i)
+      ?? sentence.match(/\b(?:it|the target) starts (burning)\b/i);
     if ( !m || /\b(?:While|until it takes damage|If this damage|reduces the target to 0)\b/i.test(sentence) ) continue;
     // Un état posé par le moteur n'a pas de durée : la seule durée lue est un tour (`effectEnds` « status:<état> », §334) —
     // « until the start of the wyvern's next turn » (le lanceur), « until the end of its next turn » (la cible).
@@ -502,4 +504,41 @@ export function monsterImmunity(html, identifier, activities=[]) {
   const seconds = n * ((m[2].toLowerCase() === "hour") ? 3600 : 60);
   const mark = `immune:${identifier}`;
   return { trigger: { on: "savedSave", do: [{ type: "mark", mark, label: "Marque.Immunite", seconds }] }, gate: { "target.hasMark": mark } };
+}
+
+/**
+ * §334 : la durée que le texte donne à l'effet d'une capacité, quand elle se compte en tours (la donnée met souvent « 1 tour », qui tombe
+ * au début du tour du combattant suivant) :
+ *  - « the target has the Restrained condition until the end of its next turn » → `effectEnds` de l'effet qui porte cet état :
+ *    `bearerTurnEnd` (« its ») ou `casterTurnEnd` (« the spy master's ») ; de même « start » ;
+ *  - « the target can't take Reactions until … » sur un effet sans état → `noReactions` de cet effet, et sa durée ;
+ *  - « the creature can't regain Hit Points » sur un effet sans état → `blocksHealing` de cet effet.
+ * Un texte à plusieurs segments (rayons numérotés) est laissé.
+ * @param {string} html
+ * @param {{activities?: Array<{type: string, effects?: string[]}>, effects?: Array<{id: string, statuses?: string[]}>}} [data]
+ * @returns {{effectEnds?: object, noReactions?: string[], blocksHealing?: string[]}}
+ */
+export function monsterEffectDurations(html, { activities=[], effects=[] }={}) {
+  const text = plainText(html);
+  const out = {};
+  if ( !text || (segments(text).length > 1) ) return out;
+  const cited = new Set(activities.flatMap(a => a.effects ?? []));
+  const own = effects.filter(e => cited.has(e.id));
+  const bare = own.filter(e => !(e.statuses ?? []).length);
+  const endOf = m => `${/^its$/i.test(m[2]) ? "bearer" : "caster"}Turn${(m[1].toLowerCase() === "start") ? "Start" : "End"}`;
+  for ( const sentence of text.split(/(?<=\.)\s+/) ) {
+    const turn = sentence.match(/\buntil the (start|end) of (its|the [^.]*?['’]s|his|her) next turn\b/i);
+    if ( !turn || /^(?:his|her)$/i.test(turn[2]) ) continue;
+    const status = sentence.match(/\bhas the (Prone|Restrained|Blinded|Deafened|Frightened|Poisoned|Stunned|Incapacitated|Paralyzed|Charmed|Grappled) condition\b/i)?.[1]?.toLowerCase();
+    if ( status ) {
+      for ( const e of own.filter(e => (e.statuses ?? []).includes(status)) ) (out.effectEnds ??= {})[e.id] = endOf(turn);
+      continue;
+    }
+    if ( /\bcan[’']t take (?:a Bonus Action or )?Reactions?\b|\bcan[’']t take a Bonus or Reaction\b/i.test(sentence) && (bare.length === 1) ) {
+      out.noReactions = [bare[0].id];
+      (out.effectEnds ??= {})[bare[0].id] = endOf(turn);
+    }
+  }
+  if ( (bare.length === 1) && /\b(?:the creature|the target) can[’']t regain Hit Points\b/i.test(text) ) out.blocksHealing = [bare[0].id];
+  return out;
 }

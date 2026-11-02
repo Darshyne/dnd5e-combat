@@ -574,6 +574,7 @@
   "DND5ECOMBAT.Souci.legendaryOwnTurn": "{name} : une action légendaire se prend après le tour d'une autre créature, pas pendant le sien.",
   "DND5ECOMBAT.Souci.legendarySpent": "{name} : plus d'action légendaire ({left}).",
   "DND5ECOMBAT.Souci.legendaryOnce": "{name} : a déjà pris une action légendaire pendant ce tour.",
+  "DND5ECOMBAT.Souci.legendaryAgain": "{name} : {item} ne peut pas être reprise avant le début de son prochain tour.",
   "DND5ECOMBAT.Retour.Utilisation": "{sign}{n} {item}",
   "DND5ECOMBAT.Retour.Emplacement": "{sign}{n} emplacement niv. {level}",
   "DND5ECOMBAT.Forme.ReprendreAide": "Action Bonus : vous quittez votre Forme sauvage et reprenez votre forme normale.",

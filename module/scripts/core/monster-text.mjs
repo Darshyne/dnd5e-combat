@@ -337,7 +337,7 @@ export function monsterAdvantage(html, identifier=null) {
  * @returns {object|null}  `saveDamage`
  */
 export function monsterSaveDamage(html, activities=[]) {
-  const saves = activities.filter(a => (a.type === "save") && ["half", "none"].includes(a.onSave));
+  const saves = activities.filter(a => (a.type === "save") && ["half", "none", "full"].includes(a.onSave));
   if ( !saves.length ) return null;
   const raw = String(html ?? "").replace(/<[^>]+>/g, " ");
   if ( !/\bFailure\s*:/i.test(raw) || (segments(plainText(html)).length > 1) ) return null;
@@ -348,7 +348,7 @@ export function monsterSaveDamage(html, activities=[]) {
     return nones.length ? Object.fromEntries(nones.map(a => [a.id, "half"])) : null;
   }
   if ( (success !== null) && (/\bdamage\b|\bhalf\b/i.test(success)) ) return null;
-  const halves = saves.filter(a => a.onSave === "half");
+  const halves = saves.filter(a => ["half", "full"].includes(a.onSave));
   return halves.length ? Object.fromEntries(halves.map(a => [a.id, "none"])) : null;
 }
 
@@ -382,4 +382,68 @@ export function monsterEndings(html, effects=[]) {
     }
   }
   return out;
+}
+
+/** Taille écrite en anglais → clé de taille dnd5e. */
+const SIZE_KEYS = { tiny: "tiny", small: "sm", medium: "med", large: "lg", huge: "huge", gargantuan: "grg" };
+
+/**
+ * K12 (SPEC §333) : l'état que le texte pose et que la donnée oublie — « If the target is a Large or smaller creature, it has the
+ * Prone condition » sur une attaque sans effet (Décharge aquatique, Coup de l'Élémentaire de l'eau), « Failure: The target has the
+ * Restrained condition » sur une sauvegarde dont l'activité ne cite pas l'effet (Filet collant). Au toucher pour une attaque, sur
+ * la sauvegarde ratée pour une sauvegarde ; limite de taille gardée. Rien quand une activité du même genre pose déjà cet état,
+ * ni pour une phrase conditionnelle (« While », « If this damage reduces », « until it takes damage »).
+ * @param {string} html
+ * @param {{activities?: Array<{type: string, effects?: string[]}>, effects?: Array<{id: string, statuses?: string[]}>}} [data]
+ * @returns {object[]} déclarations `triggers`
+ */
+export function monsterMissingStatus(html, { activities=[], effects=[] }={}) {
+  const text = plainText(html);
+  if ( !text || (segments(text).length > 1) || /\bone of the following\b/i.test(text) ) return [];
+  const statusesOf = kind => new Set(activities.filter(a => a.type === kind).flatMap(a => a.effects ?? [])
+    .flatMap(id => effects.find(e => e.id === id)?.statuses ?? []));
+  const save = activities.some(a => a.type === "save");
+  const attack = activities.some(a => a.type === "attack");
+  const out = [];
+  const sentences = text.split(/(?<=\.)\s+/);
+  for ( const [i, sentence] of sentences.entries() ) {
+    const m = sentence.match(/\b(?:it|the target) has the (Prone|Restrained|Blinded|Deafened|Frightened|Poisoned|Stunned|Incapacitated|Paralyzed) condition\b/i);
+    if ( !m || /\b(?:While|until it takes damage|If this damage|reduces the target to 0)\b/i.test(sentence) ) continue;
+    // Un état posé par le moteur n'a pas de durée : seulement ceux qui n'en ont pas (À terre, Entravé « until the net is destroyed »).
+    if ( /\buntil (?:the (?:start|end)|the grapple ends)\b|\bfor (?:\d+|one|an?|…) (?:round|minute|hour|…)|\bon an? \d/i.test(sentence) ) continue;
+    const status = m[1].toLowerCase();
+    const before = sentences.slice(0, i).join(" ");
+    const failure = /\bFailure\s*:/i.test(sentence) || (/\bFailure\s*:/i.test(before) && !/\bSuccess\s*:[^]*$/i.test(before.split(/\bFailure\s*:/i).at(-1)));
+    const on = (save && failure) ? "failedSave" : ((attack && !save) ? "hit" : null);
+    if ( !on || statusesOf(on === "hit" ? "attack" : "save").has(status) ) continue;
+    const size = sentence.match(/\bIf the target is an? (Tiny|Small|Medium|Large|Huge|Gargantuan) or smaller\b/i)?.[1];
+    out.push({ on, ...(size ? { if: { "target.sizeAtMost": SIZE_KEYS[size.toLowerCase()] } } : {}), do: [{ type: "status", status }] });
+  }
+  return out;
+}
+
+/**
+ * K12 (SPEC §333) : « the target can't make Opportunity Attacks until … » (Fouet d'os, Coup effroyable) → `noOpportunityAttacks`,
+ * porté par l'effet de l'item ; seulement si l'item a un effet.
+ */
+export function monsterNoOpportunity(html, effects=[]) {
+  if ( !effects.length ) return false;
+  return /\bcan[’']t (?:make|take) Opportunity ?(?:Attacks?)?/i.test(plainText(html));
+}
+
+/**
+ * K12 (SPEC §333) : « takes the Dash, the Disengage, or Hide action » (Ruse), « takes the Dash and Disengage actions » (Hâte du
+ * Golem d'argile) → `basicActions` de l'activité utilitaire : « or » au choix, « and » toutes.
+ * @param {string} html
+ * @param {Array<{id: string, type: string}>} activities
+ */
+export function monsterBasicActions(html, activities=[]) {
+  const utility = activities.find(a => a.type === "utility");
+  if ( !utility ) return null;
+  const m = plainText(html).match(/\btakes the ((?:(?:the |, |,? (?:and|or) )*(?:Dash|Disengage|Hide|Dodge))+) actions?\b/i);
+  if ( !m ) return null;
+  const actions = [...m[1].matchAll(/\b(Dash|Disengage|Hide|Dodge)\b/gi)].map(x => x[1].toLowerCase());
+  if ( !actions.length ) return null;
+  const rule = (actions.length === 1) ? actions[0] : (/\bor\b/i.test(m[1]) ? { choose: actions } : actions);
+  return { [utility.id]: rule };
 }

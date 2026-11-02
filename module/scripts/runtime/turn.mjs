@@ -250,6 +250,8 @@ export function legendaryIssues(activity, combatant, own) {
   if ( own ) out.push(loc("Souci.legendaryOwnTurn", { name }));
   if ( (legact.value ?? 0) < cost ) out.push(loc("Souci.legendarySpent", { name, left: legact.value ?? 0 }));
   if ( activity.actor.getFlag(MODULE_ID, "legendaryTurn") === currentTurnKey() ) out.push(loc("Souci.legendaryOnce", { name }));
+  // K12 (§333) : « can't take this action again until the start of its next turn ».
+  if ( activity.actor.getFlag(MODULE_ID, `legendaryLocked.${activity.item.id}`) ) out.push(loc("Souci.legendaryAgain", { name, item: activity.item.name }));
   return out;
 }
 
@@ -258,6 +260,9 @@ function legendaryWindowOpen(actor) {
   const w = actor?.getFlag?.(MODULE_ID, "legendaryWindow");
   return !!w && (w.turn === currentTurnKey()) && (w.left > 0);
 }
+
+/** K12 (§333) : une action légendaire qui ne revient qu'au début du prochain tour de la créature. */
+const LEGENDARY_AGAIN = /can['’]t (?:take|use) (?:this|that) (?:legendary )?(?:action|ability)? ?again until the start of (?:its|their|his|her) next turn/i;
 
 const COUNT_WORDS = { one: 1, an: 1, a: 1, two: 2, three: 3 };
 
@@ -279,6 +284,7 @@ async function onLegendaryUsed(activity) {
   const left = m ? (COUNT_WORDS[m[1].toLowerCase()] ?? (Number(m[1]) || 1)) : 0;
   const turn = currentTurnKey();
   const update = { [`flags.${MODULE_ID}.legendaryTurn`]: turn, [`flags.${MODULE_ID}.legendaryWindow`]: { turn, left } };
+  if ( LEGENDARY_AGAIN.test(text) ) update[`flags.${MODULE_ID}.legendaryLocked.${activity.item.id}`] = true;
   if ( !consumes ) update["system.resources.legact.spent"] = Math.min(legact.max, (Number(legact.spent) || 0) + cost);
   await actor.update(update);
   log(`${actor.name}: legendary action ${activity.item.name} (${cost}), ${Math.max(0, (legact.value ?? 0) - (consumes ? 0 : cost))} left${left ? `, ${left} attack(s) to follow` : ""}`);
@@ -655,6 +661,8 @@ async function onUsageCancelled(message) {
 
 async function resetBudget(combatant) {
   if ( combatant ) await writeBudget(combatant, freshBudgetFor(combatant));
+  // K12 (§333) : les actions légendaires verrouillées reviennent au début de son tour.
+  if ( combatant?.actor?.getFlag(MODULE_ID, "legendaryLocked") ) await combatant.actor.unsetFlag(MODULE_ID, "legendaryLocked").catch(() => {});
 }
 
 /* -------------------------------------------- */

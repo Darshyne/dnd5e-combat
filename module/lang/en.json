@@ -574,6 +574,7 @@
   "DND5ECOMBAT.Souci.legendaryOwnTurn": "{name}: a legendary action is taken after another creature's turn, not during its own.",
   "DND5ECOMBAT.Souci.legendarySpent": "{name}: no legendary action left ({left}).",
   "DND5ECOMBAT.Souci.legendaryOnce": "{name}: already took a legendary action during this turn.",
+  "DND5ECOMBAT.Souci.legendaryAgain": "{name}: {item} can't be used again until the start of its next turn.",
   "DND5ECOMBAT.Retour.Utilisation": "{sign}{n} {item}",
   "DND5ECOMBAT.Retour.Emplacement": "{sign}{n} level {level} slot",
   "DND5ECOMBAT.Forme.ReprendreAide": "Bonus Action: you leave your Wild Shape and return to your normal form.",

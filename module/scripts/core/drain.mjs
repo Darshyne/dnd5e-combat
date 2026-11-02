@@ -42,7 +42,7 @@ export function readDrain(html) {
   const text = plain(raw);
   const none = { equal: false, type: null, regains: false, fixed: null, onFailedSave: false, ability: null, floor: null };
   if ( /\bevery \d+ hours\b|\btoutes les \d+ heures\b/i.test(text) ) return none;
-  const en = text.match(/Hit Point maximum (?:decreases|is reduced) by an amount equal to the (?:([A-Za-z]+) )?damage (?:taken|it took)/i);
+  const en = text.match(/Hit Points? maximum (?:decreases|is reduced) by an amount equal to the (?:([A-Za-z]+) )?damage (?:taken|it took)/i);
   const fr = text.match(/maximum de points de vie (?:est réduit|diminue|baisse) d'un montant égal aux dégâts (?:([a-zàâéèêîôû]+) )?subis/i);
   const equal = !!(en || fr);
   const type = en?.[1] ? en[1].toLowerCase() : (fr?.[1] ? (FRENCH_TYPES[fr[1].toLowerCase()] ?? null) : null);

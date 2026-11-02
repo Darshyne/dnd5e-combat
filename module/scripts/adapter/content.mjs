@@ -15,7 +15,9 @@ import { CONTENT, SOURCES } from "../content/index.mjs";
 import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
-import { monsterChoice, monsterDeaths, monsterEndings, monsterPushes, monsterReactions, monsterRecurring, monsterTypeGate, monsterAdvantage, monsterSaveDamage } from "../core/monster-text.mjs";
+import { monsterChoice, monsterDeaths, monsterEndings, monsterPushes, monsterReactions, monsterRecurring, monsterTypeGate, monsterAdvantage, monsterSaveDamage, monsterMissingStatus, monsterNoOpportunity,
+  monsterBasicActions } from "../core/monster-text.mjs";
+import { readDrain, drains } from "../core/drain.mjs";
 
 export const OVERRIDES_SETTING = "contentOverrides";
 
@@ -143,12 +145,20 @@ function textLayer(item) {
   const pushes = monsterPushes(html, kinds);
   // K10 (§331) : Avantage conditionnel lu dans le texte.
   const advantage = monsterAdvantage(html, identifierOf(item).id);
-  const allTriggers = [...triggers, ...(reacts.triggers ?? []), ...(recurring.triggers ?? []), ...pushes, ...advantage];
+  // K12 (§333) : l'état que la donnée oublie de poser.
+  const acts = Array.from(item.system?.activities ?? []).map(a => ({ id: a.id, type: a.type, effects: (a.effects ?? []).map(e => e._id ?? e.id) }));
+  const missing = monsterMissingStatus(html, { activities: acts, effects });
+  const allTriggers = [...triggers, ...(reacts.triggers ?? []), ...(recurring.triggers ?? []), ...pushes, ...advantage, ...missing];
   const { triggers: _r, ...recurringRest } = recurring;
   const { triggers: _t, ...restrictions } = reacts;
   // K11 (§332) : pas de moitié des dégâts sur une réussite quand le texte n'en donne pas.
   const saveDamage = monsterSaveDamage(html, Array.from(item.system?.activities ?? []).map(a => ({ id: a.id, type: a.type, onSave: a.damage?.onSave ?? null })));
   if ( saveDamage ) recurringRest.saveDamage = saveDamage;
+  // K12 (§333) : plus d'attaque d'opportunité, Foncer / Se désengager / Se cacher, drain du maximum de PV dit par le texte.
+  if ( monsterNoOpportunity(html, effects) ) recurringRest.noOpportunityAttacks = true;
+  const basics = monsterBasicActions(html, acts);
+  if ( basics ) recurringRest.basicActions = basics;
+  if ( drains(readDrain(html)) ) recurringRest.drain = true;
   // K9 (§330) : porte de type (« Constructs and Undead succeed automatically »).
   const gate = monsterTypeGate(html);
   const layer = (allTriggers.length || Object.keys(deaths).length || choice || Object.keys(restrictions).length || Object.keys(recurringRest).length || gate)

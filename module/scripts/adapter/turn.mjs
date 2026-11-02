@@ -23,6 +23,7 @@ import { depthOf, verticalExtent, verticalGap } from "../core/space.mjs";
 import { climbSpeed } from "../core/climb.mjs";
 import { actionSpeed } from "../core/movement.mjs";
 import { multiattackOf, useKeysOf, isMultiattackItem } from "./multiattack.mjs";
+import { rangedFeatsOf } from "./conditions.mjs";
 import { pendingMetamagic, distantRange } from "./metamagic.mjs";
 
 /** Les acteurs de la scène du combat (tokens non liés compris), une fois chacun. */
@@ -177,6 +178,8 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
       || isUnarmedOption(activity),
     usesSpellSlot: spellSlot,
     lightWeapon: weapon && (item.system.properties?.has("lgt") === true),
+    // O5a (§339) : propriété Chargement, sauf si un don la lève (Expert des arbalètes).
+    loading: weapon && (activity.type === "attack") && (item.system.properties?.has("lod") === true) && !rangedFeatsOf(activity.actor, activity, attackMode).loading,
     offhand,
     nick: offhand && !!item.system.masteryOptions?.some(m => m.value === "nick"),
     // M1 (§18.6) : les Attaques multiples d'un monstre, lues dans son texte anglais.

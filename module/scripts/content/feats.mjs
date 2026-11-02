@@ -50,8 +50,8 @@ export const FEATS = Object.freeze({
   // être à 1,50 m d'un ennemi ne vous impose pas le Désavantage ; attaquer à longue portée non plus ».
   "sharpshooter": { rangedFeat: { kind: "weapon", cover: true, closeCombat: true, longRange: true } },
   // Expert des arbalètes : pas de Désavantage au contact avec une arbalète ; le modificateur aux dégâts de l'attaque supplémentaire de la
-  // propriété Légère avec une arbalète Légère. Le Rechargement n'est imposé ni par dnd5e ni par le moteur.
-  "crossbow-expert": { rangedFeat: { kind: "crossbow", closeCombat: true, offhandModifier: true } },
+  // propriété Légère avec une arbalète Légère. O5a (§339) : « vous ignorez la propriété Chargement des arbalètes » (core/turn.mjs).
+  "crossbow-expert": { rangedFeat: { kind: "crossbow", closeCombat: true, offhandModifier: true, loading: true } },
   // Sniper de sorts : les jets d'attaque des sorts ignorent l'abri partiel et aux trois quarts, pas de Désavantage au contact, et +18 m à
   // la portée d'un sort d'au moins 3 m qui demande un jet d'attaque.
   // §306 : Illusions améliorées (Illusionniste 3) — « la portée de vos sorts d'Illusion d'au moins 3 m augmente de 18 m ».

@@ -112,16 +112,17 @@ export const CROSSBOWS = Object.freeze(["handcrossbow", "heavycrossbow", "lightc
  * (une arbalète), « spell » (jet d'attaque d'un sort).
  * @param {object[]} rules  Les règles `rangedFeat` des items du porteur.
  * @param {{weapon: boolean, ranged: boolean, crossbow: boolean, spell: boolean}} attack
- * @returns {{cover: boolean, closeCombat: boolean, longRange: boolean, offhandModifier: boolean, spellRange: object|null}}
+ * O5a (§339) : `loading` — la propriété Chargement ne limite pas ces armes (Expert des arbalètes).
+ * @returns {{cover: boolean, closeCombat: boolean, longRange: boolean, offhandModifier: boolean, loading: boolean, spellRange: object|null}}
  */
 export function rangedFeatsFor(rules, attack) {
-  const out = { cover: false, closeCombat: false, longRange: false, offhandModifier: false, spellRange: null };
+  const out = { cover: false, closeCombat: false, longRange: false, offhandModifier: false, loading: false, spellRange: null };
   for ( const r of rules ?? [] ) {
     const fits = (r.kind === "weapon") ? (attack.weapon && attack.ranged)
       : (r.kind === "crossbow") ? (attack.weapon && attack.crossbow)
       : (r.kind === "spell") ? attack.spell : false;
     if ( !fits ) continue;
-    for ( const k of ["cover", "closeCombat", "longRange", "offhandModifier"] ) if ( r[k] === true ) out[k] = true;
+    for ( const k of ["cover", "closeCombat", "longRange", "offhandModifier", "loading"] ) if ( r[k] === true ) out[k] = true;
     if ( r.spellRange ) out.spellRange = r.spellRange;
   }
   return out;

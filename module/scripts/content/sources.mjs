@@ -90,3 +90,25 @@ export const SOURCE_IDENTIFIERS = Object.freeze({
   // §305 : le Compagnon réanimé de Ravenloft (sans identifiant propre).
   rhwRECompanionqV: "reanimated-companion"
 });
+
+/**
+ * O5b (SPEC §340) : les effets d'enchantement des armes et armures magiques du Guide du maître 2024, par id → l'identifiant de l'objet
+ * qui les pose. Une arme enchantée garde son propre identifiant (« longsword ») ; l'enchantement appliqué garde l'id de son effet
+ * d'origine (dnd5e, activity/enchant.mjs : `effect.clone(…).toObject()` créé avec `keepId`), même quand l'objet qui l'a posé n'est plus
+ * sur la fiche. Relevé dans le pack `equipment` du Guide (2.0.0) ; les enchantements « Enspelled » (ids partagés) n'y sont pas.
+ */
+export const ENCHANTMENT_SOURCES = Object.freeze({
+  rkijTbDVcBViZ8hs: "demon-armor",
+  GTBlnwp18lMmlhNY: "dragon-scale-mail", oAMZPSz9ScJ9kzJS: "dragon-scale-mail", YnovzwTfQAEO8okl: "dragon-scale-mail", SXYzllaQnbyxFGJu: "dragon-scale-mail", "7R5dtsUNiWZhXhS3": "dragon-scale-mail", kwIXULk6aDknIZnv: "dragon-scale-mail", "4MsmIVyXTFt4AKuD": "dragon-scale-mail", WnwsmlBDChjhXgAj: "dragon-scale-mail", wVh8ceMKvVud2qyr: "dragon-scale-mail", QzV7iJWMlEePDrjN: "dragon-scale-mail",
+  ZveR6kPKafjcwQdY: "dragon-slayer",
+  F6NbXlYCpjhBGFRp: "executioners-axe",
+  VtBOwsAVipxkP2f5: "flame-tongue", MHnAqxEXBhUbnjPq: "flame-tongue",
+  KDZFGFsxEOF5WvbJ: "frost-brand",
+  ZwpawARncDIheC65: "giant-slayer",
+  I7Iwl7awPq2wftoF: "holy-avenger",
+  L4ylYIFxr0vdht6M: "oathbow",
+  nxid1s2CZrB06HH8: "sword-of-sharpness",
+  tuFnPbghL64ioL04: "sword-of-wounding",
+  CzJMRNHYWlVNvnJN: "vicious-weapon",
+  mxrAgEyDsV2h5jla: "vorpal-sword",
+});

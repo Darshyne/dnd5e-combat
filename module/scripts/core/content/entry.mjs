@@ -603,10 +603,10 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   if ( "rangedFeat" in entry ) {
     const r = entry.rangedFeat;
     if ( !isObject(r) || !["weapon", "crossbow", "spell"].includes(r.kind)
-      || !["cover", "closeCombat", "longRange", "offhandModifier"].every(k => !(k in r) || (r[k] === true))
+      || !["cover", "closeCombat", "longRange", "offhandModifier", "loading"].every(k => !(k in r) || (r[k] === true))
       || (("spellRange" in r) && !(isObject(r.spellRange) && Number.isFinite(r.spellRange.value) && (r.spellRange.value > 0) && (typeof r.spellRange.units === "string") && r.spellRange.units
         && (!("school" in r.spellRange) || ((typeof r.spellRange.school === "string") && r.spellRange.school))))
-      || !Object.keys(r).every(k => ["kind", "cover", "closeCombat", "longRange", "offhandModifier", "spellRange"].includes(k)) ) {
+      || !Object.keys(r).every(k => ["kind", "cover", "closeCombat", "longRange", "offhandModifier", "loading", "spellRange"].includes(k)) ) {
       errors.push(`${at}rangedFeat: { kind: weapon | crossbow | spell, cover?, closeCombat?, longRange?, offhandModifier?: true, spellRange?: { value, units } }`);
     }
   }

@@ -354,9 +354,35 @@ export const ITEM_FIXES = Object.freeze({
   // Sac de haricots magiques (déversé) : l'explosion prend aussi celui qui les verse.
   "bag-of-beans": { includesOrigin: true },
 
+  /* ---- O5b (§340) : dégâts en plus contre un type de créature ---- */
+
+  // Armes enchantées (`<identifiant>-enchanted` : l'arme qui porte l'enchantement, adapter/content.mjs) — Tueuse de dragons : « 3d6 dégâts
+  // du type de l'arme de plus si la cible est un Dragon » ; Tueuse de géants : « 2d6 du type de l'arme » contre un Géant (sa sauvegarde
+  // contre À terre : lot O5c) ; Vengeresse sacrée : « 2d10 radiants » contre un Fiélon ou un Mort-vivant ; Hache du bourreau : « 2d6
+  // tranchants » contre un Humanoïde (les PV temporaires : au MJ).
+  "dragon-slayer-enchanted": BANE("dragon-slayer", ["dragon"], "3d6", "weapon", true),
+  "giant-slayer-enchanted": BANE("giant-slayer", ["giant"], "2d6", "weapon", true),
+  "holy-avenger-enchanted": BANE("holy-avenger", ["fiend", "undead"], "2d10", "radiant", true),
+  "executioners-axe-enchanted": BANE("executioners-axe", ["humanoid"], "2d6", "slashing", true),
+  // Armes qui portent leur propre identifiant — Masse d'anéantissement : « 2d6 radiants » contre un Fiélon ou un Mort-vivant ; Épée
+  // radieuse : « 1d8 radiants » contre un Mort-vivant ; Épée de Kas : « 2d10 tranchants » contre un Mort-vivant.
+  "mace-of-disruption": BANE("mace-of-disruption", ["fiend", "undead"], "2d6", "radiant"),
+  "sun-blade": BANE("sun-blade", ["undead"], "1d8", "radiant"),
+  "sword-of-kas": BANE("sword-of-kas", ["undead"], "2d10", "slashing"),
+
   // Morsure de Harkon (Ravenloft) : « +1 aux tests et sauvegardes tant que vous portez le collier » — l'effet n'est pas transféré.
   "harkons-bite": { dataFixes: [{ effect: "EzuxTW39OtnDWoi1", path: "transfer", from: false, value: true }] }
 });
+
+/**
+ * O5b (§340) : des dégâts en plus quand l'arme touche une créature de ces types — l'arme elle-même (`activity.identifier`), ou l'arme
+ * qui porte l'enchantement de cet objet (`activity.enchantedBy`).
+ */
+function BANE(identifier, types, formula, damageType, enchanted=false) {
+  const weapon = enchanted ? { "activity.enchantedBy": identifier } : { "activity.identifier": identifier };
+  const target = (types.length > 1) ? { any: types.map(t => ({ "target.creatureType": t })) } : { "target.creatureType": types[0] };
+  return { triggers: [{ on: "preDamageRoll", if: { "activity.isAttack": true, ...weapon, ...target }, do: [{ type: "damage", formula, damageType }] }] };
+}
 
 /** O3 : un poison qui endort — l'Inconscient se lève sur dégâts ou secoué, l'Empoisonné reste son effet propre. */
 function SLEEP_POISON(activity, sleep, poison, seconds) {

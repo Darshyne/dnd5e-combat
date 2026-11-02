@@ -60,7 +60,7 @@ const SUBSUMED_BY_VISION = ["blinded", "invisible"];
  *        Ce que le contenu déclare (§16, B6 : Lueurs féeriques, Tactique de meute…), par nom d'item.
  * @returns {{advantage: Reason[], disadvantage: Reason[]}}
  */
-export function attackModifiers({ attacker, target, adjacent, ranged, longRange=false, closeCombat=false, vision=null, frightenedSourceSeen=null, grappledElsewhere=null, helped=false, declared=null, elusive=false, untrainedArmor=false }) {
+export function attackModifiers({ attacker, target, adjacent, ranged, longRange=false, closeCombat=false, vision=null, frightenedSourceSeen=null, grappledElsewhere=null, helped=false, declared=null, elusive=false, untrainedArmor=false, heavyTooWeak=false }) {
   const advantage = (declared?.advantage ?? []).map(key => ({ who: "content", key }));
   const disadvantage = (declared?.disadvantage ?? []).map(key => ({ who: "content", key }));
   const kept = key => !vision || !SUBSUMED_BY_VISION.includes(key);
@@ -89,6 +89,8 @@ export function attackModifiers({ attacker, target, adjacent, ranged, longRange=
   if ( ranged && closeCombat ) disadvantage.push({ who: "situation", key: "closeCombat" });
   // §214 : armure portée sans formation — Désavantage aux attaques de Force ou de Dextérité.
   if ( untrainedArmor ) disadvantage.push({ who: "situation", key: "untrainedArmor" });
+  // O5a (§339) : arme Lourde maniée sans 13 en Force (corps à corps) ou en Dextérité (distance).
+  if ( heavyTooWeak ) disadvantage.push({ who: "situation", key: "heavyWeapon" });
   // §20 : Insaisissable — « aucun jet d'attaque ne peut avoir l'Avantage contre vous » : les raisons d'avantage ne comptent plus.
   if ( elusive ) return { advantage: [], disadvantage };
   return { advantage, disadvantage };

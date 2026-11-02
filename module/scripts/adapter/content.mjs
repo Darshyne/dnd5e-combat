@@ -12,6 +12,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { mergeEntries, validateEntry, CONTENT_VERSION, ENTRY_KEYS } from "../core/content.mjs";
 import { CONTENT, SOURCES } from "../content/index.mjs";
+import { ENCHANTMENT_SOURCES } from "../content/sources.mjs";
 import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
@@ -66,6 +67,38 @@ export function identifierOf(item) {
   return { id: null, from: null };
 }
 
+/**
+ * O5b (§340) : les identifiants des objets dont un enchantement actif est posé sur cet item — par l'id de l'effet d'enchantement
+ * (content/sources.mjs, `ENCHANTMENT_SOURCES` : il reste celui de l'effet d'origine), sinon par l'objet qui l'a posé
+ * (`system.origin.activity`, activity/enchant.mjs), quand il existe encore.
+ */
+export function enchantmentSourcesOf(item) {
+  const out = [];
+  const effects = item?.effects;
+  if ( !effects || (typeof effects[Symbol.iterator] !== "function") ) return out;
+  for ( const effect of effects ) {
+    if ( (effect?.type !== "enchantment") || effect.disabled || (effect.isAppliedEnchantment === false) ) continue;
+    let id = ENCHANTMENT_SOURCES[effect.id] ?? null;
+    if ( !id ) {
+      const activity = effect.system?.origin?.activity ?? effect.origin ?? "";
+      const itemUuid = String(activity).replace(/\.Activity\.[^.]+$/, "");
+      const source = itemUuid ? fromUuidSync(itemUuid, { strict: false }) : null;
+      if ( source && (source !== item) && (source.documentName === "Item") ) id = identifierOf(source).id;
+    }
+    if ( id && !out.includes(id) ) out.push(id);
+  }
+  return out;
+}
+
+/**
+ * O5b (§340) : ce que les enchantements d'un item lui apportent — l'entrée `<identifiant>-enchanted` de l'objet qui l'enchante (Tueuse
+ * de dragons, Vengeresse sacrée…). Un nom à part : l'objet qui pose l'enchantement, s'il reste sur la fiche, ne déclenche rien lui-même.
+ */
+function enchantmentLayer(item) {
+  const entries = enchantmentSourcesOf(item).map(id => CONTENT[`${id}-enchanted`]).filter(Boolean);
+  return entries.length ? mergeEntries(entries) : null;
+}
+
 /** La surcouche du monde : `{ identifiant: entrée }`, tenue par le MJ. */
 export function worldOverrides() {
   const stored = game.settings.get(MODULE_ID, OVERRIDES_SETTING);
@@ -108,11 +141,11 @@ function itemLayer(item) {
 export function contentOf(item) {
   const { id } = identifierOf(item);
   if ( !contentEnabled ) return { identifier: id, entry: null, layers: { text: false, module: false, world: false, item: false } };
-  const layers = { text: textLayer(item), module: id ? CONTENT[id] ?? null : null, world: id ? worldOverrides()[id] ?? null : null, item: itemLayer(item) };
+  const layers = { text: textLayer(item), enchant: enchantmentLayer(item), module: id ? CONTENT[id] ?? null : null, world: id ? worldOverrides()[id] ?? null : null, item: itemLayer(item) };
   return {
     identifier: id,
-    entry: mergeEntries([layers.text, layers.module, layers.world, layers.item]),
-    layers: { text: !!layers.text, module: !!layers.module, world: !!layers.world, item: !!layers.item }
+    entry: mergeEntries([layers.text, layers.enchant, layers.module, layers.world, layers.item]),
+    layers: { text: !!layers.text, enchant: !!layers.enchant, module: !!layers.module, world: !!layers.world, item: !!layers.item }
   };
 }
 

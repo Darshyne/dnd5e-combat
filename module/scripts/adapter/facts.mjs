@@ -14,7 +14,7 @@ import { seesBetween, canSee } from "./vision.mjs";
 import { chargedFeet } from "./variants.mjs";
 import { lightOnToken, inSunlight } from "./illumination.mjs";
 import { LIGHT } from "../core/illumination.mjs";
-import { contentOf, identifierOf } from "./content.mjs";
+import { contentOf, identifierOf, enchantmentSourcesOf } from "./content.mjs";
 import { distanceBetween } from "./turn.mjs";
 import { readUnitFactors } from "./units.mjs";
 import { isWithinRange } from "../core/units.mjs";
@@ -300,8 +300,9 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     "source.resists": type => (source?.system?.traits?.dr?.value?.has?.(type) ?? source?.system?.traits?.dr?.value?.includes?.(type)) === true,
     // §29 : l'item porte un enchantement venu d'un item de cet identifiant (arme de pacte : « pact-of-the-blade » ; Décharge
     // répulsive posée sur la Décharge occulte : « repelling-blast »).
+    // O5b (§340) : l'objet d'origine retrouvé aussi par l'id de l'effet d'enchantement, quand il n'est plus sur la fiche (adapter/content.mjs).
     "activity.enchantedBy": id => (activity?.item?.effects ?? []).some(e => !e.disabled && (e.isAppliedEnchantment ?? (e.type === "enchantment"))
-      && (identifierOf(originItemOf(e) ?? {}).id === id)),
+      && (identifierOf(originItemOf(e) ?? {}).id === id)) || enchantmentSourcesOf(activity?.item).includes(id),
     // §28 : l'école d'un sort (`system.school` : "evo" Évocation, "abj" Abjuration…) — Évocation améliorée.
     "activity.school": spellSchoolOf(activity?.item),   // §48 : celle du sort d'un parchemin
     // §27 : « tout sort mineur de Clerc » (Incantation puissante) — un tour de magie rangé sous cette classe (`spellClassOf`) ;

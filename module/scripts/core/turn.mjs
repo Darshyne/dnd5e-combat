@@ -31,7 +31,8 @@ export function freshBudget({ reactions=1 }={}) {
     perTurnReaction: reactions > 1,   // plusieurs réactions par round : pas deux dans le même tour de jeu
     reactedAt: null,                  // le tour de jeu (combat.round.turn) de la dernière réaction
     dashed: false, disengaged: false, dodging: false, slotCast: false,
-    lightAttack: false,   // §15.2 : une attaque d'arme Légère faite dans l'action Attaquer ouvre l'attaque de la main secondaire
+    lightAttack: false,
+    loadedFired: false,   // O5a (§339) : une arme à Chargement a tiré dans l'action Attaquer en cours (« un seul projectile par action »)   // §15.2 : une attaque d'arme Légère faite dans l'action Attaquer ouvre l'attaque de la main secondaire
     nickUsed: false,      // Coup double : l'attaque de la main secondaire, sans action Bonus, une fois par tour
     readied: false,       // Intention (Ready) : une action préparée, jouée plus tard par la réaction
     multi: null,  // M1 (§18.6) : Attaques multiples ouvertes ce tour — { plan, used: [clés de chaque utilisation] }
@@ -119,12 +120,14 @@ function coveredByMultiattack(budget, request) {
  * @param {object} budget
  * @param {UseRequest} request
  * @param {{isOwnTurn: boolean}} context
- * @returns {Array<"notYourTurn"|"noAction"|"noBonus"|"noReaction"|"slotAlreadyCast"|"noLightAttack">}
+ * @returns {Array<"notYourTurn"|"noAction"|"noBonus"|"noReaction"|"slotAlreadyCast"|"noLightAttack"|"loading">}
  */
 export function checkUse(budget, request, { isOwnTurn, turnKey=null }) {
   const issues = [];
   // Règle 2024 (propriété Légère) : il faut avoir attaqué avec une arme Légère dans l'action Attaquer ce tour-ci.
   if ( request.offhand && !budget.lightAttack ) issues.push("noLightAttack");
+  // O5a (§339) : Chargement — « un seul projectile quand vous utilisez une action […] pour tirer, quel que soit le nombre d'attaques ».
+  if ( request.loading && budget.loadedFired && coveredByAttackAction(budget, request) ) issues.push("loading");
   // Un geste que l'intention déclare gratuit (§16.27 : un rayon enchaîné, un rebond) ne demande rien — ni action, ni tour, ni emplacement.
   if ( request.cost === "free" ) return issues;
   const cost = effectiveCost(budget, request);
@@ -169,7 +172,10 @@ export function spendUse(budget, request, { isOwnTurn, attacksPerAction, turnKey
     next.multi = { plan, used: request.opensMultiattack ? [] : [request.keys] };
     next.attacks = { granted: attackCount(plan), used: opening.attacks };
   }
-  else if ( coveredByAttackAction(budget, request) ) next.attacks.used += (request.attackCost ?? 1);
+  else if ( coveredByAttackAction(budget, request) ) {
+    next.attacks.used += (request.attackCost ?? 1);
+    if ( request.loading ) next.loadedFired = true;
+  }
   // §157 : l'action limitée de Hâte — une seule attaque, même avec Attaque supplémentaire.
   else if ( coveredByLimitedAction(budget, request) ) {
     next.limited = 0;
@@ -179,6 +185,7 @@ export function spendUse(budget, request, { isOwnTurn, attacksPerAction, turnKey
     next[request.cost] = Math.max(0, budget[request.cost] - 1);
     if ( request.cost === "reaction" ) next.reactedAt = turnKey;
     // Au-delà d'Attaques multiples ouvertes (confirmé malgré tout), leur compteur reste celui du plan.
+    if ( request.cost === "action" ) next.loadedFired = !!(request.loading && request.weaponAttack);
     if ( request.weaponAttack && (request.cost === "action") && !budget.multi ) {
       next.attacks = { granted: Math.max(1, attacksPerAction), used: Math.min(Math.max(1, attacksPerAction), request.attackCost ?? 1) };
     }

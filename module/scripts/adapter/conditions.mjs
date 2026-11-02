@@ -186,7 +186,7 @@ export const isElusive = token => activeRule(token?.actor, "elusive");
  */
 export function rangedFeatsOf(actor, activity, attackMode=null) {
   const rules = Array.from(actor?.items ?? []).map(i => contentOf(i).entry?.rangedFeat).filter(Boolean);
-  const none = { cover: false, closeCombat: false, longRange: false, offhandModifier: false, spellRange: null };
+  const none = { cover: false, closeCombat: false, longRange: false, offhandModifier: false, loading: false, spellRange: null };
   if ( !rules.length || (activity?.type !== "attack") ) return none;
   const item = activity.item;
   return rangedFeatsFor(rules, {
@@ -205,6 +205,19 @@ export function coverAgainst(origin, target, activity, attackMode, options={}) {
 
 /** Un item de l'attaquant lui retire-t-il le Désavantage du tir au contact d'un ennemi ? */
 const ignoresCloseCombat = token => Array.from(token?.actor?.items ?? []).some(i => contentOf(i).entry?.ignoresCloseCombat === true);
+
+/**
+ * O5a (§339) : « Désavantage aux jets d'attaque avec une arme Lourde si c'est une arme de corps à corps et que votre valeur de Force
+ * n'est pas d'au moins 13, ou une arme à distance et votre valeur de Dextérité » (PHB 2024, propriété Lourde). L'arme, pas le mode
+ * d'attaque : une arme de corps à corps lancée reste une arme de corps à corps.
+ */
+export function heavyTooWeak(actor, activity) {
+  const item = activity?.item;
+  if ( (item?.type !== "weapon") || !item.system?.properties?.has?.("hvy") || (activity?.type !== "attack") ) return false;
+  const ability = String(item.system.type?.value ?? "").endsWith("R") ? "dex" : "str";
+  const score = Number(actor?.system?.abilities?.[ability]?.value);
+  return Number.isFinite(score) && (score < 13);
+}
 
 /**
  * Contexte d'attaque attendu par attackModifiers(), pour une cible. `posA` : position hypothétique
@@ -235,7 +248,9 @@ export function attackContext(origin, target, activity, attackMode, factors, { p
     // §20 : Insaisissable — aucun Avantage contre la cible.
     elusive: isElusive(target),
     // §214 : armure sans formation, attaque de Force ou de Dextérité.
-    untrainedArmor: !!armorHampers(origin?.actor, activity?.ability)
+    untrainedArmor: !!armorHampers(origin?.actor, activity?.ability),
+    // O5a (§339) : propriété Lourde — Désavantage sous 13 de Force (arme de corps à corps) ou de Dextérité (arme à distance).
+    heavyTooWeak: heavyTooWeak(origin?.actor, activity)
   };
 }
 

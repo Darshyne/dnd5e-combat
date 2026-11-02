@@ -718,6 +718,7 @@
   "DND5ECOMBAT.CoupBrutal.Option.sundering": "Coup fendant",
   "DND5ECOMBAT.Fragilisation": "{item} : Désavantage à sa prochaine sauvegarde contre un sort",
   "DND5ECOMBAT.DegatsRenvoyes": "{item} : {name} renvoie les dégâts",
+  "DND5ECOMBAT.EffetTire": "{item} : effet tiré au dé",
   "DND5ECOMBAT.CoupCritique.against": "{item} : Avantage contre elle",
   "DND5ECOMBAT.CoupCritique.by": "{item} : Désavantage à ses attaques",
   "DND5ECOMBAT.CoupCritique.Empoignade": "{item} : dégâts à {name}, agrippé(e)",

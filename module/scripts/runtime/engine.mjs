@@ -343,7 +343,7 @@ async function resume() {
     if ( resolution && pendingChoice(resolution) ) {
       // Un choix d'effet resté sans réponse (F5, joueur parti) : la question est reposée.
       log("resume: effect choice pending, question asked again");
-      const command = { type: "askChoice", prompt: resolution.plan.choice.prompt ?? null, options: resolution.plan.choice.options };
+      const command = { type: "askChoice", prompt: resolution.plan.choice.prompt ?? null, options: resolution.plan.choice.options, ...(resolution.plan.choice.roll ? { roll: true } : {}) };
       const [event] = await COMMANDS.askChoice(command, message, resolution);
       if ( event ) await dispatcher.send(message.id, event);
       continue;

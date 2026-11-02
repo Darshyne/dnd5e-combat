@@ -15,7 +15,7 @@ import { CONTENT, SOURCES } from "../content/index.mjs";
 import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
-import { monsterDeaths, monsterEndings } from "../core/monster-text.mjs";
+import { monsterChoice, monsterDeaths, monsterEndings } from "../core/monster-text.mjs";
 
 export const OVERRIDES_SETTING = "contentOverrides";
 
@@ -113,7 +113,7 @@ export function contentOf(item) {
 
 /**
  * K1 (SPEC §322) : la couche la plus basse, lue dans le texte anglais d'origine d'une capacité de PNJ (`core/monster-text.mjs`) —
- * sauvegarde répétée à la fin de ses tours, second échec, fin sur dégâts ; K2 (§323) : mort à 0 PV, paliers de PV. Le contenu livré, la surcouche du monde ou le flag de
+ * sauvegarde répétée à la fin de ses tours, second échec, fin sur dégâts ; K2 (§323) : mort à 0 PV, paliers de PV ; K3 (§324) : un seul effet. Le contenu livré, la surcouche du monde ou le flag de
  * l'item la remplacent dès qu'ils déclarent leurs propres `triggers`. Pas pour un sort (sa copie suit les règles du sort) ni pour un
  * personnage. Mise en cache par item et texte.
  */
@@ -129,7 +129,10 @@ function textLayer(item) {
   const triggers = monsterEndings(html, effects);
   // K2 (§323) : la mort à 0 PV et les paliers de PV que le texte promet.
   const deaths = monsterDeaths(html, { activities, effects });
-  const layer = (triggers.length || Object.keys(deaths).length) ? { ...(triggers.length ? { triggers } : {}), ...deaths } : null;
+  // K3 (§324) : un seul des effets — tiré au dé ou au choix de la créature.
+  const choice = monsterChoice(html, effects);
+  const layer = (triggers.length || Object.keys(deaths).length || choice)
+    ? { ...(triggers.length ? { triggers } : {}), ...deaths, ...(choice ? { choice } : {}) } : null;
   if ( textCache.size > 2000 ) textCache.clear();
   textCache.set(key, layer);
   return layer;

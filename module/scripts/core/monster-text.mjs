@@ -135,6 +135,42 @@ export function monsterDeaths(html, { activities=[], effects=[] }={}) {
 }
 
 /**
+ * K3 (SPEC §324) : un seul des effets de la capacité, quand le texte le dit — dnd5e pose sinon tous ceux de l'activité.
+ *  - « a condition determined by rolling 1d4: on a 1, Charmed; on a 2, Frightened… » → `{ effects: "one", roll: true, order }` (les
+ *    effets dans l'ordre où le texte nomme leurs états) ;
+ *  - « the Charmed or Frightened condition (the X's choice) » → `{ effects: "one" }` ;
+ *  - « X chooses a damage type » (un effet par type dans la donnée : Malédiction de l'Œil omniscient) → `{ effects: "one" }`.
+ * Pas une capacité à plusieurs segments (Rayons oculaires : le dé choisit l'activité, pas l'effet).
+ * @param {string} html
+ * @param {Array<{id: string, statuses: string[]}>} effects
+ * @returns {{effects: "one", roll?: true, order?: string[]}|null}
+ */
+export function monsterChoice(html, effects=[]) {
+  const text = plainText(html);
+  if ( !text || (effects.length < 2) || (segments(text).length > 1) ) return null;
+  const rolled = text.match(/\b(?:determined by rolling|roll(?:ing)? (?:a )?)1?d(\d+)\b([^]*)$/i);
+  if ( rolled ) {
+    const rest = rolled[2].slice(0, 400);
+    const order = [];
+    for ( const m of rest.matchAll(/\bon an? \d+\s*,\s*(?:the target has the )?([A-Za-z]+)/gi) ) {
+      const e = effects.find(x => (x.statuses ?? []).includes(m[1].toLowerCase()) && !order.includes(x.id));
+      if ( e ) order.push(e.id);
+    }
+    if ( order.length >= 2 ) return { effects: "one", roll: true, order };
+  }
+  if ( /\bthe [A-Za-z]+ or [A-Za-z]+ condition \([^)]*\bchoice\)/i.test(text) ) return { effects: "one" };
+  // « suffers one of the following effects of the X's choice » (Cimeterre de l'Amiral pirate), « shape-shifts to resemble a rat (…),
+  // a raven (…), or a spider (…) » (Changement d'aspect du Diablotin, du Quasit : une forme à la fois).
+  if ( /\bone of the following effects(?: of the [^.:]*'s choice| \([^)]*\bchoice\))/i.test(text) ) return { effects: "one" };
+  // « the target has the X's choice of (A) the Charmed condition … or (B) the Prone condition » (Distorsion psychique du Githzerai,
+  // Galvaniser les alliés d'Ez d'Avenir).
+  if ( /\bchoice of \(A\)[^]*\bor \(B\)/i.test(text) ) return { effects: "one" };
+  if ( /\bshape-shifts? to resemble an? [A-Za-z -]+ \([^)]*\), an? [A-Za-z -]+ \([^)]*\),? or an? [A-Za-z -]+/i.test(text) ) return { effects: "one" };
+  if ( /\bchooses a damage type\b/i.test(text) ) return { effects: "one" };
+  return null;
+}
+
+/**
  * Les déclarations de fin d'une capacité de monstre, d'après son texte anglais.
  * @param {string} html                                         description anglaise d'origine
  * @param {Array<{id: string, statuses: string[]}>} effects     effets de l'item (pour rattacher une règle à son issue)

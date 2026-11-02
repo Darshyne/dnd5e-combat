@@ -114,7 +114,10 @@ export function validateChoice(choice, at, errors) {
   if ( ("pool" in choice) && !(isObject(choice.pool) && Object.entries(choice.pool).every(([a, ids]) => isId(a) && Array.isArray(ids) && ids.length && ids.every(isId))) ) {
     errors.push(`${at}.pool: { <activity id>: [effect ids] } (16 characters)`);
   }
-  for ( const key of Object.keys(choice) ) if ( !["effects", "prompt", "pool"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
+  // K3 (§324) : `roll` — l'effet est tiré au dé (Lame du chaos des slaads : 1d4), dans l'ordre de `order` (ids d'effets) s'il est donné.
+  if ( ("roll" in choice) && (choice.roll !== true) ) errors.push(`${at}.roll: true or absent`);
+  if ( ("order" in choice) && !(Array.isArray(choice.order) && choice.order.length && choice.order.every(isId)) ) errors.push(`${at}.order: effect ids`);
+  for ( const key of Object.keys(choice) ) if ( !["effects", "prompt", "pool", "roll", "order"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 export function validateLight(l, at, errors) {

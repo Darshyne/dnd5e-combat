@@ -206,6 +206,8 @@ export const RAVENLOFT = Object.freeze({
       do: [{ type: "damage", formula: "1d6", damageType: "weapon" }] }]
   },
 
+  // K3 (§324) : Malédiction funeste du Vagabond des Brumes — Aveuglé ET Assourdi ; l'effet « Cursed » de la donnée ne porte qu'Assourdi.
+  "death-curse": { effectStatuses: { rY64ISTXCtioTGxl: ["blinded"] } },
   "ancient-might": {
     atZero: { activity: "pVReuhjfvDIn7X5B", whileEffect: "wrath-of-the-wild" },
     triggers: [{ on: "preDamageRoll", if: { "activity.isAttack": true, "target.hasStatus": "frightened" }, do: [{ type: "damage", formula: "@abilities.wis.mod", damageType: "weapon" }] }]

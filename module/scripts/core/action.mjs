@@ -351,7 +351,7 @@ function afterVerdict(resolution) {
   // Effets exclusifs : la question est posée à l'auteur, l'état « en attente » est écrit avant (repris après un F5).
   if ( pendingChoice(next) ) {
     next = { ...next, pending: [...next.pending, { kind: "choice" }] };
-    commands.push({ type: "askChoice", prompt: next.plan.choice.prompt ?? null, options: next.plan.choice.options });
+    commands.push({ type: "askChoice", prompt: next.plan.choice.prompt ?? null, options: next.plan.choice.options, ...(next.plan.choice.roll ? { roll: true } : {}) });
   }
   return settle(next, commands);
 }

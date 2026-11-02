@@ -92,3 +92,25 @@ describe("K2 : la mort que promet le texte d'une capacité de monstre", () => {
     expect(validateEntry({ hpTiers: [{ atMost: 20, damage: false, zero: true, activities: [b] }, { activities: [b] }] })).toEqual([]);
   });
 });
+
+describe("K3 : un seul des effets, tiré au dé ou au choix", () => {
+  const ids = ["c", "f", "p", "i"].map(c => c.repeat(16));
+  const effects = [{ id: ids[3], statuses: ["incapacitated"] }, { id: ids[0], statuses: ["charmed"] }, { id: ids[2], statuses: ["poisoned"] }, { id: ids[1], statuses: ["frightened"] }];
+  it("tiré au dé, dans l'ordre du texte", async () => {
+    const { monsterChoice } = await import("../module/scripts/core/monster-text.mjs");
+    const r = monsterChoice("Hit: 9 damage. The target has a condition determined by rolling 1d4: on a 1, Charmed; on a 2, Frightened; on a 3, Poisoned; or on a 4, Incapacitated.", effects);
+    expect(r).toEqual({ effects: "one", roll: true, order: ids });
+    expect(validateEntry({ choice: r })).toEqual([]);
+  });
+  it("au choix de la créature", async () => {
+    const { monsterChoice } = await import("../module/scripts/core/monster-text.mjs");
+    expect(monsterChoice("Failure: the target has the Charmed or Frightened condition (the bard's choice).", effects)).toEqual({ effects: "one" });
+    expect(monsterChoice("Hit: 9 damage, and the target suffers one of the following effects of the captain's choice: Awe. … Poison. …", effects)).toEqual({ effects: "one" });
+    expect(monsterChoice("The fiend chooses a damage type. Failure: the target is cursed.", effects)).toEqual({ effects: "one" });
+    expect(monsterChoice("Hit: 9 damage, and the target has the monk's choice of (A) the Charmed condition or (B) the Prone condition.", effects)).toEqual({ effects: "one" });
+    expect(monsterChoice("It shape-shifts to resemble a cat (Speed 30 ft.), a crow (20 ft., Fly 60 ft.), or a snake (20 ft.), or returns to its true form.", effects)).toEqual({ effects: "one" });
+    // Un seul effet, ou des rayons numérotés : rien à choisir ici.
+    expect(monsterChoice("the Charmed or Frightened condition (its choice)", [effects[0]])).toBe(null);
+    expect(monsterChoice("Rays (roll 1d10). 1: Weak Ray. … 2: Slow Ray. …", effects)).toBe(null);
+  });
+});

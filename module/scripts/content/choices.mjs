@@ -10,6 +10,9 @@
  */
 
 export const CHOICES = Object.freeze({
+  // K3 (§324) : Domination d'esprit de l'Aboleth (MM 2024) — l'effet « Dominated » (Charmé) n'est relié à aucune activité dans la
+  // donnée : la sauvegarde ratée ne posait rien. Relié à l'activité de sauvegarde, sans choix.
+  "dominate-mind": { pool: { zdXAMnjaOcsVmLZP: ["85n0EJTGfngNSLLl"] } },
   // Une caractéristique au choix : six effets « Hexed <caractéristique> » sur l'activité Place Curse.
   "hex": { effects: "one" },
   // C12-f : Incarnation élémentaire, « Damage Resistance » — une résistance au choix parmi cinq.

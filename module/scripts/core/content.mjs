@@ -16,7 +16,8 @@
  *     choice?: { effects: "one", prompt?, pool? }  effets EXCLUSIFS : l'auteur en choisit un (Maléfice) ; `pool` :
  *                                               { <id d'activité> : [ids d'effets de l'item] } — des effets de l'item
  *                                               qu'une activité propose sans les relier (§37, Malédiction : « Curse
- *                                               Ability » et ses six caractéristiques)
+ *                                               Ability » et ses six caractéristiques) ; K3 (§324) : `roll: true` — tiré au dé,
+ *                                               une face par effet, dans l'ordre de `order` (Lame du chaos : 1d4)
  *     teleport?: { distance, units, activity? } l'utilisation téléporte l'utilisateur (§16.10, B11) : la destination se
  *                                               choisit aussitôt, à `distance` au plus — pour un item sans activité
  *                                               « teleport » de dnd5e (tout le PHB : Foulée brumeuse y est utilitaire) ;

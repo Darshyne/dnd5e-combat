@@ -257,7 +257,11 @@ function withChoice(activity, plan) {
   const chained = plan.save?.chained ? activity.item.system.activities?.get(plan.save.activity?.split(".").pop()) : null;
   const own = applicableEffectsOf(chained ?? activity).map(e => ({ id: effectKey(e), label: effectLabel(e, (chained ?? activity).item) }));
   if ( own.length < 2 ) return plan;
-  return { ...plan, choice: { prompt: choice.prompt ?? null, options: own } };
+  // K3 (§324) : tiré au dé — les options dans l'ordre du texte (`order`), celles qu'il ne nomme pas à la suite.
+  const order = choice.order ?? [];
+  const rank = o => { const i = order.indexOf(o.id.split(".").pop()); return (i < 0) ? order.length : i; };
+  const options = choice.roll ? [...own].sort((a, b) => rank(a) - rank(b)) : own;
+  return { ...plan, choice: { prompt: choice.prompt ?? null, options, ...(choice.roll ? { roll: true } : {}) } };
 }
 
 /**

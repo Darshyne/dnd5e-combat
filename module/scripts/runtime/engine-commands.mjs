@@ -365,6 +365,14 @@ export const COMMANDS = {
     const activity = await fromUuid(resolution.activity ?? "");
     const item = activity?.item?.name ?? "";
     if ( !actor ) return [];
+    // K3 (§324) : un effet tiré au dé (Lame du chaos : 1d4) — un jet visible de tous, une face par option, sans question.
+    if ( command.roll ) {
+      const roll = await new Roll(`1d${command.options.length}`).evaluate();
+      await roll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }), flavor: loc("EffetTire", { item }) });
+      const picked = command.options[roll.total - 1];
+      log(`${item}: d${command.options.length} = ${roll.total} → ${picked?.label ?? "?"}`);
+      return picked ? [{ type: "choiceMade", id: picked.id }] : [];
+    }
     log(`${item}: ${actor.name} must choose an effect (${command.options.map(o => o.label).join(", ")})`);
     const answer = await askChoice(actor, { actor: actor.uuid, item, prompt: command.prompt, options: command.options });
     if ( !answer ) { log(`${item}: no effect chosen, waiting`); return []; }

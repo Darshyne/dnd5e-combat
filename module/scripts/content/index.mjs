@@ -43,6 +43,7 @@ import { SORCERER } from "./sorcerer.mjs";
 import { BARD } from "./bard.mjs";
 import { SPELL_RULES } from "./spell-rules.mjs";
 import { GEAR } from "./gear.mjs";
+import { ITEM_FIXES } from "./item-fixes.mjs";
 import { mergeEntries } from "../core/content.mjs";
 import { SOURCE_IDENTIFIERS } from "./sources.mjs";
 import { BURSTS, RECASTS, TURN_STARTS, BOLTS, OBSCURES, HEAL_MAX, DUPLICATES, SAVE_ADVANTAGES, ON_FELL, BONUS_ATTACKS, REACTIVE_SPELLS, PROJECTILES, LEAPS } from "./bursts.mjs";
@@ -70,11 +71,11 @@ export const BRICKS = Object.freeze([
 /**
  * Les tables d'entrées complètes, fusionnées par-dessus les briques dans cet ordre (`mergeEntries`) : la fuite par la Réaction
  * (§147), les options de Ravenloft (§19.9), les classes et espèces du Manuel des joueurs (§20), les dons (§129), les sorts à
- * règles multiples (§37), les objets (§49).
+ * règles multiples (§37), les objets (§49), les corrections de leur donnée (§335).
  */
 export const ENTRY_TABLES = Object.freeze([
   FLEE_ON_FAILED_SAVE, CONTROL, RAVENLOFT, MONSTERS, ROGUE, FIGHTER, BARBARIAN, CANTRIPS, MONK, PALADIN, RANGER, CLERIC, WIZARD, WARLOCK,
-  DRUID, SPECIES, FEATS, SORCERER, BARD, SPELL_RULES, GEAR
+  DRUID, SPECIES, FEATS, SORCERER, BARD, SPELL_RULES, GEAR, ITEM_FIXES
 ]);
 
 /**

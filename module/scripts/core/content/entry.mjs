@@ -10,6 +10,7 @@ import { BASIC_ACTION_KINDS, BONUS_ATTACK_AFTER, BREAK_MOMENTS, EFFECT_EXPIRIES,
 import { validateExtras } from "./extras.mjs";
 import { SPELL_COMPONENTS } from "../spell-failure.mjs";
 import { isId, isObject } from "./shared.mjs";
+import { validateDataFixes } from "../data-fixes.mjs";
 import { validateAura, validateTrigger } from "./steps.mjs";
 /**
  * Les erreurs d'une entrée. Vide = valide.
@@ -257,6 +258,8 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     if ( !isObject(p) || (("effect" in p) && !isId(p.effect)) || (("drop" in p) && (p.drop !== true)) || (("endsAt" in p) && !okEnd(p.endsAt))
       || !Object.keys(p).every(k => ["effect", "drop", "endsAt"].includes(k)) ) errors.push(`${at}panic: { effect?: <effect id>, drop?: true, endsAt?: { distance, units } }`);
   }
+  // O1 (§335) : corrections de la donnée premium d'un objet (core/data-fixes.mjs).
+  if ( "dataFixes" in entry ) errors.push(...validateDataFixes(entry.dataFixes, at));
   // K7 (§328) : `absorbsDamage` — types de dégâts que le porteur change en soin (Absorption de l'acide du Golem d'argile).
   if ( ("absorbsDamage" in entry) && !(Array.isArray(entry.absorbsDamage) && entry.absorbsDamage.length
     && entry.absorbsDamage.every(s => (typeof s === "string") && /^[a-z]+$/.test(s))) ) errors.push(`${at}absorbsDamage: list of damage types`);

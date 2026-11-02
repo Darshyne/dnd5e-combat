@@ -286,6 +286,23 @@ export function identify({ tokenId }) {
 }
 
 /**
+ * §335 : la donnée source d'un objet d'un token, aux chemins demandés (`effect:<id>:<chemin>` pour un effet de l'objet) — ce qu'une
+ * correction de donnée premium a écrit.
+ */
+export function itemData({ tokenId, itemId, paths=[] }) {
+  const item = viewedToken({ tokenId }).actor?.items.get(itemId);
+  if ( !item ) throw new Error(`item ${itemId} not found`);
+  const source = item.toObject();
+  const read = path => {
+    const m = path.match(/^effect:([^:]+):(.*)$/);
+    if ( !m ) return foundry.utils.getProperty(source, path);
+    const effect = source.effects.find(e => e._id === m[1]);
+    return effect ? foundry.utils.getProperty(effect, m[2]) : undefined;
+  };
+  return Object.fromEntries(paths.map(p => [p, read(p) ?? null]));
+}
+
+/**
  * §36 : les jets notés du Présage d'un token — `roll: true` les lance comme au Repos long ; `rolls: [n…]` les fixe (scénario : des
  * valeurs connues) ; `clear: true` les efface. Rend le nombre de d20 du devin et son état.
  */

@@ -10,6 +10,13 @@
  */
 
 export const SOURCE_IDENTIFIERS = Object.freeze({
+  // O1 (§335) : les quatre anneaux de maîtrise élémentaire du Guide partagent l'identifiant « ring-of-elemental-command » ; leurs défauts
+  // de donnée diffèrent (content/item-fixes.mjs). La Morsure de Harkon (Ravenloft) n'a pas d'identifiant.
+  dmgAirRingOfElem: "ring-of-elemental-command-air",
+  dmgEarthRingOfEl: "ring-of-elemental-command-earth",
+  dmgFireRingOfEle: "ring-of-elemental-command-fire",
+  dmgWaterRingOfEl: "ring-of-elemental-command-water",
+  rhwHarkonsBite2Q: "harkons-bite",
   // K6 (§327) : capacités du Monster Manual et de Ravenloft dont l'identifiant est celui d'une règle du PHB — la Riposte du Capitaine
   // pirate n'est pas la manœuvre du Maître de guerre, la Protection du Gardien bouclier pas le style de combat, le Présage du Cyclope
   // oracle pas celui du Devin, l'Échappatoire brumeuse du Vampire pas l'invocation de l'Occultiste, la Toile de l'Araignée géante pas le

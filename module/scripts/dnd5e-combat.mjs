@@ -115,6 +115,7 @@ import { registerControl } from "./runtime/control.mjs";
 import { registerCatalyst } from "./runtime/catalyst.mjs";
 import { registerSummonHandover } from "./runtime/summon-handover.mjs";
 import { registerAutoTranslate } from "./runtime/auto-translate.mjs";
+import { registerDataFixes } from "./runtime/data-fixes.mjs";
 import { registerClock } from "./runtime/clock.mjs";
 import { registerCriticals } from "./runtime/criticals.mjs";
 import { registerFalls } from "./runtime/falls.mjs";
@@ -309,6 +310,7 @@ Hooks.once("init", () => {
   gated(registerGates);   // après la légalité : une porte ne s'ouvre que pour une utilisation confirmée
   gated(registerSummonHandover);   // §118 : après la légalité — une utilisation refusée ne réclame rien aux voisins
   gated(registerAutoTranslate);
+  gated(registerDataFixes);   // §335 : donnée premium fautive corrigée à la création (après la traduction)
   gated(registerClock);   // §251 : horloge en temps réel hors combat (coupée par défaut)
   gated(registerCriticals);   // §207 : options de coup critique (écart à la CA, table de critiques), désactivées par défaut   // §204 : traduction reprise à la création (objets et créatures restés dans la langue d'origine)
   gated(registerReactions);

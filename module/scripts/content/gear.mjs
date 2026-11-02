@@ -27,6 +27,8 @@ export const GEAR = Object.freeze({
   "candle": { carriedLight: { bright: 5, dim: 10, units: "ft", animation: FLAME, burn: HOUR } },
   "lamp": { carriedLight: { bright: 15, dim: 45, units: "ft", animation: FLAME, burn: OIL, fuel: "oil" } },
   "lantern-hooded": { carriedLight: { bright: 30, dim: 60, units: "ft", burn: OIL, fuel: "oil" } },
+  // O1 (§335) : une seconde Lanterne à capuchon du Manuel, en consommable, sous l'identifiant « hooded-lantern ».
+  "hooded-lantern": { carriedLight: { bright: 30, dim: 60, units: "ft", burn: OIL, fuel: "oil" } },
   // La lanterne sourde : « lantern-bullseye » dans le Manuel des joueurs, « bullseye-lantern » dans le SRD de dnd5e.
   "lantern-bullseye": { carriedLight: BULLSEYE },
   "bullseye-lantern": { carriedLight: BULLSEYE },

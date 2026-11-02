@@ -13,6 +13,7 @@ import { scrollSpellOf } from "../../adapter/scrolls.mjs";
 import { localizeEffectNames } from "../../core/localize.mjs";
 import { referenceReader, retranslationOf, applyRetranslation } from "../../adapter/retranslate.mjs";
 import { contentOf } from "../../adapter/content.mjs";
+import { dataFixPlanOf, applyDataFixes } from "../../adapter/data-fixes.mjs";
 import { sourceKind } from "../../core/item-sources.mjs";
 
 /**
@@ -595,5 +596,35 @@ const retranslate = {
   }
 };
 
+/* -------------------------------------------- */
+/*  8. Donnée premium à corriger                  */
+/* -------------------------------------------- */
+
+/**
+ * O1 (§335) : les objets premium dont la donnée contredit la règle et que le moteur sait corriger (`dataFixes`, core/data-fixes.mjs) —
+ * ce que le MJ actif fait à la création (runtime/data-fixes.mjs) pour ce qui existait déjà. Seuls les champs du plan changent ; une
+ * valeur modifiée à la main (différente de l'origine déclarée) ne bouge pas.
+ */
+const dataFixes = {
+  id: "data-fixes", icon: "fa-solid fa-screwdriver-wrench",
+  async scan() {
+    const t = tr("DataFixes");
+    const tasks = [];
+    for ( const scanned of allItems() ) {
+      const plan = dataFixPlanOf(scanned);
+      if ( !plan ) continue;
+      const text = t("Line", { name: esc(scanned.name), count: plan.fields.length });
+      tasks.push({ root: rootOf(scanned), where: whereOf(scanned), text, preselect: true,
+        apply: async () => {
+          const item = fresh(scanned);
+          const now = dataFixPlanOf(item);
+          if ( now ) await applyDataFixes(item, now);
+          return text;
+        } });
+    }
+    return tasks;
+  }
+};
+
 /** Les vérifications, dans l'ordre où les macros les proposaient. */
-export const CHECKS = Object.freeze([cleanMidi, phbEffects, lostEffects, scrolls, ddb, pileBasics, creatures, retranslate]);
+export const CHECKS = Object.freeze([cleanMidi, phbEffects, lostEffects, scrolls, ddb, pileBasics, creatures, retranslate, dataFixes]);

@@ -221,6 +221,9 @@
  *                                               (Tempête de neige, Nuage nauséabond : ceux qui sont déjà dedans sauvegardent au début de leur tour)
  *     brutalStrike?: { options?, count? }       C12-e : Coup brutal — options offertes avec Témérité (`push` : poussée ; `effect` :
  *                                               effet de l'item posé sur la cible touchée), nombre d'options par coup (runtime/barbarian.mjs)
+ *     dataFixes?: [{ path, value, from? } | { effect, path, value, from? } | { effect, create }]
+ *                                               O1 (§335) : corrections de la donnée premium de l'objet (coût, charges, DD, dégâts, effets
+ *                                               portés, effet manquant), écrites par le MJ actif à la création et par le diagnostic — core/data-fixes.mjs
  *     absorbsDamage?: string[]                  K7 (§328) : le porteur de l'item change ces types de dégâts en soin, avant résistances et
  *                                               immunités (Absorption de l'acide, du feu, de la foudre des golems)
  *     regainOnShortRest?: string[]              C12-j : au Repos court, les utilisations de ces items (identifiants) reviennent (Source

@@ -224,7 +224,8 @@ export const ITEM_FIXES = Object.freeze({
       { path: `system.activities.${id}.activation.override`, from: false, value: true }])
   },
   // Chien d'onyx : l'effet du molosse est transféré au porteur de la figurine (vision aveugle de 18 m).
-  "onyx-dog-rare": { dataFixes: [{ effect: "fMC3o8l8D2GamPbU", path: "transfer", from: true, value: false }] },
+  // O4 : comme les autres figurines, le molosse agit juste après son maître.
+  "onyx-dog-rare": { summon: { initiative: "after" }, dataFixes: [{ effect: "fMC3o8l8D2GamPbU", path: "transfer", from: true, value: false }] },
   // Orbe des dragons : « 7 charges, 1d4 + 3 à l'aube » — l'item n'en a aucune, ses sorts payants étaient refusés.
   "orb-of-dragonkind": {
     dataFixes: [{ path: "system.uses.max", from: "", value: "7" }, { path: "system.uses.recovery", from: [], value: [{ period: "dawn", type: "formula", formula: "1d4 + 3" }] }]
@@ -269,7 +270,8 @@ export const ITEM_FIXES = Object.freeze({
   // Anneau de chaleur constante : « les dégâts de froid que vous subissez sont réduits de 2d8 ».
   "ring-of-warmth": { damageShield: { worn: "cold", formula: "2d8" } },
   // Eau bénite : « sur une réussite, aucun dégât » (la donnée en donnait la moitié).
-  "holy-water": { saveDamage: { ArV3jMOIvfj5c5y9: "none" } },
+  // O4 : le lancer « remplace l'une des attaques de l'action Attaque ».
+  "holy-water": { saveDamage: { ArV3jMOIvfj5c5y9: "none" }, replacesAttack: ["ArV3jMOIvfj5c5y9"] },
   // Teinture pâle : rien sur une réussite ; l'effet Empoisonné n'était pas relié à la sauvegarde.
   "pale-tincture": {
     saveDamage: { Xm0k8JLnz00jgCg7: "none" },
@@ -293,7 +295,7 @@ export const ITEM_FIXES = Object.freeze({
   },
   // Poudre à éternuer : « les Artificiels, Élémentaires, Vases, Plantes et Morts-vivants réussissent automatiquement ».
   // O3 : « refait le jet à la fin de chacun de ses tours ».
-  "dust-of-sneezing-and-choking": { triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "AZcO17cLsTHbb0P9", do: [{ type: "resave" }] }], targets: { unaffectedIf: { any: ["construct", "elemental", "ooze", "plant", "undead"].map(t => ({ "target.creatureType": t })) } } },
+  "dust-of-sneezing-and-choking": { includesOrigin: true, triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "AZcO17cLsTHbb0P9", do: [{ type: "resave" }] }], targets: { unaffectedIf: { any: ["construct", "elemental", "ooze", "plant", "undead"].map(t => ({ "target.creatureType": t })) } } },
   // Baume de Keoghtom : « met fin à l'état Empoisonné ».
   "keoghtoms-ointment": { curesAll: ["poisoned"] },
   // Talismans : Désavantage à la sauvegarde pour les Fiélons et Morts-vivants (bien ultime), les Célestes (mal absolu).
@@ -304,7 +306,6 @@ export const ITEM_FIXES = Object.freeze({
 
   // « Elle refait le jet à la fin de chacun de ses tours » — Paralysé, Effrayé, Étourdi, Aveuglé, Neutralisé sans fin dans la donnée.
   "wand-of-paralysis": { effectDurations: { AwFDnHD5U7aOOzds: { seconds: 60 } }, triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "AwFDnHD5U7aOOzds", do: [{ type: "resave" }] }] },
-  "mace-of-terror": { triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "amYapIKWPpJZ9EuO", do: [{ type: "resave" }] }] },
   "whelm": { triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "esmyGn6aLpCfWsFm", do: [{ type: "resave" }] }] },
   "gem-of-brightness": { triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "05Lok63szRXdAafx", do: [{ type: "resave" }] }] },
   "pipes-of-haunting": { triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "29Rm9ru4fP60YFj3", do: [{ type: "resave" }] }] },
@@ -323,6 +324,35 @@ export const ITEM_FIXES = Object.freeze({
   // dégâts » (ou secouée, l'Essence d'éther) et reste Empoisonnée — l'Empoisonné devient un effet à part.
   "oil-of-taggit": SLEEP_POISON("3E9Bg4ZYt098PHwu", "H2a1ShsSWCmSWfW7", "dasTaggitPoison0", 86400),
   "essence-of-ether": SLEEP_POISON("LyJvv1MFK97vRKM5", "izr2j393TujCLu53", "dasEtherPoison00", 28800),
+
+  /* ---- O4 (§338) : coûts, zones, invocations, fumées, lumière ---- */
+
+  // Acide, Feu grégeois : « remplacer l'une des attaques de l'action Attaque par le jet d'une fiole » (l'action entière, sinon).
+  "acid": { replacesAttack: ["PnWlLChqr5JsfCJC"] },
+  "alchemists-fire": { replacesAttack: ["NVclbplLi9uFhKQE"] },
+  // Invocations d'objets : la créature « agit juste après vous » (partage votre initiative) — elles n'entraient pas au combat.
+  ...Object.fromEntries(["elemental-gem", "blue-elemental-gem", "emerald-elemental-gem", "red-elemental-gem", "yellow-elemental-gem",
+    "baba-yagas-dancing-broom", "bowl-of-commanding-water-elementals", "brazier-of-commanding-fire-elementals",
+    "censer-of-controlling-air-elementals", "stone-of-controlling-earth-elementals", "bag-of-tricks", "bronze-griffon-rare", "ebony-fly-rare",
+    "golden-lions-rare", "ivory-goats", "marble-elephant-rare", "obsidian-steed-very-rare", "serpentine-owl-rare",
+    "silver-raven-uncommon"].map(id => [id, { summon: { initiative: "after" } }])),
+  // Cor du Valhalla : les guerriers « lancent leur initiative » et agissent à leur tour.
+  "silver-horn-of-valhalla": { summon: { initiative: "own" } },
+  // Fumées : « la zone est fortement obscurcie » — Grenade fumigène, Urne fumigène, nuée du Bâton du grand essaim.
+  "grenade-smoke": { obscures: true },
+  "eversmoking-bottle": { obscures: true },
+  "staff-of-swarming-insects": { obscures: true },
+  // Masse terrifiante : « chaque créature de votre choix à 9 m de vous » — centrée sur le porteur, alliés épargnés.
+  // (O3 : « refait le jet à la fin de chacun de ses tours ».)
+  "mace-of-terror": { ranges: { owojSA2KZWmv61Nj: { units: "self" } }, zoneAffects: "enemy",
+    triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "amYapIKWPpJZ9EuO", do: [{ type: "resave" }] }] },
+  // Carafe intarissable, Geyser : « une créature » dans la ligne, pas toutes.
+  "decanter-of-endless-water": { zoneMax: 1, zoneAffects: "enemy" },
+  // Lanterne de révélation : « brûle 6 heures avec une flasque d'Huile, Lumière vive sur 9 m et faible sur 9 m de plus » (la révélation
+  // des créatures invisibles reste au MJ).
+  "lantern-of-revealing": { carriedLight: { bright: 30, dim: 60, units: "ft", burn: { value: 6, units: "hour" }, fuel: "oil" } },
+  // Sac de haricots magiques (déversé) : l'explosion prend aussi celui qui les verse.
+  "bag-of-beans": { includesOrigin: true },
 
   // Morsure de Harkon (Ravenloft) : « +1 aux tests et sauvegardes tant que vous portez le collier » — l'effet n'est pas transféré.
   "harkons-bite": { dataFixes: [{ effect: "EzuxTW39OtnDWoi1", path: "transfer", from: false, value: true }] }

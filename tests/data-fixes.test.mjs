@@ -90,3 +90,12 @@ describe("corrections de la donnée premium (§335)", () => {
     }
   });
 });
+
+describe("table des corrections d'objets (§335–§338)", () => {
+  it("ne déclare jamais deux fois le même identifiant (la seconde écraserait la première)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const src = readFileSync(new URL("../module/scripts/content/item-fixes.mjs", import.meta.url), "utf8");
+    const keys = [...src.matchAll(/^  "([a-z0-9-]+)": /gm)].map(m => m[1]);
+    expect(keys.filter((k, i) => keys.indexOf(k) !== i)).toEqual([]);
+  });
+});

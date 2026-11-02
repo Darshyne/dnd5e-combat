@@ -224,6 +224,7 @@
  *     dataFixes?: [{ path, value, from? } | { effect, path, value, from? } | { effect, create }]
  *                                               O1 (§335) : corrections de la donnée premium de l'objet (coût, charges, DD, dégâts, effets
  *                                               portés, effet manquant), écrites par le MJ actif à la création et par le diagnostic — core/data-fixes.mjs
+ *     includesOrigin?: true                     O4 (§338) : la zone « personnelle » de l'item prend aussi son origine (Poudre à éternuer)
  *     absorbsDamage?: string[]                  K7 (§328) : le porteur de l'item change ces types de dégâts en soin, avant résistances et
  *                                               immunités (Absorption de l'acide, du feu, de la foudre des golems)
  *     regainOnShortRest?: string[]              C12-j : au Repos court, les utilisations de ces items (identifiants) reviennent (Source

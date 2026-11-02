@@ -81,7 +81,8 @@ export async function readActivityRegion(region) {
     origin,
     originDisposition: originToken?.disposition ?? null,
     originSide: originToken ? sideOf(originToken) : null,   // §181
-    excludeOrigin: activity?.range?.units === "self",
+    // O4 (§338) : `includesOrigin` — une zone sur soi qui prend aussi son origine (Poudre à éternuer, Sac de haricots magiques).
+    excludeOrigin: (activity?.range?.units === "self") && !(activity?.item && contentOf(activity.item).entry?.includesOrigin),
     // « Vous pouvez désigner des créatures qui ne sont pas affectées » (`affects.choice`, Esprits gardiens) : par défaut,
     // les alliés du lanceur sont épargnés — le moteur ne pose pas la question (§16.23).
     affects: areaAffects(activity),

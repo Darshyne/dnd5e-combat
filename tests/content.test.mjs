@@ -5,7 +5,7 @@ import { effectHolds } from "../module/scripts/core/feats.mjs";
 
 const facts = Object.fromEntries(["activity.type", "activity.isAttack", "activity.isSpell", "activity.isWeapon", "activity.identifier", "activity.id",
   "activity.hasProperty", "source.hasStatus", "source.hasEffect", "source.creatureType", "source.allyNearTarget", "source.summonNearTarget", "source.seesTarget",
-  "target.hasStatus", "target.hasEffect", "target.hasEffectFrom", "hit.stoppableBy", "damage.resisted", "target.grappledBySource", "target.wieldsProperty", "target.isSelf", "self.hasShield", "self.wieldsWeapon", "target.hasFeature", "activity.ability", "target.sizeAtMost", "target.within", "target.seesSource", "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "target.atZero", "target.isDead", "damage.hasType", "target.hpAtMost", "condition.gained",
+  "target.hasStatus", "target.hasEffect", "target.hasEffectFrom", "hit.stoppableBy", "hit.critical", "damage.resisted", "target.grappledBySource", "target.wieldsProperty", "target.isSelf", "self.hasShield", "self.wieldsWeapon", "target.hasFeature", "activity.ability", "target.sizeAtMost", "target.within", "target.seesSource", "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "target.atZero", "target.isDead", "damage.hasType", "target.hpAtMost", "condition.gained",
   "target.wounded", "target.bloodied", "source.classLevelAtLeast", "target.nearSelf", "self.seesTarget", "target.hasNotActed", "source.onOwnTurn", "activity.dealsType", "source.hasFeature", "activity.cantripOf", "activity.school", "activity.enchantedBy", "source.wildShaped", "activity.classSpell", "source.resists", "source.nearSelf", "self.seesSource", "source.hasEffectFromTarget", "source.hasSense", "target.allied"].map(k => [k, true]));
 const MOMENTS_LIST = "isHit, isDamaged, leavesReach, enemyDisengages, enter, turnStart, turnEnd, moves, preDamageRoll, hit, failedSave, savedSave, startOfTurn, endOfTurn, originTurnStart, preAttackRoll, castsSpell, isMissed, enemyTurnEnd, isTargeted, isAttacked, enemyAttacks, allyAttacks, gainsCondition, allyIsHit, allyIsDamaged, enemyAttacked, falls, allyFalls";
 
@@ -237,7 +237,7 @@ describe("contenu livré", () => {
       "regenerate", "regeneration", "relentless-endurance", "relentless-hunter", "relentless-rage", "remarkable-athlete", "remove-curse",
       "rend-mind", "repelling-blast", "resilient-sphere", "resistance", "restoring-touch", "resurrection", "retaliation",
       "revelation-in-flesh", "reverse-gravity", "revivify", "ring-of-elemental-command-air", "ring-of-elemental-command-earth",
-      "ring-of-elemental-command-fire", "ring-of-elemental-command-water", "ring-of-spell-turning", "ring-of-warmth",
+      "ring-of-elemental-command-fire", "ring-of-elemental-command-water", "ring-of-spell-turning", "ring-of-the-ram", "ring-of-warmth",
       "ring-of-x-ray-vision", "riposte", "ritual-adept", "robe-of-scintillating-colors", "robe-of-stars", "robe-of-the-archmagi",
       "rod-of-lordly-might", "rumbling-movement", "sacred-weapon", "sanctuary", "sanguine-drain", "savage-attacker", "scarab-of-protection",
       "scimitar-of-speed", "scorching-ray", "sculpt-spells", "sear-undead", "searing-smite", "searing-vengeance", "second-skin",
@@ -247,26 +247,26 @@ describe("contenu livré", () => {
       "silver-needle", "silver-raven-uncommon", "skulker", "slam", "slasher", "sleep", "sleet-storm", "slippers-of-spider-climbing", "slow",
       "slow-fall", "smelting-charge", "smite-of-protection", "sneak-attack", "soldier-feature", "soul-of-vengeance", "spare-the-dying",
       "speedy", "spell-resistance", "spell-sniper", "spellguard-shield", "spider-climb", "spike-growth", "spirit-guardians",
-      "spirit-shroud", "spiritual-weapon", "staff-of-power", "staff-of-swarming-insects", "staff-of-the-magi",
+      "spirit-shroud", "spiritual-weapon", "staff-of-power", "staff-of-striking", "staff-of-swarming-insects", "staff-of-the-magi",
       "staff-of-thunder-and-lightning", "staff-of-withering", "staggering-smite", "starry-wisp", "steady-aim", "steel-wind-strike",
       "stench", "steps-of-the-fey", "stinking-cloud", "stomp", "stone-of-controlling-earth-elementals", "stones-endurance",
       "storm-of-vengeance", "stormborn", "storms-thunder", "studied-attacks", "stunning-strike", "subtle-spell", "suggestion",
       "summon-aberration", "summon-beast", "summon-celestial", "summon-construct", "summon-dragon", "summon-elemental", "summon-fey",
       "summon-fiend", "summon-undead", "sun-blade", "sunbeam", "sunburst", "superior-inspiration", "superior-potion-of-healing",
       "supreme-healing", "supreme-potion-of-healing", "supreme-sneak", "survivor-ravenloft", "swallow", "swarm", "sweeping-attack",
-      "swift-quiver", "swoop", "sword-of-kas", "sword-of-sharpness", "symbiotic-being", "symbol", "synaptic-static", "tactical-assessment",
-      "tactical-charge", "tactical-mind", "tactical-shift", "talisman-of-pure-good", "talisman-of-ultimate-evil", "tashas-hideous-laughter",
-      "tavern-brawler", "telekinesis", "telekinetic", "tentacle-rod", "terrifying-aura", "thiefs-reflexes", "thorn-whip",
-      "thrown-weapon-fighting", "thunderous-smite", "thunderwave", "tinderbox", "toll-the-dead", "torch", "toxic-escape",
-      "trampling-charge", "travel-along-the-tree", "trebuchet", "tricksters-transposition", "trip-attack", "true-resurrection",
-      "true-strike", "tsunami", "twinned-spell", "umbral-dagger", "unarmed-fighting", "unarmed-strike", "uncanny-dodge", "undead-fortitude",
-      "unraveling-flesh", "unseen-servant", "valor-extra-attack", "vampiric-bite", "vampiric-touch", "vanish", "vicious-mockery",
-      "vile-appearance", "viral-aura", "vitality-of-the-tree", "vitriolic-sphere", "vow-of-enmity", "wails-from-the-grave", "wall-of-fire",
-      "wall-of-force", "wall-of-ice", "wall-of-stone", "wall-of-thorns", "wand-of-paralysis", "wand-of-polymorph", "wand-of-web",
-      "wand-of-wonder", "war-caster", "war-magic", "war-priest", "warding-bond", "warding-flare", "warp-body", "watchers", "water-element",
-      "water-form", "watery-rush", "weakening-breath", "web", "weird", "whelm", "whirling-form", "wild-companion", "wild-resurgence",
-      "wind-wall", "witch-bolt", "word-of-radiance", "wrath-of-the-sea", "wrath-of-the-wild", "wrathful-smite", "yellow-elemental-gem",
-      "yolandes-regal-presence", "zealous-presence"
+      "swift-quiver", "swoop", "sword-of-kas", "sword-of-sharpness", "sword-of-sharpness-enchanted", "symbiotic-being", "symbol",
+      "synaptic-static", "tactical-assessment", "tactical-charge", "tactical-mind", "tactical-shift", "talisman-of-pure-good",
+      "talisman-of-ultimate-evil", "tashas-hideous-laughter", "tavern-brawler", "telekinesis", "telekinetic", "tentacle-rod",
+      "terrifying-aura", "thiefs-reflexes", "thorn-whip", "thrown-weapon-fighting", "thunderous-smite", "thunderwave", "tinderbox",
+      "toll-the-dead", "torch", "toxic-escape", "trampling-charge", "travel-along-the-tree", "trebuchet", "tricksters-transposition",
+      "trip-attack", "true-resurrection", "true-strike", "tsunami", "twinned-spell", "umbral-dagger", "unarmed-fighting", "unarmed-strike",
+      "uncanny-dodge", "undead-fortitude", "unraveling-flesh", "unseen-servant", "valor-extra-attack", "vampiric-bite", "vampiric-touch",
+      "vanish", "vicious-mockery", "vile-appearance", "viral-aura", "vitality-of-the-tree", "vitriolic-sphere", "vow-of-enmity",
+      "wails-from-the-grave", "wall-of-fire", "wall-of-force", "wall-of-ice", "wall-of-stone", "wall-of-thorns", "wand-of-paralysis",
+      "wand-of-polymorph", "wand-of-web", "wand-of-wonder", "war-caster", "war-magic", "war-priest", "warding-bond", "warding-flare",
+      "warp-body", "watchers", "water-element", "water-form", "watery-rush", "weakening-breath", "web", "weird", "whelm", "whirling-form",
+      "wild-companion", "wild-resurgence", "wind-wall", "witch-bolt", "word-of-radiance", "wrath-of-the-sea", "wrath-of-the-wild",
+      "wrathful-smite", "yellow-elemental-gem", "yolandes-regal-presence", "zealous-presence"
     ]);
     expect(CONTENT["aura-of-protection"].aura.radius).toBe(10);
     expect(CONTENT.hex.triggers).toHaveLength(1);

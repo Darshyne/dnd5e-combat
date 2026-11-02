@@ -343,6 +343,11 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
       const ac = Number.isFinite(hit.ac) ? hit.ac : (target?.system?.attributes?.ac?.value ?? 0);
       return total < ac + (hit.cover?.bonus ?? 0) + Number(n);
     },
+    // O5c (§341) : le coup qui vient de toucher `target` est un critique (Épée acérée : « sur un 20 au d20 »).
+    "hit.critical": want => {
+      const hit = (resolution?.targets ?? []).find(t => fromUuidSync(t.token, { strict: false })?.actor === target);
+      return !!hit?.critical === want;
+    },
     "damage.resisted": want => ((damageTypes ?? []).some(t => target?.system?.traits?.dr?.value?.has?.(t) === true) === want),
     "target.wieldsProperty": prop => (target?.items ?? []).some(i => (i.type === "weapon") && i.system.equipped && i.system.properties?.has?.(prop)),
     "target.isSelf": want => (!!self && !!target && (self === target)) === want,

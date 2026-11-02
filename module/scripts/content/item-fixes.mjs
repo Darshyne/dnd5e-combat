@@ -370,6 +370,16 @@ export const ITEM_FIXES = Object.freeze({
   "sun-blade": BANE("sun-blade", ["undead"], "1d8", "radiant"),
   "sword-of-kas": BANE("sword-of-kas", ["undead"], "2d10", "slashing"),
 
+  /* ---- O5c (§341) : options au toucher, critiques ---- */
+
+  // Épée acérée (enchantement) : « sur un 20, 14 tranchants de plus et un niveau d'Épuisement » (les 14 : critique de la donnée, lot O1).
+  "sword-of-sharpness-enchanted": { triggers: [{ on: "hit", if: { "hit.critical": true }, do: [{ type: "status", status: "exhaustion" }] }] },
+  // Bâton percussif : « quand vous touchez, vous pouvez dépenser jusqu'à 3 charges : 1d6 de force par charge » — proposé au jet de dégâts,
+  // une charge par proposition (l'activité de dégâts de la donnée coûtait une action).
+  "staff-of-striking": { hitRider: { damage: "sviFeLqVM4b4jHvc", item: "staff-of-striking" } },
+  // Anneau du bélier : « si l'attaque touche, la cible est repoussée de 1,50 m » (par charge dépensée : une charge, 1,50 m).
+  "ring-of-the-ram": { triggers: [{ on: "hit", do: [{ type: "move", mode: "push", distance: 5, units: "ft" }] }] },
+
   // Morsure de Harkon (Ravenloft) : « +1 aux tests et sauvegardes tant que vous portez le collier » — l'effet n'est pas transféré.
   "harkons-bite": { dataFixes: [{ effect: "EzuxTW39OtnDWoi1", path: "transfer", from: false, value: true }] }
 });

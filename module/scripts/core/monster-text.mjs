@@ -291,8 +291,16 @@ export function monsterPushes(html, { save=false, attack=false }={}) {
 export function monsterTypeGate(html) {
   const text = plainText(html);
   if ( !text || (segments(text).length > 1) ) return null;
-  const m = text.match(/\(([A-Za-z ,]+?) succeed automatically\)/i) ?? text.match(/\bsucceeds automatically if it is an? ([A-Za-z ,]+?(?: or an? [A-Za-z]+)?)\)?(?:[.;,]|$)/i);
+  // K9 (§334) : aussi « Constructs and Undead automatically succeed on this save », « each creature … that isn't an Undead », « and
+  // isn't a Construct or an Undead » (Cri funeste, Perturbation de la vie, Visage horrifiant, Marionnettiste du sang).
+  const m = text.match(/\(([A-Za-z ,]+?) succeed automatically\)/i) ?? text.match(/\bsucceeds automatically if it is an? ([A-Za-z ,]+?(?: or an? [A-Za-z]+)?)\)?(?:[.;,]|$)/i)
+    ?? text.match(/\b((?:Constructs|Undead|Oozes|Plants|Elementals)(?:,? (?:and|or) (?:Constructs|Undead|Oozes|Plants|Elementals))*) automatically succeed on this save/i)
+    ?? text.match(/\b(?:that|and) isn['’]t an? ((?:Construct|Undead|Ooze|Plant|Elemental)(?: or an? (?:Construct|Undead|Ooze|Plant|Elemental))*)\b/i);
   if ( !m ) return null;
+  // Une porte de sauvegarde se dit avant la première issue (« Failure: ») : ailleurs, la clause vaut pour autre chose (PV temporaires
+  // de la Morsure du Souverain lézard : « a creature that isn't a Construct or an Undead »).
+  const failure = text.search(/\bFailure\s*:/i);
+  if ( !/\bSaving Throw\b/i.test(text) || ((failure >= 0) && (m.index > failure)) ) return null;
   const TYPES = ["aberration", "beast", "celestial", "construct", "dragon", "elemental", "fey", "fiend", "giant", "humanoid", "monstrosity", "ooze", "plant", "undead"];
   const types = TYPES.filter(t => new RegExp(`\\b${t}s?\\b`, "i").test(m[1]));
   if ( !types.length ) return null;
@@ -412,15 +420,18 @@ export function monsterMissingStatus(html, { activities=[], effects=[] }={}) {
   for ( const [i, sentence] of sentences.entries() ) {
     const m = sentence.match(/\b(?:it|the target) has the (Prone|Restrained|Blinded|Deafened|Frightened|Poisoned|Stunned|Incapacitated|Paralyzed) condition\b/i);
     if ( !m || /\b(?:While|until it takes damage|If this damage|reduces the target to 0)\b/i.test(sentence) ) continue;
-    // Un état posé par le moteur n'a pas de durée : seulement ceux qui n'en ont pas (À terre, Entravé « until the net is destroyed »).
-    if ( /\buntil (?:the (?:start|end)|the grapple ends)\b|\bfor (?:\d+|one|an?|…) (?:round|minute|hour|…)|\bon an? \d/i.test(sentence) ) continue;
+    // Un état posé par le moteur n'a pas de durée : la seule durée lue est un tour (`effectEnds` « status:<état> », §334) —
+    // « until the start of the wyvern's next turn » (le lanceur), « until the end of its next turn » (la cible).
+    const turn = sentence.match(/\buntil the (start|end) of (?:the \S+?['’]s|its) next turn\b/i);
+    const ends = turn ? `${/\bof its next turn/i.test(turn[0]) ? "bearer" : "caster"}Turn${(turn[1].toLowerCase() === "start") ? "Start" : "End"}` : null;
+    if ( !ends && /\buntil (?:the (?:start|end)|the grapple ends)\b|\bfor (?:\d+|one|an?|…) (?:round|minute|hour|…)|\bon an? \d/i.test(sentence) ) continue;
     const status = m[1].toLowerCase();
     const before = sentences.slice(0, i).join(" ");
     const failure = /\bFailure\s*:/i.test(sentence) || (/\bFailure\s*:/i.test(before) && !/\bSuccess\s*:[^]*$/i.test(before.split(/\bFailure\s*:/i).at(-1)));
     const on = (save && failure) ? "failedSave" : ((attack && !save) ? "hit" : null);
     if ( !on || statusesOf(on === "hit" ? "attack" : "save").has(status) ) continue;
     const size = sentence.match(/\bIf the target is an? (Tiny|Small|Medium|Large|Huge|Gargantuan) or smaller\b/i)?.[1];
-    out.push({ on, ...(size ? { if: { "target.sizeAtMost": SIZE_KEYS[size.toLowerCase()] } } : {}), do: [{ type: "status", status }] });
+    out.push({ on, ...(size ? { if: { "target.sizeAtMost": SIZE_KEYS[size.toLowerCase()] } } : {}), do: [{ type: "status", status }], ...(ends ? { ends } : {}) });
   }
   return out;
 }
@@ -461,4 +472,26 @@ export function monsterSightGate(html, activities=[]) {
   const text = plainText(html);
   if ( !text || (segments(text).length > 1) ) return null;
   return /\b(?:each|any)\b[^.:]{0,120}\bthat can see (?:the \S|it\b|him\b|her\b)/i.test(text) ? { "target.seesSource": false } : null;
+}
+
+/**
+ * K1 (SPEC §334) : « Success: The target is immune to this cloaker's Moan for the next 24 hours » (Gémissement, Regard soporifique,
+ * Visage horrifiant, Regard glaçant…) → sur une sauvegarde réussie, une marque `immune:<identifiant>` de cette durée ; la porte
+ * `target.hasMark` écarte ensuite la créature marquée (ni sauvegarde, ni effet). Pas pour une attaque (Morsure des lycanthropes : la
+ * porte écarterait aussi les dégâts du coup ; l'immunité à la malédiction y reste au MJ).
+ * @param {string} html
+ * @param {string} identifier
+ * @param {Array<{type: string}>} [activities]
+ * @returns {{trigger: object, gate: object}|null}
+ */
+export function monsterImmunity(html, identifier, activities=[]) {
+  if ( !identifier || activities.some(a => a.type === "attack") ) return null;
+  const text = plainText(html);
+  if ( !text || (segments(text).length > 1) ) return null;
+  const m = text.match(/\bSuccess\s*:\s*The target is immune to [^.]*? for (?:the next )?(\d+|an?|one) (minute|hour)s?\b/i);
+  if ( !m ) return null;
+  const n = /^\d+$/.test(m[1]) ? Number(m[1]) : 1;
+  const seconds = n * ((m[2].toLowerCase() === "hour") ? 3600 : 60);
+  const mark = `immune:${identifier}`;
+  return { trigger: { on: "savedSave", do: [{ type: "mark", mark, label: "Marque.Immunite", seconds }] }, gate: { "target.hasMark": mark } };
 }

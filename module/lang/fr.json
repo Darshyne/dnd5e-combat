@@ -345,6 +345,7 @@
   "DND5ECOMBAT.Guerison.Aucun": "{name} : aucun état à faire cesser",
   "DND5ECOMBAT.Amadou.Choisir": "Quelle source de lumière ?",
   "DND5ECOMBAT.Marque.Huile": "Couvert d'huile",
+  "DND5ECOMBAT.Marque.Immunite": "Immunisé (sauvegarde réussie)",
   "DND5ECOMBAT.Huile.Enflammee": "L'huile qui couvre {name} s'enflamme : 5 dégâts de feu.",
   "DND5ECOMBAT.Amadou.Allumer": "Allumer : {item}",
   "DND5ECOMBAT.Amadou.Eteindre": "Éteindre : {item}",

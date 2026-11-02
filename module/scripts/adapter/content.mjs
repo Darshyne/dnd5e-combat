@@ -16,7 +16,7 @@ import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { monsterChoice, monsterDeaths, monsterEndings, monsterPushes, monsterReactions, monsterRecurring, monsterTypeGate, monsterAdvantage, monsterSaveDamage, monsterMissingStatus, monsterNoOpportunity,
-  monsterBasicActions, monsterSightGate } from "../core/monster-text.mjs";
+  monsterBasicActions, monsterSightGate, monsterImmunity } from "../core/monster-text.mjs";
 import { readDrain, drains } from "../core/drain.mjs";
 
 export const OVERRIDES_SETTING = "contentOverrides";
@@ -49,7 +49,10 @@ export function identifierOf(item) {
   if ( scroll ) return { id: scroll.identifier, from: "scroll" };
   const sourceUuid = item?._stats?.compendiumSource ?? item?.flags?.dnd5e?.sourceId ?? null;
   // §277 : les sources livrées (content/sources.mjs) et celles qu'un autre module enregistre avec sa table.
-  const known = SOURCES[String(sourceUuid ?? "").split(".").at(-1)] ?? SOURCES[item?.id ?? ""];
+  // §334 : d'abord « acteur.item » — un id d'item du Monster Manual est partagé entre créatures (« mmBite0000000000 ») ; la clé
+  // « mmHomunculus0000.mmBite0000000000 » vise la morsure de l'Homoncule seule.
+  const parts = String(sourceUuid ?? "").split(".");
+  const known = ((parts.length > 3) ? SOURCES[`${parts.at(-3)}.${parts.at(-1)}`] : null) ?? SOURCES[parts.at(-1)] ?? SOURCES[item?.id ?? ""];
   if ( known ) return { id: known, from: "source" };
   const own = item?.system?.identifier;
   const original = item?.flags?.babele?.originalName;
@@ -147,7 +150,14 @@ function textLayer(item) {
   const advantage = monsterAdvantage(html, identifierOf(item).id);
   // K12 (§333) : l'état que la donnée oublie de poser.
   const acts = Array.from(item.system?.activities ?? []).map(a => ({ id: a.id, type: a.type, effects: (a.effects ?? []).map(e => e._id ?? e.id) }));
-  const missing = monsterMissingStatus(html, { activities: acts, effects });
+  // §334 : un état lu avec sa durée d'un tour la reçoit par `effectEnds` « status:<état> ».
+  const missing = monsterMissingStatus(html, { activities: acts, effects }).map(({ ends, ...t }) => {
+    if ( ends ) (recurring.effectEnds ??= {})[`status:${t.do[0].status}`] = ends;
+    return t;
+  });
+  // K1 (§334) : immunité temporaire après une réussite.
+  const immunity = monsterImmunity(html, identifierOf(item).id, acts);
+  if ( immunity ) missing.push(immunity.trigger);
   const allTriggers = [...triggers, ...(reacts.triggers ?? []), ...(recurring.triggers ?? []), ...pushes, ...advantage, ...missing];
   const { triggers: _r, ...recurringRest } = recurring;
   const { triggers: _t, ...restrictions } = reacts;
@@ -163,7 +173,8 @@ function textLayer(item) {
   const typeGate = monsterTypeGate(html);
   // K12 (§333) : « that can see the X » — une créature qui ne voit pas la source n'est pas affectée.
   const sight = monsterSightGate(html, acts);
-  const gate = (typeGate && sight) ? { unaffectedIf: { any: [typeGate.unaffectedIf, sight] } } : (typeGate ?? (sight ? { unaffectedIf: sight } : null));
+  const gates = [typeGate?.unaffectedIf, sight, immunity?.gate].filter(Boolean);
+  const gate = gates.length ? { unaffectedIf: (gates.length > 1) ? { any: gates } : gates[0] } : null;
   const layer = (allTriggers.length || Object.keys(deaths).length || choice || Object.keys(restrictions).length || Object.keys(recurringRest).length || gate)
     ? { ...(allTriggers.length ? { triggers: allTriggers } : {}), ...deaths, ...restrictions, ...recurringRest, ...(choice ? { choice } : {}), ...(gate ? { targets: gate } : {}) } : null;
   if ( textCache.size > 2000 ) textCache.clear();

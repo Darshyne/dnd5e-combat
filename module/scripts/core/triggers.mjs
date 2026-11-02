@@ -39,6 +39,8 @@ export const MOMENTS = Object.freeze({
   // la sauvegarde de l'item (ou celle qu'une attaque touchée impose).
   hit: "an attack from the item just hit the target (on application: push, condition)",
   failedSave: "the target just failed the item's saving throw (on application: push, condition)",
+  // K1 (§334) : une réussite à la sauvegarde de l'item (marque d'immunité temporaire : « immune to this … for 24 hours »).
+  savedSave: "the target just succeeded on the item's saving throw (on application: temporary immunity mark)",
   // Le tour de la créature elle-même, où qu'elle soit (brique « sauvegarde répétée ») : une déclaration
   // `via: "effect"` s'y accroche pour toute créature portant un effet de l'item (Immobilisation de personne).
   startOfTurn: "the creature starts its turn (declaration carried by an effect)",
@@ -86,7 +88,7 @@ export const PRE_ATTACK_WINDOWS = Object.freeze(["isAttacked", "enemyAttacks", "
 export const BEARER_MOMENTS = Object.freeze(["startOfTurn", "endOfTurn", "isAttacked", "isDamaged", "isHit"]);
 
 /** Les moments qui ne se publient qu'à l'application d'une résolution, par cible atteinte. */
-export const OUTCOME_MOMENTS = Object.freeze(["hit", "failedSave"]);
+export const OUTCOME_MOMENTS = Object.freeze(["hit", "failedSave", "savedSave"]);
 
 /** Les moments du tour de la créature elle-même, sans zone. */
 export const TURN_MOMENTS = Object.freeze(["startOfTurn", "endOfTurn"]);

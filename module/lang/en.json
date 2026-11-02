@@ -345,6 +345,7 @@
   "DND5ECOMBAT.Guerison.Aucun": "{name}: no condition to end",
   "DND5ECOMBAT.Amadou.Choisir": "Which light source?",
   "DND5ECOMBAT.Marque.Huile": "Covered in oil",
+  "DND5ECOMBAT.Marque.Immunite": "Immune (saving throw succeeded)",
   "DND5ECOMBAT.Huile.Enflammee": "The oil covering {name} catches fire: 5 fire damage.",
   "DND5ECOMBAT.Amadou.Allumer": "Light: {item}",
   "DND5ECOMBAT.Amadou.Eteindre": "Put out: {item}",

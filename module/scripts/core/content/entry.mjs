@@ -393,6 +393,9 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     if ( (key in entry) && !(isObject(entry[key]) && isId(entry[key].activity) && (Object.keys(entry[key]).length === 1)) ) errors.push(`${at}${key}: { activity }`);
   }
   if ( ("zoneAffects" in entry) && !["enemy", "ally"].includes(entry.zoneAffects) ) errors.push(`${at}zoneAffects: enemy, ally`);
+  if ( ("dropsEffects" in entry) && !(Array.isArray(entry.dropsEffects) && entry.dropsEffects.length && entry.dropsEffects.every(id => /^[A-Za-z0-9]{16}$/.test(id))) ) {
+    errors.push(`${at}dropsEffects: list of effect ids (16 characters)`);
+  }
   if ( ("noDamage" in entry) && !(Array.isArray(entry.noDamage) && entry.noDamage.length && entry.noDamage.every(id => /^[A-Za-z0-9]{16}$/.test(id))) ) {
     errors.push(`${at}noDamage: list of activity ids (16 characters)`);
   }

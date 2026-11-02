@@ -131,7 +131,7 @@ import { OUTCOME_MOMENTS, TURN_MOMENTS } from "../module/scripts/core/triggers.m
 describe("briques (SPEC §16) : moments d'issue et de tour, via", () => {
   it("les moments d'issue et de tour sont connus du registre", () => {
     for ( const m of [...OUTCOME_MOMENTS, ...TURN_MOMENTS] ) expect(MOMENTS[m]).toBeTruthy();
-    expect(OUTCOME_MOMENTS).toEqual(["hit", "failedSave"]);
+    expect(OUTCOME_MOMENTS).toEqual(["hit", "failedSave", "savedSave"]);
     expect(MOMENTS.preAttackRoll).toBeTruthy();
     expect(MOMENTS.castsSpell).toBeTruthy();
     expect(MOMENTS.isAttacked).toBeTruthy();

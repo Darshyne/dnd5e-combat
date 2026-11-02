@@ -324,6 +324,8 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     "target.hasStatus": id => target?.statuses?.has(id) === true,
     "target.hasEffect": id => hasEffectFrom(target, id),
     "target.hasEffectFrom": id => hasEffectFrom(target, id, source),
+    // K1 (§334) : la cible porte cette marque (immunité temporaire après une réussite : `immune:<identifiant>`).
+    "target.hasMark": mark => (target?.effects ?? []).some(e => e.flags?.["dnd5e-combat"]?.mark === mark),
     // §133 : la créature visée manie une arme équipée de cette propriété (Duelliste défensif : « Finesse ») ; c'est le réacteur lui-même
     // (Protection : « une cible autre que vous ») ; le réacteur porte un bouclier.
     // §135 : la créature blessée résiste à l'un des types de ces dégâts (Faveur de résistance aux énergies : Redirection d'énergie).

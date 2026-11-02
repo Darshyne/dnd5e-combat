@@ -21,6 +21,10 @@ export const SOURCE_IDENTIFIERS = Object.freeze({
   E2ZOsODrA6ydRBro: "mm-misty-escape",
   mmWeb00000000000: "mm-web",
   Z40sOvc1VYKqWqA6: "mm-rally",
+  // §334 : défauts de donnée propres à une créature — clé « acteur.item » de la source de compendium (l'id d'item est partagé).
+  "mmHomunculus0000.mmBite0000000000": "mm-homunculus-bite",
+  "mmPseudodragon00.mmSting000000000": "mm-pseudodragon-sting",
+  "mmWereboar000000.mmGore0000000000": "mm-wereboar-gore",
   // Espèce Dhampir (Ravenloft: The Horrors Within).
   rhwVampiricBitnE: "vampiric-bite",
   rhwSpiderClimb7F: "spider-climb",

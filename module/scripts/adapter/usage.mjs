@@ -73,7 +73,7 @@ export function poolEffectsOf(activity) {
  * comportement `applyActiveEffect` du cœur, adapter/zone-effects.mjs) ; posés en plus sur les cibles, ils ne partaient jamais.
  */
 const effectsOf = (activity, when, condition=null) => (contentOf(activity.item).entry?.zoneEffects === true) ? []
-  : applicableEffectsOf(activity).map(e => ({
+  : applicableEffectsOf(activity).filter(e => !(contentOf(activity.item).entry?.dropsEffects ?? []).includes(effectKey(e))).map(e => ({
     id: effectKey(e), activity: activity.uuid, when: when(e), ...(condition ? { if: JSON.stringify(condition) } : {})
   }));
 
@@ -363,7 +363,8 @@ function readPlan(message) {
         variant: variant ? { activity: variant.activity.uuid, kind: variant.kind, name: variant.activity.name } : null,
         damageFrom: [variant?.activity.uuid, advantage?.uuid].filter(Boolean),
         effects: [...effectsOf(source, () => "always", effectGate(source)).filter(e => variant || !chargeOnly(activity).includes(e.id)), ...(chain?.effects ?? [])],
-        steps: [...outcomeStepsOf(activity.item, "hit", "always"), ...(chain ? outcomeStepsOf(activity.item, "failedSave", "failedSave") : [])]
+        steps: [...outcomeStepsOf(activity.item, "hit", "always"), ...(chain ? [...outcomeStepsOf(activity.item, "failedSave", "failedSave"),
+          ...outcomeStepsOf(activity.item, "savedSave", "saved")] : [])]
       } };
     }
     case "save": {
@@ -378,7 +379,7 @@ function readPlan(message) {
         save: { ...save, chained: false },
         damage: hasDamageParts(activity) ? "author" : null,
         effects: saveEffectsOf(activity),
-        steps: outcomeStepsOf(activity.item, "failedSave", "failedSave")
+        steps: [...outcomeStepsOf(activity.item, "failedSave", "failedSave"), ...outcomeStepsOf(activity.item, "savedSave", "saved")]
       } };
     }
     case "damage":

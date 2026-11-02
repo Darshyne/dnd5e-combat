@@ -619,6 +619,8 @@
  *                                               §91 : hors de portée personnelle, posé à la souris (Interdiction)
  *     zoneAffects?: "enemy"|"ally"              qui la zone de l'item affecte, quand la donnée ne le dit pas (§86 : « une
  *                                               créature que vous voyez… vous pouvez la forcer » — les alliés épargnés)
+ *     dropsEffects?: [ids d'effet]            §334 : ces effets de l'item ne sont jamais posés — la donnée se trompe d'état (Frappe
+ *                                               draconique : À terre au lieu d'Effrayé, que le texte fait poser)
  *     noDamage?: [ids d'activité]               le moteur ne lance pas les dégâts de ces activités (§81, Frappe piégeuse : la
  *                                               donnée en met sur la sauvegarde, le texte n'en donne qu'au début des tours)
  *     wardsAtZero?: true                        l'effet du sort fait tomber à 1 PV au lieu de 0, puis prend fin (§73,

@@ -141,7 +141,7 @@ function textLayer(item) {
   const reacts = monsterReactions(html, { reaction: activities.some(a => item.system.activities.get(a.id)?.activation?.type === "reaction"),
     acEffect: acEffect ? Number(String(acEffect.value).replace("+", "")) : null });
   // K7 (§328) : dégâts récurrents au porteur, soins bloqués, absorption — pas pour une capacité que la brique Avaler joue déjà.
-  const recurring = monsterRecurring(html, effects);
+  const recurring = monsterRecurring(html, effects, Array.from(item.system?.activities ?? []).map(a => ({ id: a.id, type: a.type })));
   if ( CONTENT[identifierOf(item).id]?.swallow ) delete recurring.triggers;
   // K8 (§329) : poussées et tractions lues dans le texte.
   const kinds = { save: activities.some(a => item.system.activities.get(a.id)?.type === "save"), attack: activities.some(a => item.system.activities.get(a.id)?.type === "attack") };

@@ -3,7 +3,7 @@
  */
 
 import { CREATURE_TYPES } from "../eligibility.mjs";
-import { MOMENTS, OUTCOME_MOMENTS, RESAVE_MOMENTS, BEARER_MOMENTS, TURN_MOMENTS, unknownFacts, normalize, PRE_ATTACK_WINDOWS, DAMAGED_BY } from "../triggers.mjs";
+import { MOMENTS, OUTCOME_MOMENTS, RESAVE_MOMENTS, BEARER_MOMENTS, BEARER_DAMAGE_MOMENTS, unknownFacts, normalize, PRE_ATTACK_WINDOWS, DAMAGED_BY } from "../triggers.mjs";
 import { ABILITIES, ATTACK_STEPS, AURA_AFFECTS, DAMAGE_ON_SAVE, DAMAGE_TO, FALL_WINDOWS, HIT_WINDOWS, MOVE_MODES, OUTCOME_STEPS, RESAVE_ON_FAIL, STEP_TYPES, VIA } from "./enums.mjs";
 import { isId, isObject } from "./shared.mjs";
 function validateStep(step, at, errors) {
@@ -131,7 +131,7 @@ export function validateTrigger(declaration, at, facts, errors) {
       if ( isObject(s) && (s.type === "ward") && (!d.on.includes("isAttacked") || (d.via !== "effect")) ) errors.push(`${at}.do: "ward" requires the isAttacked moment and via: "effect"`);
       if ( isObject(s) && (s.type === "damage") && (s.to === "source") && ((d.on.length !== 1) || (d.on[0] !== "isHit")) ) errors.push(`${at}.do: a riposte (to: "source") requires isHit as the only moment`);
       if ( isObject(s) && (s.type === "damage") && (s.to === "origin") && ((d.on.length !== 1) || (d.on[0] !== "isDamaged") || (d.via !== "effect")) ) errors.push(`${at}.do: a damage share (to: "origin") requires isDamaged as the only moment and via: "effect"`);
-      if ( isObject(s) && (s.type === "damage") && (s.to === "bearer") && (!d.on.length || !d.on.every(m => TURN_MOMENTS.includes(m)) || (d.via !== "effect")) ) errors.push(`${at}.do: the bearer's damage (to: "bearer") requires moments among ${TURN_MOMENTS.join(", ")} and via: "effect"`);
+      if ( isObject(s) && (s.type === "damage") && (s.to === "bearer") && (!d.on.length || !d.on.every(m => BEARER_DAMAGE_MOMENTS.includes(m)) || (d.via !== "effect")) ) errors.push(`${at}.do: the bearer's damage (to: "bearer") requires moments among ${BEARER_DAMAGE_MOMENTS.join(", ")} and via: "effect"`);
       if ( isObject(s) && (s.type === "damage") && ("onSave" in s) && ((d.on.length !== 1) || (d.on[0] !== "failedSave") || ("to" in s)) ) errors.push(`${at}.do: "onSave" requires failedSave as the only moment, without "to"`);
       // §301 : `reduce` aussi aux fenêtres de chute (Chute ralentie), comme `cancel` (Feuille morte).
       const fallReaction = d.on.some(m => FALL_WINDOWS.includes(m)) && d.do.some(x => isObject(x) && (x.type === "use"));

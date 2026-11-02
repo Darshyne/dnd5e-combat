@@ -212,9 +212,41 @@ function turnMoment(moment, combatant, turnKey=null) {
   });
 }
 
+/**
+ * §334 : au début du tour d'une créature, les effets qu'elle a posés sur d'autres (`originTurnStart`, porté par l'effet) — leur porteur
+ * subit ses dégâts (Submersion, Tourbillon, Mâchonner : « at the start of each of the …'s turns »).
+ */
+function originTurnMoment(combatant) {
+  const origin = combatant?.actor;
+  const scene = combatant?.token?.parent;
+  if ( !origin || !scene ) return;
+  for ( const token of scene.tokens ) {
+    const actor = token.actor;
+    if ( !actor || (actor === origin) || !actor.effects?.size ) continue;
+    enqueue(`turn:${token.uuid}`, async () => {
+      for ( const d of fire("originTurnStart", { actor, target: actor, source: origin, targetToken: token }) ) {
+        const item = await fromUuid(d.item ?? "");
+        if ( !item?.actor || (item.actor.uuid !== origin.uuid) ) continue;
+        const effect = await fromUuid(d.effect ?? "");
+        if ( !effect ) continue;
+        for ( const step of stepsOf(d, "damage").filter(s => s.to === "bearer") ) {
+          await inflict({
+            step, item, scaling: effect.getFlag?.("dnd5e", "scaling") ?? 0, targetUuid: token.uuid,
+            speaker: ChatMessage.implementation.getSpeaker({ token }),
+            flavor: loc("DegatsPorteur", { item: d.name, name: token.name }),
+            flags: { bearerDamage: { item: d.identifier, effect: d.effect, moment: "originTurnStart" } }
+          });
+          log(`${d.name}: ${token.name} takes its damage (start of ${origin.name}'s turn)`);
+        }
+      }
+    });
+  }
+}
+
 function onTurnChange(combat, prior, current) {
   turnMoment("endOfTurn", combat.combatants.get(prior?.combatantId), turnKeyAt(combat, prior));
   turnMoment("startOfTurn", combat.combatants.get(current?.combatantId));
+  originTurnMoment(combat.combatants.get(current?.combatantId));
 }
 
 /* -------------------------------------------- */

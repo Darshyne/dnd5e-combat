@@ -7,7 +7,7 @@ const facts = Object.fromEntries(["activity.type", "activity.isAttack", "activit
   "activity.hasProperty", "source.hasStatus", "source.hasEffect", "source.creatureType", "source.allyNearTarget", "source.summonNearTarget", "source.seesTarget",
   "target.hasStatus", "target.hasEffect", "target.hasEffectFrom", "hit.stoppableBy", "damage.resisted", "target.grappledBySource", "target.wieldsProperty", "target.isSelf", "self.hasShield", "self.wieldsWeapon", "target.hasFeature", "activity.ability", "target.sizeAtMost", "target.within", "target.seesSource", "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "target.atZero", "target.isDead", "damage.hasType", "target.hpAtMost", "condition.gained",
   "target.wounded", "target.bloodied", "source.classLevelAtLeast", "target.nearSelf", "self.seesTarget", "target.hasNotActed", "source.onOwnTurn", "activity.dealsType", "source.hasFeature", "activity.cantripOf", "activity.school", "activity.enchantedBy", "source.wildShaped", "activity.classSpell", "source.resists", "source.nearSelf", "self.seesSource", "source.hasEffectFromTarget", "source.hasSense", "target.allied"].map(k => [k, true]));
-const MOMENTS_LIST = "isHit, isDamaged, leavesReach, enemyDisengages, enter, turnStart, turnEnd, moves, preDamageRoll, hit, failedSave, savedSave, startOfTurn, endOfTurn, preAttackRoll, castsSpell, isMissed, enemyTurnEnd, isTargeted, isAttacked, enemyAttacks, allyAttacks, gainsCondition, allyIsHit, allyIsDamaged, enemyAttacked, falls, allyFalls";
+const MOMENTS_LIST = "isHit, isDamaged, leavesReach, enemyDisengages, enter, turnStart, turnEnd, moves, preDamageRoll, hit, failedSave, savedSave, startOfTurn, endOfTurn, originTurnStart, preAttackRoll, castsSpell, isMissed, enemyTurnEnd, isTargeted, isAttacked, enemyAttacks, allyAttacks, gainsCondition, allyIsHit, allyIsDamaged, enemyAttacked, falls, allyFalls";
 
 describe("validation d'une entrée", () => {
   it("accepte une entrée complète et bien formée", () => {
@@ -349,7 +349,7 @@ describe("briques (SPEC §16) : étapes d'issue, sœur rejouée, sauvegarde rép
       do: [{ type: "damage", to: "bearer", activity: "uAyE5DrJp0YpElcw" }, { type: "remove" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "endOfTurn", via: "effect", do: [{ type: "damage", to: "bearer", formula: "2d8", damageType: "psychic" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "isDamaged", via: "effect", do: [{ type: "damage", to: "bearer", formula: "2d8", damageType: "psychic" }] }] }, { facts }))
-      .toEqual(["triggers[0].do: the bearer's damage (to: \"bearer\") requires moments among startOfTurn, endOfTurn and via: \"effect\""]);
+      .toEqual(["triggers[0].do: the bearer's damage (to: \"bearer\") requires moments among startOfTurn, endOfTurn, originTurnStart and via: \"effect\""]);
   });
 
   it("§19 : savedEffects (ids) et ignoresCloseCombat (true)", () => {
@@ -411,7 +411,7 @@ describe("briques (SPEC §16) : étapes d'issue, sœur rejouée, sauvegarde rép
   it("remove (B8) : l'effet cesse à un moment du porteur, porté par l'effet", () => {
     expect(validateEntry({ triggers: [{ on: "isDamaged", via: "effect", do: [{ type: "remove" }] }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "isDamaged", do: [{ type: "remove" }] }] }, { facts }))
-      .toEqual(["triggers[0].do: \"remove\" requires bearer moments (startOfTurn, endOfTurn, isAttacked, isDamaged, isHit) and via: \"effect\""]);
+      .toEqual(["triggers[0].do: \"remove\" requires bearer moments (startOfTurn, endOfTurn, isAttacked, isDamaged, isHit, originTurnStart) and via: \"effect\""]);
     expect(validateEntry({ triggers: [{ on: ["isDamaged", "hit"], via: "effect", do: [{ type: "remove" }] }] }, { facts })[0]).toMatch(/"remove"/);
   });
 

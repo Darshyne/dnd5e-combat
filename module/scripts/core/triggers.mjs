@@ -45,6 +45,8 @@ export const MOMENTS = Object.freeze({
   // `via: "effect"` s'y accroche pour toute créature portant un effet de l'item (Immobilisation de personne).
   startOfTurn: "the creature starts its turn (declaration carried by an effect)",
   endOfTurn: "the creature ends its turn (declaration carried by an effect)",
+  // §334 : la créature qui a posé l'effet commence son tour (Submersion, Tourbillon : « at the start of each of the elemental's turns »).
+  originTurnStart: "the creature that placed the effect starts its turn (declaration carried by the effect: its bearer takes damage)",
   // Brique « avantage conditionnel » (§16, B6) : sur le client de l'attaquant, avant le jet, pour chaque cible.
   // Consultées : les items de l'attaquant, et les effets portés par l'attaquant ET par la cible (`via: "effect"`).
   preAttackRoll: "the actor is about to make an attack roll against the target (advantage, disadvantage)",
@@ -85,7 +87,10 @@ export const MOMENTS = Object.freeze({
 /** §34 : les fenêtres de réaction avant un jet d'attaque (Désavantage, dé retiré). */
 export const PRE_ATTACK_WINDOWS = Object.freeze(["isAttacked", "enemyAttacks", "allyAttacks"]);
 
-export const BEARER_MOMENTS = Object.freeze(["startOfTurn", "endOfTurn", "isAttacked", "isDamaged", "isHit"]);
+export const BEARER_MOMENTS = Object.freeze(["startOfTurn", "endOfTurn", "isAttacked", "isDamaged", "isHit", "originTurnStart"]);
+
+/** §334 : les moments où le porteur d'un effet subit ses dégâts (`to: "bearer"`) — son tour, ou celui de l'origine de l'effet. */
+export const BEARER_DAMAGE_MOMENTS = Object.freeze(["startOfTurn", "endOfTurn", "originTurnStart"]);
 
 /** Les moments qui ne se publient qu'à l'application d'une résolution, par cible atteinte. */
 export const OUTCOME_MOMENTS = Object.freeze(["hit", "failedSave", "savedSave"]);

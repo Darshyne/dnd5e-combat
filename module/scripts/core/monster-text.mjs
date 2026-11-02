@@ -220,19 +220,27 @@ export function monsterReactions(html, { reaction=false, acEffect=null }={}) {
  * @param {Array<{id: string, statuses: string[]}>} [effects]
  * @returns {{triggers?: object[], blocksHealing?: true}}
  */
-export function monsterRecurring(html, effects=[]) {
-  const raw = String(html ?? "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ");
+export function monsterRecurring(html, effects=[], activities=[]) {
+  const raw = String(html ?? "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&#0?39;|&rsquo;/g, "'")
+    .replace(/\s+/g, " ");
   const out = {};
   const triggers = [];
+  // §334 : un enricher sans activité (« [[/damage average]] », ou « 3 ([[/r 1d6]]) Piercing damage ») — l'unique activité de dégâts.
+  const damageActivities = activities.filter(a => a.type === "damage");
   for ( const sentence of raw.split(/(?<=\.)\s+(?=[A-Z])/) ) {
-    const moment = sentence.match(/\bat the (start|end) of each of its turns\b/i)?.[1];
-    const activity = sentence.match(/\[\[\/damage[^\]]*\bactivity=([A-Za-z0-9]{16})/)?.[1];
+    // §334 : « at the start of each of the water elemental's turns » — le tour de la créature qui a posé l'effet (`originTurnStart`).
+    const turn = sentence.match(/\bat the (start|end) of each of (its|the [^.]*?['’]s|his|her) turns\b/i);
+    const moment = turn?.[1];
+    const ofOrigin = !!turn && /^the /i.test(turn[2]);
+    if ( ofOrigin && (moment.toLowerCase() !== "start") ) continue;
+    const activity = sentence.match(/\[\[\/damage[^\]]*\bactivity=([A-Za-z0-9]{16})/)?.[1]
+      ?? (((/\[\[\/damage\b/.test(sentence) || /\bdamage\b/i.test(sentence)) && (damageActivities.length === 1)) ? damageActivities[0].id : null);
     if ( !moment || !activity ) continue;
     if ( /\b(?:swallowed|engulfed)\b/i.test(sentence) || /\bdeals?\b[^.]*\bto (?:any|each) creature\b/i.test(sentence) ) continue;
     if ( !/\b(?:takes|loses)\b/i.test(sentence) ) continue;
     const named = conditionsIn(plainText(sentence).replace(/\bgrapple\b/i, "grappled"));
     const ids = effects.filter(e => (e.statuses ?? []).some(s => named.includes(s))).map(e => e.id);
-    const on = moment.toLowerCase() === "start" ? "startOfTurn" : "endOfTurn";
+    const on = ofOrigin ? "originTurnStart" : (moment.toLowerCase() === "start" ? "startOfTurn" : "endOfTurn");
     const step = { type: "damage", to: "bearer", activity };
     if ( ids.length && (ids.length < effects.length) ) for ( const id of ids ) triggers.push({ on, via: "effect", fromEffect: id, do: [step] });
     else triggers.push({ on, via: "effect", do: [step] });

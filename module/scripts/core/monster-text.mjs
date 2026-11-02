@@ -273,15 +273,18 @@ export function monsterPushes(html, { save=false, attack=false }={}) {
   if ( !text || (segments(text).length > 1) ) return [];
   const out = [];
   for ( const sentence of text.split(/(?<=\.)\s+/) ) {
-    const m = sentence.match(/\b(pushed|pulled) up to (\d+) feet(?: straight)? (?:away from|toward)\b/i);
-    // Ni « pushed or pulled » (au choix), ni une traction vers le centre d'une zone (Implosion) : pas vers la créature.
-    if ( !m || /\bor (?:pushed|pulled)\b/i.test(sentence) || /\bcenter\b/i.test(sentence) ) continue;
+    // §334 : aussi « the hook horror pulls (pushes, moves) the target up to 15 feet straight toward (away from) itself ».
+    const active = sentence.match(/\b(pulls|pushes|moves) the target (?:up to )?(\d+) feet(?: straight)? (toward|away from) (?:itself|it|him|her)\b/i);
+    const m = sentence.match(/\b(pushed|pulled) up to (\d+) feet(?: straight)? (?:away from|toward)\b/i)
+      ?? (active ? [active[0], (/^push/i.test(active[1]) || /^away/i.test(active[3])) ? "pushed" : "pulled", active[2]] : null);
+    // Ni « pushed or pulled » / « toward or away » (au choix), ni une traction vers le centre d'une zone (Implosion) : pas vers la créature.
+    if ( !m || /\bor (?:pushed|pulled)\b|\btoward or away\b/i.test(sentence) || /\bcenter\b/i.test(sentence) ) continue;
     const before = text.slice(0, text.indexOf(sentence));
     const failure = /\bFailure\s*:/i.test(sentence) || (/\bFailure\s*:[^]*$/i.test(before) && !/\bSuccess\s*:[^]*$/i.test(before.split(/\bFailure\s*:/i).at(-1)));
     const on = (save && failure) ? "failedSave" : (attack ? "hit" : null);
     if ( !on ) continue;
-    const size = sentence.match(/\bIf the target is an? (Tiny|Small|Medium|Large|Huge|Gargantuan) or smaller\b/i)?.[1]
-      ?? before.split(/(?<=\.)\s+/).at(-1)?.match(/\bIf the target is an? (Tiny|Small|Medium|Large|Huge) or smaller\b/i)?.[1];
+    const size = sentence.match(/\bIf the target is (?:an? )?(Tiny|Small|Medium|Large|Huge|Gargantuan) or smaller\b/i)?.[1]
+      ?? before.split(/(?<=\.)\s+/).at(-1)?.match(/\bIf the target is (?:an? )?(Tiny|Small|Medium|Large|Huge) or smaller\b/i)?.[1];
     const sizeAtMost = size ? { tiny: "tiny", small: "sm", medium: "med", large: "lg", huge: "huge", gargantuan: "grg" }[size.toLowerCase()] : null;
     out.push({ on, ...(sizeAtMost ? { if: { "target.sizeAtMost": sizeAtMost } } : {}),
       do: [{ type: "move", mode: /^pushed$/i.test(m[1]) ? "push" : "pull", distance: Number(m[2]), units: "ft" }] });

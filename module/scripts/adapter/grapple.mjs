@@ -11,6 +11,7 @@ import { rangeIssue } from "../core/range.mjs";
 import { distanceBetween } from "./turn.mjs";
 import { unarmedAttackOf } from "./basics.mjs";
 import { pilotOfActor } from "./pilot.mjs";
+import { originItemOf } from "./facts.mjs";
 
 /** Les effets actifs qui rendent cet acteur Agrippé. */
 export function grappleEffectsOf(actor) {
@@ -62,8 +63,29 @@ export function grappleSceneOf(effect) {
   catch { return null; }
 }
 
-/** DD pour s'échapper d'une empoignade : 8 + Force + maîtrise de l'agrippeur (`abilities.str.dc`). null si inconnu. */
+/**
+ * K4 (§325) : le DD d'évasion que la capacité écrit — l'activité « Escape Check » du Monster Manual (`check`), un nombre (14) ou une
+ * formule (« @skills.ath.passive »), sur l'item qui a posé l'empoignade. null s'il n'y en a pas.
+ */
+function declaredEscapeDc(effect) {
+  const item = originItemOf(effect);
+  const check = Array.from(item?.system?.activities ?? []).find(a => (a.type === "check") && /escape|évasion|evasion/i.test(a.name ?? ""))
+    ?? Array.from(item?.system?.activities ?? []).find(a => a.type === "check");
+  if ( !check ) return null;
+  const value = Number(check.check?.dc?.value);
+  if ( Number.isFinite(value) && (value > 0) ) return value;
+  const formula = check.check?.dc?.formula;
+  if ( !formula ) return null;
+  try {
+    const n = Number(Roll.safeEval(Roll.replaceFormulaData(String(formula), item.getRollData?.() ?? {})));
+    return Number.isFinite(n) && (n > 0) ? n : null;
+  } catch { return null; }
+}
+
+/** DD pour s'échapper d'une empoignade : celui que la capacité écrit (K4), sinon 8 + Force + maîtrise de l'agrippeur (`abilities.str.dc`). null si inconnu. */
 export function escapeDcOf(effect) {
+  const declared = declaredEscapeDc(effect);
+  if ( declared ) return declared;
   const grappler = grapplerOf(effect);
   // Main agrippante (§16.15) : « DD d'évasion égal à votre DD de sort » — celui du lanceur de la main.
   const summoner = grappler ? pilotOfActor(grappler)?.summoner : null;
@@ -75,10 +97,18 @@ export function escapeDcOf(effect) {
   return Number.isFinite(dc) ? dc : null;
 }
 
-/** Portée d'une empoignade : l'allonge de l'attaque à mains nues de l'agrippeur, 5 ft à défaut. */
-function grappleReachOf(grappler) {
+/**
+ * Portée d'une empoignade : l'allonge de l'attaque à mains nues de l'agrippeur, 5 ft à défaut — K4 (§325) : ou celle de la capacité
+ * qui a posé l'empoignade, si elle est plus longue (Pince du Chuul, Liane étrangleuse : 10 ft ; Pseudopode du Shoggoth : 15 ft).
+ */
+function grappleReachOf(grappler, effect=null) {
   const range = unarmedAttackOf(grappler)?.item?.system?.range;
-  return { value: range?.reach ?? 5, units: range?.units ?? "ft" };
+  const own = { value: range?.reach ?? 5, units: range?.units ?? "ft" };
+  const item = effect ? originItemOf(effect) : null;
+  const reaches = [item?.system?.range?.reach, ...Array.from(item?.system?.activities ?? []).map(a => a.range?.reach)].map(Number).filter(n => Number.isFinite(n) && (n > 0));
+  const longest = reaches.length ? Math.max(...reaches) : null;
+  if ( !longest || (((item?.system?.range?.units ?? "ft") === own.units) && (longest <= own.value)) ) return own;
+  return { value: longest, units: item?.system?.range?.units ?? "ft" };
 }
 
 /**
@@ -99,7 +129,7 @@ export function grappleFacts(effect, grappledToken, factors) {
   const grapplerToken = grappler ? tokenIn(grappledToken.parent, grappler) : null;
   if ( !grapplerToken ) return null;
   const distance = distanceBetween(grapplerToken, grappledToken);
-  const reach = grappleReachOf(grappler);
+  const reach = grappleReachOf(grappler, effect);
   const within = rangeIssue(distance, reach, factors) === null;
   return { grapplerStatuses: Array.from(grappler.statuses ?? []), withinReach: within, grappler, grapplerToken, distance, reach };
 }

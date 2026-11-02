@@ -9,11 +9,13 @@ import { judgeMasteries } from "./mastery-choices.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { naturalOneFor } from "./natural-one.mjs";
 import { combatantFor, readBudget, rangeOf } from "../adapter/turn.mjs";
-import { useIssues } from "./turn.mjs";
+import { useIssues, legendaryIssues } from "./turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { movementCap } from "./actions.mjs";
 import { ownEndingsOf, endingsOn, endFor } from "./action-end.mjs";
 import { escapeGrapple } from "./grapple.mjs";
+import { escapeDcOf, grappleEffectsOf, grappleFacts } from "../adapter/grapple.mjs";
+import { reactionsBlocked, actionOrBonusOnly } from "../adapter/reactions.mjs";
 import { saveChanceOf } from "../adapter/hitchance.mjs";
 import { identifierOf, contentOf, worldOverrides, setWorldOverride } from "../adapter/content.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
@@ -56,6 +58,16 @@ export function endings({ tokenId }) {
   const token = viewedToken({ tokenId });
   const tell = e => ({ effect: e.effect.id, name: e.effect.name, item: e.item.name, by: e.rule.by, roll: e.rule.roll ?? null, dc: e.check?.dc ?? null });
   return { own: ownEndingsOf(token.actor).map(tell), byOther: endingsOn(token).map(tell) };
+}
+
+/** K4 (§325) : les empoignades que subit un token — DD d'évasion, allonge de la prise, prise tenue. */
+export function grappleState({ tokenId }) {
+  const token = viewedToken({ tokenId });
+  const factors = readUnitFactors();
+  return grappleEffectsOf(token.actor).map(e => {
+    const f = grappleFacts(e, token, factors);
+    return { effect: e.id, name: e.name, escapeDc: escapeDcOf(e), reach: f?.reach ?? null, withinReach: f?.withinReach ?? null, distance: f?.distance ?? null };
+  });
 }
 
 export async function actionEnd({ tokenId, targetId=null }) {
@@ -125,6 +137,8 @@ export function stats({ tokenId }) {
     size: actor?.system?.traits?.size ?? null,
     mods: Object.fromEntries(Object.entries(actor?.system?.abilities ?? {}).map(([k, v]) => [k, v.mod ?? null])),
     statuses: Array.from(actor?.statuses ?? []),
+    // K6 (§327) : Réactions perdues, action OU action Bonus (effets `noReactions`, `actionOrBonus`).
+    reactionBlocked: reactionsBlocked(actor), actionOrBonus: actionOrBonusOnly(actor),
     // §52 : la lumière du token telle que le cœur la rend (données préparées : effets `token.light.*` compris).
     light: (() => { const l = (tok?.document ?? tok)?.light ?? {}; return { bright: l.bright ?? 0, dim: l.dim ?? 0, angle: l.angle ?? 360,
       animation: l.animation?.type ?? null }; })()
@@ -240,7 +254,9 @@ export function issues({ tokenId, itemId, activityType=null, cost=null }) {
   const item = viewedToken({ tokenId }).actor?.items.get(itemId);
   const activity = item?.system.activities.find(a => !activityType || (a.type === activityType));
   if ( !activity ) throw new Error("activity not found");
-  return useIssues(activity, { cost }).lines;
+  const use = useIssues(activity, { cost });
+  // K5 (§326) : les soucis d'une action légendaire (son tour, plus d'action, une par tour).
+  return [...use.lines, ...legendaryIssues(activity, use.combatant, use.own)];
 }
 
 /** §236 : la portée que le moteur applique à une activité (règles de contenu comprises : Sniper de sorts, Fureur élémentaire améliorée). */

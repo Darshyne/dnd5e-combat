@@ -10,6 +10,7 @@ import { setDeathStatus, dropAutoDead, ensureDowned } from "../adapter/death.mjs
 import { regenerationOf, isStopped, markStopped, clearStopped, regenerate } from "../adapter/regeneration.mjs";
 import { actorOfEffect } from "../adapter/grapple.mjs";
 import { enqueue } from "./queue.mjs";
+import { contentOf } from "../adapter/content.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 
@@ -68,7 +69,22 @@ async function onCreateEffect(effect) {
   }
 }
 
+/**
+ * K7 (§328) : absorption — « chaque fois qu'il subit des dégâts de foudre, il regagne autant de PV » (golems) : avant que dnd5e compte
+ * résistances et immunités, ces dégâts deviennent un soin (`dnd5e.preCalculateDamage`, documents/actor/actor.mjs:870).
+ */
+function onPreCalculateDamage(actor, damages) {
+  const types = new Set((actor?.items ?? []).flatMap(i => contentOf(i).entry?.absorbsDamage ?? []));
+  if ( !types.size ) return;
+  for ( const d of damages ) {
+    if ( !types.has(d.type) || !(d.value > 0) ) continue;
+    log(`${actor.name}: absorbs ${d.value} ${d.type} damage as healing`);
+    d.type = "healing";
+  }
+}
+
 export function registerRegeneration() {
+  route("dnd5e.preCalculateDamage", onPreCalculateDamage, { label: "damage absorption" });
   route("createActiveEffect", onCreateEffect, { executor: true, label: "regeneration: automatic Dead removed" });
   route("dnd5e.calculateDamage", onCalculateDamage, { label: "regeneration: damage types not read" });
   route("dnd5e.applyDamage", onApplyDamage, { label: "regeneration: stop not recorded" });

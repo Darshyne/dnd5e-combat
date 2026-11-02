@@ -114,3 +114,38 @@ describe("K3 : un seul des effets, tiré au dé ou au choix", () => {
     expect(monsterChoice("Rays (roll 1d10). 1: Weak Ray. … 2: Slow Ray. …", effects)).toBe(null);
   });
 });
+
+describe("K6 : Réactions lues dans le texte d'une capacité de monstre", () => {
+  it("parade : +N CA contre l'attaque, avec ou sans effet dans la donnée", async () => {
+    const { monsterReactions } = await import("../module/scripts/core/monster-text.mjs");
+    const text = "Trigger: The guard is hit by a melee attack roll. Response: The guard adds 4 to its AC against that attack, possibly causing it to miss.";
+    expect(monsterReactions(text, { reaction: true })).toEqual({ triggers: [{ on: "isHit", if: { "activity.isMelee": true }, do: [{ type: "use" }, { type: "penalty", formula: "4" }] }] });
+    expect(monsterReactions(text, { reaction: true, acEffect: 4 })).toEqual({ triggers: [{ on: "isHit", if: { "hit.stoppableBy": 4, "activity.isMelee": true }, do: [{ type: "use" }] }] });
+    expect(monsterReactions(text, { reaction: false })).toEqual({});
+  });
+  it("Réactions perdues, action ou action Bonus", async () => {
+    const { monsterReactions } = await import("../module/scripts/core/monster-text.mjs");
+    expect(monsterReactions("Failure: until the end of its next turn, the target can't take Reactions and can take either an action or a Bonus Action on its turn, not both."))
+      .toEqual({ noReactions: true, actionOrBonus: true });
+    expect(monsterReactions("Rays. 1: Slow Ray. The target can't take Reactions. 2: Fear Ray. …")).toEqual({});
+  });
+});
+
+describe("K7 : dégâts récurrents, soins bloqués, absorption", () => {
+  const p = "p".repeat(16), g = "g".repeat(16), a = "a".repeat(16);
+  it("dégâts au porteur, rattachés à l'effet dont l'état est nommé", async () => {
+    const { monsterRecurring } = await import("../module/scripts/core/monster-text.mjs");
+    const html = `<p>Failure: The target has the Poisoned condition. While Poisoned, the target takes [[/damage average activity=${a}]] damage at the start of each of its turns.</p>`;
+    const r = monsterRecurring(html, [{ id: p, statuses: ["poisoned"] }, { id: g, statuses: ["grappled"] }]);
+    expect(r).toEqual({ triggers: [{ on: "startOfTurn", via: "effect", fromEffect: p, do: [{ type: "damage", to: "bearer", activity: a }] }] });
+    expect(validateEntry(r)).toEqual([]);
+    // Une créature avalée : la brique Avaler s'en charge.
+    expect(monsterRecurring(`A swallowed creature takes [[/damage average activity=${a}]] damage at the start of each of its turns.`)).toEqual({});
+  });
+  it("soins bloqués et absorption", async () => {
+    const { monsterRecurring } = await import("../module/scripts/core/monster-text.mjs");
+    expect(monsterRecurring("While Poisoned, the target can't regain Hit Points.")).toEqual({ blocksHealing: true });
+    expect(monsterRecurring("Whenever the golem is subjected to Fire damage, it regains a number of Hit Points equal to the Fire damage dealt.")).toEqual({ absorbsDamage: ["fire"] });
+    expect(validateEntry({ absorbsDamage: ["fire"] })).toEqual([]);
+  });
+});

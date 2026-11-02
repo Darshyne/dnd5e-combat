@@ -171,6 +171,84 @@ export function monsterChoice(html, effects=[]) {
 }
 
 /**
+ * K6 (SPEC §327) : ce que le texte d'une capacité de monstre dit des Réactions.
+ *  - une parade : une activité de Réaction dont la réponse « adds N to its AC against that attack » (Contre-attaque du Commandant,
+ *    Riposte du Capitaine pirate, Posture défensive, Tourbillon de sable) → la déclaration de la Parade du MM (`isHit`, `use`, `penalty`
+ *    de N, ou du bonus de maîtrise quand le texte renvoie à une valeur calculée) ; « melee attack » dans le déclencheur : contre le corps à
+ *    corps seulement ;
+ *  - « can't take Reactions » → `noReactions` (le porteur d'un effet de l'item) ; « either an action or a Bonus Action », « an action or
+ *    a Bonus Action, not both » → `actionOrBonus`.
+ * @param {string} html
+ * @param {{reaction?: boolean}} [data]  l'item a-t-il une activité de Réaction
+ * @returns {{triggers?: object[], noReactions?: true, actionOrBonus?: true}}
+ */
+export function monsterReactions(html, { reaction=false, acEffect=null }={}) {
+  const text = plainText(html);
+  const out = {};
+  if ( !text ) return out;
+  if ( reaction ) {
+    const ac = text.match(/\badds? (\d+|…) to its AC against (?:that|the|the triggering) attack/i);
+    if ( ac ) {
+      const melee = /\bTrigger\s*:[^]*?\bmelee attack\b/i.test(text.split(/\bResponse\s*:/i)[0] ?? "");
+      // La donnée porte l'effet « +N CA » (Contre-attaque, Riposte, Tourbillon de sable) : comme Bouclier — proposée si N peut faire
+      // rater le coup, l'effet posé, le coup rejugé. Sans effet (Parade) : le bonus retiré au jet.
+      if ( Number.isFinite(acEffect) ) out.triggers = [{ on: "isHit", if: { "hit.stoppableBy": acEffect, ...(melee ? { "activity.isMelee": true } : {}) }, do: [{ type: "use" }] }];
+      else out.triggers = [{ on: "isHit", ...(melee ? { if: { "activity.isMelee": true } } : {}),
+        do: [{ type: "use" }, { type: "penalty", formula: /^\d+$/.test(ac[1]) ? ac[1] : "@prof" }] }];
+    }
+  }
+  // Une capacité à rayons numérotés : la restriction d'un rayon vaudrait pour tous ses effets — laissée.
+  if ( segments(text).length > 1 ) return out;
+  if ( /\bcan(?:'|no)t take (?:any )?Reactions\b/i.test(text) ) out.noReactions = true;
+  if ( /\b(?:either )?an action or a Bonus Action(?:,? (?:but )?not both)?\b[^.]*\b(?:on|during) its turn\b|\bcan take (?:only )?(?:either )?an action or a Bonus Action\b/i.test(text) ) out.actionOrBonus = true;
+  return out;
+}
+
+/**
+ * K7 (SPEC §328) : ce que la capacité inflige à son porteur tour après tour, et les soins qu'elle bloque.
+ *  - « the target takes [[/damage … activity=<id>]] damage at the start (end) of each of its turns », « loses […] Hit Points at the start of
+ *    each of its turns » → `{ on: startOfTurn|endOfTurn, via: "effect", do: [{ type: "damage", to: "bearer", activity }] }`, pour les
+ *    effets dont la phrase nomme l'état (« While Poisoned », « Until the grapple ends » → Agrippé), sinon pour tous ; pas une créature
+ *    avalée ou engloutie (la brique Avaler s'en charge, §18.17), ni des dégâts que le porteur inflige autour de lui (« deals … to any
+ *    creature ») ;
+ *  - « can't regain Hit Points » (le texte parle de la cible) → `blocksHealing`.
+ * Lit le HTML brut : l'enricher `[[/damage … activity=…]]` nomme l'activité de dégâts de la capacité.
+ * @param {string} html
+ * @param {Array<{id: string, statuses: string[]}>} [effects]
+ * @returns {{triggers?: object[], blocksHealing?: true}}
+ */
+export function monsterRecurring(html, effects=[]) {
+  const raw = String(html ?? "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ");
+  const out = {};
+  const triggers = [];
+  for ( const sentence of raw.split(/(?<=\.)\s+(?=[A-Z])/) ) {
+    const moment = sentence.match(/\bat the (start|end) of each of its turns\b/i)?.[1];
+    const activity = sentence.match(/\[\[\/damage[^\]]*\bactivity=([A-Za-z0-9]{16})/)?.[1];
+    if ( !moment || !activity ) continue;
+    if ( /\b(?:swallowed|engulfed)\b/i.test(sentence) || /\bdeals?\b[^.]*\bto (?:any|each) creature\b/i.test(sentence) ) continue;
+    if ( !/\b(?:takes|loses)\b/i.test(sentence) ) continue;
+    const named = conditionsIn(plainText(sentence).replace(/\bgrapple\b/i, "grappled"));
+    const ids = effects.filter(e => (e.statuses ?? []).some(s => named.includes(s))).map(e => e.id);
+    const on = moment.toLowerCase() === "start" ? "startOfTurn" : "endOfTurn";
+    const step = { type: "damage", to: "bearer", activity };
+    if ( ids.length && (ids.length < effects.length) ) for ( const id of ids ) triggers.push({ on, via: "effect", fromEffect: id, do: [step] });
+    else triggers.push({ on, via: "effect", do: [step] });
+  }
+  // Plusieurs dégâts récurrents pour tous les effets à la fois (deux sérums de la Seringue) : lequel va avec quel effet n'est pas dit.
+  const ambiguous = triggers.filter(t => !t.fromEffect).length > 1;
+  const text = plainText(html);
+  // Rayons numérotés : la règle d'un rayon vaudrait pour tous ses effets — laissée.
+  const several = segments(text).length > 1;
+  if ( triggers.length && !ambiguous && !several ) out.triggers = triggers;
+  if ( !several && /\bthe target can(?:'|’|no)t regain Hit Points\b|\bUntil (?:this poison|the curse) ends, the target can(?:'|’|no)t regain Hit Points\b/i.test(text) ) out.blocksHealing = true;
+  // « Whenever the golem is subjected to Fire damage, it (takes no damage and instead) regains … Hit Points equal to the Fire damage dealt ».
+  const absorbs = [...text.matchAll(/\bWhenever (?:the )?[^.]*? is subjected to ([A-Za-z]+) damage, (?:it takes no damage and instead )?(?:it )?regains a number of Hit Points equal to the \1 damage dealt/gi)]
+    .map(m => m[1].toLowerCase());
+  if ( absorbs.length ) out.absorbsDamage = [...new Set(absorbs)];
+  return out;
+}
+
+/**
  * Les déclarations de fin d'une capacité de monstre, d'après son texte anglais.
  * @param {string} html                                         description anglaise d'origine
  * @param {Array<{id: string, statuses: string[]}>} effects     effets de l'item (pour rattacher une règle à son issue)

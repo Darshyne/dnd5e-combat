@@ -257,6 +257,9 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     if ( !isObject(p) || (("effect" in p) && !isId(p.effect)) || (("drop" in p) && (p.drop !== true)) || (("endsAt" in p) && !okEnd(p.endsAt))
       || !Object.keys(p).every(k => ["effect", "drop", "endsAt"].includes(k)) ) errors.push(`${at}panic: { effect?: <effect id>, drop?: true, endsAt?: { distance, units } }`);
   }
+  // K7 (§328) : `absorbsDamage` — types de dégâts que le porteur change en soin (Absorption de l'acide du Golem d'argile).
+  if ( ("absorbsDamage" in entry) && !(Array.isArray(entry.absorbsDamage) && entry.absorbsDamage.length
+    && entry.absorbsDamage.every(s => (typeof s === "string") && /^[a-z]+$/.test(s))) ) errors.push(`${at}absorbsDamage: list of damage types`);
   // C12-j : `regainOnShortRest` — identifiants d'items dont les utilisations reviennent au Repos court.
   if ( ("regainOnShortRest" in entry) && !(Array.isArray(entry.regainOnShortRest) && entry.regainOnShortRest.length
     && entry.regainOnShortRest.every(s => (typeof s === "string") && s)) ) errors.push(`${at}regainOnShortRest: list of item identifiers`);

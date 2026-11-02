@@ -230,6 +230,60 @@ export function monkRequest(activity, request, budget) {
   return request;
 }
 
+/* -------------------------------------------- */
+/*  K5 (§326) : actions légendaires              */
+/* -------------------------------------------- */
+
+const isLegendary = activity => activity?.activation?.type === "legendary";
+
+/**
+ * Les soucis d'une action légendaire (règle 2024 : « immédiatement après le tour d'une autre créature », pas pendant le sien, une à la
+ * fois, tant qu'il en reste) : à son propre tour, sans action légendaire restante, ou déjà une pendant ce tour-ci.
+ */
+export function legendaryIssues(activity, combatant, own) {
+  if ( !isLegendary(activity) || !combatant || (activity.actor?.type !== "npc") ) return [];
+  const legact = activity.actor.system?.resources?.legact;
+  if ( !legact?.max ) return [];
+  const cost = Number(activity.activation?.value) || 1;
+  const name = activity.actor.name;
+  const out = [];
+  if ( own ) out.push(loc("Souci.legendaryOwnTurn", { name }));
+  if ( (legact.value ?? 0) < cost ) out.push(loc("Souci.legendarySpent", { name, left: legact.value ?? 0 }));
+  if ( activity.actor.getFlag(MODULE_ID, "legendaryTurn") === currentTurnKey() ) out.push(loc("Souci.legendaryOnce", { name }));
+  return out;
+}
+
+/** L'attaque qu'une action légendaire vient d'annoncer (« makes one Tail attack ») : ouverte pour ce tour-ci, tant qu'il en reste. */
+function legendaryWindowOpen(actor) {
+  const w = actor?.getFlag?.(MODULE_ID, "legendaryWindow");
+  return !!w && (w.turn === currentTurnKey()) && (w.left > 0);
+}
+
+const COUNT_WORDS = { one: 1, an: 1, a: 1, two: 2, three: 3 };
+
+/**
+ * Après une action légendaire (MJ) : le coût est dépensé (`resources.legact.spent`, que dnd5e remet à zéro à la fin du tour de la
+ * créature — data/actor/npc.mjs, `recoverCombatUses`) sauf si la donnée le dépense déjà ; le tour est noté ; et l'attaque que le texte
+ * annonce (« makes one Tail attack », « makes two Claw attacks ») est ouverte : elle passera sans souci « pas son tour », gratuite.
+ */
+async function onLegendaryUsed(activity) {
+  if ( !isLegendary(activity) || (activity.actor?.type !== "npc") || !game.combat?.started ) return;
+  const actor = activity.actor;
+  const legact = actor.system?.resources?.legact;
+  if ( !legact?.max ) return;
+  const cost = Number(activity.activation?.value) || 1;
+  const consumes = (activity.consumption?.targets ?? []).some(t => String(t.target ?? "").includes("legact"));
+  const text = String(activity.item?.flags?.babele?.originalPayload?.description ?? activity.item?.system?.description?.value ?? "")
+    .replace(/<[^>]+>/g, " ").replace(/\[\[[^\]]*\]\]/g, "…");
+  const m = text.match(/\bmakes? (one|an?|two|three|\d) [^.]*?\battacks?\b/i);
+  const left = m ? (COUNT_WORDS[m[1].toLowerCase()] ?? (Number(m[1]) || 1)) : 0;
+  const turn = currentTurnKey();
+  const update = { [`flags.${MODULE_ID}.legendaryTurn`]: turn, [`flags.${MODULE_ID}.legendaryWindow`]: { turn, left } };
+  if ( !consumes ) update["system.resources.legact.spent"] = Math.min(legact.max, (Number(legact.spent) || 0) + cost);
+  await actor.update(update);
+  log(`${actor.name}: legendary action ${activity.item.name} (${cost}), ${Math.max(0, (legact.value ?? 0) - (consumes ? 0 : cost))} left${left ? `, ${left} attack(s) to follow` : ""}`);
+}
+
 /**
  * Mode souple (SPEC §6) : un souci de budget, de tour ou de portée n'interdit rien. L'utilisation
  * est suspendue, le joueur lit ce qui cloche et décide. `preUseActivity` est synchrone : on
@@ -262,6 +316,14 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     const value = usageConfig[MODULE_ID]?.[key];
     if ( value && messageConfig ) foundry.utils.setProperty(messageConfig, `data.flags.${MODULE_ID}.${key}`, value);
   }
+  // K5 (§326) : l'attaque qu'une action légendaire vient d'annoncer — hors de son tour, sans souci ni Réaction, gratuite.
+  if ( !isLegendary(activity) && legendaryWindowOpen(activity.actor) ) {
+    const w = activity.actor.getFlag(MODULE_ID, "legendaryWindow");
+    activity.actor.setFlag(MODULE_ID, "legendaryWindow", { ...w, left: w.left - 1 });
+    if ( messageConfig ) foundry.utils.setProperty(messageConfig, `data.flags.${MODULE_ID}.cost`, "free");
+    log(`${activity.actor.name}: ${activity.item.name} as part of a legendary action`);
+    return true;
+  }
   if ( usageConfig[MODULE_ID]?.confirmed ) return true;
   // Une activité lancée sans cible est déjà passée en mode visée avant d'arriver ici (ui/pointer.mjs, inscrit avant).
   // Mode d'attaque déjà choisi par le clic (« main secondaire » du menu : `engage`), sinon inconnu jusqu'au jet.
@@ -269,6 +331,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const use = useIssues(activity, { cost: usageConfig[MODULE_ID]?.cost ?? null,
     attackMode: usageConfig[MODULE_ID]?.attackMode ?? null, recast: !!usageConfig[MODULE_ID]?.recast });
   const { combatant, budget, own, request } = use;
+  const legend = legendaryIssues(activity, combatant, own);
   const range = assessRange(activity);
   // Furtivité : il faut être hors du champ de vision de tout ennemi (règle 2024, adapter/hide.mjs).
   const seenBy = (basicActionOfActivity(activity, usageConfig[MODULE_ID]?.basicChoice) === "hide") ? (enemiesSeeing(usageToken(activity)) ?? []) : [];
@@ -289,10 +352,11 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const chained = chainOutliers(activity, aimed.map(t => t.document));
   const lost = (origin && !activity.target?.template?.type) ? aimed.filter(t => !unseen.includes(t)
     && locationUnknown({ hidden: hiddenDcOf(t.actor) !== null, sees: canSee(origin, t.document) })) : [];
-  if ( !use.lines.length && !range.blocking.length && !seenBy.length && !wrongType.length && !charmed.length && !unseen.length && !lost.length && !fenced.length && !offPlane.length && !chained.length ) return true;
+  if ( !use.lines.length && !legend.length && !range.blocking.length && !seenBy.length && !wrongType.length && !charmed.length && !unseen.length && !lost.length && !fenced.length && !offPlane.length && !chained.length ) return true;
 
   const lines = [
     ...use.lines,
+    ...legend,
     ...range.blocking.map(r => loc("Souci.outOfRange", { name: r.name })),
     ...(seenBy.length ? [loc("Souci.hideSeen", { names: seenBy.map(t => t.name).join(", ") })] : []),
     ...wrongType.map(t => loc("Souci.wrongType", { name: t.name, types: typesLabel(t.types), item: activity.item.name })),
@@ -625,6 +689,7 @@ export function registerTurn() {
   CONFIG.queries[WASTE_QUERY] = handleWasteUse;
   route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "use legality" });
   route("dnd5e.postUseActivity", activity => markUsedThisTurn(activity), { label: "\"once per turn\" limit not recorded" });
+  route("dnd5e.postUseActivity", activity => onLegendaryUsed(activity), { label: "legendary action not spent" });
   route("dnd5e.preRollAttackV2", onPreRollAttack, { cancellable: true, label: "attack mode preselected" });
   route("dnd5e.postAttackRollConfiguration", onPostAttackRollConfiguration, { cancellable: true, label: "attack roll range" });
 

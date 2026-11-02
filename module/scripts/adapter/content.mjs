@@ -15,7 +15,7 @@ import { CONTENT, SOURCES } from "../content/index.mjs";
 import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
-import { monsterChoice, monsterDeaths, monsterEndings } from "../core/monster-text.mjs";
+import { monsterChoice, monsterDeaths, monsterEndings, monsterReactions, monsterRecurring } from "../core/monster-text.mjs";
 
 export const OVERRIDES_SETTING = "contentOverrides";
 
@@ -131,8 +131,18 @@ function textLayer(item) {
   const deaths = monsterDeaths(html, { activities, effects });
   // K3 (§324) : un seul des effets — tiré au dé ou au choix de la créature.
   const choice = monsterChoice(html, effects);
-  const layer = (triggers.length || Object.keys(deaths).length || choice)
-    ? { ...(triggers.length ? { triggers } : {}), ...deaths, ...(choice ? { choice } : {}) } : null;
+  // K6 (§327) : parade (« adds N to its AC »), Réactions perdues, action OU action Bonus.
+  const acEffect = (item.effects?.contents ?? []).flatMap(e => e.changes ?? []).find(c => c.key === "system.attributes.ac.bonus" && /^\+?\d+$/.test(String(c.value).trim()));
+  const reacts = monsterReactions(html, { reaction: activities.some(a => item.system.activities.get(a.id)?.activation?.type === "reaction"),
+    acEffect: acEffect ? Number(String(acEffect.value).replace("+", "")) : null });
+  // K7 (§328) : dégâts récurrents au porteur, soins bloqués, absorption — pas pour une capacité que la brique Avaler joue déjà.
+  const recurring = monsterRecurring(html, effects);
+  if ( CONTENT[identifierOf(item).id]?.swallow ) delete recurring.triggers;
+  const allTriggers = [...triggers, ...(reacts.triggers ?? []), ...(recurring.triggers ?? [])];
+  const { triggers: _r, ...recurringRest } = recurring;
+  const { triggers: _t, ...restrictions } = reacts;
+  const layer = (allTriggers.length || Object.keys(deaths).length || choice || Object.keys(restrictions).length || Object.keys(recurringRest).length)
+    ? { ...(allTriggers.length ? { triggers: allTriggers } : {}), ...deaths, ...restrictions, ...recurringRest, ...(choice ? { choice } : {}) } : null;
   if ( textCache.size > 2000 ) textCache.clear();
   textCache.set(key, layer);
   return layer;

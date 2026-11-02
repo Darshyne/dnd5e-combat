@@ -10,6 +10,17 @@
  */
 
 export const SOURCE_IDENTIFIERS = Object.freeze({
+  // K6 (§327) : capacités du Monster Manual et de Ravenloft dont l'identifiant est celui d'une règle du PHB — la Riposte du Capitaine
+  // pirate n'est pas la manœuvre du Maître de guerre, la Protection du Gardien bouclier pas le style de combat, le Présage du Cyclope
+  // oracle pas celui du Devin, l'Échappatoire brumeuse du Vampire pas l'invocation de l'Occultiste, la Toile de l'Araignée géante pas le
+  // sort, le Ralliement de l'Amiral pirate pas l'aptitude du Chevalier occulte. Un identifiant propre : seule la couche texte s'y applique.
+  mmRiposte0000000: "mm-riposte",
+  mmProtection0000: "mm-protection",
+  mmPortent0000000: "mm-portent",
+  mmMistyEscape000: "mm-misty-escape",
+  E2ZOsODrA6ydRBro: "mm-misty-escape",
+  mmWeb00000000000: "mm-web",
+  Z40sOvc1VYKqWqA6: "mm-rally",
   // Espèce Dhampir (Ravenloft: The Horrors Within).
   rhwVampiricBitnE: "vampiric-bite",
   rhwSpiderClimb7F: "spider-climb",

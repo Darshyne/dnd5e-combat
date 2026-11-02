@@ -33,7 +33,7 @@ describe("chargement du module", () => {
       "chainCheck", "chatCards", "climb", "climbCeiling", "climbDown", "climbHolds", "climbState", "climbToward", "clock", "closeWindow", "concentrate", "controls",
       "cover", "damageTypes", "dash", "diagnosticBackups", "diagnosticForget", "diagnosticRepair", "diagnosticRestore", "diagnosticScan",
       "door", "dropDown", "effectOrigins", "enchant", "endings", "etherealWalls", "factions", "familiar", "familiarPocket", "familiarRecall",
-      "flammable", "flight", "follow", "followState", "forcePlayerWait", "foreignSetting", "fortified", "grab", "groupRoll", "groupRollBreakdown", "groupRollForce", "groupRollMode", "groupRollState", "heal", "hoist", "hurt", "identify", "inventory", "issues", "jump",
+      "flammable", "flight", "follow", "followState", "forcePlayerWait", "foreignSetting", "fortified", "grab", "grappleState", "groupRoll", "groupRollBreakdown", "groupRollForce", "groupRollMode", "groupRollState", "heal", "hoist", "hurt", "identify", "inventory", "issues", "jump",
       "lightState", "lock", "longRest", "masteries", "menu", "move", "movement", "naturalOne", "overrideContent", "perceived", "perf", "pickTargets", "placeItemEffect", "placeMenu", "placeRegionAt",
       "plan", "planning", "portent", "range", "rangedPlacement", "rawMove", "reachCheck", "ready", "reload", "reports", "restoreItem", "rollCard",
       "rollCheck", "rollSave", "runMacro", "saveChance", "scatter", "sees", "sequencer", "setting", "settingsChanged", "shortRest", "skillAid", "skillAids",

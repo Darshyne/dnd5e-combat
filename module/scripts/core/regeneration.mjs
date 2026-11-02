@@ -14,7 +14,8 @@ const plain = html => String(html ?? "").replace(/&amp;/g, "&").replace(/\[\[[^\
  * - §78, lycanthropes (MM 2014) : « regains 10 hit points at the start of her turn if she hasn't taken necrotic damage or
  *   bludgeoning, piercing, or slashing damage from a silvered weapon since her last turn » — `stoppedBy` (nécrotique) et
  *   `silveredBy` (contondant, perforant, tranchant : seulement d'une arme argentée).
- * @returns {{needsHp: boolean, stoppedBy: string[], silveredBy: string[], survivesZero: boolean}}
+ * - K2 (§323) : `critical` — « or damage from a Critical Hit » : un coup critique la coupe aussi.
+ * @returns {{needsHp: boolean, stoppedBy: string[], silveredBy: string[], survivesZero: boolean, critical: boolean}}
  */
 export function readRegeneration(html) {
   const text = plain(html);
@@ -22,6 +23,10 @@ export function readRegeneration(html) {
   const types = s => s.split(/,|\bor\b|\band\b/).map(x => x.trim().toLowerCase()).filter(Boolean);
   const stopped = text.match(/\btakes ([A-Za-z ,]+?) damage, this trait doesn[’']t function/i);
   const stoppedBy = stopped ? types(stopped[1]) : [];
+  // K2 (§323) : « If it takes Radiant damage or damage from a Critical Hit, this trait doesn't function » (Mastodonte implacable).
+  const withCritical = text.match(/\btakes ([A-Za-z ,]+?) damage or damage from a Critical Hit, this trait doesn[’']t function/i);
+  if ( withCritical ) stoppedBy.push(...types(withCritical[1]));
+  const critical = !!withCritical;
   const silveredBy = [];
   const since = text.match(/\bif (?:it|she|he|they) (?:hasn[’']t|has not|haven[’']t) taken (.+?) since (?:its|her|his|their) last turn/i);
   if ( since ) {
@@ -31,7 +36,7 @@ export function readRegeneration(html) {
     }
   }
   const survivesZero = /\b(?:dies|destroyed) only if (?:it|she|he|they) starts? (?:its|her|his|their) turn with 0 Hit Points\b/i.test(text);
-  return { needsHp, stoppedBy, silveredBy, survivesZero };
+  return { needsHp, stoppedBy, silveredBy, survivesZero, critical };
 }
 
 /**
@@ -46,7 +51,10 @@ export function regenerationAtTurnStart({ hp, needsHp, stopped, survivesZero, de
   return "heal";
 }
 
-/** Les types de dégâts subis coupent-ils la régénération ? `silvered` : les types reçus d'une arme argentée (§78). */
-export function stopsRegeneration(stoppedBy, types, silveredBy=[], silvered=[]) {
-  return stoppedBy.some(t => types.includes(t)) || silveredBy.some(t => silvered.includes(t));
+/**
+ * Les types de dégâts subis coupent-ils la régénération ? `silvered` : les types reçus d'une arme argentée (§78) ; K2 (§323) :
+ * `critical` — la règle coupe sur un coup critique (`byCritical`), et les dégâts viennent d'un coup critique.
+ */
+export function stopsRegeneration(stoppedBy, types, silveredBy=[], silvered=[], { byCritical=false, critical=false }={}) {
+  return stoppedBy.some(t => types.includes(t)) || silveredBy.some(t => silvered.includes(t)) || (byCritical && critical);
 }

@@ -228,7 +228,10 @@
  *     grants?: { from, activity }               C12-d : les cibles de l'activité `from` reçoivent une copie de l'item réduite à
  *                                               `activity`, au DD et au niveau du lanceur, jusqu'à la fin de sa concentration
  *                                               (Souffle du dragon, runtime/grants.mjs)
- *     killsAtZero?: true                        C12-f : une créature que les dégâts de l'item réduisent à 0 PV meurt (Désintégration)
+ *     killsAtZero?: true | { types?, sizeAtMost?, activities? }
+ *                                               C12-f : une créature que les dégâts de l'item réduisent à 0 PV meurt (Désintégration) ;
+ *                                               K2 (§323) : seulement de ces types (« un Humanoïde »), de cette taille au plus, par ces
+ *                                               activités (le rayon désintégrant parmi les Rayons oculaires)
  *     retort?: { damageType }                   C12-f : la réaction de l'item ratée par l'attaquant lui renvoie les dégâts que le
  *                                               porteur subit (Défenses envoûtantes, runtime/reactions.mjs)
  *     enterOnPose?: true                        C12-b : une zone qui dure, posée par une activité qui ne résout rien elle-même : les
@@ -718,7 +721,9 @@
  *     hpTiers?: [{ atMost?, damage?: false, effects?, statuses? }]
  *                                               §160 : l'issue selon les PV de la cible AVANT les dégâts — le premier palier qui tient
  *                                               (`atMost` absent : tous) ; aucun : ni dégâts ni effet. `damage: false` : pas de dégâts ;
- *                                               `effects` : seuls ces effets de l'activité ; `statuses` : états posés (« dead » : PV à 0)
+ *                                               `effects` : seuls ces effets de l'activité ; `statuses` : états posés (« dead » : PV à 0) ;
+ *                                               K2 (§323) : `zero: true` — PV à 0, la règle des 0 PV décide (Regard mortel) ;
+ *                                               `activities` : le palier ne vaut que pour ces activités de l'item
  *     endsCurses?: string[]                     §160 : l'utilisation fait cesser sur la cible les effets venus d'items de ces
  *                                               identifiants (Délivrance des malédictions : Malédiction, Maléfice)
  *     tempHpPool?: number                       §160 : autant de PV temporaires partagés à parts égales entre les cibles (Mot de pouvoir

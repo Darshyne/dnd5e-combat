@@ -1,7 +1,7 @@
 /**
  * Ce qu'un item déclare au moteur, toutes couches confondues (SPEC §13.4) :
  *
- *   flag de l'item  >  surcouche du monde (réglage, MJ)  >  contenu du module  >  rien = natif
+ *   flag de l'item  >  surcouche du monde (réglage, MJ)  >  contenu du module  >  texte d'une capacité de PNJ (K1)  >  rien = natif
  *
  * L'identifiant est celui de dnd5e (`system.identifier`, gardé par les copies faites depuis un
  * compendium — vérifié : Spellbook crée le sort avec `toObject()` du sort du compendium). À
@@ -15,6 +15,7 @@ import { CONTENT, SOURCES } from "../content/index.mjs";
 import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
+import { monsterDeaths, monsterEndings } from "../core/monster-text.mjs";
 
 export const OVERRIDES_SETTING = "contentOverrides";
 
@@ -101,13 +102,37 @@ function itemLayer(item) {
  */
 export function contentOf(item) {
   const { id } = identifierOf(item);
-  if ( !contentEnabled ) return { identifier: id, entry: null, layers: { module: false, world: false, item: false } };
-  const layers = { module: id ? CONTENT[id] ?? null : null, world: id ? worldOverrides()[id] ?? null : null, item: itemLayer(item) };
+  if ( !contentEnabled ) return { identifier: id, entry: null, layers: { text: false, module: false, world: false, item: false } };
+  const layers = { text: textLayer(item), module: id ? CONTENT[id] ?? null : null, world: id ? worldOverrides()[id] ?? null : null, item: itemLayer(item) };
   return {
     identifier: id,
-    entry: mergeEntries([layers.module, layers.world, layers.item]),
-    layers: { module: !!layers.module, world: !!layers.world, item: !!layers.item }
+    entry: mergeEntries([layers.text, layers.module, layers.world, layers.item]),
+    layers: { text: !!layers.text, module: !!layers.module, world: !!layers.world, item: !!layers.item }
   };
+}
+
+/**
+ * K1 (SPEC §322) : la couche la plus basse, lue dans le texte anglais d'origine d'une capacité de PNJ (`core/monster-text.mjs`) —
+ * sauvegarde répétée à la fin de ses tours, second échec, fin sur dégâts ; K2 (§323) : mort à 0 PV, paliers de PV. Le contenu livré, la surcouche du monde ou le flag de
+ * l'item la remplacent dès qu'ils déclarent leurs propres `triggers`. Pas pour un sort (sa copie suit les règles du sort) ni pour un
+ * personnage. Mise en cache par item et texte.
+ */
+const textCache = new Map();
+function textLayer(item) {
+  if ( (item?.actor?.type !== "npc") || (item.type === "spell") ) return null;
+  const html = item.flags?.babele?.originalPayload?.description ?? item.system?.description?.value ?? "";
+  if ( !html ) return null;
+  const key = `${item.uuid}|${html.length}|${item.effects?.size ?? 0}`;
+  if ( textCache.has(key) ) return textCache.get(key);
+  const effects = (item.effects?.contents ?? []).map(e => ({ id: e.id, statuses: [...(e.statuses ?? [])] }));
+  const activities = Array.from(item.system?.activities ?? []).map(a => ({ id: a.id, name: a.name ?? "" }));
+  const triggers = monsterEndings(html, effects);
+  // K2 (§323) : la mort à 0 PV et les paliers de PV que le texte promet.
+  const deaths = monsterDeaths(html, { activities, effects });
+  const layer = (triggers.length || Object.keys(deaths).length) ? { ...(triggers.length ? { triggers } : {}), ...deaths } : null;
+  if ( textCache.size > 2000 ) textCache.clear();
+  textCache.set(key, layer);
+  return layer;
 }
 
 /** §53 : l'entrée d'un identifiant sans item (une potion détruite en étant bue) : contenu du module < surcouche du monde. */

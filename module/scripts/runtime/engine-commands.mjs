@@ -12,7 +12,7 @@ import { retaliationsFor, retaliate, inflict, saveRetaliation } from "../adapter
 import { applyDamageToToken, maximizedHealing } from "../adapter/messages.mjs";
 import { requestSaves, applyEffectsToToken, applyStatusToToken, applyMarkToToken, splitPushes } from "../adapter/saves.mjs";
 import { holds } from "../core/triggers.mjs";
-import { factsFor, originItemOf } from "../adapter/facts.mjs";
+import { creatureTypeOf, factsFor, originItemOf } from "../adapter/facts.mjs";
 import { removeTransientRegions } from "../adapter/areas.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { askAllocation } from "../adapter/projectiles.mjs";
@@ -53,6 +53,20 @@ async function forceDodge(tokenUuid) {
 /** L'outil de scénario `autoReact` de l'utilisation (« none » : personne ne réagit ; « first » : la première, sans fenêtre). */
 const autoReactOf = (carrier, resolution) =>
   game.messages.get(resolution?.origin ?? carrier.id)?.getFlag(MODULE_ID, "autoReact") ?? carrier.getFlag(MODULE_ID, "autoReact") ?? null;
+
+/**
+ * K2 (§323) : la règle `killsAtZero` vaut-elle ici ? `true` ; ou réservée à des types de créature (« un Humanoïde réduit à 0 PV… »),
+ * à une taille au plus (« une créature de taille M ou inférieure »), à des activités de l'item (le rayon désintégrant).
+ */
+const SIZE_ORDER = ["tiny", "sm", "med", "lg", "huge", "grg"];
+function killsHere(rule, activity, actor) {
+  if ( !rule || !actor ) return false;
+  if ( rule === true ) return true;
+  if ( rule.activities && !(activity && rule.activities.includes(activity.id)) ) return false;
+  if ( rule.types && !rule.types.includes(creatureTypeOf(actor)) ) return false;
+  if ( rule.sizeAtMost && (SIZE_ORDER.indexOf(actor.system?.traits?.size ?? "med") > SIZE_ORDER.indexOf(rule.sizeAtMost)) ) return false;
+  return true;
+}
 
 export const COMMANDS = {
   askReactions: (command, carrier, resolution) => askHitReactions(resolution, command.tokens, id => dispatcher.drained(id), {
@@ -124,7 +138,8 @@ export const COMMANDS = {
       const patient = (await fromUuid(entry.token))?.actor;
       // §160 : paliers de PV (`hpTiers`) — l'issue se choisit d'après les PV de la cible AVANT les dégâts (Mot de pouvoir mortel, Mot de
       // pouvoir étourdissant, Parole divine) : le premier palier qui tient ; aucun, aucun effet.
-      const tier = hpTierFor(activity?.item, patient, entry, resolution.plan);
+      const tier = hpTierFor(activity?.item, patient, entry, resolution.plan, activity,
+        (resolution.targets ?? []).find(t => t.token === entry.token)?.save?.success === false);
       if ( tier ) entry = tier.entry;
       const prism = await prismaticFor(activity?.item, entry, activity, resolution.plan);
       if ( prism ) {
@@ -183,7 +198,7 @@ export const COMMANDS = {
         }
       }
       // C12-f : Désintégration — « une créature réduite à 0 PV par ce sort est désintégrée » : morte, sans jets contre la mort (`killsAtZero`).
-      if ( hp && hurting && (hp.after.value <= 0) && (contentOf(activity?.item).entry?.killsAtZero === true) && patient && !patient.statuses?.has("dead") ) {
+      if ( hp && hurting && (hp.after.value <= 0) && killsHere(contentOf(activity?.item).entry?.killsAtZero, activity, patient) && patient && !patient.statuses?.has("dead") ) {
         await applyStatusToToken(carrier, entry.token, "dead");
         log(`${activity.item.name}: ${patient.name} reduced to 0 HP — disintegrated`);
       }
@@ -274,6 +289,13 @@ export const COMMANDS = {
         const uuid = await applyStatusToToken(carrier, entry.token, status);
         if ( uuid ) { effects.push(uuid); log(`${activity?.item?.name}: ${target?.name} at ${tier.hp} HP receives "${status}"`); }
         if ( status === "dead" ) await target?.actor?.update({ "system.attributes.hp.value": 0 });
+      }
+      // K2 (§323) : « elle tombe à 0 PV » (Regard mortel, Plainte funeste) — des dégâts égaux à ses PV, par dnd5e : la Protection contre la
+      // mort et la règle des 0 PV du moteur (Mort pour un PNJ, Inconscient pour un personnage) décident comme pour tout coup.
+      if ( tier?.zero && target?.actor ) {
+        const hpNow = target.actor.system?.attributes?.hp ?? {};
+        const total = Number(hpNow.value ?? 0) + Number(hpNow.temp ?? 0);
+        if ( total > 0 ) { await target.actor.applyDamage(total); log(`${activity?.item?.name}: ${target.name} at ${tier.hp} HP drops to 0 HP`); }
       }
       entries.push({ token: entry.token, actor: entry.actor, before: hp?.before ?? null, after: hp?.after ?? null, effects });
       for ( const r of retaliations ) {

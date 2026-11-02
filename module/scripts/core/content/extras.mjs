@@ -140,8 +140,10 @@ export function validateExtras(entry, at, errors) {
       && (!("atMost" in t) || Number.isFinite(t.atMost)) && (!("damage" in t) || (t.damage === false))
       && (!("effects" in t) || (Array.isArray(t.effects) && t.effects.every(isId)))
       && (!("statuses" in t) || (Array.isArray(t.statuses) && t.statuses.every(s => typeof s === "string" && s)))
-      && Object.keys(t).every(k => ["atMost", "damage", "effects", "statuses"].includes(k)));
-    if ( !ok ) errors.push(`${at}hpTiers: [{ atMost?: number, damage?: false, effects?: [effect ids], statuses?: [conditions] }]`);
+      && (!("zero" in t) || (t.zero === true))
+      && (!("activities" in t) || (Array.isArray(t.activities) && t.activities.length && t.activities.every(isId)))
+      && Object.keys(t).every(k => ["atMost", "damage", "effects", "statuses", "zero", "activities"].includes(k)));
+    if ( !ok ) errors.push(`${at}hpTiers: [{ atMost?: number, damage?: false, effects?: [effect ids], statuses?: [conditions], zero?: true, activities?: [activity ids] }]`);
   }
   if ( ("endsCurses" in entry) && !(Array.isArray(entry.endsCurses) && entry.endsCurses.length && entry.endsCurses.every(s => typeof s === "string" && s)) ) errors.push(`${at}endsCurses: item identifiers`);
   if ( ("tempHpPool" in entry) && !(Number.isFinite(entry.tempHpPool) && (entry.tempHpPool > 0)) ) errors.push(`${at}tempHpPool: positive number`);

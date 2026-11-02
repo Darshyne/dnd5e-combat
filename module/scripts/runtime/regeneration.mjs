@@ -16,19 +16,22 @@ import { log } from "./shared.mjs";
 /** Sur le client qui applique les dégâts : les types réellement subis, gardés pour après l'écriture. */
 function onCalculateDamage(actor, damages, options) {
   const regeneration = regenerationOf(actor);
-  if ( !regeneration?.stoppedBy.length && !regeneration?.silveredBy?.length ) return;
+  if ( !regeneration?.stoppedBy.length && !regeneration?.silveredBy?.length && !regeneration?.critical ) return;
   const hurt = damages.filter(d => (d.value > 0) && d.type);
   const types = hurt.map(d => d.type);
   // §78 : une arme argentée (propriété « sil » du jet, dnd5e : DamageDescription.properties).
   const silvered = hurt.filter(d => d.properties?.has?.("sil")).map(d => d.type);
-  if ( types.length ) Object.assign((options[MODULE_ID] ??= {}), { damageTypes: types, silveredTypes: silvered });
+  // K2 (§323) : un coup critique — le jet de dégâts du message d'origine l'est.
+  const critical = (options?.origin?.rolls ?? []).some(r => r?.isCritical === true || r?.options?.isCritical === true);
+  if ( types.length ) Object.assign((options[MODULE_ID] ??= {}), { damageTypes: types, silveredTypes: silvered, critical });
 }
 
 async function onApplyDamage(actor, amount, options) {
   const regeneration = regenerationOf(actor);
   const types = options?.[MODULE_ID]?.damageTypes ?? [];
   const silvered = options?.[MODULE_ID]?.silveredTypes ?? [];
-  if ( !regeneration || !stopsRegeneration(regeneration.stoppedBy, types, regeneration.silveredBy ?? [], silvered) ) return;
+  const critical = options?.[MODULE_ID]?.critical === true;
+  if ( !regeneration || !stopsRegeneration(regeneration.stoppedBy, types, regeneration.silveredBy ?? [], silvered, { byCritical: regeneration.critical === true, critical }) ) return;
   await markStopped(actor, types);
   log(`${actor.name}: ${regeneration.item.name} stopped for their next turn (${types.join(", ")})`);
 }

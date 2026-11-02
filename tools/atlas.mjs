@@ -157,7 +157,10 @@ if ( existsSync("prive/balayages") ) {
 // Repasse terme par terme (2026-10-31, `prive/repasse/verdicts.json`) : verdict par item (uuid), écarts, termes paraphrasés.
 const review = new Map();
 if ( existsSync("prive/repasse/verdicts.json") ) {
-  for ( const v of JSON.parse(readFileSync("prive/repasse/verdicts.json", "utf8")).items ?? [] ) review.set(v.uuid, v);
+  for ( const v of JSON.parse(readFileSync("prive/repasse/verdicts.json", "utf8")).items ?? [] ) {
+    review.set(v.uuid, v);
+    for ( const u of v.uuids ?? [] ) if ( !review.has(u) ) review.set(u, v);   // une capacité de créature relue une fois vaut pour ses copies
+  }
 }
 const REVIEW_LABEL = { conforme: "conforme", "corrigé": "corrigé", partiel: "partiel", faux: "faux", mj: "MJ", "hors-combat": "hors combat", progression: "progression" };
 const scenarioFiles = readdirSync("tools/scenarios", { recursive: true }).filter(f => f.endsWith(".mjs"));
@@ -439,7 +442,7 @@ function describe({ item, tab, mod, version, pack, owner, actorId, frEntry, effe
     rd: rd ? rd.status : "", rdm: rd?.missing ?? "",
     sw: sweep ? `${sweep.ok ? "✓" : "✗"} ${sweep.at}${sweep.note ? ` — ${sweep.note}` : ""}` : "",
     sn: scen.length, sl: scen.slice(0, 8).join(", "),
-    ...reviewFields(review.get(actorId ? null : `Compendium.${mod.id}.${pack}.Item.${item._id}`)),
+    ...reviewFields(review.get(actorId ? `Compendium.${mod.id}.${pack}.Actor.${actorId}.Item.${item._id}` : `Compendium.${mod.id}.${pack}.Item.${item._id}`)),
     cm: commits[0] ?? "", cn: commits.length,
     h: dataHash, eh: entry ? hash(entryText) : "",
     d: (frDesc || desc).slice(0, 2500), dl: frDesc ? "fr" : "en"

@@ -57,15 +57,17 @@ export const serializeDamages = damages => damages.map(d => ({ ...d, properties:
  * §160 : le palier de PV (`hpTiers` du contenu) qui vaut pour cette cible, lu sur ses PV actuels (avant les dégâts) : l'entrée du plan
  * réécrite (dégâts retirés si `damage: false`, effets réduits à `effects`) et les états à poser. Null sans paliers.
  */
-export function hpTierFor(item, actor, entry, plan=null) {
-  const tiers = item ? contentOf(item).entry?.hpTiers : null;
+export function hpTierFor(item, actor, entry, plan=null, activity=null, saveFailed=false) {
+  // K2 (§323) : un palier réservé à certaines activités de l'item (un rayon parmi les Rayons oculaires) ne vaut que pour elles.
+  const tiers = (item ? contentOf(item).entry?.hpTiers : null)?.filter(t => !t.activities || (activity && t.activities.includes(activity.id)));
   if ( !tiers?.length || !actor ) return null;
   const hp = Number(actor.system?.attributes?.hp?.value ?? 0);
   const tier = tiers.find(t => !("atMost" in t) || (hp <= t.atMost));
   if ( !tier ) return { hp, statuses: [], entry: { ...entry, multiplier: 0, effects: [], steps: [] } };
   // Un sort à sauvegarde (Parole divine) ne pose ses états que sur une sauvegarde ratée : la cible qui a réussi n'a reçu aucun effet.
-  const failed = !plan?.save || ((entry.effects ?? []).length > 0);
-  return { hp, statuses: failed ? (tier.statuses ?? []) : [], entry: {
+  // K2 (§323) : une sauvegarde sans effet (Regard mortel) — l'échec se lit sur la résolution de la cible (`saveFailed`).
+  const failed = !plan?.save || saveFailed || ((entry.effects ?? []).length > 0);
+  return { hp, statuses: failed ? (tier.statuses ?? []) : [], zero: failed && (tier.zero === true), entry: {
     ...entry,
     multiplier: (tier.damage === false) ? 0 : entry.multiplier,
     effects: tier.effects ? (entry.effects ?? []).filter(e => tier.effects.includes(e.id)) : entry.effects

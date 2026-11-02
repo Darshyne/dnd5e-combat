@@ -19,6 +19,11 @@ export const EMANATIONS = Object.freeze({
   "fear-aura": { on: "turnStart", affects: "enemy" },   // Diantrefosse : « any enemy that starts its turn in the aura »
   "gibbering": { on: "turnStart" },          // Bouche gibbering : la sauvegarde seule, la table d1d8 reste au MJ
   "vile-appearance": { on: "turnStart", sees: true },   // Guenaude aquatique : « and can see the hag's true form »
+  // K1 (§322), créatures de Ravenloft : même forme, « toute créature (tout ennemi) qui commence son tour dans l'émanation » — Caillot de
+  // zombis, Horreur indicible (« tant qu'elle n'est pas Neutralisée », immunité de 24 h, lues dans le texte), Propagateur de peste.
+  "deathly-stench": { on: "turnStart" },
+  "terrifying-aura": { on: "turnStart", affects: "enemy" },
+  "viral-aura": { on: "turnStart" },
   // M8 (§18.14) : à sa mort, l'émanation part d'elle-même — Méphites, Squelette flamboyant, Champignon à spores, Magmatique.
   "death-burst": { on: "death" },
   "death-throes": { on: "death" }                       // Balor : « explodes when it dies »

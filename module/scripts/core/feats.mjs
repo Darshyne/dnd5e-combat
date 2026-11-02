@@ -76,6 +76,8 @@ export function effectHolds(rule, facts) {
     if ( (w.length !== 1) || !w[0].melee || w[0].twoHanded ) return false;
   }
   if ( rule.inCombat && !facts.inCombat ) return false;
+  // O7 (§343) : `unarmored` — ni armure ni bouclier (Bracelets de défense).
+  if ( rule.unarmored && (facts.armor || facts.shield) ) return false;
   // §135 : `light` — la lumière là où se tient le porteur (Faveur de l'esprit nocturne : « dans une lumière faible ou les ténèbres »).
   if ( rule.light && !rule.light.includes(facts.light) ) return false;
   // C12-c : `wildShaped` — sous une Forme sauvage (Formes du cercle améliorées) ; `hasEffect` — un effet actif de cet item (Plénitude

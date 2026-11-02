@@ -39,6 +39,12 @@ const vulnerabilityFrom = (resists) => vulnerability(resists).map(c => ((c.value
 /** O3 : le Charmé des anneaux de maîtrise élémentaire dure « jusqu'au début de votre prochain tour » (la donnée compte un tour de n'importe qui). */
 const CHARMED_UNTIL_NEXT_TURN = Object.freeze({ cN85nWiTzfGzWR7D: "casterTurnStart" });
 
+/** O7 : Fléau élémentaire — « Avantage aux jets d'attaque contre les Élémentaires, qui ont le Désavantage aux leurs contre vous ». */
+const ELEMENTAL_BANE = Object.freeze([
+  { on: "preAttackRoll", if: { "target.creatureType": "elemental" }, do: [{ type: "advantage" }] },
+  { on: "preAttackRoll", defends: true, if: { "source.creatureType": "elemental" }, do: [{ type: "disadvantage" }] }
+]);
+
 /** Baguette des merveilles : aucune de ses activités ne déclare son action (Magie). */
 const WONDER_ACTIVITIES = ["Z62czXwABB7SN1lP", "4h4Aazi3L1MmByOt", "76MvwJBXwm1GbzfW", "F6QdFpERu7c4x6cd", "uDrKgJTXIcF0EM33", "yMZ4RIhJV1jvkKaf",
   "DIkFGxynTge6LTPJ", "Go7QGLKLGLggVcNK", "EhdR11nT5sMOi9h5", "cKz4qaK2elWiFRCS", "2x5DGGxGI3bgymqf", "6kTej94dEVrwxM9D", "hohchQU2VPFVUIWG",
@@ -51,15 +57,15 @@ export const ITEM_FIXES = Object.freeze({
   // Anneaux de maîtrise élémentaire (un identifiant pour les quatre : content/sources.mjs les sépare). Air : « une Vitesse de vol égale à
   // votre Vitesse » — l'effet ne donne que le vol stationnaire. Terre : Mur de pierre au DD 18 de l'anneau, pas à celui du porteur.
   // Eau : « Aquatique, une Vitesse de nage de 18 m » — aucun effet dans la donnée.
-  "ring-of-elemental-command-air": { grantsSpeeds: { fly: "walk" }, effectEnds: CHARMED_UNTIL_NEXT_TURN },
+  "ring-of-elemental-command-air": { grantsSpeeds: { fly: "walk" }, effectEnds: CHARMED_UNTIL_NEXT_TURN, triggers: ELEMENTAL_BANE },
   "ring-of-elemental-command-earth": {
-    effectEnds: CHARMED_UNTIL_NEXT_TURN,
+    effectEnds: CHARMED_UNTIL_NEXT_TURN, triggers: ELEMENTAL_BANE,
     dataFixes: [{ path: "system.activities.xpuvWA5Jy39MYwCg.spell.challenge", from: { attack: null, save: null, override: false }, value: { attack: null, save: 18, override: true } }]
   },
   // O3 : Coercition élémentaire, « Charmé jusqu'au début de votre prochain tour ».
-  "ring-of-elemental-command-fire": { effectEnds: CHARMED_UNTIL_NEXT_TURN },
+  "ring-of-elemental-command-fire": { effectEnds: CHARMED_UNTIL_NEXT_TURN, triggers: ELEMENTAL_BANE },
   "ring-of-elemental-command-water": {
-    effectEnds: CHARMED_UNTIL_NEXT_TURN,
+    effectEnds: CHARMED_UNTIL_NEXT_TURN, triggers: ELEMENTAL_BANE,
     dataFixes: [{ effect: "dasWaterFocus000", create: worn("Water Focus", [change("system.traits.languages.value", "add", "aquan"), change("system.attributes.movement.swim", "upgrade", 60)]) }]
   },
   // Anneau de rayons X : la sauvegarde ratée vise un effet absent ; « vous subissez un niveau d'Épuisement » (runtime/cure.mjs le monte).
@@ -410,6 +416,32 @@ export const ITEM_FIXES = Object.freeze({
   },
   // Lame porte-bonheur (enchantement) : « relancer un Test d20 raté, une utilisation par jour ; le nouveau jet est imposé ».
   "luck-blade-enchanted": { rollBonus: { activity: "tXkbUpFL8jBRLpjM", on: ["attack", "save", "check"], reroll: {} } },
+
+  /* ---- O7 (§343) : défenses passives ---- */
+
+  // Cape de déplacement : « les jets d'attaque contre vous ont le Désavantage » — sauf quand l'effet « Displacement Suppressed » est
+  // activé (après des dégâts, jusqu'au début de votre prochain tour : bascule du joueur) ou que vous êtes Neutralisé.
+  "cloak-of-displacement": {
+    triggers: [{ on: "preAttackRoll", defends: true, if: { not: { any: [{ "target.hasEffect": "cloak-of-displacement" }, { "target.hasStatus": "incapacitated" }] } },
+      do: [{ type: "disadvantage" }] }]
+  },
+  // Bracelets de défense : « +2 à la CA si vous ne portez ni armure ni bouclier » — l'effet restait actif avec une armure.
+  "bracers-of-defense": { effectWhile: { ycuTEJoi9a8BO6xg: { if: { unarmored: true } } } },
+  // Bouclier sentinelle : « Avantage aux jets d'Initiative et aux tests de Sagesse (Perception) » — seule l'Initiative y était.
+  "sentinel-shield": {
+    dataFixes: [{ effect: "bHeGysatAXUbusV0", path: "system.changes", from: [change("flags.dnd5e.initiativeAdv", "add", true)],
+      value: [change("flags.dnd5e.initiativeAdv", "add", true), change("system.skills.prc.roll.mode", "add", 1)] }]
+  },
+  // Anneau d'action libre : « la magie ne peut ni réduire votre Vitesse ni vous Paralyser ou vous Entraver » (porté et harmonisé ; la
+  // distinction magique / non magique reste au MJ : l'immunité vaut toujours).
+  "ring-of-free-action": { grantsConditionImmunities: ["paralyzed", "restrained"] },
+  // Chausse-trapes : « sa Vitesse tombe à 0 » — l'effet visait `movement.speed`, valeur que dnd5e recalcule (sans effet).
+  "caltrops": { effectChanges: { HsbtDDdiWhk4d7WB: [{ key: "system.attributes.movement.walk", type: "override", value: 0, replace: true }] } },
+  // Aiguille empoisonnée : l'effet posé n'a pas l'état Empoisonné.
+  "poisoned-needle": { effectStatuses: { waWQ0QcVncE6pU5B: ["poisoned"] } },
+  // Le Fou (Jeu de cartes merveilleux) : « Désavantage aux jets de sauvegarde et aux tests pendant 72 heures » — l'effet est vide.
+  "fool": { effectChanges: { BkChhqAw5emn7aQp: ["str", "dex", "con", "int", "wis", "cha"].flatMap(a => [
+    { key: `system.abilities.${a}.save.roll.mode`, type: "add", value: "-1" }, { key: `system.abilities.${a}.check.roll.mode`, type: "add", value: "-1" }]) } },
 
   // Morsure de Harkon (Ravenloft) : « +1 aux tests et sauvegardes tant que vous portez le collier » — l'effet n'est pas transféré.
   "harkons-bite": { dataFixes: [{ effect: "EzuxTW39OtnDWoi1", path: "transfer", from: false, value: true }] }

@@ -43,7 +43,9 @@ export function effectFacts(actor) {
   const weapons = (actor?.items ?? []).filter(i => (i.type === "weapon") && i.system.equipped && (i.system.type?.value !== "natural")
     && (identifierOf(i).id !== "unarmed-strike")).map(w => ({ melee: !RANGED.includes(w.system.type?.value), twoHanded: !!w.system.properties?.has?.("two") }));
   const abilities = Object.fromEntries(Object.entries(actor?.system?.abilities ?? {}).map(([k, v]) => [k, Number(v?.value) || 0]));
-  return { armor, weapons, inCombat: !!combatantFor(actor)?.parent?.started, abilities, get light() { return lightOfActor(actor); },
+  // O7 (§343) : un bouclier équipé (Bracelets de défense).
+  const shield = !!actor?.system?.attributes?.ac?.equippedShield;
+  return { armor, shield, weapons, inCombat: !!combatantFor(actor)?.parent?.started, abilities, get light() { return lightOfActor(actor); },
     // C12-c : sous une Forme sauvage (l'acteur métamorphosé de dnd5e) ; les identifiants des items d'où viennent ses effets actifs.
     wildShaped: !!actor?.isPolymorphed,
     get effectsFrom() { return effectOrigins(actor); } };

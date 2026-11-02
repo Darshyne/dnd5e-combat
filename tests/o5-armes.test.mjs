@@ -64,3 +64,12 @@ describe("O5b (§340) : l'objet qui enchante une arme", () => {
     for ( const key of Object.keys(CONTENT).filter(k => k.endsWith("-enchanted")) ) expect(sources.has(key.replace(/-enchanted$/, "")), key).toBe(true);
   });
 });
+
+describe("O7 (§343) : condition « ni armure ni bouclier »", () => {
+  it("tient sans armure ni bouclier, tombe avec l'un ou l'autre", async () => {
+    const { effectHolds } = await import("../module/scripts/core/feats.mjs");
+    expect(effectHolds({ unarmored: true }, { armor: null, shield: false })).toBe(true);
+    expect(effectHolds({ unarmored: true }, { armor: "light", shield: false })).toBe(false);
+    expect(effectHolds({ unarmored: true }, { armor: null, shield: true })).toBe(false);
+  });
+});

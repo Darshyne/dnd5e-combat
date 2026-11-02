@@ -36,6 +36,9 @@ const worn = (name, changes) => ({ name, type: "base", transfer: true, disabled:
 const vulnerability = (resists) => ["bludgeoning", "piercing", "slashing"].map(t => change(`system.traits.${t === resists ? "dr" : "dv"}.value`, "add", t));
 const vulnerabilityFrom = (resists) => vulnerability(resists).map(c => ((c.value === "bludgeoning") ? { ...c, value: "bludegoning" } : c));
 
+/** O3 : le Charmé des anneaux de maîtrise élémentaire dure « jusqu'au début de votre prochain tour » (la donnée compte un tour de n'importe qui). */
+const CHARMED_UNTIL_NEXT_TURN = Object.freeze({ cN85nWiTzfGzWR7D: "casterTurnStart" });
+
 /** Baguette des merveilles : aucune de ses activités ne déclare son action (Magie). */
 const WONDER_ACTIVITIES = ["Z62czXwABB7SN1lP", "4h4Aazi3L1MmByOt", "76MvwJBXwm1GbzfW", "F6QdFpERu7c4x6cd", "uDrKgJTXIcF0EM33", "yMZ4RIhJV1jvkKaf",
   "DIkFGxynTge6LTPJ", "Go7QGLKLGLggVcNK", "EhdR11nT5sMOi9h5", "cKz4qaK2elWiFRCS", "2x5DGGxGI3bgymqf", "6kTej94dEVrwxM9D", "hohchQU2VPFVUIWG",
@@ -48,11 +51,15 @@ export const ITEM_FIXES = Object.freeze({
   // Anneaux de maîtrise élémentaire (un identifiant pour les quatre : content/sources.mjs les sépare). Air : « une Vitesse de vol égale à
   // votre Vitesse » — l'effet ne donne que le vol stationnaire. Terre : Mur de pierre au DD 18 de l'anneau, pas à celui du porteur.
   // Eau : « Aquatique, une Vitesse de nage de 18 m » — aucun effet dans la donnée.
-  "ring-of-elemental-command-air": { grantsSpeeds: { fly: "walk" } },
+  "ring-of-elemental-command-air": { grantsSpeeds: { fly: "walk" }, effectEnds: CHARMED_UNTIL_NEXT_TURN },
   "ring-of-elemental-command-earth": {
+    effectEnds: CHARMED_UNTIL_NEXT_TURN,
     dataFixes: [{ path: "system.activities.xpuvWA5Jy39MYwCg.spell.challenge", from: { attack: null, save: null, override: false }, value: { attack: null, save: 18, override: true } }]
   },
+  // O3 : Coercition élémentaire, « Charmé jusqu'au début de votre prochain tour ».
+  "ring-of-elemental-command-fire": { effectEnds: CHARMED_UNTIL_NEXT_TURN },
   "ring-of-elemental-command-water": {
+    effectEnds: CHARMED_UNTIL_NEXT_TURN,
     dataFixes: [{ effect: "dasWaterFocus000", create: worn("Water Focus", [change("system.traits.languages.value", "add", "aquan"), change("system.attributes.movement.swim", "upgrade", 60)]) }]
   },
   // Anneau de rayons X : la sauvegarde ratée vise un effet absent ; « vous subissez un niveau d'Épuisement » (runtime/cure.mjs le monte).
@@ -269,20 +276,72 @@ export const ITEM_FIXES = Object.freeze({
     dataFixes: [{ path: "system.activities.Xm0k8JLnz00jgCg7.effects", from: [], value: [{ _id: "o6ZuvxhWeXsg50MH", onSave: false }] }]
   },
   // Dard de Lolth : Inconscient « si le jet est raté de 5 ou plus » ; Empoisonné sur tout échec.
-  "lolths-sting": { failMargins: { zEQTKqd3uBj660cR: { min: 5 } } },
+  // O3 : « se réveille si elle subit des dégâts ou si une autre créature la secoue (une action) » — Empoisonné reste.
+  "lolths-sting": {
+    failMargins: { zEQTKqd3uBj660cR: { min: 5 } },
+    triggers: [{ on: "isDamaged", via: "effect", fromEffect: "zEQTKqd3uBj660cR", do: [{ type: "remove" }] }],
+    actionEnds: { zEQTKqd3uBj660cR: { by: "other", verb: "wake" } }
+  },
   // Sceptre-tentacule : la sauvegarde d'Entravé n'inflige rien ; les 3d6 viennent au début des tours de la cible (lot O3).
-  "tentacle-rod": { noDamage: ["yuASV7hKz3sa7L5P"] },
+  // O3 : « 3d6 psychiques au début de chacun de ses tours », sauvegarde répétée à la fin (l'attache à 15 ft et la libération restent au MJ).
+  "tentacle-rod": {
+    noDamage: ["yuASV7hKz3sa7L5P"],
+    triggers: [
+      { on: "startOfTurn", via: "effect", fromEffect: "JVnjmXHqpPkyKBXS", do: [{ type: "damage", to: "bearer", activity: "y9MnFdJWUat9KhbD" }] },
+      { on: "endOfTurn", via: "effect", fromEffect: "JVnjmXHqpPkyKBXS", do: [{ type: "resave" }] }
+    ]
+  },
   // Poudre à éternuer : « les Artificiels, Élémentaires, Vases, Plantes et Morts-vivants réussissent automatiquement ».
-  "dust-of-sneezing-and-choking": { targets: { unaffectedIf: { any: ["construct", "elemental", "ooze", "plant", "undead"].map(t => ({ "target.creatureType": t })) } } },
+  // O3 : « refait le jet à la fin de chacun de ses tours ».
+  "dust-of-sneezing-and-choking": { triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "AZcO17cLsTHbb0P9", do: [{ type: "resave" }] }], targets: { unaffectedIf: { any: ["construct", "elemental", "ooze", "plant", "undead"].map(t => ({ "target.creatureType": t })) } } },
   // Baume de Keoghtom : « met fin à l'état Empoisonné ».
   "keoghtoms-ointment": { curesAll: ["poisoned"] },
   // Talismans : Désavantage à la sauvegarde pour les Fiélons et Morts-vivants (bien ultime), les Célestes (mal absolu).
   "talisman-of-pure-good": { saveDisadvantageFor: ["fiend", "undead"] },
   "talisman-of-ultimate-evil": { saveDisadvantageFor: ["celestial"] },
 
+  /* ---- O3 (§337) : fins d'effet, sauvegardes répétées, réveils ---- */
+
+  // « Elle refait le jet à la fin de chacun de ses tours » — Paralysé, Effrayé, Étourdi, Aveuglé, Neutralisé sans fin dans la donnée.
+  "wand-of-paralysis": { effectDurations: { AwFDnHD5U7aOOzds: { seconds: 60 } }, triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "AwFDnHD5U7aOOzds", do: [{ type: "resave" }] }] },
+  "mace-of-terror": { triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "amYapIKWPpJZ9EuO", do: [{ type: "resave" }] }] },
+  "whelm": { triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "esmyGn6aLpCfWsFm", do: [{ type: "resave" }] }] },
+  "gem-of-brightness": { triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "05Lok63szRXdAafx", do: [{ type: "resave" }] }] },
+  "pipes-of-haunting": { triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "29Rm9ru4fP60YFj3", do: [{ type: "resave" }] }] },
+  // Mucus de charognard rampant : l'effet Paralysé et Empoisonné n'était pas relié à la sauvegarde.
+  "carrion-crawler-mucus": {
+    triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "a9KfUV3KbbB5wrFY", do: [{ type: "resave" }] }],
+    dataFixes: [{ path: "system.activities.StL0A8FviYKfGlQ8.effects", from: [], value: [{ _id: "a9KfUV3KbbB5wrFY", onSave: false }] }]
+  },
+  // Robe prismatique : « Étourdi jusqu'à la fin de l'effet », la fin de votre prochain tour ; Bâton de tonnerre et de foudre : « jusqu'à la
+  // fin de votre prochain tour ».
+  "robe-of-scintillating-colors": { effectEnds: { yQoovzqIXdUiUcU4: "casterTurnEnd" } },
+  "staff-of-thunder-and-lightning": { effectEnds: { UTstWNbk0NXrKgS6: "casterTurnEnd" } },
+  // Poussière de disparition : « juste après une attaque, des dégâts ou un sort, l'état Invisible prend fin pour cette créature ».
+  "dust-of-disappearance": { breaksOn: ["attack", "damage", "spell"] },
+  // Huile de taggit, Essence d'éther : Empoisonné et Inconscient étaient un seul effet ; la créature « se réveille si elle subit des
+  // dégâts » (ou secouée, l'Essence d'éther) et reste Empoisonnée — l'Empoisonné devient un effet à part.
+  "oil-of-taggit": SLEEP_POISON("3E9Bg4ZYt098PHwu", "H2a1ShsSWCmSWfW7", "dasTaggitPoison0", 86400),
+  "essence-of-ether": SLEEP_POISON("LyJvv1MFK97vRKM5", "izr2j393TujCLu53", "dasEtherPoison00", 28800),
+
   // Morsure de Harkon (Ravenloft) : « +1 aux tests et sauvegardes tant que vous portez le collier » — l'effet n'est pas transféré.
   "harkons-bite": { dataFixes: [{ effect: "EzuxTW39OtnDWoi1", path: "transfer", from: false, value: true }] }
 });
+
+/** O3 : un poison qui endort — l'Inconscient se lève sur dégâts ou secoué, l'Empoisonné reste son effet propre. */
+function SLEEP_POISON(activity, sleep, poison, seconds) {
+  return {
+    triggers: [{ on: "isDamaged", via: "effect", fromEffect: sleep, do: [{ type: "remove" }] }],
+    actionEnds: { [sleep]: { by: "other", verb: "wake" } },
+    dataFixes: [
+      { effect: sleep, path: "statuses", from: ["poisoned", "unconscious"], value: ["unconscious"] },
+      { effect: sleep, path: "name", from: "Poisoned and Unconscious", value: "Unconscious" },
+      { effect: poison, create: { name: "Poisoned", type: "base", transfer: false, disabled: false, statuses: ["poisoned"],
+        duration: { value: seconds, units: "seconds", expiry: "turnStart" }, system: { changes: [] } } },
+      { path: `system.activities.${activity}.effects`, from: [{ _id: sleep }], value: [{ _id: sleep, onSave: false }, { _id: poison, onSave: false }] }
+    ]
+  };
+}
 
 /** Les changements de l'enchantement de l'Épée acérée (seule la part de critique change). */
 function SHARPNESS(critical) {

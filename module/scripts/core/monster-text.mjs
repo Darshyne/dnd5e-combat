@@ -187,7 +187,10 @@ export function monsterReactions(html, { reaction=false, acEffect=null }={}) {
   const out = {};
   if ( !text ) return out;
   if ( reaction ) {
-    const ac = text.match(/\badds? (\d+|…) to its AC against (?:that|the|the triggering) attack/i);
+    // K12 (§333) : aussi « against melee attack rolls (including the triggering attack) until the start of its next turn » (Posture
+    // défensive) — l'effet « +N CA » de l'item dure alors jusqu'au début de son tour.
+    const ac = text.match(/\badds? (\d+|…) to its AC against (?:that|the|the triggering) attack/i)
+      ?? text.match(/\badds? (\d+|…) to its AC against (?:melee )?attack rolls \(including the triggering attack\)/i);
     if ( ac ) {
       const melee = /\bTrigger\s*:[^]*?\bmelee attack\b/i.test(text.split(/\bResponse\s*:/i)[0] ?? "");
       // La donnée porte l'effet « +N CA » (Contre-attaque, Riposte, Tourbillon de sable) : comme Bouclier — proposée si N peut faire

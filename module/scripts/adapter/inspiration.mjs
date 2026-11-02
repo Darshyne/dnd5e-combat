@@ -213,6 +213,8 @@ export async function offerRollBonus(actor, { kind, what, total, needed=null, sk
   for ( const item of actor?.items ?? [] ) {
     const rule = contentOf(item).entry?.rollBonus;
     if ( !rule || !(rule.on ?? []).includes(kind) ) continue;
+    // O6 (§342) : un anneau ou un objet merveilleux ne joue que porté, et harmonisé s'il l'exige.
+    if ( (item.type === "equipment") && ((item.system?.equipped === false) || ((item.system?.attunement === "required") && !item.system?.attuned)) ) continue;
     if ( (kind === "check") && rule.skills && !rule.skills.includes(skill) ) continue;
     if ( rule.statuses && !rule.statuses.some(s => statuses.includes(s)) ) continue;
     // §133 : seulement une sauvegarde de ces caractéristiques (Tueur de mages, Esprit gardé : Intelligence, Sagesse, Charisme).

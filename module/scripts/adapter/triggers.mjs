@@ -29,10 +29,20 @@ export function declarationsOfItem(item, { all=false }={}) {
   })).filter(d => all || (d.via === null));
 }
 
+/**
+ * O6 (§342) : un équipement (anneau, cape, objet merveilleux, armure, bouclier) ne déclare rien s'il n'est pas porté, ou pas harmonisé
+ * quand il l'exige — l'Anneau d'esquive totale dans le sac ne propose pas sa réaction. Armes, aptitudes et sorts : inchangés.
+ */
+export function wornOrNotEquipment(item) {
+  if ( item?.type !== "equipment" ) return true;
+  if ( item.system?.equipped === false ) return false;
+  return (item.system?.attunement !== "required") || (item.system?.attuned === true);
+}
+
 /** Ce que tous les items d'un acteur déclarent (pour lui-même). */
 export function declarationsOf(actor) {
   const out = [];
-  for ( const item of actor?.items ?? [] ) out.push(...declarationsOfItem(item));
+  for ( const item of actor?.items ?? [] ) if ( wornOrNotEquipment(item) ) out.push(...declarationsOfItem(item));
   return out;
 }
 

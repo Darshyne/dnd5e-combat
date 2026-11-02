@@ -257,7 +257,6 @@ export const ITEM_FIXES = Object.freeze({
   "spellguard-shield": { saveAdvantage: ["magic"] },
   "robe-of-the-archmagi": { saveAdvantage: ["magic"] },
   "scarab-of-protection": { saveAdvantage: ["magic"] },
-  "staff-of-the-magi": { saveAdvantage: ["magic"] },
   "ebonbane": { saveAdvantage: ["magic"] },
   // « Avantage aux sauvegardes contre l'état Empoisonné ».
   "necklace-of-adaptation": { saveAdvantage: ["poisoned"] },
@@ -379,6 +378,38 @@ export const ITEM_FIXES = Object.freeze({
   "staff-of-striking": { hitRider: { damage: "sviFeLqVM4b4jHvc", item: "staff-of-striking" } },
   // Anneau du bélier : « si l'attaque touche, la cible est repoussée de 1,50 m » (par charge dépensée : une charge, 1,50 m).
   "ring-of-the-ram": { triggers: [{ on: "hit", do: [{ type: "move", mode: "push", distance: 5, units: "ft" }] }] },
+
+  /* ---- O6 (§342) : réactions d'objets (portés, et harmonisés s'il le faut : adapter/triggers.mjs) ---- */
+
+  // Anneau d'esquive totale : « quand vous ratez une sauvegarde de Dextérité, une Réaction et 1 charge : vous la réussissez ».
+  "ring-of-evasion": { rollBonus: { activity: "8uTVtEN7h4Mp33gB", on: ["save"], abilities: ["dex"], succeed: true } },
+  // Bâton de l'acrobate : « touché par une attaque, une Réaction et 1 charge : +5 à la CA contre cette attaque » (comme Bouclier).
+  "quarterstaff-of-the-acrobat": {
+    triggers: [{ on: "isHit", if: { "hit.stoppableBy": 5 }, do: [{ type: "use", activity: "uGF83fO9tijt8I01" }, { type: "penalty", formula: "5" }] }]
+  },
+  // Gants piégeurs de projectiles : « touché par une attaque à distance ou d'arme lancée, une Réaction : dégâts réduits de 1d10 + Dex ».
+  "gloves-of-missile-snaring": {
+    triggers: [{ on: "isHit", if: { "activity.isWeapon": true, "activity.isMelee": false }, do: [{ type: "use", activity: "x4IPCLTGbrUwWZxn" }, { type: "reduce" }] }]
+  },
+  // (Bâton du thaumaturge : l'absorption de sort, comme celle du Sceptre d'absorption, demande d'annuler un sort qui vise le porteur : lot O8.)
+  "staff-of-the-magi": { saveAdvantage: ["magic"] },
+  // Pierres de Ioun d'absorption : « une Réaction : un sort de niveau 4 (8) ou moins lancé par une créature que vous voyez est annulé ».
+  "absorption-ioun-stone": { counter: { level: 4 }, triggers: [{ on: "castsSpell", if: { "target.seesSource": true }, do: [{ type: "use", activity: "VHm5fPkFAnT7Vb01", target: "source" }] }] },
+  "greater-absorption-ioun-stone": { counter: { level: 8 }, triggers: [{ on: "castsSpell", if: { "target.seesSource": true }, do: [{ type: "use", activity: "1yWFZf1MJMoNof7b", target: "source" }] }] },
+  // Anneau de feuille morte : « vous descendez de 18 m par round et ne subissez pas de dégâts de chute » — sans Réaction.
+  // L'anneau n'a aucune activité : une activité « Feuille morte » sans coût lui est ajoutée (`dataFixes`), proposée à la chute sans Réaction.
+  "ring-of-feather-falling": {
+    triggers: [{ on: "falls", free: true, do: [{ type: "use", activity: "dasFeatherFall00" }, { type: "cancel" }] }],
+    dataFixes: [{ path: "system.activities.dasFeatherFall00", value: {
+      _id: "dasFeatherFall00", type: "utility", name: "Feather Fall",
+      activation: { type: "special", value: null, override: false, condition: "" },
+      consumption: { scaling: { allowed: false }, spellSlot: true, targets: [] }, uses: { spent: 0, recovery: [], max: "" }, range: { override: false },
+      target: { template: { contiguous: false, units: "ft", type: "" }, affects: { choice: false, count: "", type: "" }, override: false, prompt: false },
+      duration: { units: "inst", concentration: false, override: false }, effects: [], roll: { prompt: false, visible: false, name: "", formula: "" }
+    } }]
+  },
+  // Lame porte-bonheur (enchantement) : « relancer un Test d20 raté, une utilisation par jour ; le nouveau jet est imposé ».
+  "luck-blade-enchanted": { rollBonus: { activity: "tXkbUpFL8jBRLpjM", on: ["attack", "save", "check"], reroll: {} } },
 
   // Morsure de Harkon (Ravenloft) : « +1 aux tests et sauvegardes tant que vous portez le collier » — l'effet n'est pas transféré.
   "harkons-bite": { dataFixes: [{ effect: "EzuxTW39OtnDWoi1", path: "transfer", from: false, value: true }] }

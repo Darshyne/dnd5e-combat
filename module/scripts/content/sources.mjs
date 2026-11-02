@@ -106,6 +106,7 @@ export const ENCHANTMENT_SOURCES = Object.freeze({
   KDZFGFsxEOF5WvbJ: "frost-brand",
   ZwpawARncDIheC65: "giant-slayer",
   I7Iwl7awPq2wftoF: "holy-avenger",
+  "3hRQ0o8Q1nmj5WwB": "luck-blade",
   L4ylYIFxr0vdht6M: "oathbow",
   nxid1s2CZrB06HH8: "sword-of-sharpness",
   tuFnPbghL64ioL04: "sword-of-wounding",

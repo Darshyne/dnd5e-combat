@@ -239,6 +239,11 @@ export function isMagical(activity) {
   return (item.type === "spell") || (item.system?.properties?.has?.("mgc") === true);
 }
 
+/** Les types d'objets que l'on porte (pas les aptitudes ni les sorts). */
+const GEAR = new Set(["equipment", "weapon", "consumable", "tool", "loot", "container"]);
+/** Équipé, et harmonisé s'il exige une harmonisation. */
+const worn = item => (item.system?.equipped !== false) && ((item.system?.attunement !== "required") || (item.system?.attuned === true));
+
 /**
  * L'acteur a-t-il l'avantage à la sauvegarde de cette activité (`saveAdvantage`) ? Ce qui le donne : un item qu'il porte
  * (Ascendance féerique, Résistance à la magie), ou, pour un sort, un effet de ce sort posé sur lui (Protection contre le
@@ -248,8 +253,12 @@ export function saveAdvantageAgainst(actor, activity) {
   const posed = statusesPosedBy(activity);
   const magical = isMagical(activity);
   if ( !posed.size && !magical ) return false;
-  // §48 : ni un sort de sa fiche, ni un parchemin qu'il porte — c'est l'effet posé qui compte.
-  const owned = (actor?.items ?? []).filter(item => !isSpellCast(item));
+  // O2 (§336) : un effet qui porte `flags.dnd5e-combat.saveAdvantage.<état|magic>` (l'Antidote bu : sa fiole est souvent consommée).
+  const flagged = actor?.flags?.[MODULE_ID]?.saveAdvantage ?? {};
+  if ( [...posed].some(s => flagged[s]) || (magical && flagged.magic) ) return true;
+  // §48 : ni un sort de sa fiche, ni un parchemin qu'il porte — c'est l'effet posé qui compte. O2 (§336) : un objet (anneau, manteau,
+  // amulette) ne protège que porté, et harmonisé s'il l'exige.
+  const owned = (actor?.items ?? []).filter(item => !isSpellCast(item) && (!GEAR.has(item.type) || worn(item)));
   const borne = (actor?.effects ?? []).filter(e => !e.disabled && !e.isSuppressed).map(originItemOf)
     .filter(item => isSpellCast(item));
   return [...owned, ...borne].some(item => (contentOf(item).entry?.saveAdvantage ?? [])

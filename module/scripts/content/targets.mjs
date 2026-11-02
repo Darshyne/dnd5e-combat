@@ -13,7 +13,8 @@ export const TARGETS = Object.freeze({
   // « Choisissez un Humanoïde… », « Un Humanoïde que vous voyez… », « Chaque Humanoïde dans une Sphère… »
   "hold-person": { types: ["humanoid"] },
   // §157 : Bouclier — « vous ne subissez aucun dégât de Projectile magique » tant qu'il tient.
-  "magic-missile": { unaffectedIf: { "target.hasEffect": "shield" } },
+  // O2 (§336) : la Broche de défense « immunité aux dégâts du sort Projectile magique », portée et harmonisée (effet transféré).
+  "magic-missile": { unaffectedIf: { any: [{ "target.hasEffect": "shield" }, { "target.hasEffect": "brooch-of-shielding" }] } },
   "charm-person": { types: ["humanoid"] },
   "dominate-person": { types: ["humanoid"] },
   "calm-emotions": { types: ["humanoid"] },

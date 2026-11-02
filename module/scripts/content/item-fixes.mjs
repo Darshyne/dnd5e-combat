@@ -146,7 +146,9 @@ export const ITEM_FIXES = Object.freeze({
   "superior-potion-of-healing": { dataFixes: [{ path: "system.activities.eT46ucSUynLRTs6N.range.units", from: "self", value: "touch" }] },
   "supreme-potion-of-healing": { dataFixes: [{ path: "system.activities.GsHW5KoST4fZ30YX.range.units", from: "self", value: "touch" }] },
   // Fléchettes empoisonnées (piège) : « 1d3 fléchettes, 1d6 de poison chacune » (puis 2d6, 4d6, 7d6 par fléchette selon le niveau).
+  // O2 : une sauvegarde réussie évite toutes les fléchettes (la donnée en donnait la moitié).
   "poisoned-darts": {
+    saveDamage: { RvICMGIB0eFj7glp: "none", MSTCr3QSYGyolvAe: "none", dmaXYLZqje000jxt: "none", NDPRYh9wNKYZuDbL: "none" },
     dataFixes: [
       { path: "system.activities.RvICMGIB0eFj7glp.damage.parts", from: DART(["poison"]), value: [formulaPart("(1d3)d6", ["poison"])] },
       { path: "system.activities.MSTCr3QSYGyolvAe.damage.parts", from: [formulaPart("(1d3) * 2d6", ["poison"])], value: [formulaPart("(2 * 1d3)d6", ["poison"])] },
@@ -159,7 +161,8 @@ export const ITEM_FIXES = Object.freeze({
       effect, path: "system.changes", from: vulnerabilityFrom(type), value: vulnerability(type) }))
   },
   // Ceinturon des nains : son effet unique est livré désactivé.
-  "belt-of-dwarvenkind": { dataFixes: [{ effect: "HNruvcSEl25DRvjj", path: "disabled", from: true, value: false }] },
+  // O2 : « Avantage aux sauvegardes contre l'état Empoisonné ».
+  "belt-of-dwarvenkind": { saveAdvantage: ["poisoned"], dataFixes: [{ effect: "HNruvcSEl25DRvjj", path: "disabled", from: true, value: false }] },
   // Cape du prestidigitateur : « une fois par jour » — l'activité ne dépense pas l'utilisation.
   "cape-of-the-mountebank": { dataFixes: [{ path: "system.activities.qsuojT0nn8ZkAY19.consumption.targets", from: [], value: [spend("itemUses", 1)] }] },
   // Cape de la chauve-souris : « une Vitesse de vol de 12 m » — l'effet de vol n'en donne aucune.
@@ -232,10 +235,51 @@ export const ITEM_FIXES = Object.freeze({
     dataFixes: [{ effect: "nxid1s2CZrB06HH8", path: "system.changes", from: SHARPNESS("14d1[necrotic]"), value: SHARPNESS("14[slashing]") }]
   },
   // Filet : l'activité renvoie à un effet absent (« Caught in Net » a un autre id) ; « remplace une des attaques de l'action Attaque ».
+  // O2 : « une créature de taille Très grande ou supérieure réussit automatiquement ».
   "net": {
     replacesAttack: ["3u15g2fvhp6MyN5O"],
+    targets: { unaffectedIf: { not: { "target.sizeAtMost": "lg" } } },
     dataFixes: [{ path: "system.activities.3u15g2fvhp6MyN5O.effects", from: [{ _id: "cMQAYD7OnCQK6Ux9", onSave: false }], value: [{ _id: "67ofG0FVqrrkAHKa", onSave: false }] }]
   },
+  /* ---- O2 (§336) : sauvegardes et défenses, par les clés existantes ---- */
+
+  // « Avantage aux jets de sauvegarde contre les sorts » — porté et harmonisé (adapter/saves.mjs).
+  "mantle-of-spell-resistance": { saveAdvantage: ["magic"] },
+  "ring-of-spell-turning": { saveAdvantage: ["magic"] },
+  "spellguard-shield": { saveAdvantage: ["magic"] },
+  "robe-of-the-archmagi": { saveAdvantage: ["magic"] },
+  "scarab-of-protection": { saveAdvantage: ["magic"] },
+  "staff-of-the-magi": { saveAdvantage: ["magic"] },
+  "ebonbane": { saveAdvantage: ["magic"] },
+  // « Avantage aux sauvegardes contre l'état Empoisonné ».
+  "necklace-of-adaptation": { saveAdvantage: ["poisoned"] },
+  "periapt-of-health": { saveAdvantage: ["poisoned"] },
+  // Antidote : « Avantage aux sauvegardes contre l'état Empoisonné pendant 1 heure » — l'effet posé est vide ; il porte désormais la
+  // marque que lit adapter/saves.mjs (la fiole est souvent consommée avant que l'effet ne soit posé).
+  "antitoxin": {
+    dataFixes: [{ effect: "DzWVacNiq6ggXbU9", path: "system.changes", from: [], value: [change("flags.dnd5e-combat.saveAdvantage.poisoned", "override", true)] }]
+  },
+  // Anneau de chaleur constante : « les dégâts de froid que vous subissez sont réduits de 2d8 ».
+  "ring-of-warmth": { damageShield: { worn: "cold", formula: "2d8" } },
+  // Eau bénite : « sur une réussite, aucun dégât » (la donnée en donnait la moitié).
+  "holy-water": { saveDamage: { ArV3jMOIvfj5c5y9: "none" } },
+  // Teinture pâle : rien sur une réussite ; l'effet Empoisonné n'était pas relié à la sauvegarde.
+  "pale-tincture": {
+    saveDamage: { Xm0k8JLnz00jgCg7: "none" },
+    dataFixes: [{ path: "system.activities.Xm0k8JLnz00jgCg7.effects", from: [], value: [{ _id: "o6ZuvxhWeXsg50MH", onSave: false }] }]
+  },
+  // Dard de Lolth : Inconscient « si le jet est raté de 5 ou plus » ; Empoisonné sur tout échec.
+  "lolths-sting": { failMargins: { zEQTKqd3uBj660cR: { min: 5 } } },
+  // Sceptre-tentacule : la sauvegarde d'Entravé n'inflige rien ; les 3d6 viennent au début des tours de la cible (lot O3).
+  "tentacle-rod": { noDamage: ["yuASV7hKz3sa7L5P"] },
+  // Poudre à éternuer : « les Artificiels, Élémentaires, Vases, Plantes et Morts-vivants réussissent automatiquement ».
+  "dust-of-sneezing-and-choking": { targets: { unaffectedIf: { any: ["construct", "elemental", "ooze", "plant", "undead"].map(t => ({ "target.creatureType": t })) } } },
+  // Baume de Keoghtom : « met fin à l'état Empoisonné ».
+  "keoghtoms-ointment": { curesAll: ["poisoned"] },
+  // Talismans : Désavantage à la sauvegarde pour les Fiélons et Morts-vivants (bien ultime), les Célestes (mal absolu).
+  "talisman-of-pure-good": { saveDisadvantageFor: ["fiend", "undead"] },
+  "talisman-of-ultimate-evil": { saveDisadvantageFor: ["celestial"] },
+
   // Morsure de Harkon (Ravenloft) : « +1 aux tests et sauvegardes tant que vous portez le collier » — l'effet n'est pas transféré.
   "harkons-bite": { dataFixes: [{ effect: "EzuxTW39OtnDWoi1", path: "transfer", from: false, value: true }] }
 });

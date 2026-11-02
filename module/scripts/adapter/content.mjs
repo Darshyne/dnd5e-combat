@@ -16,7 +16,7 @@ import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { monsterChoice, monsterDeaths, monsterEndings, monsterPushes, monsterReactions, monsterRecurring, monsterTypeGate, monsterAdvantage, monsterSaveDamage, monsterMissingStatus, monsterNoOpportunity,
-  monsterBasicActions, monsterSightGate, monsterImmunity, monsterEffectDurations } from "../core/monster-text.mjs";
+  monsterBasicActions, monsterSightGate, monsterImmunity, monsterEffectDurations, monsterReactionWindow } from "../core/monster-text.mjs";
 import { readDrain, drains } from "../core/drain.mjs";
 
 export const OVERRIDES_SETTING = "contentOverrides";
@@ -158,7 +158,12 @@ function textLayer(item) {
   // K1 (§334) : immunité temporaire après une réussite.
   const immunity = monsterImmunity(html, identifierOf(item).id, acts);
   if ( immunity ) missing.push(immunity.trigger);
-  const allTriggers = [...triggers, ...(reacts.triggers ?? []), ...(recurring.triggers ?? []), ...pushes, ...advantage, ...missing];
+  // §334 : la fenêtre d'une Réaction de monstre d'après son déclencheur, quand la parade de K6 n'en donne pas.
+  const reactionConditions = Array.from(item.system?.activities ?? []).filter(a => a.activation?.type === "reaction").map(a => a.activation?.condition ?? "");
+  const outward = Array.from(item.system?.activities ?? []).some(a => (a.activation?.type === "reaction") && ["save", "attack", "damage"].includes(a.type));
+  const window = (reactionConditions.length && !reacts.triggers?.length) ? monsterReactionWindow(html, reactionConditions, outward,
+    Array.from(item.system?.activities ?? []).find(a => a.activation?.type === "reaction")?.id ?? null) : [];
+  const allTriggers = [...triggers, ...(reacts.triggers ?? []), ...window, ...(recurring.triggers ?? []), ...pushes, ...advantage, ...missing];
   // §334 : les durées en tours que le texte donne aux effets, Réactions perdues et soins bloqués par effet.
   const durations = monsterEffectDurations(html, { activities: acts, effects });
   if ( durations.effectEnds ) recurring.effectEnds = { ...durations.effectEnds, ...(recurring.effectEnds ?? {}) };

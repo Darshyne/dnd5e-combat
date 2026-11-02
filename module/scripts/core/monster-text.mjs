@@ -542,3 +542,48 @@ export function monsterEffectDurations(html, { activities=[], effects=[] }={}) {
   if ( (bare.length === 1) && /\b(?:the creature|the target) can[’']t regain Hit Points\b/i.test(text) ) out.blocksHealing = [bare[0].id];
   return out;
 }
+
+const DAMAGE_TYPES = ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"];
+
+/**
+ * §334 : la fenêtre d'une Réaction de monstre, d'après son déclencheur (« Trigger: … », ou la condition d'activation de l'activité de
+ * Réaction) — la Réaction est proposée (`use`) au moment correspondant du moteur :
+ *  - « misses the kuo-toa with a melee attack roll » → `isMissed` (corps à corps) ;
+ *  - « hits it with an attack roll », « An attack roll hits the … », « is hit by an attack roll » → `isHit` ;
+ *  - « makes an attack roll against it » → `isAttacked` ;
+ *  - « takes Piercing or Slashing damage », « is subjected to Cold damage », « deals damage to it » → `isDamaged` (types gardés) ;
+ *  - « within 30 feet … casts a spell » → `castsSpell`.
+ * Le sujet doit être la créature elle-même (pas « A Bloodied creature … takes damage »). Rien pour les autres déclencheurs.
+ * @param {string} html
+ * @param {string[]} [conditions]  conditions d'activation des activités de Réaction
+ * @param {boolean} [outward]      l'activité de Réaction vise une autre créature (`use` sur la source du déclencheur)
+ * @param {string|null} [activity] l'id de l'activité de Réaction
+ * @returns {object[]} déclarations `triggers`
+ */
+export function monsterReactionWindow(html, conditions=[], outward=false, activity=null) {
+  // Une Réaction qui vise une autre créature (sauvegarde, attaque, dégâts : Bouclier collant) part sur celle qui l'a déclenchée ; l'activité
+  // de Réaction est nommée (l'item en a parfois d'autres : les tests pour se libérer du Bouclier collant).
+  const use = [{ type: "use", ...(activity ? { activity } : {}), ...(outward ? { target: "source" } : {}) }];
+  const text = plainText(html);
+  const declared = text.match(/\bTrigger\s*:\s*([^]*?)(?=\bResponse\b|$)/i)?.[1] ?? "";
+  const sources = [declared, ...conditions.map(c => plainText(c))].map(s => s.trim()).filter(s => s && !/^[….\s]*$/.test(s));
+  for ( const t of sources ) {
+    if ( /\bmiss(?:es|ed)\b[^.]*\bmelee attack roll\b/i.test(t) ) return [{ on: "isMissed", if: { "activity.isMelee": true }, do: use }];
+    if ( /\ban attack roll hits (?:it|him|her|the \S+|[A-Z]\w+)\b|\bhits (?:it|him|her|the \S+) with an attack roll\b|\bis hit by an? (?:melee )?attack roll\b/i.test(t) ) {
+      return [{ on: "isHit", ...(/\bmelee attack roll\b/i.test(t) ? { if: { "activity.isMelee": true } } : {}), do: use }];
+    }
+    if ( /\bmakes an attack roll against (?:it|him|her|them)\b/i.test(t) ) return [{ on: "isAttacked", do: use }];
+    // Le sujet est la créature (« The shoggoth … », « Laurie … »), ou sous-entendu dans la condition (« takes Acid … damage »).
+    if ( /^(?:the|it|takes|is|[A-Z][a-z]+)\b/i.test(t) && !/^(?:A|An|Another|Each)\b/.test(t) ) {
+      const dmg = t.match(/\b(?:takes|is subjected to) ((?:[A-Za-z]+, )*[A-Za-z]+(?:,? or [A-Za-z]+)?) damage\b/i);
+      if ( dmg ) {
+        const types = DAMAGE_TYPES.filter(k => new RegExp(`\\b${k}\\b`, "i").test(dmg[1]));
+        return [{ on: "isDamaged", ...(types.length ? { if: { "damage.hasType": types } } : {}), do: use }];
+      }
+      if ( /\btakes damage\b/i.test(t) ) return [{ on: "isDamaged", do: use }];
+    }
+    if ( /\bdeals damage to (?:it|him|her)\b/i.test(t) ) return [{ on: "isDamaged", do: use }];
+    if ( /\bcasts a spell\b/i.test(t) ) return [{ on: "castsSpell", do: use }];
+  }
+  return [];
+}

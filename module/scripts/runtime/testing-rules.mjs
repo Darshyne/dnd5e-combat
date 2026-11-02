@@ -281,7 +281,7 @@ export function identify({ tokenId }) {
   const actor = viewedToken({ tokenId }).actor;
   return (actor?.items ?? []).map(item => {
     const { id, from } = identifierOf(item);
-    return { item: item.name, id: item.id, identifier: id, from, rules: Object.keys(contentOf(item).entry ?? {}) };
+    return { item: item.name, id: item.id, identifier: id, from, rules: Object.keys(contentOf(item).entry ?? {}), triggers: contentOf(item).entry?.triggers ?? null };
   }).filter(r => r.rules.length || (r.from !== "item"));
 }
 

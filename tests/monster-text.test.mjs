@@ -181,3 +181,23 @@ describe("K10 : Avantage conditionnel lu dans le texte", () => {
     expect(monsterAdvantage("The wolf has Advantage on Wisdom (Perception) checks.")).toEqual([]);
   });
 });
+
+describe("K11 : pas de moitié des dégâts sur une réussite quand le texte n'en donne pas", () => {
+  it("clause « Success » sans dégâts, ou absente", async () => {
+    const { monsterSaveDamage } = await import("../module/scripts/core/monster-text.mjs");
+    const acts = [{ id: "s".repeat(16), type: "save", onSave: "half" }];
+    expect(monsterSaveDamage("Failure: 9 damage, and Paralyzed. Success: The target is immune to this gaze for 1 hour.", acts)).toEqual({ ["s".repeat(16)]: "none" });
+    expect(monsterSaveDamage("Failure: If it has 100 Hit Points or fewer, it dies. It otherwise takes 9 damage.", acts)).toEqual({ ["s".repeat(16)]: "none" });
+    expect(monsterSaveDamage("Failure: 9 damage. Success: [[/damage 4]] damage.", acts)).toBe(null);
+    expect(monsterSaveDamage("Failure: 9 damage. Success: Half damage only.", acts)).toBe(null);
+  });
+});
+
+describe("K11 : la moitié des dégâts sur une réussite quand le texte la donne", () => {
+  it("« Success: Half damage only » sur une donnée « none »", async () => {
+    const { monsterSaveDamage } = await import("../module/scripts/core/monster-text.mjs");
+    const acts = [{ id: "n".repeat(16), type: "save", onSave: "none" }];
+    expect(monsterSaveDamage("Failure: 9 damage, and engulfed. Success: Half damage only.", acts)).toEqual({ ["n".repeat(16)]: "half" });
+    expect(monsterSaveDamage("Failure: 9 damage. Success: The target is pushed.", acts)).toBe(null);
+  });
+});

@@ -329,6 +329,30 @@ export function monsterAdvantage(html, identifier=null) {
 }
 
 /**
+ * K11 (SPEC §332) : la donnée donne la moitié des dégâts sur une réussite (`onSave: half`) là où le texte ne donne rien — une clause
+ * « Success: » sans dégâts (« The target is immune… », « can't take this action again… »), ou aucune clause « Success: » (Arc tueur du
+ * Solar) → `saveDamage: { <activité>: "none" }` ; à l'inverse « Success: Half damage » sur une donnée `none` → `"half"`. « Success: [[/damage]] damage » (la moitié calculée par l'enricher) n'en est pas.
+ * @param {string} html
+ * @param {Array<{id: string, type: string, onSave?: string}>} activities
+ * @returns {object|null}  `saveDamage`
+ */
+export function monsterSaveDamage(html, activities=[]) {
+  const saves = activities.filter(a => (a.type === "save") && ["half", "none"].includes(a.onSave));
+  if ( !saves.length ) return null;
+  const raw = String(html ?? "").replace(/<[^>]+>/g, " ");
+  if ( !/\bFailure\s*:/i.test(raw) || (segments(plainText(html)).length > 1) ) return null;
+  const success = raw.match(/\bSuccess\s*:\s*([^]*?)(?=\b(?:Failure|First Failure|Second Failure|Failure or Success)\s*:|$)/i)?.[1] ?? null;
+  // « Success: Half damage » quand la donnée ne donne rien (Enveloppement du Cube gélatineux).
+  if ( (success !== null) && /^\s*half (?:the |as much )?damage/i.test(success) ) {
+    const nones = saves.filter(a => a.onSave === "none");
+    return nones.length ? Object.fromEntries(nones.map(a => [a.id, "half"])) : null;
+  }
+  if ( (success !== null) && (/\bdamage\b|\bhalf\b/i.test(success)) ) return null;
+  const halves = saves.filter(a => a.onSave === "half");
+  return halves.length ? Object.fromEntries(halves.map(a => [a.id, "none"])) : null;
+}
+
+/**
  * Les déclarations de fin d'une capacité de monstre, d'après son texte anglais.
  * @param {string} html                                         description anglaise d'origine
  * @param {Array<{id: string, statuses: string[]}>} effects     effets de l'item (pour rattacher une règle à son issue)

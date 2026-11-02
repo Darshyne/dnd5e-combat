@@ -15,7 +15,7 @@ import { CONTENT, SOURCES } from "../content/index.mjs";
 import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
-import { monsterChoice, monsterDeaths, monsterEndings, monsterPushes, monsterReactions, monsterRecurring, monsterTypeGate, monsterAdvantage } from "../core/monster-text.mjs";
+import { monsterChoice, monsterDeaths, monsterEndings, monsterPushes, monsterReactions, monsterRecurring, monsterTypeGate, monsterAdvantage, monsterSaveDamage } from "../core/monster-text.mjs";
 
 export const OVERRIDES_SETTING = "contentOverrides";
 
@@ -146,6 +146,9 @@ function textLayer(item) {
   const allTriggers = [...triggers, ...(reacts.triggers ?? []), ...(recurring.triggers ?? []), ...pushes, ...advantage];
   const { triggers: _r, ...recurringRest } = recurring;
   const { triggers: _t, ...restrictions } = reacts;
+  // K11 (§332) : pas de moitié des dégâts sur une réussite quand le texte n'en donne pas.
+  const saveDamage = monsterSaveDamage(html, Array.from(item.system?.activities ?? []).map(a => ({ id: a.id, type: a.type, onSave: a.damage?.onSave ?? null })));
+  if ( saveDamage ) recurringRest.saveDamage = saveDamage;
   // K9 (§330) : porte de type (« Constructs and Undead succeed automatically »).
   const gate = monsterTypeGate(html);
   const layer = (allTriggers.length || Object.keys(deaths).length || choice || Object.keys(restrictions).length || Object.keys(recurringRest).length || gate)

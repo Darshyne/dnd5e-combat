@@ -221,8 +221,9 @@ function saveEffectsOf(activity) {
   const saved = new Set(entry?.savedEffects ?? []);
   const margins = entry?.failMargins ?? {};
   // K9 (§330) : la porte de taille (M3) vaut aussi pour les effets d'une sauvegarde (Coup de bouclier, Constriction : « si la cible est
-  // de taille G ou inférieure ») — elle ne valait que pour ceux d'une attaque.
-  return effectsOf(activity, e => saved.has(effectKey(e)) ? "saved" : (e.onSave === true ? "always" : "failedSave"), sizeGate(activity))
+  // de taille G ou inférieure ») — elle ne valait que pour ceux d'une attaque. K12 (§333) : `effectsIf` aussi (Protection ésotérique :
+  // « si la cible est un Mort-vivant »).
+  return effectsOf(activity, e => saved.has(effectKey(e)) ? "saved" : (e.onSave === true ? "always" : "failedSave"), effectGate(activity))
     .map(e => (margins[e.id] ? { ...e, margin: margins[e.id] } : e));
 }
 

@@ -57,6 +57,9 @@ export const MONSTERS = Object.freeze({
     effectEnds: { okGmSea9t9idzzrp: "bearerTurnEnd", XvZO30AwVhzcboC7: "bearerTurnEnd", "1zE4l88npB9r24MV": "bearerTurnEnd", "5tr2oDlFLN7khXBT": "casterTurnStart" },
     targets: { unaffectedIf: { "activity.id": "CSKrXM1Pkhlf23et", any: [{ "target.creatureType": "construct" }, { "target.creatureType": "undead" }] } }
   },
+  // Lance de glace (Diable gelé) : ni action Bonus ni Réaction (lue dans le texte), Vitesse −10 ft jusqu'à la fin de son prochain tour ;
+  // « se déplacer ou agir, pas les deux » reste au MJ.
+  "ice-spear": { noBonus: "273sG6C6R7qUcL2v", effectChanges: { "273sG6C6R7qUcL2v": [{ key: "system.attributes.movement.walk", type: "add", value: "-10" }] } },
   // Disparition (Feu follet, Esprit frappeur) : l'Invisibilité tombe après un jet d'attaque.
   "vanish": { breaksOn: ["attack"] },
   // Ravenloft. Protection ésotérique (Gennifer) : Étourdi seulement pour un Mort-vivant.

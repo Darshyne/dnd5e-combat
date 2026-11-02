@@ -192,7 +192,7 @@ describe("contenu livré", () => {
       "guiding-bolt", "gust-of-wind", "hail-of-thorns", "hand-of-healing", "hand-of-ultimate-mercy", "haste", "heal", "healer",
       "healers-kit", "heat-aura", "heat-metal", "heavy-armor-master", "heightened-focus", "heightened-spell", "hellish-rebuke",
       "heroic-warrior", "heroism", "hex", "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-aura", "holy-nimbus",
-      "holy-water", "hunger-of-hadar", "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "ice-storm", "illusory-self",
+      "holy-water", "hunger-of-hadar", "hunters-mark", "hunters-prey", "hypnotic-pattern", "ice-knife", "ice-spear", "ice-storm", "illusory-self",
       "imprisonment", "improved-brutal-strike", "improved-brutal-strike-2", "improved-circle-forms", "improved-cunning-strike", "improved-elemental-fury", "improved-illusions", "improved-war-magic", "improved-warding-flare", "incendiary-cloud",
       "indomitable", "indomitable-might", "innate-sorcery", "insect-plague", "inspiring-smite", "instinctive-pounce", "interception",
       "intimidating-presence", "investment-of-the-chain-master", "invisibility", "invoke-duplicity", "jallarzis-storm-of-radiance", "jolt-to-life", "jump",

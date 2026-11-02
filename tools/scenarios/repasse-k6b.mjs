@@ -85,5 +85,22 @@ export default {
       checked = true;
     }
     ctx.expect(checked, "l'Ennemi touche le Lanceur (20 essais au plus)");
+
+    // Fuite toxique (Yochlol, contenu) : touché, la Réaction est prise.
+    await lend(caster, `${MM}.mmYochlol0000000.Item.mmToxicEscape000`);
+    checked = false;
+    for ( let i = 0; (i < 20) && !checked; i++ ) {
+      await ctx.setHp(caster, casterHp);
+      await pause(300);
+      const u = await ctx.use({ tokenId: enemy.id, itemId: club.id, activityType: "attack", targetTokenIds: [caster.id], rollDamage: true,
+        usageConfig: { [MODULE_ID]: { autoReact: "first" } } });
+      const r = await ctx.settle(u.usageMessageId, { timeoutMs: 45000 }).catch(() => null);
+      const entry = r?.targets?.find(t => t.name === "Lanceur");
+      if ( entry?.hit !== true ) continue;
+      await pause(2500);
+      ctx.expect((entry.halved === true) && /Toxic|toxique/i.test(entry.reaction ?? ""), `touché : la Fuite toxique est prise, dégâts divisés par deux (${entry.reaction ?? "aucune"}, moitié : ${entry.halved})`);
+      checked = true;
+    }
+    ctx.expect(checked, "l'Ennemi touche le Lanceur pour la Fuite toxique (20 essais au plus)");
   }
 };

@@ -60,6 +60,15 @@ export const MONSTERS = Object.freeze({
   // Lance de glace (Diable gelé) : ni action Bonus ni Réaction (lue dans le texte), Vitesse −10 ft jusqu'à la fin de son prochain tour ;
   // « se déplacer ou agir, pas les deux » reste au MJ.
   "ice-spear": { noBonus: "273sG6C6R7qUcL2v", effectChanges: { "273sG6C6R7qUcL2v": [{ key: "system.attributes.movement.walk", type: "add", value: "-10" }] } },
+  // Réactions de monstres dont le déclencheur ne suffit pas (§334) — l'effet de la réponse avec les briques de Réaction.
+  // Fuite toxique (Yochlol) : la moitié des dégâts du coup, puis la sauvegarde du nuage ; la téléportation reste au MJ.
+  "toxic-escape": { triggers: [{ on: "isHit", do: [{ type: "use", activity: "f6zHSW2bzTmUO9oR" }, { type: "halve" }] }] },
+  // Prévoyance limitée (Cyclope sentinelle) : Désavantage au jet d'attaque contre lui.
+  "limited-foresight": { triggers: [{ on: "isAttacked", do: [{ type: "use", activity: "oNKuSb8WamcMktfk" }, { type: "disadvantage" }] }] },
+  // Ravenloft. Parer le coup (Laurie Weathermay) : les dégâts du coup réduits par le jet de l'activité.
+  "deflect-blow": { triggers: [{ on: "isHit", do: [{ type: "use", activity: "qvWn7DuBd5mmvZ1M" }, { type: "reduce" }] }] },
+  // Réactif (Marilith) : une Réaction à chaque tour du combat.
+  "reactive": { reactions: { perRound: 20 } },
   // Disparition (Feu follet, Esprit frappeur) : l'Invisibilité tombe après un jet d'attaque.
   "vanish": { breaksOn: ["attack"] },
   // Ravenloft. Protection ésotérique (Gennifer) : Étourdi seulement pour un Mort-vivant.

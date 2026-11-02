@@ -447,3 +447,15 @@ export function monsterBasicActions(html, activities=[]) {
   const rule = (actions.length === 1) ? actions[0] : (/\bor\b/i.test(m[1]) ? { choose: actions } : actions);
   return { [utility.id]: rule };
 }
+
+/**
+ * K12 (SPEC §333) : « each creature in a 30-foot Emanation … that can see the doppelganger » (Visage troublant, Visage horrifiant,
+ * Chair qui se défait) → `targets.unaffectedIf: { "target.seesSource": false }` : une créature qui ne voit pas la source n'est pas
+ * affectée. Seulement pour une capacité à sauvegarde.
+ */
+export function monsterSightGate(html, activities=[]) {
+  if ( !activities.some(a => a.type === "save") ) return null;
+  const text = plainText(html);
+  if ( !text || (segments(text).length > 1) ) return null;
+  return /\b(?:each|any)\b[^.:]{0,120}\bthat can see (?:the \S|it\b|him\b|her\b)/i.test(text) ? { "target.seesSource": false } : null;
+}

@@ -128,7 +128,7 @@ export function stats({ tokenId }) {
   const rolls = actor?.system?.rolls ?? {};
   const attack = kind => rolls.attack?.[kind]?.bonus ?? "";
   return {
-    ac: a.ac?.value ?? null, hp: { value: a.hp?.value ?? null, max: a.hp?.max ?? null, tempmax: a.hp?.tempmax ?? 0 },
+    ac: a.ac?.value ?? null, exhaustion: Number(a.exhaustion) || 0, hp: { value: a.hp?.value ?? null, max: a.hp?.max ?? null, tempmax: a.hp?.tempmax ?? 0 },
     speed: Object.fromEntries(Object.entries(a.movement ?? {}).filter(([, v]) => typeof v === "number")),
     // dnd5e 6 range les vitesses préparées sous `movement.speeds` (§295 : Forme gazeuse).
     speeds: { ...(a.movement?.speeds ?? {}) },

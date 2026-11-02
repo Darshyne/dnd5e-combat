@@ -16,7 +16,7 @@ import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { monsterChoice, monsterDeaths, monsterEndings, monsterPushes, monsterReactions, monsterRecurring, monsterTypeGate, monsterAdvantage, monsterSaveDamage, monsterMissingStatus, monsterNoOpportunity,
-  monsterBasicActions } from "../core/monster-text.mjs";
+  monsterBasicActions, monsterSightGate } from "../core/monster-text.mjs";
 import { readDrain, drains } from "../core/drain.mjs";
 
 export const OVERRIDES_SETTING = "contentOverrides";
@@ -160,7 +160,10 @@ function textLayer(item) {
   if ( basics ) recurringRest.basicActions = basics;
   if ( drains(readDrain(html)) ) recurringRest.drain = true;
   // K9 (§330) : porte de type (« Constructs and Undead succeed automatically »).
-  const gate = monsterTypeGate(html);
+  const typeGate = monsterTypeGate(html);
+  // K12 (§333) : « that can see the X » — une créature qui ne voit pas la source n'est pas affectée.
+  const sight = monsterSightGate(html, acts);
+  const gate = (typeGate && sight) ? { unaffectedIf: { any: [typeGate.unaffectedIf, sight] } } : (typeGate ?? (sight ? { unaffectedIf: sight } : null));
   const layer = (allTriggers.length || Object.keys(deaths).length || choice || Object.keys(restrictions).length || Object.keys(recurringRest).length || gate)
     ? { ...(allTriggers.length ? { triggers: allTriggers } : {}), ...deaths, ...restrictions, ...recurringRest, ...(choice ? { choice } : {}), ...(gate ? { targets: gate } : {}) } : null;
   if ( textCache.size > 2000 ) textCache.clear();

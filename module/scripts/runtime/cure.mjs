@@ -148,7 +148,23 @@ async function onPostUseAll(activity, usageConfig, results) {
   }
 }
 
+/**
+ * K12 (§333) : un effet d'item qui porte l'état « exhaustion » (Maléfice déformant, Poids des années, Boire la sapience) ne monte pas le
+ * niveau d'Épuisement dans dnd5e 6 — seul son effet propre (`dnd5eexhaustion0`) suit `system.attributes.exhaustion`. Le MJ actif
+ * monte le niveau d'un cran (6 au plus) et retire l'effet de l'item, ou seulement son état s'il porte d'autres changements.
+ */
+async function onExhaustionEffect(effect) {
+  const actor = effect.parent;
+  if ( !(actor instanceof Actor) || (effect.id === "dnd5eexhaustion0") || !effect.statuses?.has("exhaustion") ) return;
+  const level = Number(actor.system?.attributes?.exhaustion) || 0;
+  if ( effect.changes?.length ) await effect.update({ statuses: [...effect.statuses].filter(s => s !== "exhaustion") });
+  else await effect.delete();
+  await actor.update({ "system.attributes.exhaustion": Math.min(6, level + 1) });
+  log(`${actor.name}: ${effect.name} — Exhaustion ${level} → ${Math.min(6, level + 1)}`);
+}
+
 export function registerCure() {
   CONFIG.queries[CURE_QUERY] = handleCure;
   route("dnd5e.postUseActivity", onPostUseAll, { label: "potion: conditions not removed" });
+  route("createActiveEffect", onExhaustionEffect, { executor: true, label: "Exhaustion: level not raised by an item effect" });
 }

@@ -203,7 +203,7 @@ describe("contenu livré", () => {
       "medium-armor-master", "melfs-acid-arrow", "menacing-attack", "mind-sliver", "mind-spike", "mindless-rage", "minor-illusion",
       "mirror-image", "mislead", "mist-walker", "misty-escape", "misty-form", "misty-step", "modify-memory", "monks-focus", "moonbeam", "moonlight-step",
       "mordenkainens-faithful-hound", "mordenkainens-magnificent-mansion", "mordenkainens-sword", "natures-ward", "natures-wrath",
-      "necrotic-husk", "nimble-escape", "observant", "oil", "open-hand-technique", "otilukes-freezing-sphere", "otilukes-resilient-sphere",
+      "necrotic-husk", "nimble-escape", "noxious-miasma", "observant", "oil", "open-hand-technique", "otilukes-freezing-sphere", "otilukes-resilient-sphere",
       "ottos-irresistible-dance", "pack-tactics", "pact-of-the-blade", "pact-of-the-chain", "parry", "parry-maneuver", "pass-without-trace",
       "path-to-the-grave", "perfect-focus", "persistent-rage", "phantasmal-creatures", "phantasmal-force", "phantasmal-killer", "phantom-steed",
       "physicians-touch", "piercer", "plant-growth", "poisoner", "polearm-master", "polymorph", "portent", "potent-cantrip",

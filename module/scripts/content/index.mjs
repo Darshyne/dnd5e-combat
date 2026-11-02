@@ -25,6 +25,7 @@ import { BANISHES, ENDS_WHEN, WARDS_CONDITIONS } from "./endings.mjs";
 import { DAMAGE_SHIELDS, HIT_DICE_HEALS } from "./defenses.mjs";
 import { BREAKS_ON, NO_REACTIONS, ACTION_OR_BONUS, SINGLE_ATTACK, SPELL_FAILURES, NO_ATTACKS_OR_SPELLS, NO_SPELLS, KNOWN_TO_ORIGIN, CONTROL, CURES, FIGHTING_ADVANTAGE, SAVED_EFFECTS, SIZE_CHANGES, ORDER_LISTS, FLEE_ON_FAILED_SAVE } from "./spells.mjs";
 import { RAVENLOFT } from "./ravenloft.mjs";
+import { MONSTERS } from "./monsters.mjs";
 import { ROGUE } from "./rogue.mjs";
 import { FIGHTER } from "./fighter.mjs";
 import { BARBARIAN } from "./barbarian.mjs";
@@ -72,7 +73,7 @@ export const BRICKS = Object.freeze([
  * règles multiples (§37), les objets (§49).
  */
 export const ENTRY_TABLES = Object.freeze([
-  FLEE_ON_FAILED_SAVE, CONTROL, RAVENLOFT, ROGUE, FIGHTER, BARBARIAN, CANTRIPS, MONK, PALADIN, RANGER, CLERIC, WIZARD, WARLOCK,
+  FLEE_ON_FAILED_SAVE, CONTROL, RAVENLOFT, MONSTERS, ROGUE, FIGHTER, BARBARIAN, CANTRIPS, MONK, PALADIN, RANGER, CLERIC, WIZARD, WARLOCK,
   DRUID, SPECIES, FEATS, SORCERER, BARD, SPELL_RULES, GEAR
 ]);
 

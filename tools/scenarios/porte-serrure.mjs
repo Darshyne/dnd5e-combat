@@ -24,6 +24,8 @@ export default {
     const fighter = await ctx.token("Guerrier").catch(() => null);
     const zombi = await ctx.token("Zombi").catch(() => null);
     if ( !fighter ) { ctx.log("Guerrier absent : non applicable"); return; }
+    // O9d (§357) : crocheter demande des outils de voleur — le Guerrier en reçoit pour le scénario.
+    await ctx.ensureItem(fighter, "Compendium.dnd-players-handbook.equipment.Item.phbtulThievesToo");
     const grid = await ctx.gridSize();
     const home = await ctx.position(fighter);
     const doorX = home.x + (4 * grid);

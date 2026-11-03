@@ -53,6 +53,8 @@ describe("serrure d'une porte (§244)", () => {
       { method: "key", spent: false }, { method: "pick", spent: false }, { method: "force", spent: false }
     ]);
     expect(lockChoices(lock, { hasKey: false }).map(c => c.method)).toEqual(["pick", "force"]);
+    // O9d (§357) : sans outils de voleur, pas de crochetage.
+    expect(lockChoices(lock, { hasKey: false, hasTools: false }).map(c => c.method)).toEqual(["force"]);
     expect(lockChoices(normalizeLock({ unforceable: true }), {}).map(c => c.method)).toEqual(["pick"]);
     expect(lockChoices(normalizeLock({}), { tries: { "Actor.a": ["pick"] }, who: "Actor.a", mode: "once" }))
       .toEqual([{ method: "pick", spent: true }, { method: "force", spent: false }]);

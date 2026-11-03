@@ -470,6 +470,7 @@
   "DND5ECOMBAT.Porte.HorsDatteinte": "Porte hors d'atteinte ce tour-ci.",
   "DND5ECOMBAT.Serrure.AvecCle": "Déverrouiller (clé)",
   "DND5ECOMBAT.Serrure.Essaye": "déjà essayé",
+  "DND5ECOMBAT.Serrure.SansOutils": "{name} n'a pas d'outils de voleur : impossible de crocheter.",
   "DND5ECOMBAT.Serrure.DejaEssaye": "{name} a déjà essayé : le MJ peut remettre les essais à zéro.",
   "DND5ECOMBAT.Serrure.SansMJ": "Aucun MJ connecté pour juger la serrure.",
   "DND5ECOMBAT.Serrure.CrochetageRate": "{name} n'arrive pas à crocheter la serrure.",

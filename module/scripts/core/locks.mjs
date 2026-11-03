@@ -108,12 +108,13 @@ export function recordTry(tries, who, method, mode) {
  * @param {Record<string, string[]>} state.tries
  * @param {string} state.who           Le personnage (son uuid).
  * @param {string} state.mode          Réglage `lockFailure`.
+ * @param {boolean} [state.hasTools]   O9d (§357) : il porte des outils de voleur — sans eux, crocheter n'est pas proposé.
  * @returns {Array<{method: string, spent: boolean}>}  `spent` : essai déjà fait (l'entrée le dit, un clic le rappelle).
  */
-export function lockChoices(lock, { hasKey=false, tries={}, who="", mode="free" }={}) {
+export function lockChoices(lock, { hasKey=false, tries={}, who="", mode="free", hasTools=true }={}) {
   const out = [];
   if ( lock.key && hasKey ) out.push({ method: "key", spent: false });
-  out.push({ method: "pick", spent: alreadyTried(tries, who, "pick", mode) });
+  if ( hasTools ) out.push({ method: "pick", spent: alreadyTried(tries, who, "pick", mode) });
   if ( !lock.unforceable ) out.push({ method: "force", spent: alreadyTried(tries, who, "force", mode) });
   return out;
 }

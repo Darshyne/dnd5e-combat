@@ -96,7 +96,22 @@ export function hasLockTries(wall) {
 export function lockEntriesFor(token, wall) {
   const actor = token?.actor;
   const lock = lockOf(wall);
-  return lockChoices(lock, { hasKey: !!keyItemFor(actor, lock), tries: triesOf(wall), who: triesKey(actor?.uuid), mode: lockFailureMode() });
+  return lockChoices(lock, { hasKey: !!keyItemFor(actor, lock), tries: triesOf(wall), who: triesKey(actor?.uuid), mode: lockFailureMode(),
+    hasTools: hasThievesTools(actor) });
+}
+
+/**
+ * O9d (§357) : « crocheter une serrure » demande des outils de voleur (Manuel des joueurs 2024, Outils de voleur) — un item outil de
+ * base `thief`, ou d'identifiant `thieves-tools`.
+ */
+function hasThievesTools(actor) {
+  return Array.from(actor?.items ?? []).some(i => (i.type === "tool")
+    && ((i.system?.type?.baseItem === "thief") || (i.system?.identifier === "thieves-tools")));
+}
+
+/** O9d (§357) : un Pied-de-biche porté donne l'Avantage aux tests de Force pour forcer (Manuel des joueurs 2024, Pied-de-biche). */
+function hasCrowbar(actor) {
+  return Array.from(actor?.items ?? []).some(i => i.system?.identifier === "crowbar");
 }
 
 /**
@@ -107,7 +122,7 @@ export function lockEntriesFor(token, wall) {
 async function rollFor(actor, method, event) {
   const rolls = await rolledAndShown(() => (method === "pick")
     ? actor.rollToolCheck({ tool: "thief", ability: "dex", event }, { configure: false })
-    : actor.rollSkill({ skill: "ath", ability: "str", event }, { configure: false }));
+    : actor.rollSkill({ skill: "ath", ability: "str", event, ...(hasCrowbar(actor) ? { advantage: true } : {}) }, { configure: false }));
   const total = rolls?.[0]?.total;
   return Number.isFinite(total) ? total : null;
 }
@@ -123,6 +138,10 @@ const tokenUuid = token => token.document?.uuid ?? token.uuid;
 async function attempt(token, wall, method, { event=null }={}) {
   const actor = token?.actor;
   if ( !actor || !mayUse() ) return null;
+  if ( (method === "pick") && !hasThievesTools(actor) ) {
+    ui.notifications.info(loc("Serrure.SansOutils", { name: token.name }));
+    return null;
+  }
   if ( alreadyTried(triesOf(wall), triesKey(actor.uuid), method, lockFailureMode()) ) {
     ui.notifications.info(loc("Serrure.DejaEssaye", { name: token.name }));
     return null;

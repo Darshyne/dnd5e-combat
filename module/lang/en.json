@@ -470,6 +470,7 @@
   "DND5ECOMBAT.Porte.HorsDatteinte": "The door is out of reach this turn.",
   "DND5ECOMBAT.Serrure.AvecCle": "Unlock (key)",
   "DND5ECOMBAT.Serrure.Essaye": "already tried",
+  "DND5ECOMBAT.Serrure.SansOutils": "{name} has no thieves' tools: cannot pick the lock.",
   "DND5ECOMBAT.Serrure.DejaEssaye": "{name} has already tried: the GM can reset the attempts.",
   "DND5ECOMBAT.Serrure.SansMJ": "No GM connected to judge the lock.",
   "DND5ECOMBAT.Serrure.CrochetageRate": "{name} fails to pick the lock.",

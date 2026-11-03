@@ -41,6 +41,7 @@ import { registerBursts } from "./runtime/bursts.mjs";
 import { registerCoatings } from "./runtime/coatings.mjs";
 import { registerGrants } from "./runtime/grants.mjs";
 import { registerFelled } from "./runtime/felled.mjs";
+import { registerWeaponFeed } from "./runtime/weapon-feed.mjs";
 import { registerProjectiles } from "./runtime/projectiles.mjs";
 import { registerAuras } from "./runtime/auras.mjs";
 import { registerEmanations } from "./runtime/emanations.mjs";
@@ -334,6 +335,7 @@ Hooks.once("init", () => {
   gated(registerCoatings);   // §345 : la lame enduite (Dague venimeuse) perd son poison au premier coup qui touche
   gated(registerGrants);   // C12-d : activités données à une autre créature (Souffle du dragon)
   gated(registerFelled);
+  gated(registerWeaponFeed);
   gated(registerZones);
   gated(registerAuras);
   gated(registerEmanations);

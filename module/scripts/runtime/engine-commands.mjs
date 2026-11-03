@@ -13,6 +13,7 @@ import { applyDamageToToken, maximizedHealing } from "../adapter/messages.mjs";
 import { requestSaves, applyEffectsToToken, applyStatusToToken, applyMarkToToken, splitPushes } from "../adapter/saves.mjs";
 import { holds } from "../core/triggers.mjs";
 import { creatureTypeOf, factsFor, originItemOf } from "../adapter/facts.mjs";
+import { isSpellCast } from "../adapter/scrolls.mjs";
 import { removeTransientRegions } from "../adapter/areas.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { askAllocation } from "../adapter/projectiles.mjs";
@@ -159,6 +160,11 @@ export const COMMANDS = {
       if ( healed ) log(`maximum healing for ${entry.token} (${healed.map(d => d.value).join(" + ")})`);
       // Rien à lire sans jet (sauvegarde ou effet seuls : `multiplier` 0, pas de `damageRoll`).
       let rolled = (entry.multiplier > 0) ? (healed ?? deserializeDamages(resolution.damageRoll?.damages ?? [])) : [];
+      // §355 : Demonomicon d'Iggwilv — les dégâts d'un sort du porteur contre un Fiélon sont maximisés.
+      if ( rolled.length && !resolution.plan.heal && spellDamageMaxed(source?.actor ?? activity?.actor, activity, patient) ) {
+        rolled = (await maximizedHealing(damageMessage)) ?? rolled;
+        log(`${activity.item.name}: maximum damage against ${patient?.name}`);
+      }
       // §164 : le type de chaque rayon d'Embruns prismatiques ; deux rayons de dégâts, deux fois les dégâts.
       if ( prism?.types.length ) rolled = prism.types.flatMap(type => rolled.map(d => ({ ...d, type })));
       // §27 : Disciple de la Vie — des PV de plus au soin d'un sort lancé par un emplacement.
@@ -467,4 +473,11 @@ function creaturesAround(center, around, source) {
   const factors = readUnitFactors();
   return (center.parent?.tokens ?? []).filter(t => (t !== center) && (t !== source) && t.actor && !t.hidden && !isObjectToken(t)
     && !t.actor.statuses?.has?.("dead") && (rangeIssue(distanceBetween(center, t), { value: around.radius, units: around.units }, factors) === null));
+}
+
+/** §355 : l'auteur porte-t-il un objet qui maximise les dégâts de ses sorts contre le type de cette créature (`maxSpellDamageVs`) ? */
+function spellDamageMaxed(actor, activity, target) {
+  if ( !actor || !target || !isSpellCast(activity?.item) ) return false;
+  const type = creatureTypeOf(target);
+  return !!type && Array.from(actor.items ?? []).some(i => (contentOf(i).entry?.maxSpellDamageVs ?? []).includes(type));
 }

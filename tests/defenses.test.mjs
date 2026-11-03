@@ -62,3 +62,22 @@ describe("O8d (§347) : défenses contre les attaques à distance", () => {
     expect(validateEntry({ triggers: [{ on: "enemyAttacks", do: [{ type: "intercept" }] }] }).length).toBe(1);
   });
 });
+
+import { weaponFeed } from "../module/scripts/core/defenses.mjs";
+
+describe("§355 : armes qui nourrissent leur porteur", () => {
+  const v = (id, o={}) => ({ id, type: "humanoid", hit: true, critical: false, fell: false, maxHp: 30, ...o });
+  it("Noirtranchant : tombée à 0, tuée et son maximum de PV en PV temporaires ; pas un Mort-vivant", () => {
+    expect(weaponFeed({ devours: true, victims: [v("a", { fell: true }), v("b", { fell: true, type: "undead", maxHp: 90 })] })).toEqual({ tempHp: 30, slain: ["a"] });
+    expect(weaponFeed({ devours: true, victims: [v("a")] })).toEqual({ tempHp: 0, slain: [] });
+  });
+  it("Épée voleuse de vie : 15 sur un critique, pas sur une Créature artificielle", () => {
+    expect(weaponFeed({ critAmount: 15, victims: [v("a", { critical: true })] }).tempHp).toBe(15);
+    expect(weaponFeed({ critAmount: 15, victims: [v("a", { critical: true, type: "construct" })] }).tempHp).toBe(0);
+    expect(weaponFeed({ critAmount: 15, victims: [v("a")] }).tempHp).toBe(0);
+  });
+  it("validation", () => {
+    expect(validateEntry({ devours: true, critFeeds: { amount: 15 }, maxSpellDamageVs: ["fiend"] })).toEqual([]);
+    expect(validateEntry({ devours: 1, critFeeds: { amount: 0 }, maxSpellDamageVs: ["dragonkin"] }).length).toBe(3);
+  });
+});

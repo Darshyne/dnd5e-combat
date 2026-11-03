@@ -106,6 +106,7 @@
   "DND5ECOMBAT.Retour.SortAbsorbe": "{spell} absorbé par {item}",
   "DND5ECOMBAT.Retour.CibleAttiree": "Attaque attirée par le bouclier ({item})",
   "DND5ECOMBAT.Retour.CibleInterceptee": "Attaque interceptée ({item})",
+  "DND5ECOMBAT.Retour.PvTemporaires": "+{n} PV temporaires ({item})",
   "DND5ECOMBAT.Retour.ParcheminIllisible": "Parchemin inintelligible ({item})",
   "DND5ECOMBAT.Retour.ParcheminPerdu": "Le sort s'efface du parchemin ({item})",
   "DND5ECOMBAT.Retour.ChaineTropLoin": "À plus de {distance} {units} de {name}",

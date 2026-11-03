@@ -333,6 +333,12 @@
  *     swornEnemy?: { effect }                   §353 : une attaque à distance avec l'arme contre la cible qui porte cet effet venu
  *                                               d'elle (Arc du serment) — Avantage, abri partiel ou aux trois quarts ignoré, pas de
  *                                               Désavantage à longue portée
+ *     devours?: true                            §355 : une créature (ni Créature artificielle ni Mort-vivant) que l'arme fait tomber à 0 PV est tuée
+ *                                               et son porteur gagne des PV temporaires égaux à son maximum de PV (Noirtranchant)
+ *     critFeeds?: { amount }                    §355 : un coup critique de l'arme sur une créature (ni Créature artificielle ni Mort-vivant)
+ *                                               donne à son porteur ces PV temporaires (Épée voleuse de vie : 15)
+ *     maxSpellDamageVs?: string[]               §355 : l'objet dans l'inventaire, les dégâts des sorts de son porteur contre ces types de
+ *                                               créature sont maximisés (Demonomicon d'Iggwilv : Fiélon)
  *     breaksOn?: ("attack"|"damage"|"spell")[] les effets de l'item cessent quand leur porteur fait un jet d'attaque, inflige des
  *                                               dégâts ou lance un sort (Invisibilité, §16.47)
  *     noReactions?: true                        le porteur d'un effet de l'item ne peut pas prendre de Réaction (Tentacules de

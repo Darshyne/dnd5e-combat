@@ -61,3 +61,23 @@ export function attractorOf(bearers) {
   const near = (bearers ?? []).filter(b => b.within && Number.isFinite(b.distance)).sort((a, b) => a.distance - b.distance);
   return near[0]?.id ?? null;
 }
+
+/** §355 : les types de créature dont une arme ne se nourrit pas (« sauf une Créature artificielle ou un Mort-vivant »). */
+const SOULLESS = Object.freeze(["construct", "undead"]);
+
+/**
+ * §355 : ce qu'une attaque de l'arme rapporte à son porteur — `devours` (Noirtranchant : PV temporaires égaux au maximum de PV de la
+ * créature qu'elle fait tomber à 0, et la créature est tuée) ; `critAmount` (Épée voleuse de vie : ces PV temporaires sur un coup
+ * critique). Les PV temporaires ne se cumulent pas : la plus forte valeur. Rend `{ tempHp, slain }` (ids des victimes tuées).
+ * @param {{devours?: boolean, critAmount?: number, victims: Array<{id: string, type: string|null, hit: boolean, critical: boolean, fell: boolean, maxHp: number}>}} data
+ */
+export function weaponFeed({ devours=false, critAmount=0, victims=[] }) {
+  let tempHp = 0;
+  const slain = [];
+  for ( const v of victims ) {
+    if ( SOULLESS.includes(v.type) ) continue;
+    if ( devours && v.fell ) { slain.push(v.id); tempHp = Math.max(tempHp, Number(v.maxHp) || 0); }
+    if ( (critAmount > 0) && v.hit && v.critical ) tempHp = Math.max(tempHp, critAmount);
+  }
+  return { tempHp, slain };
+}

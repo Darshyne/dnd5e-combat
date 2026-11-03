@@ -64,6 +64,12 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   if ( ("swornEnemy" in entry) && !(isObject(entry.swornEnemy) && isId(entry.swornEnemy.effect) && (Object.keys(entry.swornEnemy).length === 1)) ) {
     errors.push(`${at}swornEnemy: { effect: effect id }`);
   }
+  // §355 : armes qui nourrissent leur porteur (Noirtranchant, Épée voleuse de vie) ; dégâts de sort maximisés contre des types (Demonomicon).
+  if ( ("devours" in entry) && (entry.devours !== true) ) errors.push(`${at}devours: true or absent`);
+  if ( ("critFeeds" in entry) && !(isObject(entry.critFeeds) && Number.isInteger(entry.critFeeds.amount) && (entry.critFeeds.amount > 0)
+    && (Object.keys(entry.critFeeds).length === 1)) ) errors.push(`${at}critFeeds: { amount: positive integer }`);
+  if ( ("maxSpellDamageVs" in entry) && !(Array.isArray(entry.maxSpellDamageVs) && entry.maxSpellDamageVs.length
+    && entry.maxSpellDamageVs.every(t => CREATURE_TYPES.includes(t))) ) errors.push(`${at}maxSpellDamageVs: non-empty list of creature types`);
   if ( "choice" in entry ) validateChoice(entry.choice, `${at}choice`, errors);
   if ( "targets" in entry ) validateTargets(entry.targets, `${at}targets`, facts, errors);
   if ( "trace" in entry ) {

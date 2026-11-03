@@ -277,7 +277,13 @@ export const ITEM_FIXES = Object.freeze({
   "spellguard-shield": { saveAdvantage: ["magic"] },
   "robe-of-the-archmagi": { saveAdvantage: ["magic"] },
   "scarab-of-protection": { saveAdvantage: ["magic"] },
-  "ebonbane": { saveAdvantage: ["magic"] },
+  // O9b (§355) : Fléau d'ébène — « quand vous touchez un Céleste ou un Humanoïde, l'attaque inflige aussi 3d6 nécrotiques » ; la donnée les
+  // mettait sur chaque coup : retirés de l'attaque, ajoutés au toucher selon le type.
+  "ebonbane": {
+    saveAdvantage: ["magic"],
+    dataFixes: [{ path: "system.activities.SDii9JGqHIjeOxdv.damage.parts", from: [{ number: 3, denomination: 6, types: ["necrotic"] }], value: [] }],
+    ...BANE("ebonbane", ["celestial", "humanoid"], "3d6", "necrotic")
+  },
   // « Avantage aux sauvegardes contre l'état Empoisonné ».
   "necklace-of-adaptation": { saveAdvantage: ["poisoned"] },
   "periapt-of-health": { saveAdvantage: ["poisoned"] },
@@ -474,6 +480,12 @@ export const ITEM_FIXES = Object.freeze({
   // O8h (§351) : armes de siège en tir en cloche — « ne peut pas toucher une cible à 18 m ou moins de lui » (le Trébuchet plus haut ;
   // le tir par-dessus les murs reste au MJ).
   "mangonel": { minRange: { value: 60, units: "ft" } },
+  // O9b (§355) : Noirtranchant — « quand vous faites tomber une créature à 0 PV, l'épée la tue et dévore son âme (sauf Créature artificielle
+  // ou Mort-vivant) ; vous gagnez des PV temporaires égaux à son maximum de PV » ; Épée voleuse de vie — « sur un 20, 15 nécrotiques en plus
+  // (la donnée) et vous gagnez autant de PV temporaires ». Demonomicon d'Iggwilv — « les dégâts de vos sorts contre un Fiélon : le maximum ».
+  "blackrazor": { devours: true },
+  "sword-of-life-stealing-enchanted": { critFeeds: { amount: 15 } },
+  "demonomicon-of-iggwilv": { maxSpellDamageVs: ["fiend"] },
   // O9a (§354) : poisons et pièges — Torpeur : « la Vitesse est divisée par deux tant qu'elle est Empoisonnée ainsi » ; Pierre roulante :
   // « sur un échec, À terre ».
   "torpor": { effectChanges: { "4fBr9e0P9LVogtyq": [{ key: "system.attributes.movement.walk", type: "multiply", value: 0.5 }] } },

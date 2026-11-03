@@ -165,13 +165,21 @@ function selfTarget(message) {
   return token?.actor ? [{ token: token.uuid, actor: token.actor.uuid, name: token.name, ac: null }] : [];
 }
 
+/** §345 : les enchantements appliqués à l'item depuis ce profil (`flags.dnd5e.enchantmentProfile`, dnd5e activity/enchant.mjs:165). */
+export function enchantedBy(item, profile) {
+  return Array.from(item?.effects?.values?.() ?? []).filter(e => !e.disabled && (e.getFlag?.("dnd5e", "enchantmentProfile") === profile));
+}
+
 /**
  * La sauvegarde qu'une attaque qui touche impose : celle que l'item déclare, sinon la sauvegarde sœur que la forme
  * de l'item annonce (M2, Griffe de la Goule).
  */
 function chainedSave(activity) {
   const item = activity.item;
-  const id = item ? (contentOf(item).entry?.onHit?.save ?? siblingSaveOf(activitiesOf(item), item.system?.description?.value ?? "")) : null;
+  const onHit = item ? contentOf(item).entry?.onHit : null;
+  // §345 : une sauvegarde qui ne vaut que sous un enchantement de l'item (la lame enduite de la Dague venimeuse).
+  if ( onHit?.whileEnchanted && !enchantedBy(item, onHit.whileEnchanted).length ) return null;
+  const id = item ? (onHit?.save ?? siblingSaveOf(activitiesOf(item), item.system?.description?.value ?? "")) : null;
   const sibling = id ? activity.item.system.activities?.get(id) : null;
   if ( sibling?.type !== "save" ) return null;
   const save = saveOf(sibling);

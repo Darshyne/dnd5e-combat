@@ -38,6 +38,7 @@ import { registerLingering } from "./runtime/lingering.mjs";
 import { registerPassengers } from "./runtime/passengers.mjs";
 import { registerBanish } from "./runtime/banish.mjs";
 import { registerBursts } from "./runtime/bursts.mjs";
+import { registerCoatings } from "./runtime/coatings.mjs";
 import { registerGrants } from "./runtime/grants.mjs";
 import { registerFelled } from "./runtime/felled.mjs";
 import { registerProjectiles } from "./runtime/projectiles.mjs";
@@ -330,6 +331,7 @@ Hooks.once("init", () => {
   gated(registerStorm);   // §70 : Appel de la foudre, le dé de l'orage déjà là
   gated(registerSelfAreas);   // §47 : une zone « sur soi » se pose d'office sur le lanceur
   gated(registerBursts);
+  gated(registerCoatings);   // §345 : la lame enduite (Dague venimeuse) perd son poison au premier coup qui touche
   gated(registerGrants);   // C12-d : activités données à une autre créature (Souffle du dragon)
   gated(registerFelled);
   gated(registerZones);

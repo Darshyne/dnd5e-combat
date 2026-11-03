@@ -44,3 +44,18 @@ export function counterSucceeds(plan, total) {
   if ( plan?.auto ) return true;
   return Number.isFinite(total) && Number.isFinite(plan?.dc) && (total >= plan.dc);
 }
+
+/**
+ * §344 (lot O8) : absorber un sort qui ne vise que le porteur (Sceptre d'absorption, Bâton du thaumaturge) — « un sort qui ne cible que
+ * vous et ne produit pas de zone d'effet ». Un sort d'au moins le niveau 1 (l'énergie stockée, ou les charges gagnées, valent son niveau),
+ * une seule cible, pas de zone ; un objet qui paie par niveau (`costs` : le Sceptre) doit avoir assez d'utilisations.
+ * L'activité de l'objet est jouée au niveau du sort : `scaling` = niveau − 1 (consommation « amount » de dnd5e : une par niveau).
+ * @param {{castLevel: number, targets: number, area: boolean, costs?: boolean, usesLeft?: number|null}} data
+ * @returns {{scaling: number}|null}
+ */
+export function absorbPlan({ castLevel, targets, area, costs=false, usesLeft=null }={}) {
+  const cast = level(castLevel) ?? 0;
+  if ( (cast < 1) || (targets !== 1) || area ) return null;
+  if ( costs && (usesLeft !== null) && (usesLeft < cast) ) return null;
+  return { scaling: cast - 1 };
+}

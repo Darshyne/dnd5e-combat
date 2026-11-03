@@ -24,6 +24,7 @@ import { tallyAfter } from "../core/tally.mjs";
 import { askHitReactions, windowIsDamaged, windowIsMissed, windowEnemyAttacked, askDamageGuardians } from "./reactions.mjs";
 import { markConcentrationBreaker, resistanceIgnoredBy, fortifiedExtra } from "./feats.mjs";
 import { liftToken } from "./elevation-spells.mjs";
+import { requestSave } from "./neighbours.mjs";
 import { duplicateEffectsOf } from "../adapter/duplicates.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
 import { log, loc, waitForDice, notice } from "./shared.mjs";
@@ -275,6 +276,12 @@ export const COMMANDS = {
           await liftToken(target, step, region);
         }
         else if ( step.type === "status" ) {
+          // §345 : l'état seulement sur une sauvegarde ratée (Tueuse de géants), lancée ici, sans fenêtre.
+          if ( step.save && target?.actor ) {
+            const saved = await requestSave(target.actor, { ability: step.save.ability, dc: step.save.dc, flavor: step.name ?? null });
+            log(`${step.name ?? "condition"}: ${target.name} ${step.save.ability} saving throw ${saved?.total ?? "?"} vs DC ${step.save.dc}: ${saved?.success ? "succeeded" : "failed"}`);
+            if ( saved?.success !== false ) continue;
+          }
           const uuid = await applyStatusToToken(carrier, entry.token, step.status);
           if ( uuid ) { effects.push(uuid); log(`${step.name ?? "condition"}: ${target?.name} receives "${step.status}"`); }
         }

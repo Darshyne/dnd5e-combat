@@ -47,6 +47,9 @@ function validateStep(step, at, errors) {
     if ( ("follow" in step) && (typeof step.follow !== "boolean") ) errors.push(`${at}.follow: boolean`);
   }
   if ( (step.type === "status") && ((typeof step.status !== "string") || !step.status) ) errors.push(`${at}.status: condition required`);
+  // §345 : `save` — l'état seulement si la cible rate cette sauvegarde (Tueuse de géants : Force DD 15 ou À terre).
+  if ( (step.type === "status") && ("save" in step) && !(isObject(step.save) && (typeof step.save.ability === "string") && /^[a-z]{3}$/.test(step.save.ability)
+    && Number.isFinite(step.save.dc) && (step.save.dc > 0)) ) errors.push(`${at}.save: { ability, dc }`);
   if ( (step.type === "lift") && !(Number.isFinite(step.height) && (step.height > 0) && (typeof step.units === "string") && step.units) ) errors.push(`${at}.height, units: elevation required`);
   // §86 : riposte par une sauvegarde — vers l'attaquant, une activité de l'item.
   if ( step.type === "save" ) {
@@ -138,7 +141,9 @@ export function validateTrigger(declaration, at, facts, errors) {
       // §301 : `reduce` aussi aux fenêtres de chute (Chute ralentie), comme `cancel` (Feuille morte).
       const fallReaction = d.on.some(m => FALL_WINDOWS.includes(m)) && d.do.some(x => isObject(x) && (x.type === "use"));
       if ( isObject(s) && ["halve", "uncrit", "reduce", "miss", "penalty"].includes(s.type) && !((s.type === "penalty") && preAttackReaction) && !((s.type === "reduce") && fallReaction) && (!d.on.some(m => HIT_WINDOWS.includes(m)) || !d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "${s.type}" requires the isHit or allyIsHit moment and a "use" reaction`);
-      if ( isObject(s) && (s.type === "cancel") && !fallReaction ) errors.push(`${at}.do: "cancel" requires the falls or allyFalls moment and a "use" reaction`);
+      // §344 : `cancel` aussi à la fenêtre `isTargeted` (Sceptre d'absorption : le sort qui vise le porteur est annulé).
+      const targetedReaction = d.on.includes("isTargeted") && d.do.some(x => isObject(x) && (x.type === "use"));
+      if ( isObject(s) && (s.type === "cancel") && !fallReaction && !targetedReaction ) errors.push(`${at}.do: "cancel" requires the falls, allyFalls or isTargeted moment and a "use" reaction`);
       if ( isObject(s) && (s.type === "absorb") && !(d.on.includes("allyIsDamaged") && d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "absorb" requires the allyIsDamaged moment and a "use" reaction`);
       if ( isObject(s) && (s.type === "interpose") && !(d.on.includes("allyIsDamaged") && d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "interpose" requires the allyIsDamaged moment and a "use" reaction`);
       if ( isObject(s) && (s.type === "bonus") && !(d.on.includes("allyAttacks") && preAttackReaction) ) errors.push(`${at}.do: "bonus" requires the allyAttacks moment and a "use" reaction`);

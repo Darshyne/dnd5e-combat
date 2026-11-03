@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { castLevelOf, counterPlan, counterSucceeds } from "../module/scripts/core/counter.mjs";
+import { castLevelOf, counterPlan, counterSucceeds, absorbPlan } from "../module/scripts/core/counter.mjs";
 import { validateEntry, mergeEntries } from "../module/scripts/core/content.mjs";
 const facts = { "target.seesSource": true };
 
@@ -39,5 +39,41 @@ describe("§66 : contresort à la manière de 2014", () => {
     expect(validateEntry({ counter: { level: 5, dc: 12 } }, { facts })[0]).toMatch(/counter/);
     expect(validateEntry({ counter: true }, { facts })[0]).toMatch(/counter/);
     expect(mergeEntries([{ counter: { level: 3 } }, { counter: { level: 5 } }]).counter).toEqual({ level: 5 });
+  });
+});
+
+describe("§344 : absorber un sort qui ne vise que le porteur", () => {
+  it("un sort de niveau 1 ou plus, une seule cible, sans zone : l'activité est jouée au niveau du sort", () => {
+    expect(absorbPlan({ castLevel: 3, targets: 1, area: false })).toEqual({ scaling: 2 });
+    expect(absorbPlan({ castLevel: 1, targets: 1, area: false })).toEqual({ scaling: 0 });
+  });
+  it("ni tour de magie, ni plusieurs cibles, ni zone", () => {
+    expect(absorbPlan({ castLevel: 0, targets: 1, area: false })).toBeNull();
+    expect(absorbPlan({ castLevel: 2, targets: 2, area: false })).toBeNull();
+    expect(absorbPlan({ castLevel: 2, targets: 1, area: true })).toBeNull();
+  });
+  it("le Sceptre doit pouvoir stocker l'énergie ; le Bâton gagne des charges sans plafond lu ici", () => {
+    expect(absorbPlan({ castLevel: 5, targets: 1, area: false, costs: true, usesLeft: 4 })).toBeNull();
+    expect(absorbPlan({ castLevel: 4, targets: 1, area: false, costs: true, usesLeft: 4 })).toEqual({ scaling: 3 });
+    expect(absorbPlan({ castLevel: 9, targets: 1, area: false, costs: false, usesLeft: 0 })).toEqual({ scaling: 8 });
+  });
+  it("l'étape cancel est permise à la fenêtre isTargeted avec une réaction", () => {
+    expect(validateEntry({ triggers: [{ on: "isTargeted", do: [{ type: "use", activity: "abcdefghijklmnop" }, { type: "cancel" }] }] })).toEqual([]);
+    expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "use", activity: "abcdefghijklmnop" }, { type: "cancel" }] }] }).length).toBeGreaterThan(0);
+  });
+});
+
+describe("§345 : sauvegarde au toucher sous enchantement, état après sauvegarde", () => {
+  it("onHit.whileEnchanted et spends", () => {
+    expect(validateEntry({ onHit: { save: "abcdefghijklmnop", whileEnchanted: "ponmlkjihgfedcba", spends: true } })).toEqual([]);
+    expect(validateEntry({ onHit: { save: "abcdefghijklmnop", spends: true } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ onHit: { save: "abcdefghijklmnop", whileEnchanted: "court" } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ onHit: { save: "abcdefghijklmnop", autre: 1 } }).length).toBeGreaterThan(0);
+  });
+  it("étape status avec save", () => {
+    const entry = save => ({ triggers: [{ on: "hit", do: [{ type: "status", status: "prone", save }] }] });
+    expect(validateEntry(entry({ ability: "str", dc: 15 }))).toEqual([]);
+    expect(validateEntry(entry({ ability: "force", dc: 15 })).length).toBeGreaterThan(0);
+    expect(validateEntry(entry({ ability: "str" })).length).toBeGreaterThan(0);
   });
 });

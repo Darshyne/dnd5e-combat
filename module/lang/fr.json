@@ -102,6 +102,7 @@
   "DND5ECOMBAT.Altitude.SansVitesse": "{name} ne peut pas se déplacer ainsi ({mode}) : sa fiche n'en a pas la vitesse.",
   "DND5ECOMBAT.Altitude.VitesseAccordee": "{mode} (accordé par le moteur)",
   "DND5ECOMBAT.Retour.SortRate": "{spell} échoue",
+  "DND5ECOMBAT.Retour.SortAbsorbe": "{spell} absorbé par {item}",
   "DND5ECOMBAT.Retour.ChaineTropLoin": "À plus de {distance} {units} de {name}",
   "DND5ECOMBAT.Retour.Altitude.Accordee": "{mode} accordé",
   "DND5ECOMBAT.Altitude.BetterLevels": "dnd5e-combat : le réglage « Set elevation on level change » de Baileywiki Better Levels est actif. Il ramène le token au bas du niveau à chaque changement de niveau, ce qui défait « Modes de déplacement et élévation » (un token qui vole et change d'étage est reposé au sol). Désactivez-le : le moteur pose déjà le token au sol du nouveau niveau, selon son mode.",

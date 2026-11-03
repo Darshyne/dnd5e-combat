@@ -102,6 +102,7 @@
   "DND5ECOMBAT.Altitude.SansVitesse": "{name} cannot move this way ({mode}): its sheet has no such speed.",
   "DND5ECOMBAT.Altitude.VitesseAccordee": "{mode} (granted by the engine)",
   "DND5ECOMBAT.Retour.SortRate": "{spell} fails",
+  "DND5ECOMBAT.Retour.SortAbsorbe": "{spell} absorbed by {item}",
   "DND5ECOMBAT.Retour.ChaineTropLoin": "More than {distance} {units} from {name}",
   "DND5ECOMBAT.Retour.Altitude.Accordee": "{mode} granted",
   "DND5ECOMBAT.Altitude.BetterLevels": "dnd5e-combat: Baileywiki Better Levels' \"Set elevation on level change\" setting is on. It puts a token back at the bottom of its level on every level change, which undoes \"Movement modes and elevation\" (a flying token changing floors is set back on the ground). Turn it off: the engine already puts the token on the new level's ground, according to its mode.",

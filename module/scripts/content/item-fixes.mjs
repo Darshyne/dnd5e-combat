@@ -366,7 +366,9 @@ export const ITEM_FIXES = Object.freeze({
   // contre À terre : lot O5c) ; Vengeresse sacrée : « 2d10 radiants » contre un Fiélon ou un Mort-vivant ; Hache du bourreau : « 2d6
   // tranchants » contre un Humanoïde (les PV temporaires : au MJ).
   "dragon-slayer-enchanted": BANE("dragon-slayer", ["dragon"], "3d6", "weapon", true),
-  "giant-slayer-enchanted": BANE("giant-slayer", ["giant"], "2d6", "weapon", true),
+  // §345 : « …et doit réussir une sauvegarde de Force DD 15 ou tomber À terre » (aucune activité de sauvegarde dans la donnée).
+  "giant-slayer-enchanted": { triggers: [...BANE("giant-slayer", ["giant"], "2d6", "weapon", true).triggers,
+    { on: "hit", if: { "target.creatureType": "giant" }, do: [{ type: "status", status: "prone", save: { ability: "str", dc: 15 } }] }] },
   "holy-avenger-enchanted": BANE("holy-avenger", ["fiend", "undead"], "2d10", "radiant", true),
   "executioners-axe-enchanted": BANE("executioners-axe", ["humanoid"], "2d6", "slashing", true),
   // Armes qui portent leur propre identifiant — Masse d'anéantissement : « 2d6 radiants » contre un Fiélon ou un Mort-vivant ; Épée
@@ -383,6 +385,10 @@ export const ITEM_FIXES = Object.freeze({
   // une charge par proposition (l'activité de dégâts de la donnée coûtait une action).
   "staff-of-striking": { hitRider: { damage: "sviFeLqVM4b4jHvc", item: "staff-of-striking" } },
   // Anneau du bélier : « si l'attaque touche, la cible est repoussée de 1,50 m » (par charge dépensée : une charge, 1,50 m).
+  // Dague venimeuse (§345) : « une action Bonus pour enduire la lame ; le poison reste 1 minute ou jusqu'à ce qu'une attaque avec cette
+  // arme touche : sauvegarde de Constitution DD 15 ou 2d10 poison et Empoisonné » — la sauvegarde « Poison Save » n'est imposée que sous
+  // l'enchantement « Poison Coat », que le coup qui touche retire.
+  "dagger-of-venom": { onHit: { save: "VHStJ3hZGwHAHcUQ", whileEnchanted: "f0WvHHwmTfdkF3OP", spends: true } },
   "ring-of-the-ram": { triggers: [{ on: "hit", do: [{ type: "move", mode: "push", distance: 5, units: "ft" }] }] },
 
   /* ---- O6 (§342) : réactions d'objets (portés, et harmonisés s'il le faut : adapter/triggers.mjs) ---- */
@@ -397,8 +403,12 @@ export const ITEM_FIXES = Object.freeze({
   "gloves-of-missile-snaring": {
     triggers: [{ on: "isHit", if: { "activity.isWeapon": true, "activity.isMelee": false }, do: [{ type: "use", activity: "x4IPCLTGbrUwWZxn" }, { type: "reduce" }] }]
   },
-  // (Bâton du thaumaturge : l'absorption de sort, comme celle du Sceptre d'absorption, demande d'annuler un sort qui vise le porteur : lot O8.)
-  "staff-of-the-magi": { saveAdvantage: ["magic"] },
+  // Bâton du thaumaturge : « une Réaction quand une autre créature lance un sort qui ne cible que vous : le bâton absorbe sa magie, annule
+  // son effet et gagne autant de charges que le niveau du sort » (§344). L'explosion au-delà de 50 charges reste au MJ.
+  "staff-of-the-magi": { saveAdvantage: ["magic"], triggers: [{ on: "isTargeted", do: [{ type: "use", activity: "QcfPhLX9LBvOnShu" }, { type: "cancel" }] }] },
+  // Sceptre d'absorption : « une Réaction pour absorber un sort qui ne cible que vous et ne produit pas de zone d'effet ; son effet est
+  // annulé, son énergie stockée » (§344) — l'activité « Absorb Spell » dépense autant d'utilisations que le niveau du sort.
+  "rod-of-absorption": { triggers: [{ on: "isTargeted", do: [{ type: "use", activity: "y66MTczY5BQfIonF" }, { type: "cancel" }] }] },
   // Pierres de Ioun d'absorption : « une Réaction : un sort de niveau 4 (8) ou moins lancé par une créature que vous voyez est annulé ».
   "absorption-ioun-stone": { counter: { level: 4 }, triggers: [{ on: "castsSpell", if: { "target.seesSource": true }, do: [{ type: "use", activity: "VHm5fPkFAnT7Vb01", target: "source" }] }] },
   "greater-absorption-ioun-stone": { counter: { level: 8 }, triggers: [{ on: "castsSpell", if: { "target.seesSource": true }, do: [{ type: "use", activity: "1yWFZf1MJMoNof7b", target: "source" }] }] },

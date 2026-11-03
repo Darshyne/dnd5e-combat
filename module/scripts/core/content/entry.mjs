@@ -29,6 +29,13 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   if ( "aura" in entry ) validateAura(entry.aura, `${at}aura`, errors);
   if ( "onHit" in entry ) {
     if ( !isObject(entry.onHit) || !isId(entry.onHit.save) ) errors.push(`${at}onHit.save: activity id (16 characters)`);
+    // §345 : `whileEnchanted` — seulement tant que l'item porte cet enchantement (profil, id d'effet) ; `spends` : un coup qui touche y
+    // met fin (Dague venimeuse : « le poison reste jusqu'à ce qu'une attaque avec cette arme touche »).
+    else {
+      if ( ("whileEnchanted" in entry.onHit) && !isId(entry.onHit.whileEnchanted) ) errors.push(`${at}onHit.whileEnchanted: effect id (16 characters)`);
+      if ( ("spends" in entry.onHit) && ((entry.onHit.spends !== true) || !("whileEnchanted" in entry.onHit)) ) errors.push(`${at}onHit.spends: true, with whileEnchanted`);
+      for ( const key of Object.keys(entry.onHit) ) if ( !["save", "whileEnchanted", "spends"].includes(key) ) errors.push(`${at}onHit.${key}: unknown key`);
+    }
   }
   if ( "choice" in entry ) validateChoice(entry.choice, `${at}choice`, errors);
   if ( "targets" in entry ) validateTargets(entry.targets, `${at}targets`, facts, errors);

@@ -33,6 +33,7 @@ import { route } from "./router.mjs";
 import { log, loc, say, locEsc, notice, waitForDice } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { castLevelFor } from "../adapter/counter.mjs";
+import { absorbPlan } from "../core/counter.mjs";
 import { wasteUse } from "./turn.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { settledResolution } from "../adapter/messages.mjs";
@@ -110,20 +111,42 @@ async function passWards(activity, origin, wards) {
  * §157 : les créatures visées par une utilisation sans jet d'attaque, hostiles à l'utilisateur, qui ont une réaction `isTargeted`
  * pour elle (Bouclier contre Projectile magique), avec leurs options.
  */
-function targetedCandidates(activity, origin, targets) {
+function targetedCandidates(activity, origin, targets, { isSpell=false, castLevel=0 }={}) {
   const out = [];
   for ( const token of targets ) {
     if ( !token.actor || !areEnemies(token, origin) ) continue;
     if ( token.actor.statuses.has(CONFIG.specialStatusEffects.DEFEATED) ) continue;
     const actor = token.actor;
     const options = reactionOptions(actor, "isTargeted",
-      matching("isTargeted", { actor, target: actor, source: origin.actor, activity, sourceToken: origin, targetToken: token }));
+      matching("isTargeted", { actor, target: actor, source: origin.actor, activity, sourceToken: origin, targetToken: token }))
+      .flatMap(o => o.cancel ? absorbOption(o, activity, targets, { isSpell, castLevel }) : (activity.type === "attack") ? [] : [o]);
     if ( options.length ) out.push({ token, actor, options });
   }
   return out;
 }
 
-/** §157 : chaque créature visée réagit, l'une après l'autre ; la réaction est résolue avant l'utilisation (son effet compte déjà). */
+/**
+ * §344 : une réaction qui annule le sort (Sceptre d'absorption, Bâton du thaumaturge) — seulement contre un sort de niveau 1 ou plus qui
+ * ne vise que le porteur, sans zone ; son activité est jouée au niveau du sort (le Sceptre dépense autant de niveaux, le Bâton gagne
+ * autant de charges).
+ */
+function absorbOption(option, activity, targets, { isSpell, castLevel }) {
+  if ( !isSpell ) return [];
+  const reaction = fromUuidSync(option.activity ?? "", { strict: false });
+  // « Tant que vous tenez » : le Bâton est une arme, que la garde « porté » (adapter/triggers.mjs) laisse passer — tenu et harmonisé.
+  const item = reaction?.item;
+  if ( !item || (item.system?.equipped === false) || ((item.system?.attunement === "required") && (item.system?.attuned !== true)) ) return [];
+  const use = reaction?.consumption?.targets?.find(t => t.type === "itemUses");
+  const costs = Number(use?.value) > 0;
+  const plan = absorbPlan({ castLevel, targets: targets.length, area: !!activity.target?.template?.type, costs,
+    usesLeft: reaction?.item?.system?.uses?.value ?? null });
+  return plan ? [{ ...option, usage: { ...(option.usage ?? {}), scaling: plan.scaling } }] : [];
+}
+
+/**
+ * §157 : chaque créature visée réagit, l'une après l'autre ; la réaction est résolue avant l'utilisation (son effet compte déjà).
+ * §344 : false si une réaction a annulé le sort (absorbé).
+ */
 async function passTargeted(activity, origin, candidates, { auto }) {
   for ( const { token, actor, options } of candidates ) {
     log(`${origin.name} uses ${activity.item.name} on ${token.name}: ${token.name} can react (${options.map(o => o.name).join(", ")})`);
@@ -132,7 +155,14 @@ async function passTargeted(activity, origin, candidates, { auto }) {
       prompt: { key: "ReactionCible", data: { caster: origin.name, spell: activity.item.name } }
     });
     if ( answer?.message ) await settledResolution(answer.message);
+    if ( answer?.cancel ) {
+      log(`${token.name} absorbs ${origin.name}'s ${activity.item.name} (${answer.name}): the spell is canceled`);
+      notice(token, { key: "Retour.SortAbsorbe", data: { spell: activity.item.name, item: answer.name ?? "" } }, "refused",
+        { all: true, action: "spellAbsorbed", outcome: "failure" });
+      return false;
+    }
   }
+  return true;
 }
 
 /* -------------------------------------------- */
@@ -260,7 +290,9 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   // quand les cibles sont désignées : le mode visée relance l'utilisation, la question serait posée deux fois.
   const seers = (preAttack && targets.length) ? seersOf(origin) : [];
   // §157 : une utilisation sans jet d'attaque qui vise des créatures (un projectile de Projectile magique) — leur fenêtre `isTargeted`.
-  const targeted = ((activity.type !== "attack") && (auto !== "none") && targets.length) ? targetedCandidates(activity, origin, targets) : [];
+  // §344 : aussi un sort à jet d'attaque, pour les seules réactions qui l'annulent (Sceptre d'absorption).
+  const targeted = (((activity.type !== "attack") || isSpell) && (auto !== "none") && targets.length)
+    ? targetedCandidates(activity, origin, targets, { isSpell, castLevel: isSpell ? castLevelFor(activity, usageConfig) : 0 }) : [];
   if ( !failure && !wards.length && !candidates.length && !reactors.length && !seers.length && !targeted.length ) return true;
 
   // Les cibles du lanceur, à remettre avant la relance : une réaction jouée sur ce même client (le MJ qui contrôle
@@ -271,7 +303,8 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     if ( failure && !(await passFailure(activity, origin, failure)) ) return wasteUse(activity);
     if ( wards.length && !(await passWards(activity, origin, wards)) ) return;
     if ( candidates.length && !(await passCounters(activity, origin, candidates, { auto, castLevel: castLevelFor(activity, usageConfig) })) ) return wasteUse(activity);
-    if ( targeted.length ) await passTargeted(activity, origin, targeted, { auto });
+    // §344 : le sort absorbé se dissipe ; les ressources engagées sont perdues.
+    if ( targeted.length && !(await passTargeted(activity, origin, targeted, { auto })) ) return wasteUse(activity);
     let mods = reactors.length ? await askAttackReactions(activity, origin, reactors, { auto }) : null;
     const foretold = seers.length ? await foretellFor(origin, { kind: "attack", item: activity.item.name, auto }) : null;
     if ( foretold ) {

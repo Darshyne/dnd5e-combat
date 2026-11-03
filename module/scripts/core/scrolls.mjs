@@ -65,3 +65,32 @@ export function scrollSpell({ stamped=null, candidates=[], known=new Map(), leve
   const lvl = Number.isFinite(level) ? level : (Number.isFinite(found.level) ? found.level : null);
   return { identifier: found.identifier, level: lvl, school: found.school ?? null };
 }
+
+/**
+ * O8g (§350) : lire un parchemin de sort (Guide du maître 2024, « Parchemin de sort ») — « si le sort est sur la liste de votre classe,
+ * vous pouvez lire le parchemin et lancer son sort […] ; sinon il est inintelligible. Si le sort est sur votre liste mais d'un niveau
+ * supérieur à ceux que vous pouvez lancer, faites un test de votre caractéristique d'incantation (DD 10 + niveau du sort) ; en cas
+ * d'échec, le sort disparaît du parchemin ». Utilisation d'objets magiques (Voleur) : « n'importe quel parchemin ; un sort mineur ou de
+ * niveau 1 se lance sans test, au-delà un test d'Intelligence (Arcanes) DD 10 + niveau ».
+ * @param {{level: number, onList: boolean, anyScroll?: boolean, maxLevel?: number}} reader
+ * @returns {{access: "free"|"check"|"refused", via: "class"|"device"|null, dc: number|null}}
+ */
+export function scrollAccess({ level, onList, anyScroll=false, maxLevel=0 }) {
+  const lvl = Math.max(0, Number(level) || 0);
+  if ( !onList && !anyScroll ) return { access: "refused", via: null, dc: null };
+  if ( lvl === 0 ) return { access: "free", via: onList ? "class" : "device", dc: null };
+  if ( onList && (lvl <= (Number(maxLevel) || 0)) ) return { access: "free", via: "class", dc: null };
+  if ( anyScroll && (lvl <= 1) ) return { access: "free", via: "device", dc: null };
+  // Un test : celui de la classe (caractéristique d'incantation) si le sort est sur sa liste, sinon Intelligence (Arcanes).
+  return { access: "check", via: onList ? "class" : "device", dc: 10 + lvl };
+}
+
+/** O8g (§350) : le plus haut niveau d'emplacement de sort d'un personnage (emplacements ou magie de pacte), 0 sans emplacement. */
+export function highestSlotLevel(spells={}) {
+  let best = 0;
+  for ( const [key, slot] of Object.entries(spells ?? {}) ) {
+    const level = (key === "pact") ? Number(slot?.level) : Number(/^spell(\d)$/.exec(key)?.[1]);
+    if ( Number.isFinite(level) && (Number(slot?.max) > 0) ) best = Math.max(best, level);
+  }
+  return best;
+}

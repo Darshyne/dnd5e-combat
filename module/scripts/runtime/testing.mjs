@@ -9,6 +9,7 @@
  */
 
 import { playerWaits } from "../adapter/player-wait.mjs";
+import { scrollReadingFor, scrollReadOf } from "../adapter/scrolls.mjs";
 import { forceWait } from "./player-waits.mjs";
 import { pickCandidates, upgradeOf } from "../adapter/pick-targets.mjs";
 import { castOnPicked } from "./pick-targets.mjs";
@@ -156,6 +157,28 @@ function status() {
  * Lance une macro (par son uuid : monde ou compendium « Outils du MJ », §56) sans attendre sa fin : ses fenêtres se lisent et se
  * répondent ensuite par `list-dialogs` / `answer-dialog` du connecteur. Réservé au MJ.
  */
+/** O8g (§350) : un parchemin de sort fait comme dnd5e le fait depuis un compendium (`createScrollFromSpell`), donné à l'acteur du token. */
+async function makeScroll({ tokenId, spellUuid, quantity=1 }) {
+  gmOnly();
+  const actor = canvas.scene?.tokens.get(tokenId)?.actor;
+  const spell = await fromUuid(spellUuid);
+  if ( !actor || !spell ) throw new Error("token or spell not found");
+  const scroll = await CONFIG.Item.documentClass.createScrollFromSpell(spell, {}, { dialog: false });
+  const data = scroll?.toObject?.() ?? scroll;
+  foundry.utils.setProperty(data, "system.quantity", quantity);
+  const [created] = await actor.createEmbeddedDocuments("Item", [data]);
+  return { itemId: created?.id ?? null, name: created?.name ?? null, activities: Array.from(created?.system.activities ?? []).map(a => a.type) };
+}
+
+/** O8g (§350) : ce que le moteur juge d'un parchemin pour son porteur (`scrollReadingFor`), activité par activité. */
+function scrollReading({ tokenId, itemId }) {
+  const actor = canvas.scene?.tokens.get(tokenId)?.actor;
+  const item = actor?.items.get(itemId);
+  if ( !item ) throw new Error("item not found");
+  return Array.from(item.system.activities ?? []).map(a => ({ type: a.type, spell: a.spell?.uuid ?? null, reading: scrollReadingFor(a, actor),
+    read: scrollReadOf(a), ready: globalThis.dnd5e?.registry?.spellLists?.ready ?? null, classes: Object.keys(actor.classes ?? {}) }));
+}
+
 async function runMacro({ uuid }={}) {
   gmOnly();
   const macro = await fromUuid(uuid);
@@ -436,4 +459,4 @@ async function forcePlayerWait({ id=null }={}) {
   return { forced: target ? await forceWait(target) : false };
 }
 
-export const testApi = Object.freeze({ controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, owners, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, hood, removeItemEffect, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, forcePlayerWait, pickTargets, castPicked });
+export const testApi = Object.freeze({ controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, owners, makeScroll, scrollReading, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, hood, removeItemEffect, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, forcePlayerWait, pickTargets, castPicked });

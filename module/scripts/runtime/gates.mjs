@@ -31,7 +31,7 @@ import { keepPendingAttack } from "./actions.mjs";
 import { seersOf, foretellFor } from "../adapter/portent.mjs";
 import { route } from "./router.mjs";
 import { log, loc, say, locEsc, notice, waitForDice } from "./shared.mjs";
-import { isSpellCast } from "../adapter/scrolls.mjs";
+import { isSpellCast, scrollReadingFor, scrollActivityOf } from "../adapter/scrolls.mjs";
 import { castLevelFor } from "../adapter/counter.mjs";
 import { absorbPlan } from "../core/counter.mjs";
 import { wasteUse } from "./turn.mjs";
@@ -262,6 +262,36 @@ async function passCounters(activity, origin, candidates, { auto, castLevel }) {
 /* -------------------------------------------- */
 
 /* -------------------------------------------- */
+/*  O8g (§350) : lire un parchemin de sort       */
+/* -------------------------------------------- */
+
+/**
+ * Un parchemin d'un niveau que le lecteur ne peut pas encore lancer : le test (DD 10 + niveau) de sa caractéristique d'incantation, ou
+ * d'Intelligence (Arcanes) par Utilisation d'objets magiques ; raté, le sort disparaît du parchemin — l'action est perdue, le
+ * parchemin aussi. Rend vrai si le sort part.
+ */
+async function passScrollCheck(activity, origin, reading) {
+  const actor = origin.actor;
+  const rolls = reading.skill
+    ? await actor.rollSkill({ skill: reading.skill, ability: reading.ability, target: reading.dc }, { configure: false })
+    : await actor.rollAbilityCheck({ ability: reading.ability, target: reading.dc }, { configure: false });
+  const total = rolls?.[0]?.total ?? null;
+  // Le verdict attend l'animation de Dice So Nice (règle DAS) : le message du test est le dernier de ce lecteur portant ce total.
+  const card = (total === null) ? null : game.messages.contents.findLast(m => (m.speaker?.actor === actor.id) && (m.rolls?.[0]?.total === total));
+  if ( card ) await waitForDice(card);
+  const ok = (total !== null) && (total >= reading.dc);
+  log(`${origin.name} reads ${scrollActivityOf(activity)?.item?.name ?? activity.item.name} (level ${reading.level}): check ${total ?? "—"} vs DC ${reading.dc} -> ${ok ? "the spell goes through" : "the spell vanishes from the scroll"}`);
+  if ( ok ) return true;
+  const item = scrollActivityOf(activity)?.item ?? activity.item;
+  notice(origin, { key: "Retour.ParcheminPerdu", data: { item: item.name } }, "refused", { all: true, action: "scrollLost", outcome: "failure" });
+  await wasteUse(activity);
+  const quantity = Number(item.system?.quantity) || 1;
+  if ( quantity > 1 ) await item.update({ "system.quantity": quantity - 1 });
+  else await item.delete();
+  return false;
+}
+
+/* -------------------------------------------- */
 /*  O8d (§347) : Bouclier d'attraction          */
 /* -------------------------------------------- */
 
@@ -298,6 +328,14 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   if ( usageConfig[MODULE_ID]?.gated || !activity?.item || !canvas?.ready ) return true;
   const origin = usageToken(activity);
   if ( !origin?.actor ) return true;
+  // O8g (§350) : un parchemin hors de la liste de sorts du lecteur est inintelligible ; trop haut pour lui, un test d'abord.
+  const reading = scrollReadingFor(activity, origin.actor);
+  if ( reading?.access === "refused" ) {
+    log(`${origin.name}: ${scrollActivityOf(activity)?.item?.name ?? activity.item.name} is unintelligible (${reading.identifier} is not on their spell lists)`);
+    notice(origin, { key: "Retour.ParcheminIllisible", data: { item: scrollActivityOf(activity)?.item?.name ?? activity.item.name } }, "refused");
+    return false;
+  }
+  const scrollCheck = (reading?.access === "check") ? reading : null;
   let targets = Array.from(game.user.targets).map(t => t.document).filter(t => t !== origin);
   // O8d (§347) : le porteur du Bouclier d'attraction devient la cible, avant toute autre fenêtre.
   const attracted = (activity.type === "attack") ? attractions(activity, origin, targets, usageConfig[MODULE_ID]?.attackMode ?? null) : [];
@@ -341,12 +379,13 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   // §344 : aussi un sort à jet d'attaque, pour les seules réactions qui l'annulent (Sceptre d'absorption).
   const targeted = (((activity.type !== "attack") || isSpell) && (auto !== "none") && targets.length)
     ? targetedCandidates(activity, origin, targets, { isSpell, castLevel: isSpell ? castLevelFor(activity, usageConfig) : 0 }) : [];
-  if ( !failure && !wards.length && !candidates.length && !reactors.length && !seers.length && !targeted.length ) return true;
+  if ( !scrollCheck && !failure && !wards.length && !candidates.length && !reactors.length && !seers.length && !targeted.length ) return true;
 
   // Les cibles du lanceur, à remettre avant la relance : une réaction jouée sur ce même client (le MJ qui contrôle
   // les deux) les a remplacées par les siennes (vu le 2026-09-24 : le Rayon relancé sans cible, ou sur le lanceur).
   const chosen = Array.from(game.user.targets).map(t => t.id);
   (async () => {
+    if ( scrollCheck && !(await passScrollCheck(activity, origin, scrollCheck)) ) return;
     // §298 : le sort raté (Lenteur) ou contré ne part pas, mais son action est perdue.
     if ( failure && !(await passFailure(activity, origin, failure)) ) return wasteUse(activity);
     if ( wards.length && !(await passWards(activity, origin, wards)) ) return;

@@ -105,6 +105,8 @@
   "DND5ECOMBAT.Retour.SortAbsorbe": "{spell} absorbed by {item}",
   "DND5ECOMBAT.Retour.CibleAttiree": "Attack pulled by the shield ({item})",
   "DND5ECOMBAT.Retour.CibleInterceptee": "Attack intercepted ({item})",
+  "DND5ECOMBAT.Retour.ParcheminIllisible": "Scroll unintelligible ({item})",
+  "DND5ECOMBAT.Retour.ParcheminPerdu": "The spell vanishes from the scroll ({item})",
   "DND5ECOMBAT.Retour.ChaineTropLoin": "More than {distance} {units} from {name}",
   "DND5ECOMBAT.Retour.Altitude.Accordee": "{mode} granted",
   "DND5ECOMBAT.Altitude.BetterLevels": "dnd5e-combat: Baileywiki Better Levels' \"Set elevation on level change\" setting is on. It puts a token back at the bottom of its level on every level change, which undoes \"Movement modes and elevation\" (a flying token changing floors is set back on the ground). Turn it off: the engine already puts the token on the new level's ground, according to its mode.",

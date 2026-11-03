@@ -12,7 +12,8 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { scrollCandidates, scrollSpell, slug } from "../core/scrolls.mjs";
+import { scrollCandidates, scrollSpell, slug, scrollAccess, highestSlotLevel } from "../core/scrolls.mjs";
+import { identifierOf } from "./content.mjs";
 import { potionOfCast } from "./potions.mjs";
 
 /** slug (identifiant, nom affiché, nom anglais) → { identifier, level, school }. */
@@ -99,4 +100,54 @@ export function stampScroll(spell, scrollData) {
   scrollData.flags[MODULE_ID] = { ...(scrollData.flags[MODULE_ID] ?? {}), scroll: {
     identifier, level: Number(scrollData.flags.dnd5e?.spellLevel?.value ?? spell.system.level) || 0, school: spell.system.school ?? null
   } };
+}
+
+/**
+ * O8g (§350) : l'activité du parchemin derrière une utilisation — celle du parchemin lui-même, ou, pour le sort en cache qu'une
+ * activité « cast » lance (`flags.dnd5e.cachedFor`, documents/activity/cast.mjs : `use` passe au sort), l'activité « cast » de son
+ * parchemin. Null sinon.
+ */
+export function scrollActivityOf(activity) {
+  if ( isScroll(activity?.item) ) return activity;
+  // `cachedFor` est un uuid relatif à l'acteur : dnd5e le résout par `linkedActivity` (data/item/spell.mjs).
+  const cast = activity?.item?.flags?.dnd5e?.cachedFor ? (activity.item.system?.linkedActivity ?? null) : null;
+  return ((cast?.type === "cast") && isScroll(cast.item)) ? cast : null;
+}
+
+/**
+ * O8g (§350) : le sort que lit cette activité d'un parchemin `{ identifier, level }`, ou null — un parchemin à activité « cast » (fait
+ * depuis un compendium : l'activité vise le vrai sort) comme un parchemin à activités recopiées (`scrollSpellOf`).
+ */
+export function scrollReadOf(activity) {
+  const item = activity?.item;
+  if ( !isScroll(item) ) return null;
+  if ( activity.type !== "cast" ) return scrollSpellOf(item);
+  const spell = fromUuidSync(activity.spell?.uuid ?? "", { strict: false });
+  const flags = item.flags ?? {};
+  const byName = scrollSpell({ stamped: flags[MODULE_ID]?.scroll ?? null, known, level: Number(flags.dnd5e?.spellLevel?.value ?? NaN),
+    candidates: scrollCandidates({ name: item.name, originalNames: [flags.babele?.originalName].filter(Boolean) }) });
+  const identifier = spell?.system?.identifier || byName?.identifier || null;
+  const level = Number(activity.spell?.level ?? spell?.system?.level ?? byName?.level);
+  return identifier ? { identifier, level: Number.isFinite(level) ? level : 0 } : null;
+}
+
+/**
+ * O8g (§350) : ce qu'un personnage peut faire de ce parchemin (`scrollAccess`) — la liste de sorts de ses classes et sous-classes
+ * (registre de dnd5e `dnd5e.registry.spellLists`), Utilisation d'objets magiques, son plus haut emplacement ; la caractéristique du
+ * test : celle de la classe dont la liste porte le sort, sinon l'Intelligence (Arcanes). Null : pas un parchemin, pas un personnage,
+ * ou registre pas prêt (rien n'est imposé).
+ */
+export function scrollReadingFor(activity, actor) {
+  activity = scrollActivityOf(activity);
+  const read = scrollReadOf(activity);
+  const registry = globalThis.dnd5e?.registry?.spellLists;
+  if ( !read || (actor?.type !== "character") || !registry?.ready ) return null;
+  const owners = [...Object.entries(actor.classes ?? {}).map(([id, cls]) => ({ cls, list: registry.forType("class", id) })),
+    ...Object.entries(actor.subclasses ?? {}).map(([id, sub]) => ({ cls: sub.class ?? null, list: registry.forType("subclass", id) }))];
+  const owner = owners.find(o => o.list?.identifiers?.has?.(read.identifier)) ?? null;
+  const anyScroll = Array.from(actor.items ?? []).some(i => identifierOf(i).id === "use-magic-device");
+  const access = scrollAccess({ level: read.level, onList: !!owner, anyScroll, maxLevel: highestSlotLevel(actor.system?.spells) });
+  const ability = (access.via === "class")
+    ? (owner?.cls?.system?.spellcasting?.ability || actor.system?.attributes?.spellcasting || "int") : "int";
+  return { ...read, ...access, ability, skill: (access.via === "device") ? "arc" : null };
 }

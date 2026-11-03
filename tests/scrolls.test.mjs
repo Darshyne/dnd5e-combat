@@ -58,3 +58,26 @@ describe("le sort d'un parchemin", () => {
     expect(scrollCandidates({ name: "Parchemin de sort : 2e niveau", originalNames: ["Spell Scroll, 2nd Level"] })).toEqual([]);
   });
 });
+
+import { scrollAccess, highestSlotLevel } from "../module/scripts/core/scrolls.mjs";
+
+describe("O8g (§350) : lire un parchemin de sort", () => {
+  it("hors de la liste de classe : inintelligible", () => {
+    expect(scrollAccess({ level: 1, onList: false, maxLevel: 5 }).access).toBe("refused");
+  });
+  it("sur la liste, à un niveau lançable : libre ; au-delà : test DD 10 + niveau", () => {
+    expect(scrollAccess({ level: 3, onList: true, maxLevel: 3 })).toEqual({ access: "free", via: "class", dc: null });
+    expect(scrollAccess({ level: 5, onList: true, maxLevel: 3 })).toEqual({ access: "check", via: "class", dc: 15 });
+    expect(scrollAccess({ level: 0, onList: true, maxLevel: 0 }).access).toBe("free");
+  });
+  it("Utilisation d'objets magiques : tout parchemin, test d'Arcanes au-delà du niveau 1", () => {
+    expect(scrollAccess({ level: 1, onList: false, anyScroll: true })).toEqual({ access: "free", via: "device", dc: null });
+    expect(scrollAccess({ level: 4, onList: false, anyScroll: true })).toEqual({ access: "check", via: "device", dc: 14 });
+    expect(scrollAccess({ level: 2, onList: true, anyScroll: true, maxLevel: 2 }).access).toBe("free");
+  });
+  it("plus haut emplacement : emplacements ou pacte, ceux à 0 ignorés", () => {
+    expect(highestSlotLevel({ spell1: { max: 4 }, spell2: { max: 3 }, spell3: { max: 0 }, pact: { level: 0, max: 0 } })).toBe(2);
+    expect(highestSlotLevel({ spell1: { max: 0 }, pact: { level: 3, max: 2 } })).toBe(3);
+    expect(highestSlotLevel({})).toBe(0);
+  });
+});

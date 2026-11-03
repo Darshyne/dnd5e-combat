@@ -274,7 +274,8 @@ export const ITEM_FIXES = Object.freeze({
   // « Avantage aux jets de sauvegarde contre les sorts » — porté et harmonisé (adapter/saves.mjs).
   "mantle-of-spell-resistance": { saveAdvantage: ["magic"] },
   "ring-of-spell-turning": { saveAdvantage: ["magic"] },
-  "spellguard-shield": { saveAdvantage: ["magic"] },
+  // O9e (§358) : « … et les jets d'attaque de sort ont le Désavantage contre vous » (le bouclier tenu).
+  "spellguard-shield": { saveAdvantage: ["magic"], triggers: [{ on: "preAttackRoll", defends: true, if: { "activity.isSpell": true }, do: [{ type: "disadvantage" }] }] },
   "robe-of-the-archmagi": { saveAdvantage: ["magic"] },
   "scarab-of-protection": { saveAdvantage: ["magic"] },
   // O9b (§355) : Fléau d'ébène — « quand vous touchez un Céleste ou un Humanoïde, l'attaque inflige aussi 3d6 nécrotiques » ; la donnée les

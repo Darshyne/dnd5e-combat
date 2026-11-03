@@ -41,6 +41,7 @@
   "DND5ECOMBAT.Souci.noReaction": "Vous avez déjà utilisé votre réaction.",
   "DND5ECOMBAT.Souci.slotAlreadyCast": "Vous avez déjà lancé un sort avec un emplacement ce tour-ci (règle 2024 : un seul par tour).",
   "DND5ECOMBAT.Souci.outOfRange": "{name} est hors de portée.",
+  "DND5ECOMBAT.Souci.tooClose": "{name} est trop près : l'arme ne peut pas toucher si près.",
   "DND5ECOMBAT.PorteeLongue": "{name} est à portée longue : désavantage à l'attaque.",
   "DND5ECOMBAT.UtiliserQuandMeme": "Utiliser quand même",
   "DND5ECOMBAT.UtiliserMaReaction": "Utiliser ma réaction",

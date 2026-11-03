@@ -328,6 +328,8 @@
  *     exclusiveWeapon?: true | { whileEffect } O8e (§348) : l'item harmonisé, son porteur a le Désavantage aux attaques avec ses autres
  *                                               armes — toujours, ou tant qu'une créature vivante de la scène porte l'effet `whileEffect`
  *                                               de l'item (Arc du serment : l'ennemi juré)
+ *     minRange?: { value, units }               O8h (§351) : portée minimale — une cible à cette distance ou moins est un souci de
+ *                                               légalité bloquant, comme hors de portée (Mangonneau, Trébuchet : 18 m)
  *     breaksOn?: ("attack"|"damage"|"spell")[] les effets de l'item cessent quand leur porteur fait un jet d'attaque, inflige des
  *                                               dégâts ou lance un sort (Invisibilité, §16.47)
  *     noReactions?: true                        le porteur d'un effet de l'item ne peut pas prendre de Réaction (Tentacules de

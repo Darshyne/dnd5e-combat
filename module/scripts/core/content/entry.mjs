@@ -54,6 +54,12 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     const ok = (x === true) || (isObject(x) && isId(x.whileEffect) && (Object.keys(x).length === 1));
     if ( !ok ) errors.push(`${at}exclusiveWeapon: true or { whileEffect: effect id }`);
   }
+  // O8h (§351) : portée minimale d'une arme (armes de siège : « ne peut pas toucher une cible à 18 m ou moins »).
+  if ( "minRange" in entry ) {
+    const m = entry.minRange;
+    if ( !isObject(m) || !(Number.isFinite(m.value) && (m.value > 0)) || (typeof m.units !== "string") || !m.units
+      || Object.keys(m).some(k => !["value", "units"].includes(k)) ) errors.push(`${at}minRange: { value: positive number, units }`);
+  }
   if ( "choice" in entry ) validateChoice(entry.choice, `${at}choice`, errors);
   if ( "targets" in entry ) validateTargets(entry.targets, `${at}targets`, facts, errors);
   if ( "trace" in entry ) {

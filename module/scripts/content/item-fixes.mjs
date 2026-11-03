@@ -86,7 +86,9 @@ export const ITEM_FIXES = Object.freeze({
   "laser-pistol": { dataFixes: reloads(50) },
   "laser-rifle": { dataFixes: reloads(30) },
   // Trébuchet : le tir dépense les utilisations de l'activité (aucune) au lieu des charges de l'item que « Charger » remplit.
+  // O8h (§351) : et sa portée minimale (« ne peut pas toucher une cible à 18 m ou moins »), comme le Mangonneau plus bas.
   "trebuchet": {
+    minRange: { value: 60, units: "ft" },
     dataFixes: [{ path: "system.activities.GkViNDrZd4rImGoq.consumption.targets", from: [{ type: "activityUses", value: "2", scaling: {} }], value: [spend("itemUses", 2)] }]
   },
   // Attaque à mains nues du Guide : « 1 + modificateur de Force » (celle du Manuel), pas « modificateur + maîtrise ».
@@ -444,6 +446,9 @@ export const ITEM_FIXES = Object.freeze({
   // propre ; « il ne vise que vous » et l'avatar des alliés qui le blessent restent au MJ.
   "skull": { summon: { initiative: "own", hostile: true, vanishesAtZero: true, vanishesWithCaster: true } },
   "scroll-of-titan-summoning": { summon: { initiative: "own", hostile: true, vanishesAtZero: true } },
+  // O8h (§351) : armes de siège en tir en cloche — « ne peut pas toucher une cible à 18 m ou moins de lui » (le Trébuchet plus haut ;
+  // le tir par-dessus les murs reste au MJ).
+  "mangonel": { minRange: { value: 60, units: "ft" } },
   // Pierres de Ioun d'absorption : « une Réaction : un sort de niveau 4 (8) ou moins lancé par une créature que vous voyez est annulé ».
   "absorption-ioun-stone": { counter: { level: 4 }, triggers: [{ on: "castsSpell", if: { "target.seesSource": true }, do: [{ type: "use", activity: "VHm5fPkFAnT7Vb01", target: "source" }] }] },
   "greater-absorption-ioun-stone": { counter: { level: 8 }, triggers: [{ on: "castsSpell", if: { "target.seesSource": true }, do: [{ type: "use", activity: "1yWFZf1MJMoNof7b", target: "source" }] }] },

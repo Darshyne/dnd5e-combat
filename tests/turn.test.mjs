@@ -231,3 +231,24 @@ describe("§236 : Pas véloce", () => {
     expect(refundUse(before, freshBudget(), before).fleetStep).toBe(false);
   });
 });
+
+import { tooClose } from "../module/scripts/core/range.mjs";
+import { validateEntry } from "../module/scripts/core/content.mjs";
+
+describe("O8h (§351) : portée minimale des armes de siège", () => {
+  const factors = { ft: 1, m: 1 / 0.3 };
+  it("à 18 m ou moins : trop près ; au-delà : non", () => {
+    expect(tooClose({ value: 60, units: "ft" }, { value: 60, units: "ft" }, factors)).toBe(true);
+    expect(tooClose({ value: 30, units: "ft" }, { value: 60, units: "ft" }, factors)).toBe(true);
+    expect(tooClose({ value: 65, units: "ft" }, { value: 60, units: "ft" }, factors)).toBe(false);
+  });
+  it("sans portée minimale ou unité inconnue : jamais trop près", () => {
+    expect(tooClose({ value: 5, units: "ft" }, null, factors)).toBe(false);
+    expect(tooClose({ value: 5, units: "ft" }, { value: 60, units: "league" }, factors)).toBe(false);
+  });
+  it("validation : minRange", () => {
+    expect(validateEntry({ minRange: { value: 60, units: "ft" } })).toEqual([]);
+    expect(validateEntry({ minRange: { value: 0, units: "ft" } }).length).toBe(1);
+    expect(validateEntry({ minRange: { value: 60 } }).length).toBe(1);
+  });
+});

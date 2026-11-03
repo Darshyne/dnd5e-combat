@@ -24,3 +24,15 @@ export function rangeIssue(measured, range, factors) {
   }
   return "outOfRange";
 }
+
+/**
+ * O8h (§351) : une portée minimale — « ne peut pas toucher une cible à 18 m ou moins de lui » (Mangonneau, Trébuchet, tir en cloche).
+ * @param {{value: number, units: string}} measured  Distance mesurée, unité de la grille.
+ * @param {{value: number, units: string}|null} min  La portée minimale de l'arme, ou null.
+ * @param {Record<string, number>} factors
+ * @returns {boolean}  vrai si la cible est trop près (à la portée minimale ou moins) ; faux sans portée minimale mesurable.
+ */
+export function tooClose(measured, min, factors) {
+  if ( !Number.isFinite(min?.value) || !(min.units in factors) || !(measured?.units in factors) ) return false;
+  return measured.value <= convertLength(min.value, min.units, measured.units, factors) + 1e-6;
+}

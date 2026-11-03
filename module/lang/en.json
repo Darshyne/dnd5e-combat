@@ -41,6 +41,7 @@
   "DND5ECOMBAT.Souci.noReaction": "You already used your Reaction.",
   "DND5ECOMBAT.Souci.slotAlreadyCast": "You already cast a spell with a slot this turn (2024 rule: one per turn).",
   "DND5ECOMBAT.Souci.outOfRange": "{name} is out of range.",
+  "DND5ECOMBAT.Souci.tooClose": "{name} is too close: the weapon cannot hit that near.",
   "DND5ECOMBAT.PorteeLongue": "{name} is at long range: Disadvantage on the attack roll.",
   "DND5ECOMBAT.UtiliserQuandMeme": "Use anyway",
   "DND5ECOMBAT.UtiliserMaReaction": "Use my Reaction",

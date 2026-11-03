@@ -9,7 +9,7 @@ import { judgeMasteries } from "./mastery-choices.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { naturalOneFor } from "./natural-one.mjs";
 import { combatantFor, readBudget, rangeOf } from "../adapter/turn.mjs";
-import { useIssues, legendaryIssues } from "./turn.mjs";
+import { useIssues, legendaryIssues, rangeProblems } from "./turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { movementCap } from "./actions.mjs";
 import { ownEndingsOf, endingsOn, endFor } from "./action-end.mjs";
@@ -269,6 +269,16 @@ export function range({ tokenId, itemId, activityType=null }) {
   const activity = viewedToken({ tokenId }).actor?.items.get(itemId)?.system.activities.find(a => !activityType || (a.type === activityType));
   if ( !activity ) throw new Error("activity not found");
   return rangeOf(activity);
+}
+
+/** O8h (§351) : les soucis de portée (hors de portée, portée longue, trop près) d'une activité contre ces cibles, désignées ici. */
+export function rangeCheck({ tokenId, itemId, targetIds=[], activityType=null }) {
+  const activity = viewedToken({ tokenId }).actor?.items.get(itemId)?.system.activities.find(a => !activityType || (a.type === activityType));
+  if ( !activity ) throw new Error("activity not found");
+  targetIds.forEach((id, i) => canvas.tokens.get(id)?.setTarget(true, { releaseOthers: i === 0 }));
+  const { problems } = rangeProblems(activity);
+  for ( const id of targetIds ) canvas.tokens.get(id)?.setTarget(false, { releaseOthers: false });
+  return problems;
 }
 
 /** §20 : le budget du tour d'un combattant (action, action Bonus, Foncer, Se désengager, Vitesse à 0, déplacement en plus). */

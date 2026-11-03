@@ -1,6 +1,6 @@
 import { MODULE_ID } from "../constants.mjs";
 import { checkUse, spendUse, refundUse, basicAction, BASIC_ACTION_FLAGS, effectiveCost } from "../core/turn.mjs";
-import { rangeIssue } from "../core/range.mjs";
+import { rangeIssue, tooClose } from "../core/range.mjs";
 import { throwableAttackMode, versatileGrip } from "../core/attack.mjs";
 import {
   combatantFor, isOwnTurn, readBudget, writeBudget, requestFor, attacksPerAction, rangeOf, reachOf, canBeThrown,
@@ -37,7 +37,7 @@ import { chainOf, chainLimit, chainOutliers } from "../adapter/chain.mjs";
 /* -------------------------------------------- */
 
 /** Les cibles désignées qui ne sont pas à portée normale, pour un mode d'attaque donné s'il est connu. */
-function rangeProblems(activity, attackMode=null) {
+export function rangeProblems(activity, attackMode=null) {
   const origin = usageToken(activity);
   if ( !origin || !canvas.ready ) return { key: "", problems: [] };
   const factors = readUnitFactors();
@@ -48,11 +48,17 @@ function rangeProblems(activity, attackMode=null) {
   // mesure depuis le lanceur ou depuis l'une de ses invocations `castFrom`, la plus favorable.
   const from = [origin];
   if ( activity.item?.type === "spell" ) from.push(...summonsOfWith(activity.actor, "castFrom").filter(t => t.parent === origin.parent));
-  const rank = issue => ({ longRange: 1, outOfRange: 2 })[issue] ?? 0;
+  const rank = issue => ({ longRange: 1, outOfRange: 2, tooClose: 3 })[issue] ?? 0;
+  // O8h (§351) : une portée minimale (armes de siège) — trop près est aussi bloquant.
+  const min = contentOf(activity.item).entry?.minRange ?? null;
+  const issueFrom = (o, target) => {
+    const measured = distanceBetween(o, target);
+    return (min && tooClose(measured, min, factors)) ? "tooClose" : (rangeIssue(measured, range, factors) ?? null);
+  };
   for ( const target of game.user.targets ) {
     if ( target.document === origin ) continue;
     ids.push(target.id);
-    const issue = from.map(o => rangeIssue(distanceBetween(o, target.document), range, factors) ?? null)
+    const issue = from.map(o => issueFrom(o, target.document))
       .reduce((best, i) => (rank(i) < rank(best) ? i : best));
     if ( issue ) problems.push({ issue, name: target.name });
   }
@@ -78,7 +84,7 @@ function assessRange(activity, attackMode=null) {
   const { key, problems } = rangeProblems(activity, attackMode);
   if ( acknowledged(key) ) return { key, blocking: [] };
   for ( const r of problems.filter(r => r.issue === "longRange") ) ui.notifications.info(loc("PorteeLongue", { name: r.name }));
-  const blocking = problems.filter(r => r.issue === "outOfRange");
+  const blocking = problems.filter(r => ["outOfRange", "tooClose"].includes(r.issue));
   if ( problems.length && !blocking.length ) acknowledge(key);   // rappel donné une fois
   return { key, blocking };
 }
@@ -363,7 +369,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const lines = [
     ...use.lines,
     ...legend,
-    ...range.blocking.map(r => loc("Souci.outOfRange", { name: r.name })),
+    ...range.blocking.map(r => loc((r.issue === "tooClose") ? "Souci.tooClose" : "Souci.outOfRange", { name: r.name })),
     ...(seenBy.length ? [loc("Souci.hideSeen", { names: seenBy.map(t => t.name).join(", ") })] : []),
     ...wrongType.map(t => loc("Souci.wrongType", { name: t.name, types: typesLabel(t.types), item: activity.item.name })),
     ...charmed.map(t => loc("Souci.charmed", { name: t.name })),
@@ -490,7 +496,7 @@ function onPostAttackRollConfiguration(rolls, config, dialogConfig, messageConfi
   if ( !range.blocking.length ) return true;
 
   const beyondReach = canBeThrown(activity) && !options.attackMode?.startsWith("thrown");
-  const lines = range.blocking.map(r => loc(beyondReach ? "Souci.outOfReach" : "Souci.outOfRange", { name: r.name }));
+  const lines = range.blocking.map(r => loc((r.issue === "tooClose") ? "Souci.tooClose" : (beyondReach ? "Souci.outOfReach" : "Souci.outOfRange"), { name: r.name }));
   const buttons = [{ action: "go", label: loc("AttaquerQuandMeme"), default: true }, { action: "cancel", label: loc("Renoncer") }];
   confirmDialog(`${activity.item.name} — ${activity.actor?.name ?? ""}`, lines, buttons).then(choice => {
     if ( choice !== "go" ) return;

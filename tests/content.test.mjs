@@ -214,7 +214,7 @@ describe("contenu livré", () => {
       "lantern-of-revealing", "large-form", "laser-pistol", "laser-rifle", "lay-on-hands", "leading-evasion", "lesser-restoration",
       "levitate", "life-drain", "lifedrinker", "light", "lightning-arrow", "limited-foresight", "living-shadow", "lolths-sting",
       "luck-blade-enchanted", "lucky", "lunar-form", "lunging-attack", "lupin-howl", "mace-of-disruption", "mace-of-terror", "mage-armor",
-      "mage-hand", "mage-slayer", "magic-missile", "magic-resistance", "magic-weapon", "magnificent-mansion", "maneuvering-attack",
+      "mage-hand", "mage-slayer", "magic-missile", "magic-resistance", "magic-weapon", "magnificent-mansion", "maneuvering-attack", "mangonel",
       "mantle-of-spell-resistance", "manual-of-quickness-of-action", "marble-elephant-rare", "marshal-undead", "martial-arts",
       "mass-cure-wounds", "mass-heal", "mass-suggestion", "maze", "medium-armor-master", "melfs-acid-arrow", "menacing-attack",
       "mind-sliver", "mind-spike", "mindless-rage", "minor-illusion", "mirror-image", "mislead", "mist-walker", "misty-escape",

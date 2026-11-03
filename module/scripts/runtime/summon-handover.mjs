@@ -17,6 +17,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { summonOwnership } from "../core/summon.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
+import { contentOf } from "../adapter/content.mjs";
 
 /**
  * Les invocations reprises en cours, par uuid d'activité (l'activité remise à l'échelle garde son id) : `{ takers, at }`. Une
@@ -79,6 +80,8 @@ async function onPostSummon(activity, profile, tokens) {
   if ( !game.user.isGM ) return;
   const caster = activity?.actor;
   if ( !caster ) return;
+  // O8f (§349) : une invocation hostile n'est à personne (adapter/summons.mjs, `makeSummonHostile`).
+  if ( contentOf(activity.item).entry?.summon?.hostile === true ) return;
   const isGM = id => game.users.get(id)?.isGM === true;
   const seen = new Set();
   for ( const token of tokens ?? [] ) {

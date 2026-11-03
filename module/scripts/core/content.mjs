@@ -42,6 +42,8 @@
  *                                               item (Appel de destrier : « le destrier est remplacé par le nouveau ») ;
  *                                               `minLevels: { <activité>: n }` (§230) : cette activité ne se lance qu'à partir
  *                                               du niveau de sort n — son incantation gratuite (au niveau de base) n'en est pas une.
+ *                                               O8f (§349) `hostile: true` : la créature est hostile à tous (Le Crâne, Parchemin
+ *                                               d'invocation de titan) — token Hostile, aucun joueur propriétaire ni pilote.
  *                                               §305 `vanishesWithCaster: true` : elle disparaît à la mort de son lanceur (Appel de
  *                                               destrier, Compagnon primitif) ; `endsOnLongRest: true` : elle part au Repos long de
  *                                               son lanceur (Compagnon sauvage).

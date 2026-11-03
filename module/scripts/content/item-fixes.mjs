@@ -439,6 +439,11 @@ export const ITEM_FIXES = Object.freeze({
   // Enemy » posé par « Swear Oath »). La folie furieuse de la Hache reste au MJ.
   "berserker-axe-enchanted": { exclusiveWeapon: true },
   "oathbow-enchanted": { exclusiveWeapon: { whileEffect: "EWoLqkPJeK9dwYhn" } },
+  // O8f (§349) : invocations hostiles — Le Crâne (Jeu des merveilles) : « un Avatar de la mort apparaît […] disparaît à 0 PV ou à votre
+  // mort » ; Parchemin d'invocation de titan : « le titan est Hostile envers toutes les autres créatures et disparaît à 0 PV ». Initiative
+  // propre ; « il ne vise que vous » et l'avatar des alliés qui le blessent restent au MJ.
+  "skull": { summon: { initiative: "own", hostile: true, vanishesAtZero: true, vanishesWithCaster: true } },
+  "scroll-of-titan-summoning": { summon: { initiative: "own", hostile: true, vanishesAtZero: true } },
   // Pierres de Ioun d'absorption : « une Réaction : un sort de niveau 4 (8) ou moins lancé par une créature que vous voyez est annulé ».
   "absorption-ioun-stone": { counter: { level: 4 }, triggers: [{ on: "castsSpell", if: { "target.seesSource": true }, do: [{ type: "use", activity: "VHm5fPkFAnT7Vb01", target: "source" }] }] },
   "greater-absorption-ioun-stone": { counter: { level: 8 }, triggers: [{ on: "castsSpell", if: { "target.seesSource": true }, do: [{ type: "use", activity: "1yWFZf1MJMoNof7b", target: "source" }] }] },

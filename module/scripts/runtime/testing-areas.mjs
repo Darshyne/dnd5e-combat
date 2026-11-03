@@ -67,6 +67,16 @@ export async function wallSide({ regionId, flip=false }) {
  * `placeSummons` :40494) est remplacé par la position donnée, sur CETTE instance d'activité et le temps de l'appel.
  * Outil de test seulement : le moteur, lui, laisse le placement au système.
  */
+/** O8f (§349) : la disposition d'un token et les joueurs (non MJ, ou « default ») qui ont au moins un droit sur son acteur du monde. */
+export function owners({ tokenId }) {
+  const token = canvas.scene?.tokens.get(tokenId);
+  if ( !token ) throw new Error("token not found");
+  const actor = (token.actorLink === false) ? (token.baseActor ?? game.actors.get(token.actorId)) : token.actor;
+  const players = Object.entries(actor?.ownership ?? {}).filter(([id, level]) => (level >= 1) && ((id === "default") || !game.users.get(id)?.isGM))
+    .map(([id]) => (id === "default") ? id : (game.users.get(id)?.name ?? id));
+  return { disposition: token.disposition, players, gmOwned: Object.entries(actor?.ownership ?? {}).some(([id, level]) => (level >= 3) && game.users.get(id)?.isGM) };
+}
+
 export async function summonAt({ tokenId, itemId, activityId=null, profile=null, actorUuid=null, x, y }) {
   gmOnly();
   const token = canvas.scene?.tokens.get(tokenId);
@@ -74,7 +84,9 @@ export async function summonAt({ tokenId, itemId, activityId=null, profile=null,
   const activity = activityId ? item?.system.activities.get(activityId) : item?.system.activities.find(a => a.type === "summon");
   if ( !activity || (activity.type !== "summon") ) throw new Error("summon activity not found");
   // §84 : sans rien consommer, comme `use` par défaut — un lanceur sans emplacement ouvrait « Plus de charge » chez le MJ (§77).
-  const used = await activity.use({ consume: false, create: { summons: false }, [MODULE_ID]: { confirmed: true, autoReact: "none", placeSummons: false } },
+  // O8f (§349) : une activité « rider » (Parchemin d'invocation de titan : elle n'apparaît qu'avec l'enchantement qui nomme le titan) ne
+  // s'utilise pas telle quelle — seule la pose est faite.
+  const used = activity.isHidden ? null : await activity.use({ consume: false, create: { summons: false }, [MODULE_ID]: { confirmed: true, autoReact: "none", placeSummons: false } },
     { configure: false });
   activity.getPlacement = async () => [{ x, y, elevation: token.elevation ?? 0, rotation: 0 }];
   // §107 : une invocation « par FP » (Appel de familier) demande la créature au joueur (summon.mjs, `queryActor`) — fournie ici.

@@ -118,3 +118,12 @@ describe("propriétaires d'une créature invoquée par le MJ (§197)", () => {
     expect(summonOwnership({ alice: 3 }, { alice: 2 }, isGM)).toEqual({ alice: 3 });
   });
 });
+
+import { validateEntry } from "../module/scripts/core/content.mjs";
+
+describe("O8f (§349) : invocations hostiles", () => {
+  it("summon.hostile : true ou absent", () => {
+    expect(validateEntry({ summon: { initiative: "own", hostile: true, vanishesAtZero: true } })).toEqual([]);
+    expect(validateEntry({ summon: { initiative: "own", hostile: "yes" } }).length).toBe(1);
+  });
+});

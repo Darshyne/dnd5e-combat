@@ -92,6 +92,24 @@ export function summonItemOf(tokenDoc) {
   return uuid ? fromUuidSync(uuid, { strict: false }) : null;
 }
 
+/**
+ * O8f (§349) : une invocation `summon.hostile` (Le Crâne, Parchemin d'invocation de titan) — token Hostile, et l'acteur invoqué (celui du
+ * monde, dont hérite un token non lié) n'appartient plus à aucun joueur : dnd5e le crée au nom de qui invoque. MJ actif. Rend vrai si fait.
+ */
+export async function makeSummonHostile(tokenDoc) {
+  const item = summonItemOf(tokenDoc);
+  if ( contentOf(item).entry?.summon?.hostile !== true ) return false;
+  const hostile = CONST.TOKEN_DISPOSITIONS.HOSTILE;
+  if ( tokenDoc.disposition !== hostile ) await tokenDoc.update({ disposition: hostile });
+  const actor = (tokenDoc.actorLink === false) ? (tokenDoc.baseActor ?? game.actors.get(tokenDoc.actorId)) : tokenDoc.actor;
+  if ( actor && !actor.pack ) {
+    const ownership = Object.fromEntries(Object.entries(actor.ownership ?? {})
+      .map(([id, level]) => [id, ((id === "default") || !game.users.get(id)?.isGM) ? CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE : level]));
+    if ( Object.entries(ownership).some(([id, level]) => actor.ownership[id] !== level) ) await actor.update({ ownership });
+  }
+  return true;
+}
+
 /** L'effet de concentration de l'invocateur sur cet item, ou null. */
 export function concentrationOn(item) {
   const actor = item?.actor;

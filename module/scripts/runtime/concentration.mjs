@@ -2,7 +2,7 @@ import {
   rollerFor, readConcentrationPrompt, concentrationKeptBy, rollConcentration, readConcentrationSave, breakConcentration, removeRegionsOf,
   isConcentrationEffect, concentrationDisabled, CONCENTRATION_QUERY, CONCENTRATION_TIMEOUT, handleConcentrationQuery
 } from "../adapter/concentration.mjs";
-import { tieSummonToConcentration, removeSummonsOf, joinSummonerCombat, summonItemOf } from "../adapter/summons.mjs";
+import { tieSummonToConcentration, removeSummonsOf, joinSummonerCombat, summonItemOf, makeSummonHostile } from "../adapter/summons.mjs";
 
 import { MODULE_ID } from "../constants.mjs";
 import { route } from "./router.mjs";
@@ -106,6 +106,8 @@ export function registerConcentration() {
   route("createToken", async tokenDoc => {
     const item = summonItemOf(tokenDoc);
     if ( !item ) return;
+    // O8f (§349) : une invocation hostile (Le Crâne, Parchemin d'invocation de titan).
+    if ( await makeSummonHostile(tokenDoc) ) log(`${tokenDoc.name}: summoned by ${item.name}, hostile to everyone`);
     const effect = await tieSummonToConcentration(tokenDoc);
     if ( effect ) log(`${tokenDoc.name}: sustained by ${item.actor?.name}'s concentration (${item.name})`);
     const combatant = await joinSummonerCombat(tokenDoc);

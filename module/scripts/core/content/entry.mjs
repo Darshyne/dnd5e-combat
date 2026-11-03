@@ -48,6 +48,12 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       for ( const key of Object.keys(r) ) if ( !["ac", "resistance", "attract"].includes(key) ) errors.push(`${at}rangedDefense.${key}: unknown key`);
     }
   }
+  // O8e (§348) : Désavantage avec les autres armes — toujours (`true`), ou tant qu'une créature vivante porte l'effet `whileEffect` de l'item.
+  if ( "exclusiveWeapon" in entry ) {
+    const x = entry.exclusiveWeapon;
+    const ok = (x === true) || (isObject(x) && isId(x.whileEffect) && (Object.keys(x).length === 1));
+    if ( !ok ) errors.push(`${at}exclusiveWeapon: true or { whileEffect: effect id }`);
+  }
   if ( "choice" in entry ) validateChoice(entry.choice, `${at}choice`, errors);
   if ( "targets" in entry ) validateTargets(entry.targets, `${at}targets`, facts, errors);
   if ( "trace" in entry ) {

@@ -7,9 +7,10 @@
 import { MODULE_ID } from "../constants.mjs";
 import { normalize, select, stepsOf } from "../core/triggers.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
-import { originItemOf, factsFor, comesFromItemEffect } from "./facts.mjs";
+import { originItemOf, factsFor, comesFromItemEffect, weaponKind } from "./facts.mjs";
 import { hasReactionAdvantage, takeReactionAdvantage, hasReactionDisadvantage, takeReactionDisadvantage } from "./marks.mjs";
 import { markModifiers } from "./mastery.mjs";
+import { exclusiveWeaponHindrances } from "../core/attack.mjs";
 export { factsFor, originItemOf, tokenOf, comesFromItemEffect } from "./facts.mjs";
 
 /**
@@ -146,9 +147,37 @@ export function declaredAttackModifiers(sourceToken, targetToken, activity) {
   for ( const e of source.effects ?? [] ) if ( (e.getFlag?.(MODULE_ID, "critMark")?.side === "by") && !out.disadvantage.includes(e.name) ) out.disadvantage.push(e.name);
   // C12-e : Défense multiattaque — l'attaquant qui a touché ce porteur pendant ce tour.
   for ( const e of source.effects ?? [] ) if ( (e.getFlag?.(MODULE_ID, "hitDefense")?.against === target.uuid) && !out.disadvantage.includes(e.name) ) out.disadvantage.push(e.name);
+  // O8e (§348) : Désavantage avec les autres armes (Hache du berserker, Arc du serment).
+  for ( const name of exclusiveWeaponHindrances(exclusiveRules(sourceToken), weaponAttackItem(activity)) ) {
+    if ( !out.disadvantage.includes(name) ) out.disadvantage.push(name);
+  }
   // §21 : les marques des bottes d'arme — Sape (Désavantage de l'attaquant), Coup vexant (Avantage contre cette cible).
   const marks = markModifiers(sourceToken, targetToken, activity);
   for ( const type of ["advantage", "disadvantage"] ) for ( const name of marks[type] ) if ( !out[type].includes(name) ) out[type].push(name);
+  return out;
+}
+
+/** O8e (§348) : l'id de l'arme d'une attaque d'arme (pas une frappe à mains nues), ou null. */
+function weaponAttackItem(activity) {
+  if ( (activity?.type !== "attack") || (activity.item?.type !== "weapon") || (weaponKind(activity) === "unarmed") ) return null;
+  return activity.item.id;
+}
+
+/**
+ * O8e (§348) : les règles `exclusiveWeapon` des armes harmonisées de l'attaquant — actives toujours, ou tant qu'une créature vivante
+ * de la scène porte l'effet `whileEffect` venu de cette arme (l'ennemi juré de l'Arc du serment).
+ */
+function exclusiveRules(sourceToken) {
+  const actor = sourceToken?.actor;
+  const out = [];
+  for ( const item of actor?.items ?? [] ) {
+    const rule = contentOf(item).entry?.exclusiveWeapon;
+    if ( !rule || ((item.system?.attunement === "required") && (item.system?.attuned !== true)) ) continue;
+    const active = (rule === true) || (sourceToken.parent?.tokens ?? []).some(t => t.actor && (t.actor !== actor)
+      && ((t.actor.system?.attributes?.hp?.value ?? 1) > 0) && !t.actor.statuses?.has?.("dead")
+      && t.actor.effects.some(e => !e.disabled && comesFromItemEffect(e, rule.whileEffect) && (originItemOf(e) === item)));
+    out.push({ item: item.id, name: item.name, active });
+  }
   return out;
 }
 

@@ -191,8 +191,13 @@ export async function enchant({ tokenId, itemId, activityId, targetItemId, profi
   const activity = actor?.items.get(itemId)?.system.activities?.get(activityId);
   const target = actor?.items.get(targetItemId);
   if ( !activity || !target ) throw new Error("activity or item not found");
-  const effect = await activity.applyEnchantment(profile ?? activity.effects?.[0]?._id, target, { strict: true });
-  return { effectId: effect?.id ?? null };
+  const profileId = profile ?? activity.effects?.[0]?._id;
+  const effect = await activity.applyEnchantment(profileId, target, { strict: true });
+  // O8e (§348) : sans carte de chat, dnd5e ne crée pas les « riders » (activités et effets ajoutés par l'enchantement : « Swear Oath »
+  // de l'Arc du serment) ; ils sont demandés ici comme la carte le ferait (`collectRiders`, chemin enchantmentProfile + activityId).
+  const riders = effect ? (await effect.system?.collectRiders?.({ dnd5e: { enchantmentProfile: profileId, activityId } }) ?? []) : [];
+  if ( riders.length ) await foundry.documents.modifyBatch(riders);
+  return { effectId: effect?.id ?? null, riders: riders.length };
 }
 
 /** §23 : soigne un token comme le ferait un sort (`applyDamage` de type « healing ») ; rend ses PV avant et après. */

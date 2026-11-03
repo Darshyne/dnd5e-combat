@@ -90,3 +90,15 @@ export function throwableAttackMode({ requested, remembered, byDefault, hasTarge
   if ( fromMemory && requested.startsWith("thrown") && byDefault && (byDefault !== requested) ) return byDefault;
   return null;
 }
+
+/**
+ * O8e (§348) : « Désavantage aux jets d'attaque avec les armes autres que celle-ci » (Hache du berserker, Arc du serment tant que
+ * l'ennemi juré vit). Les noms des règles qui gênent une attaque d'arme faite avec l'item `attacking` : actives, d'un autre item.
+ * @param {Array<{item: string, name: string, active: boolean}>} rules
+ * @param {string|null} attacking  id de l'item de l'arme ; null si l'attaque n'est pas une attaque d'arme
+ * @returns {string[]}
+ */
+export function exclusiveWeaponHindrances(rules, attacking) {
+  if ( !attacking ) return [];
+  return (rules ?? []).filter(r => r.active && (r.item !== attacking)).map(r => r.name);
+}

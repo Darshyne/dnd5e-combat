@@ -72,3 +72,24 @@ describe("critique en dépassant la CA (§207)", async () => {
     expect(base.critical).toBeCloseTo(1 / 20, 6);
   });
 });
+
+import { exclusiveWeaponHindrances } from "../module/scripts/core/attack.mjs";
+import { validateEntry } from "../module/scripts/core/content.mjs";
+
+describe("O8e (§348) : Désavantage avec les autres armes", () => {
+  const rules = [{ item: "axe", name: "Hache du berserker", active: true }, { item: "bow", name: "Arc du serment", active: false }];
+  it("une autre arme : le Désavantage de chaque règle active", () => {
+    expect(exclusiveWeaponHindrances(rules, "sword")).toEqual(["Hache du berserker"]);
+  });
+  it("l'arme elle-même, une attaque qui n'est pas d'arme ou une règle inactive : rien", () => {
+    expect(exclusiveWeaponHindrances(rules, "axe")).toEqual([]);
+    expect(exclusiveWeaponHindrances(rules, null)).toEqual([]);
+    expect(exclusiveWeaponHindrances([{ item: "bow", name: "Arc", active: false }], "sword")).toEqual([]);
+  });
+  it("validation : true ou { whileEffect }", () => {
+    expect(validateEntry({ exclusiveWeapon: true })).toEqual([]);
+    expect(validateEntry({ exclusiveWeapon: { whileEffect: "EWoLqkPJeK9dwYhn" } })).toEqual([]);
+    expect(validateEntry({ exclusiveWeapon: { whileEffect: "x" } }).length).toBe(1);
+    expect(validateEntry({ exclusiveWeapon: false }).length).toBe(1);
+  });
+});

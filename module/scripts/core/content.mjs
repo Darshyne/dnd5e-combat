@@ -323,6 +323,9 @@
  *                                               d'attaque à distance ; `resistance` : Résistance aux dégâts des attaques avec une arme à
  *                                               distance ; `attract` (ft) : une attaque avec une arme à distance contre une créature à cette
  *                                               distance du porteur le vise à sa place (malédiction).
+ *     exclusiveWeapon?: true | { whileEffect } O8e (§348) : l'item harmonisé, son porteur a le Désavantage aux attaques avec ses autres
+ *                                               armes — toujours, ou tant qu'une créature vivante de la scène porte l'effet `whileEffect`
+ *                                               de l'item (Arc du serment : l'ennemi juré)
  *     breaksOn?: ("attack"|"damage"|"spell")[] les effets de l'item cessent quand leur porteur fait un jet d'attaque, inflige des
  *                                               dégâts ou lance un sort (Invisibilité, §16.47)
  *     noReactions?: true                        le porteur d'un effet de l'item ne peut pas prendre de Réaction (Tentacules de

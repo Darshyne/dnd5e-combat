@@ -292,6 +292,8 @@ export const COMMANDS = {
             }
             const uuid = await applyStatusToToken(carrier, victim.uuid, step.status);
             if ( uuid ) { effects.push(uuid); log(`${step.name ?? "condition"}: ${victim.name} receives "${step.status}"`); }
+            // O9a (§354) : « détruite », « tuée sur le coup » — Morte, et ses PV à 0 (comme les paliers de PV, plus bas).
+            if ( uuid && (step.status === "dead") ) await victim.actor?.update({ "system.attributes.hp.value": 0 });
           }
         }
       }

@@ -123,3 +123,9 @@ export function resistRangedWeapon(actor, damages) {
   const traits = actor.system?.traits ?? {};
   return halveUnresisted(damages, { resisted: traits.dr?.value ?? [], immune: traits.di?.value ?? [] });
 }
+
+/** O9a (§354) : l'acteur porte-t-il une armure en adamantium (propriété `ada` de dnd5e, sur une armure équipée) ? */
+export function wearsAdamantine(actor) {
+  return Array.from(actor?.items ?? []).some(i => (i.type === "equipment") && i.system?.equipped && (i.system?.type?.value !== "shield")
+    && (i.system?.properties?.has?.("ada") === true));
+}

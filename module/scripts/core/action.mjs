@@ -197,8 +197,8 @@ export function applicationPlan(resolution) {
  *           elle reste dans la résolution pour qu'on le lise, mais ni sauvegarde, ni dégâts, ni effet.
  */
 
-function blankTarget({ token, actor, name, ac=null, defenceless=false, canReact=false, autoFail=null, cover=null, unaffected=null, duplicates=0, times=1, evasion=false, sculpted=false }) {
-  return { token, actor, name, ac, defenceless, canReact, autoFail, cover, unaffected, duplicates, times, evasion, sculpted, halved: false,
+function blankTarget({ token, actor, name, ac=null, defenceless=false, canReact=false, autoFail=null, cover=null, unaffected=null, duplicates=0, times=1, evasion=false, sculpted=false, noCrit=false }) {
+  return { token, actor, name, ac, defenceless, canReact, autoFail, cover, unaffected, duplicates, times, evasion, sculpted, noCrit, halved: false,
     hit: null, critical: false, reason: null, reaction: null, duplicate: null, save: null, damage: null, effects: [] };
 }
 
@@ -255,9 +255,9 @@ function judge(resolution, { roll, messageId, targets, critMargin=0 }) {
   // Les cibles d'une attaque sont celles désignées au moment du jet, pas à l'utilisation.
   const judged = resolveAttack(roll, targets.map(blankTarget)).map(t => {
     const auto = t.hit && !t.critical && t.defenceless;
-    if ( auto ) return { ...t, critical: true, reason: "autoCritical" };
+    if ( auto ) return plainHit({ ...t, critical: true, reason: "autoCritical" });
     // §207 : « CA + 10 » (règle maison, réglage `critMargin` lu au jet).
-    return beatsAcBy(t, roll, critMargin) ? { ...t, critical: true, reason: "beatsAc" } : t;
+    return plainHit(beatsAcBy(t, roll, critMargin) ? { ...t, critical: true, reason: "beatsAc" } : t);
   });
   const pending = judged.filter(t => t.hit && t.canReact).map(t => ({ kind: "reaction", window: "isHit", token: t.token }));
   const next = { ...resolution, attack: { roll, messageId, ...(critMargin > 0 ? { critMargin } : {}) }, targets: judged, pending };
@@ -289,10 +289,15 @@ function reactionResolved(resolution, { token, used=null, ac, halve=false, uncri
     const plain = (uncrit && again.critical) ? { critical: false, uncritted: true } : {};
     // §24 : Parade — un montant retiré aux dégâts de l'attaque.
     const reduced = ((reduce > 0) && (again.hit === true)) ? { reduced: reduce } : {};
-    return { ...again, ...count, ...plain, ...reduced, reaction: used, halved: !!halve && again.hit === true };
+    return plainHit({ ...again, ...count, ...plain, ...reduced, reaction: used, halved: !!halve && again.hit === true });
   });
   const next = { ...resolution, targets, pending: resolution.pending.filter(p => (p.kind !== "reaction") || (p.token !== token)) };
   return next.pending.length ? same(next) : afterReactions(next);
+}
+
+/** O9a (§354) : une cible qui ne subit pas de coup critique (Armure en adamantium) — le critique devient un coup normal. */
+function plainHit(t) {
+  return (t.noCrit && t.critical) ? { ...t, critical: false, uncritted: true } : t;
 }
 
 /** Répliques (Image miroir, §16.25) : un d6 par réplique restante ; un 3 ou plus, et c'est une réplique qui est touchée. */

@@ -141,8 +141,13 @@ export const ITEM_FIXES = Object.freeze({
   // Bâton de dynamite : le lancer est en portée « personnelle » (la sphère tombait sur le lanceur) ; « lancé jusqu'à 18 m ».
   "dynamite-stick": { ranges: { "8vYrGCuiK0BcQ8k9": { value: 60, units: "ft" }, "4aJqDXopO4psnUXg": { value: 60, units: "ft" } } },
   // Torche : son attaque dépense une utilisation que l'item n'a pas (attaque refusée).
+  // O9a (§354) : « utilisée comme une arme courante de corps à corps » — dnd5e n'ajoute pas la maîtrise à l'attaque d'un consommable
+  // (`@prof` y vaut 0 : la maîtrise de l'item) ; celle du personnage.
   "torch": {
-    dataFixes: [{ path: "system.activities.SouNhSdWdnznKCam.consumption.targets", from: [spend("itemUses", 1)], value: [] }]
+    dataFixes: [
+      { path: "system.activities.SouNhSdWdnznKCam.consumption.targets", from: [spend("itemUses", 1)], value: [] },
+      { path: "system.activities.SouNhSdWdnznKCam.attack.bonus", from: "", value: "@attributes.prof" }
+    ]
   },
   // Huile d'affûtage : « l'arme enduite devient une Arme +3 » — l'enchantement de la donnée expire au bout d'une minute.
   "oil-of-sharpness": {
@@ -215,7 +220,10 @@ export const ITEM_FIXES = Object.freeze({
     dataFixes: [
       { path: "system.uses", from: { spent: 0, recovery: [], max: "" }, value: { spent: 0, recovery: [{ period: "dawn", type: "recoverAll" }], max: "1" } },
       { path: "system.activities.YvxUL75GlG2OoFMg.consumption.targets", from: [], value: [spend("itemUses", 1)] }
-    ]
+    ],
+    // O9a (§354) : « une créature qui peut toucher les liens, l'Entravée comprise, peut prendre une action pour un test de Force
+    // (Athlétisme) DD 20 » — celui de l'activité « Break Check » (un nouvel essai raté reste au MJ).
+    actionEnds: { IgRS1gR2uBlWZnIK: { by: "bearer", roll: "check" } }
   },
   // Pierre de Ioun de vigilance : « Avantage aux jets d'Initiative et aux tests de Sagesse (Perception) » — seule l'Initiative y était.
   "awareness-ioun-stone": {
@@ -286,7 +294,14 @@ export const ITEM_FIXES = Object.freeze({
   // Teinture pâle : rien sur une réussite ; l'effet Empoisonné n'était pas relié à la sauvegarde.
   "pale-tincture": {
     saveDamage: { Xm0k8JLnz00jgCg7: "none" },
-    dataFixes: [{ path: "system.activities.Xm0k8JLnz00jgCg7.effects", from: [], value: [{ _id: "o6ZuvxhWeXsg50MH", onSave: false }] }]
+    // O9a (§354) : « les dégâts du poison ne peuvent être soignés par aucun moyen tant que la créature est Empoisonnée ».
+    blocksHealing: true,
+    dataFixes: [
+      { path: "system.activities.Xm0k8JLnz00jgCg7.effects", from: [], value: [{ _id: "o6ZuvxhWeXsg50MH", onSave: false }] },
+      // O9a (§354) : le « PV maximum + 0 » de la donnée (à régler à la main) tombait à 0 une fois appliqué : la cible mourait. Retiré,
+      // `blocksHealing` fait le travail.
+      { effect: "o6ZuvxhWeXsg50MH", path: "system.changes", from: [{ key: "system.attributes.hp.max", value: 0, type: "add" }], value: [] }
+    ]
   },
   // Dard de Lolth : Inconscient « si le jet est raté de 5 ou plus » ; Empoisonné sur tout échec.
   // O3 : « se réveille si elle subit des dégâts ou si une autre créature la secoue (une action) » — Empoisonné reste.
@@ -310,8 +325,9 @@ export const ITEM_FIXES = Object.freeze({
   // Baume de Keoghtom : « met fin à l'état Empoisonné ».
   "keoghtoms-ointment": { curesAll: ["poisoned"] },
   // Talismans : Désavantage à la sauvegarde pour les Fiélons et Morts-vivants (bien ultime), les Célestes (mal absolu).
-  "talisman-of-pure-good": { saveDisadvantageFor: ["fiend", "undead"] },
-  "talisman-of-ultimate-evil": { saveDisadvantageFor: ["celestial"] },
+  // O9a (§354) : « sur un échec, la cible tombe dans la fissure et est détruite » — Morte ; sur une réussite, les 4d6 de la donnée.
+  "talisman-of-pure-good": { saveDisadvantageFor: ["fiend", "undead"], triggers: [{ on: "failedSave", if: { "activity.id": "aXBr8uIgXMNnZdfy" }, do: [{ type: "status", status: "dead" }] }] },
+  "talisman-of-ultimate-evil": { saveDisadvantageFor: ["celestial"], triggers: [{ on: "failedSave", if: { "activity.id": "zknPGzuSFtET9BIe" }, do: [{ type: "status", status: "dead" }] }] },
 
   /* ---- O3 (§337) : fins d'effet, sauvegardes répétées, réveils ---- */
 
@@ -358,7 +374,8 @@ export const ITEM_FIXES = Object.freeze({
   "mace-of-terror": { ranges: { owojSA2KZWmv61Nj: { units: "self" } }, zoneAffects: "enemy",
     triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "amYapIKWPpJZ9EuO", do: [{ type: "resave" }] }] },
   // Carafe intarissable, Geyser : « une créature » dans la ligne, pas toutes.
-  "decanter-of-endless-water": { zoneMax: 1, zoneAffects: "enemy" },
+  // O9a (§354) : Geyser — « sur un échec, la créature tombe À terre » (le texte de la donnée ne pose que les dégâts).
+  "decanter-of-endless-water": { zoneMax: 1, zoneAffects: "enemy", triggers: [{ on: "failedSave", if: { "activity.id": "QObmaE8dWI8pIXFE" }, do: [{ type: "status", status: "prone" }] }] },
   // Lanterne de révélation : « brûle 6 heures avec une flasque d'Huile, Lumière vive sur 9 m et faible sur 9 m de plus » (la révélation
   // des créatures invisibles reste au MJ).
   "lantern-of-revealing": { carriedLight: { bright: 30, dim: 60, units: "ft", burn: { value: 6, units: "hour" }, fuel: "oil" } },
@@ -387,7 +404,13 @@ export const ITEM_FIXES = Object.freeze({
   "executioners-axe-enchanted": BANE("executioners-axe", ["humanoid"], "2d6", "slashing", true),
   // Armes qui portent leur propre identifiant — Masse d'anéantissement : « 2d6 radiants » contre un Fiélon ou un Mort-vivant ; Épée
   // radieuse : « 1d8 radiants » contre un Mort-vivant ; Épée de Kas : « 2d10 tranchants » contre un Mort-vivant.
-  "mace-of-disruption": BANE("mace-of-disruption", ["fiend", "undead"], "2d6", "radiant"),
+  // O9a (§354) : « à 25 PV ou moins après ces dégâts, sauvegarde de Sagesse DD 15 ou détruite ; sur une réussite, Effrayée » — la donnée
+  // posait Effrayé sur un échec et ne détruisait jamais.
+  "mace-of-disruption": {
+    triggers: [...BANE("mace-of-disruption", ["fiend", "undead"], "2d6", "radiant").triggers,
+      { on: "failedSave", if: { "activity.id": "sUoIpd68kJWIxRaU", "target.hpAtMost": 25 }, do: [{ type: "status", status: "dead" }] }],
+    savedEffects: ["Z49QSPjltZ1NT28K"]
+  },
   // §346 : « la lame lumineuse émet une Lumière vive sur 4,50 m et faible sur 4,50 m de plus » (la lame apparaît et disparaît : menu de
   // l'objet ; régler le rayon par une action Magie reste au MJ).
   "sun-blade": { ...BANE("sun-blade", ["undead"], "1d8", "radiant"), carriedLight: { bright: 15, dim: 30, units: "ft" } },
@@ -451,6 +474,17 @@ export const ITEM_FIXES = Object.freeze({
   // O8h (§351) : armes de siège en tir en cloche — « ne peut pas toucher une cible à 18 m ou moins de lui » (le Trébuchet plus haut ;
   // le tir par-dessus les murs reste au MJ).
   "mangonel": { minRange: { value: 60, units: "ft" } },
+  // O9a (§354) : poisons et pièges — Torpeur : « la Vitesse est divisée par deux tant qu'elle est Empoisonnée ainsi » ; Pierre roulante :
+  // « sur un échec, À terre ».
+  "torpor": { effectChanges: { "4fBr9e0P9LVogtyq": [{ key: "system.attributes.movement.walk", type: "multiply", value: 0.5 }] } },
+  "rolling-stone": { triggers: [{ on: "failedSave", if: { "activity.id": "MLbhL4DqA54XPO0N" }, do: [{ type: "status", status: "prone" }] }] },
+  // Voleuse de vie : « une créature de moins de 100 PV […] réussit une sauvegarde de Constitution DD 15 ou est tuée sur le coup ; les
+  // Créatures artificielles et les Morts-vivants réussissent d'office » (activité « Life Stealing », jouée sur le 20 naturel ; elle arrive
+  // sur l'arme enchantée sous un autre id : la seule sauvegarde de l'arme).
+  "nine-lives-stealer-enchanted": { triggers: [{ on: "failedSave", if: { "activity.type": "save", "target.hpAtMost": 99,
+    not: { any: [{ "target.creatureType": "construct" }, { "target.creatureType": "undead" }] } }, do: [{ type: "status", status: "dead" }] }] },
+  // Sceptre de suzeraineté : « blessée par vous ou vos alliés, la cible cesse d'être Charmée » (comme Charme-personne).
+  "rod-of-rulership": { triggers: [{ on: "isDamaged", via: "effect", fromEffect: "x1imiHMHJdzBfnVe", by: "originSide", do: [{ type: "remove" }] }] },
   // §352 : Marteau de tonnerre (posé sur un Maillet d'armes ou un Marteau de guerre) — « si l'attaque lancée touche, la cible et chaque
   // créature à 9 m d'elle autre que vous font une sauvegarde de Constitution DD 17 ou sont Étourdies jusqu'à la fin de votre prochain
   // tour ». L'Étourdi sans sauvegarde des données (« Hurl Hammer ») ne passe jamais (`effectsIf` faux : la cible n'est pas l'auteur) ;

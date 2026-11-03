@@ -16,7 +16,7 @@ import { unaffectedBy } from "../adapter/eligibility.mjs";
 import { restoreHp, rollDamageFor } from "../adapter/messages.mjs";
 import { removeEffects, TARGETS_QUERY, handleTargetsQuery, SAVE_QUERY, handleSaveQuery } from "../adapter/saves.mjs";
 import { statusesOf, areAdjacent, evades, avoids, coverAgainst, isRangedAttack } from "../adapter/conditions.mjs";
-import { rangedAcBonus } from "../adapter/defenses.mjs";
+import { rangedAcBonus, wearsAdamantine } from "../adapter/defenses.mjs";
 import { currentAc } from "../adapter/reactions.mjs";
 import { CHOICE_QUERY, handleChoiceQuery, askChoice } from "../adapter/choices.mjs";
 import { ALLOCATION_QUERY, handleAllocationQuery } from "../adapter/projectiles.mjs";
@@ -233,6 +233,8 @@ export async function enrich(targets, plan, originUuid, activityUuid=null, attac
       evasion: !!plan.save && (evades(token?.actor) || (avoids(token?.actor) ? "any" : false)),
       sculpted: (sculpts > 0) && !!token && !!casterToken && (token.actor !== caster) && areAllies(token, casterToken)
         && (sculpts-- > 0),
+      // O9a (§354) : « tout coup critique contre vous devient un coup normal » (armure en adamantium portée : propriété `ada` de dnd5e).
+      noCrit: !!plan.attack && wearsAdamantine(token?.actor),
       unaffected
     });
   }

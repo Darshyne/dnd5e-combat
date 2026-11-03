@@ -67,6 +67,13 @@ describe("attaque", () => {
     expect(isCriticalHit(resolution)).toBe(true);
   });
 
+  it("O9a (§354) : une cible qui ne subit pas de critique (Armure en adamantium) — un coup normal, même sans défense", () => {
+    const { resolution } = play(open({ ...base, plan, targets: [] }),
+      { type: "attackRolled", roll: roll(13), messageId: "Atk", targets: [T(1, { defenceless: true, noCrit: true })] });
+    expect(resolution.targets[0]).toMatchObject({ hit: true, critical: false, uncritted: true });
+    expect(isCriticalHit(resolution)).toBe(false);
+  });
+
   it("applique aux seules cibles touchées, puis ouvre la fenêtre « blessé » et nettoie", () => {
     const opened = play(open({ ...base, plan, targets: [] }),
       { type: "attackRolled", roll: roll(15), messageId: "Atk", targets: [T(1), T(2, { ac: 18 })] },

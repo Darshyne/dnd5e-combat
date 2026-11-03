@@ -18,7 +18,9 @@ import { askChoice } from "../adapter/choices.mjs";
 import { askAllocation } from "../adapter/projectiles.mjs";
 import { pushAway } from "../adapter/movement.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
-import { combatantFor, readBudget, writeBudget } from "../adapter/turn.mjs";
+import { combatantFor, readBudget, writeBudget, distanceBetween } from "../adapter/turn.mjs";
+import { rangeIssue } from "../core/range.mjs";
+import { isObjectToken } from "../adapter/bodies.mjs";
 import { dodge as takeDodge } from "../core/turn.mjs";
 import { tallyAfter } from "../core/tally.mjs";
 import { askHitReactions, windowIsDamaged, windowIsMissed, windowEnemyAttacked, askDamageGuardians } from "./reactions.mjs";
@@ -278,14 +280,19 @@ export const COMMANDS = {
           await liftToken(target, step, region);
         }
         else if ( step.type === "status" ) {
-          // §345 : l'état seulement sur une sauvegarde ratée (Tueuse de géants), lancée ici, sans fenêtre.
-          if ( step.save && target?.actor ) {
-            const saved = await requestSave(target.actor, { ability: step.save.ability, dc: step.save.dc, flavor: step.name ?? null });
-            log(`${step.name ?? "condition"}: ${target.name} ${step.save.ability} saving throw ${saved?.total ?? "?"} vs DC ${step.save.dc}: ${saved?.success ? "succeeded" : "failed"}`);
-            if ( saved?.success !== false ) continue;
+          // §352 : `around` — la cible et chaque créature à cette distance d'elle, l'auteur excepté (Marteau de tonnerre : « la cible et
+          // chaque créature à 9 m d'elle autre que vous »), chacune sa sauvegarde.
+          const struck = target ? [target, ...(step.around ? creaturesAround(target, step.around, source) : [])] : [];
+          for ( const victim of struck ) {
+            // §345 : l'état seulement sur une sauvegarde ratée (Tueuse de géants), lancée ici, sans fenêtre.
+            if ( step.save && victim.actor ) {
+              const saved = await requestSave(victim.actor, { ability: step.save.ability, dc: step.save.dc, flavor: step.name ?? null });
+              log(`${step.name ?? "condition"}: ${victim.name} ${step.save.ability} saving throw ${saved?.total ?? "?"} vs DC ${step.save.dc}: ${saved?.success ? "succeeded" : "failed"}`);
+              if ( saved?.success !== false ) continue;
+            }
+            const uuid = await applyStatusToToken(carrier, victim.uuid, step.status);
+            if ( uuid ) { effects.push(uuid); log(`${step.name ?? "condition"}: ${victim.name} receives "${step.status}"`); }
           }
-          const uuid = await applyStatusToToken(carrier, entry.token, step.status);
-          if ( uuid ) { effects.push(uuid); log(`${step.name ?? "condition"}: ${target?.name} receives "${step.status}"`); }
         }
       }
       for ( const status of tier?.statuses ?? [] ) {
@@ -448,4 +455,14 @@ async function forcedMove(source, target, { mode, distance, units, follow=false 
   }
   const { cells, wanted } = await pushAway(source, target, { distance: value, units }, readUnitFactors(), { towards, follow });
   log(`${towards ? "pull" : "push"}: ${target.name} ${towards ? "pulled" : "pushed"} ${cells} square(s) out of ${wanted}${cells < wanted ? " (stopped)" : ""}`);
+}
+
+/**
+ * §352 : les créatures vivantes à `around.radius` (en `around.units`) d'un token, sur la même scène, lui et l'auteur exceptés (ni
+ * objet, ni token caché).
+ */
+function creaturesAround(center, around, source) {
+  const factors = readUnitFactors();
+  return (center.parent?.tokens ?? []).filter(t => (t !== center) && (t !== source) && t.actor && !t.hidden && !isObjectToken(t)
+    && !t.actor.statuses?.has?.("dead") && (rangeIssue(distanceBetween(center, t), { value: around.radius, units: around.units }, factors) === null));
 }

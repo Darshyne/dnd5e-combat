@@ -200,7 +200,7 @@ describe("contenu livré", () => {
       "giant-insect", "giant-slayer-enchanted", "gibbering", "globe-of-invulnerability", "gloves-of-missile-snaring",
       "gloves-of-swimming-and-climbing", "goading-attack", "golden-lions-rare", "grappler", "grasping-hand", "grasping-vine",
       "grave-dust-flight", "grease", "great-weapon-fighting", "great-weapon-master", "greater-absorption-ioun-stone", "greater-portent",
-      "greater-restoration", "grenade-smoke", "guardian-of-faith", "guidance", "guiding-bolt", "gust-of-wind", "hail-of-thorns",
+      "greater-restoration", "grenade-smoke", "guardian-of-faith", "guidance", "guiding-bolt", "gust-of-wind", "hail-of-thorns", "hammer-of-thunderbolts-enchanted",
       "hand-of-healing", "hand-of-ultimate-mercy", "harkons-bite", "haste", "heal", "healer", "healers-kit", "heat-aura", "heat-metal",
       "heavy-armor-master", "heightened-focus", "heightened-spell", "hellish-rebuke", "helm-of-brilliance", "helm-of-brilliance-enchanted", "helm-of-telepathy",
       "heroic-warrior", "heroism", "hex", "hideous-laughter", "hills-tumble", "hold-monster", "hold-person", "holy-aura",
@@ -1194,5 +1194,13 @@ describe("§317 : repasse, lot C12-j (divers)", () => {
     expect(CONTENT["font-of-inspiration"].regainOnShortRest).toEqual(["bardic-inspiration"]);
     expect(CONTENT["steel-wind-strike"].projectiles).toEqual({ count: "5", attack: true });
     expect(validateEntry({ regainOnShortRest: [""] })).toHaveLength(1);
+  });
+});
+
+describe("§352 : étape status — around", () => {
+  it("around : { radius, units }", () => {
+    expect(validateEntry({ triggers: [{ on: "hit", do: [{ type: "status", status: "stunned", save: { ability: "con", dc: 17 }, around: { radius: 30, units: "ft" } }] }] })).toEqual([]);
+    expect(validateEntry({ triggers: [{ on: "hit", do: [{ type: "status", status: "stunned", around: { radius: 0, units: "ft" } }] }] }).length).toBe(1);
+    expect(validateEntry({ triggers: [{ on: "hit", do: [{ type: "status", status: "stunned", around: 30 }] }] }).length).toBe(1);
   });
 });

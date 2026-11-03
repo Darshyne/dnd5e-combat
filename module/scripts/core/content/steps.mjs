@@ -50,6 +50,9 @@ function validateStep(step, at, errors) {
   // §345 : `save` — l'état seulement si la cible rate cette sauvegarde (Tueuse de géants : Force DD 15 ou À terre).
   if ( (step.type === "status") && ("save" in step) && !(isObject(step.save) && (typeof step.save.ability === "string") && /^[a-z]{3}$/.test(step.save.ability)
     && Number.isFinite(step.save.dc) && (step.save.dc > 0)) ) errors.push(`${at}.save: { ability, dc }`);
+  // §352 : `around` — aussi chaque créature à cette distance de la cible, l'auteur excepté (Marteau de tonnerre).
+  if ( (step.type === "status") && ("around" in step) && !(isObject(step.around) && Number.isFinite(step.around.radius) && (step.around.radius > 0)
+    && (typeof step.around.units === "string") && step.around.units) ) errors.push(`${at}.around: { radius, units }`);
   if ( (step.type === "lift") && !(Number.isFinite(step.height) && (step.height > 0) && (typeof step.units === "string") && step.units) ) errors.push(`${at}.height, units: elevation required`);
   // §86 : riposte par une sauvegarde — vers l'attaquant, une activité de l'item.
   if ( step.type === "save" ) {

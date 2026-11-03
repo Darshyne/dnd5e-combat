@@ -449,6 +449,15 @@ export const ITEM_FIXES = Object.freeze({
   // O8h (§351) : armes de siège en tir en cloche — « ne peut pas toucher une cible à 18 m ou moins de lui » (le Trébuchet plus haut ;
   // le tir par-dessus les murs reste au MJ).
   "mangonel": { minRange: { value: 60, units: "ft" } },
+  // §352 : Marteau de tonnerre (posé sur un Maillet d'armes ou un Marteau de guerre) — « si l'attaque lancée touche, la cible et chaque
+  // créature à 9 m d'elle autre que vous font une sauvegarde de Constitution DD 17 ou sont Étourdies jusqu'à la fin de votre prochain
+  // tour ». L'Étourdi sans sauvegarde des données (« Hurl Hammer ») ne passe jamais (`effectsIf` faux : la cible n'est pas l'auteur) ;
+  // le Fléau des géants reste au MJ.
+  "hammer-of-thunderbolts-enchanted": {
+    effectsIf: { "target.isSelf": true },
+    triggers: [{ on: "hit", if: { "activity.isMelee": false }, do: [{ type: "status", status: "stunned", save: { ability: "con", dc: 17 }, around: { radius: 30, units: "ft" } }] }],
+    effectEnds: { "status:stunned": "casterTurnEnd" }
+  },
   // Pierres de Ioun d'absorption : « une Réaction : un sort de niveau 4 (8) ou moins lancé par une créature que vous voyez est annulé ».
   "absorption-ioun-stone": { counter: { level: 4 }, triggers: [{ on: "castsSpell", if: { "target.seesSource": true }, do: [{ type: "use", activity: "VHm5fPkFAnT7Vb01", target: "source" }] }] },
   "greater-absorption-ioun-stone": { counter: { level: 8 }, triggers: [{ on: "castsSpell", if: { "target.seesSource": true }, do: [{ type: "use", activity: "1yWFZf1MJMoNof7b", target: "source" }] }] },

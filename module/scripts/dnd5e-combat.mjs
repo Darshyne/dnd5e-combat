@@ -42,6 +42,7 @@ import { registerCoatings } from "./runtime/coatings.mjs";
 import { registerGrants } from "./runtime/grants.mjs";
 import { registerFelled } from "./runtime/felled.mjs";
 import { registerWeaponFeed } from "./runtime/weapon-feed.mjs";
+import { registerWrath } from "./runtime/wrath.mjs";
 import { registerProjectiles } from "./runtime/projectiles.mjs";
 import { registerAuras } from "./runtime/auras.mjs";
 import { registerEmanations } from "./runtime/emanations.mjs";
@@ -336,6 +337,7 @@ Hooks.once("init", () => {
   gated(registerGrants);   // C12-d : activités données à une autre créature (Souffle du dragon)
   gated(registerFelled);
   gated(registerWeaponFeed);
+  gated(registerWrath);
   gated(registerZones);
   gated(registerAuras);
   gated(registerEmanations);

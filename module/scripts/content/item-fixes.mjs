@@ -468,7 +468,10 @@ export const ITEM_FIXES = Object.freeze({
   // O8e (§348) : Hache du berserker — « Désavantage aux jets d'attaque avec les armes autres que celle-ci » (malédiction, harmonisée) ;
   // Arc du serment — « tant que votre ennemi juré vit, Désavantage aux jets d'attaque avec toutes les autres armes » (l'effet « Sworn
   // Enemy » posé par « Swear Oath »). La folie furieuse de la Hache reste au MJ.
-  "berserker-axe-enchanted": { exclusiveWeapon: true },
+  // O9c (§356) : et sa folie furieuse — « chaque fois qu'une autre créature vous blesse : Sagesse DD 15 ou folie furieuse ». Épée
+  // vengeresse : même Désavantage avec les autres armes, et « blessé en combat : Sagesse DD 15 ou vous attaquez qui vous a blessé ».
+  "berserker-axe-enchanted": { exclusiveWeapon: true, wrath: { kind: "berserk", save: { ability: "wis", dc: 15 } } },
+  "sword-of-vengeance-enchanted": { exclusiveWeapon: true, wrath: { kind: "vengeance", save: { ability: "wis", dc: 15 } } },
   // §353 : et contre l'ennemi juré, « Avantage au jet ; la cible ne profite pas d'un abri partiel ou aux trois quarts, et pas de
   // Désavantage à longue portée ». Les 3d6 Perforants : l'activité « Attack Sworn Enemy » des données, à choisir contre lui.
   "oathbow-enchanted": { exclusiveWeapon: { whileEffect: "EWoLqkPJeK9dwYhn" }, swornEnemy: { effect: "EWoLqkPJeK9dwYhn" } },

@@ -106,6 +106,8 @@
   "DND5ECOMBAT.Retour.SortAbsorbe": "{spell} absorbed by {item}",
   "DND5ECOMBAT.Retour.CibleAttiree": "Attack pulled by the shield ({item})",
   "DND5ECOMBAT.Retour.CibleInterceptee": "Attack intercepted ({item})",
+  "DND5ECOMBAT.Colere.Berserk": "Berserk against {name}",
+  "DND5ECOMBAT.Colere.Vengeance": "Vengeance against {name}",
   "DND5ECOMBAT.Retour.PvTemporaires": "+{n} temporary HP ({item})",
   "DND5ECOMBAT.Retour.ParcheminIllisible": "Scroll unintelligible ({item})",
   "DND5ECOMBAT.Retour.ParcheminPerdu": "The spell vanishes from the scroll ({item})",

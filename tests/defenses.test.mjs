@@ -81,3 +81,26 @@ describe("§355 : armes qui nourrissent leur porteur", () => {
     expect(validateEntry({ devours: 1, critFeeds: { amount: 0 }, maxSpellDamageVs: ["dragonkin"] }).length).toBe(3);
   });
 });
+
+import { wrathSaveDue, wrathEnds } from "../module/scripts/core/defenses.mjs";
+
+describe("§356 : armes maudites, colère du porteur", () => {
+  it("la sauvegarde : blessé par un autre, pas déjà en colère ; la vengeance seulement en combat", () => {
+    expect(wrathSaveDue({ kind: "berserk", byOther: true, inCombat: false, marked: false })).toBe(true);
+    expect(wrathSaveDue({ kind: "vengeance", byOther: true, inCombat: false, marked: false })).toBe(false);
+    expect(wrathSaveDue({ kind: "vengeance", byOther: true, inCombat: true, marked: false })).toBe(true);
+    expect(wrathSaveDue({ kind: "berserk", byOther: false, inCombat: true, marked: false })).toBe(false);
+    expect(wrathSaveDue({ kind: "berserk", byOther: true, inCombat: true, marked: true })).toBe(false);
+  });
+  it("la fin : folie furieuse sans créature à 18 m, vengeance quand l'un des deux tombe", () => {
+    expect(wrathEnds({ kind: "berserk", othersNear: false, foeDown: false, bearerDown: false })).toBe(true);
+    expect(wrathEnds({ kind: "berserk", othersNear: true, foeDown: true, bearerDown: false })).toBe(false);
+    expect(wrathEnds({ kind: "vengeance", othersNear: true, foeDown: true, bearerDown: false })).toBe(true);
+    expect(wrathEnds({ kind: "vengeance", othersNear: false, foeDown: false, bearerDown: false })).toBe(false);
+    expect(wrathEnds({ kind: "vengeance", othersNear: true, foeDown: false, bearerDown: true })).toBe(true);
+  });
+  it("validation", () => {
+    expect(validateEntry({ wrath: { kind: "berserk", save: { ability: "wis", dc: 15 } } })).toEqual([]);
+    expect(validateEntry({ wrath: { kind: "rage", save: { ability: "wis", dc: 15 } } }).length).toBe(1);
+  });
+});

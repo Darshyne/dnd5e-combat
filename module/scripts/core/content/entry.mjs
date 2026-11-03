@@ -70,6 +70,13 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     && (Object.keys(entry.critFeeds).length === 1)) ) errors.push(`${at}critFeeds: { amount: positive integer }`);
   if ( ("maxSpellDamageVs" in entry) && !(Array.isArray(entry.maxSpellDamageVs) && entry.maxSpellDamageVs.length
     && entry.maxSpellDamageVs.every(t => CREATURE_TYPES.includes(t))) ) errors.push(`${at}maxSpellDamageVs: non-empty list of creature types`);
+  // §356 : arme maudite qui s'empare de son porteur quand on le blesse.
+  if ( "wrath" in entry ) {
+    const w = entry.wrath;
+    const ok = isObject(w) && ["berserk", "vengeance"].includes(w.kind) && isObject(w.save) && /^[a-z]{3}$/.test(w.save.ability ?? "")
+      && Number.isFinite(w.save.dc) && (w.save.dc > 0) && (Object.keys(w).length === 2);
+    if ( !ok ) errors.push(`${at}wrath: { kind: berserk|vengeance, save: { ability, dc } }`);
+  }
   if ( "choice" in entry ) validateChoice(entry.choice, `${at}choice`, errors);
   if ( "targets" in entry ) validateTargets(entry.targets, `${at}targets`, facts, errors);
   if ( "trace" in entry ) {

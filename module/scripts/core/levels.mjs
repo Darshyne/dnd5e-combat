@@ -48,7 +48,7 @@ export const FEATURE_LEVELS = Object.freeze({
   // Intégral : ce que déclare le contenu, objet par objet.
   registerPilot: F, registerReduction: F, registerCoven: F, registerRecast: F, registerProjectiles: F, registerMetamagic: F,
   registerGates: F, registerPortent: F, registerDispel: F, registerContest: F, registerStorm: F, registerBursts: F, registerCoatings: F, registerGrants: F,
-  registerFelled: F, registerWeaponFeed: F, registerAuras: F, registerEmanations: F, registerRegeneration: F, registerFortitude: F, registerDrain: F,
+  registerFelled: F, registerWeaponFeed: F, registerWrath: F, registerAuras: F, registerEmanations: F, registerRegeneration: F, registerFortitude: F, registerDrain: F,
   registerSpaceSharing: F, registerObjectPassage: E, registerEmpower: F, registerLifesteal: F, registerDischarge: F, registerMastery: F, registerSneak: F, registerFighter: F, registerFeats: F, registerEffectWhile: F, registerSpeedGrants: F, registerGrimoire: F, registerFlee: F,
   registerMonk: F, registerSmite: F, registerManeuverDice: F, registerRollBonus: F, registerNaturalOne: F, registerRise: F,
   registerAfterSneak: F, registerCantrips: F, registerEndings: F, registerActionEnd: F, registerBarbarian: F,

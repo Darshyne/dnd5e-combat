@@ -339,6 +339,10 @@
  *                                               donne à son porteur ces PV temporaires (Épée voleuse de vie : 15)
  *     maxSpellDamageVs?: string[]               §355 : l'objet dans l'inventaire, les dégâts des sorts de son porteur contre ces types de
  *                                               créature sont maximisés (Demonomicon d'Iggwilv : Fiélon)
+ *     wrath?: { kind, save: { ability, dc } }   §356 : arme maudite harmonisée — blessé par une autre créature (en combat pour
+ *                                               `vengeance`), le porteur fait la sauvegarde ; ratée, une marque « Folie furieuse » /
+ *                                               « Vengeance » contre l'auteur des dégâts, levée au début de son tour quand la colère
+ *                                               prend fin (runtime/wrath.mjs)
  *     breaksOn?: ("attack"|"damage"|"spell")[] les effets de l'item cessent quand leur porteur fait un jet d'attaque, inflige des
  *                                               dégâts ou lance un sort (Invisibilité, §16.47)
  *     noReactions?: true                        le porteur d'un effet de l'item ne peut pas prendre de Réaction (Tentacules de

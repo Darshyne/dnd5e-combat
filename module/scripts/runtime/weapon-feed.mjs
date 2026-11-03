@@ -35,6 +35,10 @@ async function onResolution(resolution) {
   const { tempHp, slain } = weaponFeed({ devours: entry.devours === true, critAmount: entry.critFeeds?.amount ?? 0, victims });
   const carrier = game.messages.get(resolution.carrier ?? "");
   for ( const id of slain ) {
+    // À 0 PV, le moteur pose déjà Inconscient ou Mort (même id d'effet, `dnd5edead0000000`) : un temps pour qu'il ait fini, puis
+    // seulement si la créature n'est pas déjà Morte — deux créations croisées de l'état échouent (vu le 2026-11-03).
+    await new Promise(resolve => setTimeout(resolve, 600));
+    if ( fromUuidSync(id, { strict: false })?.actor?.statuses?.has("dead") ) continue;
     await applyStatusToToken(carrier, id, "dead");
     log(`${activity.item.name}: ${fromUuidSync(id, { strict: false })?.name} is slain, its soul devoured`);
   }

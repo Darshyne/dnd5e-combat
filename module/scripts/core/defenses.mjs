@@ -81,3 +81,23 @@ export function weaponFeed({ devours=false, critAmount=0, victims=[] }) {
   }
   return { tempHp, slain };
 }
+
+/**
+ * §356 : les armes maudites qui s'emparent de leur porteur quand on le blesse (`wrath`) — Hache du berserker (`berserk` : « chaque fois
+ * qu'une autre créature vous inflige des dégâts ») et Épée vengeresse (`vengeance` : « … en combat »). La sauvegarde est-elle due ?
+ * @param {{kind: "berserk"|"vengeance", byOther: boolean, inCombat: boolean, marked: boolean}} data
+ */
+export function wrathSaveDue({ kind, byOther, inCombat, marked }) {
+  if ( !byOther || marked ) return false;
+  return (kind === "vengeance") ? inCombat : true;
+}
+
+/**
+ * §356 : la colère prend-elle fin, au début du tour du porteur ? Folie furieuse : « quand vous commencez votre tour sans créature à 18 m
+ * de vous » ; vengeance : « jusqu'à ce que vous tombiez à 0 PV, ou elle ».
+ * @param {{kind: "berserk"|"vengeance", othersNear: boolean, foeDown: boolean, bearerDown: boolean}} data
+ */
+export function wrathEnds({ kind, othersNear, foeDown, bearerDown }) {
+  if ( bearerDown ) return true;
+  return (kind === "vengeance") ? foeDown : !othersNear;
+}

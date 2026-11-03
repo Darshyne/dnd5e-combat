@@ -22,7 +22,7 @@ import { areaLightRadii, tokenLightChanges, dispelledBy } from "../core/light.mj
 import { wallLightPoints } from "../core/wall.mjs";
 import { wallGeometryOf } from "./wall-side.mjs";
 import { lengthIn } from "./units.mjs";
-export { burnLeftOf, burnOut, carriedLightEffect, carriedLightOf, carriedLightState, carriedLightsOf, carriedSourceOf, dropCarriedLight, fuelOf, heldItems, remainingOf, rememberBurn, setCarriedLight } from "./carried-lights.mjs";
+export { burnLeftOf, burnOut, carriedLightEffect, carriedLightOf, carriedLightState, carriedLightsOf, carriedSourceOf, dropCarriedLight, fuelOf, heldItems, remainingOf, rememberBurn, setCarriedLight, setHood, hoodedDown } from "./carried-lights.mjs";
 
 /** La règle de lumière d'un item, ou null. */
 export function lightRuleOf(item) {

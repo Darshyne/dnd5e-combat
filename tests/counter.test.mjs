@@ -77,3 +77,16 @@ describe("§345 : sauvegarde au toucher sous enchantement, état après sauvegar
     expect(validateEntry(entry({ ability: "str" })).length).toBeGreaterThan(0);
   });
 });
+
+describe("§346 : lumière portée — capuchon et enchantement", () => {
+  const light = extra => ({ carriedLight: { bright: 30, dim: 60, units: "ft", ...extra } });
+  it("hooded : { bright, dim }", () => {
+    expect(validateEntry(light({ hooded: { bright: 0, dim: 5 } }))).toEqual([]);
+    expect(validateEntry(light({ hooded: { dim: 5 } })).length).toBeGreaterThan(0);
+    expect(validateEntry(light({ hooded: { bright: 0, dim: 5, angle: 3 } })).length).toBeGreaterThan(0);
+  });
+  it("whileEnchanted : un id d'effet", () => {
+    expect(validateEntry(light({ whileEnchanted: "MHnAqxEXBhUbnjPq" }))).toEqual([]);
+    expect(validateEntry(light({ whileEnchanted: "Ablaze" })).length).toBeGreaterThan(0);
+  });
+});

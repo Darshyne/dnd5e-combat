@@ -21,7 +21,7 @@ import { reportsText } from "../core/automation.mjs";
 import { identifierOf, contentOf } from "../adapter/content.mjs";
 import { animationState } from "./animations.mjs";
 import { carriedLightState } from "../adapter/lights.mjs";
-import { toggleCarriedLight } from "./lights.mjs";
+import { toggleCarriedLight, toggleHood } from "./lights.mjs";
 import { listBackups as diagBackups, repairTasks, restore as diagRestore, scanWorld } from "./diagnostic/index.mjs";
 import { gmOnly, windows, viewedToken } from "./testing-shared.mjs";
 import { climbEntries } from "./climb.mjs";
@@ -69,6 +69,23 @@ async function toggleLight({ actorId, itemId, on=null }) {
   if ( !item ) throw new Error("item not found");
   const result = await toggleCarriedLight(item, on);
   return { ...result, state: item.actor?.items.get(itemId) ? carriedLightState(item) : null };
+}
+
+/** §346 : baisse (`down: true`) ou lève le capuchon d'une source allumée. */
+async function hood({ actorId, itemId, down=null }) {
+  gmOnly();
+  const item = game.actors.get(actorId)?.items.get(itemId);
+  if ( !item ) throw new Error("item not found");
+  return toggleHood(item, down);
+}
+
+/** §346 : retire un effet d'un item de l'acteur (un enchantement appliqué). */
+async function removeItemEffect({ actorId, itemId, effectId }) {
+  gmOnly();
+  const effect = game.actors.get(actorId)?.items.get(itemId)?.effects.get(effectId);
+  if ( !effect ) return false;
+  await effect.delete();
+  return true;
 }
 
 /** §121 : l'état d'une source portée (allumée, temps restant, combustible), ou null si elle n'est plus là. */
@@ -419,4 +436,4 @@ async function forcePlayerWait({ id=null }={}) {
   return { forced: target ? await forceWait(target) : false };
 }
 
-export const testApi = Object.freeze({ controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, forcePlayerWait, pickTargets, castPicked });
+export const testApi = Object.freeze({ controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, hood, removeItemEffect, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, forcePlayerWait, pickTargets, castPicked });

@@ -15,6 +15,8 @@ import { toGridUnits } from "./lights.mjs";
 const CARRIED_FLAG = "carriedLightOf";
 /** §121 : sur l'item, le temps qui restait (secondes) quand on l'a éteinte ; absent : neuve (torche) ou remplie (lampe). */
 const BURN_FLAG = "burnLeft";
+/** §346 : sur l'effet de lumière, le capuchon baissé. */
+const HOOD_FLAG = "hooded";
 
 /** La lumière d'une source portée (lampe, lanterne, torche, bougie), ou null. */
 export const carriedLightOf = item => contentOf(item).entry?.carriedLight ?? null;
@@ -138,6 +140,28 @@ export async function setCarriedLight(item, on) {
   if ( item.getFlag(MODULE_ID, BURN_FLAG) !== undefined ) await item.unsetFlag(MODULE_ID, BURN_FLAG);
   if ( !wasEquipped ) await item.update({ "system.equipped": true, [`flags.${MODULE_ID}.${EQUIPPED_FLAG}`]: true });
   return { changed: true, lit: true, left: plan.left, refilled, equipped: !wasEquipped };
+}
+
+/** §346 : le capuchon de la source allumée est-il baissé ? */
+export const hoodedDown = item => !!carriedLightEffect(item)?.getFlag(MODULE_ID, HOOD_FLAG);
+
+/**
+ * §346 : baisse (`down: true`) ou lève le capuchon d'une source allumée qui en a un (`carriedLight.hooded`) — l'effet de lumière prend
+ * les rayons capuchon baissé, ou reprend les siens. Rien si la source est éteinte (rallumée, elle repart capuchon levé).
+ * @returns {Promise<{changed: boolean, down?: boolean, reason?: string}>}
+ */
+export async function setHood(item, down) {
+  const rule = carriedLightOf(item);
+  const lit = carriedLightEffect(item);
+  if ( !rule?.hooded ) return { changed: false, reason: "noHood" };
+  if ( !lit ) return { changed: false, reason: "notLit" };
+  if ( !!lit.getFlag(MODULE_ID, HOOD_FLAG) === !!down ) return { changed: false, reason: down ? "alreadyDown" : "alreadyUp" };
+  const grid = canvas?.scene?.grid ?? game.scenes.active?.grid;
+  const radius = v => (grid ? toGridUnits(v, rule.units, grid) : v);
+  const radii = down ? rule.hooded : rule;
+  await lit.update({ "system.changes": tokenLightChanges({ bright: radius(radii.bright), dim: radius(radii.dim), angle: rule.angle ?? null,
+    animation: rule.animation ?? null }), [`flags.${MODULE_ID}.${HOOD_FLAG}`]: !!down });
+  return { changed: true, down: !!down };
 }
 
 /** §121 : éteinte, la source que l'allumage avait équipée retourne dans le sac (la main est libre). */

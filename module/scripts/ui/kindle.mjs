@@ -9,8 +9,8 @@
  */
 
 import { contentOf } from "../adapter/content.mjs";
-import { carriedLightsOf, carriedLightEffect, carriedLightOf, burnLeftOf } from "../adapter/lights.mjs";
-import { toggleCarriedLight, burnLabel } from "../runtime/lights.mjs";
+import { carriedLightsOf, carriedLightEffect, carriedLightOf, burnLeftOf, hoodedDown } from "../adapter/lights.mjs";
+import { toggleCarriedLight, toggleHood, burnLabel } from "../runtime/lights.mjs";
 import { tokenOf } from "../adapter/facts.mjs";
 import { route } from "../runtime/router.mjs";
 import { log, loc, notice } from "../runtime/shared.mjs";
@@ -18,7 +18,8 @@ import { log, loc, notice } from "../runtime/shared.mjs";
 async function onPostUse(activity) {
   const actor = activity?.actor;
   if ( !contentOf(activity?.item).entry?.kindles || !actor?.isOwner ) return;
-  const sources = carriedLightsOf(actor);
+  // §346 : une lumière qui suit un enchantement (Langue de feu) ne s'allume pas à l'amadou.
+  const sources = carriedLightsOf(actor).filter(i => !carriedLightOf(i).whileEnchanted);
   const token = tokenOf(actor);
   if ( !sources.length ) return notice(token, loc("Amadou.Rien"));
   const label = item => loc(carriedLightEffect(item) ? "Amadou.Eteindre" : "Amadou.Allumer", { item: item.name });
@@ -39,8 +40,15 @@ async function onPostUse(activity) {
 
 /** §121 : « Allumer » / « Éteindre » dans le menu d'une source portée de l'inventaire. */
 function onItemContext(item, options) {
-  if ( !carriedLightOf(item) || !item.actor?.isOwner || !Array.isArray(options) ) return;
+  const rule = carriedLightOf(item);
+  if ( !rule || rule.whileEnchanted || !item.actor?.isOwner || !Array.isArray(options) ) return;
   const lit = !!carriedLightEffect(item);
+  // §346 : le capuchon d'une source allumée (Lanterne à capuchon).
+  if ( lit && rule.hooded ) {
+    const down = hoodedDown(item);
+    options.push({ label: loc(down ? "Lumiere.MenuLeverCapuchon" : "Lumiere.MenuBaisserCapuchon"), icon: down ? "fa-solid fa-sun" : "fa-solid fa-moon",
+      group: "action", onClick: () => toggleHood(item) });
+  }
   const left = burnLabel(burnLeftOf(item));
   options.push({
     label: loc(lit ? "Lumiere.MenuEteindre" : "Lumiere.MenuAllumer", { left }),

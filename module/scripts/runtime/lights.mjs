@@ -6,7 +6,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { lightUpRegion, followRegion, extinguishRegion, addEffectLight, placeLightObject, lightRuleOf, lightChoiceOf,
-  summonSizeOf, lightCaster, lightCasterFor, colorSummonedToken, extinguishLights, carriedLightOf, carriedLightEffect, setCarriedLight,
+  summonSizeOf, lightCaster, lightCasterFor, colorSummonedToken, extinguishLights, carriedLightOf, carriedLightEffect, setCarriedLight, setHood, hoodedDown,
   dropCarriedLight, carriedSourceOf, remainingOf, burnOut, rememberBurn } from "../adapter/lights.mjs";
 import { burnParts } from "../core/light.mjs";
 import { concentrationEffectOf } from "../adapter/concentration.mjs";
@@ -98,6 +98,34 @@ export async function toggleCarriedLight(item, on=null) {
 }
 
 /**
+ * §346 : baisse ou lève le capuchon de la source allumée (Lanterne à capuchon), sur le client du porteur. Sans coût d'action, comme
+ * l'allumage (l'action Bonus reste à la table).
+ */
+export async function toggleHood(item, down=null) {
+  if ( !item?.actor?.isOwner ) return { changed: false, reason: "notOwner" };
+  const result = await setHood(item, (down === null) ? !hoodedDown(item) : down);
+  if ( !result.changed ) return result;
+  notice(tokenOf(item.actor), loc(result.down ? "Lumiere.CapuchonBaisse" : "Lumiere.CapuchonLeve", { item: item.name }), result.down ? "ended" : "gain");
+  log(`${item.actor.name}: ${item.name} hood ${result.down ? "lowered" : "raised"}`);
+  return result;
+}
+
+/**
+ * §346 : la lumière d'une arme qui suit un enchantement (`carriedLight.whileEnchanted` : Langue de feu embrasée, flammes du Heaume
+ * scintillant) — allumée quand l'enchantement de ce profil arrive sur l'item, éteinte quand il part. MJ actif.
+ */
+async function followEnchantment(effect) {
+  const item = effect?.parent;
+  if ( (item?.documentName !== "Item") || !item.actor ) return;
+  const profile = effect.getFlag?.("dnd5e", "enchantmentProfile");
+  const rule = profile ? carriedLightOf(item) : null;
+  if ( !rule?.whileEnchanted || (rule.whileEnchanted !== profile) ) return;
+  const on = item.effects.some(e => !e.disabled && (e.getFlag("dnd5e", "enchantmentProfile") === profile));
+  const result = await setCarriedLight(item, on);
+  if ( result.changed ) log(`${item.actor.name}: ${item.name} ${on ? "sheds light" : "no longer sheds light"} (${effect.name})`);
+}
+
+/**
  * §121 : la source s'est consumée — l'effet part, la torche aussi ; le porteur et le MJ l'apprennent. MJ actif. Une seule fois par
  * effet : le cœur le marque expiré (`updateActiveEffect`) et le moteur retire les effets expirés (`deleteActiveEffect` qui suit).
  */
@@ -133,6 +161,11 @@ async function tellDispelled(region, dispelled) {
 }
 
 export function registerLights() {
+  // §346 : la lumière d'une arme enchantée suit son enchantement.
+  for ( const hook of ["createActiveEffect", "updateActiveEffect", "deleteActiveEffect"] ) {
+    route(hook, effect => enqueue(`enchantLight:${effect?.parent?.uuid}`, () => followEnchantment(effect)),
+      { executor: true, label: "enchanted weapon: light not updated" });
+  }
   // À la file par région : la création et un redessin aussitôt après (l'anneau du Mur de feu, §170) ne posent pas deux fois.
   const queued = (region, task) => enqueue(`light:${region.id}`, task);
   route("createRegion", region => queued(region, async () => {

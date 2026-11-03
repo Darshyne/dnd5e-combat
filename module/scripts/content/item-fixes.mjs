@@ -45,6 +45,10 @@ const ELEMENTAL_BANE = Object.freeze([
   { on: "preAttackRoll", defends: true, if: { "source.creatureType": "elemental" }, do: [{ type: "disadvantage" }] }
 ]);
 
+/** §346 : le clair de lune de l'Épée sélène ; des flammes sur une lame (animation « torch » du cœur). */
+const MOONLIGHT = Object.freeze({ bright: 15, dim: 30, units: "ft" });
+const FLAMES = Object.freeze({ type: "torch", speed: 2, intensity: 2 });
+
 /** Baguette des merveilles : aucune de ses activités ne déclare son action (Magie). */
 const WONDER_ACTIVITIES = ["Z62czXwABB7SN1lP", "4h4Aazi3L1MmByOt", "76MvwJBXwm1GbzfW", "F6QdFpERu7c4x6cd", "uDrKgJTXIcF0EM33", "yMZ4RIhJV1jvkKaf",
   "DIkFGxynTge6LTPJ", "Go7QGLKLGLggVcNK", "EhdR11nT5sMOi9h5", "cKz4qaK2elWiFRCS", "2x5DGGxGI3bgymqf", "6kTej94dEVrwxM9D", "hohchQU2VPFVUIWG",
@@ -365,6 +369,14 @@ export const ITEM_FIXES = Object.freeze({
   // du type de l'arme de plus si la cible est un Dragon » ; Tueuse de géants : « 2d6 du type de l'arme » contre un Géant (sa sauvegarde
   // contre À terre : lot O5c) ; Vengeresse sacrée : « 2d10 radiants » contre un Fiélon ou un Mort-vivant ; Hache du bourreau : « 2d6
   // tranchants » contre un Humanoïde (les PV temporaires : au MJ).
+  // §346 : lumière d'une arme. Épée sélène : « dégainée dans les Ténèbres, la lame répand un clair de lune : Lumière vive sur 4,50 m et
+  // faible sur 4,50 m de plus » (dégainer : menu de l'objet), l'objet lui-même ou l'arme qu'il enchante. Langue de feu : « ces flammes
+  // répandent une Lumière vive sur 12 m et faible sur 12 m de plus », tant que l'enchantement « Ablaze » est sur l'arme ; flammes du
+  // Heaume scintillant (« Burst Into Flames ») : vive sur 3 m, faible sur 3 m de plus.
+  "moon-touched-sword": { carriedLight: MOONLIGHT },
+  "moon-touched-sword-enchanted": { carriedLight: MOONLIGHT },
+  "flame-tongue-enchanted": { carriedLight: { bright: 40, dim: 80, units: "ft", animation: FLAMES, whileEnchanted: "MHnAqxEXBhUbnjPq" } },
+  "helm-of-brilliance-enchanted": { carriedLight: { bright: 10, dim: 20, units: "ft", animation: FLAMES, whileEnchanted: "oZBFpi117yOXca3k" } },
   "dragon-slayer-enchanted": BANE("dragon-slayer", ["dragon"], "3d6", "weapon", true),
   // §345 : « …et doit réussir une sauvegarde de Force DD 15 ou tomber À terre » (aucune activité de sauvegarde dans la donnée).
   "giant-slayer-enchanted": { triggers: [...BANE("giant-slayer", ["giant"], "2d6", "weapon", true).triggers,
@@ -374,7 +386,9 @@ export const ITEM_FIXES = Object.freeze({
   // Armes qui portent leur propre identifiant — Masse d'anéantissement : « 2d6 radiants » contre un Fiélon ou un Mort-vivant ; Épée
   // radieuse : « 1d8 radiants » contre un Mort-vivant ; Épée de Kas : « 2d10 tranchants » contre un Mort-vivant.
   "mace-of-disruption": BANE("mace-of-disruption", ["fiend", "undead"], "2d6", "radiant"),
-  "sun-blade": BANE("sun-blade", ["undead"], "1d8", "radiant"),
+  // §346 : « la lame lumineuse émet une Lumière vive sur 4,50 m et faible sur 4,50 m de plus » (la lame apparaît et disparaît : menu de
+  // l'objet ; régler le rayon par une action Magie reste au MJ).
+  "sun-blade": { ...BANE("sun-blade", ["undead"], "1d8", "radiant"), carriedLight: { bright: 15, dim: 30, units: "ft" } },
   "sword-of-kas": BANE("sword-of-kas", ["undead"], "2d10", "slashing"),
 
   /* ---- O5c (§341) : options au toucher, critiques ---- */

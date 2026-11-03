@@ -155,7 +155,12 @@ export function validateCarriedLight(l, at, errors) {
     && Object.keys(l.burn).every(k => ["value", "units"].includes(k))) ) errors.push(`${at}.burn: { value > 0, units: second | minute | hour }`);
   if ( ("fuel" in l) && !((typeof l.fuel === "string") && l.fuel) ) errors.push(`${at}.fuel: identifier of the fuel item`);
   if ( ("fuel" in l) && !("burn" in l) ) errors.push(`${at}.fuel: needs burn`);
-  for ( const key of Object.keys(l) ) if ( !["bright", "dim", "units", "angle", "animation", "burn", "fuel"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
+  // §346 : `hooded` — les rayons capuchon baissé (Lanterne à capuchon : Lumière faible sur 1,50 m) ; `whileEnchanted` — la lumière suit
+  // un enchantement de l'item (profil, id d'effet : Langue de feu embrasée), sans allumage à la main.
+  if ( ("hooded" in l) && !(isObject(l.hooded) && ["bright", "dim"].every(k => Number.isFinite(l.hooded[k]) && (l.hooded[k] >= 0))
+    && Object.keys(l.hooded).every(k => ["bright", "dim"].includes(k))) ) errors.push(`${at}.hooded: { bright, dim }`);
+  if ( ("whileEnchanted" in l) && !isId(l.whileEnchanted) ) errors.push(`${at}.whileEnchanted: effect id (16 characters)`);
+  for ( const key of Object.keys(l) ) if ( !["bright", "dim", "units", "angle", "animation", "burn", "fuel", "hooded", "whileEnchanted"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 export function validateEmanation(e, at, errors) {

@@ -102,6 +102,7 @@ export const ENCHANTMENT_SOURCES = Object.freeze({
   GTBlnwp18lMmlhNY: "dragon-scale-mail", oAMZPSz9ScJ9kzJS: "dragon-scale-mail", YnovzwTfQAEO8okl: "dragon-scale-mail", SXYzllaQnbyxFGJu: "dragon-scale-mail", "7R5dtsUNiWZhXhS3": "dragon-scale-mail", kwIXULk6aDknIZnv: "dragon-scale-mail", "4MsmIVyXTFt4AKuD": "dragon-scale-mail", WnwsmlBDChjhXgAj: "dragon-scale-mail", wVh8ceMKvVud2qyr: "dragon-scale-mail", QzV7iJWMlEePDrjN: "dragon-scale-mail",
   ZveR6kPKafjcwQdY: "dragon-slayer",
   F6NbXlYCpjhBGFRp: "executioners-axe",
+  LdDrwdlNhF9ZxLJB: "moon-touched-sword", oZBFpi117yOXca3k: "helm-of-brilliance",
   VtBOwsAVipxkP2f5: "flame-tongue", MHnAqxEXBhUbnjPq: "flame-tongue",
   KDZFGFsxEOF5WvbJ: "frost-brand",
   ZwpawARncDIheC65: "giant-slayer",

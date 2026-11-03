@@ -133,6 +133,21 @@ export function seesInvisible(actor) {
 }
 
 /**
+ * §353 : l'attaque à distance faite avec cette arme vise-t-elle son ennemi juré (`swornEnemy` : Arc du serment) — une cible qui porte
+ * l'effet `swornEnemy.effect` venu de cette arme ? Rend le nom de l'arme, ou null.
+ */
+export function swornEnemyOf(activity, targetToken, attackMode=null) {
+  const item = activity?.item;
+  const rule = item ? contentOf(item).entry?.swornEnemy : null;
+  if ( !rule || (activity.type !== "attack") ) return null;
+  const ranged = (activity.attack?.type?.value === "ranged") || (attackMode?.startsWith?.("thrown") === true);
+  if ( !ranged ) return null;
+  const actor = targetToken?.actor;
+  const marked = (actor?.effects ?? []).some(e => !e.disabled && comesFromItemEffect(e, rule.effect) && (originItemOf(e) === item));
+  return marked ? item.name : null;
+}
+
+/**
  * L'effet vient-il de l'effet d'item de cet id ? Le plateau d'effets de dnd5e copie l'effet d'item en gardant sa source
  * (`_stats.duplicateSource`, ou `compendiumSource` depuis un compendium : effect-application.mjs, `_prepareEffectData`).
  */

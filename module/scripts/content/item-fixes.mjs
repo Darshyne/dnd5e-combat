@@ -440,7 +440,9 @@ export const ITEM_FIXES = Object.freeze({
   // Arc du serment — « tant que votre ennemi juré vit, Désavantage aux jets d'attaque avec toutes les autres armes » (l'effet « Sworn
   // Enemy » posé par « Swear Oath »). La folie furieuse de la Hache reste au MJ.
   "berserker-axe-enchanted": { exclusiveWeapon: true },
-  "oathbow-enchanted": { exclusiveWeapon: { whileEffect: "EWoLqkPJeK9dwYhn" } },
+  // §353 : et contre l'ennemi juré, « Avantage au jet ; la cible ne profite pas d'un abri partiel ou aux trois quarts, et pas de
+  // Désavantage à longue portée ». Les 3d6 Perforants : l'activité « Attack Sworn Enemy » des données, à choisir contre lui.
+  "oathbow-enchanted": { exclusiveWeapon: { whileEffect: "EWoLqkPJeK9dwYhn" }, swornEnemy: { effect: "EWoLqkPJeK9dwYhn" } },
   // O8f (§349) : invocations hostiles — Le Crâne (Jeu des merveilles) : « un Avatar de la mort apparaît […] disparaît à 0 PV ou à votre
   // mort » ; Parchemin d'invocation de titan : « le titan est Hostile envers toutes les autres créatures et disparaît à 0 PV ». Initiative
   // propre ; « il ne vise que vous » et l'avatar des alliés qui le blessent restent au MJ.

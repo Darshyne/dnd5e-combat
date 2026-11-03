@@ -15,7 +15,7 @@ import { verbalSpellBlocked, hampersRangedAttack, forbiddenAgainstCharmer, requi
 import { distanceBetween, rangeOf } from "./turn.mjs";
 import { lengthIn } from "./units.mjs";
 import { visionFacts, isVisionAvailable, canSee, tokenOnViewedScene } from "./vision.mjs";
-import { originItemOf, revealedInvisible, seesInvisible } from "./facts.mjs";
+import { originItemOf, revealedInvisible, seesInvisible, swornEnemyOf } from "./facts.mjs";
 import { grappledElsewhere } from "./grapple.mjs";
 import { helpedAgainst } from "./help.mjs";
 import { spellCommandOf } from "./pilot.mjs";
@@ -200,7 +200,8 @@ export function rangedFeatsOf(actor, activity, attackMode=null) {
 /** §131 : l'abri de la cible contre cette attaque — un don de tir peut ignorer l'abri partiel ou aux trois quarts. */
 export function coverAgainst(origin, target, activity, attackMode, options={}) {
   const cover = coverFor(origin, target, { ...options, activity, attackMode });
-  return coverLeft(cover, activity ? rangedFeatsOf(origin?.actor, activity, attackMode).cover : false);
+  // §353 : l'ennemi juré de l'Arc du serment ne profite pas de l'abri partiel ou aux trois quarts.
+  return coverLeft(cover, activity ? (rangedFeatsOf(origin?.actor, activity, attackMode).cover || !!swornEnemyOf(activity, target, attackMode)) : false);
 }
 
 /** Un item de l'attaquant lui retire-t-il le Désavantage du tir au contact d'un ennemi ? */
@@ -232,7 +233,7 @@ export function attackContext(origin, target, activity, attackMode, factors, { p
     target: statusesOf(target, origin),
     adjacent: areAdjacent(origin, target, factors, { posA }),
     ranged,
-    longRange: ranged && !feats.longRange && (rangeIssue(distanceBetween(origin, target, { posA }), rangeOf(activity, attackMode), factors) === "longRange"),
+    longRange: ranged && !feats.longRange && !swornEnemyOf(activity, target, attackMode) && (rangeIssue(distanceBetween(origin, target, { posA }), rangeOf(activity, attackMode), factors) === "longRange"),
     // §19 : pas de Désavantage aux attaques à distance malgré un ennemi au contact
     // (contenu `ignoresCloseCombat` : déclaré par un module de créatures tiers).
     closeCombat: ranged && !feats.closeCombat && hasHostileAdjacent(origin, factors, posA) && !ignoresCloseCombat(origin),

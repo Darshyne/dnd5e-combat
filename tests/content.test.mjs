@@ -1204,3 +1204,11 @@ describe("§352 : étape status — around", () => {
     expect(validateEntry({ triggers: [{ on: "hit", do: [{ type: "status", status: "stunned", around: 30 }] }] }).length).toBe(1);
   });
 });
+
+describe("§353 : swornEnemy", () => {
+  it("{ effect: id }", () => {
+    expect(validateEntry({ swornEnemy: { effect: "EWoLqkPJeK9dwYhn" } })).toEqual([]);
+    expect(validateEntry({ swornEnemy: { effect: "x" } }).length).toBe(1);
+    expect(validateEntry({ swornEnemy: true }).length).toBe(1);
+  });
+});

@@ -19,7 +19,7 @@ import { reactionsBlocked, actionOrBonusOnly } from "../adapter/reactions.mjs";
 import { saveChanceOf } from "../adapter/hitchance.mjs";
 import { identifierOf, contentOf, worldOverrides, setWorldOverride } from "../adapter/content.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
-import { attackContext, areAdjacent } from "../adapter/conditions.mjs";
+import { attackContext, areAdjacent, coverAgainst } from "../adapter/conditions.mjs";
 import { attackModifiers } from "../core/conditions.mjs";
 import { portentDice, portentOf, rollPortent } from "../adapter/portent.mjs";
 import { aidsFor, isGuided } from "../adapter/skill-aid.mjs";
@@ -106,12 +106,14 @@ export async function perceived({ observerId, targetIds=[] }) {
 }
 
 /** §172 : l'abri de la cible contre l'attaquant, tel que le verdict le calculera (`coverFor`), ou null. */
-export function cover({ attackerId, targetId, itemId=null }) {
+export function cover({ attackerId, targetId, itemId=null, effective=false }) {
   const attacker = canvas.scene?.tokens.get(attackerId);
   const target = canvas.scene?.tokens.get(targetId);
   if ( !attacker || !target ) throw new Error("token not found on the viewed scene");
   // §173 : avec l'attaque d'un item (une arme à distance devant le Mur de vent).
   const activity = itemId ? attacker.actor?.items.get(itemId)?.system.activities.find(a => a.type === "attack") ?? null : null;
+  // §353 : `effective` — l'abri qui reste à l'attaque, une fois ôté ce que l'attaquant ignore (dons de tir, ennemi juré).
+  if ( effective && activity ) return coverAgainst(attacker, target, activity, null, { quiet: true });
   return coverFor(attacker, target, { quiet: true, activity });
 }
 

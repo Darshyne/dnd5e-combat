@@ -7,7 +7,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { normalize, select, stepsOf } from "../core/triggers.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
-import { originItemOf, factsFor, comesFromItemEffect, weaponKind } from "./facts.mjs";
+import { originItemOf, factsFor, comesFromItemEffect, weaponKind, swornEnemyOf } from "./facts.mjs";
 import { hasReactionAdvantage, takeReactionAdvantage, hasReactionDisadvantage, takeReactionDisadvantage } from "./marks.mjs";
 import { markModifiers } from "./mastery.mjs";
 import { exclusiveWeaponHindrances } from "../core/attack.mjs";
@@ -147,6 +147,9 @@ export function declaredAttackModifiers(sourceToken, targetToken, activity) {
   for ( const e of source.effects ?? [] ) if ( (e.getFlag?.(MODULE_ID, "critMark")?.side === "by") && !out.disadvantage.includes(e.name) ) out.disadvantage.push(e.name);
   // C12-e : Défense multiattaque — l'attaquant qui a touché ce porteur pendant ce tour.
   for ( const e of source.effects ?? [] ) if ( (e.getFlag?.(MODULE_ID, "hitDefense")?.against === target.uuid) && !out.disadvantage.includes(e.name) ) out.disadvantage.push(e.name);
+  // §353 : Avantage contre l'ennemi juré (Arc du serment).
+  const sworn = swornEnemyOf(activity, targetToken);
+  if ( sworn && !out.advantage.includes(sworn) ) out.advantage.push(sworn);
   // O8e (§348) : Désavantage avec les autres armes (Hache du berserker, Arc du serment).
   for ( const name of exclusiveWeaponHindrances(exclusiveRules(sourceToken), weaponAttackItem(activity)) ) {
     if ( !out.disadvantage.includes(name) ) out.disadvantage.push(name);

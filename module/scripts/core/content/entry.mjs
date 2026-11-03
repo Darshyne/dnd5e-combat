@@ -60,6 +60,10 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     if ( !isObject(m) || !(Number.isFinite(m.value) && (m.value > 0)) || (typeof m.units !== "string") || !m.units
       || Object.keys(m).some(k => !["value", "units"].includes(k)) ) errors.push(`${at}minRange: { value: positive number, units }`);
   }
+  // §353 : l'ennemi juré (Arc du serment) — la cible qui porte cet effet de l'arme.
+  if ( ("swornEnemy" in entry) && !(isObject(entry.swornEnemy) && isId(entry.swornEnemy.effect) && (Object.keys(entry.swornEnemy).length === 1)) ) {
+    errors.push(`${at}swornEnemy: { effect: effect id }`);
+  }
   if ( "choice" in entry ) validateChoice(entry.choice, `${at}choice`, errors);
   if ( "targets" in entry ) validateTargets(entry.targets, `${at}targets`, facts, errors);
   if ( "trace" in entry ) {

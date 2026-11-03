@@ -27,7 +27,7 @@ describe("validation d'une entrée", () => {
     const errors = validateEntry({ triggers: [{ on: "onHit", if: { "moon.phase": "full" }, do: [{ type: "smite" }] }] }, { facts });
     expect(errors).toEqual([
       `triggers[0].on: unknown moment "onHit" (${MOMENTS_LIST})`,
-      "triggers[0].do[0].type: unknown \"smite\" (lift, disarm, use, replay, damage, move, status, resave, remove, halve, uncrit, consume, advantage, disadvantage, ward, attackBonus, endCondition, reduce, miss, penalty, bonus, absorb, interpose, mark, save, breakConcentration, cancel)",
+      "triggers[0].do[0].type: unknown \"smite\" (lift, disarm, use, replay, damage, move, status, resave, remove, halve, uncrit, consume, advantage, disadvantage, ward, attackBonus, endCondition, reduce, miss, penalty, bonus, absorb, interpose, mark, save, breakConcentration, cancel, intercept)",
       "triggers[0].if: unknown fact \"moon.phase\""
     ]);
     expect(validateEntry({ triggers: [{ on: "isHit" }] }, { facts })).toEqual(["triggers[0].do: at least one step"]);
@@ -156,7 +156,7 @@ describe("contenu livré", () => {
       "action-surge", "adrenaline-rush", "agile", "aid", "air-element", "air-form", "alchemists-fire", "alert", "alter-self", "ambush",
       "ancient-might", "animal-friendship", "animate-objects", "antilife-shell", "antimagic-field", "antimatter-rifle", "antitoxin",
       "arcane-eye", "arcane-gate", "arcane-hand", "arcane-recovery", "arcane-sword", "arcane-vigor", "arcane-ward", "armor-of-agathys",
-      "armor-of-vulnerability", "arms-of-hadar", "aspect-of-the-wilds", "assassinate", "athlete", "aura-of-alacrity", "aura-of-authority",
+      "armor-of-vulnerability", "arms-of-hadar", "arrow-catching-shield", "aspect-of-the-wilds", "assassinate", "athlete", "aura-of-alacrity", "aura-of-authority",
       "aura-of-bravery", "aura-of-courage", "aura-of-devotion", "aura-of-life", "aura-of-protection", "aura-of-purity", "aura-of-vitality",
       "aura-of-warding", "avatar-of-battle", "avenger-spirit", "avenging-angel", "avoidance", "awareness-ioun-stone",
       "baba-yagas-dancing-broom", "bag-of-beans", "bag-of-tricks", "bait-and-switch", "ball-bearings", "banishing-smite", "banishment",
@@ -245,7 +245,7 @@ describe("contenu livré", () => {
       "savage-attacker", "scarab-of-protection", "scimitar-of-speed", "scorching-ray", "sculpt-spells", "sear-undead", "searing-smite",
       "searing-vengeance", "second-skin", "second-story-work", "see-invisibility", "self-restoration", "sentinel",
       "sentinel-at-deaths-door", "sentinel-shield", "serpentine-owl-rare", "shade-spirit", "shadow-stealth", "shadow-veil", "shadow-walk",
-      "shadowy-dodge", "sharp-eye-ravenloft", "sharpshooter", "shatter", "shield", "shield-master", "shillelagh", "shining-smite",
+      "shadowy-dodge", "sharp-eye-ravenloft", "sharpshooter", "shatter", "shield", "shield-master", "shield-of-missile-attraction", "shillelagh", "shining-smite",
       "shocking-grasp", "sickening-vapors", "silence", "silver-horn-of-valhalla", "silver-needle", "silver-raven-uncommon", "skulker",
       "slam", "slasher", "sleep", "sleet-storm", "slippers-of-spider-climbing", "slow", "slow-fall", "smelting-charge",
       "smite-of-protection", "sneak-attack", "soldier-feature", "soul-of-vengeance", "spare-the-dying", "speedy", "spell-resistance",

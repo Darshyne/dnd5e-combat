@@ -115,9 +115,10 @@ function bodiesAround(attacker, target) {
 }
 
 /** Une attaque à distance avec une arme (tir, ou arme lancée) ? */
-function isRangedWeaponAttack(activity, attackMode) {
+export function isRangedWeaponAttack(activity, attackMode) {
   if ( (activity?.type !== "attack") || (activity.item?.type !== "weapon") ) return false;
-  if ( attackMode ) return /ranged|thrown/.test(attackMode);
+  // O8d (§347) : une arbalète (Deux mains) porte un mode « twoHanded » : le mode ne compte que s'il lance l'arme.
+  if ( /ranged|thrown/.test(attackMode ?? "") ) return true;
   return activity.attack?.type?.value === "ranged";
 }
 

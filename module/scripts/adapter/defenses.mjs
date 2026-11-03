@@ -7,7 +7,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { reduceDamageOfType, hitDiceAllowed } from "../core/defenses.mjs";
+import { reduceDamageOfType, hitDiceAllowed, halveUnresisted } from "../core/defenses.mjs";
 import { contentOf } from "./content.mjs";
 import { originItemOf } from "./facts.mjs";
 // La clé porte l'id du combat : la marque « une fois par tour » d'un combat précédent ne compte plus.
@@ -101,4 +101,25 @@ export async function spendHitDiceToHeal(activity, die, count) {
   await roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor }), flavor: `${activity.item.name} — ${spent}${die}` });
   await actor.applyDamage([{ value: roll.total, type: "healing" }]);
   return roll;
+}
+
+/* -------------------------------------------- */
+/*  O8d (§347) : défenses contre les attaques à distance */
+/* -------------------------------------------- */
+
+/** Les règles `rangedDefense` des items que l'acteur porte (et a harmonisés s'il le faut). */
+export function rangedDefensesOf(actor) {
+  return Array.from(actor?.items ?? []).filter(worn).map(i => contentOf(i).entry?.rangedDefense).filter(Boolean);
+}
+
+/** Bonus de CA contre un jet d'attaque à distance (Bouclier antiprojectiles : +2, en plus du bonus du bouclier). */
+export function rangedAcBonus(actor) {
+  return rangedDefensesOf(actor).reduce((sum, r) => sum + (Number(r.ac) || 0), 0);
+}
+
+/** Résistance aux dégâts d'une attaque avec une arme à distance (Bouclier d'attraction) : les dégâts réduits, sinon tels quels. */
+export function resistRangedWeapon(actor, damages) {
+  if ( !rangedDefensesOf(actor).some(r => r.resistance === true) ) return { damages, reduced: 0 };
+  const traits = actor.system?.traits ?? {};
+  return halveUnresisted(damages, { resisted: traits.dr?.value ?? [], immune: traits.di?.value ?? [] });
 }

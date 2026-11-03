@@ -24,6 +24,7 @@ import { saveAdvantageAgainst, fightingAdvantageFor, sizeAdvantageFor, bestSaveA
 import { critMargin } from "./criticals.mjs";
 import { conditionImmunitiesOf } from "./facts.mjs";
 import { attackContext, coverAgainst } from "./conditions.mjs";
+import { rangedAcBonus } from "./defenses.mjs";
 import { coverFor } from "./cover.mjs";
 import { readUnitFactors } from "./units.mjs";
 import { effectOfProfile } from "./usage.mjs";
@@ -112,7 +113,9 @@ export function hitChanceOf(attacker, target, activity, { attackMode=null, posA,
   const mode = netMode({ advantage: advantage ? [1] : [], disadvantage: disadvantage ? [1] : [] });
 
   const cover = coverAgainst(attacker, target, activity, choices.attackMode, { posA, quiet: true });   // §131
-  const ac = cover ? ((cover.bonus === null) ? null : baseAc + cover.bonus) : baseAc;
+  // O8d (§347) : bonus de CA contre les attaques à distance (Bouclier antiprojectiles).
+  const shield = context.ranged ? rangedAcBonus(target.actor) : 0;
+  const ac = cover ? ((cover.bonus === null) ? null : baseAc + cover.bonus + shield) : baseAc + shield;
   const chance = hitChance({
     ac, bonus: bonus.flat, dice: bonus.dice, mode,
     critical: activity.criticalThreshold ?? 20,

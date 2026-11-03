@@ -423,6 +423,17 @@ export const ITEM_FIXES = Object.freeze({
   // Sceptre d'absorption : « une Réaction pour absorber un sort qui ne cible que vous et ne produit pas de zone d'effet ; son effet est
   // annulé, son énergie stockée » (§344) — l'activité « Absorb Spell » dépense autant d'utilisations que le niveau du sort.
   "rod-of-absorption": { triggers: [{ on: "isTargeted", do: [{ type: "use", activity: "y66MTczY5BQfIonF" }, { type: "cancel" }] }] },
+  // O8d (§347) : Bouclier antiprojectiles — « +2 à la CA contre les jets d'attaque à distance, en plus du bonus du bouclier ; quand un
+  // attaquant fait un jet d'attaque à distance contre une cible à 1,50 m de vous, vous pouvez prendre une Réaction pour devenir la cible ».
+  // L'effet facultatif des données (« Ranged Attack AC Bonus ») reste désactivé : le moteur compte le +2 lui-même.
+  "arrow-catching-shield": {
+    rangedDefense: { ac: 2 },
+    triggers: [{ on: "enemyAttacks", if: { "activity.isAttack": true, "activity.isMelee": false, "target.isSelf": false,
+      "target.nearSelf": { distance: 5, units: "ft" } }, do: [{ type: "use", activity: "KZLj6yQjI7Ps1KkW" }, { type: "intercept" }] }]
+  },
+  // Bouclier d'attraction : Résistance aux dégâts des attaques avec une arme à distance ; malédiction : une telle attaque contre une
+  // créature à 3 m du porteur le vise à sa place (la levée de la malédiction reste au MJ).
+  "shield-of-missile-attraction": { rangedDefense: { resistance: true, attract: 10 } },
   // Pierres de Ioun d'absorption : « une Réaction : un sort de niveau 4 (8) ou moins lancé par une créature que vous voyez est annulé ».
   "absorption-ioun-stone": { counter: { level: 4 }, triggers: [{ on: "castsSpell", if: { "target.seesSource": true }, do: [{ type: "use", activity: "VHm5fPkFAnT7Vb01", target: "source" }] }] },
   "greater-absorption-ioun-stone": { counter: { level: 8 }, triggers: [{ on: "castsSpell", if: { "target.seesSource": true }, do: [{ type: "use", activity: "1yWFZf1MJMoNof7b", target: "source" }] }] },

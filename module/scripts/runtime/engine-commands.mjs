@@ -29,6 +29,7 @@ import { duplicateEffectsOf } from "../adapter/duplicates.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
 import { log, loc, waitForDice, notice } from "./shared.mjs";
 import { waitForAnimations } from "./animations.mjs";
+import { isRangedWeaponAttack } from "../adapter/cover.mjs";
 import { TRANSIENT_LINGER_MS, deserializeDamages, dispatcher, healsDownedToMax, healsMax, hpTierFor, prismaticFor, slotHealBonus, speakerTokenUuid } from "./engine.mjs";
 
 /* -------------------------------------------- */
@@ -182,7 +183,8 @@ export const COMMANDS = {
       const early = first ? await applyEffectsToToken(carrier, entry.token, entry.effects.filter(e => !e.if)) : [];
       const hp = (entry.multiplier > 0)
         ? await applyDamageToToken(ward?.interpose ?? entry.token, rolled, damageMessage, { multiplier: entry.multiplier, reduction: entry.reduction ?? 0, absorbInto: ward?.item ?? null,
-          ignoreResistance: resistanceIgnoredBy(source?.actor ?? activity?.actor, activity) })   // §134
+          ignoreResistance: resistanceIgnoredBy(source?.actor ?? activity?.actor, activity),   // §134
+          rangedWeapon: !!resolution.plan.attack && isRangedWeaponAttack(activity, attackMode) })   // O8d (§347)
         : null;
       // §133 : Tueur de mages — la créature concentrée que l'auteur vient de blesser aura le Désavantage à son jet de concentration.
       if ( hp && hurting ) await markConcentrationBreaker(source?.actor ?? activity?.actor, hp.actor);

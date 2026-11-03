@@ -144,6 +144,8 @@ export function validateTrigger(declaration, at, facts, errors) {
       // §344 : `cancel` aussi à la fenêtre `isTargeted` (Sceptre d'absorption : le sort qui vise le porteur est annulé).
       const targetedReaction = d.on.includes("isTargeted") && d.do.some(x => isObject(x) && (x.type === "use"));
       if ( isObject(s) && (s.type === "cancel") && !fallReaction && !targetedReaction ) errors.push(`${at}.do: "cancel" requires the falls, allyFalls or isTargeted moment and a "use" reaction`);
+      // O8d (§347) : `intercept` — le réacteur devient la cible de l'attaque (Bouclier antiprojectiles), avant le jet.
+      if ( isObject(s) && (s.type === "intercept") && !(d.on.includes("enemyAttacks") && preAttackReaction) ) errors.push(`${at}.do: "intercept" requires the enemyAttacks moment and a "use" reaction`);
       if ( isObject(s) && (s.type === "absorb") && !(d.on.includes("allyIsDamaged") && d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "absorb" requires the allyIsDamaged moment and a "use" reaction`);
       if ( isObject(s) && (s.type === "interpose") && !(d.on.includes("allyIsDamaged") && d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "interpose" requires the allyIsDamaged moment and a "use" reaction`);
       if ( isObject(s) && (s.type === "bonus") && !(d.on.includes("allyAttacks") && preAttackReaction) ) errors.push(`${at}.do: "bonus" requires the allyAttacks moment and a "use" reaction`);

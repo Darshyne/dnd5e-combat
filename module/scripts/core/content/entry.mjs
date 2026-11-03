@@ -37,6 +37,17 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       for ( const key of Object.keys(entry.onHit) ) if ( !["save", "whileEnchanted", "spends"].includes(key) ) errors.push(`${at}onHit.${key}: unknown key`);
     }
   }
+  // O8d (§347) : défenses contre les seules attaques à distance (Bouclier antiprojectiles, Bouclier d'attraction).
+  if ( "rangedDefense" in entry ) {
+    const r = entry.rangedDefense;
+    if ( !isObject(r) || !Object.keys(r).length ) errors.push(`${at}rangedDefense: { ac?, resistance?, attract? }`);
+    else {
+      if ( ("ac" in r) && !(Number.isInteger(r.ac) && (r.ac > 0)) ) errors.push(`${at}rangedDefense.ac: positive integer`);
+      if ( ("resistance" in r) && (r.resistance !== true) ) errors.push(`${at}rangedDefense.resistance: true or absent`);
+      if ( ("attract" in r) && !(Number.isFinite(r.attract) && (r.attract > 0)) ) errors.push(`${at}rangedDefense.attract: distance in feet`);
+      for ( const key of Object.keys(r) ) if ( !["ac", "resistance", "attract"].includes(key) ) errors.push(`${at}rangedDefense.${key}: unknown key`);
+    }
+  }
   if ( "choice" in entry ) validateChoice(entry.choice, `${at}choice`, errors);
   if ( "targets" in entry ) validateTargets(entry.targets, `${at}targets`, facts, errors);
   if ( "trace" in entry ) {

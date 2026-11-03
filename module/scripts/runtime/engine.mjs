@@ -15,7 +15,8 @@ import { maximizeDice } from "../core/max-dice.mjs";
 import { unaffectedBy } from "../adapter/eligibility.mjs";
 import { restoreHp, rollDamageFor } from "../adapter/messages.mjs";
 import { removeEffects, TARGETS_QUERY, handleTargetsQuery, SAVE_QUERY, handleSaveQuery } from "../adapter/saves.mjs";
-import { statusesOf, areAdjacent, evades, avoids, coverAgainst } from "../adapter/conditions.mjs";
+import { statusesOf, areAdjacent, evades, avoids, coverAgainst, isRangedAttack } from "../adapter/conditions.mjs";
+import { rangedAcBonus } from "../adapter/defenses.mjs";
 import { currentAc } from "../adapter/reactions.mjs";
 import { CHOICE_QUERY, handleChoiceQuery, askChoice } from "../adapter/choices.mjs";
 import { ALLOCATION_QUERY, handleAllocationQuery } from "../adapter/projectiles.mjs";
@@ -212,7 +213,10 @@ export async function enrich(targets, plan, originUuid, activityUuid=null, attac
     // P1 (b) : l'abri corrige la CA avant le verdict — rien n'est posé sur la cible (SPEC §14.1, tranché).
     // §131 : un don de tir (Tireur d'élite, Sniper de sorts) ignore l'abri partiel ou aux trois quarts.
     const cover = (origin && token && (target.ac !== null) && (target.ac !== undefined)) ? coverAgainst(origin, token, activity, attackMode) : null;
-    const ac = cover ? ((cover.bonus === null) ? null : target.ac + cover.bonus) : target.ac;
+    // O8d (§347) : un bonus de CA contre les seules attaques à distance (Bouclier antiprojectiles).
+    const shield = (origin && activity && token && isRangedAttack(activity, attackMode)) ? rangedAcBonus(token.actor) : 0;
+    let ac = cover ? ((cover.bonus === null) ? null : target.ac + cover.bonus) : target.ac;
+    if ( shield && (ac !== null) && (ac !== undefined) ) ac += shield;
     // §16.8 : type de créature, règle du contenu, immunité à tous les effets — la cible reste lisible, hors d'atteinte.
     const unaffected = await unaffectedBy(activity, plan, token, { castLevel });
     if ( unaffected ) log(`${target.name}: unaffected by ${activity?.item?.name ?? "the action"} (${unaffected.reason}${unaffected.detail ? `: ${unaffected.detail}` : ""})`);

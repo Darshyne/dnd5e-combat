@@ -40,6 +40,10 @@ import { settledResolution } from "../adapter/messages.mjs";
 import { identifierOf, contentOf } from "../adapter/content.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
 import { failureFor, spellFailed } from "../core/spell-failure.mjs";
+import { attractorOf } from "../core/defenses.mjs";
+import { rangedDefensesOf } from "../adapter/defenses.mjs";
+import { isRangedWeaponAttack } from "../adapter/cover.mjs";
+import { isObjectToken } from "../adapter/bodies.mjs";
 
 
 /** Une carte de chat qui dit ce que la porte a décidé (lue par les scénarios : flag `gate`) ; `details` : lignes de plus. */
@@ -257,11 +261,55 @@ async function passCounters(activity, origin, candidates, { auto, castLevel }) {
 
 /* -------------------------------------------- */
 
+/* -------------------------------------------- */
+/*  O8d (§347) : Bouclier d'attraction          */
+/* -------------------------------------------- */
+
+/**
+ * « Quand une attaque avec une arme à distance vise une créature à 3 m ou moins de vous, la malédiction fait de vous la cible » : pour
+ * chaque cible, le porteur le plus proche (vivant, ni l'attaquant ni déjà visé) prend sa place. Rend les remplacements { from, to }.
+ */
+function attractions(activity, origin, targets, attackMode) {
+  if ( !isRangedWeaponAttack(activity, attackMode) || !targets.length ) return [];
+  const factors = readUnitFactors();
+  const bearers = (origin.parent?.tokens ?? []).filter(t => t.actor && !t.hidden && !isObjectToken(t) && (t !== origin)
+    && ((t.actor.system.attributes?.hp?.value ?? 0) > 0) && rangedDefensesOf(t.actor).some(r => r.attract));
+  const out = [];
+  for ( const target of targets ) {
+    const taken = new Set([...targets.map(t => t.id), ...out.map(o => o.to)]);
+    const id = attractorOf(bearers.filter(b => !taken.has(b.id)).map(b => {
+      const distance = distanceBetween(b, target);
+      const max = Math.max(...rangedDefensesOf(b.actor).map(r => Number(r.attract) || 0));
+      return { id: b.id, distance: distance.value, within: rangeIssue(distance, { value: max, units: "ft" }, factors) === null };
+    }));
+    if ( id ) out.push({ from: target.id, to: id });
+  }
+  return out;
+}
+
+/** Remplace des cibles de l'utilisateur (Token#setTarget, comme la porte) ; rend la nouvelle liste d'ids. */
+function swapTargets(ids, swaps) {
+  const next = ids.map(id => swaps.find(s => s.from === id)?.to ?? id).filter((id, i, all) => all.indexOf(id) === i);
+  next.forEach((id, i) => canvas.tokens.get(id)?.setTarget(true, { releaseOthers: i === 0 }));
+  return next;
+}
+
 function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   if ( usageConfig[MODULE_ID]?.gated || !activity?.item || !canvas?.ready ) return true;
   const origin = usageToken(activity);
   if ( !origin?.actor ) return true;
-  const targets = Array.from(game.user.targets).map(t => t.document).filter(t => t !== origin);
+  let targets = Array.from(game.user.targets).map(t => t.document).filter(t => t !== origin);
+  // O8d (§347) : le porteur du Bouclier d'attraction devient la cible, avant toute autre fenêtre.
+  const attracted = (activity.type === "attack") ? attractions(activity, origin, targets, usageConfig[MODULE_ID]?.attackMode ?? null) : [];
+  if ( attracted.length ) {
+    swapTargets(Array.from(game.user.targets).map(t => t.id), attracted);
+    for ( const { from, to } of attracted ) {
+      const bearer = origin.parent.tokens.get(to);
+      log(`${origin.name}'s ${activity.item.name}: the Shield of Missile Attraction pulls the attack from ${origin.parent.tokens.get(from)?.name} to ${bearer?.name}`);
+      if ( bearer ) notice(bearer, { key: "Retour.CibleAttiree", data: { item: activity.item.name } }, "refused", { all: true, action: "attackAttracted" });
+    }
+    targets = Array.from(game.user.targets).map(t => t.document).filter(t => t !== origin);
+  }
   const wards = wardsAgainst(activity, origin, targets);
   // Un sort lancé en réaction (Contresort lui-même, Bouclier) n'ouvre pas de fenêtre : pas de contre-contre (limite assumée).
   // Commander les objets d'un sort déjà lancé (« Move Lights », §16.17) n'est pas lancer un sort : rien à contrer.
@@ -312,6 +360,14 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
       log(`${foretold.seer}: Portent, the d20 of ${origin.name}'s attack will be ${foretold.value}`);
     }
     if ( preAttack ) rememberAttackMods(activity.uuid, mods);
+    // O8d (§347) : un réacteur devenu la cible (Bouclier antiprojectiles) remplace la cible d'origine.
+    if ( mods?.intercepts?.length ) {
+      chosen.splice(0, chosen.length, ...swapTargets(chosen, mods.intercepts));
+      for ( const { to } of mods.intercepts ) {
+        const catcher = origin.parent.tokens.get(to);
+        if ( catcher ) notice(catcher, { key: "Retour.CibleInterceptee", data: { item: activity.item.name } }, "gain", { all: true, action: "attackIntercepted" });
+      }
+    }
     const now = Array.from(game.user.targets).map(t => t.id);
     if ( chosen.length && ((now.length !== chosen.length) || now.some(id => !chosen.includes(id))) ) {
       // Token#setTarget, comme la réaction elle-même (adapter/reactions.mjs) : le cœur V14 n'a plus User#updateTokenTargets.

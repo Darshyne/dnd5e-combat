@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { reduceDamageOfType, hitDiceAllowed } from "../module/scripts/core/defenses.mjs";
+import { reduceDamageOfType, hitDiceAllowed, halveUnresisted, attractorOf } from "../module/scripts/core/defenses.mjs";
 import { validateEntry } from "../module/scripts/core/content.mjs";
 
 describe("Résistance : réduire les dégâts d'un type", () => {
@@ -33,5 +33,32 @@ describe("schéma", () => {
     expect(validateEntry({ damageShield: { formula: "1d4", effects: { u2mf5JowVgwqCARq: "acid" }, oncePerTurn: true } })).toEqual([]);
     expect(validateEntry({ hitDiceHeal: { activity: "5paXkJ6hEw07yl8g", base: 2 } })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "preAttackRoll", do: [{ type: "attackBonus" }] }] }, { facts: {} })).toContain("triggers[0].do[0].formula: formula required");
+  });
+});
+
+describe("O8d (§347) : défenses contre les attaques à distance", () => {
+  it("Résistance aux dégâts d'une arme à distance : chaque part divisée par deux, arrondie à l'inférieur", () => {
+    const r = halveUnresisted([{ value: 7, type: "piercing" }, { value: 4, type: "fire" }]);
+    expect(r.damages.map(d => d.value)).toEqual([3, 2]);
+    expect(r.reduced).toBe(6);
+  });
+  it("un type déjà résisté ou immunisé n'est pas réduit deux fois ; soins inchangés", () => {
+    const r = halveUnresisted([{ value: 8, type: "piercing" }, { value: 6, type: "fire" }, { value: 5, type: "healing" }],
+      { resisted: ["piercing"], immune: [] });
+    expect(r.damages.map(d => d.value)).toEqual([8, 3, 5]);
+  });
+  it("le porteur le plus proche à portée prend la place de la cible ; aucun à portée : personne", () => {
+    expect(attractorOf([{ id: "a", distance: 10, within: true }, { id: "b", distance: 5, within: true }, { id: "c", distance: 1, within: false }])).toBe("b");
+    expect(attractorOf([{ id: "a", distance: 15, within: false }])).toBe(null);
+    expect(attractorOf([])).toBe(null);
+  });
+  it("validation : rangedDefense et l'étape intercept", () => {
+    expect(validateEntry({ rangedDefense: { ac: 2 } })).toEqual([]);
+    expect(validateEntry({ rangedDefense: { resistance: true, attract: 10 } })).toEqual([]);
+    expect(validateEntry({ rangedDefense: {} }).length).toBe(1);
+    expect(validateEntry({ rangedDefense: { ac: 1.5, resistance: "yes", attract: -1, other: 1 } }).length).toBe(4);
+    expect(validateEntry({ triggers: [{ on: "enemyAttacks", do: [{ type: "use", activity: "KZLj6yQjI7Ps1KkW" }, { type: "intercept" }] }] })).toEqual([]);
+    expect(validateEntry({ triggers: [{ on: "isHit", do: [{ type: "use", activity: "KZLj6yQjI7Ps1KkW" }, { type: "intercept" }] }] }).length).toBe(1);
+    expect(validateEntry({ triggers: [{ on: "enemyAttacks", do: [{ type: "intercept" }] }] }).length).toBe(1);
   });
 });

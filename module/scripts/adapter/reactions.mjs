@@ -82,6 +82,7 @@ export function reactionOptions(actor, window, declarations) {
     uncrit: stepsOf(d, "uncrit").length > 0,
     reduce: stepsOf(d, "reduce").length > 0,
     cancel: stepsOf(d, "cancel").length > 0,   // §301 : Feuille morte
+    intercept: stepsOf(d, "intercept").length > 0,   // O8d (§347) : Bouclier antiprojectiles
     reduceBonus: stepsOf(d, "reduce")[0]?.bonus ?? null,
     miss: stepsOf(d, "miss").length > 0,
     penalty: stepsOf(d, "penalty")[0]?.formula ?? null,
@@ -364,7 +365,7 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
   const counter = (results && (castLevel !== null)) ? await resolveCounter(actor, activity.item, castLevel) : null;
   return results ? { counter, reduce, penalty, bonus, disadvantage: option.disadvantage === true, used: option.activity, name: option.name, message: results.message?.id ?? null, halve: option.halve === true,
     uncrit: option.uncrit === true, miss: option.miss === true, absorb: option.absorb === true, interpose: option.interpose === true,
-    endCondition: option.endCondition === true, cancel: option.cancel === true } : null;
+    endCondition: option.endCondition === true, cancel: option.cancel === true, intercept: option.intercept === true } : null;
 }
 
 /** §88 : dépense ce que l'activité consomme d'utilisations d'items (Riposte : un dé de supériorité), sans l'utiliser. */

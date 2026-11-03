@@ -319,6 +319,10 @@
  *                                               réduit les dégâts de ce type de `formula` (Résistance, §16.46) ; `worn` (un type de
  *                                               dégâts) : le porteur de l'item lui-même, équipé (et harmonisé s'il le faut) — un
  *                                               anneau qui « réduit les dégâts de froid subis de 2d8 » (§65)
+ *     rangedDefense?: { ac?, resistance?, attract? }   O8d (§347) : porté (et harmonisé) — `ac` : bonus de CA contre les jets
+ *                                               d'attaque à distance ; `resistance` : Résistance aux dégâts des attaques avec une arme à
+ *                                               distance ; `attract` (ft) : une attaque avec une arme à distance contre une créature à cette
+ *                                               distance du porteur le vise à sa place (malédiction).
  *     breaksOn?: ("attack"|"damage"|"spell")[] les effets de l'item cessent quand leur porteur fait un jet d'attaque, inflige des
  *                                               dégâts ou lance un sort (Invisibilité, §16.47)
  *     noReactions?: true                        le porteur d'un effet de l'item ne peut pas prendre de Réaction (Tentacules de

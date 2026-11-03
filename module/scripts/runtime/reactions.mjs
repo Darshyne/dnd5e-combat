@@ -390,6 +390,13 @@ export async function askAttackReactions(activity, origin, reactors, { auto=null
       auto: auto === "first"
     });
     if ( !answer ) continue;
+    // O8d (§347) : le réacteur devient la cible (Bouclier antiprojectiles) ; la porte change les cibles avant la relance.
+    if ( answer.intercept && (token !== target) && !mods.intercepts?.some(i => i.from === target.id) ) {
+      mods.intercepts = [...(mods.intercepts ?? []), { from: target.id, to: token.id }];
+      log(`${token.name} reacts before ${origin.name}'s attack: ${answer.name}, becomes the target instead of ${target.name}`);
+      mods.names.push(answer.name);
+      continue;
+    }
     if ( answer.disadvantage ) mods.disadvantage = true;
     mods.penalty += Number(answer.penalty) || 0;
     mods.bonus += Number(answer.bonus) || 0;

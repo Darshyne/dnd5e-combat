@@ -12,7 +12,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { timedWait } from "./dialogs.mjs";
-import { applyDamageShields } from "./defenses.mjs";
+import { applyDamageShields, resistRangedWeapon } from "./defenses.mjs";
 import { damageVariant } from "./variants.mjs";
 import { sneakAttackFor, askHitOptions } from "./sneak.mjs";
 import { optionalBonusesFor } from "./triggers.mjs";
@@ -275,12 +275,15 @@ function readHp(actor) {
  * immunités, vulnérabilités et PV temporaires. À n'appeler que sur le client du MJ actif.
  * @returns {Promise<object|null>}  Entrée de journal pour recordDamage(), ou null si la cible a disparu.
  */
-export async function applyDamageToToken(tokenUuid, raw, originMessage, { multiplier=1, reduction=0, absorbInto=null, ignoreResistance=[] }={}) {
+export async function applyDamageToToken(tokenUuid, raw, originMessage, { multiplier=1, reduction=0, absorbInto=null, ignoreResistance=[], rangedWeapon=false }={}) {
   const actor = (await fromUuid(tokenUuid))?.actor;
   if ( !actor ) return null;
   const before = readHp(actor);
   // §16.46 : Résistance — les dégâts du type protégé réduits, avant leur application.
-  const shielded = await applyDamageShields(actor, raw);
+  // O8d (§347) : Résistance aux dégâts d'une attaque avec une arme à distance (Bouclier d'attraction), avant le reste.
+  const ranged = rangedWeapon ? resistRangedWeapon(actor, raw) : { damages: raw, reduced: 0 };
+  if ( ranged.reduced ) console.log(`${MODULE_ID} | ${actor.name}: Resistance to ranged weapon damage, -${ranged.reduced}`);
+  const shielded = await applyDamageShields(actor, ranged.damages);
   const shields = shielded.done;
   // §24 : Parade — « réduit les dégâts totaux de l'attaque » : retiré part après part (avant résistances et multiplicateur).
   let left = Math.max(0, Number(reduction) || 0);

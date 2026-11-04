@@ -341,8 +341,9 @@ function readPlan(message) {
   // une capacité utilitaire à portée personnelle (Rage…) a ses effets posés par d'autres chemins.
   // §101 : de même une potion « au toucher » (Potion de guérison importante du Guide du maître, seule de sa famille à porter
   // « contact, une créature ») : boire ou faire boire — désignée, la cible ; sans cible, le buveur.
-  const untargetedSelf = (activity.type === "heal") && !activity.target?.template?.type && !(message.system?.targets?.length)
-    && ((rangeUnitsOf(activity) === "self") || (isPotion(activity.item) && (activity.range?.units === "touch")));
+  // O9f (§359) : une potion ou une huile « au toucher » qui n'est pas un soin (Huile éthérée : son effet sur personne) suit la même règle.
+  const untargetedSelf = !activity.target?.template?.type && !(message.system?.targets?.length)
+    && (((activity.type === "heal") && (rangeUnitsOf(activity) === "self")) || (isPotion(activity.item) && (activity.range?.units === "touch")));
   // §53 : une potion « sur soi » est pour le buveur, quel que soit le type d'activité (Invisibilité, Force de géant, Potion de
   // poison…) et même si une autre créature est encore visée ; de même le sort qu'une potion fait lancer (Rapidité : Hâte,
   // Croissance…), quelle que soit sa portée — « quand vous buvez cette potion, vous gagnez l'effet du sort ».

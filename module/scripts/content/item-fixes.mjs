@@ -484,6 +484,13 @@ export const ITEM_FIXES = Object.freeze({
   // O8h (§351) : armes de siège en tir en cloche — « ne peut pas toucher une cible à 18 m ou moins de lui » (le Trébuchet plus haut ;
   // le tir par-dessus les murs reste au MJ).
   "mangonel": { minRange: { value: 60, units: "ft" } },
+  // O9f (§359) : Menottes — « liée, la créature a le Désavantage aux jets d'attaque » ; s'en libérer, l'activité « Escape Check » (le
+  // bris, « Burst Check », reste au MJ). Corde d'enchevêtrement — l'Entravée tente l'activité « Escape ».
+  "manacles": {
+    triggers: [{ on: "preAttackRoll", via: "effect", fromEffect: "hKJK8c3uwhFNdn5m", do: [{ type: "disadvantage" }] }],
+    actionEnds: { hKJK8c3uwhFNdn5m: { by: "bearer", roll: "check" } }
+  },
+  "rope-of-entanglement": { actionEnds: { sYzIZOD83JG2W6wh: { by: "bearer", roll: "check" } } },
   // O9b (§355) : Noirtranchant — « quand vous faites tomber une créature à 0 PV, l'épée la tue et dévore son âme (sauf Créature artificielle
   // ou Mort-vivant) ; vous gagnez des PV temporaires égaux à son maximum de PV » ; Épée voleuse de vie — « sur un 20, 15 nécrotiques en plus
   // (la donnée) et vous gagnez autant de PV temporaires ». Demonomicon d'Iggwilv — « les dégâts de vos sorts contre un Fiélon : le maximum ».

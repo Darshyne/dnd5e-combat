@@ -484,6 +484,22 @@ export const ITEM_FIXES = Object.freeze({
   // O8h (§351) : armes de siège en tir en cloche — « ne peut pas toucher une cible à 18 m ou moins de lui » (le Trébuchet plus haut ;
   // le tir par-dessus les murs reste au MJ).
   "mangonel": { minRange: { value: 60, units: "ft" } },
+  // O9g (§360) : Anneau d'invisibilité — « une action Magie pour vous donner l'état Invisible » ; la donnée n'a ni activité ni effet :
+  // les deux lui sont ajoutés (redevenir visible par une action Bonus, ou en ôtant l'anneau, reste à retirer l'état).
+  "ring-of-invisibility": {
+    dataFixes: [
+      { effect: "dasRingInvisEff0", create: { name: "Invisible", type: "base", transfer: false, disabled: false, statuses: ["invisible"], system: { changes: [] } } },
+      { path: "system.activities.dasRingInvisible", value: {
+        _id: "dasRingInvisible", type: "utility", name: "Turn Invisible",
+        activation: { type: "action", value: null, override: false, condition: "" },
+        consumption: { scaling: { allowed: false }, spellSlot: true, targets: [] }, uses: { spent: 0, recovery: [], max: "" },
+        range: { override: false, units: "self" },
+        target: { template: { contiguous: false, units: "ft", type: "" }, affects: { choice: false, count: "", type: "self" }, override: false, prompt: false },
+        duration: { units: "inst", concentration: false, override: false }, effects: [{ _id: "dasRingInvisEff0" }],
+        roll: { prompt: false, visible: false, name: "", formula: "" }
+      } }
+    ]
+  },
   // O9f (§359) : Menottes — « liée, la créature a le Désavantage aux jets d'attaque » ; s'en libérer, l'activité « Escape Check » (le
   // bris, « Burst Check », reste au MJ). Corde d'enchevêtrement — l'Entravée tente l'activité « Escape ».
   "manacles": {

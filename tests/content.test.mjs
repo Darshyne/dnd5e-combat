@@ -239,7 +239,7 @@ describe("contenu livré", () => {
       "regeneration", "relentless-endurance", "relentless-hunter", "relentless-rage", "remarkable-athlete", "remove-curse", "rend-mind",
       "repelling-blast", "resilient-sphere", "resistance", "restoring-touch", "resurrection", "retaliation", "revelation-in-flesh",
       "reverse-gravity", "revivify", "ring-of-elemental-command-air", "ring-of-elemental-command-earth", "ring-of-elemental-command-fire",
-      "ring-of-elemental-command-water", "ring-of-evasion", "ring-of-feather-falling", "ring-of-free-action", "ring-of-spell-turning",
+      "ring-of-elemental-command-water", "ring-of-evasion", "ring-of-feather-falling", "ring-of-free-action", "ring-of-invisibility", "ring-of-spell-turning",
       "ring-of-the-ram", "ring-of-warmth", "ring-of-x-ray-vision", "riposte", "ritual-adept", "robe-of-scintillating-colors",
       "robe-of-stars", "robe-of-the-archmagi", "rod-of-absorption", "rod-of-lordly-might", "rod-of-rulership", "rolling-stone", "rope-of-entanglement", "rumbling-movement", "sacred-weapon", "sanctuary", "sanguine-drain",
       "savage-attacker", "scarab-of-protection", "scimitar-of-speed", "scorching-ray", "scroll-of-titan-summoning", "sculpt-spells", "sear-undead", "searing-smite",

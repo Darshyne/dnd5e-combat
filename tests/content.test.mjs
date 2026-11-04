@@ -210,7 +210,7 @@ describe("contenu livré", () => {
       "improved-war-magic", "improved-warding-flare", "incendiary-cloud", "indomitable", "indomitable-might", "innate-sorcery",
       "insect-plague", "inspiring-smite", "instinctive-pounce", "interception", "intimidating-presence", "investment-of-the-chain-master",
       "invisibility", "invoke-duplicity", "iron-bands-of-bilarro", "iron-flask", "ivory-goats", "jallarzis-storm-of-radiance",
-      "jolt-to-life", "jump", "keoghtoms-ointment", "knowledge-from-a-past-life", "lamp", "lantern-bullseye", "lantern-hooded",
+      "jester", "jolt-to-life", "jump", "keoghtoms-ointment", "knowledge-from-a-past-life", "lamp", "lantern-bullseye", "lantern-hooded",
       "lantern-of-revealing", "large-form", "laser-pistol", "laser-rifle", "lay-on-hands", "leading-evasion", "lesser-restoration",
       "levitate", "life-drain", "lifedrinker", "light", "lightning-arrow", "limited-foresight", "living-shadow", "lolths-sting",
       "luck-blade-enchanted", "lucky", "lunar-form", "lunging-attack", "lupin-howl", "mace-of-disruption", "mace-of-terror", "mage-armor",

@@ -484,6 +484,17 @@ export const ITEM_FIXES = Object.freeze({
   // O8h (§351) : armes de siège en tir en cloche — « ne peut pas toucher une cible à 18 m ou moins de lui » (le Trébuchet plus haut ;
   // le tir par-dessus les murs reste au MJ).
   "mangonel": { minRange: { value: 60, units: "ft" } },
+  // O9g (§360) : Le Bouffon (Jeu des merveilles) — « Avantage aux Tests d'un d20 pendant 72 h » : l'activité « Card Effect: Advantage » ne
+  // posait rien ; un effet de 72 h lui est ajouté (tests de caractéristique, sauvegardes, compétences ; les jets d'attaque restent au MJ).
+  "jester": {
+    dataFixes: [
+      { effect: "dasJesterAdvant0", create: { name: "Jester: Advantage", type: "base", transfer: false, disabled: false, duration: { seconds: 259200 },
+        system: { changes: [...["str", "dex", "con", "int", "wis", "cha"].flatMap(a => [
+          { key: `system.abilities.${a}.check.roll.mode`, type: "upgrade", value: "1" }, { key: `system.abilities.${a}.save.roll.mode`, type: "upgrade", value: "1" }]),
+          ...["acr","ani","arc","ath","dec","his","ins","itm","inv","med","nat","prc","prf","per","rel","slt","ste","sur"].map(k => ({ key: `system.skills.${k}.roll.mode`, type: "upgrade", value: "1" }))] } } },
+      { path: "system.activities.6WJ08JWazu3OZign.effects", from: [], value: [{ _id: "dasJesterAdvant0" }] }
+    ]
+  },
   // O9g (§360) : Anneau d'invisibilité — « une action Magie pour vous donner l'état Invisible » ; la donnée n'a ni activité ni effet :
   // les deux lui sont ajoutés (redevenir visible par une action Bonus, ou en ôtant l'anneau, reste à retirer l'état).
   "ring-of-invisibility": {

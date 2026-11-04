@@ -343,6 +343,8 @@
  *                                               `vengeance`), le porteur fait la sauvegarde ; ratée, une marque « Folie furieuse » /
  *                                               « Vengeance » contre l'auteur des dégâts, levée au début de son tour quand la colère
  *                                               prend fin (runtime/wrath.mjs)
+ *     hardToPerceive?: true                     O9g (§361) : porté et harmonisé, la Perception pour repérer le porteur a le Désavantage
+ *                                               (passive −5 ; Cape elfique)
  *     breaksOn?: ("attack"|"damage"|"spell")[] les effets de l'item cessent quand leur porteur fait un jet d'attaque, inflige des
  *                                               dégâts ou lance un sort (Invisibilité, §16.47)
  *     noReactions?: true                        le porteur d'un effet de l'item ne peut pas prendre de Réaction (Tentacules de

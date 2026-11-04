@@ -5,6 +5,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
+import { hardToPerceive } from "./defenses.mjs";
 import { LIGHT } from "../core/illumination.mjs";
 import { hiddenEffectsOf, OUT_OF_ACTION } from "./hide.mjs";
 import { canSee, blockedBetween, hasLineOfSight } from "./vision.mjs";
@@ -79,7 +80,8 @@ export function passiveObservers(hidden) {
     if ( (token === hidden) || token.hidden || !actor || isObjectToken(token) ) continue;
     if ( !areEnemies(hidden, token) ) continue;
     if ( OUT_OF_ACTION.some(s => actor.statuses.has(s)) || actor.statuses.has(defeated) ) continue;
-    const passive = Number(actor.system?.skills?.prc?.passive);
+    // O9g (§361) : contre un porteur de Cape elfique, la Perception passive perd 5.
+    const passive = Number(actor.system?.skills?.prc?.passive) - (hardToPerceive(hidden.actor) ? 5 : 0);
     out.push({ token, passive, ...sightingOf(token, hidden) });
   }
   return out;

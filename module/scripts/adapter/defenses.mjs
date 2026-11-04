@@ -129,3 +129,11 @@ export function wearsAdamantine(actor) {
   return Array.from(actor?.items ?? []).some(i => (i.type === "equipment") && i.system?.equipped && (i.system?.type?.value !== "shield")
     && (i.system?.properties?.has?.("ada") === true));
 }
+
+/**
+ * O9g (§361) : « les tests de Sagesse (Perception) pour vous percevoir ont le Désavantage » (Cape elfique, portée et harmonisée : contenu
+ * `hardToPerceive`) — la Perception passive contre ce porteur perd 5 (règle du Désavantage sur un score passif).
+ */
+export function hardToPerceive(actor) {
+  return Array.from(actor?.items ?? []).some(i => worn(i) && (contentOf(i).entry?.hardToPerceive === true));
+}

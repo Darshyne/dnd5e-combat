@@ -16,6 +16,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
+import { hardToPerceive } from "../adapter/defenses.mjs";
 import { route } from "./router.mjs";
 import { theaterActive } from "./theater-state.mjs";
 import { log, loc, isExecutor, say, esc } from "./shared.mjs";
@@ -91,8 +92,10 @@ async function entered(obs, target, state) {
   const stealth = (await target.actor.rollSkill({ skill: "ste" }, { configure: false }))?.[0];
   if ( !stealth ) return;
   let dc;
-  if ( state.fails > 0 ) dc = (await obs.actor.rollSkill({ skill: "prc" }, { configure: false }))?.[0]?.total ?? 10;
-  else dc = Number(obs.actor.system?.skills?.prc?.passive) || 10;
+  // O9g (§361) : contre un porteur de Cape elfique, Perception avec le Désavantage (passive : −5).
+  const cloaked = hardToPerceive(target.actor);
+  if ( state.fails > 0 ) dc = (await obs.actor.rollSkill({ skill: "prc", ...(cloaked ? { disadvantage: true } : {}) }, { configure: false }))?.[0]?.total ?? 10;
+  else dc = (Number(obs.actor.system?.skills?.prc?.passive) || 10) - (cloaked ? 5 : 0);
   if ( stealth.total >= dc ) { log(`stealth: ${target.name} ${stealth.total} vs ${obs.name} ${dc} — unseen`); return; }
   state.fails += 1;
   if ( state.fails >= 2 ) return spot(obs, target, point, "failed");

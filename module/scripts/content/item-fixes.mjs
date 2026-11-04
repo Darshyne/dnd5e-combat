@@ -484,6 +484,9 @@ export const ITEM_FIXES = Object.freeze({
   // O8h (§351) : armes de siège en tir en cloche — « ne peut pas toucher une cible à 18 m ou moins de lui » (le Trébuchet plus haut ;
   // le tir par-dessus les murs reste au MJ).
   "mangonel": { minRange: { value: 60, units: "ft" } },
+  // O9g (§361) : Cape elfique — « les tests de Sagesse (Perception) pour vous percevoir ont le Désavantage » (l'Avantage en Discrétion est
+  // déjà dans la donnée).
+  "cloak-of-elvenkind": { hardToPerceive: true },
   // O9g (§360) : Le Bouffon (Jeu des merveilles) — « Avantage aux Tests d'un d20 pendant 72 h » : l'activité « Card Effect: Advantage » ne
   // posait rien ; un effet de 72 h lui est ajouté (tests de caractéristique, sauvegardes, compétences ; les jets d'attaque restent au MJ).
   "jester": {

@@ -29,7 +29,7 @@ import { areEnemies } from "../adapter/factions.mjs";
 import { factionsApi } from "./factions.mjs";
 import { coneOf } from "../adapter/cone.mjs";
 import { canSee as canSeeToken } from "../adapter/vision.mjs";
-import { sightingOf } from "../adapter/search.mjs";
+import { sightingOf, passiveObservers } from "../adapter/search.mjs";
 import { setHidden, check as stealthCheck, stealthViews } from "./stealth.mjs";
 import { pickableNear, pickUp, scatterZones } from "./scatter.mjs";
 import { unlitZones, ignitableNear, ignite, fireTargetAt, igniteWithActivity } from "./flammable.mjs";
@@ -447,6 +447,8 @@ export async function stealth({ op="state", tokenId, on=true }={}) {
   const token = viewedToken({ tokenId });
   if ( op === "set" ) await setHidden(token, on);
   if ( op === "check" ) await stealthCheck(token.parent);
+  // O9g (§361) : la Perception passive de chaque ennemi contre ce token (Cape elfique : −5).
+  if ( op === "observers" ) return passiveObservers(token.document ?? token).map(o => ({ name: o.token.name, passive: o.passive }));
   const point = lightAtPoint(stealthPoint(token));
   // Par nom ; deux observateurs du même nom (deux Bandits) se distinguent par leur id, sinon l'un cacherait l'autre.
   const names = token.parent.tokens.contents.map(t => t.name);

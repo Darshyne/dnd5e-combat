@@ -171,7 +171,7 @@ describe("contenu livré", () => {
       "carrion-crawler-mucus", "cause-fear", "celestial-revelation", "censer-of-controlling-air-elementals", "chain-lightning",
       "channel-divinity", "channel-divinity-cleric", "charger", "charging-horn", "charm-monster", "charm-person", "chill-touch",
       "chromatic-orb", "circle-of-mortality", "circle-of-power", "clairvoyant-combatant", "cloak-of-arachnida", "cloak-of-displacement",
-      "cloak-of-the-bat", "clockwork-cavalcade", "cloud-of-daggers", "cloudkill", "clouds-jaunt", "combat-inspiration", "command",
+      "cloak-of-elvenkind", "cloak-of-the-bat", "clockwork-cavalcade", "cloud-of-daggers", "cloudkill", "clouds-jaunt", "combat-inspiration", "command",
       "commanders-strike", "commanding-presence", "compelled-duel", "compulsion", "confusion", "conjure-animals", "conjure-barrage",
       "conjure-celestial", "conjure-elemental", "conjure-fey", "conjure-minor-elementals", "conjure-volley", "conjure-woodland-beings",
       "consume-life", "contact-other-plane", "contagion", "continual-flame", "cordon-of-arrows", "corrosive-form", "cosmic-omen",

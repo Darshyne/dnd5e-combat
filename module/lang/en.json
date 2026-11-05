@@ -1897,5 +1897,20 @@
   "DND5ECOMBAT.Explosion.Tient": "{item}: explosion chance ({n}% or less) — it holds",
   "DND5ECOMBAT.Explosion.Explose": "{item} explodes!",
   "DND5ECOMBAT.Explosion.Degats": "{item} explodes in the hands of {name}",
-  "DND5ECOMBAT.Protection.Fin": "{item}: the emanation ends"
+  "DND5ECOMBAT.Protection.Fin": "{item}: the emanation ends",
+  "DND5ECOMBAT.AlerteMJ.Titre": "DAS · For the GM",
+  "DND5ECOMBAT.AlerteMJ.Fermer": "Click to close",
+  "DND5ECOMBAT.Reglage.gmAlertBanner.Nom": "GM alerts: banner",
+  "DND5ECOMBAT.Reglage.gmAlertBanner.Aide": "When an ability or effect leaves something to the GM, it is shown at the top of the screen (the whispered chat card stays). GM only.",
+  "DND5ECOMBAT.Reglage.gmAlertSeconds.Nom": "GM alerts: seconds on screen",
+  "DND5ECOMBAT.Reglage.gmAlertSeconds.Aide": "How long a GM alert stays in the banner. 0: until clicked.",
+  "DND5ECOMBAT.AlerteMJ.ParcheminProtection": "{actor} is protected: a creature of the warded type within 5 ft of the emanation can take a Magic action to overcome it (DC 15 Charisma save; on a success, it is no longer affected).",
+  "DND5ECOMBAT.AlerteMJ.ManuelVivacite": "{item}: the benefit only comes after 48 hours of reading within 6 days — apply it when the reading is done.",
+  "DND5ECOMBAT.AlerteMJ.SceptreTentacule": "{item}: a Restrained target is held while it stays within 15 ft; it ends if {actor} lets go or moves away.",
+  "DND5ECOMBAT.AlerteMJ.AvatarMort": "{item}: the Avatar of Death targets only {actor} — its actions are up to the GM.",
+  "DND5ECOMBAT.AlerteMJ.Titan": "{item}: the titan is Hostile to every other creature — play it as a hostile creature.",
+  "DND5ECOMBAT.AlerteMJ.Bouffon": "{item}: Advantage on d20 Tests for 72 hours — attack rolls are not covered automatically.",
+  "DND5ECOMBAT.AlerteMJ.BatonMage": "{item}: the staff gains charges equal to the spell's level — past 50 charges it explodes (Retributive Strike).",
+  "DND5ECOMBAT.AlerteMJ.FolieFurieuse": "{actor} is in a berserker rage ({item}): they attack the nearest creature they can see until it ends.",
+  "DND5ECOMBAT.AlerteMJ.Vengeance": "{actor} is bent on vengeance ({item}): they attack the creature that hurt them until it falls."
 }

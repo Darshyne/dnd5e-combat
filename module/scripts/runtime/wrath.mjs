@@ -4,7 +4,7 @@
  *    dégâts, runtime/triggers.mjs `recordDamager`) — et en combat pour la vengeance —, la sauvegarde est lancée ; ratée, une marque est
  *    posée sur le porteur (« Folie furieuse » / « Vengeance », contre l'auteur des dégâts), vue de toute la table ;
  *  - au début du tour du porteur, la marque tombe si la colère prend fin (`wrathEnds`).
- * Ce que la marque impose (attaquer la créature la plus proche, ou celle qui l'a blessé) reste au joueur et au MJ.
+ * Ce que la marque impose (attaquer la créature la plus proche, ou celle qui l'a blessé) reste au joueur et au MJ, qui en est alerté (§364).
  */
 
 import { MODULE_ID } from "../constants.mjs";
@@ -15,6 +15,7 @@ import { distanceBetween } from "../adapter/turn.mjs";
 import { lengthIn } from "../adapter/units.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { requestSave } from "./neighbours.mjs";
+import { alertGM } from "./gm-alert.mjs";
 import { route } from "./router.mjs";
 import { enqueue } from "./queue.mjs";
 import { log, loc, notice } from "./shared.mjs";
@@ -50,6 +51,9 @@ async function onDamaged(actor, changes) {
   log(`${found.item.name}: ${actor.name} — ${label}`);
   const shown = token?.document ?? token;
   if ( shown ) notice(shown, label, "refused", { all: true, action: "wrath" });
+  // §364 : ce que la marque impose (attaquer la créature la plus proche, ou celle qui l'a blessé) reste au MJ — il en est alerté.
+  await alertGM({ text: loc(found.rule.kind === "berserk" ? "AlerteMJ.FolieFurieuse" : "AlerteMJ.Vengeance", { actor: actor.name, item: found.item.name }),
+    item: found.item, actor });
 }
 
 /** Au début du tour du porteur : la colère prend-elle fin ? */

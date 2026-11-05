@@ -191,6 +191,14 @@ export function validateExtras(entry, at, errors) {
     && Object.keys(entry.barrier).every(k => ["radius", "units", "exceptTypes", "onlyTypes", "shields", "endsOnContact"].includes(k))) ) {
     errors.push(`${at}barrier: { radius > 0, units, exceptTypes?, onlyTypes?, shields?, endsOnContact? }`);
   }
+  // §364 : alerte MJ — à l'utilisation, ce que le MJ doit gérer : une clé de traduction (`DND5ECOMBAT.AlerteMJ.<key>`) ou un texte.
+  if ( "gmAlert" in entry ) {
+    const ok = r => isObject(r) && ((("key" in r) && /^[A-Za-z0-9]+$/.test(r.key ?? "") && !("text" in r)) || ((typeof r.text === "string") && r.text.trim() && !("key" in r)))
+      && (!("activities" in r) || (Array.isArray(r.activities) && r.activities.length && r.activities.every(isId)))
+      && Object.keys(r).every(k => ["key", "text", "activities"].includes(k));
+    const list = [entry.gmAlert].flat();
+    if ( !list.length || !list.every(ok) ) errors.push(`${at}gmAlert: { key | text, activities? } or a list of them`);
+  }
   // O9h : un enduit d'arme (Poison standard) — l'activité qui enduit, celle qui porte les dés, les types de dégâts qui le délivrent.
   if ( "coats" in entry ) {
     const c = entry.coats;

@@ -625,3 +625,28 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .dnd5e-combat-pick .dnd5e-combat-pick-row .name { flex: 1; }
 .dnd5e-combat-pick .dnd5e-combat-pick-row .distance { opacity: 0.65; font-size: 0.9em; }
 .dnd5e-combat-pick .dnd5e-combat-pick-upgrade { display: flex; align-items: center; gap: 8px; padding: 6px; border-top: 1px solid rgba(255, 255, 255, 0.15); font-weight: bold; }
+
+/* ---------- §364 : alerte MJ — bandeau en haut de l'écran et carte chuchotée, aux couleurs de DAS ---------- */
+.das-gm-alerts {
+  position: fixed; z-index: 1001; top: calc(var(--dnd5e-combat-banner-top, 72px) + 44px); left: 50%; transform: translateX(-50%);
+  width: min(640px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+}
+.das-gm-alerts__line {
+  pointer-events: auto; cursor: pointer; display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px;
+  background: rgba(18, 22, 31, 0.95); color: #e6e8ee; border: 1px solid #ff4d8d; border-left: 4px solid #ff4d8d; border-radius: 6px;
+  box-shadow: 0 0 12px rgba(255, 77, 141, 0.35), 0 4px 14px rgba(0, 0, 0, 0.6); font: 13px/1.4 var(--font-primary, sans-serif);
+  animation: das-gm-alert-in 0.25s ease-out; transition: opacity 0.25s, transform 0.25s;
+}
+.das-gm-alerts__line.closing { opacity: 0; transform: translateY(-6px); }
+.das-gm-alerts__line > .fa-triangle-exclamation { color: #ff4d8d; font-size: 18px; margin-top: 2px; }
+.das-gm-alerts__body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.das-gm-alerts__title { font-weight: 700; color: #ff4d8d; }
+.das-gm-alerts__close { color: #9aa2b4; }
+@keyframes das-gm-alert-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+.chat-message .das-gm-alert {
+  margin: 2px 0; padding: 6px 8px; border: 1px solid #ff4d8d; border-left: 4px solid #ff4d8d; border-radius: 5px;
+  background: #12161f; color: #e6e8ee;
+}
+.chat-message .das-gm-alert header { display: flex; align-items: center; gap: 6px; font-weight: 700; color: #ff4d8d; border: none; margin: 0 0 4px; }
+.chat-message .das-gm-alert p { margin: 2px 0; }
+.chat-message .das-gm-alert .das-gm-alert__item { color: #9aa2b4; font-size: 0.92em; }

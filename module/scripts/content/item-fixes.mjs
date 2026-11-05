@@ -262,7 +262,7 @@ export const ITEM_FIXES = Object.freeze({
   // Robe aux étoiles : « +1 aux jets de sauvegarde » — aucun effet.
   "robe-of-stars": { dataFixes: [{ effect: "dasRobeOfStars00", create: worn("Robe of Stars", [change("system.bonuses.abilities.save", "add", "+1")]) }] },
   // Manuel de vivacité : « Lire » renvoie à un effet qui n'est pas celui de l'item ; le bénéfice vient au bout de 48 heures de lecture (au MJ).
-  "manual-of-quickness-of-action": { dataFixes: [{ path: "system.activities.MeBH48FuUmQFEhUM.effects", from: [{ _id: "9npFjYvEL3twc99F" }], value: [] }] },
+  "manual-of-quickness-of-action": { gmAlert: { key: "ManuelVivacite" }, dataFixes: [{ path: "system.activities.MeBH48FuUmQFEhUM.effects", from: [{ _id: "9npFjYvEL3twc99F" }], value: [] }] },
   // Épée acérée : « 14 dégâts tranchants de plus » sur un 20 — la donnée les met en nécrotique.
   "sword-of-sharpness": {
     dataFixes: [{ effect: "nxid1s2CZrB06HH8", path: "system.changes", from: SHARPNESS("14d1[necrotic]"), value: SHARPNESS("14[slashing]") }]
@@ -325,6 +325,7 @@ export const ITEM_FIXES = Object.freeze({
   // Sceptre-tentacule : la sauvegarde d'Entravé n'inflige rien ; les 3d6 viennent au début des tours de la cible (lot O3).
   // O3 : « 3d6 psychiques au début de chacun de ses tours », sauvegarde répétée à la fin (l'attache à 15 ft et la libération restent au MJ).
   "tentacle-rod": {
+    gmAlert: { key: "SceptreTentacule" },
     noDamage: ["yuASV7hKz3sa7L5P"],
     triggers: [
       { on: "startOfTurn", via: "effect", fromEffect: "JVnjmXHqpPkyKBXS", do: [{ type: "damage", to: "bearer", activity: "y9MnFdJWUat9KhbD" }] },
@@ -458,7 +459,7 @@ export const ITEM_FIXES = Object.freeze({
   },
   // Bâton du thaumaturge : « une Réaction quand une autre créature lance un sort qui ne cible que vous : le bâton absorbe sa magie, annule
   // son effet et gagne autant de charges que le niveau du sort » (§344). L'explosion au-delà de 50 charges reste au MJ.
-  "staff-of-the-magi": { saveAdvantage: ["magic"], triggers: [{ on: "isTargeted", do: [{ type: "use", activity: "QcfPhLX9LBvOnShu" }, { type: "cancel" }] }] },
+  "staff-of-the-magi": { gmAlert: { key: "BatonMage", activities: ["QcfPhLX9LBvOnShu"] }, saveAdvantage: ["magic"], triggers: [{ on: "isTargeted", do: [{ type: "use", activity: "QcfPhLX9LBvOnShu" }, { type: "cancel" }] }] },
   // Sceptre d'absorption : « une Réaction pour absorber un sort qui ne cible que vous et ne produit pas de zone d'effet ; son effet est
   // annulé, son énergie stockée » (§344) — l'activité « Absorb Spell » dépense autant d'utilisations que le niveau du sort.
   "rod-of-absorption": { triggers: [{ on: "isTargeted", do: [{ type: "use", activity: "y66MTczY5BQfIonF" }, { type: "cancel" }] }] },
@@ -486,8 +487,8 @@ export const ITEM_FIXES = Object.freeze({
   // O8f (§349) : invocations hostiles — Le Crâne (Jeu des merveilles) : « un Avatar de la mort apparaît […] disparaît à 0 PV ou à votre
   // mort » ; Parchemin d'invocation de titan : « le titan est Hostile envers toutes les autres créatures et disparaît à 0 PV ». Initiative
   // propre ; « il ne vise que vous » et l'avatar des alliés qui le blessent restent au MJ.
-  "skull": { summon: { initiative: "own", hostile: true, vanishesAtZero: true, vanishesWithCaster: true } },
-  "scroll-of-titan-summoning": { summon: { initiative: "own", hostile: true, vanishesAtZero: true } },
+  "skull": { gmAlert: { key: "AvatarMort" }, summon: { initiative: "own", hostile: true, vanishesAtZero: true, vanishesWithCaster: true } },
+  "scroll-of-titan-summoning": { gmAlert: { key: "Titan" }, summon: { initiative: "own", hostile: true, vanishesAtZero: true } },
   // O8h (§351) : armes de siège en tir en cloche — « ne peut pas toucher une cible à 18 m ou moins de lui » (le Trébuchet plus haut ;
   // le tir par-dessus les murs reste au MJ).
   "mangonel": { minRange: { value: 60, units: "ft" } },
@@ -503,6 +504,7 @@ export const ITEM_FIXES = Object.freeze({
   // O9g (§360) : Le Bouffon (Jeu des merveilles) — « Avantage aux Tests d'un d20 pendant 72 h » : l'activité « Card Effect: Advantage » ne
   // posait rien ; un effet de 72 h lui est ajouté (tests de caractéristique, sauvegardes, compétences ; les jets d'attaque restent au MJ).
   "jester": {
+    gmAlert: { key: "Bouffon", activities: ["6WJ08JWazu3OZign"] },
     dataFixes: [
       { effect: "dasJesterAdvant0", create: { name: "Jester: Advantage", type: "base", transfer: false, disabled: false, duration: { seconds: 259200 },
         system: { changes: [...["str", "dex", "con", "int", "wis", "cha"].flatMap(a => [
@@ -669,7 +671,7 @@ export const ITEM_FIXES = Object.freeze({
     dataFixes: [{ path: "system.activities.SLT3PkMx7Cq6Rnon.enchant.self", from: false, value: true }] },
   ...Object.fromEntries(["aberration", "beast", "celestial", "construct", "dragon", "elemental", "humanoid", "fey", "fiend", "giant", "monstrosity",
     "ooze", "plant", "undead"].map(type => [`scroll-of-protection-${type}-enchanted`,
-    { barrier: { radius: 5, units: "ft", onlyTypes: [type], shields: true, endsOnContact: true } }])),
+    { barrier: { radius: 5, units: "ft", onlyTypes: [type], shields: true, endsOnContact: true }, gmAlert: { key: "ParcheminProtection" } }])),
 
   // Morsure de Harkon (Ravenloft) : « +1 aux tests et sauvegardes tant que vous portez le collier » — l'effet n'est pas transféré.
   "harkons-bite": { dataFixes: [{ effect: "EzuxTW39OtnDWoi1", path: "transfer", from: false, value: true }] }

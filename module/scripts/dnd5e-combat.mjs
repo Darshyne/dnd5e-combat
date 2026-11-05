@@ -139,6 +139,8 @@ import { registerAmmo } from "./runtime/ammo.mjs";
 import { ammoState, setAmmo } from "./adapter/ammo.mjs";
 import { registerRecast } from "./runtime/recast.mjs";
 import { registerChat } from "./ui/chat.mjs";
+import { registerGmAlert, alertGM } from "./runtime/gm-alert.mjs";
+import { registerGmAlertUi } from "./ui/gm-alert.mjs";
 import { registerCompact } from "./ui/compact.mjs";
 import { registerPurge } from "./runtime/purge.mjs";
 import { registerPerf, perfApi } from "./runtime/perf.mjs";
@@ -229,6 +231,7 @@ const state = {
   climb: climbApi,
   ethereal: etherealApi,   // §225 : `is(token)`, `perceives(observer, target)`, `toggle(tokens?, active?)`
   theater: theaterApi,   // §220 : Théâtre de l'esprit — `active()`, `set(on)` ; hook `dnd5e-combat.theater`
+  gm: { alert: alertGM },   // §364 : alerte MJ (`api.gm.alert({ text, item, actor })`) ; hook `dnd5e-combat.gmAlert`
   rolls: { ...rollsApi, open: openGroupRoll, tracker: openTracker },   // §242 : jets demandés par le MJ — hooks `groupRoll`, `groupRollPrompt`
   combat: combatApi,   // §250 : évènements dans l'initiative — `addEvent`, `removeEvent`, `events`, `isEvent` ; hook `dnd5e-combat.eventTurn`
   gap: publicGap,
@@ -417,6 +420,8 @@ Hooks.once("init", () => {
   gated(registerCatalyst);   // §289 : Seconde peau, le changement involontaire
   gated(registerCompact);   // §58 : avant registerChat — le résumé des dés précède le verdict
   gated(registerChat);
+  gated(registerGmAlert);   // §364 : alerte MJ — la carte chuchotée
+  gated(registerGmAlertUi);   // §364 : son bandeau chez le MJ
   gated(registerPurge);
   gated(registerFeedback);
   gated(registerTimers);   // §272 : minuteries au-dessus des tokens (fouille, désamorçage), vues de toute la table

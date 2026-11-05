@@ -347,6 +347,10 @@
  *                                               prend fin (runtime/wrath.mjs)
  *     hardToPerceive?: true                     O9g (§361) : porté et harmonisé, la Perception pour repérer le porteur a le Désavantage
  *                                               (passive −5 ; Cape elfique)
+ *     gmAlert?: { key | text, activities? } | [...]  §364 : à l'utilisation de l'item (ou de ces activités), le MJ est alerté de ce qui lui
+ *                                               revient (bandeau en haut de son écran, carte chuchotée aux couleurs de DAS) — `key` : le texte
+ *                                               `DND5ECOMBAT.AlerteMJ.<key>`, `{actor}` et `{item}` remplis ; `text` : un texte tel quel
+ *                                               (surcouche du monde, module voisin). runtime/gm-alert.mjs
  *     coats?: { activity, damage, damageTypes, seconds, ammunition? }  O9h (§363) : l'activité `activity` enduit une arme (ou `ammunition`
  *                                               munitions) du porteur, au choix ; pendant `seconds`, le premier jet de dégâts de cette arme qui
  *                                               porte l'un des `damageTypes` reçoit les dés de l'activité `damage`, puis l'enduit tombe

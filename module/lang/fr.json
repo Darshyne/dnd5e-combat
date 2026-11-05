@@ -1897,5 +1897,20 @@
   "DND5ECOMBAT.Explosion.Tient": "{item} : risque d’explosion ({n} % ou moins) — il tient",
   "DND5ECOMBAT.Explosion.Explose": "{item} explose !",
   "DND5ECOMBAT.Explosion.Degats": "{item} explose entre les mains de {name}",
-  "DND5ECOMBAT.Protection.Fin": "{item} : l’émanation prend fin"
+  "DND5ECOMBAT.Protection.Fin": "{item} : l’émanation prend fin",
+  "DND5ECOMBAT.AlerteMJ.Titre": "DAS · Pour le MJ",
+  "DND5ECOMBAT.AlerteMJ.Fermer": "Cliquer pour fermer",
+  "DND5ECOMBAT.Reglage.gmAlertBanner.Nom": "Alertes MJ : bandeau",
+  "DND5ECOMBAT.Reglage.gmAlertBanner.Aide": "Quand une capacité ou un effet laisse quelque chose au MJ, c'est affiché en haut de l'écran (la carte chuchotée reste dans le chat). MJ seulement.",
+  "DND5ECOMBAT.Reglage.gmAlertSeconds.Nom": "Alertes MJ : secondes à l'écran",
+  "DND5ECOMBAT.Reglage.gmAlertSeconds.Aide": "Durée d'une alerte MJ dans le bandeau. 0 : jusqu'au clic.",
+  "DND5ECOMBAT.AlerteMJ.ParcheminProtection": "{actor} est protégé : une créature du type repoussé, à 1,50 m de l'émanation, peut tenter de la franchir par une action Magie (JS de Charisme DD 15 ; réussi, elle n'est plus concernée).",
+  "DND5ECOMBAT.AlerteMJ.ManuelVivacite": "{item} : le bénéfice ne vient qu'après 48 heures de lecture en 6 jours — à appliquer une fois la lecture finie.",
+  "DND5ECOMBAT.AlerteMJ.SceptreTentacule": "{item} : une cible Entravée reste tenue tant qu'elle est à 4,50 m ; c'est fini si {actor} la lâche ou s'éloigne.",
+  "DND5ECOMBAT.AlerteMJ.AvatarMort": "{item} : l'Avatar de la mort ne vise que {actor} — ses actions sont au MJ.",
+  "DND5ECOMBAT.AlerteMJ.Titan": "{item} : le titan est Hostile envers toutes les autres créatures — à jouer comme une créature hostile.",
+  "DND5ECOMBAT.AlerteMJ.Bouffon": "{item} : Avantage aux tests d20 pendant 72 heures — les jets d'attaque ne sont pas pris en charge.",
+  "DND5ECOMBAT.AlerteMJ.BatonMage": "{item} : le bâton gagne autant de charges que le niveau du sort — au-delà de 50 charges, il explose (Frappe vengeresse).",
+  "DND5ECOMBAT.AlerteMJ.FolieFurieuse": "{actor} est pris de folie furieuse ({item}) : il attaque la créature la plus proche qu'il voit jusqu'à la fin.",
+  "DND5ECOMBAT.AlerteMJ.Vengeance": "{actor} veut se venger ({item}) : il attaque la créature qui l'a blessé jusqu'à ce qu'elle tombe."
 }

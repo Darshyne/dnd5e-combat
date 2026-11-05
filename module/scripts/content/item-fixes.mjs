@@ -484,6 +484,12 @@ export const ITEM_FIXES = Object.freeze({
   // O8h (§351) : armes de siège en tir en cloche — « ne peut pas toucher une cible à 18 m ou moins de lui » (le Trébuchet plus haut ;
   // le tir par-dessus les murs reste au MJ).
   "mangonel": { minRange: { value: 60, units: "ft" } },
+  // O9g (§362) : Bottes de rapidité — « Click Heels » ne visait pas son porteur (l'effet partait sur la cible désignée, ou sur personne) :
+  // sur soi ; et « une créature qui vous porte une attaque d'opportunité a le Désavantage » tant que l'effet est là.
+  "boots-of-speed": {
+    dataFixes: [{ path: "system.activities.ffXywPJdVzwe6NId.target.affects.type", from: "", value: "self" }],
+    opportunityDisadvantage: { whileEffect: "XP45fDHAojcVjDc0" }
+  },
   // O9g (§361) : Cape elfique — « les tests de Sagesse (Perception) pour vous percevoir ont le Désavantage » (l'Avantage en Discrétion est
   // déjà dans la donnée).
   "cloak-of-elvenkind": { hardToPerceive: true },

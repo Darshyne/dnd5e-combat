@@ -200,7 +200,8 @@
  *     ritualAdept?: {class: string}           §139 : Savoir rituel — les sorts rituels de ce grimoire, non préparés, en rituel hors combat
  *     slotRecovery?: {class: string, maxLevel?: number}   §139 : Restauration magique au Repos court (moitié du niveau de la classe)
  *     reactiveStrike?: true                     §136 : Attaque réactive (Maître d'hast) contre qui entre dans l'allonge de l'arme d'hast tenue
- *     opportunityDisadvantage?: true            §134 : les attaques d'opportunité contre le porteur ont le Désavantage (Rapide)
+ *     opportunityDisadvantage?: true | { whileEffect }  §134 : les attaques d'opportunité contre le porteur ont le Désavantage (Rapide) ;
+ *                                               O9g (§362) `whileEffect` : tant que cet effet venu de l'item est sur le porteur (Bottes de rapidité)
  *     quickStand?: { value, units }             §134 : se relever coûte ce déplacement (au plus la moitié de la Vitesse ; Athlète)
  *     quickSearch?: true                        §134 : l'action Chercher se prend par une action Bonus quand elle est libre (Observateur)
  *     haltOnReaction?: { effect }               §133 : une attaque en Réaction (attaque d'opportunité) qui touche pose cet effet de

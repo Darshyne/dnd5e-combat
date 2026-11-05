@@ -624,7 +624,12 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   if ( ("ritualAdept" in entry) && !(entry.ritualAdept && (typeof entry.ritualAdept.class === "string")) ) errors.push(`${at}ritualAdept: { class }`);
   if ( ("slotRecovery" in entry) && !(entry.slotRecovery && (typeof entry.slotRecovery.class === "string")
     && ((entry.slotRecovery.maxLevel === undefined) || Number.isInteger(entry.slotRecovery.maxLevel))) ) errors.push(`${at}slotRecovery: { class, maxLevel? }`);
-  for ( const key of ["elementalAdept", "quickSearch", "opportunityDisadvantage", "reactiveStrike", "fleeOnFailedSave", "hardToPerceive"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
+  for ( const key of ["elementalAdept", "quickSearch", "reactiveStrike", "fleeOnFailedSave", "hardToPerceive"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
+  // O9g (§362) : `{ whileEffect }` — seulement tant que cet effet de l'item s'applique (Bottes de rapidité, talons claqués).
+  if ( ("opportunityDisadvantage" in entry) && (entry.opportunityDisadvantage !== true)
+    && !(isObject(entry.opportunityDisadvantage) && isId(entry.opportunityDisadvantage.whileEffect) && (Object.keys(entry.opportunityDisadvantage).length === 1)) ) {
+    errors.push(`${at}opportunityDisadvantage: true or { whileEffect: effect id }`);
+  }
   if ( ("ignoresResistance" in entry) && !(isObject(entry.ignoresResistance) && Array.isArray(entry.ignoresResistance.types) && entry.ignoresResistance.types.length
     && entry.ignoresResistance.types.every(t => (typeof t === "string") && t) && Object.keys(entry.ignoresResistance).every(k => k === "types")) ) {
     errors.push(`${at}ignoresResistance: { types: [damage types] }`);

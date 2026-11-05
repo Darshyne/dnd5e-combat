@@ -12,7 +12,7 @@ import { pilotOf } from "../adapter/pilot.mjs";
 import { avoidsOpportunity } from "../adapter/opportunity.mjs";
 import { current } from "../core/action.mjs";
 import { contentOf } from "../adapter/content.mjs";
-import { originItemOf, tokenOf } from "../adapter/facts.mjs";
+import { originItemOf, tokenOf, comesFromItemEffect } from "../adapter/facts.mjs";
 import { duplicatesAgainst } from "../adapter/duplicates.mjs";
 import { announce, matching } from "./triggers.mjs";
 import { route } from "./router.mjs";
@@ -28,8 +28,13 @@ import { samePlane } from "../adapter/plane.mjs";
 import { offerCombatInspirationDefense, hasCombatInspiration } from "../adapter/inspiration.mjs";
 
 /** §134 : Rapide — le nom de l'item qui donne le Désavantage aux attaques d'opportunité contre cet acteur, ou null. */
-function hamperedBy(actor) {
-  return Array.from(actor?.items ?? []).find(i => contentOf(i).entry?.opportunityDisadvantage === true)?.name ?? null;
+export function hamperedBy(actor) {
+  return Array.from(actor?.items ?? []).find(i => {
+    const rule = contentOf(i).entry?.opportunityDisadvantage;
+    if ( rule === true ) return true;
+    // O9g (§362) : Bottes de rapidité — tant que l'effet « talons claqués » posé par l'activité de l'item est sur le porteur.
+    return !!rule?.whileEffect && (actor.effects ?? []).some(e => !e.disabled && (originItemOf(e) === i) && comesFromItemEffect(e, rule.whileEffect));
+  })?.name ?? null;
 }
 
 /** Les réactions qu'un acteur peut proposer dans une fenêtre, d'après le registre. `publish` : le moment a vraiment lieu. */

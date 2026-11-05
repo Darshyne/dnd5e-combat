@@ -9,6 +9,7 @@
  */
 
 import { playerWaits } from "../adapter/player-wait.mjs";
+import { hamperedBy } from "./reactions.mjs";
 import { scrollReadingFor, scrollReadOf } from "../adapter/scrolls.mjs";
 import { forceWait } from "./player-waits.mjs";
 import { pickCandidates, upgradeOf } from "../adapter/pick-targets.mjs";
@@ -177,6 +178,11 @@ function scrollReading({ tokenId, itemId }) {
   if ( !item ) throw new Error("item not found");
   return Array.from(item.system.activities ?? []).map(a => ({ type: a.type, spell: a.spell?.uuid ?? null, reading: scrollReadingFor(a, actor),
     read: scrollReadOf(a), ready: globalThis.dnd5e?.registry?.spellLists?.ready ?? null, classes: Object.keys(actor.classes ?? {}) }));
+}
+
+/** O9g (§362) : l'item qui donne le Désavantage aux attaques d'opportunité contre ce token (Rapide, Bottes de rapidité), ou null. */
+function hampered({ tokenId }) {
+  return hamperedBy(canvas.scene?.tokens.get(tokenId)?.actor ?? null);
 }
 
 async function runMacro({ uuid }={}) {
@@ -459,4 +465,4 @@ async function forcePlayerWait({ id=null }={}) {
   return { forced: target ? await forceWait(target) : false };
 }
 
-export const testApi = Object.freeze({ controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, rangeCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, owners, makeScroll, scrollReading, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, hood, removeItemEffect, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, forcePlayerWait, pickTargets, castPicked });
+export const testApi = Object.freeze({ controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, rangeCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, owners, makeScroll, scrollReading, hampered, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, hood, removeItemEffect, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, forcePlayerWait, pickTargets, castPicked });

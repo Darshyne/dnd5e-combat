@@ -165,7 +165,7 @@ describe("contenu livré", () => {
       "blessed-strikes", "blessed-strikes-potent-spellcasting", "blessing-of-the-trickster", "blinding-smite", "blindness-deafness",
       "blink", "blue-elemental-gem", "blur", "boon-of-combat-prowess", "boon-of-dimensional-travel", "boon-of-energy-resistance",
       "boon-of-fate", "boon-of-fortitude", "boon-of-irresistible-offense", "boon-of-recovery", "boon-of-speed", "boon-of-spell-recall",
-      "boon-of-the-night-spirit", "boots-of-striding-and-springing", "bowl-of-commanding-water-elementals", "bracers-of-defense", "brave",
+      "boon-of-the-night-spirit", "boots-of-speed", "boots-of-striding-and-springing", "bowl-of-commanding-water-elementals", "bracers-of-defense", "brave",
       "brazier-of-commanding-fire-elementals", "breath-weapon", "bronze-griffon-rare", "brutal-strike", "brute-spirit", "bubble-dash",
       "bullseye-lantern", "call-lightning", "calm-emotions", "caltrops", "candle", "cape-of-the-mountebank", "careful-spell",
       "carrion-crawler-mucus", "cause-fear", "celestial-revelation", "censer-of-controlling-air-elementals", "chain-lightning",

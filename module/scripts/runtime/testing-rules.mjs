@@ -194,7 +194,8 @@ export async function enchant({ tokenId, itemId, activityId, targetItemId, profi
   const target = actor?.items.get(targetItemId);
   if ( !activity || !target ) throw new Error("activity or item not found");
   const profileId = profile ?? activity.effects?.[0]?._id;
-  const effect = await activity.applyEnchantment(profileId, target, { strict: true });
+  // O9h (§363) : un enchantement de soi se pose sans les restrictions, comme dnd5e le fait (activity/enchant.mjs, `_triggerSubsequentActions`).
+  const effect = await activity.applyEnchantment(profileId, target, { strict: !(activity.enchant?.self && (target === activity.item)) });
   // O8e (§348) : sans carte de chat, dnd5e ne crée pas les « riders » (activités et effets ajoutés par l'enchantement : « Swear Oath »
   // de l'Arc du serment) ; ils sont demandés ici comme la carte le ferait (`collectRiders`, chemin enchantmentProfile + activityId).
   const riders = effect ? (await effect.system?.collectRiders?.({ dnd5e: { enchantmentProfile: profileId, activityId } }) ?? []) : [];

@@ -43,6 +43,8 @@ import { registerGrants } from "./runtime/grants.mjs";
 import { registerFelled } from "./runtime/felled.mjs";
 import { registerWeaponFeed } from "./runtime/weapon-feed.mjs";
 import { registerWrath } from "./runtime/wrath.mjs";
+import { registerBackfire } from "./runtime/backfire.mjs";
+import { registerProtection } from "./runtime/protection.mjs";
 import { registerProjectiles } from "./runtime/projectiles.mjs";
 import { registerAuras } from "./runtime/auras.mjs";
 import { registerEmanations } from "./runtime/emanations.mjs";
@@ -338,6 +340,8 @@ Hooks.once("init", () => {
   gated(registerFelled);
   gated(registerWeaponFeed);
   gated(registerWrath);
+  gated(registerBackfire);   // O9h (§363) : Cor de dévastation
+  gated(registerProtection);   // O9h (§363) : Parchemin de protection
   gated(registerZones);
   gated(registerAuras);
   gated(registerEmanations);

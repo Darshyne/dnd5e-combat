@@ -81,5 +81,26 @@ export function registerEnchant() {
     data.system.changes = rewritePactChanges(data.system.changes, rewrite);
     log(`${item.name}: pact weapon (${rewrite.chosen ?? "normal type"})`);
   }, { label: "pact weapon: enchantment not rewritten" });
+  // O9h (§363) : un objet qui s'enchante lui-même avec l'un de ses propres profils (Parchemin de protection : le type de créature) — la
+  // copie que dnd5e crée sur l'objet qui porte déjà le profil n'aboutit pas (vu en jeu : aucun effet créé, sans erreur). Le profil choisi
+  // est activé à sa place, comme un enchantement posé (origine : l'activité) ; les autres profils de l'activité sont éteints.
+  route("dnd5e.preApplyEnchantment", (item, data, { activity }={}) => {
+    const profile = data?.flags?.dnd5e?.enchantmentProfile;
+    if ( !activity || (activity.item !== item) || !profile || !item.effects?.has?.(profile) ) return;
+    const profiles = new Set((activity.effects ?? []).map(p => p._id));
+    const updates = item.effects.filter(e => profiles.has(e.id) && (e.id !== profile)).map(e => ({ _id: e.id, disabled: true }));
+    updates.push({ _id: profile, disabled: false, origin: activity.uuid, "system.origin": data.system?.origin ?? {}, "flags.dnd5e": data.flags.dnd5e });
+    // Les « riders » du profil (activité « Use » du parchemin, cachée tant qu'aucun enchantement ne la déclare) : copiés comme dnd5e le fait
+    // à la pose d'un enchantement (data/active-effect/enchantment.mjs, `collectRiders`).
+    item.updateEmbeddedDocuments("ActiveEffect", updates).then(async () => {
+      const riders = await item.effects.get(profile)?.system?.collectRiders?.({ dnd5e: { enchantmentProfile: profile, activityId: activity.id } }) ?? [];
+      if ( riders.length ) await foundry.documents.modifyBatch(riders);
+      // Le nom que le profil donne (« Scroll of Protection: Undead ») : dnd5e n'applique pas ses changements à un profil de l'objet.
+      const named = (item.effects.get(profile)?.system?.changes ?? item.effects.get(profile)?.changes ?? []).find(c => c.key === "name")?.value;
+      if ( named && (named !== item.name) ) await item.update({ name: named });
+      log(`${item.name}: its own profile "${item.effects.get(profile)?.name}" switched on`);
+    }).catch(err => console.error(`${MODULE_ID} | ${item.name}: profile not switched on`, err));
+    return false;
+  }, { cancellable: true, label: "self enchantment: profile not switched on" });
   CONFIG.queries[ENCHANT_QUERY] = handleEnchant;
 }

@@ -265,8 +265,9 @@
  *                                               cibles choisies (Survivance : plafond à la moitié des PV max ; `temp` : en PV temporaires,
  *                                               Châtiment exaltant) — runtime/cure.mjs, core/pools.mjs
  *     flurryStrikes?: number                    §295 : le porteur de l'item frappe ce nombre de fois au Déluge de coups (Credo accru : 3)
- *     effectDurations?: { <id d'effet>: { seconds } }  §295 : la durée d'un effet de l'item à sa pose, quand la donnée se trompe
- *                                               (Présence intimidante : une minute, pas un round)
+ *     effectDurations?: { <id d'effet>: { seconds } | { formula, units } }  §295 : la durée d'un effet de l'item à sa pose, quand la donnée se trompe
+ *                                               (Présence intimidante : une minute, pas un round) ; O9h : `{ formula, units }` — tirée une fois par
+ *                                               utilisation, la même pour toutes les cibles (Poussière de disparition : 2d4 minutes)
  *     grantsResistances?: string[]              §236 : les Résistances que l'item donne sans effet dans ses données (Avatar de la
  *                                               bataille) — un effet tenu sur l'acteur, comme `grantsSpeeds`
  *     scoreFloor?: string[]                     §236 : un test ou une sauvegarde de ces caractéristiques vaut au moins leur valeur
@@ -346,6 +347,15 @@
  *                                               prend fin (runtime/wrath.mjs)
  *     hardToPerceive?: true                     O9g (§361) : porté et harmonisé, la Perception pour repérer le porteur a le Désavantage
  *                                               (passive −5 ; Cape elfique)
+ *     coats?: { activity, damage, damageTypes, seconds, ammunition? }  O9h (§363) : l'activité `activity` enduit une arme (ou `ammunition`
+ *                                               munitions) du porteur, au choix ; pendant `seconds`, le premier jet de dégâts de cette arme qui
+ *                                               porte l'un des `damageTypes` reçoit les dés de l'activité `damage`, puis l'enduit tombe
+ *                                               (Poison standard ; runtime/coatings.mjs)
+ *     castDuration?: { seconds }                O9h (§363) : les sorts que l'objet fait lancer durent ce temps (effets et zones ; Huile
+ *                                               d'insaisissabilité : 8 heures)
+ *     backfire?: { after, chance, activity, destroys? }  O9h (§363) : après l'une des activités `after`, un d100 ; `chance` % ou moins,
+ *                                               l'activité de dégâts `activity` frappe le porteur, et l'objet est détruit (`destroys` ; Cor de
+ *                                               dévastation)
  *     breaksOn?: ("attack"|"damage"|"spell")[] les effets de l'item cessent quand leur porteur fait un jet d'attaque, inflige des
  *                                               dégâts ou lance un sort (Invisibilité, §16.47)
  *     noReactions?: true                        le porteur d'un effet de l'item ne peut pas prendre de Réaction (Tentacules de
@@ -754,6 +764,9 @@
  *                                               prismatique traversé) ; `activities` : seulement pour ces activités
  *     barrier?: { radius, units, exceptTypes? }  §163 : une créature (hors `exceptTypes`) n'entre pas dans l'Émanation, ni n'y frappe au
  *                                               corps à corps sans allonge (Coquille antivie, adapter/barriers.mjs)
+ *                                               O9h (§363) : `onlyTypes` — seules ces créatures sont arrêtées ; `shields` — elles n'affectent
+ *                                               rien dedans (aucune action ne les y atteint) ; `endsOnContact` — l'émanation tombe si son
+ *                                               porteur se déplace de façon à en mettre une dedans (Parchemin de protection)
  *     seesInvisible?: true                      §161 : le porteur d'un effet de l'item voit les créatures Invisibles (Détection de
  *                                               l'invisibilité) — vision simulée et état forfaitaire de l'attaque
  *     hpTiers?: [{ atMost?, damage?: false, effects?, statuses? }]

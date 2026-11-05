@@ -428,7 +428,10 @@ function readPlan(message) {
       // §72 : un test en opposition (`contest`) — l'effet ne se pose que gagné (runtime/contest.mjs).
       const contest = contentOf(activity.item).entry?.contest;
       if ( contest && (!contest.activity || (contest.activity === activity.id)) ) return null;
-      return { ...common, targets, plan: { effects: effectsOf(activity, () => "always") } };
+      // O9h (§363) : une émanation sur soi qui pose ses effets (Poussière de disparition : « vous et chaque créature dans 3 m ») — ses
+      // cibles sont ceux qu'elle recouvre, comme une zone de sauvegarde.
+      return { ...common, targets, ...(!self && (rangeUnitsOf(activity) === "self") && activity.target?.template?.type ? { area: templated(activity, message) } : {}),
+        plan: { effects: effectsOf(activity, () => "always") } };
     default:
       return null;
   }

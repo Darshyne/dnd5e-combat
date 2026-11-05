@@ -139,7 +139,10 @@ export const ITEM_FIXES = Object.freeze({
   // Heaume scintillant : typé armure légère, il remplaçait l'armure portée (Défense sans armure, Armure du mage, formation) : un objet merveilleux.
   "helm-of-brilliance": { dataFixes: [{ path: "system.type.value", from: "light", value: "wondrous" }] },
   // Bâton de dynamite : le lancer est en portée « personnelle » (la sphère tombait sur le lanceur) ; « lancé jusqu'à 18 m ».
-  "dynamite-stick": { ranges: { "8vYrGCuiK0BcQ8k9": { value: 60, units: "ft" }, "4aJqDXopO4psnUXg": { value: 60, units: "ft" } } },
+  // O9h (§363) : la liasse — « chaque bâton après le premier augmente les dégâts de 1d6 » ; `@scaling` vaut 1 pour un seul bâton (dnd5e,
+  // Scaling : l'augmentation + 1), la formule de la donnée donnait 4d6 au lieu de 3d6.
+  "dynamite-stick": { ranges: { "8vYrGCuiK0BcQ8k9": { value: 60, units: "ft" }, "4aJqDXopO4psnUXg": { value: 60, units: "ft" } },
+    dataFixes: [{ path: "system.activities.4aJqDXopO4psnUXg.damage.parts.0.custom.formula", from: "(3 + @scaling)d6", value: "(2 + @scaling)d6" }] },
   // Torche : son attaque dépense une utilisation que l'item n'a pas (attaque refusée).
   // O9a (§354) : « utilisée comme une arme courante de corps à corps » — dnd5e n'ajoute pas la maîtrise à l'attaque d'un consommable
   // (`@prof` y vaut 0 : la maîtrise de l'item) ; celle du personnage.
@@ -154,8 +157,10 @@ export const ITEM_FIXES = Object.freeze({
     dataFixes: ["qwUNBZRXUAvDcqDw", "RcpoKs7oJMugW7ib"].flatMap(effect => [
       { effect, path: "duration.value", from: 60, value: null }, { effect, path: "duration.expiry", from: "turnStart", value: null }])
   },
-  // Huile d'insaisissabilité : la verser au sol ne consomme pas la fiole.
-  "oil-of-slipperiness": { dataFixes: [{ path: "system.activities.IQsAg45adQPcbS86.consumption.targets", from: [], value: [spend("itemUses", 1)] }] },
+  // Huile d'insaisissabilité : la verser au sol ne consomme pas la fiole. O9h (§363) : Liberté de mouvement et Graisse « pendant 8 heures »
+  // (les copies des sorts gardaient 1 heure et 1 minute).
+  "oil-of-slipperiness": { dataFixes: [{ path: "system.activities.IQsAg45adQPcbS86.consumption.targets", from: [], value: [spend("itemUses", 1)] }],
+    castDuration: { seconds: 28800 } },
   // Potion d'amitié avec les animaux : sauvegarde « DD 13 », pas celle du buveur.
   "potion-of-animal-friendship": {
     dataFixes: [{ path: "system.activities.0Ecazu341cv88FXR.spell.challenge", from: { attack: null, save: null, override: false }, value: { attack: null, save: 13, override: true } }]
@@ -352,8 +357,10 @@ export const ITEM_FIXES = Object.freeze({
   // fin de votre prochain tour ».
   "robe-of-scintillating-colors": { effectEnds: { yQoovzqIXdUiUcU4: "casterTurnEnd" } },
   "staff-of-thunder-and-lightning": { effectEnds: { UTstWNbk0NXrKgS6: "casterTurnEnd" } },
-  // Poussière de disparition : « juste après une attaque, des dégâts ou un sort, l'état Invisible prend fin pour cette créature ».
-  "dust-of-disappearance": { breaksOn: ["attack", "damage", "spell"] },
+  // Poussière de disparition : « juste après une attaque, des dégâts ou un sort, l'état Invisible prend fin pour cette créature ». O9h (§363) :
+  // « vous et chaque créature et objet dans une Émanation de 3 m » — le lanceur compris ; « pendant 2d4 minutes », la même durée pour tous.
+  "dust-of-disappearance": { breaksOn: ["attack", "damage", "spell"], includesOrigin: true,
+    effectDurations: { MC5GAZMrAc4wSvAS: { formula: "2d4", units: "minutes" } } },
   // Huile de taggit, Essence d'éther : Empoisonné et Inconscient étaient un seul effet ; la créature « se réveille si elle subit des
   // dégâts » (ou secouée, l'Essence d'éther) et reste Empoisonnée — l'Empoisonné devient un effet à part.
   "oil-of-taggit": SLEEP_POISON("3E9Bg4ZYt098PHwu", "H2a1ShsSWCmSWfW7", "dasTaggitPoison0", 86400),
@@ -596,6 +603,73 @@ export const ITEM_FIXES = Object.freeze({
   // Le Fou (Jeu de cartes merveilleux) : « Désavantage aux jets de sauvegarde et aux tests pendant 72 heures » — l'effet est vide.
   "fool": { effectChanges: { BkChhqAw5emn7aQp: ["str", "dex", "con", "int", "wis", "cha"].flatMap(a => [
     { key: `system.abilities.${a}.save.roll.mode`, type: "add", value: "-1" }, { key: `system.abilities.${a}.check.roll.mode`, type: "add", value: "-1" }]) } },
+
+  // O9h (§363) — Poison standard : « une action Bonus pour enduire une arme ou jusqu'à trois munitions ; une créature qui subit des dégâts
+  // perforants ou tranchants de l'arme ou des munitions empoisonnées subit 1d4 dégâts de poison en plus ; le poison garde son efficacité
+  // 1 minute ou jusqu'à ce que ses dégâts soient infligés ». La donnée n'a que les dés : une activité « enduire » est ajoutée.
+  "poison-basic": {
+    dataFixes: [{ path: "system.activities.dasCoatWeapon000", value: {
+      _id: "dasCoatWeapon000", type: "utility", name: "Coat Weapon",
+      activation: { type: "bonus", value: null, override: false, condition: "" },
+      consumption: { scaling: { allowed: false }, spellSlot: true, targets: [spend("itemUses", 1)] }, uses: { spent: 0, recovery: [], max: "" },
+      range: { override: false, units: "self" },
+      target: { template: { contiguous: false, units: "ft", type: "" }, affects: { choice: false, count: "", type: "self" }, override: false, prompt: false },
+      duration: { units: "inst", concentration: false, override: false }, effects: [], roll: { prompt: false, visible: false, name: "", formula: "" }
+    } }],
+    coats: { activity: "dasCoatWeapon000", damage: "KLsqFTXAS8fnlaYs", damageTypes: ["piercing", "slashing"], seconds: 60, ammunition: 3 }
+  },
+  // O9h (§363) — Fumées d'othur brûlé : « un JS de Constitution DD 13 ou 3d6 dégâts de poison, et elle doit refaire la sauvegarde au début de
+  // chacun de ses tours ; à chaque nouvel échec, 1d6 dégâts de poison ; après trois réussites, le poison prend fin ». La donnée ne pose
+  // aucun effet à suivre : un effet est créé, posé à l'échec ; compteur de trois réussites (pas de seuil d'échecs : 99).
+  "burnt-othur-fumes": {
+    dataFixes: [
+      { effect: "dasOthurFumes000", create: { name: "Burnt Othur Fumes", type: "base", transfer: false, disabled: false, statuses: [], system: { changes: [] } } },
+      { path: "system.activities.13ZvV9bxzM90FeQO.effects", from: [], value: [{ _id: "dasOthurFumes000", onSave: false }] }
+    ],
+    triggers: [{ on: "startOfTurn", via: "effect", fromEffect: "dasOthurFumes000",
+      do: [{ type: "resave", tally: { successes: 3, failures: 99 } }, { type: "damage", to: "bearer", activity: "6o0JLH0kvEJ1n6D8" }] }]
+  },
+  // O9h (§363) — Potion des pugilistes : « chaque Frappe à mains nues inflige 1d6 dégâts de force en plus sur un coup ; l'effet dure 10
+  // minutes ». La donnée n'a pas d'effet : il est créé, posé par « Drink », et porte les dés (la potion bue n'existe plus).
+  "potion-of-pugilism": {
+    dataFixes: [
+      { effect: "dasPugilismEff00", create: { name: "Potion of Pugilism", type: "base", transfer: false, disabled: false, duration: { seconds: 600 }, statuses: [], system: { changes: [] } } },
+      { path: "system.activities.RoR08ONPd8se88h5.effects", from: [], value: [{ _id: "dasPugilismEff00" }] }
+    ],
+    triggers: [{ on: "preDamageRoll", via: "effect", fromEffect: "dasPugilismEff00", if: { "activity.weaponKind": ["unarmed"] },
+      do: [{ type: "damage", formula: "1d6", damageType: "force" }] }]
+  },
+  // O9h (§363) — Potion de résistance : une potion se boit ou se fait boire (action Bonus) — la donnée la limite au buveur. Au toucher : la
+  // cible désignée, sinon le buveur (adapter/usage.mjs).
+  "potion-of-resistance": {
+    dataFixes: [
+      { path: "system.activities.n52xzzYU7CI8sywr.range.units", from: "self", value: "touch" },
+      { path: "system.activities.n52xzzYU7CI8sywr.target.affects.type", from: "self", value: "creature" }
+    ]
+  },
+  // O9h (§363) — Perle de force : « toute créature qui a raté la sauvegarde et se trouve entièrement dans la zone est piégée dans la sphère »
+  // pendant 1 minute — rien n'y entre ni n'en sort (`encloses`, comme la Sphère résiliente) ; « celles qui ont réussi […] sont repoussées
+  // du centre jusqu'à n'être plus dedans » : 3 m (le rayon).
+  "bead-of-force": {
+    dataFixes: [
+      { effect: "dasBeadOfForce00", create: { name: "Sphere of Force", type: "base", transfer: false, disabled: false, duration: { seconds: 60 }, statuses: [], system: { changes: [] } } },
+      { path: "system.activities.OZHtgfnTZWKOg9JP.effects", from: [], value: [{ _id: "dasBeadOfForce00", onSave: false }] }
+    ],
+    encloses: true,
+    triggers: [{ on: "savedSave", do: [{ type: "move", mode: "push", distance: 10, units: "ft" }] }]
+  },
+  // O9h (§363) — Cor de dévastation : « 20 % de chances qu'il explose : 10d6 dégâts de force au souffleur, le cor est détruit ».
+  "horn-of-blasting": { backfire: { after: ["FMTcQOb5MZKBohdN"], chance: 20, activity: "q8PShLHyh2ItXbkQ", destroys: true } },
+  // O9h (§363) — Parchemin de protection : l'Émanation de 1,50 m dure 5 minutes (la donnée n'en dit rien) ; le type, choisi par
+  // l'enchantement du parchemin, est lu par `scroll-of-protection-<type>-enchanted` (content/sources.mjs) : seules ces créatures sont
+  // arrêtées, n'affectent rien dedans, et l'émanation tombe si le lecteur va jusqu'à l'une d'elles.
+  // La donnée enchante un AUTRE objet non magique (`enchant.self` faux) : le parchemin, magique, ne pouvait recevoir son type — il
+  // s'enchante lui-même (dnd5e, activity/enchant.mjs : `_triggerSubsequentActions`, sans restriction).
+  "scroll-of-protection": { effectDurations: { EDWprUVJxRYDOl4p: { seconds: 300 } },
+    dataFixes: [{ path: "system.activities.SLT3PkMx7Cq6Rnon.enchant.self", from: false, value: true }] },
+  ...Object.fromEntries(["aberration", "beast", "celestial", "construct", "dragon", "elemental", "humanoid", "fey", "fiend", "giant", "monstrosity",
+    "ooze", "plant", "undead"].map(type => [`scroll-of-protection-${type}-enchanted`,
+    { barrier: { radius: 5, units: "ft", onlyTypes: [type], shields: true, endsOnContact: true } }])),
 
   // Morsure de Harkon (Ravenloft) : « +1 aux tests et sauvegardes tant que vous portez le collier » — l'effet n'est pas transféré.
   "harkons-bite": { dataFixes: [{ effect: "EzuxTW39OtnDWoi1", path: "transfer", from: false, value: true }] }

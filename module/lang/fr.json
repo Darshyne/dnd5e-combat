@@ -1890,5 +1890,12 @@
   "DND5ECOMBAT.Attente.Depuis": "{n} s",
   "DND5ECOMBAT.Attente.Aucune": "Personne n'est attendu.",
   "DND5ECOMBAT.Attente.Titre": "Joueurs attendus",
-  "DND5ECOMBAT.Attente.Joueur": "Le MJ attend votre réponse."
+  "DND5ECOMBAT.Attente.Joueur": "Le MJ attend votre réponse.",
+  "DND5ECOMBAT.Enduit.Choix": "Quelle arme ou quelles munitions enduire ?",
+  "DND5ECOMBAT.Enduit.Aucun": "{item} : aucune arme ni munition à enduire",
+  "DND5ECOMBAT.Enduit.Pose": "{weapon} enduite ({item})",
+  "DND5ECOMBAT.Explosion.Tient": "{item} : risque d’explosion ({n} % ou moins) — il tient",
+  "DND5ECOMBAT.Explosion.Explose": "{item} explose !",
+  "DND5ECOMBAT.Explosion.Degats": "{item} explose entre les mains de {name}",
+  "DND5ECOMBAT.Protection.Fin": "{item} : l’émanation prend fin"
 }

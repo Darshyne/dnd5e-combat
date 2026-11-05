@@ -77,7 +77,10 @@ export function enchantmentSourcesOf(item) {
   const effects = item?.effects;
   if ( !effects || (typeof effects[Symbol.iterator] !== "function") ) return out;
   for ( const effect of effects ) {
-    if ( (effect?.type !== "enchantment") || effect.disabled || (effect.isAppliedEnchantment === false) ) continue;
+    // O9h (§363) : un profil de l'objet activé à la place d'un enchantement de soi (runtime/enchant.mjs) porte sa propre marque de profil —
+    // dnd5e ne le compte pas comme appliqué.
+    const ownProfile = effect?.flags?.dnd5e?.enchantmentProfile === effect?.id;
+    if ( (effect?.type !== "enchantment") || effect.disabled || ((effect.isAppliedEnchantment === false) && !ownProfile) ) continue;
     let id = ENCHANTMENT_SOURCES[effect.id] ?? null;
     if ( !id ) {
       const activity = effect.system?.origin?.activity ?? effect.origin ?? "";

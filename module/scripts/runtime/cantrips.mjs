@@ -17,7 +17,9 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
-import { contentOf } from "../adapter/content.mjs";
+import { contentOf, entryOfIdentifier } from "../adapter/content.mjs";
+import { potionOfCast } from "../adapter/potions.mjs";
+import { durationSeconds } from "../core/rolled-duration.mjs";
 import { originItemOf, isWounded } from "../adapter/facts.mjs";
 import { comesFromItemEffect } from "../adapter/triggers.mjs";
 import { currentTurnKey, combatSceneActors, turnKeyAt } from "../adapter/turn.mjs";
@@ -50,6 +52,29 @@ function removedAtTurn(effect) {
     && (d.do ?? []).some(s => s.type === "remove"));
 }
 
+/** O9h (§363) : les durées tirées par utilisation (`{ formula, units }`), pour que toutes les cibles d'un même usage aient la même. */
+const drawn = new Map();
+
+/** La durée de cet effet selon la règle `effectDurations` — tirée une fois par utilisation (message d'origine) et par item. */
+function drawnDuration(effect, item, rule) {
+  if ( Number.isFinite(rule.seconds) ) return rule.seconds;
+  const now = Date.now();
+  for ( const [k, v] of drawn ) if ( now - v.at > 30000 ) drawn.delete(k);
+  const key = `${item.uuid}|${effect.system?.origin?.message ?? effect.origin ?? ""}`;
+  if ( !drawn.has(key) ) {
+    const seconds = durationSeconds(rule);
+    drawn.set(key, { seconds, at: now });
+    if ( seconds ) log(`${item.name}: duration ${rule.formula} ${rule.units} → ${seconds} s`);
+  }
+  return drawn.get(key).seconds;
+}
+
+/** O9h (§363) : un effet du sort qu'un objet a fait lancer (copie `cachedFor`) dure ce que l'objet déclare (`castDuration`). */
+export function castDurationOf(spell) {
+  const potion = spell ? potionOfCast(spell) : null;
+  return potion?.identifier ? (entryOfIdentifier(potion.identifier)?.castDuration?.seconds ?? null) : null;
+}
+
 /**
  * Avant la pose, sur le client qui crée l'effet : le tour noté, une minute de durée (l'heure de fin est celle du moteur). Dans les
  * données de création, sans écriture : une mise à jour juste après croisait la réécriture d'un token non lié (« A parent Document
@@ -62,7 +87,8 @@ function onPreCreateEffect(effect) {
   const item = originItemOf(effect);
   const durations = item ? contentOf(item).entry?.effectDurations : null;
   const wanted = durations ? Object.entries(durations).find(([id]) => comesFromItemEffect(effect, id))?.[1] : null;
-  if ( wanted ) effect.updateSource({ duration: { value: wanted.seconds, units: "seconds", expiry: null } });
+  const seconds = wanted ? drawnDuration(effect, item, wanted) : castDurationOf(item);
+  if ( seconds ) effect.updateSource({ duration: { value: seconds, units: "seconds", expiry: null } });
   if ( !game.combat?.started ) return true;
   if ( !endRuleOf(effect) && !removedAtTurn(effect) ) return true;
   effect.updateSource({ [`flags.${MODULE_ID}.placedOn`]: currentTurnKey(), duration: { value: 60, units: "seconds", expiry: null } });

@@ -26,6 +26,7 @@ import { carriedLightState } from "../adapter/lights.mjs";
 import { toggleCarriedLight, toggleHood } from "./lights.mjs";
 import { listBackups as diagBackups, repairTasks, restore as diagRestore, scanWorld } from "./diagnostic/index.mjs";
 import { gmOnly, windows, viewedToken } from "./testing-shared.mjs";
+import { barrierBetween } from "../adapter/barriers.mjs";
 import { climbEntries } from "./climb.mjs";
 import { climbSystemOn } from "../core/climb-system.mjs";
 import { flight, hoist, grab, jump, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, dash, door, lock, familiar, familiarPocket, familiarRecall, follow, followState, move, movement, plan, stairs, stairsAt, takeStairs, teleport, teleportPick, threats, transpose, unfollow, view } from "./testing-moves.mjs";
@@ -181,6 +182,14 @@ function scrollReading({ tokenId, itemId }) {
 }
 
 /** O9g (§362) : l'item qui donne le Désavantage aux attaques d'opportunité contre ce token (Rapide, Bottes de rapidité), ou null. */
+/** O9h (§363) : la barrière qui empêche cette action d'atteindre sa cible (Coquille antivie, Parchemin de protection), ou null. */
+function barrier({ attackerId, targetId, itemId, activityType=null }) {
+  const attacker = canvas.scene?.tokens.get(attackerId);
+  const target = canvas.scene?.tokens.get(targetId);
+  const activity = attacker?.actor?.items.get(itemId)?.system.activities.find(a => !activityType || (a.type === activityType)) ?? null;
+  return barrierBetween(attacker, target, activity)?.item?.name ?? null;
+}
+
 function hampered({ tokenId }) {
   return hamperedBy(canvas.scene?.tokens.get(tokenId)?.actor ?? null);
 }
@@ -465,4 +474,4 @@ async function forcePlayerWait({ id=null }={}) {
   return { forced: target ? await forceWait(target) : false };
 }
 
-export const testApi = Object.freeze({ controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, rangeCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, owners, makeScroll, scrollReading, hampered, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, hood, removeItemEffect, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, forcePlayerWait, pickTargets, castPicked });
+export const testApi = Object.freeze({ barrier, controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, rangeCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, owners, makeScroll, scrollReading, hampered, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, hood, removeItemEffect, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, forcePlayerWait, pickTargets, castPicked });

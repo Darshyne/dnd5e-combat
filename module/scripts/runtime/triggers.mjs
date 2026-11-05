@@ -55,7 +55,8 @@ export function matching(moment, context) {
   // §225 : rien ne s'accroche d'un plan à l'autre (réaction, dégâts bonus, protection d'un allié) — l'Éthéré ne touche que l'Éthéré.
   const others = [context.source ?? context.sourceToken, context.target ?? context.targetToken].filter(Boolean);
   if ( others.some(other => !samePlane(context.actor, other)) ) return [];
-  const declarations = BEARER_MOMENTS.includes(moment)
+  // O9h (§363) : un effet porté par l'auteur ajoute aussi ses dégâts bonus (Potion des pugilistes : la potion bue n'existe plus).
+  const declarations = (BEARER_MOMENTS.includes(moment) || (moment === "preDamageRoll"))
     ? [...declarationsOf(context.actor), ...declarationsOfEffects(context.actor)]
     : declarationsOf(context.actor);
   return select(declarations, moment, factsFor(context));

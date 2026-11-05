@@ -110,6 +110,10 @@ export const ENCHANTMENT_SOURCES = Object.freeze({
   "3hRQ0o8Q1nmj5WwB": "luck-blade",
   L4ylYIFxr0vdht6M: "oathbow", J4bEaPvFwAGKSrPm: "berserker-axe", RSpASIW4HbToM7yC: "hammer-of-thunderbolts", qiwTWGRINh3WFPaA: "nine-lives-stealer", fSXff5Y6ILs6gJT7: "sword-of-life-stealing", vRcdxeUa3i4BjM3i: "sword-of-vengeance",
   nxid1s2CZrB06HH8: "sword-of-sharpness",
+  // O9h (§363) : Parchemin de protection, un profil par type de créature.
+  BFfhMUlqxRCc8RVd: "scroll-of-protection-aberration", S6ExnY9BBE2pR0fr: "scroll-of-protection-beast", bbPsBexnD43dITRz: "scroll-of-protection-celestial", digyUmkB2vUGt81C: "scroll-of-protection-construct", TaWMk1UKev6qtNMW: "scroll-of-protection-dragon",
+  Byvwe1NjGChfIS8X: "scroll-of-protection-elemental", xu5cGmok325TaOt5: "scroll-of-protection-humanoid", NzbOdx6nFdfqGIin: "scroll-of-protection-fey", "1MhKOwy5blXJtP9r": "scroll-of-protection-fiend", zECAU6TNjC2wJpGq: "scroll-of-protection-giant",
+  IRF1OVqBXs7xNqcq: "scroll-of-protection-monstrosity", "4Xom4fAANNPxjb0k": "scroll-of-protection-ooze", jyIGfsCnReo9WEpN: "scroll-of-protection-plant", JvE43pQh6FVZ42qp: "scroll-of-protection-undead",
   tuFnPbghL64ioL04: "sword-of-wounding",
   CzJMRNHYWlVNvnJN: "vicious-weapon",
   mxrAgEyDsV2h5jla: "vorpal-sword",

@@ -4,7 +4,8 @@
  *  - `globe: { radius, units, maxLevel, everywhere? }` (adapter/eligibility.mjs, §161) ; `everywhere` — Champ antimagie : aucun sort
  *    n'y affecte personne, d'où qu'il soit lancé, et on n'y lance aucun sort ;
  *  - `barrier: { radius, units, exceptTypes? }` — Coquille antivie : une créature (hors `exceptTypes`) ne peut pas y entrer, ni frapper
- *    au corps à corps à travers sans arme à allonge.
+ *    au corps à corps à travers sans arme à allonge ; O9h (§363) : `onlyTypes`, `shields` (rien de ce qu'elle fait n'atteint l'intérieur),
+ *    `endsOnContact` (Parchemin de protection).
  * Lecture seulement : la légalité (runtime/turn.mjs, runtime/actions.mjs) et l'éligibilité décident.
  */
 
@@ -46,8 +47,16 @@ export function antimagicAround(token) {
   return zonesOf(token?.parent, "globe").find(z => z.rule.everywhere && insideZone(z.holder, token, z.rule)) ?? null;
 }
 
-/** La créature passe-t-elle la barrière (types exemptés, le lanceur lui-même) ? */
-const crosses = (zone, token) => (zone.holder === token) || (zone.rule.exceptTypes ?? []).includes(creatureTypeOf(token.actor));
+/**
+ * La créature passe-t-elle la barrière (types exemptés, le lanceur lui-même) ? O9h (§363) : `onlyTypes` — seules ces créatures sont
+ * arrêtées (Parchemin de protection).
+ */
+const crosses = (zone, token) => {
+  if ( zone.holder === token ) return true;
+  const type = creatureTypeOf(token.actor);
+  if ( zone.rule.onlyTypes ) return !zone.rule.onlyTypes.includes(type);
+  return (zone.rule.exceptTypes ?? []).includes(type);
+};
 
 /**
  * §163 : Coquille antivie — la barrière que ce déplacement franchirait de l'extérieur vers l'intérieur, ou null. `positions` : les
@@ -66,11 +75,22 @@ export function barrierCrossed(token, positions) {
  * vers une cible à l'intérieur. Rend la barrière, ou null.
  */
 export function barrierBetween(attacker, target, activity) {
-  if ( (activity?.type !== "attack") || (activity.attack?.type?.value !== "melee") ) return null;
-  if ( activity.item?.system?.properties?.has?.("rch") ) return null;
+  const melee = (activity?.type === "attack") && (activity.attack?.type?.value === "melee") && !activity.item?.system?.properties?.has?.("rch");
   for ( const zone of zonesOf(attacker?.parent, "barrier") ) {
+    // O9h (§363) : `shields` — la créature arrêtée n'affecte rien dans la zone, quelle que soit l'action (Parchemin de protection).
+    if ( !melee && !zone.rule.shields ) continue;
     if ( crosses(zone, attacker) || insideZone(zone.holder, attacker, zone.rule) ) continue;
     if ( insideZone(zone.holder, target, zone.rule) ) return zone;
   }
   return null;
+}
+
+/**
+ * O9h (§363) : `endsOnContact` — les barrières de ce porteur qui contiennent maintenant une créature qu'elles arrêtent (il s'est déplacé
+ * jusqu'à elle : l'émanation tombe). Rend `{ item, rule }` pour chacune.
+ */
+export function breachedBarriers(holder) {
+  return zonesOf(holder?.parent, "barrier").filter(zone => (zone.holder === holder) && zone.rule.endsOnContact
+    && (holder.parent?.tokens ?? []).some(t => t.actor && !crosses(zone, t) && ((t.actor.system?.attributes?.hp?.value ?? 1) > 0)
+      && insideZone(zone.holder, t, zone.rule)));
 }

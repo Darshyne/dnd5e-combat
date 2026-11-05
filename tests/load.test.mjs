@@ -29,7 +29,7 @@ describe("chargement du module", () => {
   });
 
   it("expose ses fonctions de test au connecteur sous api.mcp (call-module-api), et elles seules", () => {
-    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "advanceTime", "animations", "attackReasons", "budget", "burning", "castPicked", "catalyst",
+    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "advanceTime", "animations", "attackReasons", "barrier", "budget", "burning", "castPicked", "catalyst",
       "chainCheck", "chatCards", "climb", "climbCeiling", "climbDown", "climbHolds", "climbState", "climbToward", "clock", "closeWindow", "concentrate", "controls",
       "cover", "damageTypes", "dash", "diagnosticBackups", "diagnosticForget", "diagnosticRepair", "diagnosticRestore", "diagnosticScan",
       "door", "dropDown", "effectOrigins", "enchant", "endings", "etherealWalls", "factions", "familiar", "familiarPocket", "familiarRecall",
@@ -62,7 +62,7 @@ describe("chargement du module", () => {
   it("appelle les inscrits de createChatMessage dans l'ordre voulu : résolution d'abord", () => {
     expect(api.api.routes().createChatMessage.map(r => r.label)).toEqual([
       "resolution interrupted", "concentration: processing interrupted", "pool: recharge not written", "targets released", "Flurry of Blows: targeting not opened",
-      "budget: spending not recorded", "Dispel Magic: nothing dispelled", "trace or mark not handled", "granted activity not given", "weapon mastery: mark not used up", "maneuver: Bait and Switch or Commander's Strike not played", "Heroic Inspiration not offered on Initiative", "Initiative d20 not rerolled", "effect end when the caster targets another creature: not judged", "Rage: upkeep not recorded", "swallow / engulf: action not tracked", "fall damage not applied", "Ready: \"attacks / casts a spell\" trigger not checked", "help", "group roll: result not processed", "tether: not recorded", "single card: roll not folded", "chat log purge", "visual feedback: effect ending", "group roll: tracker not opened"
+      "budget: spending not recorded", "Dispel Magic: nothing dispelled", "trace or mark not handled", "granted activity not given", "backfire: explosion chance not rolled", "weapon mastery: mark not used up", "maneuver: Bait and Switch or Commander's Strike not played", "Heroic Inspiration not offered on Initiative", "Initiative d20 not rerolled", "effect end when the caster targets another creature: not judged", "Rage: upkeep not recorded", "swallow / engulf: action not tracked", "fall damage not applied", "Ready: \"attacks / casts a spell\" trigger not checked", "help", "group roll: result not processed", "tether: not recorded", "single card: roll not folded", "chat log purge", "visual feedback: effect ending", "group roll: tracker not opened"
     ]);
   });
 
@@ -75,7 +75,7 @@ describe("chargement du module", () => {
 
   it("déclare annulables les hooks `pre…` du système et du cœur, `dnd5e.teleport`, `dnd5e.createMeasuredTemplate` (§190) et `dropCanvasData` (appelés par Hooks.call, board.mjs:2490), et eux seuls", () => {
     const cancellable = Object.entries(api.api.routes()).filter(([, rs]) => rs.some(r => r.cancellable)).map(([h]) => h).sort();
-    expect(cancellable).toEqual(["dnd5e.createMeasuredTemplate", "dnd5e.postAttackRollConfiguration", "dnd5e.preCombatRecovery", "dnd5e.preCreateMeasuredTemplate", "dnd5e.preDisplayCardV2", "dnd5e.preRollAbilityCheckV2", "dnd5e.preRollAttackV2", "dnd5e.preRollConcentrationV2", "dnd5e.preRollDamageV2", "dnd5e.preRollSavingThrowV2", "dnd5e.preSummon", "dnd5e.preUseActivity", "dnd5e.teleport", "dropCanvasData", "preCreateActiveEffect", "preCreateItem", "preMoveToken", "preUpdateActiveEffect", "preUpdateActor", "preUpdateItem", "preUpdateToken"]);
+    expect(cancellable).toEqual(["dnd5e.createMeasuredTemplate", "dnd5e.postAttackRollConfiguration", "dnd5e.preApplyEnchantment", "dnd5e.preCombatRecovery", "dnd5e.preCreateMeasuredTemplate", "dnd5e.preDisplayCardV2", "dnd5e.preRollAbilityCheckV2", "dnd5e.preRollAttackV2", "dnd5e.preRollConcentrationV2", "dnd5e.preRollDamageV2", "dnd5e.preRollSavingThrowV2", "dnd5e.preSummon", "dnd5e.preUseActivity", "dnd5e.teleport", "dropCanvasData", "preCreateActiveEffect", "preCreateItem", "preMoveToken", "preUpdateActiveEffect", "preUpdateActor", "preUpdateItem", "preUpdateToken"]);
   });
 
   it("enregistre les requêtes entre clients", () => {

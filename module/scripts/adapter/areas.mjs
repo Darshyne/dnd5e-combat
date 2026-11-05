@@ -12,7 +12,8 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { contentOf } from "./content.mjs";
+import { contentOf, entryOfIdentifier } from "./content.mjs";
+import { potionOfCast } from "./potions.mjs";
 import { translateShapes, shapeCenter, expiryTime, siblingsByMoment } from "../core/area.mjs";
 import { stepsOf, holds } from "../core/triggers.mjs";
 import { factsFor } from "./facts.mjs";
@@ -311,9 +312,15 @@ export function readTimeFactors() {
 export async function noteExpiry(region, now=game.time.worldTime) {
   const activity = fromUuidSync(region.getFlag("dnd5e", "activity") ?? "", { strict: false });
   const item = activity?.item;
-  if ( !item || isInstantaneous(activity) ) return null;
+  if ( !item ) return null;
+  // O9h (§363) : le sort qu'un objet a fait lancer dure ce que l'objet déclare (Huile d'insaisissabilité : Graisse, 8 heures) — la zone
+  // posée par la copie du sort, ou par l'activité « cast » de l'objet elle-même (pose directe).
+  const potion = potionOfCast(item);
+  const declared = potion?.identifier ? entryOfIdentifier(potion.identifier)?.castDuration?.seconds
+    : ((activity.type === "cast") ? contentOf(item).entry?.castDuration?.seconds : null);
+  if ( !Number.isFinite(declared) && isInstantaneous(activity) ) return null;
   if ( activity.duration?.concentration || item.requiresConcentration || item.system?.properties?.has?.("concentration") ) return null;
-  const at = expiryTime(now, activity.duration ?? {}, readTimeFactors());
+  const at = Number.isFinite(declared) ? now + declared : expiryTime(now, activity.duration ?? {}, readTimeFactors());
   if ( at === null ) return null;
   await region.setFlag(MODULE_ID, "expiresAt", at);
   return at;

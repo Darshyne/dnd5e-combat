@@ -1890,5 +1890,12 @@
   "DND5ECOMBAT.Attente.Depuis": "{n} s",
   "DND5ECOMBAT.Attente.Aucune": "Nobody is awaited.",
   "DND5ECOMBAT.Attente.Titre": "Awaited players",
-  "DND5ECOMBAT.Attente.Joueur": "The GM is waiting for your answer."
+  "DND5ECOMBAT.Attente.Joueur": "The GM is waiting for your answer.",
+  "DND5ECOMBAT.Enduit.Choix": "Which weapon or ammunition do you coat?",
+  "DND5ECOMBAT.Enduit.Aucun": "{item}: no weapon or ammunition to coat",
+  "DND5ECOMBAT.Enduit.Pose": "{weapon} coated ({item})",
+  "DND5ECOMBAT.Explosion.Tient": "{item}: explosion chance ({n}% or less) — it holds",
+  "DND5ECOMBAT.Explosion.Explose": "{item} explodes!",
+  "DND5ECOMBAT.Explosion.Degats": "{item} explodes in the hands of {name}",
+  "DND5ECOMBAT.Protection.Fin": "{item}: the emanation ends"
 }

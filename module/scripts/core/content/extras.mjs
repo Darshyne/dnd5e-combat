@@ -17,9 +17,12 @@ export function validateExtras(entry, at, errors) {
   if ( ("flurryStrikes" in entry) && !(Number.isInteger(entry.flurryStrikes) && (entry.flurryStrikes > 0)) ) errors.push(`${at}flurryStrikes: positive integer`);
   if ( "effectDurations" in entry ) {
     const d = entry.effectDurations;
-    if ( !isObject(d) || !Object.keys(d).length || !Object.entries(d).every(([id, v]) => isId(id) && isObject(v)
-      && Number.isInteger(v.seconds) && (v.seconds > 0) && Object.keys(v).every(k => k === "seconds")) ) {
-      errors.push(`${at}effectDurations: { effect id: { seconds } }`);
+    // O9h : `{ formula, units }` — une durée tirée une fois par utilisation, la même pour toutes les cibles (Poussière de disparition : 2d4 minutes).
+    const okDuration = v => isObject(v) && ((Number.isInteger(v.seconds) && (v.seconds > 0) && Object.keys(v).every(k => k === "seconds"))
+      || ((typeof v.formula === "string") && v.formula.trim() && ["seconds", "minutes", "hours"].includes(v.units)
+        && Object.keys(v).every(k => ["formula", "units"].includes(k))));
+    if ( !isObject(d) || !Object.keys(d).length || !Object.entries(d).every(([id, v]) => isId(id) && okDuration(v)) ) {
+      errors.push(`${at}effectDurations: { effect id: { seconds } | { formula, units: seconds|minutes|hours } }`);
     }
   }
   if ( ("grantsConditionImmunities" in entry) && !(Array.isArray(entry.grantsConditionImmunities) && entry.grantsConditionImmunities.length
@@ -183,8 +186,31 @@ export function validateExtras(entry, at, errors) {
     && (!("activities" in entry.prismatic) || (Array.isArray(entry.prismatic.activities) && entry.prismatic.activities.every(isId)))
     && Object.keys(entry.prismatic).every(k => ["indigo", "violet", "all", "activities"].includes(k))) ) errors.push(`${at}prismatic: { indigo, violet, all?, activities? } (effect / activity ids)`);
   if ( ("barrier" in entry) && !(isObject(entry.barrier) && Number.isFinite(entry.barrier.radius) && (entry.barrier.radius > 0) && (typeof entry.barrier.units === "string")
-    && (!("exceptTypes" in entry.barrier) || (Array.isArray(entry.barrier.exceptTypes) && entry.barrier.exceptTypes.every(t => CREATURE_TYPES.includes(t))))
-    && Object.keys(entry.barrier).every(k => ["radius", "units", "exceptTypes"].includes(k))) ) errors.push(`${at}barrier: { radius > 0, units, exceptTypes? }`);
+    && ["exceptTypes", "onlyTypes"].every(k => !(k in entry.barrier) || (Array.isArray(entry.barrier[k]) && entry.barrier[k].every(t => CREATURE_TYPES.includes(t))))
+    && (!("shields" in entry.barrier) || (entry.barrier.shields === true)) && (!("endsOnContact" in entry.barrier) || (entry.barrier.endsOnContact === true))
+    && Object.keys(entry.barrier).every(k => ["radius", "units", "exceptTypes", "onlyTypes", "shields", "endsOnContact"].includes(k))) ) {
+    errors.push(`${at}barrier: { radius > 0, units, exceptTypes?, onlyTypes?, shields?, endsOnContact? }`);
+  }
+  // O9h : un enduit d'arme (Poison standard) — l'activité qui enduit, celle qui porte les dés, les types de dégâts qui le délivrent.
+  if ( "coats" in entry ) {
+    const c = entry.coats;
+    const ok = isObject(c) && isId(c.activity) && isId(c.damage) && Array.isArray(c.damageTypes) && c.damageTypes.length
+      && c.damageTypes.every(t => (typeof t === "string") && /^[a-z]+$/.test(t)) && Number.isInteger(c.seconds) && (c.seconds > 0)
+      && (!("ammunition" in c) || (Number.isInteger(c.ammunition) && (c.ammunition > 0)))
+      && Object.keys(c).every(k => ["activity", "damage", "damageTypes", "seconds", "ammunition"].includes(k));
+    if ( !ok ) errors.push(`${at}coats: { activity, damage (activity ids), damageTypes, seconds, ammunition? }`);
+  }
+  // O9h : la durée des sorts que l'objet fait lancer (Huile d'insaisissabilité : 8 heures).
+  if ( ("castDuration" in entry) && !(isObject(entry.castDuration) && Number.isInteger(entry.castDuration.seconds) && (entry.castDuration.seconds > 0)
+    && (Object.keys(entry.castDuration).length === 1)) ) errors.push(`${at}castDuration: { seconds }`);
+  // O9h : après certaines activités, une chance que l'objet se retourne contre son porteur (Cor de dévastation : 20 %).
+  if ( "backfire" in entry ) {
+    const b = entry.backfire;
+    const ok = isObject(b) && Array.isArray(b.after) && b.after.length && b.after.every(isId) && Number.isInteger(b.chance) && (b.chance > 0) && (b.chance <= 100)
+      && isId(b.activity) && (!("destroys" in b) || (b.destroys === true))
+      && Object.keys(b).every(k => ["after", "chance", "activity", "destroys"].includes(k));
+    if ( !ok ) errors.push(`${at}backfire: { after (activity ids), chance 1–100, activity, destroys? }`);
+  }
   if ( ("saveDisadvantageFor" in entry) && !(Array.isArray(entry.saveDisadvantageFor) && entry.saveDisadvantageFor.length
     && entry.saveDisadvantageFor.every(t => CREATURE_TYPES.includes(t))) ) errors.push(`${at}saveDisadvantageFor: creature types (${CREATURE_TYPES.join(", ")})`);
   if ( "effectEnds" in entry ) {

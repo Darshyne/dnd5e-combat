@@ -341,6 +341,18 @@ export const COMMANDS = {
     // Sauvegarde répétée (brique « resave ») : réussie, l'effet tombe ; ratée, rien ne change — sauf les dégâts qu'elle
     // porte (§19.6, `onFail` : le saignement d'Épine).
     if ( resave?.effect ) {
+      /** §19.6 : les dégâts du porteur qui ne valent que si la sauvegarde est ratée (saignement d'Épine, Fumées d'othur). */
+      const failDamage = async t => {
+        if ( !resave.onFail || !t.save || (t.save.success === true) ) return;
+        const item = await fromUuid(resave.onFail.item ?? "");
+        for ( const step of resave.onFail.steps ?? [] ) {
+          const logged = await inflict({ step, item, scaling: resave.onFail.scaling ?? 0, targetUuid: t.token,
+            speaker: ChatMessage.implementation.getSpeaker({ token: (await fromUuid(t.token)) ?? undefined }),
+            flavor: loc("DegatsPorteur", { item: resave.onFail.name ?? item?.name ?? "", name: t.name }),
+            flags: { bearerDamage: { item: resave.onFail.identifier ?? null, effect: resave.effect, moment: resave.moment } } });
+          if ( logged ) { extra.push({ ...logged, name: resave.onFail.name }); log(`${resave.onFail.name}: saving throw failed, ${t.name} takes its damage`); }
+        }
+      };
       for ( const t of resolution.targets ) {
         // §43.1 : compteur — l'effet ne tombe qu'au seuil de réussites ; au seuil d'échecs, il reste et plus rien n'est rejoué.
         if ( resave.tally && t.save ) {
@@ -359,20 +371,14 @@ export const COMMANDS = {
           await effect.update(update);
           log(`tally: ${t.name} — ${said}${after.settled ? `; settled, "${effect.name}" remains${resave.tally.status ? ` (${resave.tally.status})` : ""}` : ""}`);
           notice(t.token, after.settled ? loc("Compteur.Clos", { item: effect.name }) : said, after.settled ? "refused" : "prompt");
+          // O9h (§363) : un compteur avec des dégâts d'échec (Fumées d'othur : « à chaque nouvel échec, 1d6 dégâts de poison »).
+          await failDamage(t);
           continue;
         }
         if ( t.save?.success !== true ) {
           // §37 : Malédiction, « Cursed Actions » — ratée, la créature prend l'action Esquiver ce tour.
           if ( resave.dodge && t.save ) await forceDodge(t.token);
-          if ( !resave.onFail || !t.save ) continue;
-          const item = await fromUuid(resave.onFail.item ?? "");
-          for ( const step of resave.onFail.steps ?? [] ) {
-            const logged = await inflict({ step, item, scaling: resave.onFail.scaling ?? 0, targetUuid: t.token,
-              speaker: ChatMessage.implementation.getSpeaker({ token: (await fromUuid(t.token)) ?? undefined }),
-              flavor: loc("DegatsPorteur", { item: resave.onFail.name ?? item?.name ?? "", name: t.name }),
-              flags: { bearerDamage: { item: resave.onFail.identifier ?? null, effect: resave.effect, moment: resave.moment } } });
-            if ( logged ) { extra.push({ ...logged, name: resave.onFail.name }); log(`${resave.onFail.name}: saving throw failed, ${t.name} takes its damage`); }
-          }
+          await failDamage(t);
           continue;
         }
         if ( resave.keep ) { log(`repeated saving throw succeeded: ${t.name} keeps the effect (it does not end on a success)`); continue; }

@@ -44,6 +44,7 @@ import { BARD } from "./bard.mjs";
 import { SPELL_RULES } from "./spell-rules.mjs";
 import { GEAR } from "./gear.mjs";
 import { ITEM_FIXES } from "./item-fixes.mjs";
+import { GM_ALERTS } from "./gm-alerts.mjs";
 import { mergeEntries } from "../core/content.mjs";
 import { SOURCE_IDENTIFIERS } from "./sources.mjs";
 import { BURSTS, RECASTS, TURN_STARTS, BOLTS, OBSCURES, HEAL_MAX, DUPLICATES, SAVE_ADVANTAGES, ON_FELL, BONUS_ATTACKS, REACTIVE_SPELLS, PROJECTILES, LEAPS } from "./bursts.mjs";
@@ -65,7 +66,8 @@ export const BRICKS = Object.freeze([
   [TETHERS, null], [DAMAGE_SHIELDS, "damageShield"], [HIT_DICE_HEALS, "hitDiceHeal"], [BREAKS_ON, "breaksOn"],
   [NO_REACTIONS, "noReactions"], [ACTION_OR_BONUS, "actionOrBonus"], [SINGLE_ATTACK, "singleAttack"], [SPELL_FAILURES, "spellFailure"], [NO_ATTACKS_OR_SPELLS, "noAttacksOrSpells"], [NO_SPELLS, "noSpells"], [KNOWN_TO_ORIGIN, "knownToOrigin"], [CURES, "cures"],
   [FIGHTING_ADVANTAGE, "advantageIfFighting"], [SAVED_EFFECTS, "savedEffects"], [SIZE_CHANGES, "resize"],
-  [ORDER_LISTS, "orders"], [ENDS_WHEN, "endsWhen"], [BANISHES, "banishes"], [WARDS_CONDITIONS, "wardsConditions"]
+  [ORDER_LISTS, "orders"], [ENDS_WHEN, "endsWhen"], [BANISHES, "banishes"], [WARDS_CONDITIONS, "wardsConditions"],
+  [GM_ALERTS, "gmAlert"]
 ].map(Object.freeze));
 
 /**

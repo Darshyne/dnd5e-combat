@@ -5,6 +5,7 @@
  */
 const MODULE_ID = "dnd5e-combat";
 const DMG = "Compendium.dnd-dungeon-masters-guide.equipment.Item.";
+const PHB = "Compendium.dnd-players-handbook.spells.Item.";
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 export default {
@@ -40,5 +41,26 @@ export default {
       const none = (await ctx.messagesSince(again.usageMessageId)).filter(m => m.flags?.[MODULE_ID]?.gmAlert);
       ctx.expect(!none.length, "une autre activité de l'objet n'alerte pas");
     }
+
+    // §365 : un sort de la table des alertes (Amitié, lancée par le Magicien sur le Zombi).
+    if ( tokens.some(t => t.name === "Magicien") && tokens.some(t => t.name === "Zombi") ) {
+      const mage = await ctx.token("Magicien");
+      const zombi = await ctx.token("Zombi");
+      const friends = await ctx.ensureItem(mage, `${PHB}phbsplFriends000`, { system: { method: "atwill" } });
+      const cast = await ctx.use({ tokenId: mage.id, itemId: friends, targetTokenIds: [zombi.id], consume: false });
+      await pause(2500);
+      const spellCards = (await ctx.messagesSince(cast.usageMessageId)).filter(m => m.flags?.[MODULE_ID]?.gmAlert);
+      ctx.expect(spellCards.length === 1, `Amitié : une alerte (${spellCards.map(c => c.flags[MODULE_ID].gmAlert.text).join(" / ") || "aucune"})`);
+      ctx.restore(() => ctx.removeEffectsNamed(zombi, /Friends|Amitié/i).catch(() => {}));
+    }
+
+    // §365 : réglage de monde « Alertes MJ » éteint — plus aucune carte.
+    const on = await ctx.engine("setting", { key: "gmAlerts", value: false });
+    ctx.restore(() => ctx.engine("setting", { key: "gmAlerts", value: on.before }));
+    const off = await ctx.use({ tokenId: fighter.id, itemId: jester, activityId: "6WJ08JWazu3OZign", consume: false, targetTokenIds: [] });
+    await pause(2500);
+    const silent = (await ctx.messagesSince(off.usageMessageId)).filter(m => m.flags?.[MODULE_ID]?.gmAlert);
+    ctx.expect(!silent.length, `alertes éteintes : aucune carte (${silent.length})`);
+    await ctx.engine("setting", { key: "gmAlerts", value: on.before });
   }
 };

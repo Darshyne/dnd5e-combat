@@ -5,7 +5,7 @@
  *    texte `DND5ECOMBAT.AlerteMJ.<key>` (ou `text`, pour une surcouche du monde ou un module voisin) ;
  *  - `alertGM({ text, item, actor })` pour le reste du moteur (une marque de colère posée…), publié aussi en `api.gm.alert` ;
  *  - hook public `dnd5e-combat.gmAlert` `({ text, item, actor })`, appelé avant la carte : un voisin qui rend `false` la remplace.
- * Le texte reçoit `{actor}` (le nom de l'utilisateur) et `{item}`. MJ actif.
+ * Le texte reçoit `{actor}` (le nom de l'utilisateur) et `{item}`. MJ actif. Réglage de monde `gmAlerts` (§365) : éteint, rien n'est posté.
  */
 
 import { MODULE_ID } from "../constants.mjs";
@@ -14,6 +14,12 @@ import { route } from "./router.mjs";
 import { esc, log, loc, viaActiveGM } from "./shared.mjs";
 
 export const GM_ALERT_HOOK = `${MODULE_ID}.gmAlert`;
+/** §365 : réglage de monde — sans lui, aucune alerte (ni carte, ni bandeau). */
+export const GM_ALERTS_SETTING = "gmAlerts";
+
+export function gmAlertsOn() {
+  try { return game.settings.get(MODULE_ID, GM_ALERTS_SETTING) !== false; } catch { return true; }
+}
 const GM_ALERT_QUERY = `${MODULE_ID}.gmAlert`;
 
 /** Le texte d'une règle `gmAlert`, ses variables remplies. */
@@ -25,6 +31,7 @@ function textOf(rule, { actor, item }) {
 
 /** Sur le MJ actif : la carte chuchotée aux MJ. */
 async function postAlert({ text, item=null, actor=null }) {
+  if ( !gmAlertsOn() ) return null;
   const actorDoc = actor ? await fromUuid(actor) : null;
   const itemName = item ?? "";
   if ( Hooks.call(GM_ALERT_HOOK, { text, item: itemName, actor: actorDoc }) === false ) return null;
@@ -46,7 +53,7 @@ async function postAlert({ text, item=null, actor=null }) {
  * @param {{ text: string, item?: Item|string|null, actor?: Actor|null }} alert
  */
 export async function alertGM({ text, item=null, actor=null }) {
-  if ( !text ) return null;
+  if ( !text || !gmAlertsOn() ) return null;
   const payload = { text: String(text), item: (typeof item === "string") ? item : (item?.name ?? null), actor: actor?.uuid ?? null };
   if ( !game.users.activeGM ) return null;
   return viaActiveGM(GM_ALERT_QUERY, postAlert, payload);
@@ -63,12 +70,14 @@ async function onUsage(message) {
   const activity = message.getAssociatedActivity?.();
   const item = activity?.item ?? message.getAssociatedItem?.();
   const rules = alertsFor(item, activity?.id);
-  if ( !rules.length ) return;
+  if ( !rules.length || !gmAlertsOn() ) return;
   const actor = message.getAssociatedActor?.() ?? item?.actor ?? null;
   for ( const rule of rules ) await postAlert({ text: textOf(rule, { actor, item }), item: item?.name ?? null, actor: actor?.uuid ?? null });
 }
 
 export function registerGmAlert() {
+  game.settings.register(MODULE_ID, GM_ALERTS_SETTING, { scope: "world", config: true, type: Boolean, default: true,
+    name: `DND5ECOMBAT.Reglage.${GM_ALERTS_SETTING}.Nom`, hint: `DND5ECOMBAT.Reglage.${GM_ALERTS_SETTING}.Aide` });
   CONFIG.queries[GM_ALERT_QUERY] = postAlert;
   route("createChatMessage", onUsage, { executor: true, label: "GM alert: not posted" });
 }

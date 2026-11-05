@@ -110,6 +110,16 @@ describe("originPointOfShapes — point d'origine d'une zone", () => {
     expect(originPointOfShapes([], fallback)).toBe(fallback);
     expect(originPointOfShapes(undefined, null)).toBe(null);
   });
+  it("14.370 : forme « cases de grille » — son origine, sinon le repli", () => {
+    expect(originPointOfShapes([{ type: "grid", offsets: [{ i: 1, j: 2 }], origin: { x: 70, y: 80 } }], fallback)).toEqual({ x: 70, y: 80 });
+    expect(originPointOfShapes([{ type: "grid", offsets: [{ i: 1, j: 2 }], origin: null }], fallback)).toBe(fallback);
+  });
+  it("14.370 : une forme « trou » n'est jamais l'origine (Boule de feu prudente)", () => {
+    const hole = { type: "grid", hole: true, offsets: [{ i: 3, j: 3 }], origin: { x: 1, y: 1 } };
+    expect(originPointOfShapes([hole, { type: "circle", x: 100, y: 200, radius: 50 }])).toEqual({ x: 100, y: 200 });
+    expect(originPointOfShapes([{ type: "circle", x: 100, y: 200, radius: 50 }, hole])).toEqual({ x: 100, y: 200 });
+    expect(originPointOfShapes([hole], fallback)).toBe(fallback);
+  });
 });
 
 describe("withinSphere — une vraie sphère, pas un cylindre (P2)", () => {

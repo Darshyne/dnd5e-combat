@@ -43,13 +43,16 @@ async function breakEffects(actor, moments, exceptItem=null, { before=null }={})
  */
 async function breakOnOrigin(message) {
   let moment = null;
-  const activity = message.getAssociatedActivity?.() ?? null;
+  // dnd5e 6 : quand l'item de la carte n'existe plus, `getAssociatedItem` passe par `getOriginatingMessage()`, qui peut rendre
+  // `system.origin` (des données, pas un message) — « Receiver must be an instance of class ChatMessage5e ». Lecture sans risque.
+  const read = fn => { try { return fn() ?? null; } catch { return null; } };
+  const activity = read(() => message.getAssociatedActivity?.());
   if ( message.type === "attack" ) moment = "attack";
   else if ( (message.type === "damage") && (activity?.type !== "heal") ) moment = "damage";
   else if ( (message.type === "usage") && (activity?.type === "save") ) moment = "forcesSave";
   if ( !moment ) return;
-  const item = activity?.item ?? message.getAssociatedItem?.() ?? null;
-  const caster = message.getAssociatedActor?.() ?? item?.actor ?? null;
+  const item = activity?.item ?? read(() => message.getAssociatedItem?.());
+  const caster = read(() => message.getAssociatedActor?.()) ?? item?.actor ?? null;
   if ( !caster ) return;
   for ( const token of canvas.scene?.tokens ?? [] ) {
     const actor = token.actor;

@@ -172,7 +172,8 @@ function sphereAt(region, activity, origin) {
 export function shapesReach(region, activity, originToken, token) {
   const round = (templateOf(activity)?.type === "sphere") || (templateOf(activity)?.type === "circle");
   const center = tokenCenter(token);
-  return anyShapeTakes(region.shapes.map(s => s.toObject?.() ?? s).map(shape => {
+  // 14.370 : une forme « trou » (cases épargnées) ne prend personne — le cœur l'a déjà retirée de l'appartenance.
+  return anyShapeTakes(region.shapes.map(s => s.toObject?.() ?? s).filter(s => !s.hole).map(shape => {
     const origin = originOfShapes(region, [shape], originToken);
     const sphere = (available && round) ? sphereAt(region, activity, origin) : null;
     const rect = rectOfShape(shape);

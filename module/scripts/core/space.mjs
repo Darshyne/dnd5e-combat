@@ -90,16 +90,20 @@ export function regionElevationFor({ type, size, width, height }, { elevation=0,
  * Point d'origine d'une zone, en pixels, d'après sa première forme (formes de région du cœur V14,
  * common/data/data.mjs) : centre d'un cercle ou d'une ellipse, origine d'un cône, d'une ligne ou
  * d'un anneau, centre d'un rectangle (son origine décalée par son ancre), origine ou centre de
- * masse d'un polygone. Pour une émanation, une forme de token ou une forme inconnue, `fallback`
- * (le centre du token d'origine, que l'adaptateur connaît).
+ * masse d'un polygone, origine d'une forme « cases de grille » (14.370) quand elle en a une. Pour une émanation, une forme
+ * de token ou une forme inconnue, `fallback` (le centre du token d'origine, que l'adaptateur connaît). Une forme « trou »
+ * (`hole`, une case épargnée dans une Boule de feu prudente) n'est jamais l'origine : on prend la première forme pleine.
  * @param {object[]} shapes
  * @param {{x: number, y: number}|null} fallback
  * @returns {{x: number, y: number}|null}
  */
 export function originPointOfShapes(shapes, fallback=null) {
-  const shape = shapes?.[0];
+  const shape = shapes?.find(s => !s?.hole);
   if ( !shape ) return fallback;
   switch ( shape.type ) {
+    case "grid":
+      return (shape.origin && Number.isFinite(shape.origin.x) && Number.isFinite(shape.origin.y))
+        ? { x: shape.origin.x, y: shape.origin.y } : fallback;
     case "circle":
     case "ellipse":
     case "cone":

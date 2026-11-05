@@ -20,6 +20,7 @@ import { openWelcome } from "./welcome.mjs";
 import { openDiagnostic } from "./diagnostic.mjs";
 import { openFactions } from "./factions.mjs";
 import { reportsApi } from "./automation.mjs";
+import { replaceKeepingScroll } from "./scroll.mjs";
 
 const WINDOW_ID = "das-settings";
 const LOGO = `modules/${MODULE_ID}/assets/das-logo.png`;
@@ -81,6 +82,7 @@ const appClass = () => AppClass ??= class DasSettingsApp extends foundry.applica
   };
 
   #module = MODULE_ID;
+  #scroll = {};            // défilement gardé d'un rendu à l'autre (ui/scroll.mjs)
   #tab = new Map();        // module → sous-onglet ouvert
   #query = "";
   #opened = new Set();     // aides dépliées à la main (« module.clé »)
@@ -164,8 +166,10 @@ const appClass = () => AppClass ??= class DasSettingsApp extends foundry.applica
     return root;
   }
 
+  /** Le défilement est gardé tant qu'on reste dans le même module et le même onglet (un réglage changé redessine tout). */
   _replaceHTML(result, content) {
-    content.replaceChildren(result);
+    replaceKeepingScroll(content, result, [".das-settings__main nav", ".das-settings__content"], this.#scroll,
+      `${this.#module}/${this.#tab.get(this.#module)}`);
   }
 
   #matches(ns, key) {

@@ -6,6 +6,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { CHECKS, listBackups, repairTasks, restore, scanWorld } from "../runtime/diagnostic/index.mjs";
 import { uniqueRoots } from "../core/backup.mjs";
 import { loc, esc } from "../runtime/shared.mjs";
+import { replaceKeepingScroll } from "./scroll.mjs";
 
 /** La classe de la fenêtre, créée au premier usage (le module se charge aussi hors de Foundry : tests/load.test.mjs). */
 let DiagnosticClass = null;
@@ -39,6 +40,7 @@ export const DiagnosticApp = () => DiagnosticClass ??= class DiagnosticApp exten
   #result = null;        // { backup, results }
   #backups = null;
   #working = false;
+  #scroll = {};          // défilement gardé d'un rendu à l'autre (ui/scroll.mjs)
 
   async _renderHTML() {
     const root = document.createElement("div");
@@ -120,8 +122,9 @@ export const DiagnosticApp = () => DiagnosticClass ??= class DiagnosticApp exten
     return `${intro}<ul class="das-backups">${rows}</ul>`;
   }
 
+  /** Le défilement est gardé dans le même onglet : cocher, « Tout décocher » ou une option ne ramène plus en haut. */
   _replaceHTML(result, content) {
-    content.replaceChildren(result);
+    replaceKeepingScroll(content, result, [".das-pane"], this.#scroll, this.#tab);
   }
 
   /** La valeur d'une option de vérification : celle choisie, sinon son défaut. */

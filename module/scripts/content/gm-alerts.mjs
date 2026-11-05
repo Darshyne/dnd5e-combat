@@ -11,7 +11,6 @@ export const GM_ALERTS = Object.freeze({
   "delayed-blast-fireball": { key: "BouleRetardement" },
   "tsunami": { key: "Tsunami" },
   "forbiddance": { key: "Interdiction" },
-  "storm-of-vengeance": { key: "TempeteVengeance" },
   "divine-word": { key: "ParoleDivine" },
   "compulsion": { key: "Injonction" },
   "telekinesis": { key: "Telekinesie" },
@@ -42,7 +41,5 @@ export const GM_ALERTS = Object.freeze({
   "mist-walker": { key: "MarcheBrumes" },
   "feral-pounce": { key: "BondFeroce" },
   "ghost-walk": { key: "MarcheFantome" },
-  "shadow-walk": { key: "MarcheOmbre" },
-  "wrath-of-the-wild": { key: "CourrouxSauvage" },
-  "shade-spirit": { key: "EspritOmbre" }
+  "wrath-of-the-wild": { key: "CourrouxSauvage" }
 });

@@ -1915,7 +1915,6 @@
   "DND5ECOMBAT.AlerteMJ.BouleRetardement": "{item} : si une créature touche ou lance la bille avant l'explosion, à toi de jouer la suite.",
   "DND5ECOMBAT.AlerteMJ.Tsunami": "{item} : créatures emportées par la vague, nage et limite de taille (TG au plus) sont à gérer.",
   "DND5ECOMBAT.AlerteMJ.Interdiction": "{item} : le choix des types touchés, le mot de passe, le voyage planaire et la téléportation interdits sont à gérer.",
-  "DND5ECOMBAT.AlerteMJ.TempeteVengeance": "{item} : sous le nuage, les attaques à distance avec une arme sont impossibles.",
   "DND5ECOMBAT.AlerteMJ.ParoleDivine": "{item} : un Céleste, Élémentaire, Fée ou Fiélon qui rate sa sauvegarde est renvoyé sur son plan d'origine pour 24 heures — à retirer de la scène.",
   "DND5ECOMBAT.AlerteMJ.Injonction": "{item} : par une action Bonus, {actor} peut faire déplacer les cibles dans la direction choisie.",
   "DND5ECOMBAT.AlerteMJ.Telekinesie": "{item} : le déplacement de la créature ou de l'objet (jusqu'à 9 m) est à faire à la main.",
@@ -1942,9 +1941,13 @@
   "DND5ECOMBAT.AlerteMJ.MarcheBrumes": "{item} : sur une sauvegarde ratée contre Agrippé ou Entravé, la téléportation reste possible — à gérer.",
   "DND5ECOMBAT.AlerteMJ.BondFeroce": "{item} : {actor} peut repousser la cible de 1,50 m au lieu de la mettre À terre.",
   "DND5ECOMBAT.AlerteMJ.MarcheFantome": "{item} : {actor} peut traverser créatures et objets comme un terrain difficile.",
-  "DND5ECOMBAT.AlerteMJ.MarcheOmbre": "{item} : départ et arrivée doivent être en Pénombre ou dans les Ténèbres.",
   "DND5ECOMBAT.AlerteMJ.CourrouxSauvage": "{item} : la transformation et les Représailles rôdeuses (attaque d'opportunité) sont à gérer.",
-  "DND5ECOMBAT.AlerteMJ.EspritOmbre": "{item} : quand l'invisibilité prend fin, l'émanation de 1,50 m est à jouer.",
   "DND5ECOMBAT.Reglage.gmAlerts.Nom": "Alertes MJ",
-  "DND5ECOMBAT.Reglage.gmAlerts.Aide": "Quand une capacité ou un effet laisse quelque chose au MJ, il est prévenu (carte chuchotée et bandeau). Décoché : aucune alerte, pour personne."
+  "DND5ECOMBAT.Reglage.gmAlerts.Aide": "Quand une capacité ou un effet laisse quelque chose au MJ, il est prévenu (carte chuchotée et bandeau). Décoché : aucune alerte, pour personne.",
+  "DND5ECOMBAT.Teleport.TropEclaire.from": "Téléportation : il faut partir de la Pénombre ou des Ténèbres.",
+  "DND5ECOMBAT.Teleport.TropEclaire.to": "Téléportation : l'arrivée doit être dans la Pénombre ou les Ténèbres.",
+  "DND5ECOMBAT.Retour.TropEclaire": "Trop éclairé",
+  "DND5ECOMBAT.Souci.tooBright": "{item} : il faut se tenir dans la Pénombre ou les Ténèbres",
+  "DND5ECOMBAT.Souci.noRangedWeapons": "dans la {item}, les attaques à distance avec une arme sont impossibles",
+  "DND5ECOMBAT.Souci.noRangedWeaponsAt": "{name} est dans la {item} : les attaques à distance avec une arme y sont impossibles"
 }

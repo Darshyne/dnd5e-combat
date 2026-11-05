@@ -243,6 +243,20 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     errors.push(`${at}etherealShift: true or { others: true }`);
   }
   validateExtras(entry, at, errors);
+  // §367 : la fin d'un effet de l'item fait utiliser une activité de l'item autour de son porteur (Esprit de l'ombre).
+  if ( "endActivity" in entry ) {
+    const e = entry.endActivity;
+    if ( !isObject(e) || !Object.keys(e).length ) errors.push(`${at}endActivity: { effect id: { activity, radius, units } }`);
+    else for ( const [id, r] of Object.entries(e) ) {
+      if ( !isId(id) ) errors.push(`${at}endActivity: "${id}" is not an effect id (16 characters)`);
+      if ( !isObject(r) || !isId(r.activity) || !(Number.isFinite(r.radius) && (r.radius > 0)) || (typeof r.units !== "string") || !r.units
+        || !Object.keys(r).every(k => ["activity", "radius", "units"].includes(k)) ) errors.push(`${at}endActivity.${id}: { activity, radius, units }`);
+    }
+  }
+  // §367 : pas d'attaque à distance avec une arme dans la zone de l'item (Tempête de vengeance), dès le rejeu `fromPulse` du lanceur.
+  if ( ("noRangedWeapons" in entry) && !((entry.noRangedWeapons === true) || (isObject(entry.noRangedWeapons)
+    && Number.isInteger(entry.noRangedWeapons.fromPulse) && (entry.noRangedWeapons.fromPulse > 0)
+    && (Object.keys(entry.noRangedWeapons).length === 1))) ) errors.push(`${at}noRangedWeapons: true or { fromPulse }`);
   if ( ("drawsOnEnd" in entry) && (!isObject(entry.drawsOnEnd) || !Object.keys(entry.drawsOnEnd).length
     || !Object.entries(entry.drawsOnEnd).every(([id, uuid]) => isId(id) && (typeof uuid === "string") && /RollTable\.[A-Za-z0-9]{16}$/.test(uuid))) ) {
     errors.push(`${at}drawsOnEnd: { effect id: RollTable uuid }`);

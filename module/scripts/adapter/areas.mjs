@@ -107,6 +107,22 @@ export function lastingRegions(scene) {
   return scene?.regions.filter(r => readAreaState(r)?.usage) ?? [];
 }
 
+/**
+ * §367 : la zone qui dure (`noRangedWeapons`, Tempête de vengeance) dans laquelle se tient ce token et où les attaques à distance avec
+ * une arme sont impossibles — `fromPulse` : seulement à partir de ce rejeu du lanceur (`pulses` de l'état de la zone). Rend l'item, ou null.
+ */
+export function rangedBanAround(token) {
+  for ( const region of lastingRegions(token?.parent) ) {
+    const uuid = region.getFlag?.("dnd5e", "activity");
+    const item = uuid ? fromUuidSync(uuid, { strict: false })?.item : null;
+    const rule = item ? contentOf(item).entry?.noRangedWeapons : null;
+    if ( !rule ) continue;
+    if ( rule.fromPulse && ((Number(readAreaState(region)?.pulses) || 0) < rule.fromPulse) ) continue;
+    if ( isInside(token, region) ) return item;
+  }
+  return null;
+}
+
 /** Ce token est-il dans la région, à sa position actuelle ou à une position donnée ? */
 export function isInside(token, region, position) {
   // Sans position donnée : la position validée, pas la position visuelle (voir committedPosition).

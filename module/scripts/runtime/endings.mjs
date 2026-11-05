@@ -49,6 +49,11 @@ async function onDeleteEffect(effect) {
       log(`${item.name}: "${effect.name}" ends on ${actor.name}, table "${table.name}" drawn`);
     }).catch(err => console.error(`${MODULE_ID} | drawsOnEnd`, err));
   }
+  // §367 : l'activité que la fin de l'effet fait utiliser autour de son porteur (Esprit de l'ombre).
+  const ending = item ? contentOf(item).entry?.endActivity : null;
+  const endKey = ending ? Object.keys(ending).find(id => comesFromItemEffect(effect, id)) : null;
+  if ( endKey ) enqueue(`endActivity:${actor.uuid}`, () => useOnEnd(item, ending[endKey], actor, effect))
+    .catch(err => console.error(`${MODULE_ID} | endActivity`, err));
   // §53 : le sort qu'une potion a fait lancer n'a pas de suite (Rapidité : « sans la vague de léthargie » de Hâte).
   const rules = (item && !potionOfCast(item)) ? contentOf(item).entry?.effectThen : null;
   if ( !rules ) return;
@@ -61,6 +66,25 @@ async function onDeleteEffect(effect) {
     const placed = await placeItemEffect(item, rules[key], actor, { scaling: effect.getFlag?.("dnd5e", "scaling") ?? 0 });
     if ( placed ) log(`${item.name}: "${effect.name}" ends on ${actor.name}, "${placed.name}" applied`);
   });
+}
+
+/**
+ * §367 : `endActivity` — l'effet est tombé : l'activité de l'item, utilisée par son propriétaire (le lanceur) sur les créatures à `radius`
+ * du porteur (lui exclu, vivantes, visibles sur la scène), sans gabarit et sans rien dépenser ; personne autour : rien.
+ */
+async function useOnEnd(item, rule, actor, effect) {
+  const activity = item.system.activities?.get(rule.activity);
+  const bearer = actor.isToken ? actor.token : (actor.getActiveTokens?.(false, true)?.[0] ?? null);
+  if ( !activity || !bearer?.parent || (bearer.parent !== canvas.scene) ) return;
+  const reach = lengthIn(rule.radius, rule.units, bearer.parent.grid.units);
+  const around = bearer.parent.tokens.filter(t => t.actor && (t !== bearer) && !t.hidden && t.object
+    && ((t.actor.system.attributes?.hp?.value ?? 0) > 0) && (distanceBetween(bearer, t).value <= reach + 1e-6));
+  log(`${item.name}: "${effect.name}" ends on ${actor.name}, "${activity.name}" on ${around.map(t => t.name).join(", ") || "nobody"}`);
+  if ( !around.length ) return;
+  canvas.tokens.setTargets(around.map(t => t.id));
+  // Pas de gabarit : les cibles du message (`givenTargets`, §104), comme une zone dont les cibles sont fournies.
+  await activity.use({ consume: false, [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: false } }, { configure: false },
+    { data: { flags: { [MODULE_ID]: { givenTargets: true } } } });
 }
 
 /* -------------------------------------------- */

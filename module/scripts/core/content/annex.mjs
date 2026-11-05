@@ -93,7 +93,8 @@ export function validateTeleport(teleport, at, errors) {
     }
   }
   if ( ("unseen" in teleport) && (teleport.unseen !== true) ) errors.push(`${at}.unseen: true or absent`);
-  for ( const key of Object.keys(teleport) ) if ( !["distance", "units", "activity", "then", "passengers", "unseen"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
+  if ( ("maxLight" in teleport) && !["dim", "dark"].includes(teleport.maxLight) ) errors.push(`${at}.maxLight: "dim" or "dark"`);
+  for ( const key of Object.keys(teleport) ) if ( !["distance", "units", "activity", "then", "passengers", "unseen", "maxLight"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 export function validateTargets(targets, at, facts, errors) {

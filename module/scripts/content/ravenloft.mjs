@@ -169,8 +169,8 @@ export const RAVENLOFT = Object.freeze({
   // Sorcellerie de l'ombre, Puissance de l'ombre — Force du tombeau : à 0 PV sans mourir, JS de Charisme (DD 5 + les dégâts subis) ;
   // réussi, PV = Charisme + niveau d'Ensorceleur (le soin « Heal on Success » de la donnée, sur vous). Une fois par repos long.
   "power-of-shadow": { atZero: { activity: "EmL9RVBiEFBPk2Cf", save: { ability: "cha", dc: "5 + @damage" } } },
-  // Marche dans l'ombre : téléportation de 36 m (« en pénombre ou dans les ténèbres, vers un tel espace » : au MJ).
-  "shadow-walk": { teleport: { distance: 120, units: "ft", activity: "XZKq03VYLlOcRzj2" } },
+  // Marche dans l'ombre : téléportation de 36 m, « en Pénombre ou dans les Ténèbres, vers un tel espace » (§367 : `maxLight`).
+  "shadow-walk": { teleport: { distance: 120, units: "ft", activity: "XZKq03VYLlOcRzj2", maxLight: "dim" } },
   // Gardien creux, Courroux sauvage — Aura troublante : « au début de chacun de vos tours suivants, chaque créature de votre choix dans
   // une émanation de 3 m fait un JS de Sagesse ou est Effrayée » — tant que vous êtes transformé (l'effet de la donnée). À la
   // transformation elle-même : au MJ. Représailles rôdeuses (attaque d'opportunité) : au MJ.
@@ -196,8 +196,9 @@ export const RAVENLOFT = Object.freeze({
   // Esprit prêtre : le soin, et « l'un de ces états de votre choix prend fin ».
   "priest-spirit": { cures: ["blinded", "charmed", "deafened", "paralyzed", "poisoned", "stunned"] },
   // Esprit de l'ombre : Invisible « jusqu'à la fin de son prochain tour, ou jusqu'à ce qu'elle attaque, inflige des dégâts ou lance un
-  // sort ». L'émanation de 1,50 m quand l'invisibilité prend fin (« Emanate and End ») : au MJ.
-  "shade-spirit": { breaksOn: ["attack", "damage", "spell"] },
+  // sort ». §367 : l'émanation de 1,50 m quand l'invisibilité prend fin (« Emanate and End », `endActivity`).
+  "shade-spirit": { breaksOn: ["attack", "damage", "spell"],
+    endActivity: { fzN2X69eyByhtaYu: { activity: "abooAkpLL09oe1T8", radius: 5, units: "ft" } } },
   // Canalisation renforcée, Puissance d'outre-tombe : « une fois par tour, quand vous lancez un sort de Barde avec un emplacement qui
   // inflige des dégâts, lancez 1d6 et ajoutez-le » (aux soins : au MJ). Manifestation spirituelle (abri des Esprits gardiens) : au MJ.
   "empowered-channeling": {

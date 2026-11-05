@@ -39,3 +39,23 @@ describe("§366 : breaksOnOrigin et repasse des parts laissées au MJ", () => {
     for ( const id of ["friends", "fear", "crown-of-madness", "eyebite", "death-ward", "tentacle-rod", "jester"] ) expect(CONTENT[id]?.gmAlert, id).toBeUndefined();
   });
 });
+
+describe("§367 : endActivity, teleport.maxLight, noRangedWeapons", () => {
+  it("valide les clés", () => {
+    expect(validateEntry({ endActivity: { fzN2X69eyByhtaYu: { activity: "abooAkpLL09oe1T8", radius: 5, units: "ft" } } })).toEqual([]);
+    expect(validateEntry({ endActivity: { fzN2X69eyByhtaYu: { activity: "abooAkpLL09oe1T8" } } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ endActivity: { court: { activity: "abooAkpLL09oe1T8", radius: 5, units: "ft" } } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ teleport: { distance: 120, units: "ft", maxLight: "dim" } })).toEqual([]);
+    expect(validateEntry({ teleport: { distance: 120, units: "ft", maxLight: "bright" } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ noRangedWeapons: true })).toEqual([]);
+    expect(validateEntry({ noRangedWeapons: { fromPulse: 4 } })).toEqual([]);
+    expect(validateEntry({ noRangedWeapons: { fromPulse: 0 } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ noRangedWeapons: { fromPulse: 4, x: 1 } }).length).toBeGreaterThan(0);
+  });
+  it("Esprit de l'ombre, Marche dans l'ombre, Tempête de vengeance", () => {
+    expect(CONTENT["shade-spirit"].endActivity.fzN2X69eyByhtaYu.activity).toBe("abooAkpLL09oe1T8");
+    expect(CONTENT["shadow-walk"].teleport.maxLight).toBe("dim");
+    expect(CONTENT["storm-of-vengeance"].noRangedWeapons).toEqual({ fromPulse: 4 });
+    for ( const id of ["shade-spirit", "shadow-walk", "storm-of-vengeance"] ) expect(CONTENT[id]?.gmAlert, id).toBeUndefined();
+  });
+});

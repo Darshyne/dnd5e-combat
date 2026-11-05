@@ -23,7 +23,8 @@
  *                                               « teleport » de dnd5e (tout le PHB : Foulée brumeuse y est utilitaire) ;
  *                                               `then` : id d'une activité de l'item utilisée à l'arrivée (§67 quater) ;
  *                                               `passengers: { count, within?, units? }` (§264) : jusqu'à `count` créatures non
- *                                               hostiles à `within` (5 ft) partent avec lui, posées à son contact (Porte dimensionnelle)
+ *                                               hostiles à `within` (5 ft) partent avec lui, posées à son contact (Porte dimensionnelle) ;
+ *                                               `maxLight: "dim"|"dark"` (§367) : départ et arrivée pas plus éclairés (Marche dans l'ombre)
  *     lineDash?: { reach, units, activity? }    ruée en ligne droite (§57) : à l'utilisation, la case
  *                                               d'arrivée se choisit (jusqu'à la Vitesse, inoccupée, en vue, en ligne droite à
  *                                               travers les créatures, sans attaque d'opportunité) ; l'activité (défaut : celle
@@ -388,6 +389,13 @@
  *     cures?: string[]                          l'utilisation fait cesser UN de ces états sur la cible, au choix (Restauration
  *                                               partielle, §16.47)
  *     curesOn?: <id d'activité>                 §288 : `cures` seulement pour cette activité (Rupture d'enchantement)
+ *     endActivity?: { <id d'effet>: { activity, radius, units } }
+ *                                               §367 : quand cet effet de l'item tombe (durée, rupture, retrait), l'activité de
+ *                                               l'item est utilisée sur les créatures à `radius` de son porteur, lui exclu, sans
+ *                                               rien dépenser (Esprit de l'ombre : « Emanate and End ») — runtime/endings.mjs, MJ actif
+ *     noRangedWeapons?: true | { fromPulse }   §367 : dans la zone de l'item, pas d'attaque à distance avec une arme (ni depuis la
+ *                                               zone, ni vers elle) ; `fromPulse` : à partir de ce rejeu de `casterPulse` (Tempête de
+ *                                               vengeance, tours 5 à 10) — souci de légalité, runtime/turn.mjs
  *     drawsOnEnd?: { <id d'effet>: <uuid de table> }  §289 : quand cet effet de l'item tombe, la table est tirée (Ombre vivante :
  *                                               « Volonté de l'ombre » au début du tour)
  *     catalyst?: { save, cast, effect }         §289 : Seconde peau — le MJ déclare le catalyseur (menu du token) ; au début du tour

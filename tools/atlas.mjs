@@ -12,7 +12,7 @@
  * est tenu dans `prive/atlas/historique.json`, une ligne de plus par item à chaque changement.
  * Lit une COPIE des bases LevelDB (Foundry les verrouille). Le JSON produit contient le texte premium : il va hors du dépôt.
  *   node tools/atlas.mjs <dossier de sortie> [dossier Data de Foundry]
- * Sortie : `atlas-<onglet>.json` (sorts, dons, aptitudes, objets, creatures), `atlas-resume.json`, et `prive/ATLAS.md` (comptes, sans texte).
+ * Sortie : `atlas-<onglet>.json` (sorts, dons, aptitudes, objets, creatures), `atlas-briques.json` (§367), `atlas-resume.json`, et `prive/ATLAS.md` (comptes, sans texte).
  */
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -21,6 +21,8 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { ClassicLevel } from "classic-level";
 import { CONTENT } from "../module/scripts/content/index.mjs";
+import { ENTRY_KEYS, STEP_TYPES } from "../module/scripts/core/content/enums.mjs";
+import { MOMENTS } from "../module/scripts/core/triggers.mjs";
 
 const [out, data = "F:/Foundry V14/Data"] = process.argv.slice(2);
 if ( !out ) { console.error("usage : node tools/atlas.mjs <dossier de sortie> [Data]"); process.exit(1); }
@@ -500,6 +502,51 @@ for ( const tab of TABS ) {
   for ( const r of list ) if ( r.rp ) byReview[r.rp] = (byReview[r.rp] ?? 0) + 1;
   for ( const [key, n] of Object.entries(byReview) ) summary.push({ tab, kind: "repasse", key, n });
 }
+/* ---- briques (§367) : les clés de contenu, les moments et les étapes du moteur, d'après son code ---- */
+// Description : le commentaire de schéma de core/content.mjs (clés, étapes `{ type }`), le texte de MOMENTS (core/triggers.mjs).
+function schemaDocs() {
+  const lines = readFileSync("module/scripts/core/content.mjs", "utf8").split(/\r?\n/);
+  const keys = new Map(), steps = new Map();
+  let cur = null;
+  const split = rest => { const m = rest.match(/^(.*?\S)\s{2,}(\S.*)$/); return m ? { sig: m[1], d: [m[2]] } : { sig: rest.trim(), d: [] }; };
+  for ( const line of lines ) {
+    let m = line.match(/^ \*     ([a-zA-Z]+)\?: (.*)$/);
+    if ( m ) { const v = split(`${m[1]}?: ${m[2]}`); cur = v; if ( !keys.has(m[1]) ) keys.set(m[1], v); continue; }
+    m = line.match(/^ \*   \{ type: "(\w+)"(.*)$/);
+    if ( m ) { const v = split(`{ type: "${m[1]}"${m[2]}`); cur = v; if ( !steps.has(m[1]) ) steps.set(m[1], v); continue; }
+    m = line.match(/^ \*\s{20,}(\S.*)$/);
+    if ( m && cur ) { cur.d.push(m[1]); continue; }
+    cur = null;
+  }
+  return { keys, steps };
+}
+const docs = schemaDocs();
+const tabOfIdent = new Map();
+for ( const r of rows ) if ( r.i && !tabOfIdent.has(r.i) ) tabOfIdent.set(r.i, new Set());
+for ( const r of rows ) if ( r.i ) tabOfIdent.get(r.i).add(r.t);
+const stepsIn = entry => (entry.triggers ?? []).flatMap(t => [...(t.do ?? []), ...(t.else ?? [])]);
+const momentsIn = entry => (entry.triggers ?? []).flatMap(t => [t.on].flat());
+const brickRow = (kind, key, doc, users) => {
+  const text = doc ? doc.d.join(" ").replace(/\s+/g, " ") : "";
+  const sec = (`${doc?.sig ?? ""} ${text}`.match(/§\s?\d+|[CKO]\d+[a-z]?/) ?? [""])[0].replace(/\s/g, "");
+  const per = Object.fromEntries(TABS.map(t => [t, users.filter(i => tabOfIdent.get(i)?.has(t)).length]));
+  return { k: `${kind}:${key}`, b: key, kd: kind, sig: doc?.sig ?? "", d: text, s: sec, u: users.length,
+    ex: users.slice(0, 12).join(", "), ...per, doc: doc ? 1 : 0 };
+};
+const idents = Object.keys(CONTENT);
+const bricks = [
+  ...ENTRY_KEYS.map(k => brickRow("clé", k, docs.keys.get(k), idents.filter(i => CONTENT[i] && (k in CONTENT[i])))),
+  ...Object.entries(MOMENTS).map(([k, en]) => brickRow("moment", k, { sig: `on: "${k}"`, d: [en] }, idents.filter(i => momentsIn(CONTENT[i] ?? {}).includes(k)))),
+  ...STEP_TYPES.map(k => brickRow("étape", k, docs.steps.get(k), idents.filter(i => stepsIn(CONTENT[i] ?? {}).some(st => st?.type === k))))
+].sort((a, b) => b.u - a.u || a.b.localeCompare(b.b));
+writeFileSync(join(out, "atlas-briques.json"), JSON.stringify(bricks));
+for ( const kind of ["clé", "moment", "étape"] ) {
+  const l = bricks.filter(b => b.kd === kind);
+  summary.push({ tab: "briques", kind: "briques", key: kind, n: l.length });
+  summary.push({ tab: "briques", kind: "briques", key: `${kind}:inutilisée`, n: l.filter(b => !b.u).length });
+  summary.push({ tab: "briques", kind: "briques", key: `${kind}:sans doc`, n: l.filter(b => !b.doc).length });
+}
+
 // Le tableau de bord ne lit que des lignes : les métadonnées du relevé en sont aussi.
 const meta = [["date", TODAY], ["engine", ENGINE_VERSION], ["previous", previous ?? ""], ["rows", String(rows.length)],
   ["modules", Object.values(versions).map(v => `${v.label} ${v.version}`).join(" · ")]];
@@ -538,6 +585,16 @@ for ( const tab of TABS ) {
   const list = rows.filter(r => (r.t === tab) && r.rp);
   if ( list.length ) md.push(`| ${tab} | ${list.length} | ${Object.values(REVIEW_LABEL).map(l => list.filter(r => r.rp === l).length || "").join(" | ")} | ${list.filter(r => r.rpg === "haute").length || ""} |`);
 }
+md.push("", "## Briques du moteur", "",
+  "Les clés de contenu (`core/content/enums.mjs`), les moments de déclencheur (`core/triggers.mjs`) et les étapes (`do: [{ type }]`)",
+  "qu'un item peut déclarer, par nombre d'entrées de contenu qui s'en servent. Détail (description, exemples, onglets) : onglet",
+  "« Briques » du tableau de bord.", "");
+for ( const kind of ["clé", "moment", "étape"] ) {
+  const l = bricks.filter(b => b.kd === kind);
+  md.push(`- **${kind}s** : ${l.length}, dont ${l.filter(b => !b.u).length} sans usage dans le contenu livré et ${l.filter(b => !b.doc).length} sans description dans le schéma`);
+}
+md.push("", "| Brique | Genre | § | Entrées | " + TABS.join(" | ") + " |", "|---|---|---|---|" + TABS.map(() => "---|").join(""));
+for ( const b of bricks ) md.push(`| \`${b.b}\` | ${b.kd} | ${b.s} | ${b.u} | ${TABS.map(t => b[t] || "").join(" | ")} |`);
 md.push("", "## Défauts de données", "");
 for ( const r of rows.filter(r => r.bad.length).slice(0, 400) ) md.push(`- ${r.t} · ${r.o ? `${r.o} · ` : ""}${r.f ?? r.n} \`${r.i}\` (${r.m}) : ${r.bad.join(" ; ")}`);
 writeFileSync("prive/ATLAS.md", md.join("\n"));

@@ -1915,7 +1915,6 @@
   "DND5ECOMBAT.AlerteMJ.BouleRetardement": "{item}: if a creature touches or throws the bead before it explodes, play what follows.",
   "DND5ECOMBAT.AlerteMJ.Tsunami": "{item}: creatures carried by the wave, swimming and the size limit (Huge or smaller) are yours to handle.",
   "DND5ECOMBAT.AlerteMJ.Interdiction": "{item}: which creature types are affected, the password, and the blocked planar travel and teleportation are yours to handle.",
-  "DND5ECOMBAT.AlerteMJ.TempeteVengeance": "{item}: under the cloud, ranged weapon attacks are impossible.",
   "DND5ECOMBAT.AlerteMJ.ParoleDivine": "{item}: a Celestial, Elemental, Fey or Fiend that fails its save is sent back to its home plane for 24 hours — take it off the scene.",
   "DND5ECOMBAT.AlerteMJ.Injonction": "{item}: as a Bonus Action, {actor} can move the targets in the chosen direction.",
   "DND5ECOMBAT.AlerteMJ.Telekinesie": "{item}: moving the creature or object (up to 30 ft) is done by hand.",
@@ -1942,9 +1941,13 @@
   "DND5ECOMBAT.AlerteMJ.MarcheBrumes": "{item}: on a failed save against Grappled or Restrained, the teleport is still allowed — yours to handle.",
   "DND5ECOMBAT.AlerteMJ.BondFeroce": "{item}: {actor} can push the target 5 ft away instead of knocking it Prone.",
   "DND5ECOMBAT.AlerteMJ.MarcheFantome": "{item}: {actor} can move through creatures and objects as Difficult Terrain.",
-  "DND5ECOMBAT.AlerteMJ.MarcheOmbre": "{item}: departure and arrival must both be in Dim Light or Darkness.",
   "DND5ECOMBAT.AlerteMJ.CourrouxSauvage": "{item}: the transformation and Prowling Retaliation (opportunity attack) are yours to handle.",
-  "DND5ECOMBAT.AlerteMJ.EspritOmbre": "{item}: when the invisibility ends, the 5-ft emanation is yours to play.",
   "DND5ECOMBAT.Reglage.gmAlerts.Nom": "GM alerts",
-  "DND5ECOMBAT.Reglage.gmAlerts.Aide": "When an ability or effect leaves something to the GM, they are told (whispered card and banner). Unchecked: no alert at all, for anyone."
+  "DND5ECOMBAT.Reglage.gmAlerts.Aide": "When an ability or effect leaves something to the GM, they are told (whispered card and banner). Unchecked: no alert at all, for anyone.",
+  "DND5ECOMBAT.Teleport.TropEclaire.from": "Teleport: you must start in Dim Light or Darkness.",
+  "DND5ECOMBAT.Teleport.TropEclaire.to": "Teleport: the destination must be in Dim Light or Darkness.",
+  "DND5ECOMBAT.Retour.TropEclaire": "Too bright",
+  "DND5ECOMBAT.Souci.tooBright": "{item}: you must be in Dim Light or Darkness",
+  "DND5ECOMBAT.Souci.noRangedWeapons": "inside the {item}, ranged attacks with weapons are impossible",
+  "DND5ECOMBAT.Souci.noRangedWeaponsAt": "{name} is inside the {item}: ranged attacks with weapons are impossible there"
 }

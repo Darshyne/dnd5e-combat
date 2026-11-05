@@ -163,9 +163,18 @@ export default {
     await useOn(shade, [cleric]);
     const inv = (await statuses(cleric)).includes("invisible");
     ctx.expect(inv, "Esprit de l'ombre : le Clerc Invisible");
+    const beforeEnd = await ctx.lastMessageId();
     await ctx.use({ tokenId: cleric.id, identifier: "mace", activityType: "attack", targetTokenIds: [bandit.id] });
     await pause(4000);
     ctx.expect(!(await statuses(cleric)).includes("invisible"), "il attaque : l'invisibilité prend fin");
+    // §367 : « Emanate and End » — la sauvegarde de Constitution des créatures à 1,50 m du Clerc (le Bandit et le Zombi, au contact).
+    const emanation = (await ctx.messagesSince(beforeEnd)).find(m => (m.type === "usage") && JSON.stringify(m.flags ?? {}).includes("abooAkpLL09oe1T8"));
+    ctx.expect(!!emanation, "Esprit de l'ombre : l'émanation à la fin de l'invisibilité");
+    if ( emanation ) {
+      const res = await ctx.settle(emanation.id, { timeoutMs: 45000 }).catch(() => null);
+      const names = (res?.targets ?? []).map(t => t.name);
+      ctx.expect(names.includes("Bandit") && !names.includes("Clerc"), `l'émanation vise le Bandit, pas le Clerc (${names.join(", ") || "personne"})`);
+    }
     await clearAll();
 
     // 7. Canalisation renforcée.

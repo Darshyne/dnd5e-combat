@@ -28,6 +28,9 @@ import { route } from "./router.mjs";
 import { log, loc, sleep, viaActiveGM } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { antimagicAround, barrierBetween } from "../adapter/barriers.mjs";
+import { rangedBanAround } from "../adapter/areas.mjs";
+import { isRangedWeaponAttack } from "../adapter/cover.mjs";
+import { selfTeleportOf, tooBrightFor } from "./teleport.mjs";
 import { windowDisengaged } from "./reactions.mjs";
 import { samePlane } from "../adapter/plane.mjs";
 import { chainOf, chainLimit, chainOutliers } from "../adapter/chain.mjs";
@@ -182,8 +185,13 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
     && (activity.actor?.items ?? []).some(i => (i.type === "equipment") && i.system?.equipped && (i.system?.type?.value === "heavy"));
   // §214 : armure portée sans formation — pas de sorts.
   const unarmored = isSpellCast(activity.item) ? untrainedArmor(activity.actor) : null;
+  // §367 : Tempête de vengeance — pas d'attaque à distance avec une arme depuis la zone ; Marche dans l'ombre — pas depuis un lieu éclairé.
+  const storm = (!pilot && isRangedWeaponAttack(activity, attackMode)) ? rangedBanAround(usageToken(activity)) : null;
+  const bright = (!pilot && usageToken(activity) && selfTeleportOf(activity)) ? (tooBrightFor(activity, usageToken(activity)) === "from") : false;
   const lines = [
     ...issues.map(i => loc(`Souci.${i}`)),
+    ...(storm ? [loc("Souci.noRangedWeapons", { item: storm.name })] : []),
+    ...(bright ? [loc("Souci.tooBright", { item: activity.item.name })] : []),
     ...(outOfAmmunition(activity, attackMode) ? [loc("Souci.noAmmunition", { item: activity.item.name })] : []),
     ...(silenced ? [loc("Souci.silenced")] : []),
     ...(raging ? [loc("Souci.rage")] : []),
@@ -360,11 +368,14 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   // §62 : une créature cachée, ni vue ni perçue autrement, n'a pas de position connue — pas de cible (une zone, si).
   // §163 : Coquille antivie — pas de coup au corps à corps à travers la barrière.
   const fenced = origin ? aimed.map(t => ({ name: t.name, zone: barrierBetween(origin, t.document, activity) })).filter(t => t.zone) : [];
+  // §367 : Tempête de vengeance — ni vers une cible dans la zone (depuis la zone : `useIssues`).
+  const stormed = isRangedWeaponAttack(activity, usageConfig[MODULE_ID]?.attackMode ?? null)
+    ? aimed.map(t => ({ name: t.name, item: rangedBanAround(t.document) })).filter(t => t.item) : [];
   // §286 : Chaîne d'éclairs — les cibles secondaires à 9 m de la première.
   const chained = chainOutliers(activity, aimed.map(t => t.document));
   const lost = (origin && !activity.target?.template?.type) ? aimed.filter(t => !unseen.includes(t)
     && locationUnknown({ hidden: hiddenDcOf(t.actor) !== null, sees: canSee(origin, t.document) })) : [];
-  if ( !use.lines.length && !legend.length && !range.blocking.length && !seenBy.length && !wrongType.length && !charmed.length && !unseen.length && !lost.length && !fenced.length && !offPlane.length && !chained.length ) return true;
+  if ( !use.lines.length && !legend.length && !range.blocking.length && !seenBy.length && !wrongType.length && !charmed.length && !unseen.length && !lost.length && !fenced.length && !stormed.length && !offPlane.length && !chained.length ) return true;
 
   const lines = [
     ...use.lines,
@@ -377,6 +388,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     ...unseen.map(t => loc("Souci.notSeen", { name: t.name })),
     ...lost.map(t => loc("Souci.hiddenTarget", { name: t.name })),
     ...fenced.map(t => loc("Souci.barrier", { name: t.name, item: t.zone.item.name })),
+    ...stormed.map(t => loc("Souci.noRangedWeaponsAt", { name: t.name, item: t.item.name })),
     ...chained.map(t => loc("Souci.chainTooFar", { name: t.name, first: aimed[0].name, distance: chainLimit(chainOf(activity.item), aimed[0].document),
       units: aimed[0].document.parent.grid.units }))
   ];

@@ -9,6 +9,8 @@ import { lengthIn } from "../adapter/units.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { cellUnder } from "../adapter/movement.mjs";
 import { canSeePoint, isVisionAvailable } from "../adapter/vision.mjs";
+import { lightAt, lightOnToken } from "../adapter/illumination.mjs";
+import { LIGHT } from "../core/illumination.mjs";
 import { afterTeleportOptions } from "./teleport-options.mjs";
 import { carryPassengers, choosePassengers } from "./passengers.mjs";
 import { loc, notice, log } from "./shared.mjs";
@@ -58,6 +60,14 @@ export function onTeleport(activity, plans) {
       return false;
     }
     const center = doc.getCenterPoint ? doc.getCenterPoint(to) : { x: to.x, y: to.y };
+    // §367 : Marche dans l'ombre — « en Pénombre ou dans les Ténèbres, vers un espace … lui aussi en Pénombre ou dans les Ténèbres ».
+    const lit = tooBrightFor(activity, doc, { ...center, elevation: to.elevation ?? doc._source.elevation ?? 0 });
+    if ( lit ) {
+      ui.notifications.warn(loc(`Teleport.TropEclaire.${lit}`));
+      notice(doc, loc("Retour.TropEclaire"));
+      refusedTeleports.add(doc.uuid);
+      return false;
+    }
     // C12-b : Porte dimensionnelle — « un lieu que vous voyez, ou que vous décrivez » (`teleport.unseen`) : pas d'exigence de vue.
     const unseen = activity?.item ? contentOf(activity.item).entry?.teleport?.unseen === true : false;
     if ( !unseen && isVisionAvailable() && (canSeePoint(doc, { ...center, elevation: to.elevation ?? 0 }) === false) ) {
@@ -68,6 +78,24 @@ export function onTeleport(activity, plans) {
     }
   }
   return true;
+}
+
+/**
+ * §367 : `teleport.maxLight` — le départ (`"from"`) ou l'arrivée (`"to"`) plus éclairés que la règle ne le permet, ou null. Sans canevas
+ * ou sans lumière lisible : rien à redire.
+ * @param {Activity} activity
+ * @param {TokenDocument} doc
+ * @param {{x: number, y: number, elevation?: number}|null} [destination]
+ */
+export function tooBrightFor(activity, doc, destination=null) {
+  const rule = activity?.item ? contentOf(activity.item).entry?.teleport : null;
+  if ( !rule?.maxLight || (rule.activity && (rule.activity !== activity.id)) ) return null;
+  const limit = (rule.maxLight === "dark") ? LIGHT.DARK : LIGHT.DIM;
+  const here = lightOnToken(doc);
+  if ( here && (here.level > limit) ) return "from";
+  const there = destination ? lightAt(destination) : null;
+  if ( there && (there.level > limit) ) return "to";
+  return null;
 }
 
 /**

@@ -78,7 +78,8 @@
  *                                               moments (turnEnd par défaut ; enter : une créature arrive à portée ; turnStart : elle commence son tour à portée ;
  *                                               casterTurnStart : au début du tour du lanceur, contre UN ennemi à portée (§159) ;
  *                                               moves : l'objet arrive à portée d'elle), une fois par tour et par
- *                                               créature ; `affects: "enemy"` : seulement les ennemis du lanceur
+ *                                               créature ; `affects: "enemy"` : seulement les ennemis du lanceur ;
+ *                                               `seenBy: "caster"` : seulement une créature que le lanceur voit (§368)
  *     burst?: { activity, radius, units, from?, affects? } après le jet d'attaque, touché ou raté, le moteur joue l'activité sœur
  *                                               `activity` sur la cible et chaque créature à `radius` d'elle (§16.19 :
  *                                               l'explosion du Couteau de glace) ; `from` : après ces activités-là

@@ -71,10 +71,11 @@ export const SUMMONS = Object.freeze({
   // Invocation d'animaux (PHB 2.2.0) : une meute d'esprits de taille G, sans substance, que le lanceur peut déplacer de 9 m
   // quand il bouge à son tour ; dès qu'elle arrive à 3 m d'une créature visible, ou qu'une telle créature entre à 3 m d'elle
   // ou y termine son tour, cette créature peut devoir faire une sauvegarde de Dextérité, au plus une fois par tour (§16.22).
+  // §368 : « une créature que vous voyez » — une créature que le lanceur ne voit pas (Invisible…) est épargnée.
   "conjure-animals": {
     initiative: "none", endsSpell: true,
     pilot: { cost: "free", distance: 30, units: "ft", occupies: false },
-    pulse: { item: "pack-damage", radius: 10, units: "ft", on: ["turnEnd", "enter", "moves"], affects: "enemy" }
+    pulse: { item: "pack-damage", radius: 10, units: "ft", on: ["turnEnd", "enter", "moves"], affects: "enemy", seenBy: "caster" }
   },
   // §159 (relevé des sorts, lot 3). Appel de destrier : « partage votre initiative et agit juste après vous ». Épée de Mordenkainen :
   // « attaque à l'apparition, puis par une action Bonus, se déplace de 9 m et attaque » (« Move and Attack »). Invocation de fée :

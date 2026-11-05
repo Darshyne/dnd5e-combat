@@ -32,6 +32,7 @@ import { enqueue } from "./queue.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { lengthIn } from "../adapter/units.mjs";
+import { canSee } from "../adapter/vision.mjs";
 
 /** Une écriture à la fois par objet. */
 const queues = new Map();
@@ -246,7 +247,7 @@ async function pulseAtTurnStart(combat, prior, current) {
     const on = pulse.rule.on ?? ["turnEnd"];
     if ( on.includes("turnStart") && pulseReaches(source, pulse, started) ) await pulseOnce(source, pulse, started, "turnStart");
     if ( on.includes("casterTurnStart") && (summonItemOf(source)?.actor === started.actor) ) {
-      const near = source.parent.tokens.filter(t => pulseReaches(source, pulse, t))
+      const near = source.parent.tokens.filter(t => pulseReaches(source, pulse, t) && pulseSeen(source, pulse, t))
         .sort((a, b) => distanceBetween(source, a).value - distanceBetween(source, b).value);
       if ( near.length ) await pulseOnce(source, pulse, near[0], "casterTurnStart");
       else log(`${source.name}: nobody within reach at ${started.name}'s turn start`);
@@ -259,13 +260,30 @@ function pulseCanHit(source, pulse, token) {
   if ( (token === source) || !token.actor || token.hidden || isObjectToken(token) ) return false;
   if ( token.actor.statuses.has(CONFIG.specialStatusEffects.DEFEATED) ) return false;
   if ( pulse.rule.affects !== "enemy" ) return true;
+  return areEnemies(pulseCaster(source) ?? source, token);
+}
+
+/**
+ * Le token du lanceur d'une invocation sur sa scène, ou null. §159 : une invocation non pilotée (Chien de garde, Gardien de la foi)
+ * juge les ennemis d'après son lanceur aussi — sa propre disposition est souvent neutre.
+ */
+function pulseCaster(source) {
   const pilot = pilotOf(source);
-  // §159 : une invocation non pilotée (Chien de garde, Gardien de la foi) juge les ennemis d'après son lanceur aussi — sa propre
-  // disposition est souvent neutre.
-  const owner = pilot ? null : summonItemOf(source)?.actor;
-  const caster = pilot ? summonerToken(pilot)
-    : (owner?.getActiveTokens?.(false, true) ?? []).find(t => t.parent === source.parent) ?? null;
-  return areEnemies(caster ?? source, token);
+  if ( pilot ) return summonerToken(pilot);
+  const owner = summonItemOf(source)?.actor;
+  return (owner?.getActiveTokens?.(false, true) ?? []).find(t => t.parent === source.parent) ?? null;
+}
+
+/**
+ * §368 : `seenBy: "caster"` — « une créature que vous voyez » (Invocation d'animaux) : le lanceur doit voir la créature, par la
+ * vision du moteur (Invisible, ténèbres, brume, caché, plan Éthéré…). Sans token du lanceur sur la scène, il ne voit rien ;
+ * une vision qui ne peut pas se juger ici (canevas absent : null) ne bloque pas.
+ */
+function pulseSeen(source, pulse, token) {
+  if ( pulse.rule.seenBy !== "caster" ) return true;
+  const caster = pulseCaster(source);
+  if ( !caster ) return false;
+  return canSee(caster, token) !== false;
 }
 
 /** La créature est-elle à portée de l'objet — à une position donnée de l'un ou de l'autre ? */
@@ -283,6 +301,8 @@ function pulseOnce(source, pulse, token, moment, turn=pulseTurnKey()) {
     const memory = source.getFlag(MODULE_ID, "pulse");
     const hit = (memory?.turn === turn) ? memory.hit : [];
     if ( hit.includes(token.id) ) return;
+    // Non vue : pas de sauvegarde, et son « une fois par tour » n'est pas dépensé.
+    if ( !pulseSeen(source, pulse, token) ) return log(`${source.name}: ${token.name} not seen by the caster (${moment}), skipped`);
     await source.setFlag(MODULE_ID, "pulse", { turn, hit: [...hit, token.id] });
     log(`${source.name}: ${token.name} (${moment}, ${pulse.activity.item.name})`);
     await pulseAgainst(pulse.activity, source, token, moment);

@@ -33,7 +33,8 @@ export function validateSummon(summon, at, errors) {
       if ( (typeof u.units !== "string") || !u.units ) errors.push(`${at}.pulse.units: unit required`);
       if ( ("on" in u) && (!Array.isArray(u.on) || !u.on.length || !u.on.every(m => PULSE_MOMENTS.includes(m))) ) errors.push(`${at}.pulse.on: ${PULSE_MOMENTS.join(", ")}`);
       if ( ("affects" in u) && !["any", "enemy"].includes(u.affects) ) errors.push(`${at}.pulse.affects: any, enemy`);
-      for ( const key of Object.keys(u) ) if ( !["item", "radius", "units", "on", "affects"].includes(key) ) errors.push(`${at}.pulse.${key}: unknown key`);
+      if ( ("seenBy" in u) && (u.seenBy !== "caster") ) errors.push(`${at}.pulse.seenBy: caster`);
+      for ( const key of Object.keys(u) ) if ( !["item", "radius", "units", "on", "affects", "seenBy"].includes(key) ) errors.push(`${at}.pulse.${key}: unknown key`);
     }
   }
   if ( "pilot" in summon ) {

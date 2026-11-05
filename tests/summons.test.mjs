@@ -14,6 +14,7 @@ describe("initiative d'une créature invoquée (§16.13)", () => {
 
 import { planCommand, castCommand, currentCommand, nextPlayableTurn } from "../module/scripts/core/pilot.mjs";
 import { validateEntry } from "../module/scripts/core/content.mjs";
+import { CONTENT } from "../module/scripts/content/index.mjs";
 
 describe("objet piloté (§16.15, B19) : commandes", () => {
   const T = "c.2.0";
@@ -102,6 +103,14 @@ describe("Invocation d'animaux (§16.22) : schéma", () => {
     expect(validateEntry({ summon: { initiative: "none", pulse: { item: "x", radius: 10, units: "ft", on: ["start"], affects: "ally" } } })).toEqual([
       "summon.pulse.on: turnEnd, enter, moves, turnStart, casterTurnStart", "summon.pulse.affects: any, enemy"
     ]);
+  });
+
+  it("pulse seenBy (§368)", () => {
+    expect(validateEntry({ summon: { initiative: "none", pulse: { item: "pack-damage", radius: 10, units: "ft", seenBy: "caster" } } })).toEqual([]);
+    expect(validateEntry({ summon: { initiative: "none", pulse: { item: "x", radius: 10, units: "ft", seenBy: true } } })).toEqual([
+      "summon.pulse.seenBy: caster"
+    ]);
+    expect(CONTENT["conjure-animals"].summon.pulse.seenBy).toBe("caster");
   });
 });
 

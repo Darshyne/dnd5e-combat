@@ -7,14 +7,11 @@
 
 export const GM_ALERTS = Object.freeze({
   // Sorts.
-  "friends": { key: "Amitie" },
   "earthquake": { key: "Seisme" },
   "delayed-blast-fireball": { key: "BouleRetardement" },
   "tsunami": { key: "Tsunami" },
   "forbiddance": { key: "Interdiction" },
   "storm-of-vengeance": { key: "TempeteVengeance" },
-  "death-ward": { key: "ProtectionMort" },
-  "yolandes-regal-presence": { key: "PresenceRoyale" },
   "divine-word": { key: "ParoleDivine" },
   "compulsion": { key: "Injonction" },
   "telekinesis": { key: "Telekinesie" },
@@ -25,11 +22,7 @@ export const GM_ALERTS = Object.freeze({
   "levitate": { key: "Levitation" },
   "prismatic-spray": { key: "EmbrunsPrismatiques" },
   "geas": { key: "Quete" },
-  "crown-of-madness": { key: "CouronneDement" },
-  "eyebite": { key: "MauvaisOeil" },
   "protection-from-evil-and-good": { key: "ProtectionMalBien" },
-  "cordon-of-arrows": { key: "CordonFleches" },
-  "fear": { key: "Terreur" },
   "greater-restoration": { key: "RestaurationSup" },
   "abjure-foes": { key: "AbjurationEnnemis" },
   "conjure-elemental": { key: "InvocationElementaire" },

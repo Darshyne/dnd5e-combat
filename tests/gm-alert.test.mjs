@@ -23,3 +23,19 @@ describe("§364 : gmAlert", () => {
     for ( const k of keys ) expect(en[`DND5ECOMBAT.AlerteMJ.${k}`], k).toBeTruthy();
   });
 });
+
+describe("§366 : breaksOnOrigin et repasse des parts laissées au MJ", () => {
+  it("valide la clé", () => {
+    expect(validateEntry({ breaksOnOrigin: ["attack", "damage", "forcesSave"] })).toEqual([]);
+    expect(validateEntry({ breaksOnOrigin: ["spell"] }).length).toBeGreaterThan(0);
+    expect(validateEntry({ breaksOnOrigin: [] }).length).toBeGreaterThan(0);
+  });
+  it("Amitié, Sceptre-tentacule, Bouffon, Restauration suprême, Cordon de flèches", () => {
+    expect(CONTENT.friends.breaksOnOrigin).toEqual(["attack", "damage", "forcesSave"]);
+    expect(CONTENT["tentacle-rod"].endsWhen.apart).toEqual({ distance: 15, units: "ft" });
+    expect(CONTENT.jester.triggers[0].do).toEqual([{ type: "advantage" }]);
+    expect(CONTENT["greater-restoration"].endsCurses).toEqual(["bestow-curse", "hex"]);
+    expect(CONTENT["cordon-of-arrows"].zoneAffects).toBe("enemy");
+    for ( const id of ["friends", "fear", "crown-of-madness", "eyebite", "death-ward", "tentacle-rod", "jester"] ) expect(CONTENT[id]?.gmAlert, id).toBeUndefined();
+  });
+});

@@ -69,8 +69,8 @@ export const SAVED_EFFECTS = Object.freeze({
 /** Le sort fait cesser UN de ces états sur sa cible, au choix (Restauration partielle). */
 export const CURES = Object.freeze({
   "lesser-restoration": ["blinded", "deafened", "paralyzed", "poisoned"],
-  // §160 : Restauration suprême — « … fait cesser l'un de ces effets : un niveau d'Épuisement, Charmé, Pétrifié » (la malédiction, la
-  // réduction de caractéristique ou de PV max : au MJ).
+  // §160 : Restauration suprême — « … fait cesser l'un de ces effets : un niveau d'Épuisement, Charmé, Pétrifié » (la malédiction :
+  // content/spell-rules.mjs, §366 ; la réduction de caractéristique ou de PV max : au MJ).
   "greater-restoration": ["charmed", "petrified", "exhaustion"],
   // Protection contre le poison : « si la cible est Empoisonnée, cet état prend fin ».
   "protection-from-poison": ["poisoned"],

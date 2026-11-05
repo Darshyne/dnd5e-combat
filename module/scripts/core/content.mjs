@@ -362,6 +362,10 @@
  *                                               dévastation)
  *     breaksOn?: ("attack"|"damage"|"spell")[] les effets de l'item cessent quand leur porteur fait un jet d'attaque, inflige des
  *                                               dégâts ou lance un sort (Invisibilité, §16.47)
+ *     breaksOnOrigin?: ("attack"|"damage"|"forcesSave")[]
+ *                                               §366 : les effets de l'item cessent sur toute créature quand celui qui les a
+ *                                               posés fait un jet d'attaque, un jet de dégâts ou impose une sauvegarde par un AUTRE
+ *                                               item (Amitié) — runtime/breaks.mjs, MJ actif
  *     noReactions?: true                        le porteur d'un effet de l'item ne peut pas prendre de Réaction (Tentacules de
  *                                               Hadar, §16.47)
  *     actionOrBonus?: true                      le porteur d'un effet de l'item ne prend qu'une action OU une action Bonus à son

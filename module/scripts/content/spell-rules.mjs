@@ -150,7 +150,8 @@ export const SPELL_RULES = Object.freeze({
   "aid": { effectsFirst: true },
   // §75 : Cordon de flèches — quatre projectiles, puis le sort prend fin (content/triggers.mjs).
   // §303 : « quatre munitions », « deux de plus par niveau d'emplacement au-dessus du 2e » — 2 × le niveau de lancement.
-  "cordon-of-arrows": { zoneCharges: "2 * @item.level" },
+  // §366 : « vous pouvez désigner des créatures, que le sort ignore » — les alliés du lanceur.
+  "cordon-of-arrows": { zoneCharges: "2 * @item.level", zoneAffects: "enemy" },
   // §71 : Dague des ombres (Familier de vampire, Monster Manual 2024, `mmUmbralDagger00`) — « si la cible tombe à 0 point de vie en
   // raison de cette attaque, elle se retrouve Stabilisée mais subit l'état Empoisonné pendant 1 heure ; tant qu'elle est Empoisonnée,
   // elle est Paralysée » : l'effet « Empoisonné et Paralysé » de l'item ne passe que si la cible est à 0 PV après les dégâts, et
@@ -235,7 +236,7 @@ export const SPELL_RULES = Object.freeze({
   // §86 : Présence royale de Yolande — « Surround Self » (OJHRKWz8JvLzyl9R) n'a pas d'émanation dans la donnée : 10 ft sur soi,
   // posée d'office ; « une créature que vous voyez… vous pouvez la forcer » : les alliés épargnés. Qui y entre (ou que
   // l'émanation recouvre) ou y finit son tour : « Emanation Save » (dzeoGwKOPG7PHbyE, Sagesse, 4d6 psychiques), une fois par tour ;
-  // ratée, À terre. « Vous pouvez la pousser de 3 m » : au MJ.
+  // ratée, À terre, et repoussée de 3 m (§366).
   // §263 : « chaque créature de votre choix » dans la zone — la donnée ne le dit pas (`affects.choice` absent) : les alliés du
   // lanceur sont épargnés, comme pour les Esprits gardiens (§16.23). Audit CAT / CPR : Vague destructrice touchait aussi les alliés.
   "destructive-wave": { zoneAffects: "enemy" },
@@ -250,7 +251,8 @@ export const SPELL_RULES = Object.freeze({
     zoneAffects: "enemy",
     triggers: [
       { on: ["enter", "turnEnd"], do: [{ type: "replay", activity: "dzeoGwKOPG7PHbyE" }] },
-      { on: "failedSave", do: [{ type: "status", status: "prone" }] }
+      // §366 : « et vous pouvez la pousser jusqu'à 3 m » — poussée d'office.
+      { on: "failedSave", do: [{ type: "status", status: "prone" }, { type: "move", mode: "push", distance: 10, units: "ft" }] }
     ]
   },
   // §86 : Invocation d'êtres sylvestres — « Cast » (dnd5eactivity000, la sauvegarde de la pose) sans émanation dans la donnée :
@@ -329,6 +331,8 @@ export const SPELL_RULES = Object.freeze({
       ["k2569xtIeXKRReLU", "wis"], ["sC2IXWDs07oTt5JN", "cha"]].map(([id, a]) => [id, [{ key: `system.abilities.${a}.save.roll.mode`, type: "add", value: "-1", ifCaster: "eldritch-hex" }]]))
   },
   "remove-curse": { endsCurses: ["bestow-curse", "hex"] },
+  // §366 : Restauration suprême — « … met fin à une malédiction » (les mêmes que Délivrance des malédictions).
+  "greater-restoration": { endsCurses: ["bestow-curse", "hex"] },
   // Régénération : « la cible regagne 1 PV au début de chacun de ses tours » (l'effet « Regenerating » est vide).
   "regenerate": { triggers: [{ on: "startOfTurn", via: "effect", fromEffect: "O73gdwM6cCbr9LXn", do: [{ type: "damage", to: "bearer", formula: "1", damageType: "healing" }] }] },
   // Mot de pouvoir fortifiant : 120 PV temporaires répartis à parts égales entre les cibles (jusqu'à six).

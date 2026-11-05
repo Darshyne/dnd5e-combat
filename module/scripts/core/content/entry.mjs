@@ -132,6 +132,11 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     }
   }
   if ( ("healsDownedMax" in entry) && (entry.healsDownedMax !== true) ) errors.push(`${at}healsDownedMax: true or absent`);
+  // §366 : les effets de l'item cessent quand leur LANCEUR fait ceci (Amitié).
+  if ( "breaksOnOrigin" in entry ) {
+    const b = entry.breaksOnOrigin;
+    if ( !Array.isArray(b) || !b.length || !b.every(m => ["attack", "damage", "forcesSave"].includes(m)) ) errors.push(`${at}breaksOnOrigin: list among attack, damage, forcesSave`);
+  }
   if ( "breaksOn" in entry ) {
     const b = entry.breaksOn;
     if ( !Array.isArray(b) || !b.length || !b.every(m => BREAK_MOMENTS.includes(m)) ) errors.push(`${at}breaksOn: list among ${BREAK_MOMENTS.join(", ")}`);

@@ -37,7 +37,41 @@ async function breakEffects(actor, moments, exceptItem=null, { before=null }={})
   }
 }
 
+/**
+ * §366 : `breaksOnOrigin` — sur le MJ actif, à chaque carte d'attaque, de dégâts (pas de soins) ou d'utilisation à sauvegarde : les
+ * effets que l'auteur de la carte a posés (par un autre item) et dont l'item déclare ce moment tombent, sur toute créature de la scène.
+ */
+async function breakOnOrigin(message) {
+  let moment = null;
+  const activity = message.getAssociatedActivity?.() ?? null;
+  if ( message.type === "attack" ) moment = "attack";
+  else if ( (message.type === "damage") && (activity?.type !== "heal") ) moment = "damage";
+  else if ( (message.type === "usage") && (activity?.type === "save") ) moment = "forcesSave";
+  if ( !moment ) return;
+  const item = activity?.item ?? message.getAssociatedItem?.() ?? null;
+  const caster = message.getAssociatedActor?.() ?? item?.actor ?? null;
+  if ( !caster ) return;
+  for ( const token of canvas.scene?.tokens ?? [] ) {
+    const actor = token.actor;
+    if ( !actor ) continue;
+    const broken = actor.effects.filter(e => {
+      const source = originItemOf(e);
+      if ( !source || (source.actor?.uuid !== caster.uuid) || (item && (source.uuid === item.uuid)) ) return false;
+      return (contentOf(source).entry?.breaksOnOrigin ?? []).includes(moment);
+    });
+    if ( !broken.length ) continue;
+    await actor.deleteEmbeddedDocuments("ActiveEffect", broken.map(e => e.id));
+    for ( const e of broken ) {
+      log(`${actor.name}: ${e.name} ends (${caster.name}: ${moment})`);
+      if ( token.object ) notice(token.object, loc("Retour.FinEffet", { item: e.name }), "ended");
+    }
+  }
+}
+
 export function registerBreaks() {
+  route("createChatMessage", message => {
+    breakOnOrigin(message).catch(err => console.error(`${MODULE_ID} | effect end`, err));
+  }, { executor: true, label: "effect ending on the caster's action not removed" });
   route("dnd5e.rollAttackV2", (rolls, { subject }={}) => {
     breakEffects(subject?.actor, breakMoments({ attack: true, damage: false, spell: false })).catch(err => console.error(`${MODULE_ID} | effect end`, err));
   }, { label: "effect ending on attack roll not removed" });

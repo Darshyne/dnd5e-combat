@@ -323,9 +323,10 @@ export const ITEM_FIXES = Object.freeze({
     actionEnds: { zEQTKqd3uBj660cR: { by: "other", verb: "wake" } }
   },
   // Sceptre-tentacule : la sauvegarde d'Entravé n'inflige rien ; les 3d6 viennent au début des tours de la cible (lot O3).
-  // O3 : « 3d6 psychiques au début de chacun de ses tours », sauvegarde répétée à la fin (l'attache à 15 ft et la libération restent au MJ).
+  // O3 : « 3d6 psychiques au début de chacun de ses tours », sauvegarde répétée à la fin (l'attache à 15 ft : §366 ; lâcher la cible : retirer l'effet).
+  // §366 : « tant qu'elle reste à 4,50 m » — l'Entravée est libérée dès que le porteur et elle sont séparés de plus de 15 ft.
   "tentacle-rod": {
-    gmAlert: { key: "SceptreTentacule" },
+    endsWhen: { apart: { distance: 15, units: "ft" } },
     noDamage: ["yuASV7hKz3sa7L5P"],
     triggers: [
       { on: "startOfTurn", via: "effect", fromEffect: "JVnjmXHqpPkyKBXS", do: [{ type: "damage", to: "bearer", activity: "y9MnFdJWUat9KhbD" }] },
@@ -502,9 +503,10 @@ export const ITEM_FIXES = Object.freeze({
   // déjà dans la donnée).
   "cloak-of-elvenkind": { hardToPerceive: true },
   // O9g (§360) : Le Bouffon (Jeu des merveilles) — « Avantage aux Tests d'un d20 pendant 72 h » : l'activité « Card Effect: Advantage » ne
-  // posait rien ; un effet de 72 h lui est ajouté (tests de caractéristique, sauvegardes, compétences ; les jets d'attaque restent au MJ).
+  // posait rien ; un effet de 72 h lui est ajouté (tests de caractéristique, sauvegardes, compétences ; les jets d'attaque : §366).
   "jester": {
-    gmAlert: { key: "Bouffon", activities: ["6WJ08JWazu3OZign"] },
+    // §366 : les jets d'attaque aussi (dnd5e n'a pas de clé d'effet pour leur mode).
+    triggers: [{ on: "preAttackRoll", via: "effect", fromEffect: "dasJesterAdvant0", if: { "source.hasEffect": "jester" }, do: [{ type: "advantage" }] }],
     dataFixes: [
       { effect: "dasJesterAdvant0", create: { name: "Jester: Advantage", type: "base", transfer: false, disabled: false, duration: { seconds: 259200 },
         system: { changes: [...["str", "dex", "con", "int", "wis", "cha"].flatMap(a => [

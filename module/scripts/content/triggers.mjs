@@ -59,7 +59,7 @@ export const TRIGGERS = Object.freeze({
   "cloud-of-daggers": [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }],
   // §75 : Cordon de flèches (version simple, demandée par l'utilisateur) — la sphère de 9 m que pose l'action du sort ; une créature qui y
   // entre ou y termine son tour reçoit un projectile : la sauvegarde de Dextérité de l'activité sœur (2d4 perforants). Quatre
-  // projectiles (`zoneCharges`, content/spell-rules.mjs), puis le sort prend fin. Les créatures désignées à épargner : au MJ.
+  // projectiles (`zoneCharges`, content/spell-rules.mjs), puis le sort prend fin. Les créatures désignées : les alliés (§366).
   "cordon-of-arrows": [{ on: ["enter", "turnEnd"], do: [{ type: "replay", activity: "dnd5eactivity000" }] }],
   // §86 : Aura sacrée — « les autres créatures ont le Désavantage aux jets d'attaque contre elles » (porté par la copie de l'aura,
   // content/auras.mjs) ; « quand un Fiélon ou un Mort-vivant touche une créature affectée d'une attaque au corps à corps,

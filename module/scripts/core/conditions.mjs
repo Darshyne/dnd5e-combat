@@ -53,6 +53,9 @@ const SUBSUMED_BY_VISION = ["blinded", "invisible"];
  *        true = l'attaquant est agrippé et la cible n'est pas son agrippeur ; null = inconnu (pas de désavantage).
  * @param {boolean} [context.helped]
  *        Soutien (2024) : un allié de l'attaquant a distrait la cible — avantage.
+ * @param {string|null} [context.flankedWith]
+ *        Prise en tenaille (§369, règle optionnelle) : le nom de l'allié qui se tient de l'autre côté de la cible — avantage au
+ *        corps à corps. null : pas de tenaille (ou règle désactivée).
  * @param {boolean|null} [context.frightenedSourceSeen]
  *        Effrayé : « tant que la source de la peur est en vue ». false = aucune source connue n'est
  *        en vue, l'état ne gêne pas l'attaque ; null = source inconnue ou non jugée, l'état s'applique.
@@ -60,7 +63,7 @@ const SUBSUMED_BY_VISION = ["blinded", "invisible"];
  *        Ce que le contenu déclare (§16, B6 : Lueurs féeriques, Tactique de meute…), par nom d'item.
  * @returns {{advantage: Reason[], disadvantage: Reason[]}}
  */
-export function attackModifiers({ attacker, target, adjacent, ranged, longRange=false, closeCombat=false, vision=null, frightenedSourceSeen=null, grappledElsewhere=null, helped=false, declared=null, elusive=false, untrainedArmor=false, heavyTooWeak=false }) {
+export function attackModifiers({ attacker, target, adjacent, ranged, longRange=false, closeCombat=false, vision=null, frightenedSourceSeen=null, grappledElsewhere=null, helped=false, flankedWith=null, declared=null, elusive=false, untrainedArmor=false, heavyTooWeak=false }) {
   const advantage = (declared?.advantage ?? []).map(key => ({ who: "content", key }));
   const disadvantage = (declared?.disadvantage ?? []).map(key => ({ who: "content", key }));
   const kept = key => !vision || !SUBSUMED_BY_VISION.includes(key);
@@ -83,6 +86,8 @@ export function attackModifiers({ attacker, target, adjacent, ranged, longRange=
   }
   if ( grappledElsewhere === true ) disadvantage.push({ who: "attacker", key: "grappled" });
   if ( helped === true ) advantage.push({ who: "situation", key: "helped" });
+  // §369 : prise en tenaille (règle optionnelle du DMG 2014, réglage `flanking`) — le nom de l'allié qui prend la cible à revers.
+  if ( flankedWith && !ranged ) advantage.push({ who: "situation", key: "flanking", ally: String(flankedWith) });
   // À terre : avantage pour qui est au contact, désavantage pour tous les autres.
   if ( target.includes("prone") ) (adjacent ? advantage : disadvantage).push({ who: "target", key: adjacent ? "prone" : "proneFar" });
   if ( ranged && longRange ) disadvantage.push({ who: "situation", key: "longRange" });

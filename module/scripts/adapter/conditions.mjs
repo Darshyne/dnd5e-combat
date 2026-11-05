@@ -18,6 +18,7 @@ import { visionFacts, isVisionAvailable, canSee, tokenOnViewedScene } from "./vi
 import { originItemOf, revealedInvisible, seesInvisible, swornEnemyOf } from "./facts.mjs";
 import { grappledElsewhere } from "./grapple.mjs";
 import { helpedAgainst } from "./help.mjs";
+import { flankingAlly } from "./flanking.mjs";
 import { spellCommandOf } from "./pilot.mjs";
 import { declaredAttackModifiers } from "./triggers.mjs";
 import { isDeadActor } from "./death.mjs";
@@ -244,6 +245,8 @@ export function attackContext(origin, target, activity, attackMode, factors, { p
     grappledElsewhere: grappledElsewhere(origin, target),
     // Soutien (2024) : un allié de l'attaquant a distrait la cible (adapter/help.mjs).
     helped: helpedAgainst(origin, target),
+    // §369 : prise en tenaille (règle optionnelle, réglage `flanking`, désactivée par défaut) — le nom de l'allié de l'autre côté.
+    flankedWith: flankingAlly(origin, target, { ranged, factors, posA }),
     // Ce que le contenu déclare (§16, B6) : Lueurs féeriques, Tactique de meute, Protection contre le mal et le bien.
     declared: declaredAttackModifiers(origin, target, activity),
     // §20 : Insaisissable — aucun Avantage contre la cible.

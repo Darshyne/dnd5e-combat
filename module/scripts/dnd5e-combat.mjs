@@ -123,6 +123,7 @@ import { registerAutoTranslate } from "./runtime/auto-translate.mjs";
 import { registerDataFixes } from "./runtime/data-fixes.mjs";
 import { registerClock } from "./runtime/clock.mjs";
 import { registerCriticals } from "./runtime/criticals.mjs";
+import { registerFlanking } from "./runtime/flanking.mjs";
 import { registerFalls } from "./runtime/falls.mjs";
 import { registerKnockout } from "./runtime/knockout.mjs";
 import { registerTheater, theaterApi } from "./runtime/theater.mjs";
@@ -320,6 +321,7 @@ Hooks.once("init", () => {
   gated(registerAutoTranslate);
   gated(registerDataFixes);   // §335 : donnée premium fautive corrigée à la création (après la traduction)
   gated(registerClock);   // §251 : horloge en temps réel hors combat (coupée par défaut)
+  gated(registerFlanking);   // §369 : prise en tenaille (règle optionnelle du DMG 2014), désactivée par défaut
   gated(registerCriticals);   // §207 : options de coup critique (écart à la CA, table de critiques), désactivées par défaut   // §204 : traduction reprise à la création (objets et créatures restés dans la langue d'origine)
   gated(registerReactions);
   gated(registerPortent);   // §36 : Présage (Repos long, requête du devin)

@@ -34,7 +34,7 @@ function sceneLength(feet) {
 
 /** Une source d'avantage ou de désavantage (core/conditions.mjs), en clair. */
 export function describeReason(r) {
-  if ( r.who === "situation" ) return game.i18n.format(`DND5ECOMBAT.Raison.${r.key}`, { distance: sceneLength(5) });
+  if ( r.who === "situation" ) return game.i18n.format(`DND5ECOMBAT.Raison.${r.key}`, { distance: sceneLength(5), ally: r.ally ?? "" });
   if ( r.who === "content" ) return r.key;   // le nom de l'item qui le déclare (§16, B6)
   if ( r.key === "unseen" ) return loc(`Raison.unseen.${r.who}`);   // vision (P1) : pas un état
   return game.i18n.format(`DND5ECOMBAT.Raison.${r.who}`, { status: r.key === "proneFar" ? loc("Raison.proneFar") : statusName(r.key) });

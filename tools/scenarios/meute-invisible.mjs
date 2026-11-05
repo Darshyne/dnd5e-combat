@@ -83,8 +83,10 @@ export default {
       const logBefore = (await ctx.engineLog()).length;
       await ctx.call("move-token", { tokenId: pack.id, x: z.x + grid, y: z.y, elevation: 0 });
       await pause(5000);
-      const tick = (await ctx.messagesSince(since)).find(m => (m.type === "usage") && (m.flags?.[MODULE_ID]?.areaTick?.event === "pulse"));
-      const skipped = (await ctx.engineLog()).slice(logBefore).some(l => /not seen by the caster/.test(l));
+      // Seule la sauvegarde du Zombi compte : un autre token de l'arène (le Bandit) peut se trouver à portée de la meute.
+      const onZombi = m => [...(m.targets ?? []), ...(m.flags?.[MODULE_ID]?.resolution?.targets ?? [])].some(t => String(t.token ?? "").endsWith(zombi.id));
+      const tick = (await ctx.messagesSince(since)).find(m => (m.type === "usage") && (m.flags?.[MODULE_ID]?.areaTick?.event === "pulse") && onZombi(m));
+      const skipped = (await ctx.engineLog()).slice(logBefore).some(l => /Zombi not seen by the caster/.test(l));
       return { tick: !!tick, skipped };
     };
 

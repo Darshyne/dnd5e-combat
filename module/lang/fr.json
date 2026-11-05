@@ -1299,6 +1299,7 @@
   "DND5ECOMBAT.Diagnostic.RienATrouver": "rien à réparer",
   "DND5ECOMBAT.Diagnostic.ToutCocher": "Tout cocher",
   "DND5ECOMBAT.Diagnostic.ToutDecocher": "Tout décocher",
+  "DND5ECOMBAT.Diagnostic.ToutDeselectionner": "Tout désélectionner",
   "DND5ECOMBAT.Diagnostic.Reparer": "Réparer la sélection ({count})",
   "DND5ECOMBAT.Diagnostic.Confirmer": "Appliquer {count} réparation(s) à {docs} document(s) ?",
   "DND5ECOMBAT.Diagnostic.ConfirmerSauvegarde": "Ces documents seront d'abord copiés dans le compendium « DAS · Sauvegardes », puis vérifiés ; si la copie est incomplète, rien n'est modifié. Vous pourrez les restaurer depuis l'onglet Sauvegardes.",

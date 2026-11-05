@@ -1299,6 +1299,7 @@
   "DND5ECOMBAT.Diagnostic.RienATrouver": "nothing to repair",
   "DND5ECOMBAT.Diagnostic.ToutCocher": "Tick all",
   "DND5ECOMBAT.Diagnostic.ToutDecocher": "Untick all",
+  "DND5ECOMBAT.Diagnostic.ToutDeselectionner": "Untick everything",
   "DND5ECOMBAT.Diagnostic.Reparer": "Repair the selection ({count})",
   "DND5ECOMBAT.Diagnostic.Confirmer": "Apply {count} repair(s) to {docs} document(s)?",
   "DND5ECOMBAT.Diagnostic.ConfirmerSauvegarde": "These documents will first be copied into the \"DAS · Backups\" compendium, then checked; if the copy is incomplete, nothing is modified. You can restore them from the Backups tab.",

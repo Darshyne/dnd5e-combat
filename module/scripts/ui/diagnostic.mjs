@@ -87,6 +87,8 @@ export const DiagnosticApp = () => DiagnosticClass ??= class DiagnosticApp exten
     return `${intro}<div class="das-checks">${sections}</div>
       <footer class="das-actions">
         <button type="button" class="das-button ghost" data-action="scan"><i class="fa-solid fa-rotate"></i> ${esc(loc("Diagnostic.Reanalyser"))}</button>
+        <button type="button" class="das-button ghost" data-action="uncheckAll" ${count ? "" : "disabled"}>
+          <i class="fa-regular fa-square"></i> ${esc(loc("Diagnostic.ToutDeselectionner"))}</button>
         <button type="button" class="das-button" data-action="repair" ${count ? "" : "disabled"}>
           <i class="fa-solid fa-screwdriver-wrench"></i> ${esc(loc("Diagnostic.Reparer", { count }))}</button>
       </footer>`;
@@ -149,7 +151,11 @@ export const DiagnosticApp = () => DiagnosticClass ??= class DiagnosticApp exten
       const count = this.#selected().length;
       const repair = el.querySelector("[data-action=repair]");
       if ( repair ) { repair.disabled = !count; repair.lastChild.textContent = ` ${loc("Diagnostic.Reparer", { count })}`; }
+      const uncheck = el.querySelector("[data-action=uncheckAll]");
+      if ( uncheck ) uncheck.disabled = !count;
     }));
+    // Tout désélectionner, toutes vérifications confondues (les boutons par section restent pour une seule vérification).
+    el.querySelector("[data-action=uncheckAll]")?.addEventListener("click", () => { this.#checked.clear(); this.render(); });
     el.querySelectorAll("[data-option]").forEach(box => box.addEventListener("change", () => {
       const [checkId, optionId] = box.dataset.option.split(".");
       (this.#options[checkId] ??= {})[optionId] = box.checked;

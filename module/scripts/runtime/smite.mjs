@@ -206,14 +206,11 @@ async function applyRider(smite, item, resolution) {
   const target = fromUuidSync(smite.target, { strict: false });
   const hit = (resolution.targets ?? []).some(t => (t.token === smite.target) && (t.hit === true));
   if ( !target?.actor || !hit || ((target.actor.system.attributes?.hp?.value ?? 0) <= 0) ) return;
+  // §372 : posé comme l'effet d'un châtiment (`placeItemEffect` : origine et `_stats.duplicateSource`) — une règle qui vise CET effet de
+  // l'item (`maxNextHit` par id : Mise en danger) le reconnaît.
   if ( smite.effect ) {
-    const source = item.effects.get(smite.effect);
-    if ( source ) {
-      const data = foundry.utils.mergeObject(source.toObject(), { origin: item.uuid, transfer: false, disabled: false }, { inplace: false });
-      delete data._id;
-      await target.actor.createEmbeddedDocuments("ActiveEffect", [data]);
-      log(`${smite.name}: "${source.name}" placed on ${target.name}`);
-    }
+    const placed = await placeItemEffect(item, smite.effect, target.actor);
+    if ( placed ) log(`${smite.name}: "${placed.name}" placed on ${target.name}`);
   }
   if ( smite.status ) {
     await target.actor.toggleStatusEffect(smite.status, { active: true });

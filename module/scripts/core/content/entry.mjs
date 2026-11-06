@@ -449,7 +449,8 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       errors.push(`${at}maxDamage: { activity, weapons?: [${WEAPON_KINDS.join("|")}], refundOnHit?: true }`);
     }
   }
-  if ( ("maxNextHit" in entry) && (entry.maxNextHit !== true) ) errors.push(`${at}maxNextHit: true or absent`);
+  // §372 : un id d'effet — seul le porteur de CET effet de l'item (Mise en danger, pas l'effet de Provocation du même item).
+  if ( ("maxNextHit" in entry) && (entry.maxNextHit !== true) && !isId(entry.maxNextHit) ) errors.push(`${at}maxNextHit: true, an effect id, or absent`);
   // §281 : l'empoignade de l'auteur — plus grand pour Agripper et Pousser, traîner sans surcoût, Désavantage contre sa prise, abri.
   if ( "grappleSize" in entry ) {
     const g = entry.grappleSize;

@@ -653,8 +653,8 @@
  *                                               ce tour-ci avec une arme de ces genres (`weapons` : "unarmed", "simpleM", "improv"… —
  *                                               WEAPON_KINDS) ; touchée, `refundOnHit` rend les utilisations que l'activité a coûtées ;
  *                                               ratée, la promesse est perdue (runtime/maneuver-dice.mjs)
- *     maxNextHit?: true                         §279 : le porteur d'un effet de l'item subit le maximum des dés de la prochaine attaque qui
- *                                               le touche, puis l'effet cesse
+ *     maxNextHit?: true | <id d'effet>          §279 : le porteur d'un effet de l'item subit le maximum des dés de la prochaine attaque qui
+ *                                               le touche, puis l'effet cesse ; §372 : un id — seulement le porteur de cet effet
  *     grappleSize?: { bonus?, dragFree? }       §281 : l'auteur compte comme `bonus` tailles de plus pour Agripper et Pousser ; il traîne
  *                                               sans surcoût une victime d'au plus `dragFree` tailles de plus que lui (Poids lourd : 1 et 0)
  *     inescapable?: true                        §281 : les sauvegardes contre sa Lutte ou sa Bousculade, et les tests pour échapper à sa
@@ -733,7 +733,7 @@
  *                                               siens, les utilisations des items `restores` (identifiants) rendues
  *     replacesAttack?: true | string[]          l'activité remplace une attaque de l'action Attaquer (Souffle, §31) ; une liste : ces
  *                                               activités seulement (§188, Huile : le lancer, pas l'étalage au sol)
- *     hitRider?: { damage?, effect?, status?, sizeAtMost?, slot?, weapon?, oncePerTurn?, save?, item?, whileActive? }
+ *     hitRider?: { damage?, effect?, status?, sizeAtMost?, slot?, weapon?, oncePerTurn?, save?, item?, whileActive? } | [...]
  *                                               faveur proposée au jet de dégâts d'une attaque qui touche, contre une
  *                                               utilisation de l'item (Ascendance gigante, §31) : les dés de l'activité
  *                                               `damage`, puis l'effet `effect` de l'item ou l'état `status` posés sur la
@@ -751,6 +751,12 @@
  *                                               l'identifiant de l'item dont une utilisation paie la faveur (les manœuvres : les dés
  *                                               de `combat-superiority`) ; `weaponDamage` — les dés ont le type de dégâts de l'arme ;
  *                                               une faveur à `sizeAtMost` ne joue sa sauvegarde que contre une cible assez petite
+ *                                               §372 : une liste d'options exclusives du même item (au moins deux, chacune avec
+ *                                               `name`, l'activité qui la nomme), qui partagent sa marque « une fois par tour » ;
+ *                                               `formula` — des dés propres (« 1d12 ») ; `weapons` — seulement une attaque de ces
+ *                                               genres d'arme (`WEAPON_KINDS`) ; `perTurn: { count, while }` — la limite par
+ *                                               tour passe à `count` tant qu'un effet de l'item `while` est porté (avec
+ *                                               `oncePerTurn`)
  *     cellWall?: true                           §172 : mur d'une case d'épaisseur (Mur d'épines, Barrière de lames) — posé sur une
  *                                               rangée de cases (centres, sans diagonale, bouts prolongés d'une demi-case) ; son
  *                                               anneau, tiré d'un disque, est une bande à l'intérieur du cercle

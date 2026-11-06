@@ -10,7 +10,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
 import { combatantFor, readBudget } from "./turn.mjs";
-import { creatureTypeOf, originItemOf, carriesEffectFrom } from "./facts.mjs";
+import { creatureTypeOf, originItemOf, carriesEffectFrom, weaponKind } from "./facts.mjs";
 import { timedWait } from "./dialogs.mjs";
 import { isSpellCast } from "./scrolls.mjs";
 import { spendItemUses } from "./uses.mjs";
@@ -90,6 +90,23 @@ function turnKey(actor) {
 }
 
 /**
+ * §372 : combien de fois une faveur « une fois par tour » a servi ce tour-ci — la marque vaut le tour (une fois) ou « tour#n ».
+ * Les options d'une même liste partagent la marque de leur item.
+ */
+function usedThisTurn(actor, key, turn) {
+  const mark = String(actor?.getFlag?.(MODULE_ID, `oncePerTurn.${key}`) ?? "");
+  if ( !turn || !mark ) return 0;
+  if ( mark === turn ) return 1;
+  const [at, n] = mark.split("#");
+  return (at === turn) ? (Number(n) || 1) : 0;
+}
+
+/** §372 : la limite par tour d'une faveur — relevée (`perTurn.count`) tant qu'un effet de l'item `perTurn.while` est porté. */
+function perTurnLimit(actor, rule) {
+  return (rule.perTurn && carriesEffectFrom(actor, rule.perTurn.while)) ? rule.perTurn.count : 1;
+}
+
+/**
  * L'arme du coup est-elle enchantée par l'item `id` (arme de pacte : « pact-of-the-blade ») ? Si aucune arme de l'acteur ne l'est
  * (pacte jamais posé sur cette fiche, arme liée à la main du temps de Midi), toute arme de corps à corps compte.
  */
@@ -111,53 +128,60 @@ export function riderOptions(actor, target, activity=null, attackMode=null) {
   const turn = turnKey(actor);
   const out = [];
   for ( const item of actor?.items ?? [] ) {
-    const rule = contentOf(item).entry?.hitRider;
-    if ( !rule ) continue;
-    let left;
-    let level = null;
-    // §87 : la faveur se paie avec une utilisation d'un AUTRE item (les manœuvres : les dés de Supériorité martiale).
-    const payer = rule.pays ? (actor.items.find(i => identifierOf(i).id === rule.pays) ?? null) : null;
-    if ( rule.pays && !payer ) continue;
-    // §298 : l'activité de dégâts manque sur cet item (le « psionic-power » de l'Âme acérée porte le même identifiant que celui du
-    // Guerrier psi, sans Frappe psionique) : rien à proposer.
-    if ( rule.damage && !item.system.activities?.get(rule.damage) ) continue;
-    if ( payer ) {
-      const uses = payer.system.uses ?? {};
-      left = Number.isFinite(Number(uses.value)) ? Number(uses.value) : (Number(uses.max) || 0) - (Number(uses.spent) || 0);
-    } else if ( rule.slot === "pact" ) {
-      const pact = actor.system?.spells?.pact ?? {};
-      left = Number(pact.value) || 0;
-      level = Number(pact.level) || 0;
-    } else if ( !(item.system.uses?.max ?? "") ) left = Infinity;   // §78 : sans maximum, sans compter (Piqué)
-    else {
-      const uses = item.system.uses ?? {};
-      left = Number.isFinite(Number(uses.value)) ? Number(uses.value) : (Number(uses.max) || 0) - (Number(uses.spent) || 0);
+    const declared = contentOf(item).entry?.hitRider;
+    if ( !declared ) continue;
+    // §372 : une liste — des options exclusives du même item (École des coups durs : 1d12, Mise en danger ou Provocation).
+    for ( const rule of [declared].flat() ) {
+      let left;
+      let level = null;
+      // §87 : la faveur se paie avec une utilisation d'un AUTRE item (les manœuvres : les dés de Supériorité martiale).
+      const payer = rule.pays ? (actor.items.find(i => identifierOf(i).id === rule.pays) ?? null) : null;
+      if ( rule.pays && !payer ) continue;
+      // §298 : l'activité de dégâts manque sur cet item (le « psionic-power » de l'Âme acérée porte le même identifiant que celui du
+      // Guerrier psi, sans Frappe psionique) : rien à proposer.
+      if ( rule.damage && !item.system.activities?.get(rule.damage) ) continue;
+      if ( payer ) {
+        const uses = payer.system.uses ?? {};
+        left = Number.isFinite(Number(uses.value)) ? Number(uses.value) : (Number(uses.max) || 0) - (Number(uses.spent) || 0);
+      } else if ( rule.slot === "pact" ) {
+        const pact = actor.system?.spells?.pact ?? {};
+        left = Number(pact.value) || 0;
+        level = Number(pact.level) || 0;
+      } else if ( !(item.system.uses?.max ?? "") ) left = Infinity;   // §78 : sans maximum, sans compter (Piqué)
+      else {
+        const uses = item.system.uses ?? {};
+        left = Number.isFinite(Number(uses.value)) ? Number(uses.value) : (Number(uses.max) || 0) - (Number(uses.spent) || 0);
+      }
+      if ( !(left > 0) ) continue;
+      // §95 : seulement tant qu'un effet de l'item est sur le porteur (Avatar terrifiant : sous la Forme d'effroi).
+      if ( rule.whileActive && !carriesEffectFrom(actor, identifierOf(item).id) ) continue;
+      if ( rule.weapon && !(meleeWeaponHit(activity, attackMode) && wieldsBound(activity, actor, rule.weapon)) ) continue;
+      // §78 : seulement avec l'arme de cet identifiant (Piqué : l'épée courte).
+      if ( rule.item && (identifierOf(activity?.item ?? {}).id !== rule.item) ) continue;
+      // §129 : seulement une attaque à mains nues (Bagarreur de tavernes : l'Attaque à mains nues, ou l'attaque améliorée du don).
+      if ( rule.unarmed && !unarmedAttack(activity) ) continue;
+      // §132 : un coup au corps à corps (arme ou mains nues), un bouclier au bras, des dégâts de ce type (Cogneur, Trancheur, Chargeur,
+      // Maître des boucliers).
+      if ( rule.melee && !meleeWeaponHit(activity, attackMode) ) continue;
+      if ( rule.shield && !wearsShield(actor) ) continue;
+      if ( rule.damageType && !attackDamageTypes(activity).includes(rule.damageType) ) continue;
+      // §372 : seulement une attaque de ces genres d'arme (« unarmed », types d'arme de dnd5e).
+      if ( rule.weapons && !rule.weapons.includes(weaponKind(activity)) ) continue;
+      const key = identifierOf(item).id ?? item.id;
+      if ( rule.oncePerTurn && turn && (usedThisTurn(actor, key, turn) >= perTurnLimit(actor, rule)) ) continue;
+      const size = target?.actor?.system?.traits?.size;
+      // §132 : `sizeAbove` — la cible n'a pas plus de N tailles de plus que l'auteur (Cogneur : « pas plus d'une taille au-dessus »).
+      const own = actor.system?.traits?.size;
+      const fits = (!rule.sizeAtMost || !size || (sizes.indexOf(size) <= sizes.indexOf(rule.sizeAtMost)))
+        && (!rule.sizeAbove || !size || !own || (sizes.indexOf(size) <= sizes.indexOf(own) + rule.sizeAbove));
+      if ( !fits && !rule.damage && !rule.effect ) continue;
+      const unlimited = left === Infinity;
+      // §372 : le nom d'une option de liste, celui de son activité (« School of Hard Knocks: Endanger »).
+      const name = rule.name ? (item.system.activities?.get(rule.name)?.name || item.name) : null;
+      const label = (rule.slot === "pact") ? t("FaveurPacte", { item: item.name, level, n: left })
+        : (name ?? (unlimited ? item.name : t("Faveur", { item: item.name, n: left })));
+      out.push({ item, rule, rider: true, free: false, unlimited, level, fits, payer, once: rule.oncePerTurn ? key : null, label, name });
     }
-    if ( !(left > 0) ) continue;
-    // §95 : seulement tant qu'un effet de l'item est sur le porteur (Avatar terrifiant : sous la Forme d'effroi).
-    if ( rule.whileActive && !carriesEffectFrom(actor, identifierOf(item).id) ) continue;
-    if ( rule.weapon && !(meleeWeaponHit(activity, attackMode) && wieldsBound(activity, actor, rule.weapon)) ) continue;
-    // §78 : seulement avec l'arme de cet identifiant (Piqué : l'épée courte).
-    if ( rule.item && (identifierOf(activity?.item ?? {}).id !== rule.item) ) continue;
-    // §129 : seulement une attaque à mains nues (Bagarreur de tavernes : l'Attaque à mains nues, ou l'attaque améliorée du don).
-    if ( rule.unarmed && !unarmedAttack(activity) ) continue;
-    // §132 : un coup au corps à corps (arme ou mains nues), un bouclier au bras, des dégâts de ce type (Cogneur, Trancheur, Chargeur,
-    // Maître des boucliers).
-    if ( rule.melee && !meleeWeaponHit(activity, attackMode) ) continue;
-    if ( rule.shield && !wearsShield(actor) ) continue;
-    if ( rule.damageType && !attackDamageTypes(activity).includes(rule.damageType) ) continue;
-    const key = identifierOf(item).id ?? item.id;
-    if ( rule.oncePerTurn && turn && (actor.getFlag(MODULE_ID, `oncePerTurn.${key}`) === turn) ) continue;
-    const size = target?.actor?.system?.traits?.size;
-    // §132 : `sizeAbove` — la cible n'a pas plus de N tailles de plus que l'auteur (Cogneur : « pas plus d'une taille au-dessus »).
-    const own = actor.system?.traits?.size;
-    const fits = (!rule.sizeAtMost || !size || (sizes.indexOf(size) <= sizes.indexOf(rule.sizeAtMost)))
-      && (!rule.sizeAbove || !size || !own || (sizes.indexOf(size) <= sizes.indexOf(own) + rule.sizeAbove));
-    if ( !fits && !rule.damage && !rule.effect ) continue;
-    const unlimited = left === Infinity;
-    const label = (rule.slot === "pact") ? t("FaveurPacte", { item: item.name, level, n: left })
-      : (unlimited ? item.name : t("Faveur", { item: item.name, n: left }));
-    out.push({ item, rule, rider: true, free: false, unlimited, level, fits, payer, once: rule.oncePerTurn ? key : null, label });
   }
   return out;
 }
@@ -187,6 +211,8 @@ function unarmedAttack(activity) {
 export function smiteDamage(option, target) {
   const { item, rule, level } = option;
   if ( option.rider ) {
+    // §372 : des dés propres à l'option (École des coups durs : 1d12), lus avec les données de l'acteur.
+    if ( rule.formula ) return { formula: Roll.replaceFormulaData(rule.formula, item.actor?.getRollData() ?? {}, { missing: "0" }), type: null };
     // Une faveur sans dégâts (Renversement des coteaux) : rien à lancer, mais elle vaut.
     const part = rule.damage ? item.system.activities?.get(rule.damage)?.damage?.parts?.[0] : null;
     const type = Array.from(part?.types ?? [])[0] ?? null;
@@ -213,7 +239,8 @@ export function smiteDamage(option, target) {
 export async function spendSmite(actor, option) {
   if ( option.once ) {
     const turn = turnKey(actor);
-    if ( turn ) await actor.setFlag(MODULE_ID, `oncePerTurn.${option.once}`, turn);
+    const used = usedThisTurn(actor, option.once, turn);
+    if ( turn ) await actor.setFlag(MODULE_ID, `oncePerTurn.${option.once}`, used ? `${turn}#${used + 1}` : turn);
   }
   if ( option.rider && (option.rule.slot === "pact") ) {
     const value = Number(actor.system.spells?.pact?.value) || 0;
@@ -269,14 +296,16 @@ export async function askSmite(actor, target, options) {
     const group = String(first ?? "").startsWith("group") ? groups[Number(first.replace("group", ""))] : null;
     if ( !group ) return null;
     if ( group.picks.length === 1 ) return group.picks[0].o;
-    const levels = group.picks.map(({ i, o }) => `<button type="button" class="level${o.free ? " free" : ""}" data-action="smite${i}"
-      data-tooltip="${esc(o.label)}">${esc(o.level ? String(o.level) : t("PastilleUtiliser"))}</button>`).join("");
+    // §372 : les options d'une liste se montrent par leur nom.
+    const named = group.picks.every(({ o }) => o.name);
+    const levels = group.picks.map(({ i, o }) => `<button type="button" class="level${o.free ? " free" : ""}${o.name ? " named" : ""}" data-action="smite${i}"
+      data-tooltip="${esc(o.label)}">${esc(o.name ?? (o.level ? String(o.level) : t("PastilleUtiliser")))}</button>`).join("");
     const second = await timedWait({
       window: { title }, classes: ["dnd5e-combat-smite", "step-level"], position: { width: 360 },
       content: `<div class="chosen"><img src="${esc(group.item.img ?? "")}" alt=""><span class="name">${esc(group.item.name)}</span></div>
-        <p>${t("QuestionNiveau")}</p><div class="levels">${levels}</div>`,
+        <p>${t(named ? "QuestionOption" : "QuestionNiveau")}</p><div class="levels">${levels}</div>`,
       buttons: [...group.picks.map(({ i, o }) => ({ action: `smite${i}`, label: o.label })),
-        { action: "back", label: t("AutreSort"), icon: "fa-solid fa-arrow-left" }, none]
+        { action: "back", label: t(named ? "AutreFaveur" : "AutreSort"), icon: "fa-solid fa-arrow-left" }, none]
     }, { fallback: "none" });
     if ( second === "back" ) continue;
     const i = Number(String(second ?? "").replace("smite", ""));

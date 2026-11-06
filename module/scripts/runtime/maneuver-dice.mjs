@@ -102,7 +102,9 @@ function maxPromiseFits(promise, activity) {
 function maxNextHitEffects(actor) {
   return (actor?.appliedEffects ?? []).filter(e => {
     const item = originItemOf(e);
-    return !!item && (contentOf(item).entry?.maxNextHit === true);
+    const rule = item ? contentOf(item).entry?.maxNextHit : null;
+    // §372 : un id d'effet — seulement la copie de CET effet de l'item (`_stats.duplicateSource`, posée par placeItemEffect).
+    return (rule === true) || (!!rule && [e._stats?.duplicateSource, e._stats?.compendiumSource].some(u => String(u ?? "").endsWith(`.ActiveEffect.${rule}`)));
   });
 }
 

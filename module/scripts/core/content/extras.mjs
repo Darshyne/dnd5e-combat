@@ -3,7 +3,7 @@
  */
 
 import { CREATURE_TYPES } from "../eligibility.mjs";
-import { ACTION_END_BY, ACTION_END_ROLLS, ACTION_END_STATUSES, ACTION_END_VERBS, EFFECT_ENDS, METAMAGIC_KINDS, ROLL_BONUS_ON, SIZES } from "./enums.mjs";
+import { ACTION_END_BY, ACTION_END_ROLLS, ACTION_END_STATUSES, ACTION_END_VERBS, EFFECT_ENDS, METAMAGIC_KINDS, ROLL_BONUS_ON, SIZES, WEAPON_KINDS } from "./enums.mjs";
 import { isId, isObject } from "./shared.mjs";
 /**
  * Les clés validées hors de `validateEntry` : d'abord celles du Roublard (§20 : parts de plus de l'Attaque sournoise, Frappes
@@ -284,25 +284,10 @@ export function validateExtras(entry, at, errors) {
     && Object.keys(entry.transpose).every(k => k === "summon")) ) errors.push(`${at}transpose: { summon } (identifier of the summoning item)`);
   if ( ("portent" in entry) && !(isObject(entry.portent) && Number.isInteger(entry.portent.dice) && (entry.portent.dice > 0)
     && Object.keys(entry.portent).every(k => k === "dice")) ) errors.push(`${at}portent: { dice } (positive integer)`);
-  if ( ("hitRider" in entry) && !(isObject(entry.hitRider) && Object.keys(entry.hitRider).length
-    && Object.keys(entry.hitRider).every(k => ["damage", "effect", "status", "sizeAtMost", "slot", "weapon", "oncePerTurn", "save", "item", "pays", "weaponDamage", "whileActive", "push", "unarmed", "melee", "shield", "damageType", "sizeAbove"].includes(k))
-    && ["melee", "shield"].every(k => !(k in entry.hitRider) || (entry.hitRider[k] === true))
-    && (!("damageType" in entry.hitRider) || ((typeof entry.hitRider.damageType === "string") && !!entry.hitRider.damageType))
-    && (!("sizeAbove" in entry.hitRider) || (Number.isInteger(entry.hitRider.sizeAbove) && (entry.hitRider.sizeAbove >= 0)))
-    && (!("unarmed" in entry.hitRider) || (entry.hitRider.unarmed === true))
-    && (!("push" in entry.hitRider) || (isObject(entry.hitRider.push) && Number.isFinite(entry.hitRider.push.distance) && (entry.hitRider.push.distance > 0)
-      && (typeof entry.hitRider.push.units === "string") && !!entry.hitRider.push.units && Object.keys(entry.hitRider.push).every(k => ["distance", "units"].includes(k))))
-    && (!("whileActive" in entry.hitRider) || (entry.hitRider.whileActive === true))
-    && (!("pays" in entry.hitRider) || ((typeof entry.hitRider.pays === "string") && !!entry.hitRider.pays && !("slot" in entry.hitRider)))
-    && (!("weaponDamage" in entry.hitRider) || (entry.hitRider.weaponDamage === true))
-    && (!("slot" in entry.hitRider) || (entry.hitRider.slot === "pact"))
-    && (!("weapon" in entry.hitRider) || (typeof entry.hitRider.weapon === "string"))
-    && (!("oncePerTurn" in entry.hitRider) || (entry.hitRider.oncePerTurn === true))
-    && ["damage", "effect", "save"].every(k => !(k in entry.hitRider) || isId(entry.hitRider[k]))
-    && (!("item" in entry.hitRider) || (typeof entry.hitRider.item === "string"))
-    && (!("status" in entry.hitRider) || (typeof entry.hitRider.status === "string"))
-    && (!("sizeAtMost" in entry.hitRider) || SIZES.includes(entry.hitRider.sizeAtMost))) ) {
-    errors.push(`${at}hitRider: { damage?, effect?, status?, sizeAtMost?, slot?: "pact", weapon?, oncePerTurn?: true, save?, item?, pays?, weaponDamage?: true, push?: { distance, units }, unarmed?: true, melee?: true, shield?: true, damageType?, sizeAbove? }`);
+  if ( ("hitRider" in entry) && !(Array.isArray(entry.hitRider)
+    ? (entry.hitRider.length > 1) && entry.hitRider.every(r => validRider(r) && isId(r.name))
+    : validRider(entry.hitRider)) ) {
+    errors.push(`${at}hitRider: { damage?, effect?, status?, sizeAtMost?, slot?: "pact", weapon?, oncePerTurn?: true, save?, item?, pays?, weaponDamage?: true, push?: { distance, units }, unarmed?: true, melee?: true, shield?: true, damageType?, sizeAbove?, formula?, weapons?: [weapon kinds], perTurn?: { count, while } }, or a list of at least two such options, each with name (activity id)`);
   }
   if ( ("flurry" in entry) && !(isObject(entry.flurry) && isId(entry.flurry.activity) && Number.isInteger(entry.flurry.strikes) && (entry.flurry.strikes > 0)
     && (!("weapons" in entry.flurry) || (typeof entry.flurry.weapons === "boolean"))
@@ -325,4 +310,33 @@ export function validateExtras(entry, at, errors) {
   if ( ("cunningStrikeMax" in entry) && !(Number.isInteger(entry.cunningStrikeMax) && (entry.cunningStrikeMax >= 1)) ) {
     errors.push(`${at}cunningStrikeMax: integer ≥ 1`);
   }
+}
+
+/** Une faveur au toucher (`hitRider`), seule ou dans une liste (§372). */
+function validRider(r) {
+  return isObject(r) && Object.keys(r).length
+    && Object.keys(r).every(k => ["damage", "effect", "status", "sizeAtMost", "slot", "weapon", "oncePerTurn", "save", "item", "pays", "weaponDamage", "whileActive", "push", "unarmed", "melee", "shield", "damageType", "sizeAbove", "name", "formula", "weapons", "perTurn"].includes(k))
+    && ["melee", "shield"].every(k => !(k in r) || (r[k] === true))
+    && (!("damageType" in r) || ((typeof r.damageType === "string") && !!r.damageType))
+    && (!("sizeAbove" in r) || (Number.isInteger(r.sizeAbove) && (r.sizeAbove >= 0)))
+    && (!("unarmed" in r) || (r.unarmed === true))
+    && (!("push" in r) || (isObject(r.push) && Number.isFinite(r.push.distance) && (r.push.distance > 0)
+      && (typeof r.push.units === "string") && !!r.push.units && Object.keys(r.push).every(k => ["distance", "units"].includes(k))))
+    && (!("whileActive" in r) || (r.whileActive === true))
+    && (!("pays" in r) || ((typeof r.pays === "string") && !!r.pays && !("slot" in r)))
+    && (!("weaponDamage" in r) || (r.weaponDamage === true))
+    && (!("slot" in r) || (r.slot === "pact"))
+    && (!("weapon" in r) || (typeof r.weapon === "string"))
+    && (!("oncePerTurn" in r) || (r.oncePerTurn === true))
+    && ["damage", "effect", "save"].every(k => !(k in r) || isId(r[k]))
+    && (!("item" in r) || (typeof r.item === "string"))
+    && (!("status" in r) || (typeof r.status === "string"))
+    && (!("sizeAtMost" in r) || SIZES.includes(r.sizeAtMost))
+    // §372 : une option parmi plusieurs (liste) — son nom (une activité de l'item), ses dés propres, les genres d'arme, la limite par tour
+    // relevée tant qu'un effet d'un autre item est porté.
+    && (!("name" in r) || isId(r.name))
+    && (!("formula" in r) || ((typeof r.formula === "string") && !!r.formula.trim()))
+    && (!("weapons" in r) || (Array.isArray(r.weapons) && r.weapons.length && r.weapons.every(k => WEAPON_KINDS.includes(k))))
+    && (!("perTurn" in r) || (isObject(r.perTurn) && Number.isInteger(r.perTurn.count) && (r.perTurn.count > 1) && (typeof r.perTurn.while === "string")
+      && !!r.perTurn.while && Object.keys(r.perTurn).every(k => ["count", "while"].includes(k)) && (r.oncePerTurn === true)));
 }

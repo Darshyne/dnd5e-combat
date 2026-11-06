@@ -312,18 +312,24 @@ export function knownRepos() {
 
 /** Les rôles des utilisateurs, en anglais (la langue des issues) : « GM », « Player 1 »… */
 export function roles(labels={}) {
-  const users = Array.from(globalThis.game?.users ?? [], u => ({ id: u.id, name: u.name, isGM: u.isGM }));
+  const users = Array.from(globalThis.game?.users ?? [], u => ({ id: u.id, name: u.name, isGM: u.isGM, active: !!u.active }));
   return roleLabels(users, labels);
 }
 
-/** Les réglages simples des modules de la suite : booléens, nombres, et chaînes à choix (jamais du texte libre ni un objet). */
+/**
+ * Les réglages simples des modules de la suite qui diffèrent de leur valeur par défaut : booléens, nombres, et chaînes à choix (jamais
+ * du texte libre ni un objet). Ceux restés par défaut ne disent rien de la table et noyaient le rapport (vu sur un vrai rapport :
+ * 190 lignes).
+ */
 function suiteSettings() {
   const values = {};
   for ( const [id, s] of game.settings.settings ) {
     if ( !isSuitePackage(s.namespace) ) continue;
     const type = s.type?.name ?? typeof s.type;
     if ( !["Boolean", "Number", "String"].includes(type) || ((type === "String") && !s.choices) ) continue;
-    try { values[id] = game.settings.get(s.namespace, s.key); } catch { /* réglage illisible */ }
+    let value;
+    try { value = game.settings.get(s.namespace, s.key); } catch { continue; }
+    if ( value !== s.default ) values[id] = value;
   }
   return safeSettings(values);
 }

@@ -197,8 +197,9 @@ describe("rapport du runtime (§380)", () => {
     const settings = new Map([["dnd5e-combat.level", { namespace: "dnd5e-combat", key: "level", type: String, choices: { full: "", assisted: "" } }],
       ["dnd5e-combat.critTable", { namespace: "dnd5e-combat", key: "critTable", type: String }],
       ["dnd5e-combat.cover", { namespace: "dnd5e-combat", key: "cover", type: Boolean }],
+      ["dnd5e-combat.vision", { namespace: "dnd5e-combat", key: "vision", type: Boolean, default: true }],
       ["third-mod.secret", { namespace: "third-mod", key: "secret", type: Boolean }]]);
-    const values = { level: "full", critTable: "Table de Zoé", cover: true, secret: true };
+    const values = { level: "full", critTable: "Table de Zoé", cover: true, secret: true, vision: true };
     Object.assign(globalThis.game, {
       version: "14.369", system: { id: "dnd5e", version: "6.0.6" }, i18n: { lang: "fr" }, world: { id: "dandd", title: "Curse of Strahd" },
       user: users[0], users, actors: [{ name: "Ireena Kolyana" }], items: [],

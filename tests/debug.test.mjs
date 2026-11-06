@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   stackFrames, packagesOfStack, attribute, formatArgs, errorIn, signature, createRing, createErrorLog, roleLabels,
   createScrubber, scrubDeep, safeSettings, buildReport, reportMarkdown, reportJson, githubRepo, pickRepo, truncateForUrl,
-  issueUrl, MAX_FRAMES, MAX_MESSAGE
+  issueUrl, MAX_FRAMES, MAX_MESSAGE, formatAgo, errorTitle
 } from "../module/scripts/core/debug.mjs";
 
 const CHROME = `TypeError: Cannot read properties of undefined (reading 'x')
@@ -225,5 +225,38 @@ describe("GitHub (§380)", () => {
     expect(url.length).toBeLessThanOrEqual(7000);
     expect(decodeURIComponent(url.split("&body=")[1])).toMatch(/Attach\.\n$/);
     expect(issueUrl({ repo: null, body: "x" })).toBeNull();
+  });
+});
+
+describe("lisibilité du rapport (§380, après un vrai rapport)", () => {
+  it("durées en secondes, minutes ou heures", () => {
+    expect([formatAgo(4.4), formatAgo(59), formatAgo(2867.8), formatAgo(7500), formatAgo(NaN)]).toEqual(["4 s", "59 s", "47 min", "2 h 05", "?"]);
+  });
+
+  it("le titre : la première ligne, sans « Error: », coupée à un mot", () => {
+    const deprec = "Error: foundry.utils.objectsEqual has been deprecated and renamed to foundry.utils.equals, which handles equality testing for more than just objects.\nDeprecated since Version 14";
+    const t = errorTitle(deprec);
+    expect(t.title.startsWith("foundry.utils.objectsEqual has been deprecated")).toBe(true);
+    expect(t.title.length).toBeLessThanOrEqual(120);
+    expect(t.title.endsWith("…")).toBe(true);
+    expect(t.title).not.toMatch(/\s…$/);
+    expect(t.whole).toBe(false);
+    expect(errorTitle("TypeError: x is undefined")).toEqual({ title: "TypeError: x is undefined", whole: true });
+  });
+
+  it("un seul MJ connecté s'appelle « GM », même avec un autre compte MJ hors ligne", () => {
+    const r = roleLabels([{ id: "a", isGM: true, active: true }, { id: "b", isGM: true, active: false }, { id: "c", isGM: false, active: true }]);
+    expect([r.get("a"), r.get("b"), r.get("c")]).toEqual(["GM", "GM", "Player 1"]);
+  });
+
+  it("le message n'est répété en bloc que s'il dit plus que le titre ; les réglages sont comptés", () => {
+    const log = createErrorLog({ now: () => 1000 });
+    log.add({ message: "short one" });
+    log.add({ message: "Error: first line\nsecond line" });
+    const md = reportMarkdown(buildReport({ now: 4000, errors: log.list(), environment: { settings: { a: true, b: 2 } } }));
+    expect(md).toContain("### error ×1 — short one\n\nlast 3 s ago\n\n");
+    expect(md).toContain("### error ×1 — first line");
+    expect(md).toContain("```\nError: first line\nsecond line\n```");
+    expect(md).toContain("<summary>DAS settings changed from their default (2)</summary>");
   });
 });

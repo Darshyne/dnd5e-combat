@@ -234,7 +234,9 @@ export function roleLabels(users, { gm="GM", player="Player" }={}) {
   const out = new Map();
   let gms = 0;
   let players = 0;
-  const gmCount = users.filter(u => u.isGM).length;
+  // Numérotés seulement si plusieurs MJ sont connectés (`active`, vrai par défaut) : un compte MJ de test resté hors ligne ne fait pas
+  // de l'unique MJ de la partie un « GM 1 ».
+  const gmCount = users.filter(u => u.isGM && (u.active ?? true)).length;
   for ( const u of users ) {
     if ( u.isGM ) out.set(u.id, (gmCount > 1) ? `${gm} ${++gms}` : gm);
     else out.set(u.id, `${player} ${++players}`);
@@ -342,8 +344,33 @@ const line = text => fence(String(text ?? "")).replace(/\s*\n\s*/g, " ");
 export const MARKDOWN_LABELS = {
   description: "Description", noDescription: "(none)", environment: "Environment", context: "Token context", errors: "Errors",
   noErrors: "No error recorded.", trail: "Recent DAS actions", flagged: "Flagged items", sections: "Modules",
-  times: "×", clients: "clients", hook: "hook", lastSeen: "last", secondsAgo: "s ago", before: "Before this error"
+  times: "×", clients: "clients", hook: "hook", lastSeen: "last", ago: "ago", before: "Before this error",
+  settings: "DAS settings changed from their default"
 };
+
+/** Une durée écoulée lisible : « 12 s », « 47 min », « 2 h 05 ». */
+export function formatAgo(seconds) {
+  if ( !Number.isFinite(seconds) ) return "?";
+  const s = Math.max(0, Math.round(seconds));
+  if ( s < 60 ) return `${s} s`;
+  if ( s < 3600 ) return `${Math.floor(s / 60)} min`;
+  return `${Math.floor(s / 3600)} h ${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}`;
+}
+
+/**
+ * Le titre d'une erreur : la première ligne de son message, sans le « Error: » que le type dit déjà, coupée à un mot sous `max`.
+ * @returns {{ title: string, whole: boolean }}  `whole` : le titre dit tout le message (inutile de le répéter en bloc).
+ */
+export function errorTitle(message, max=120) {
+  const text = String(message ?? "").trim();
+  const first = text.split("\n")[0].replace(/^(?:Uncaught\s+)?Error:\s*/, "").trim();
+  let title = first;
+  if ( title.length > max ) {
+    const cut = title.lastIndexOf(" ", max - 1);
+    title = `${title.slice(0, cut > max / 2 ? cut : max - 1).trimEnd()}…`;
+  }
+  return { title, whole: (title === first) && !text.includes("\n") };
+}
 
 const value = v => (typeof v === "object" && v !== null ? JSON.stringify(v) : String(v));
 
@@ -353,7 +380,7 @@ function bullets(obj, indent="") {
     .map(([k, v]) => `${indent}- **${k}**: ${line(value(v))}`);
 }
 
-const stepLine = (s, L) => `- ${s.ago ?? "?"} ${L.secondsAgo} · ${[s.client, s.module, s.kind].filter(Boolean).join(" · ")} — ${line(s.text)}`;
+const stepLine = (s, L) => `- ${formatAgo(s.ago)} ${L.ago} · ${[s.client, s.module, s.kind].filter(Boolean).join(" · ")} — ${line(s.text)}`;
 
 /** Le rapport en Markdown (GitHub, Discord). Les titres sont donnés ; par défaut en anglais, la langue des issues. */
 export function reportMarkdown(report, labels={}) {
@@ -366,7 +393,7 @@ export function reportMarkdown(report, labels={}) {
   out.push(...bullets(rest));
   if ( modules?.length ) out.push(`- **modules** (${modules.length}): ${modules.map(m => `${m.id} ${m.version ?? ""}`.trim()).join(", ")}`);
   if ( settings && Object.keys(settings).length ) {
-    out.push("", "<details><summary>DAS settings</summary>", "", ...bullets(settings), "", "</details>");
+    out.push("", `<details><summary>${L.settings} (${Object.keys(settings).length})</summary>`, "", ...bullets(settings), "", "</details>");
   }
   out.push("");
   if ( report.context ) out.push(`## ${L.context}`, "", ...bullets(report.context), "");
@@ -374,12 +401,13 @@ export function reportMarkdown(report, labels={}) {
   if ( !report.errors.length ) out.push(L.noErrors, "");
   for ( const e of report.errors ) {
     const head = [e.module ? `[${e.module}]` : null, e.kind, `${L.times}${e.count}`].filter(Boolean).join(" ");
-    out.push(`### ${head} — ${line(e.message).slice(0, 200)}`, "");
+    const { title, whole } = errorTitle(e.message);
+    out.push(`### ${head} — ${line(title)}`, "");
     const meta = [e.label ? line(e.label) : null, e.hook ? `${L.hook} \`${line(e.hook)}\`` : null,
       e.clients.length ? `${L.clients}: ${e.clients.join(", ")}` : null,
-      Number.isFinite(e.lastAgo) ? `${L.lastSeen} ${e.lastAgo} ${L.secondsAgo}` : null].filter(Boolean);
+      Number.isFinite(e.lastAgo) ? `${L.lastSeen} ${formatAgo(e.lastAgo)} ${L.ago}` : null].filter(Boolean);
     if ( meta.length ) out.push(meta.join(" · "), "");
-    if ( e.message.length > 200 ) out.push("```", fence(e.message), "```", "");
+    if ( !whole ) out.push("```", fence(e.message), "```", "");
     if ( e.stack.length ) out.push("```", ...e.stack.map(fence), "```", "");
     if ( e.trail.length ) out.push(`<details><summary>${L.before}</summary>`, "", ...e.trail.map(s => stepLine(s, L)), "", "</details>", "");
   }

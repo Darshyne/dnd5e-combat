@@ -209,7 +209,7 @@ const appClass = () => AppClass ??= class DasSettingsApp extends foundry.applica
     const s = settingOf(ns, key);
     const id = `${ns}.${key}`;
     const value = this.#value(ns, key);
-    const changed = !foundry.utils.objectsEqual({ v: value }, { v: s.default });
+    const changed = !foundry.utils.equals(value, s.default);
     const open = searching || this.#opened.has(id);
     const hint = tr(s.hint);
     return `<div class="das-settings__row ${s.scope}${state.sub ? " sub" : ""}${state.off ? " off" : ""}" data-key="${esc(id)}">
@@ -333,7 +333,7 @@ const appClass = () => AppClass ??= class DasSettingsApp extends foundry.applica
       const [ns, key] = this.#split(id);
       const s = settingOf(ns, key);
       if ( !s || ((s.scope === "world") && !canEditWorld()) ) continue;
-      if ( foundry.utils.objectsEqual({ v: value }, { v: game.settings.get(ns, key) }) ) continue;
+      if ( foundry.utils.equals(value, game.settings.get(ns, key)) ) continue;
       await game.settings.set(ns, key, value);
       if ( s.requiresReload ) reload = true;
     }

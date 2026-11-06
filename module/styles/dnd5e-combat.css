@@ -701,3 +701,26 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-settings__row.sub { margin-left: 22px; }
 .das-settings__row.off { opacity: 0.45; }
 .das-settings__row.off .ctl { pointer-events: none; }
+
+/* §380 : rapport de bug DAS */
+#sidebar .das-sidebar-settings { position: relative; }
+.das-debug-badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px;
+  background: #c0392b; color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; pointer-events: auto; }
+.das-debug-report .window-content { padding: 10px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+.das-debug-report section { display: flex; flex-direction: column; gap: 4px; }
+.das-debug-report h3 { display: flex; align-items: center; gap: 8px; margin: 4px 0 0; font-size: 1.05em; border: none; }
+.das-debug-report h3 .das-button { margin-left: auto; padding: 1px 8px; font-size: 0.85em; }
+.das-debug__intro { margin: 0; font-size: 0.92em; }
+.das-debug__errors { list-style: none; margin: 0; padding: 0; max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
+.das-debug__errors label { display: flex; align-items: baseline; gap: 6px; font-size: 0.92em; }
+.das-debug__count { font-weight: 700; min-width: 2.5em; }
+.das-debug__module { font-family: var(--font-mono, monospace); font-size: 0.85em; opacity: 0.8; }
+.das-debug__message { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.das-debug-report textarea { width: 100%; resize: vertical; font-size: 0.92em; }
+.das-debug__preview { min-height: 200px; flex: 1; font-family: var(--font-mono, monospace); font-size: 0.82em !important; white-space: pre; }
+.das-debug__options { flex-direction: row !important; flex-wrap: wrap; gap: 4px 14px !important; }
+.das-debug__option { display: flex; align-items: center; gap: 4px; font-size: 0.92em; }
+.das-debug__actions, .das-debug__tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.das-debug__github { display: flex; gap: 4px; margin-left: auto; align-items: center; }
+.das-debug__github select { max-width: 220px; }
+.das-debug__tools .das-button.on { background: var(--das-accent); color: #fff; }

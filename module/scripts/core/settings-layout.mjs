@@ -27,7 +27,7 @@ export const SETTINGS_TABS = Object.freeze([
       g("interface", "fa-solid fa-window-maximize", ["sidebarButton"])
     ],
     tools: [{ id: "welcome", icon: "fa-solid fa-dragon" }, { id: "diagnostic", icon: "fa-solid fa-stethoscope" },
-      { id: "reports", icon: "fa-solid fa-flag" }] },
+      { id: "reports", icon: "fa-solid fa-flag" }, { id: "debugReport", icon: "fa-solid fa-bug", everyone: true }] },
   { id: "combat", icon: "fa-solid fa-shield-halved",
     keys: ["heroicInspiration", "cover", "flanking", "flankingSide", "flankingConga", "aurasOnlyInCombat", "npcSaveChoice", "legendaryResistance", "portent", "combatWindowUnlimited", "combatWindowSeconds",
       "critMargin", "criticalMode", "criticalTable", "criticalNpc", "successAtCost", "successAtCostHold", "masteryRules", "sneakAttackMode", "nonLethalMenu", "endUnaffected"],
@@ -96,7 +96,7 @@ export const SETTINGS_TABS = Object.freeze([
         "floatStrikes", "floatEffects", "floatResources", "floatPrompts"]),
       g("timers", "fa-solid fa-gear", ["timerHideSeconds"])
     ] },
-  { id: "advanced", icon: "fa-solid fa-gears", keys: ["perfWarnMs", "automationBadges", "debugCapture", "debugAllModules"] }
+  { id: "advanced", icon: "fa-solid fa-gears", keys: ["perfWarnMs", "automationBadges", "debugCapture", "debugAllModules", "debugNotify"] }
 ]);
 
 /**

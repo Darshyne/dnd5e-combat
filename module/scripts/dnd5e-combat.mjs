@@ -175,6 +175,7 @@ import { registerFactionsUI, openFactions } from "./ui/factions.mjs";
 import { registerSettingsWindow, openSettings, registerWindow } from "./ui/settings.mjs";
 import { openDiagnostic } from "./ui/diagnostic.mjs";
 import { registerDebug, debugApi } from "./runtime/debug.mjs";
+import { registerDebugReport, openDebugReport } from "./ui/debug-report.mjs";
 
 /**
  * État global du module, exposé sur game.modules.get(MODULE_ID).api pour l'inspection.
@@ -219,7 +220,7 @@ import { registerDebug, debugApi } from "./runtime/debug.mjs";
  *   request)` (les tuiles de bonus) ; `title(request)`. Hooks `dnd5e-combat.groupRoll` (le point, à chaque résultat, sur chaque client) et
  *   `dnd5e-combat.groupRollPrompt` (une interface prend la fenêtre du joueur : runtime/group-roll.mjs).
  * `debug` : le débogueur (§380, runtime/debug.mjs) — `errors()`, `trailList()`, `logs()`, `verbose(on)`, `register({ module, repo, collect })`,
- *   `trail(module, kind, text)`, `onError(fn)`, `clear()` ; hook `dnd5e-combat.debug` au `setup`, avec cette API.
+ *   `trail(module, kind, text)`, `onError(fn)`, `clear()`, `open({ token })` (la fenêtre) ; hook `dnd5e-combat.debug` au `setup`, avec cette API.
  * `welcome.open()` : l'écran d'accueil (§177) ; `diagnostic.open({ check })` : le diagnostic du monde (vérifications, réparation après
  *   sauvegarde, restauration), sur une seule vérification si `check` est donné (macros « Outils du MJ »).
  */
@@ -231,7 +232,7 @@ const state = {
   flee: fleeFrom, save: requestSave, drop: dropHeldBy,
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
   level: automationLevel, levelAtLeast, skippedRoutes,
-  welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic }, debug: debugApi, settings: { open: openSettings, registerWindow },
+  welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic }, debug: Object.freeze({ ...debugApi, open: openDebugReport }), settings: { open: openSettings, registerWindow },
   vision: { canSee: publicCanSee, cone: publicCone, canHear: publicCanHear },
   factions: { ...factionsApi, open: () => openFactions() },
   sneak: stealthApi,
@@ -457,6 +458,7 @@ Hooks.once("init", () => {
   gated(registerMasteryUI);   // §222 : pastille de botte sur la fiche, fenêtre des bottes
   gated(registerFactionsUI);   // §181 : fenêtre, outil de la barre, HUD du token
   gated(registerStealthUI);   // §183 : raccourci du mode furtif, cônes dessinés chez le joueur
+  gated(registerDebugReport);   // §380 : fenêtre du rapport de bug, pastille, avis, entrée du menu
   gated(registerSettingsWindow);   // la fenêtre de réglages : en dernier, elle range au `setup` ce que les autres ont déclaré
   state.active = true;
 });

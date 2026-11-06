@@ -13,9 +13,11 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { attribute, createErrorLog, createRing, errorIn, formatArgs, packagesOfStack } from "../core/debug.mjs";
+import { attribute, buildReport, createErrorLog, createRing, createScrubber, errorIn, formatArgs, githubRepo, packagesOfStack, pickRepo,
+  reportMarkdown, roleLabels, safeSettings } from "../core/debug.mjs";
 import { isSuiteTitle } from "../core/settings-layout.mjs";
 import { identifierOf } from "../adapter/content.mjs";
+import { reports as itemReports } from "../adapter/automation.mjs";
 import { route } from "./router.mjs";
 
 export const DEBUG_CAPTURE_SETTING = "debugCapture";
@@ -213,7 +215,7 @@ export async function setVerboseEverywhere(on) {
 function onUseActivity(activity, usage, results) {
   const item = activity?.item;
   const targets = globalThis.game?.user?.targets?.size ?? 0;
-  trail("use", `${identifierOf(item) || item?.type || "?"} · ${activity?.type ?? "?"}${targets ? ` · ${targets} target(s)` : ""}`
+  trail("use", `${identifierOf(item)?.id || item?.type || "?"} · ${activity?.type ?? "?"}${targets ? ` · ${targets} target(s)` : ""}`
     + `${activity?.actor?.type ? ` · ${activity.actor.type}` : ""}`);
 }
 
@@ -258,7 +260,7 @@ export const debugApi = Object.freeze({
   /** Écouter les nouvelles erreurs (la pastille de l'interface) ; rend une fonction pour arrêter. */
   onError(fn) { listeners.add(fn); return () => listeners.delete(fn); },
   clear() { errors.clear(); trailRing.clear(); logRing.clear(); state.pending = []; },
-  get enabled() { return state.enabled; }
+  enabled: () => state.enabled
 });
 
 /** Les sections des voisins, chacune lue à part (une section qui échoue est notée, pas fatale). */
@@ -278,6 +280,122 @@ export function knownRepos() {
   for ( const mod of globalThis.game?.modules ?? [] ) if ( mod.active && isSuitePackage(mod.id) && mod.url ) out[mod.id] = mod.url;
   for ( const { module, repo } of registered.values() ) if ( repo ) out[module] = repo;
   return out;
+}
+
+/* -------------------------------------------- */
+/*  Le rapport                                  */
+/* -------------------------------------------- */
+
+/** Les rôles des utilisateurs, en anglais (la langue des issues) : « GM », « Player 1 »… */
+export function roles(labels={}) {
+  const users = Array.from(globalThis.game?.users ?? [], u => ({ id: u.id, name: u.name, isGM: u.isGM }));
+  return roleLabels(users, labels);
+}
+
+/** Les réglages simples des modules de la suite : booléens, nombres, et chaînes à choix (jamais du texte libre ni un objet). */
+function suiteSettings() {
+  const values = {};
+  for ( const [id, s] of game.settings.settings ) {
+    if ( !isSuitePackage(s.namespace) ) continue;
+    const type = s.type?.name ?? typeof s.type;
+    if ( !["Boolean", "Number", "String"].includes(type) || ((type === "String") && !s.choices) ) continue;
+    try { values[id] = game.settings.get(s.namespace, s.key); } catch { /* réglage illisible */ }
+  }
+  return safeSettings(values);
+}
+
+/** L'environnement de ce client : versions, modules actifs, réglages de la suite, navigateur, scène. Rien qui nomme la table. */
+export function environment() {
+  const scene = globalThis.canvas?.scene;
+  const levels = scene?.levels?.size ?? scene?.levels?.length ?? 0;
+  const gm = game.users.activeGM;
+  return {
+    foundry: game.version,
+    system: `${game.system.id} ${game.system.version}`,
+    language: game.i18n.lang,
+    role: roles().get(game.user.id) ?? null,
+    activeGM: gm ? (gm.isSelf ? "this client" : "connected") : "none",
+    players: game.users.filter(u => u.active && !u.isGM).length,
+    browser: globalThis.navigator?.userAgent ?? null,
+    window: globalThis.innerWidth ? `${globalThis.innerWidth}×${globalThis.innerHeight}` : null,
+    scene: scene ? `grid ${scene.grid?.type} · ${scene.grid?.size} px · ${scene.grid?.distance} ${scene.grid?.units ?? ""} · ${levels} level(s)`
+      + ` · ${scene.tokens?.size ?? 0} token(s)` : null,
+    combat: game.combat ? `round ${game.combat.round} · ${game.combat.combatants?.size ?? 0} combatant(s)` : null,
+    modules: Array.from(game.modules).filter(m => m.active).map(m => ({ id: m.id, version: m.version ?? null }))
+      .sort((a, b) => (isSuitePackage(b.id) - isSuitePackage(a.id)) || a.id.localeCompare(b.id)),
+    settings: suiteSettings()
+  };
+}
+
+/** Ce qu'un token dit de lui sans se nommer : type, niveau, taille, états, identifiants de ses objets, position verticale. */
+export function tokenContext(token) {
+  const doc = token?.document ?? token;
+  const actor = doc?.actor;
+  if ( !actor ) return null;
+  const details = actor.system?.details ?? {};
+  const ids = Array.from(actor.items ?? [], i => identifierOf(i)?.id || i.type).filter(Boolean);
+  return {
+    actorType: actor.type,
+    actorLevel: details.level ?? (details.cr !== undefined ? `CR ${details.cr}` : null),
+    size: actor.system?.traits?.size ?? null,
+    hp: actor.system?.attributes?.hp ? `${actor.system.attributes.hp.value}/${actor.system.attributes.hp.max}` : null,
+    statuses: Array.from(actor.statuses ?? []).join(", ") || null,
+    disposition: doc.disposition ?? null,
+    elevation: doc.elevation ?? null,
+    tokenLevel: doc.level ?? null,
+    inCombat: !!doc.inCombat,
+    linked: !!doc.actorLink,
+    items: `${ids.length}: ${ids.slice(0, 80).join(", ")}${ids.length > 80 ? ", …" : ""}`
+  };
+}
+
+/** Les noms que le rapport masque : utilisateurs (→ rôles), titre du monde, et, sauf demande, acteurs du monde et de la scène. */
+function scrubberFor({ includeNames=false }={}) {
+  const names = [];
+  const r = roles();
+  for ( const u of game.users ) names.push([u.name, r.get(u.id) ?? "user"]);
+  names.push([game.world?.title, "<world>"], [game.world?.id, "<world>"]);
+  if ( !includeNames ) {
+    for ( const a of game.actors ?? [] ) names.push([a.name, "<actor>"]);
+    for ( const t of globalThis.canvas?.scene?.tokens ?? [] ) names.push([t.name, "<token>"]);
+    names.push([globalThis.canvas?.scene?.name, "<scene>"]);
+  }
+  return createScrubber({ names });
+}
+
+/**
+ * Le rapport complet, nettoyé, et son Markdown. Les clients (identifiants d'utilisateurs) deviennent des rôles.
+ * @param {object} [options]
+ * @param {string} [options.description]
+ * @param {string[]} [options.selected]       Signatures des erreurs retenues (toutes si absent).
+ * @param {boolean} [options.includeNames]    Garder les noms d'acteurs et de tokens.
+ * @param {boolean} [options.includeFlagged]  Joindre les items signalés (identifiant et note).
+ * @param {boolean} [options.includeLogs]     Joindre les lignes du mode détaillé.
+ * @param {Token|TokenDocument} [options.token]  Le contexte d'un token (menu contextuel).
+ * @param {object} [options.labels]           Titres du Markdown.
+ */
+export function buildDebugReport({ description="", selected, includeNames=false, includeFlagged=false, includeLogs=false, token=null,
+  labels={} }={}) {
+  const r = roles();
+  const who = id => (id ? (r.get(id) ?? "user") : null);
+  const asRoles = step => ({ ...step, client: who(step.client) });
+  const errorsNow = errors.list().map(g => ({ ...g, clients: g.clients.map(who), trail: g.trail.map(asRoles) }));
+  const trailNow = trailRing.list().map(asRoles);
+  if ( includeLogs ) trailNow.push(...logRing.list().map(asRoles));
+  trailNow.sort((a, b) => a.t - b.t);
+  const flagged = includeFlagged ? Object.values(itemReports() ?? {}).map(f => ({ identifier: f.identifier ?? "?", note: f.note ?? "" })) : [];
+  const report = buildReport({ now: Date.now(), description, environment: environment(), context: tokenContext(token),
+    errors: errorsNow, selected, trail: trailNow, flagged, sections: collectSections() }, scrubberFor({ includeNames }));
+  return { report, markdown: reportMarkdown(report, labels) };
+}
+
+/** Les dépôts GitHub proposés (« propriétaire/dépôt »), le plus mis en cause en premier. */
+export function reportRepos(report) {
+  const repos = Object.fromEntries(Object.entries(knownRepos()).map(([id, url]) => [id, githubRepo(url) ?? (/^[\w.-]+\/[\w.-]+$/.test(url) ? url : null)])
+    .filter(([, repo]) => repo));
+  const best = pickRepo(report?.errors ?? [], repos, repos[MODULE_ID] ?? null);
+  const all = [...new Set([best, ...Object.values(repos)].filter(Boolean))];
+  return all.map(repo => ({ repo, modules: Object.keys(repos).filter(id => repos[id] === repo) }));
 }
 
 /* -------------------------------------------- */

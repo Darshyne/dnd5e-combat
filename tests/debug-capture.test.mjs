@@ -178,3 +178,47 @@ describe("remontée vers le MJ actif (§380)", () => {
   });
 });
 
+
+describe("rapport du runtime (§380)", () => {
+  function table() {
+    const users = [{ id: "u-gm", name: "Raphaël", isGM: true, active: true, isSelf: true }, { id: "u-p1", name: "Zoé", isGM: false, active: true }];
+    Object.assign(users, { activeGM: users[0] });
+    const settings = new Map([["dnd5e-combat.level", { namespace: "dnd5e-combat", key: "level", type: String, choices: { full: "", assisted: "" } }],
+      ["dnd5e-combat.critTable", { namespace: "dnd5e-combat", key: "critTable", type: String }],
+      ["dnd5e-combat.cover", { namespace: "dnd5e-combat", key: "cover", type: Boolean }],
+      ["third-mod.secret", { namespace: "third-mod", key: "secret", type: Boolean }]]);
+    const values = { level: "full", critTable: "Table de Zoé", cover: true, secret: true };
+    Object.assign(globalThis.game, {
+      version: "14.369", system: { id: "dnd5e", version: "6.0.6" }, i18n: { lang: "fr" }, world: { id: "dandd", title: "Curse of Strahd" },
+      user: users[0], users, actors: [{ name: "Ireena Kolyana" }], items: [],
+      settings: { settings, get: (ns, key) => values[key] }
+    });
+  }
+
+  it("rôles, monde et acteurs masqués, réglages simples, contexte d'un token sans son nom", () => {
+    table();
+    globalThis.game.user = { id: "u-p1" };
+    target.console.error(errorFrom("dnd5e-combat", "Zoé lost Ireena Kolyana in Curse of Strahd"));
+    trail("use", "rage · utility");
+    const token = { name: "Ireena Kolyana", disposition: 1, elevation: 0, inCombat: false, actorLink: true,
+      actor: { type: "character", statuses: new Set(["prone"]), items: [{ type: "feat", system: { identifier: "rage" } }],
+        system: { details: { level: 3 }, traits: { size: "med" }, attributes: { hp: { value: 5, max: 20 } } } } };
+    const { report, markdown } = debug.buildDebugReport({ description: "Zoé clicked", token });
+    expect(report.errors[0].message).toBe("Error: Player 1 lost <actor> in <world>");
+    expect(report.errors[0].clients).toEqual(["Player 1"]);
+    expect(report.description).toBe("Player 1 clicked");
+    expect(report.environment.settings).toEqual({ "dnd5e-combat.level": "full", "dnd5e-combat.cover": true });
+    expect(report.environment.system).toBe("dnd5e 6.0.6");
+    expect(report.context).toMatchObject({ actorType: "character", actorLevel: 3, statuses: "prone", items: "1: rage" });
+    expect(markdown).not.toMatch(/Zoé|Raphaël|Ireena|Strahd/);
+    const kept = debug.buildDebugReport({ includeNames: true });
+    expect(kept.report.errors[0].message).toBe("Error: Player 1 lost Ireena Kolyana in <world>");
+  });
+
+  it("propose le dépôt du module mis en cause", () => {
+    table();
+    target.console.error(errorFrom("darsh-loot"));
+    const { report } = debug.buildDebugReport();
+    expect(debug.reportRepos(report).map(r => r.repo).slice(0, 2)).toEqual(["Darshyne/darsh-loot", "Darshyne/dnd5e-combat"]);
+  });
+});

@@ -20,6 +20,7 @@ import { openWelcome } from "./welcome.mjs";
 import { openDiagnostic } from "./diagnostic.mjs";
 import { openFactions } from "./factions.mjs";
 import { reportsApi } from "./automation.mjs";
+import { openDebugReport } from "./debug-report.mjs";
 import { replaceKeepingScroll } from "./scroll.mjs";
 
 const WINDOW_ID = "das-settings";
@@ -398,6 +399,7 @@ const ENGINE_TOOLS = Object.freeze({
   welcome: () => openWelcome(),
   diagnostic: () => openDiagnostic(),
   reports: () => reportsApi.open(),
+  debugReport: () => openDebugReport(),
   factions: () => openFactions()
 });
 

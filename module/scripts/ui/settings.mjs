@@ -13,7 +13,7 @@
  * `sidebarButton`), comme le bouton « Ouvrir les réglages » de chaque module dans la liste de Foundry.
  */
 import { MODULE_ID } from "../constants.mjs";
-import { SETTINGS_TABS, placeSettings, matchesQuery, validateWindow, isSuiteTitle, shortTitle, orderModules } from "../core/settings-layout.mjs";
+import { SETTINGS_TABS, placeSettings, matchesQuery, validateWindow, isSuiteTitle, shortTitle, orderModules, groupSettings, subState } from "../core/settings-layout.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc, esc } from "../runtime/shared.mjs";
 import { openWelcome } from "./welcome.mjs";
@@ -145,7 +145,7 @@ const appClass = () => AppClass ??= class DasSettingsApp extends foundry.applica
     else {
       const tab = tabs.find(t => t.id === this.#tab.get(ns));
       const workshop = windows.get(ns)?.tab?.kind === "workshop";
-      content = tab ? this.#section(ns, tab.keys, "world") + this.#section(ns, tab.keys, "client")
+      content = tab ? this.#section(ns, tab, "world") + this.#section(ns, tab, "client")
         + (workshop ? this.#workshop(ns, tab.tools) : this.#tools(tab.tools)) : "";
     }
     const single = (tabs.length < 2) || searching;
@@ -177,30 +177,56 @@ const appClass = () => AppClass ??= class DasSettingsApp extends foundry.applica
     return matchesQuery(this.#query, tr(s.name), tr(s.hint));
   }
 
-  #section(ns, keys, scope) {
-    const rows = keys.filter(k => (settingOf(ns, k)?.scope ?? "client") === scope);
+  /**
+   * Une portée d'un onglet : ses réglages rangés en cadres, un par règle (`groups` du plan : demande de l'utilisateur, 2026-11-06) ; les
+   * options d'une règle décalées sous elle, grisées tant qu'elle est éteinte (valeur en attente comprise). Sans `groups`, une liste.
+   */
+  #section(ns, tab, scope) {
+    const rows = tab.keys.filter(k => (settingOf(ns, k)?.scope ?? "client") === scope);
     if ( !rows.length ) return "";
+    const valueOf = key => (settingOf(ns, key) ? this.#value(ns, key) : undefined);
+    const frames = groupSettings(rows, tab.groups).map(group => {
+      const body = group.keys.map(k => this.#row(ns, k, false, subState(k, group, valueOf))).join("");
+      if ( group.id === null ) return body;
+      const tag = group.tag ? `<span class="das-settings__frame-tag">${esc(loc(`Reglages.Etiquette.${group.tag}`))}</span>` : "";
+      return `<section class="das-settings__frame"><h4 class="das-settings__frame-head"><i class="${esc(group.icon ?? "fa-solid fa-sliders")}"></i>`
+        + `<span>${esc(this.#groupLabel(ns, group.id))}</span>${tag}</h4>${body}</section>`;
+    });
     return `<h3 class="das-settings__section ${scope}">${esc(loc(`Reglages.Section.${scope}`))}<span>${esc(loc(`Reglages.Qui.${scope}`))}</span></h3>
-      ${rows.map(k => this.#row(ns, k, false)).join("")}`;
+      ${frames.join("")}`;
   }
 
-  #row(ns, key, searching) {
+  /** Le titre d'un cadre : celui du moteur (`DND5ECOMBAT.Reglages.Groupe.<id>`), ou pour un voisin `<module>.Reglages.Groupe.<id>`. */
+  #groupLabel(ns, id) {
+    const own = `DND5ECOMBAT.Reglages.Groupe.${id}`;
+    const theirs = `${ns}.Reglages.Groupe.${id}`;
+    if ( (ns !== MODULE_ID) && game.i18n.has(theirs) ) return game.i18n.localize(theirs);
+    return game.i18n.has(own) ? game.i18n.localize(own) : id;
+  }
+
+  #row(ns, key, searching, state={ sub: false, off: false }) {
     const s = settingOf(ns, key);
     const id = `${ns}.${key}`;
     const value = this.#value(ns, key);
     const changed = !foundry.utils.objectsEqual({ v: value }, { v: s.default });
     const open = searching || this.#opened.has(id);
     const hint = tr(s.hint);
-    return `<div class="das-settings__row ${s.scope}" data-key="${esc(id)}">
+    return `<div class="das-settings__row ${s.scope}${state.sub ? " sub" : ""}${state.off ? " off" : ""}" data-key="${esc(id)}">
       <div><div class="name">${esc(tr(s.name) || key)}
         ${hint ? `<button type="button" class="das-settings__help${open ? " on" : ""}" data-help="${esc(id)}" aria-label="${esc(loc("Reglages.Aide"))}">?</button>` : ""}
         ${s.requiresReload ? `<span class="das-settings__badge reload">${esc(loc("Reglages.Recharge"))}</span>` : ""}
         ${changed ? `<span class="das-settings__badge changed">${esc(loc("Reglages.Modifie"))}</span>` : ""}</div>
         ${(open && hint) ? `<p class="hint">${esc(hint)}</p>` : ""}</div>
-      <div class="ctl">${this.#control(id, s, value)}</div></div>`;
+      <div class="ctl">${this.#control(id, s, value, state.off)}</div></div>`;
   }
 
-  #control(id, s, value) {
+  #control(id, s, value, off=false) {
+    // Une option d'une règle éteinte : grisée, non modifiable (elle garde sa valeur).
+    const html = this.#field(id, s, value);
+    return off ? html.replace(/<(input|select)/g, "<$1 disabled") : html;
+  }
+
+  #field(id, s, value) {
     const type = s.type?.name ?? s.type;
     const key = esc(id);
     if ( type === "Boolean" ) return `<input type="checkbox" data-key="${key}" ${value ? "checked" : ""}>`;

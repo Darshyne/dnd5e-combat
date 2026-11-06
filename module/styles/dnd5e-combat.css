@@ -680,3 +680,15 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .targets [data-uuid] .das-at-cost-button { width: auto; flex: 0 0 auto; font-size: 0.8em; line-height: 1.5; margin: 2px 0 0; }
 .targets [data-uuid] .das-at-cost-mark { flex-basis: 100%; font-size: 0.8em; }
 .das-at-cost__cost { display: block; margin: 6px 0 0; padding: 4px 8px; border-left: 3px solid #e0a050; font-style: italic; }
+
+/* 2026-11-06 : réglages groupés par règle — un cadre par règle, toujours ouvert ; les options d'une règle décalées sous elle et grisées
+   tant que la règle est éteinte. */
+.das-settings__frame { border: 1px solid var(--das-line); border-radius: 8px; padding: 6px 10px 3px; margin: 0 0 10px; background: rgba(255, 255, 255, 0.015); }
+.das-screen .das-settings__frame-head { display: flex; align-items: center; gap: 8px; margin: 2px 2px 8px; font-family: inherit; font-size: 0.95em;
+  font-weight: 600; color: var(--das-ink); border: none; }
+.das-settings__frame-head i { color: var(--das-muted); width: 16px; text-align: center; }
+.das-settings__frame-tag { margin-left: auto; font-size: 0.8em; font-weight: 400; color: var(--das-muted); font-style: italic; }
+.das-settings__frame .das-settings__row { margin-bottom: 5px; }
+.das-settings__row.sub { margin-left: 22px; }
+.das-settings__row.off { opacity: 0.45; }
+.das-settings__row.off .ctl { pointer-events: none; }

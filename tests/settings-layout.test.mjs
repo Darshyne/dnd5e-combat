@@ -73,3 +73,66 @@ describe("§291 : un atelier à la fin", async () => {
     expect(validateWindow({ namespace: "x", tabs, tab: { kind: "atelier" } })).toEqual(["tab.kind: \"settings\" or \"workshop\" expected"]);
   });
 });
+
+describe("réglages groupés par règle (2026-11-06)", async () => {
+  const { SETTINGS_TABS, groupSettings, subState, validateWindow } = await import("../module/scripts/core/settings-layout.mjs");
+  const fr = JSON.parse((await import("node:fs")).readFileSync(new URL("../module/lang/fr.json", import.meta.url), "utf8"));
+
+  it("chaque groupe ne range que des réglages de son onglet, une seule fois, et a son titre traduit", () => {
+    for ( const tab of SETTINGS_TABS ) {
+      const seen = new Set();
+      for ( const group of tab.groups ?? [] ) {
+        expect(fr[`DND5ECOMBAT.Reglages.Groupe.${group.id}`], group.id).toBeTruthy();
+        for ( const key of group.keys ) {
+          expect(tab.keys, `${tab.id}/${group.id}`).toContain(key);
+          expect(seen.has(key), key).toBe(false);
+          seen.add(key);
+        }
+        for ( const [key, rule] of Object.entries(group.sub) ) {
+          expect(group.keys, key).toContain(key);
+          expect(group.keys, rule.parent).toContain(rule.parent);
+        }
+        if ( group.tag ) expect(fr[`DND5ECOMBAT.Reglages.Etiquette.${group.tag}`]).toBeTruthy();
+      }
+      // Tous les réglages d'un onglet groupé ont leur cadre (le cadre « Autres » reste un filet).
+      if ( tab.groups ) expect(tab.keys.filter(k => !seen.has(k)), tab.id).toEqual([]);
+    }
+    expect(fr["DND5ECOMBAT.Reglages.Groupe.other"]).toBeTruthy();
+  });
+
+  it("cadres : l'ordre du groupe, les absents omis, le reste dans « other » ; sans groupes, une liste sans titre", () => {
+    const groups = [{ id: "a", keys: ["x", "y"] }, { id: "b", keys: ["z"] }];
+    expect(groupSettings(["y", "w", "x"], groups).map(g => [g.id, g.keys])).toEqual([["a", ["x", "y"]], ["other", ["w"]]]);
+    expect(groupSettings(["x"], undefined)).toEqual([{ id: null, sub: {}, keys: ["x"] }]);
+    expect(groupSettings([], groups)).toEqual([]);
+  });
+
+  it("option d'une règle : décalée sous elle, grisée quand la règle est éteinte, en cascade", () => {
+    const group = { keys: ["gmAlerts", "gmAlertBanner", "gmAlertSeconds"],
+      sub: { gmAlertBanner: { parent: "gmAlerts", off: [false] }, gmAlertSeconds: { parent: "gmAlertBanner", off: [false] } } };
+    const values = { gmAlerts: true, gmAlertBanner: true };
+    const v = k => values[k];
+    expect(subState("gmAlerts", group, v)).toEqual({ sub: false, off: false });
+    expect(subState("gmAlertSeconds", group, v)).toEqual({ sub: true, off: false });
+    values.gmAlerts = false;
+    expect(subState("gmAlertBanner", group, v)).toEqual({ sub: true, off: true });
+    expect(subState("gmAlertSeconds", group, v)).toEqual({ sub: true, off: true });
+    // La règle dans une autre portée (un autre cadre) : grisée, sans décalage.
+    expect(subState("gmAlertSeconds", { ...group, keys: ["gmAlertSeconds"] }, v)).toEqual({ sub: false, off: true });
+  });
+
+  it("la prise en tenaille éteinte grise ses options ; le succès à un prix sa pause", () => {
+    const combat = SETTINGS_TABS.find(t => t.id === "combat");
+    const flank = combat.groups.find(g => g.id === "flanking");
+    expect(subState("flankingSide", flank, () => "off").off).toBe(true);
+    expect(subState("flankingSide", flank, () => "pc").off).toBe(false);
+    const cost = combat.groups.find(g => g.id === "successAtCost");
+    expect(subState("successAtCostHold", cost, () => false).off).toBe(true);
+  });
+
+  it("des groupes déclarés par un voisin sont vérifiés", () => {
+    expect(validateWindow({ namespace: "m", tabs: [{ id: "a", keys: ["x"], groups: [{ id: "g", keys: ["x"], sub: { x: { parent: "y", off: [false] } } }] }] })).toEqual([]);
+    expect(validateWindow({ namespace: "m", tabs: [{ id: "a", keys: ["x"], groups: [{ keys: "x" }] }] }).length).toBeGreaterThan(0);
+    expect(validateWindow({ namespace: "m", tabs: [{ id: "a", keys: ["x"], groups: [{ id: "g", keys: [], sub: { x: { parent: "y" } } }] }] }).length).toBeGreaterThan(0);
+  });
+});

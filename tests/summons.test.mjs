@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { initiativeAfter } from "../module/scripts/core/turn.mjs";
-import { summonOwnership } from "../module/scripts/core/summon.mjs";
+import { summonOwnership, summonChoices, asksSummonForm } from "../module/scripts/core/summon.mjs";
 
 describe("initiative d'une créature invoquée (§16.13)", () => {
   it("juste sous l'invocateur, au-dessus du suivant", () => {
@@ -134,5 +134,35 @@ describe("O8f (§349) : invocations hostiles", () => {
   it("summon.hostile : true ou absent", () => {
     expect(validateEntry({ summon: { initiative: "own", hostile: true, vanishesAtZero: true } })).toEqual([]);
     expect(validateEntry({ summon: { initiative: "own", hostile: "yes" } }).length).toBe(1);
+  });
+});
+
+describe("§383 : choisir la forme d'une invocation (issue #38)", () => {
+  it("plusieurs profils, tailles ou types : un choix", () => {
+    expect(summonChoices({ profiles: 2 })).toEqual({ profile: true, size: false, type: false, any: true });
+    expect(summonChoices({ profiles: 1, types: 3 })).toMatchObject({ profile: false, type: true, any: true });
+    expect(summonChoices({ profiles: 3, sizes: 5 })).toMatchObject({ profile: true, size: true });
+  });
+  it("une seule forme, ou aucune : rien à choisir", () => {
+    expect(summonChoices({ profiles: 1, sizes: 1, types: 1 }).any).toBe(false);
+    expect(summonChoices({ profiles: 0, sizes: 4 }).any).toBe(false);
+    expect(summonChoices().any).toBe(false);
+  });
+  const two = summonChoices({ profiles: 2 });
+  it("demandée quand la fenêtre de dnd5e est sautée (barre d'actions) et que quelque chose sera invoqué", () => {
+    expect(asksSummonForm({ configure: false, choices: two, willSummon: true })).toBe(true);
+  });
+  it("pas quand dnd5e montre sa fenêtre : son choix « Profil » suffit", () => {
+    expect(asksSummonForm({ configure: true, choices: two, willSummon: true })).toBe(false);
+    expect(asksSummonForm({ configure: undefined, choices: two, willSummon: true })).toBe(false);
+  });
+  it("pas quand rien ne sera invoqué, déjà choisi, confirmé d'office ou choisi ailleurs", () => {
+    expect(asksSummonForm({ configure: false, choices: two, willSummon: false })).toBe(false);
+    expect(asksSummonForm({ configure: false, choices: two, willSummon: true, chosen: true })).toBe(false);
+    expect(asksSummonForm({ configure: false, choices: two, willSummon: true, confirmed: true })).toBe(false);
+    expect(asksSummonForm({ configure: false, choices: two, willSummon: true, otherChoice: true })).toBe(false);
+  });
+  it("une seule forme : jamais", () => {
+    expect(asksSummonForm({ configure: false, choices: summonChoices({ profiles: 1 }), willSummon: true })).toBe(false);
   });
 });

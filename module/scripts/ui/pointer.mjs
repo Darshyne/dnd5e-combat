@@ -22,7 +22,7 @@ import { clampToCircle } from "../core/storm.mjs";
 import { askStorm } from "./storm.mjs";
 import { contentOf, rangeUnitsOf, identifierOf } from "../adapter/content.mjs";
 import { projectilesOf, projectileCount, targetCount } from "../adapter/projectiles.mjs";
-import { concentrationOn } from "../adapter/summons.mjs";
+import { concentrationOn, summonChoicesOf } from "../adapter/summons.mjs";
 import { engage, castOnTargets, lineDashOf } from "../runtime/actions.mjs";
 import { movableZoneOf, moveZone, tooFarForZone } from "../runtime/zones.mjs";
 import { castWithPicks } from "../runtime/projectiles.mjs";
@@ -41,6 +41,9 @@ import { enchantWith, pactWith } from "../runtime/enchant.mjs";
 import { askPact } from "./pact.mjs";
 import { askEnchantWeapon } from "./enchant.mjs";
 import { takeForm } from "../runtime/wildshape.mjs";
+import { askSummonForm } from "./summon-form.mjs";
+import { castWithForm } from "../runtime/summon-handover.mjs";
+import { asksSummonForm } from "../core/summon.mjs";
 import { shapeCenter } from "../core/area.mjs";
 import { targetRule, targetRefusal } from "../core/targeting.mjs";
 import { relationForTargeting } from "../adapter/factions.mjs";
@@ -375,6 +378,20 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     const usage = [usageConfig, dialogConfig, messageConfig];
     askWildForm(activity).then(uuid => uuid ? exclusive(() => takeForm(activity, usage, uuid)) : null)
       .catch(err => console.error(`${MODULE_ID} | Wild Shape`, err));
+    return false;
+  }
+  // §383 (issue #38) : une invocation à plusieurs formes (Convocation de céleste : Vengeur / Défenseur), tailles ou types, lancée
+  // sans la fenêtre de dnd5e (barre d'actions, manette : `configure: false`) — la forme se choisit dans la fenêtre du moteur, chez
+  // celui qui lance, puis l'utilisation repart avec elle. Lumière a sa propre fenêtre (§16.35).
+  if ( (activity?.type === "summon") && canvas.ready && activity.actor?.isOwner && !lightChoiceOf(activity)
+    && asksSummonForm({ configure: dialogConfig?.configure, choices: summonChoicesOf(activity), chosen: !!ours.summonForm,
+      confirmed: !!ours.confirmed, otherChoice: !!ours.lightChoice,
+      willSummon: !!usageConfig.create?.summons || !!contentOf(activity.item).entry?.placesSummons || (game.user.targets.size > 0) }) ) {
+    closeSheetFor(activity);
+    stopTargeting();
+    const usage = [usageConfig, dialogConfig, messageConfig];
+    askSummonForm(activity, usageConfig.summons ?? {}).then(choice => choice ? exclusive(() => castWithForm(activity, usage, choice)) : null)
+      .catch(err => console.error(`${MODULE_ID} | summon form`, err));
     return false;
   }
   // §57 : une ruée en ligne droite (Frappe du vent) — la case d'arrivée se vise au lieu de poser le gabarit de ligne.

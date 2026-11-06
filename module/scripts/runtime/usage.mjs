@@ -15,7 +15,8 @@
  *  - §77 : une activité qui dépense ses propres utilisations sans en avoir, quand l'item en porte (donnée du Monster Manual 2024,
  *    Nuage fétide du Dretch), dépense celles de l'item (corrigé sur la copie de l'item que dnd5e utilise, pas sur la fiche).
  *  - Un vrai choix reste à la fenêtre : profil d'invocation, de transformation ou d'enchantement quand il y en a plusieurs,
- *    commande de bastion.
+ *    taille ou type de créature d'une invocation (§383), commande de bastion. Un appel qui saute lui-même la fenêtre (barre
+ *    d'actions) reçoit la fenêtre « Choisir la forme » du moteur (ui/summon-form.mjs).
  */
 
 import { MODULE_ID } from "../constants.mjs";
@@ -25,6 +26,7 @@ import { movableZoneOf } from "./zones.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 import { whileAwaiting } from "../adapter/awaiting.mjs";
+import { summonChoicesOf } from "../adapter/summons.mjs";
 
 export const AUTO_USAGE_SETTING = "autoUsage";
 
@@ -35,7 +37,10 @@ function needsChoice(activity) {
   // nombre de PV égal à… », jusqu'à ce qui reste), le curseur de la fenêtre de dnd5e (`consumption.scaling`). Sans elle, dnd5e
   // prenait 1 point. Le niveau d'un sort est jugé plus bas (§106).
   if ( activity.consumption?.scaling?.allowed && !activity.requiresSpellSlot ) return true;
-  if ( ["summon", "transform", "enchant"].includes(activity.type) ) {
+  // §383 : une invocation garde la fenêtre dès qu'il y a une forme, une taille ou un type à choisir (Appel de familier : un seul
+  // profil, trois types de créature — le premier était pris d'office).
+  if ( activity.type === "summon" ) return summonChoicesOf(activity).any;
+  if ( ["transform", "enchant"].includes(activity.type) ) {
     const profiles = (activity.type === "enchant") ? activity.availableEnchantments : activity.availableProfiles;
     return (profiles?.length ?? 0) > 1;
   }

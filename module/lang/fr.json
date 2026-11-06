@@ -2120,5 +2120,10 @@
   "DND5ECOMBAT.Reglages.Groupe.awaiting": "Sablier d'attente",
   "DND5ECOMBAT.Reglages.Groupe.other": "Autres réglages",
   "DND5ECOMBAT.Reglages.Etiquette.house": "règle maison",
-  "DND5ECOMBAT.Reglages.Etiquette.dmg": "aide du Guide du maître"
+  "DND5ECOMBAT.Reglages.Etiquette.dmg": "aide du Guide du maître",
+  "DND5ECOMBAT.Invocation.ChoisirClic": "Choisissez la forme de la créature invoquée : un clic sur sa carte l'invoque.",
+  "DND5ECOMBAT.Invocation.Choisir": "Choisissez la forme de la créature invoquée, puis « Invoquer ».",
+  "DND5ECOMBAT.Invocation.Taille": "Taille",
+  "DND5ECOMBAT.Invocation.Type": "Type de créature",
+  "DND5ECOMBAT.Invocation.Invoquer": "Invoquer"
 }

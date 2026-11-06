@@ -13,6 +13,17 @@ import { initiativeAfter } from "../core/turn.mjs";
 import { contentOf } from "./content.mjs";
 import { expiryTime } from "../core/area.mjs";
 import { readTimeFactors } from "./areas.mjs";
+import { summonChoices } from "../core/summon.mjs";
+
+/**
+ * §383 : ce qu'une activité « summon » laisse choisir à la pose (profils disponibles à ce niveau — `availableProfiles`,
+ * documents/activity/summon.mjs —, tailles, types de créature). Tout faux pour une autre activité.
+ */
+export function summonChoicesOf(activity) {
+  if ( activity?.type !== "summon" ) return summonChoices();
+  return summonChoices({ profiles: activity.availableProfiles?.length ?? 0, sizes: activity.creatureSizes?.size ?? 0,
+    types: activity.creatureTypes?.size ?? 0 });
+}
 
 /**
  * §198 : la durée propre d'une invocation sans concentration — celle de l'activité qui l'a posée (`flags.dnd5e.summon.activity`),

@@ -81,7 +81,7 @@ export default {
     const damageMessages = msgs => msgs.filter(m => m.type === "damage");
 
     await part("Attaque acceptée", async () => {
-      await setting("successAtCost", true); await setting("successAtCostHold", 10); await setting("successAtCostNpc", false);
+      await setting("successAtCost", true); await setting("successAtCostHold", 10);
       // Les PV lus pendant la pause : les essais d'avant ont pu toucher normalement.
       let hp0 = null;
       const r = await nearMissAttack(async c => {

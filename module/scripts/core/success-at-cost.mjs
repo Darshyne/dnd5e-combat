@@ -45,8 +45,9 @@ export function nearMissTargets(roll, targets, margin) {
 }
 
 /**
- * L'écart de l'aide pour un jet de cette créature : 0 si l'aide est éteinte, si la créature n'est pas un personnage joueur (sauf
- * réglage `npc`), ou si c'est un objet.
+ * L'écart de l'aide pour un jet de cette créature : 0 si l'aide est éteinte ou si la créature n'est pas un personnage joueur — la
+ * règle vise les joueurs (le MJ propose, le joueur choisit ; pour un PNJ, le MJ décide seul : décision de l'utilisateur, 2026-11-06).
+ * `npc` reste ici pour une table qui le voudrait un jour ; aucun réglage ne le donne.
  * @param {{enabled: boolean, npc: boolean, isCharacter: boolean}} facts
  */
 export function atCostMarginFor({ enabled, npc=false, isCharacter=false }) {

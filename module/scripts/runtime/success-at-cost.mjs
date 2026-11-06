@@ -24,7 +24,6 @@ import { esc, isExecutor, loc, locEsc, log, notice, say, tokenOfActor, viaActive
 
 export const AT_COST_SETTING = "successAtCost";
 export const AT_COST_HOLD_SETTING = "successAtCostHold";
-export const AT_COST_NPC_SETTING = "successAtCostNpc";
 /** Public : après chaque réponse. */
 export const AT_COST_HOOK = `${MODULE_ID}.successAtCost`;
 /** Pour l'interface du MJ : une occasion ouverte, prise, ou close (`closed`). */
@@ -38,7 +37,7 @@ export const atCostEnabled = () => read(AT_COST_SETTING, false) === true;
 /** L'écart de l'aide pour un jet de cette créature (0 : rien à proposer). */
 export function atCostMarginOf(actor) {
   if ( !actor || ["group", "vehicle"].includes(actor.type) ) return 0;
-  return atCostMarginFor({ enabled: atCostEnabled(), npc: read(AT_COST_NPC_SETTING, false) === true, isCharacter: actor.type === "character" });
+  return atCostMarginFor({ enabled: atCostEnabled(), isCharacter: actor.type === "character" });
 }
 
 /* -------------------------------------------- */
@@ -246,7 +245,6 @@ export function registerSuccessAtCost() {
     name: `DND5ECOMBAT.Reglage.${key}.Nom`, hint: `DND5ECOMBAT.Reglage.${key}.Aide`, ...data });
   world(AT_COST_SETTING, { type: Boolean, default: false });
   world(AT_COST_HOLD_SETTING, { type: Number, default: AT_COST_HOLD.byDefault, range: { min: AT_COST_HOLD.min, max: AT_COST_HOLD.max, step: 1 } });
-  world(AT_COST_NPC_SETTING, { type: Boolean, default: false });
   CONFIG.queries[AT_COST_QUERY] = handleAtCostQuery;   // chez le joueur qui répond
   CONFIG.queries[AT_COST_MARK_QUERY] = markMessage;
   // Une scène qui change : les occasions ouvertes se ferment (l'échec reste).

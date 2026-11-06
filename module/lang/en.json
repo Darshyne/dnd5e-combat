@@ -2004,9 +2004,7 @@
   "DND5ECOMBAT.APrix.MarqueAvecPrix": "Success (at a cost: {cost})",
   "DND5ECOMBAT.Attente.Quoi.APrix": "Success at a Cost",
   "DND5ECOMBAT.Reglage.successAtCost.Nom": "Success at a Cost",
-  "DND5ECOMBAT.Reglage.successAtCost.Aide": "Optional aid from the 2024 Dungeon Master's Guide (chapter 2). When an attack, check or save misses by 1 or 2, only the GM is told (pill above the token, menu entry, button on the card) and may offer success with a cost they describe; the player accepts or declines. Natural 1s on attacks are never offered, and a hit gained this way is never critical.",
+  "DND5ECOMBAT.Reglage.successAtCost.Aide": "Optional aid from the 2024 Dungeon Master's Guide (chapter 2). When an attack, check or save misses by 1 or 2, only the GM is told (pill above the token, menu entry, button on the card) and may offer success with a cost they describe; the player accepts or declines. Player characters' rolls only. Natural 1s on attacks are never offered, and a hit gained this way is never critical.",
   "DND5ECOMBAT.Reglage.successAtCostHold.Nom": "Success at a Cost: pause (seconds)",
-  "DND5ECOMBAT.Reglage.successAtCostHold.Aide": "For an attack or save resolved by DAS, the time the GM has to offer success before the result is applied. 0: no pause, only the card buttons (rolls with nothing applied).",
-  "DND5ECOMBAT.Reglage.successAtCostNpc.Nom": "Success at a Cost: NPCs too",
-  "DND5ECOMBAT.Reglage.successAtCostNpc.Aide": "Otherwise, only player characters' rolls are flagged."
+  "DND5ECOMBAT.Reglage.successAtCostHold.Aide": "For an attack or save resolved by DAS, the time the GM has to offer success before the result is applied. 0: no pause, only the card buttons (rolls with nothing applied)."
 }

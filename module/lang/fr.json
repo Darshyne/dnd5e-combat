@@ -323,6 +323,8 @@
   "DND5ECOMBAT.Reglage.debugAllModules.Aide": "Sur ce client, relever aussi les erreurs où aucun module DAS n'apparaît (autres modules, système, cœur de Foundry). Utile quand un conflit entre modules est soupçonné.",
   "DND5ECOMBAT.Reglage.debugNotify.Nom": "Rapport de bug : prévenir à la première erreur",
   "DND5ECOMBAT.Reglage.debugNotify.Aide": "Sur ce client, un avis discret à la première erreur d'un module DAS de la session. La pastille du bouton « Réglages DAS » compte les erreurs dans tous les cas.",
+  "DND5ECOMBAT.Reglage.debugMenu.Nom": "Rapport de bug : entrée du menu contextuel",
+  "DND5ECOMBAT.Reglage.debugMenu.Aide": "Affiche « Rapport de bug… » dans le menu contextuel des tokens (le MJ sur toute créature, un joueur sur les siennes). Décoché : l'entrée disparaît pour toute la table ; la fenêtre reste ouverte depuis les réglages DAS.",
   "DND5ECOMBAT.Debogueur.Titre": "Rapport de bug DAS",
   "DND5ECOMBAT.Debogueur.Intro": "Ce rapport reste sur cet ordinateur tant que vous ne cliquez pas sur une sortie. Les noms des joueurs deviennent des rôles, le nom du monde est masqué. Relisez l'aperçu avant de l'envoyer.",
   "DND5ECOMBAT.Debogueur.AvecToken": "Le contexte du token choisi est joint (type, niveau, états, identifiants de ses objets — sans son nom).",

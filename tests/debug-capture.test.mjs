@@ -248,3 +248,22 @@ describe("bruit écarté (§380, vu en jeu côté joueur)", () => {
     expect(debugApi.errors()).toEqual([]);
   });
 });
+
+describe("entrée du menu contextuel (§380)", () => {
+  it("le MJ sur toute créature, un joueur sur les siennes ; retirée par le réglage de monde", async () => {
+    const { debugMenuEntry } = await import("../module/scripts/ui/debug-report.mjs");
+    let shown = true;
+    Object.assign(globalThis.game, { i18n: { localize: k => k, format: k => k }, settings: { get: (ns, key) => (key === "debugMenu" ? shown : true) } });
+    const mine = { actor: {}, isOwner: true };
+    const theirs = { actor: {}, isOwner: false };
+    game.user = { isGM: false };
+    expect(debugMenuEntry(mine)?.label).toBe("DND5ECOMBAT.Debogueur.Menu");
+    expect(debugMenuEntry(theirs)).toBeNull();
+    game.user = { isGM: true };
+    expect(debugMenuEntry(theirs)).not.toBeNull();
+    expect(debugMenuEntry({ isOwner: true })).toBeNull();      // pas d'acteur
+    shown = false;
+    expect(debugMenuEntry(theirs)).toBeNull();
+    expect(debugMenuEntry(mine)).toBeNull();
+  });
+});

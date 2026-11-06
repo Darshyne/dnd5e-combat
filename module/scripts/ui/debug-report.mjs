@@ -3,7 +3,8 @@
  * joueurs lui ont envoyées), une description, l'environnement, la piste des derniers gestes ; un aperçu complet et modifiable ; trois
  * sorties, chacune sur un clic : copier le Markdown, enregistrer un fichier (.md ou .json), ouvrir la page « New issue » de GitHub
  * pré-remplie. Rien ne part sans ce clic. Ouverte depuis l'onglet Général de la fenêtre DAS (MJ et joueurs) ou le menu contextuel
- * d'un token (le MJ sur toute créature, un joueur sur les siennes : le contexte de ce token est joint) ; `api.debug.open()`.
+ * d'un token (le MJ sur toute créature, un joueur sur les siennes : le contexte de ce token est joint ; réglage de monde `debugMenu`
+ * pour retirer cette entrée) ; `api.debug.open()`.
  * Retour visuel : une pastille du nombre d'erreurs sur le bouton « Réglages DAS » de la barre latérale, et un avis à la première
  * erreur DAS de la session (réglage client `debugNotify`).
  */
@@ -17,6 +18,7 @@ import { loc, esc } from "../runtime/shared.mjs";
 
 const WINDOW_ID = "das-debug-report";
 export const DEBUG_NOTIFY_SETTING = "debugNotify";
+export const DEBUG_MENU_SETTING = "debugMenu";
 let notified = false;
 
 /** Les titres du Markdown : en anglais (la langue des issues), quelle que soit la langue de l'interface. */
@@ -218,10 +220,13 @@ export function openDebugReport({ token=null }={}) {
   return app;
 }
 
-/** L'entrée du menu contextuel : le MJ sur toute créature, un joueur sur les siennes. */
+/** L'entrée du menu contextuel : le MJ sur toute créature, un joueur sur les siennes ; absente si le MJ l'a retirée (`debugMenu`). */
 export function debugMenuEntry(target) {
   const doc = target?.document ?? target;
   if ( !doc?.actor || !(game.user.isGM || doc.isOwner) ) return null;
+  let shown = true;
+  try { shown = game.settings.get(MODULE_ID, DEBUG_MENU_SETTING); } catch { /* réglage pas encore déclaré */ }
+  if ( !shown ) return null;
   return { icon: "fa-solid fa-bug", label: loc("Debogueur.Menu"), run: () => openDebugReport({ token: doc }) };
 }
 
@@ -259,6 +264,10 @@ export function registerDebugReport() {
   game.settings.register(MODULE_ID, DEBUG_NOTIFY_SETTING, {
     name: "DND5ECOMBAT.Reglage.debugNotify.Nom", hint: "DND5ECOMBAT.Reglage.debugNotify.Aide",
     scope: "client", config: true, type: Boolean, default: true
+  });
+  game.settings.register(MODULE_ID, DEBUG_MENU_SETTING, {
+    name: "DND5ECOMBAT.Reglage.debugMenu.Nom", hint: "DND5ECOMBAT.Reglage.debugMenu.Aide",
+    scope: "world", config: true, type: Boolean, default: true
   });
   debugApi.onError((group, isNew) => {
     // Une erreur levée avant `ready` attend : ni avis ni fenêtre tant que l'interface n'est pas là.

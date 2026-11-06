@@ -323,6 +323,8 @@
   "DND5ECOMBAT.Reglage.debugAllModules.Aide": "On this client, also record errors where no DAS module appears (other modules, the system, Foundry core). Useful when a conflict between modules is suspected.",
   "DND5ECOMBAT.Reglage.debugNotify.Nom": "Bug report: notify on the first error",
   "DND5ECOMBAT.Reglage.debugNotify.Aide": "On this client, a discreet notice on the session's first error from a DAS module. The badge on the « DAS Settings » button counts errors either way.",
+  "DND5ECOMBAT.Reglage.debugMenu.Nom": "Bug report: context menu entry",
+  "DND5ECOMBAT.Reglage.debugMenu.Aide": "Shows « Bug report… » in the tokens' context menu (the GM on any creature, a player on their own). Unticked: the entry disappears for the whole table; the window still opens from the DAS Settings.",
   "DND5ECOMBAT.Debogueur.Titre": "DAS bug report",
   "DND5ECOMBAT.Debogueur.Intro": "This report stays on this computer until you click an output. Player names become roles, the world name is hidden. Read the preview before sending it.",
   "DND5ECOMBAT.Debogueur.AvecToken": "The chosen token's context is attached (type, level, statuses, its items' identifiers — not its name).",

@@ -99,7 +99,7 @@ export const SETTINGS_TABS = Object.freeze([
       g("awaiting", "fa-solid fa-hourglass-half", ["awaitingShow", "awaitingGm", "awaitingHide"],
         { sub: { awaitingGm: offIf("awaitingShow", false) } })
     ] },
-  { id: "advanced", icon: "fa-solid fa-gears", keys: ["perfWarnMs", "automationBadges", "debugCapture", "debugAllModules", "debugNotify"] }
+  { id: "advanced", icon: "fa-solid fa-gears", keys: ["perfWarnMs", "automationBadges", "debugCapture", "debugAllModules", "debugNotify", "debugMenu"] }
 ]);
 
 /**

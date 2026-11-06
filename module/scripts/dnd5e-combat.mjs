@@ -174,6 +174,7 @@ import { registerStealthUI } from "./ui/stealth.mjs";
 import { registerFactionsUI, openFactions } from "./ui/factions.mjs";
 import { registerSettingsWindow, openSettings, registerWindow } from "./ui/settings.mjs";
 import { openDiagnostic } from "./ui/diagnostic.mjs";
+import { registerDebug, debugApi } from "./runtime/debug.mjs";
 
 /**
  * État global du module, exposé sur game.modules.get(MODULE_ID).api pour l'inspection.
@@ -217,6 +218,8 @@ import { openDiagnostic } from "./ui/diagnostic.mjs";
  *   le Désavantage que le système donnera) ; `breakdown(actor,
  *   request)` (les tuiles de bonus) ; `title(request)`. Hooks `dnd5e-combat.groupRoll` (le point, à chaque résultat, sur chaque client) et
  *   `dnd5e-combat.groupRollPrompt` (une interface prend la fenêtre du joueur : runtime/group-roll.mjs).
+ * `debug` : le débogueur (§380, runtime/debug.mjs) — `errors()`, `trailList()`, `logs()`, `verbose(on)`, `register({ module, repo, collect })`,
+ *   `trail(module, kind, text)`, `onError(fn)`, `clear()` ; hook `dnd5e-combat.debug` au `setup`, avec cette API.
  * `welcome.open()` : l'écran d'accueil (§177) ; `diagnostic.open({ check })` : le diagnostic du monde (vérifications, réparation après
  *   sauvegarde, restauration), sur une seule vérification si `check` est donné (macros « Outils du MJ »).
  */
@@ -228,7 +231,7 @@ const state = {
   flee: fleeFrom, save: requestSave, drop: dropHeldBy,
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
   level: automationLevel, levelAtLeast, skippedRoutes,
-  welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic }, settings: { open: openSettings, registerWindow },
+  welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic }, debug: debugApi, settings: { open: openSettings, registerWindow },
   vision: { canSee: publicCanSee, cone: publicCone, canHear: publicCanHear },
   factions: { ...factionsApi, open: () => openFactions() },
   sneak: stealthApi,
@@ -290,6 +293,7 @@ Hooks.once("init", () => {
   state.reason = standbyReason();
   // §177 : l'accueil et le diagnostic, même en veille (le diagnostic nettoie justement les traces de Midi-QOL). Hors niveaux.
   registerWelcome({ menu: !!state.reason });
+  registerDebug();   // §380 : le débogueur, même en veille et à tout niveau (la capture tourne depuis le chargement du script)
   if ( state.reason ) return;
   // L'ordre de ces appels est l'ordre d'appel des inscrits d'un même hook (runtime/router.mjs).
   // Le moteur d'abord ; la souris (ui/pointer) avant la légalité (turn) : une activité sans cible

@@ -17,6 +17,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { recordTiming } from "./perf.mjs";
 import { isExecutor } from "./shared.mjs";
 import { theaterActive } from "./theater-state.mjs";
+import { noteRouterError, noteRefused } from "./debug.mjs";
 
 /** §220 : les hooks de démarrage passent toujours — leurs écoutes doivent être posées pour qu'on puisse rallumer sans recharger. */
 export const STARTUP_HOOKS = Object.freeze(["init", "i18nInit", "setup", "ready"]);
@@ -108,11 +109,15 @@ const router = createRouter({
   subscribe: (hook, fn) => Hooks.on(hook, fn),
   isExecutor,
   report: (entry, err) => {
+    noteRouterError(entry, err);   // §380 : le débogueur, avec le libellé et le hook (la console ne la relève pas une seconde fois)
     console[entry.level](`${MODULE_ID} | ${entry.label}`, err);
     if ( entry.notify ) ui.notifications.error(entry.notify, { localize: true });
   },
   // Qui annule quoi : un déplacement arrêté en route se lit ainsi dans la console (get-client-errors, watch).
-  refused: entry => console.log(`${MODULE_ID} | ${entry.hook} cancelled by "${entry.label}"`),
+  refused: entry => {
+    noteRefused(entry);   // §380 : un geste de la piste
+    console.log(`${MODULE_ID} | ${entry.hook} cancelled by "${entry.label}"`);
+  },
   // §98 : relevé des temps (runtime/perf.mjs).
   timing: { now: () => performance.now(), record: recordTiming },
   // §220 : Théâtre de l'esprit.

@@ -96,7 +96,7 @@ export const SETTINGS_TABS = Object.freeze([
         "floatStrikes", "floatEffects", "floatResources", "floatPrompts"]),
       g("timers", "fa-solid fa-gear", ["timerHideSeconds"])
     ] },
-  { id: "advanced", icon: "fa-solid fa-gears", keys: ["perfWarnMs", "automationBadges"] }
+  { id: "advanced", icon: "fa-solid fa-gears", keys: ["perfWarnMs", "automationBadges", "debugCapture", "debugAllModules"] }
 ]);
 
 /**

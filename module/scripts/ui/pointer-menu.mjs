@@ -42,6 +42,7 @@ import { actingToken, engageWith, exclusive, inCombat, observe } from "./pointer
 import { down, startRecall, clearPreview, previewMenuAttack } from "./pointer-mouse.mjs";
 import { hideHitChance } from "./hitchance.mjs";
 import { groupRollEntry } from "./group-roll.mjs";
+import { debugMenuEntry } from "./debug-report.mjs";
 import { setHeroic } from "../runtime/heroic.mjs";
 import { atCostMenuEntry } from "./success-at-cost.mjs";
 import { armCatalyst, catalystArmed, catalystOf } from "../runtime/catalyst.mjs";
@@ -529,6 +530,9 @@ function pushGroupRoll(entries, target) {
   for ( const wait of game.user.isGM ? waitsOf(target?.actor) : [] ) {
     entries.push({ icon: "fa-solid fa-forward", label: loc("Attente.Menu", { name: wait.userName, what: wait.label }), run: () => forceWait(wait.id) });
   }
+  // §380 : « Rapport de bug… » — le MJ sur toute créature, un joueur sur les siennes (le contexte de ce token est joint).
+  const bug = debugMenuEntry(target);
+  if ( bug ) entries.push(bug);
 }
 
 function heroicEntry(target) {

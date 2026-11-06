@@ -386,7 +386,8 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   // sans la fenêtre de dnd5e (barre d'actions, manette : `configure: false`) — la forme se choisit dans la fenêtre du moteur, chez
   // celui qui lance, puis l'utilisation repart avec elle. Lumière a sa propre fenêtre (§16.35).
   // §385 : « jusqu'à N » créatures (`summon.chooseCount`) — toujours cette fenêtre, avec le nombre et, depuis la fiche, le niveau.
-  const chooseCount = (activity?.type === "summon") && !!contentOf(activity.item).entry?.summon?.chooseCount;
+  const chooseRule = (activity?.type === "summon") ? contentOf(activity.item).entry?.summon?.chooseCount : null;
+  const chooseCount = !!chooseRule;
   if ( (activity?.type === "summon") && canvas.ready && activity.actor?.isOwner && !lightChoiceOf(activity)
     && asksSummonForm({ configure: dialogConfig?.configure, choices: summonChoicesOf(activity), chosen: !!ours.summonForm,
       confirmed: !!ours.confirmed, otherChoice: !!ours.lightChoice, always: chooseCount,
@@ -394,7 +395,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     closeSheetFor(activity);
     stopTargeting();
     const usage = [usageConfig, dialogConfig, messageConfig];
-    const options = { chooseCount, chooseLevel: chooseCount && (dialogConfig?.configure !== false) && activity.requiresSpellSlot,
+    const options = { chooseCount, countFormula: (typeof chooseRule === "string") ? chooseRule : null, chooseLevel: chooseCount && (dialogConfig?.configure !== false) && activity.requiresSpellSlot,
       slot: usageConfig.spell?.slot ?? null };
     askSummonForm(activity, usageConfig.summons ?? {}, options).then(choice => choice ? exclusive(() => castWithForm(activity, usage, choice)) : null)
       .catch(err => console.error(`${MODULE_ID} | summon form`, err));

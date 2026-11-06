@@ -12,8 +12,12 @@ import { isId, isObject } from "./shared.mjs";
 export function validateSummon(summon, at, errors) {
   if ( !isObject(summon) || !["after", "own", "none"].includes(summon.initiative) ) return errors.push(`${at}.initiative: "after", "own" or "none"`);
   if ( ("endsSpell" in summon) && (summon.endsSpell !== true) ) errors.push(`${at}.endsSpell: true or absent`);
-  for ( const flag of ["endsAtZero", "vanishesAtZero", "mimic", "endsIfIncapacitated", "castFrom", "familiar", "replaces", "vanishesWithCaster", "endsOnLongRest", "hostile", "untargeted", "chooseCount"] ) {
+  for ( const flag of ["endsAtZero", "vanishesAtZero", "mimic", "endsIfIncapacitated", "castFrom", "familiar", "replaces", "vanishesWithCaster", "endsOnLongRest", "hostile", "untargeted"] ) {
     if ( (flag in summon) && (summon[flag] !== true) ) errors.push(`${at}.${flag}: true or absent`);
+  }
+  // §385 / §387 : `chooseCount` — true (le `count` du profil) ou une formule (« @item.level * 2 - 5 » : Animation des morts).
+  if ( ("chooseCount" in summon) && (summon.chooseCount !== true) && !((typeof summon.chooseCount === "string") && summon.chooseCount.trim()) ) {
+    errors.push(`${at}.chooseCount: true or a count formula`);
   }
   if ( ("vanishesAfterDamage" in summon) && !(Number.isInteger(summon.vanishesAfterDamage) && (summon.vanishesAfterDamage > 0)) ) {
     errors.push(`${at}.vanishesAfterDamage: a positive whole number`);

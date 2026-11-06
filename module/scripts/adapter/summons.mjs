@@ -76,11 +76,12 @@ export function applyPreferredActors(activity) {
  * §385 : combien de créatures un profil pose au niveau `level` (sa formule `count` avec `@item.level` à ce niveau, comme `getPlacement`,
  * documents/activity/summon.mjs). Null si la formule n'est pas fixe (des dés : pas de choix proposé).
  */
-export function summonCountAt(activity, profile, level) {
+export function summonCountAt(activity, profile, level, formula=null) {
   try {
     const data = activity.getRollData?.() ?? {};
     const rollData = { ...data, item: { ...(data.item ?? {}), level } };
-    const roll = new Roll(String(profile?.count || "1"), rollData);
+    // §387 : une formule du contenu (`summon.chooseCount`) passe avant celle du profil.
+    const roll = new Roll(String(formula || profile?.count || "1"), rollData);
     if ( !roll.isDeterministic ) return null;
     return Math.max(0, Math.floor(Number(roll.evaluateSync().total) || 0));
   } catch(err) { return null; }

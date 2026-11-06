@@ -154,7 +154,7 @@ describe("contenu livré", () => {
     expect(Object.keys(CONTENT).sort()).toEqual([
       "aberrant-anatomy", "abjure-foes", "absorb-elements", "absorption-ioun-stone", "acid", "acid-arrow", "acrobatic-movement",
       "action-surge", "adrenaline-rush", "agile", "aid", "air-element", "air-form", "alchemists-fire", "alert", "alter-self", "ambush",
-      "ancient-might", "animal-friendship", "animate-objects", "antilife-shell", "antimagic-field", "antimatter-rifle", "antitoxin",
+      "ancient-might", "animal-friendship", "animate-dead", "animate-objects", "antilife-shell", "antimagic-field", "antimatter-rifle", "antitoxin",
       "arcane-eye", "arcane-gate", "arcane-hand", "arcane-recovery", "arcane-sword", "arcane-vigor", "arcane-ward", "armor-of-agathys",
       "armor-of-vulnerability", "arms-of-hadar", "arrow-catching-shield", "aspect-of-the-wilds", "assassinate", "athlete",
       "aura-of-alacrity", "aura-of-authority", "aura-of-bravery", "aura-of-courage", "aura-of-devotion", "aura-of-life",

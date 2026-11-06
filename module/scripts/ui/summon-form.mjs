@@ -60,9 +60,9 @@ function selectHtml(name, label, values, labels, current) {
  * n'est lancé).
  * @param {Activity} activity  L'activité « summon » (copie mise à l'échelle comprise : les profils disponibles suivent le niveau).
  * @param {object} [current]   Ce que dnd5e a préparé (`usageConfig.summons`), coché d'avance.
- * @param {{ chooseCount?: boolean, chooseLevel?: boolean, slot?: string|null }} [options]  §385.
+ * @param {{ chooseCount?: boolean, countFormula?: string|null, chooseLevel?: boolean, slot?: string|null }} [options]  §385, §387.
  */
-export async function askSummonForm(activity, current={}, { chooseCount=false, chooseLevel=false, slot=null }={}) {
+export async function askSummonForm(activity, current={}, { chooseCount=false, countFormula=null, chooseLevel=false, slot=null }={}) {
   const choices = summonChoicesOf(activity);
   const baseRollData = activity.getRollData?.() ?? {};
   const baseLevel = Number(activity.item?.system?.level) || 0;
@@ -93,7 +93,7 @@ export async function askSummonForm(activity, current={}, { chooseCount=false, c
     if ( !profiles.some(p => p._id === picked) ) picked = profiles[0]?._id ?? null;
     const forms = profiles.map(p => formOf(activity, p, rollAt(level), { bare: chooseCount }));
     const profile = profiles.find(p => p._id === picked);
-    const counts = chooseCount ? countChoices(summonCountAt(activity, profile, level)) : [];
+    const counts = chooseCount ? countChoices(summonCountAt(activity, profile, level, countFormula)) : [];
     const countHtml = counts.length
       ? selectHtml("count", loc("Invocation.Nombre"), counts, {}, counts[counts.length - 1]) : "";
     return `<div class="dnd5e-combat-forms">${cardsHtml(forms, picked)}</div>${countHtml}`;
@@ -104,7 +104,7 @@ export async function askSummonForm(activity, current={}, { chooseCount=false, c
   const read = form => {
     const data = new foundry.applications.ux.FormDataExtended(form).object;
     // Le nombre borné au maximum de la forme cochée à ce niveau (une forme changée sans clic garderait celui d'une autre).
-    const max = chooseCount ? summonCountAt(activity, profilesAt(level).find(p => p._id === (data.profile || picked)), level) : null;
+    const max = chooseCount ? summonCountAt(activity, profilesAt(level).find(p => p._id === (data.profile || picked)), level, countFormula) : null;
     const count = (Number(data.count) > 0) ? (max ? Math.min(Number(data.count), max) : Number(data.count)) : null;
     return { profile: data.profile || picked, ...(choices.size ? { creatureSize: data.creatureSize } : {}),
       ...(choices.type ? { creatureType: data.creatureType } : {}),

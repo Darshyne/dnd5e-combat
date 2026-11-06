@@ -128,5 +128,33 @@ export default {
       const wanted = mm ? "Compendium.dnd-monster-manual.actors." : "Compendium.dnd5e.actors24.";
       ctx.expect(String(captured?.summoned?.uuid ?? "").startsWith(wanted), `goule du ${mm ? "Monster Manual 2024" : "SRD 2024"} (${captured?.summoned?.uuid})`);
     }
+
+    // §387 : Animation des morts — sans os ni cadavre à viser, Squelette ou Zombi, et combien : au niveau 4, « niveau × 2 − 5 » = 3.
+    // Comme depuis la barre avec un emplacement de niveau 4 (rien n'est consommé) ; Zombi, 2 choisis.
+    const dead = await ctx.ensureItem(mage, SPELLS + "phbsplAnimateDea");
+    const started = await ctx.engine("castFromBar", { tokenId: mage.id, itemId: dead, slot: "spell4", x: pos.x + grid, y: pos.y + (3 * grid) });
+    const zombie = started.profiles.find(p => /zomb/i.test(p.name)) ?? started.profiles[1];
+    let deadForm = null;
+    for ( let i = 0; !deadForm && (i < 8); i++ ) {
+      const found = await ctx.call("list-dialogs", { dialogsOnly: true, waitMs: 1000 });
+      deadForm = (found.windows ?? []).find(d => (d.fields ?? []).some(f => f.name === "count"));
+      if ( !deadForm ) await pause(500);
+    }
+    const deadCount = deadForm?.fields?.find(f => f.name === "count");
+    if ( ctx.expect(!!deadForm, "Animation des morts : la fenêtre demande la forme et le nombre, sans cible à désigner") ) {
+      ctx.expect((deadCount.options ?? []).map(o => o.value).join(",") === "1,2,3", `de 1 à 3 au niveau 4 (${(deadCount.options ?? []).map(o => o.value).join(",")})`);
+      await ctx.call("answer-dialog", { id: deadForm.id, fields: { profile: zombie.id, count: "2" }, button: "summon" });
+      let captured = null;
+      for ( let i = 0; i < 20; i++ ) {
+        await pause(500);
+        captured = await ctx.engine("summonCaptured", {});
+        if ( captured?.tokens ) break;
+      }
+      const placed = captured?.tokens ?? [];
+      summoned.push(...placed.map(t => t.id));
+      for ( const t of placed ) if ( t.actorId ) actorsMade.add(t.actorId);
+      ctx.expect(captured?.summoned?.profile === zombie.id, `Zombi invoqué (${captured?.summoned?.name ?? "rien"})`);
+      ctx.expect(placed.length === 2, `deux zombis posés (${placed.length})`);
+    }
   }
 };

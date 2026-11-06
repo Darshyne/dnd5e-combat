@@ -42,6 +42,10 @@ export const SUMMONS = Object.freeze({
   // §385 (issue #38, décision de l'utilisateur) : Création de morts-vivants sans corps à viser ; le lanceur choisit combien de goules
   // (« jusqu'à trois », plus au-dessus), ou de blêmes / nécrophages / momies selon le niveau. Elles jouent à leur propre Initiative.
   "create-undead": { initiative: "own", untargeted: true, chooseCount: true },
+  // §387 (issue #38, demande de l'utilisateur) : Animation des morts de même — sans os ni cadavre à viser, Squelette ou Zombi, et
+  // combien : les données ne le disent que dans la cible du sort (« @item.level * 2 - 5 » : 1 au niveau 3, +2 par niveau). Ses
+  // données ne posent rien (`summon.prompt` faux) : PLACES_SUMMONS. Un cadavre ciblé reste relevé à sa place par un voisin (§118).
+  "animate-dead": { initiative: "own", untargeted: true, chooseCount: "@item.level * 2 - 5" },
   // §259 : « s'il tombe à 0 point de vie, le sort prend fin » — sans concentration, le serviteur disparaît.
   "unseen-servant": { initiative: "none", vanishesAtZero: true },
   // §107 : `familiar` — actions de base sauf l'attaque, vision, poche dimensionnelle. Le Pacte de la chaîne (occultiste, PHB
@@ -113,4 +117,4 @@ export const SUMMONS = Object.freeze({
  * (retour de séance, 2026-10-08 : la meute d'Invocation d'animaux n'apparaissait pas). Restent décochés, à dessein, ceux où
  * l'invocation est facultative : Lumière et Flamme éternelle (sur un objet), Animation des morts (relever un cadavre).
  */
-export const PLACES_SUMMONS = Object.freeze(["conjure-animals", "summon-undead", "grasping-vine", "phantom-steed", "project-image"]);
+export const PLACES_SUMMONS = Object.freeze(["conjure-animals", "summon-undead", "grasping-vine", "phantom-steed", "project-image", "animate-dead"]);

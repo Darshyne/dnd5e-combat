@@ -215,9 +215,10 @@ export function damageTypes({ tokenId, itemId }) {
  * { configure: false })`, sans `confirmed` : la fenêtre « Choisir la forme » du moteur doit s'ouvrir), sans rien consommer. La pose
  * qui suivra est notée et faite à la case donnée (le placement interactif de dnd5e, `getPlacement`, est remplacé sur l'instance
  * d'activité que `dnd5e.preSummon` reçoit — la copie mise à l'échelle). Ne fait pas attendre la fenêtre : rend tout de suite.
+ * `sheet: true` : comme depuis la fiche (voir plus bas).
  */
 let summonWatch = null;
-export function castFromBar({ tokenId, itemId, slot=null, x, y }) {
+export function castFromBar({ tokenId, itemId, slot=null, x, y, sheet=false }) {
   gmOnly();
   const token = canvas.scene?.tokens.get(tokenId);
   const item = token?.actor?.items.get(itemId);
@@ -237,7 +238,9 @@ export function castFromBar({ tokenId, itemId, slot=null, x, y }) {
     watch.tokens = (tokens ?? []).map(t => ({ id: t.id, name: t.name, actorId: t.actorId }));
     Hooks.off("dnd5e.postSummon", watch.tokenHook);
   });
-  activity.use({ consume: false, ...(slot ? { spell: { slot } } : {}) }, { configure: false })
+  // `sheet` : comme un clic dans la fiche (`activity.use()` ordinaire, fenêtre de dnd5e, consommation) — sans emplacement, le MJ reçoit
+  // « Plus de charge » (§77), dont la relance saute la fenêtre de dnd5e.
+  (sheet ? activity.use() : activity.use({ consume: false, ...(slot ? { spell: { slot } } : {}) }, { configure: false }))
     .catch(err => console.error(`${MODULE_ID} | castFromBar`, err));
   return { started: true, profiles: activity.availableProfiles.map(p => ({ id: p._id, name: p.name })) };
 }

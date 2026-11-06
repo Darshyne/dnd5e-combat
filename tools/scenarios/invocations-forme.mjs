@@ -13,7 +13,10 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 // darsh-animations ajoute, BLFX n'en a pas ; Élémentaire : celle de BLFX).
 const CASES = [
   { item: "phbsplSummonCele", index: 1, label: "Défenseur", fx: "holy_light2" },
-  { item: "phbsplSummonElem", index: 2, label: "Feu", fx: null }
+  { item: "phbsplSummonElem", index: 2, label: "Feu", fx: null },
+  // Depuis la fiche, par le MJ, sans emplacement de niveau 5 (Kaalisti, Occultiste 5, dans le retour de table) : « Plus de charge »
+  // (§77) → « Lancer quand même », dont la relance sautait la fenêtre de dnd5e — Vengeur d'office.
+  { item: "phbsplSummonCele", index: 1, label: "Défenseur (fiche, sans emplacement)", fx: null, sheet: true }
 ];
 
 export default {
@@ -39,16 +42,30 @@ export default {
       }
     });
 
+    // L'animation de Convocation de céleste vient de darsh-animations ≥ la version qui publie `previewSummon` (son SPEC §22).
+    const summonFx = !!(await ctx.call("call-module-api", { moduleId: "darsh-animations", fn: "previewSummon", args: {} }).catch(() => null));
+    const slots5 = Number((await ctx.call("get-actor", { actorId: mage.actorId })).system?.spells?.spell5?.value) > 0;
     const animated = !!(await ctx.call("call-module-api", { moduleId: "darsh-animations", fn: "renderer", args: {} }).catch(() => null))
       && ((await ctx.engine("sequencer", {})).available);
-    for ( const [n, { item: source, index, label, fx }] of CASES.entries() ) {
+    for ( const [n, { item: source, index, label, fx, sheet=false }] of CASES.entries() ) {
       const itemId = await ctx.ensureItem(mage, SPELLS + source);
-      const started = await ctx.engine("castFromBar", { tokenId: mage.id, itemId, x: pos.x + ((n + 1) * grid), y: pos.y + grid });
+      if ( sheet && slots5 ) { ctx.log(`${source} : le Magicien a des emplacements de niveau 5, cas « sans emplacement » sauté`); continue; }
+      const started = await ctx.engine("castFromBar", { tokenId: mage.id, itemId, sheet, x: pos.x + ((n + 1) * grid), y: pos.y + grid });
+      if ( sheet ) {
+        const asked = await ctx.call("list-dialogs", { dialogsOnly: true, waitMs: 8000 });
+        const forced = (asked.windows ?? []).find(d => (d.buttons ?? []).some(b => b.action === "yes") && !(d.fields ?? []).some(f => f.name === "profile"));
+        if ( !ctx.expect(!!forced, `${source} : le MJ peut lancer sans emplacement (« Plus de charge »)`) ) continue;
+        await ctx.call("answer-dialog", { id: forced.id, button: "yes" });
+      }
       const wanted = started.profiles[index];
       if ( !ctx.expect(!!wanted, `${source} : la forme ${label} existe (${started.profiles.map(p => p.name).join(" / ")})`) ) continue;
-      const found = await ctx.call("list-dialogs", { dialogsOnly: true, waitMs: 8000 });
-      const dialog = (found.windows ?? []).find(d => (d.fields ?? []).some(f => f.name === "profile"));
-      if ( !ctx.expect(!!dialog, `${source} : la fenêtre « Choisir la forme » s'ouvre (barre, sans la fenêtre de dnd5e)`) ) continue;
+      let dialog = null;
+      for ( let i = 0; !dialog && (i < 8); i++ ) {
+        const found = await ctx.call("list-dialogs", { dialogsOnly: true, waitMs: 1000 });
+        dialog = (found.windows ?? []).find(d => (d.fields ?? []).some(f => f.name === "profile"));
+        if ( !dialog ) await pause(500);
+      }
+      if ( !ctx.expect(!!dialog, `${source} : la fenêtre « Choisir la forme » s'ouvre (${sheet ? "relance sans emplacement" : "barre"}, sans la fenêtre de dnd5e)`) ) continue;
       await ctx.call("answer-dialog", { id: dialog.id, fields: { profile: wanted.id }, button: "summon" });
       let captured = null;
       for ( let i = 0; i < 20; i++ ) {
@@ -63,12 +80,13 @@ export default {
       ctx.expect(placed.length > 0, `${source} : la créature est posée (${placed.map(t => t.name).join(", ") || "aucune"})`);
       // L'apparition (darsh-animations, BLFX « After Summon ») : des effets Sequencer en cours peu après la pose.
       let files = [];
-      for ( let i = 0; animated && (i < 10); i++ ) {
+      for ( let i = 0; animated && !(fx && !summonFx) && (i < 10); i++ ) {
         await pause(400);
         files = (await ctx.engine("sequencer", {})).effects.map(e => e.file);
         if ( files.length && (!fx || files.some(f => f.includes(fx))) ) break;
       }
-      if ( animated ) ctx.expect(files.length > 0 && (!fx || files.some(f => f.includes(fx))),
+      if ( fx && !summonFx ) ctx.log(`${source} : darsh-animations sans les animations d'invocation (§22) : apparition non vérifiée`);
+      else if ( animated ) ctx.expect(files.length > 0 && (!fx || files.some(f => f.includes(fx))),
         `${source} : une animation d'apparition joue (${files.map(f => f.split("/").pop()).slice(0, 3).join(", ") || "aucune"})`);
       await pause(2500);
     }

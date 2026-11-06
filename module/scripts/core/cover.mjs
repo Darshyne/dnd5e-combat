@@ -114,7 +114,8 @@ export function pullBack(centre, corner, hit, margin) {
  *                                                    où se trouve son centre (un coin dans la roche n'est pas son espace).
  * @param {(centre: {x,y}, corner: {x,y}) => {x,y}} [context.clipTarget]    §239 : de même pour la cible.
  * @returns {{degree: "none"|"half"|"threeQuarters"|"total", bonus: number|null, blockedLines: number, byCreature: boolean,
- *            sources: string[]}}  `sources` : ce qui coupe les lignes du coin retenu (« wall », « surface », « creature »).
+ *            sources: string[]}}  `sources` : tout ce qui coupe les lignes du coin retenu (« wall », « surface », « creature »),
+ *            même ce qui ne décide pas du degré.
  */
 export function coverBetween({ attacker, target, bodies=[], blocked=() => false, inset=0, clipAttacker=null, clipTarget=null }) {
   const from = clipped(attacker, inset, clipAttacker);
@@ -134,8 +135,10 @@ export function coverBetween({ attacker, target, bodies=[], blocked=() => false,
     let byCreature = false;
     if ( (degree === "none") && creatures ) { degree = "half"; byCreature = true; }
     const rank = DEGREES.indexOf(degree);
+    // #33 : une créature qui coupe aussi des lignes de ce coin est citée, même quand le mur décide du degré (les abris ne
+    // s'additionnent pas : seul le plus fort compte).
+    if ( creatures ) kinds.add("creature");
     // L'attaquant choisit le coin qui laisse le moins d'abri à sa cible.
-    if ( byCreature ) kinds.add("creature");
     if ( !best || (rank < best.rank) ) best = { rank, degree, blockedLines: walls + (byCreature ? creatures : 0), byCreature, sources: [...kinds] };
     if ( best.rank === 0 ) break;
   }

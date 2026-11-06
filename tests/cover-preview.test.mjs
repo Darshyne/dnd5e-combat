@@ -58,3 +58,13 @@ describe("texte de l'aperçu", () => {
     expect(coverPreviewText(null, t)).toBeNull();
   });
 });
+
+describe("#33 : une créature qui coupe aussi le coin retenu est citée", () => {
+  it("mur et créature : le mur décide, les deux sont cités", () => {
+    const blocked = (a, b) => (b.y < 50 ? "wall" : false);   // le mur coupe les lignes vers le haut de la cible
+    const cover = coverBetween({ attacker, target, bodies: [{ x: 100, y: 0, width: 100, height: 100 }], blocked, inset: 10 });
+    expect(cover.degree).toBe("half");
+    expect(cover.byCreature).toBe(false);
+    expect(cover.sources).toEqual(["wall", "creature"]);
+  });
+});

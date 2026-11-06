@@ -14,25 +14,41 @@ import { lengthIn, readUnitFactors } from "./units.mjs";
 
 const centre = r => ({ x: r.x + (r.width / 2), y: r.y + (r.height / 2) });
 
-/** Où, sur la ligne de a à b (0–1), se trouve le premier obstacle de l'une de ces sources ; null si l'axe n'en croise aucun. */
+/**
+ * Où, sur la ligne de a à b (0–1), se trouve le premier obstacle de l'une de ces sources. D'abord sur l'axe des centres ; si l'axe
+ * ne croise rien (l'abri vient des lignes de coin : un pan de mur à côté de l'axe), le premier obstacle sur les lignes du centre de
+ * l'attaquant aux coins de la cible, ramené sur l'axe ; null si rien.
+ */
 function firstObstacle(attacker, target, a, b, pa, sources, seenOnly) {
   const length = Math.hypot(b.x - a.x, b.y - a.y);
   if ( length < 1e-6 ) return null;
-  const hits = [];
-  if ( sources.includes("wall") ) {
-    const level = attacker.parent.levels?.get?.(pa.level ?? attacker._source.level) ?? undefined;
-    const eye = eyeElevation(attacker, pa);
-    const points = CONFIG.Canvas.polygonBackends.move.testCollision({ ...a, elevation: eye }, { ...b, elevation: eye },
-      { type: "move", mode: "all", level }) ?? [];
-    for ( const p of (Array.isArray(points) ? points : []) ) hits.push(Math.hypot(p.x - a.x, p.y - a.y) / length);
-  }
-  if ( sources.includes("creature") ) {
-    for ( const t of coverBodies(attacker, target, seenOnly) ) {
-      const at = segmentEntry(a, b, rectOf(t));
-      if ( at !== null ) hits.push(at);
+  const level = attacker.parent.levels?.get?.(pa.level ?? attacker._source.level) ?? undefined;
+  const eye = eyeElevation(attacker, pa);
+  const bodies = sources.includes("creature") ? coverBodies(attacker, target, seenOnly).map(t => rectOf(t)) : [];
+  // La position d'un point sur l'axe a → b (projection), en fraction.
+  const along = p => (((p.x - a.x) * (b.x - a.x)) + ((p.y - a.y) * (b.y - a.y))) / (length * length);
+  const hitsOn = end => {
+    const hits = [];
+    if ( sources.includes("wall") ) {
+      const points = CONFIG.Canvas.polygonBackends.move.testCollision({ ...a, elevation: eye }, { ...end, elevation: eye },
+        { type: "move", mode: "all", level }) ?? [];
+      for ( const p of (Array.isArray(points) ? points : []) ) hits.push(along(p));
     }
+    for ( const r of bodies ) {
+      const t = segmentEntry(a, end, r);
+      if ( t !== null ) hits.push(along({ x: a.x + ((end.x - a.x) * t), y: a.y + ((end.y - a.y) * t) }));
+    }
+    return hits;
+  };
+  let hits = hitsOn(b);
+  if ( !hits.length ) {
+    const inset = attacker.parent.grid.size * 0.1;
+    const r = rectOf(target);
+    const corners = [{ x: r.x + inset, y: r.y + inset }, { x: r.x + r.width - inset, y: r.y + inset },
+      { x: r.x + inset, y: r.y + r.height - inset }, { x: r.x + r.width - inset, y: r.y + r.height - inset }];
+    hits = corners.flatMap(hitsOn);
   }
-  return hits.length ? Math.min(...hits) : null;
+  return hits.length ? Math.max(0, Math.min(1, Math.min(...hits))) : null;
 }
 
 /**

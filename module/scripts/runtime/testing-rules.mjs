@@ -528,7 +528,7 @@ export function etherealWalls({ tokenId, point }) {
 function plainRoll(view) {
   if ( !view ) return null;
   return { id: view.id, request: view.request, done: view.done, success: view.success, successes: view.successes, cancelled: !!view.cancelled,
-    entries: view.entries.map(e => ({ name: e.name, total: e.total, d20: e.d20, status: e.status, success: e.success, user: e.user })) };
+    entries: view.entries.map(e => ({ name: e.name, total: e.total, d20: e.d20, status: e.status, success: e.success, user: e.user, atCost: e.atCost ?? null })) };
 }
 
 /**

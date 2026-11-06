@@ -50,6 +50,7 @@ const STYLES = {
   spend: { fill: 0xffb347, fontSize: 20 },      // la ressource dépensée pour cela (−1 emplacement niv. 2)
   strike: { fill: 0xe0453a, fontSize: 26 },     // §223 : un coup qui porte l'Attaque sournoise ou des dégâts au choix (Frappe effroyable)
   heroic: { fill: 0xffd24a, fontSize: 28 },     // §282 : l'Inspiration héroïque utilisée (un dé relancé)
+  atCost: { fill: 0xe0a050, fontSize: 26 },     // issue #32 : un succès à un prix accepté
   check: { fill: 0xf0e6c8, fontSize: 22 },      // §292 : un test de caractéristique, de compétence ou d'outil, sans DD connu
   checkSuccess: { fill: 0x8fd18f, fontSize: 22 },
   checkFail: { fill: 0xe07a6a, fontSize: 22 }
@@ -66,7 +67,7 @@ function textOf(f) {
     case "saveFail": return loc(f.auto ? "Retour.SauvegardeRateeOffice" : "Retour.SauvegardeRatee");
     case "duplicate": return loc("Retour.Replique");
     case "unaffected": return loc("Retour.NonAffecte");
-    case "prompt": case "refused": case "ended": case "gain": case "spend": case "strike": case "heroic":
+    case "prompt": case "refused": case "ended": case "gain": case "spend": case "strike": case "heroic": case "atCost":
     case "check": case "checkSuccess": case "checkFail": return f.text;
   }
   return null;
@@ -189,15 +190,15 @@ function show(feedback) {
  * soleil doré qui grandit et tourne, deux anneaux qui s'élargissent, ~1,4 s. Dessiné même sans textes flottants : c'est le retour visuel
  * de l'action.
  */
-export async function heroicBurst(token) {
+export async function heroicBurst(token, { color=0xffd24a, icon="icons/svg/sun.svg" }={}) {
   const placeable = (typeof token === "string") ? fromUuidSync(token)?.object : (token?.object ?? token);
   if ( !canvas?.ready || !placeable?.visible || placeable.document?.isSecret ) return;
-  const gold = 0xffd24a;
+  const gold = color;
   const size = Math.max(placeable.w, placeable.h);
   const box = new PIXI.Container();
   box.position.set(placeable.center.x, placeable.center.y);
   const rings = [0, 1].map(() => box.addChild(new PIXI.Graphics()));
-  const texture = await foundry.canvas.loadTexture("icons/svg/sun.svg").catch(() => null);
+  const texture = await foundry.canvas.loadTexture(icon).catch(() => null);
   const sun = texture ? box.addChild(new PIXI.Sprite(texture)) : null;
   if ( sun ) { sun.anchor.set(0.5); sun.tint = gold; }
   layerOf().addChild(box);
@@ -333,6 +334,8 @@ export function registerFeedback() {
   route(`${MODULE_ID}.notice`, n => {
     floatNotice(n.token, n.text, n.kind);
     if ( n.kind === "heroic" ) heroicBurst(n.token).catch(() => {});
+    // Issue #32 : le succès à un prix accepté — le même éclat, ambré, avec la balance.
+    if ( n.kind === "atCost" ) heroicBurst(n.token, { color: 0xe0a050, icon: "icons/svg/aura.svg" }).catch(() => {});
   }, { label: "visual feedback: engine notice" });
   // §252 : l'avis d'une action d'un autre client (runtime/shared.mjs, `notice(…, { all: true })`), dessiné ici.
   CONFIG.queries[NOTICE_QUERY] = receiveNotice;

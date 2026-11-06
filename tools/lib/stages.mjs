@@ -48,3 +48,14 @@ export const ARENE_SORTS = Object.freeze({
     "Mort-vivant": [9, 15], "Grande cible": [14, 4], "Créature artificielle": [9, 4], "Cible lointaine": [35, 10]
   })
 });
+
+/**
+ * Issue #32 : l'« Arène du succès à un prix » (`tools/arene-prix.mjs`) — scène plate de 12 × 8 cases de 140 px (5 ft). Le Héros (le
+ * Guerrier pré-tiré du Manuel : un personnage joueur, le seul à qui l'aide s'applique par défaut) au contact du Mannequin (999 PV,
+ * CA 15) ; le Lanceur (PNJ sans item, Flamme sacrée prêtée par le scénario) à 4 cases du Héros, pour la sauvegarde. Positions en cases.
+ */
+export const ARENE_PRIX = Object.freeze({
+  name: "Arène du succès à un prix",
+  cols: 12, rows: 8, grid: 140,
+  tokens: Object.freeze({ "Héros du prix": [4, 4], "Mannequin": [5, 4], "Lanceur du prix": [4, 8] })
+});

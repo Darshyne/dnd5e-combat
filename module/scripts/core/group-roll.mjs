@@ -65,7 +65,8 @@ export function tally(request, entries) {
   const dc = request?.dc ?? null;
   const out = entries.map(e => {
     const rolled = Number.isFinite(e.total) && (e.total !== null);
-    return { ...e, status: rolled ? "rolled" : "waiting", success: rolled ? outcomeOf(e.total, dc) : null };
+    // Issue #32 : une ligne acceptée en succès à un prix (`atCost`) compte comme réussie, son total restant celui du jet.
+    return { ...e, status: rolled ? "rolled" : "waiting", success: rolled ? ((e.atCost && (dc !== null)) ? true : outcomeOf(e.total, dc)) : null };
   });
   const rolled = out.filter(e => e.status === "rolled").length;
   const waiting = out.length - rolled;

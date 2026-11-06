@@ -72,6 +72,8 @@ import { registerFollowUps } from "./runtime/follow-ups.mjs";
 import { registerManeuverDice } from "./runtime/maneuver-dice.mjs";
 import { registerRollBonus } from "./runtime/roll-bonus.mjs";
 import { registerHeroic, setHeroic } from "./runtime/heroic.mjs";
+import { registerSuccessAtCost, atCostApi } from "./runtime/success-at-cost.mjs";
+import { registerSuccessAtCostUI } from "./ui/success-at-cost.mjs";
 import { hasHeroic, heroicMode } from "./adapter/heroic.mjs";
 import { registerNaturalOne } from "./runtime/natural-one.mjs";
 import { registerRise } from "./runtime/rise.mjs";
@@ -243,7 +245,10 @@ const state = {
   // §282 : Inspiration héroïque — `has(actor)`, `set(actor, on)` (MJ : la donne ou la retire, carte et retour à la table), `mode()` : le
   // réglage de ce client (« on », « failure », « off »).
   waits: { list: playerWaits, force: id => forceWait(id), open: openPlayerWaits },   // §290 : fenêtres sans délai, attentes du MJ
-  heroic: { has: hasHeroic, set: (actor, on) => (game.user.isGM ? setHeroic(actor, on) : false), mode: heroicMode }
+  heroic: { has: hasHeroic, set: (actor, on) => (game.user.isGM ? setHeroic(actor, on) : false), mode: heroicMode },
+  // Issue #32 : succès à un prix — `enabled()`, `candidates()` (les pauses ouvertes chez le MJ actif), `offer(id, { cost? })`,
+  // `dismiss(id)`, `offerOnMessage(messageId, { what, cost? })`. Hook `dnd5e-combat.successAtCost` après chaque réponse.
+  atCost: atCostApi
 };
 
 /** §196 : l'écart de deux tokens en cases (3D, et son vide vertical), pour un voisin qui juge une allonge — null s'il ne se mesure pas. */
@@ -369,6 +374,7 @@ Hooks.once("init", () => {
   gated(registerSmite);   // §25 : sorts de châtiment (après registerSneak : les dés du châtiment suivent ceux de l'Attaque sournoise)
   gated(registerFollowUps);   // §373 : activités proposées après un coup (après registerSmite : la faveur d'abord, puis la prise)
   gated(registerManeuverDice);   // §89, §90 : dés de manœuvre (Fente, Feinte, Jeu de jambes évasif, Balayage, Chassé-croisé, Frappe commandée)
+  gated(registerSuccessAtCost);   // issue #32 : succès à un prix (réglages, question au joueur)
   gated(registerHeroic);   // §282 : Inspiration héroïque — avant les dés d'après le jet (Embuscade, Inspiration bardique), qui l'attendent
   gated(registerRollBonus);      // §90 : un dé ajouté à un test ou à l'initiative (Embuscade, Autorité naturelle, Évaluation tactique)
   gated(registerNaturalOne);     // §93 : un 1 naturel à un Test d20 (Dons sombres de Ravenloft)
@@ -440,6 +446,7 @@ Hooks.once("init", () => {
   gated(registerKindleUi);   // §52 : boîte à amadou
   gated(registerSkillAidUi);   // §113 : section « Aides » de la fenêtre de jet d'un test
   gated(registerGroupRollUI);   // §242 : fenêtre de demande, dé de la barre d'outils, HUD du token, carte
+  gated(registerSuccessAtCostUI);   // issue #32 : pastille du MJ, boutons et marques des cartes
   gated(registerPlayerWaitsUI);   // §290 : fenêtre de suivi du MJ (qui il attend, forcer)
   gated(registerGroupRollTracker);   // §242 : fenêtre de suivi du MJ (jets en cours, lancer pour un joueur qui tarde)
   gated(registerAutomation);

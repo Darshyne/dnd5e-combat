@@ -42,6 +42,7 @@ import { actingToken, engageWith, exclusive, inCombat, observe } from "./pointer
 import { down, startRecall } from "./pointer-mouse.mjs";
 import { groupRollEntry } from "./group-roll.mjs";
 import { setHeroic } from "../runtime/heroic.mjs";
+import { atCostMenuEntry } from "./success-at-cost.mjs";
 import { armCatalyst, catalystArmed, catalystOf } from "../runtime/catalyst.mjs";
 import { forceWait, waitsOf } from "../runtime/player-waits.mjs";
 
@@ -481,6 +482,9 @@ function tokenEntries(token, target, { aggressive=true }={}) {
  * (retour de l'utilisateur, 2026-10-25 : pas dans le HUD du token) ; sur son propre token aussi, où l'entrée « HUD » le garde à portée.
  */
 function pushGroupRoll(entries, target) {
+  // Issue #32 : MJ — pendant la pause d'un jet raté de 1 ou 2 de ce token : offrir le succès à un prix.
+  const atCost = atCostMenuEntry(target);
+  if ( atCost ) entries.unshift(atCost);
   const entry = groupRollEntry(target);
   if ( entry ) entries.push(entry);
   // §282 : MJ, sur un personnage joueur — donner ou retirer l'Inspiration héroïque.

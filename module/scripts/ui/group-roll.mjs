@@ -18,6 +18,7 @@ import { ROLL_TYPES, normalizeRequest } from "../core/group-roll.mjs";
 import { requestOf, viewOf, toolLabel, testTitle } from "../adapter/group-roll.mjs";
 import { requestGroupRoll } from "../runtime/group-roll.mjs";
 import { openTracker } from "./group-roll-tracker.mjs";
+import { decorateGroupCard } from "./success-at-cost.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc, esc } from "../runtime/shared.mjs";
 
@@ -299,6 +300,8 @@ function onRenderCard(message, html) {
     status.querySelectorAll(".fa-check, .fa-xmark").forEach(i => i.remove());
     status.append(foundry.applications.fields.createFontAwesomeIcon(entry.success ? "check" : "xmark"));
   }
+  // Issue #32 : succès à un prix — bouton du MJ sur une ligne ratée de 1 ou 2, marque sur une ligne acceptée.
+  decorateGroupCard(message, root, view, { what: testTitle(request) });
   // Le verdict : au MJ toujours, aux joueurs quand le DD n'est pas caché.
   root.querySelector(".das-group-roll__verdict")?.remove();
   if ( (view.success !== null) && (gm || !request.hideDc) ) {

@@ -355,6 +355,12 @@ async function resume() {
       continue;
     }
     if ( resolution?.step !== STEPS.AWAITING_REACTION ) continue;
+    // Issue #32 : une pause de succès à un prix restée ouverte (F5 du MJ) : l'échec reste.
+    if ( resolution.pending.some(p => p.kind === "atCost") ) {
+      log("resume: success at a cost not offered before the reload, the failure stands");
+      await dispatcher.send(message.id, { type: "atCostDecided", accepted: false });
+      continue;
+    }
     log(`resume: reaction window closed (${resolution.pending.length} pending)`);
     // Des répliques dont les dés n'ont pas été lancés : on les lance.
     const duplicates = resolution.pending.filter(p => p.kind === "duplicates").map(p => p.token);

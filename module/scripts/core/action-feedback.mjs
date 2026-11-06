@@ -20,7 +20,9 @@ export const CORE_SOUNDS = Object.freeze({
   // §282 : l'Inspiration héroïque utilisée — un coup de tambour épique.
   heroicHit: "sounds/combat/epic-turn-1hit.ogg",
   // §290 : le MJ force la réponse d'un joueur.
-  nextHorn: "sounds/combat/epic-next-horn.ogg"
+  nextHorn: "sounds/combat/epic-next-horn.ogg",
+  // Issue #32 : un succès à un prix accepté — deux coups de tambour.
+  atCost: "sounds/combat/epic-turn-2hit.ogg"
 });
 
 /** Le son par défaut d'une action (`action`) selon son issue (`success`, `failure`), ou null. */
@@ -43,7 +45,9 @@ const DEFAULTS = Object.freeze({
   control: { success: CORE_SOUNDS.chime, failure: CORE_SOUNDS.dull },
   upkeep: { success: CORE_SOUNDS.chime, failure: CORE_SOUNDS.fade },
   // §290 : la réponse d'un joueur forcée par le MJ (fenêtres du combat sans délai).
-  forced: { success: CORE_SOUNDS.nextHorn, failure: null }
+  forced: { success: CORE_SOUNDS.nextHorn, failure: null },
+  // Issue #32 : le succès à un prix accepté (refusé : rien).
+  atCost: { success: CORE_SOUNDS.atCost, failure: null }
 });
 
 /** Le son par défaut de cette action et de cette issue (null : aucun). */

@@ -290,6 +290,8 @@ export function viewOf(message) {
       aids: [...(result?.getFlag?.(MODULE_ID, "groupRollAids") ?? []), ...(bonus?.parts ?? []).filter(p => p.helper)],
       forced: result?.getFlag?.(MODULE_ID, "groupRollForced") ?? null, bonus: Number(bonus?.total) || 0, deciding,
       rolled: Number.isFinite(roll?.total) ? roll.total : null,
+      // Issue #32 : accepté en succès à un prix (le MJ l'a offert, le joueur a dit oui) — `{ cost }`.
+      atCost: result?.getFlag?.(MODULE_ID, "atCost") ?? null,
       by: result?.author?.id ?? null };
   });
   return { id: message.id, request, ...tally(request, entries) };

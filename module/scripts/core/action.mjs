@@ -34,6 +34,7 @@
  */
 
 import { resolveAttack, beatsAcBy } from "./attack.mjs";
+import { nearMissTargets } from "./success-at-cost.mjs";
 
 /** Version du schéma écrit dans les flags. Une résolution d'une autre version est ignorée. */
 export const RESOLUTION_VERSION = 2;
@@ -251,7 +252,7 @@ export function open({ id, carrier, origin=null, activity, source=null, plan, ta
 /* -------------------------------------------- */
 
 /** Le jet d'attaque est connu : verdict par cible, puis fenêtre de réaction pour ceux qui en ont une. */
-function judge(resolution, { roll, messageId, targets, critMargin=0 }) {
+function judge(resolution, { roll, messageId, targets, critMargin=0, atCost=0 }) {
   // Les cibles d'une attaque sont celles désignées au moment du jet, pas à l'utilisation.
   const judged = resolveAttack(roll, targets.map(blankTarget)).map(t => {
     const auto = t.hit && !t.critical && t.defenceless;
@@ -260,7 +261,8 @@ function judge(resolution, { roll, messageId, targets, critMargin=0 }) {
     return plainHit(beatsAcBy(t, roll, critMargin) ? { ...t, critical: true, reason: "beatsAc" } : t);
   });
   const pending = judged.filter(t => t.hit && t.canReact).map(t => ({ kind: "reaction", window: "isHit", token: t.token }));
-  const next = { ...resolution, attack: { roll, messageId, ...(critMargin > 0 ? { critMargin } : {}) }, targets: judged, pending };
+  // Issue #32 : `atCost` — l'écart du « succès à un prix » pour ce jet (0 : éteint), jugé après les réactions (afterReactions).
+  const next = { ...resolution, attack: { roll, messageId, ...(critMargin > 0 ? { critMargin } : {}), ...(atCost > 0 ? { atCost } : {}) }, targets: judged, pending };
   if ( !pending.length ) return afterReactions(next);
   return {
     resolution: { ...next, step: STEPS.AWAITING_REACTION },
@@ -310,12 +312,34 @@ export function duplicateTakesHit(dice) {
  * touchée qui a des répliques les fait jouer — le runtime lance les dés et détruit la réplique touchée.
  */
 function afterReactions(resolution) {
+  // Issue #32 : succès à un prix — sur la CA finale (Bouclier compris), les cibles ratées de 1 ou 2 ; la question au MJ, une seule fois.
+  const near = (resolution.atCost === undefined) ? nearMissTargets(resolution.attack?.roll, resolution.targets, resolution.attack?.atCost ?? 0) : [];
+  if ( near.length ) {
+    return {
+      resolution: { ...resolution, step: STEPS.AWAITING_REACTION, atCost: { asked: near.map(t => t.token) }, pending: [{ kind: "atCost" }] },
+      commands: [{ type: "atCostPause", targets: near, total: resolution.attack.roll.total }]
+    };
+  }
   const waiting = resolution.targets.filter(t => (t.hit === true) && (t.duplicates > 0) && (t.duplicate === null) && !t.unaffected);
   if ( !waiting.length ) return afterVerdict(resolution);
   return {
     resolution: { ...resolution, step: STEPS.AWAITING_REACTION, pending: waiting.map(t => ({ kind: "duplicates", token: t.token })) },
     commands: [{ type: "rollDuplicates", tokens: waiting.map(t => t.token) }]
   };
+}
+
+/**
+ * Issue #32 : le MJ a offert le succès à un prix et le joueur a répondu. Accepté : les cibles proposées sont touchées (jamais d'un coup
+ * critique), le prix noté ; sinon l'échec reste. Puis la suite ordinaire (répliques, sauvegardes, dégâts) — une seule fois.
+ */
+function atCostDecided(resolution, { accepted=false, cost=null }) {
+  if ( (resolution.step !== STEPS.AWAITING_REACTION) || !resolution.pending.some(p => p.kind === "atCost") ) return same(resolution);
+  const asked = new Set(resolution.atCost?.asked ?? []);
+  const targets = accepted ? resolution.targets.map(t => (asked.has(t.token) && (t.hit === false))
+    ? plainHit({ ...t, hit: true, critical: false, reason: "atCost" }) : t) : resolution.targets;
+  const next = { ...resolution, targets, atCost: { ...resolution.atCost, accepted: !!accepted, cost: accepted ? (cost ?? null) : null },
+    pending: resolution.pending.filter(p => p.kind !== "atCost") };
+  return next.pending.length ? same(next) : afterReactions(next);
 }
 
 /** Les dés des répliques d'une cible sont lancés : un coup détourné devient un raté, sans dégâts ni effet. */
@@ -389,15 +413,16 @@ function settle(resolution, commands=[]) {
 }
 
 /** Le premier jet fait foi : un second jet du même acteur est ignoré, au MJ d'annuler et de corriger. */
-function saveRolled(resolution, { actor, total, messageId, mode=null, resisted=false, interposed=false }) {
+function saveRolled(resolution, { actor, total, messageId, mode=null, resisted=false, interposed=false, atCost=null }) {
   if ( (resolution.step !== STEPS.AWAITING_ROLLS) || !resolution.plan.save ) return same(resolution);
   const waiting = pendingSaves(resolution).find(t => t.actor === actor);
   if ( !waiting ) return same(resolution);
   // §18.9 : une Résistance légendaire change l'échec en réussite (le total reste celui du jet).
   // §133 : `interposed` — Interposer le bouclier, réaction prise sur une réussite : aucun dégât.
   // §231 : `mode` — le d20 lancé avec Avantage ou Désavantage, pour le retour visuel.
-  const save = { total, success: resisted || (total >= resolution.plan.save.dc), messageId, ...(mode ? { mode } : {}), ...(resisted ? { resisted: true } : {}),
-    ...(interposed ? { interposed: true } : {}) };
+  // Issue #32 : `atCost` — le succès à un prix accepté (`{ cost }`) change l'échec en réussite, le total restant celui du jet.
+  const save = { total, success: resisted || !!atCost || (total >= resolution.plan.save.dc), messageId, ...(mode ? { mode } : {}), ...(resisted ? { resisted: true } : {}),
+    ...(interposed ? { interposed: true } : {}), ...(atCost ? { atCost: { cost: atCost.cost ?? null } } : {}) };
   return settle({ ...resolution, targets: resolution.targets.map(t => t === waiting ? { ...t, save } : t) });
 }
 
@@ -458,7 +483,7 @@ function undone(resolution) {
 
 const TRANSITIONS = Object.freeze({
   attackRolled: (resolution, event) => (resolution.step === STEPS.AWAITING_ATTACK) ? judge(resolution, event) : same(resolution),
-  reactionResolved, duplicatesRolled, saveRolled, damageRolled, choiceMade, allocated, applied, undone
+  reactionResolved, duplicatesRolled, atCostDecided, saveRolled, damageRolled, choiceMade, allocated, applied, undone
 });
 
 /**

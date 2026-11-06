@@ -18,6 +18,7 @@ import { rerolledDamage } from "../core/heroic.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { critMargin } from "../adapter/criticals.mjs";
 import { log, loc, waitForDice } from "./shared.mjs";
+import { atCostMarginOf, holdForAtCost } from "./success-at-cost.mjs";
 import { LOOKBACK, castLevelOfMessage, dispatcher, enrich, openingFor, resolutionOn, serializeDamages, speakerTokenUuid } from "./engine.mjs";
 
 /* -------------------------------------------- */
@@ -102,7 +103,10 @@ export async function onAttackMessage(message) {
   const rolled = async plan => {
     const targets = await enrich(attack.targets, plan, speakerTokenUuid(message), attack.activity, message.rolls?.[0]?.options?.attackMode ?? message.system?.mode ?? null,
       castLevelOfMessage(game.messages.get(message.system?.origin ?? "") ?? message));
-    return { type: "attackRolled", roll: await inspiredAttack(message, attack.roll, targets), messageId: message.id, targets, critMargin: critMargin() };
+    // Issue #32 : l'écart du succès à un prix pour ce jet (0 : éteint, ou pas un personnage joueur) — jugé par le cœur après les réactions.
+    const attacker = (await fromUuid(speakerTokenUuid(message) ?? ""))?.actor ?? message.getAssociatedActor?.() ?? null;
+    return { type: "attackRolled", roll: await inspiredAttack(message, attack.roll, targets), messageId: message.id, targets, critMargin: critMargin(),
+      atCost: atCostMarginOf(attacker) };
   };
   // Le message d'utilisation attend ce jet : c'est lui le porteur.
   const awaited = attack.origin && await dispatcher.send(attack.origin, resolution =>
@@ -155,6 +159,13 @@ export async function onDamageMessage(message) {
 }
 
 /** Le porteur auquel se rapporte un jet de sauvegarde. */
+/** Issue #32 : cette sauvegarde est-elle attendue par une résolution du moteur (qui a sa propre pause) ? */
+export function saveInResolution(message) {
+  const save = readSaveMessage(message);
+  const carrierId = save?.actor ? carrierOfSave(save) : null;
+  return !!(carrierId && resolutionOn(game.messages.get(carrierId)));
+}
+
 function carrierOfSave(save) {
   if ( save.request ) return game.messages.get(save.request)?.getFlag(MODULE_ID, "requestFor") ?? null;
   return save.origin;
@@ -186,13 +197,20 @@ export async function onSaveMessage(message) {
     const luck = (actor && (total < dc)) ? await offerRollBonus(actor, { kind: "save", what: loc("Inspiration.Sauvegarde"), total, needed: dc, statuses: saveStatuses(carrier, resolution), d20: heroic?.kept ?? keptD20(message.rolls?.[0]), ability: resolution.plan?.save?.ability ?? null }) : 0;
     if ( luck ) { log(`${actor.name}: die added to their saving throw, ${total} + ${luck} = ${total + luck}`); total += luck; }
   }
+  // Issue #32 : succès à un prix — encore ratée de 1 ou 2 après les aides : la pause du MJ, avant que rien ne soit appliqué.
+  let atCost = null;
+  if ( Number.isFinite(dc) && (total < dc) && !resisted ) {
+    const saverDoc = saver ?? await fromUuid(save.actor);
+    const answer = await holdForAtCost({ actor: saverDoc, token: saverDoc?.token ?? null, what: loc("Inspiration.Sauvegarde"), total, needed: dc, kind: "save" });
+    if ( answer?.accepted ) atCost = { cost: answer.cost ?? null };
+  }
   // §133 : Maître des boucliers, Interposer le bouclier — une sauvegarde de Dextérité réussie contre des dégâts réduits de moitié : la
   // Réaction pour n'en subir aucun.
   const plan = resolution.plan ?? {};
   const halfDex = !!plan.damage && !!plan.save && !plan.save.chained && (plan.save.ability === "dex") && ((plan.save.onSave ?? "half") === "half");
-  const interposed = (halfDex && Number.isFinite(dc) && (total >= dc)) ? await offerInterpose(await fromUuid(save.actor)) : false;
+  const interposed = (halfDex && Number.isFinite(dc) && ((total >= dc) || atCost)) ? await offerInterpose(await fromUuid(save.actor)) : false;
   await dispatcher.send(carrierId, { type: "saveRolled", actor: save.actor, total, messageId: message.id, ...(save.mode ? { mode: save.mode } : {}), ...(resisted ? { resisted: true } : {}),
-    ...(interposed ? { interposed: true } : {}) });
+    ...(interposed ? { interposed: true } : {}), ...(atCost ? { atCost } : {}) });
 }
 
 /**

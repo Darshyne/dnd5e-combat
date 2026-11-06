@@ -40,7 +40,7 @@ export const FEATURE_LEVELS = Object.freeze({
   registerPurge: E, registerAutomation: E, registerSummonHandover: E, registerAutoTranslate: E, registerDataFixes: E, registerClock: E, registerCriticals: A, registerFlanking: A, registerFactions: E, registerFactionsUI: E, registerSettingsWindow: E, registerStealthMode: E, registerStealthUI: E, registerGroupRoll: E, registerGroupRollUI: E, registerGroupRollTracker: E, registerGmAlert: E, registerGmAlertUi: E, registerPlayerWaits: E, registerPlayerWaitsUI: E,
 
   // Assisté : la résolution, et les règles générales qui valent pour toute créature.
-  registerEngine: A, registerHeroic: A, registerConcentration: A, registerDeath: A, registerUsage: A, registerReactions: A, registerReady: A, registerBurning: A, registerImprovised: A, registerArmorTraining: A, registerMasteryChoices: A, registerMasteryUI: A, registerTriggers: A,
+  registerEngine: A, registerHeroic: A, registerSuccessAtCost: A, registerSuccessAtCostUI: A, registerConcentration: A, registerDeath: A, registerUsage: A, registerReactions: A, registerReady: A, registerBurning: A, registerImprovised: A, registerArmorTraining: A, registerMasteryChoices: A, registerMasteryUI: A, registerTriggers: A,
   registerConditions: A, registerAreas: A, registerLingering: A, registerPassengers: A, registerBanish: F, registerSelfAreas: A, registerZones: A, registerGrapple: A, registerProne: A,
   registerStabilize: A, registerHelp: A, registerHide: A, registerSearch: A, registerPassivePerception: A, registerEffects: A,
   registerAnimations: A, registerActivityChoice: A, registerCompact: A, registerChat: A,

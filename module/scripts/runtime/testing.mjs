@@ -28,6 +28,8 @@ import { listBackups as diagBackups, repairTasks, restore as diagRestore, scanWo
 import { gmOnly, windows, viewedToken } from "./testing-shared.mjs";
 import { barrierBetween } from "../adapter/barriers.mjs";
 import { climbEntries } from "./climb.mjs";
+import { atCostCandidates, dismissAtCost, offerAtCost, offerOnMessage, offerOnRow, rowCandidate, nativeCandidate } from "./success-at-cost.mjs";
+import { groupRollView } from "./group-roll.mjs";
 import { climbSystemOn } from "../core/climb-system.mjs";
 import { flight, hoist, grab, jump, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, dash, door, lock, familiar, familiarPocket, familiarRecall, follow, followState, move, movement, plan, stairs, stairsAt, takeStairs, teleport, teleportPick, threats, transpose, unfollow, view } from "./testing-moves.mjs";
 import { range, ready, burning, actionEnd, attackReasons, budget, cover, effectOrigins, enchant, endings, factions, heal, hurt, identify, itemData, issues, naturalOne, overrideContent, perceived, portent, rollCheck, rollSave, saveChance, flammable, scatter, sees, skillAid, skillAids, stats, stealth, use, masteries, etherealWalls, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeItemEffect, concentrate, upkeep, stand, fortified, catalyst, grappleState , rangeCheck } from "./testing-rules.mjs";
@@ -479,4 +481,28 @@ async function forcePlayerWait({ id=null }={}) {
   return { forced: target ? await forceWait(target) : false };
 }
 
-export const testApi = Object.freeze({ barrier, gmAlerts, controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, rangeCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, owners, makeScroll, scrollReading, hampered, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, hood, removeItemEffect, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, forcePlayerWait, pickTargets, castPicked });
+/**
+ * Issue #32 : succès à un prix, pour les scénarios — `list` (les pauses ouvertes chez le MJ actif), `offer` (une pause prise ; `cost`
+ * donné : sans la fenêtre du MJ), `dismiss`, `row` (une ligne d'un jet demandé, `card` + `tokenId`), `message` (un jet natif à DD).
+ */
+async function atCost({ action="list", id=null, cost, card=null, tokenId=null, message=null }={}) {
+  if ( action === "list" ) return atCostCandidates();
+  if ( action === "offer" ) return { accepted: await offerAtCost(id, { cost }) };
+  if ( action === "dismiss" ) { dismissAtCost(id); return { ok: true }; }
+  if ( action === "row" ) {
+    const view = groupRollView(card);
+    const actor = canvas.tokens.get(tokenId)?.actor;
+    const entry = view?.entries.find(e => e.uuid === actor?.uuid);
+    const row = rowCandidate(entry ? { ...entry, actor } : null, view?.request);
+    if ( !row ) return { candidate: false, total: entry?.total ?? null, dc: view?.request?.dc ?? null };
+    return { candidate: true, accepted: await offerOnRow(card, { ...row, what: "test" }, { cost }) };
+  }
+  if ( action === "message" ) {
+    const m = game.messages.get(message);
+    if ( !nativeCandidate(m) ) return { candidate: false };
+    return { candidate: true, accepted: await offerOnMessage(message, { what: "test", cost }) };
+  }
+  throw new Error(`unknown action: ${action}`);
+}
+
+export const testApi = Object.freeze({ atCost, barrier, gmAlerts, controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, rangeCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, owners, makeScroll, scrollReading, hampered, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, hood, removeItemEffect, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, forcePlayerWait, pickTargets, castPicked });

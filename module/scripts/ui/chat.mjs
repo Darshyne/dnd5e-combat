@@ -85,6 +85,7 @@ function verdictText(t) {
   if ( t.reason === "duplicate" ) notes.push(loc("Repliques.Note"));
   else if ( t.reason === "autoCritical" ) notes.push(loc("CritiqueDOffice"));
   else if ( t.reason === "beatsAc" ) notes.push(loc("CritOption.Ecart", { margin: critMargin() }));   // §207
+  else if ( t.reason === "atCost" ) notes.push(loc("APrix.Note"));   // issue #32 : succès à un prix
   // P1 (b) : l'abri calculé par le moteur, sans la CA.
   if ( t.cover && (t.cover.bonus !== null) ) notes.push(`${loc(`Abri.${t.cover.degree}`)} +${t.cover.bonus}`);
   return `${loc(key)}${notes.length ? ` (${notes.join(", ")})` : ""}`;
@@ -154,6 +155,7 @@ function renderResolution(message, html, resolution) {
         parts.push((t.save.auto === "noSave") ? loc("SansSauvegarde") : (t.save.auto === "willing") ? loc("Consentant.Carte")
           : t.save.auto ? loc("SauvegardeDOffice", { status: statusName(t.save.auto) })
           : loc(t.save.success ? "SauvegardeReussie" : "SauvegardeRatee", { n: t.save.total }));
+        if ( t.save.atCost ) parts.push(loc("APrix.Note"));   // issue #32 : succès à un prix
         if ( t.save.success && !plan.attack ) css = "miss";
       }
     }

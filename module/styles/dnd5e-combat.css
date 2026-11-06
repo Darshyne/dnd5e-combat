@@ -650,3 +650,33 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .chat-message .das-gm-alert header { display: flex; align-items: center; gap: 6px; font-weight: 700; color: #ff4d8d; border: none; margin: 0 0 4px; }
 .chat-message .das-gm-alert p { margin: 2px 0; }
 .chat-message .das-gm-alert .das-gm-alert__item { color: #9aa2b4; font-size: 0.92em; }
+
+/* Issue #32 : succès à un prix — la pastille du MJ (au-dessus du token, ou dans le coin), sa fenêtre, la question au joueur, les cartes. */
+#das-at-cost-dock { position: fixed; right: 320px; bottom: 16px; display: flex; flex-direction: column; gap: 6px; z-index: 100; pointer-events: none; }
+.das-at-cost-pill { --left: 1; position: relative; pointer-events: auto; display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border-radius: 999px;
+  background: rgba(20, 16, 10, 0.88); border: 1px solid #e0a050; color: #f3e6cc; font-size: 13px; cursor: pointer; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
+.das-at-cost-pill.floating { position: fixed; z-index: 100; transform: translate(-50%, calc(-100% - 6px)); }
+.das-at-cost-pill:hover { border-color: #ffd27a; background: rgba(40, 30, 14, 0.95); }
+.das-at-cost-pill.claimed { opacity: 0.7; cursor: default; }
+.das-at-cost-pill > .fa-scale-balanced { position: absolute; left: 13px; color: #e0a050; font-size: 12px; }
+.das-at-cost-pill__ring { width: 30px; height: 30px; flex: 0 0 30px; transform: rotate(-90deg); }
+.das-at-cost-pill__ring circle { fill: none; stroke: #e0a050; stroke-width: 3; stroke-dasharray: 94.25; stroke-dashoffset: calc(94.25 * (1 - var(--left))); }
+
+.das-at-cost-pill__text { display: flex; flex-direction: column; line-height: 1.15; }
+.das-at-cost-pill__text small { opacity: 0.7; font-size: 11px; }
+.das-at-cost-pill__close { opacity: 0.6; padding: 4px; }
+.das-at-cost-pill__close:hover { opacity: 1; color: #ff8a7a; }
+.das-at-cost { border-top: 2px solid #e0a050; }
+.das-at-cost .window-header .window-icon { color: #e0a050; }
+.das-at-cost__rule { margin: 0 0 8px; font-size: 0.9em; opacity: 0.75; font-style: italic; }
+.das-at-cost__label { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
+.das-at-cost__ideas { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.das-at-cost__ideas .das-at-cost__idea { flex: 0 0 auto; width: auto; line-height: 1.6; padding: 0 8px; font-size: 0.85em; }
+.das-at-cost-button { margin-top: 4px; border-color: #e0a050; }
+.das-at-cost-button i { color: #e0a050; }
+.das-at-cost-mark { margin: 4px 0 0; font-size: 0.9em; color: #b8782c; font-weight: 600; }
+.das-at-cost-mark i { margin-right: 4px; }
+.targets [data-uuid] .das-at-cost-button { width: auto; flex: 0 0 auto; font-size: 0.8em; line-height: 1.5; margin: 2px 0 0; }
+.targets [data-uuid] .das-at-cost-mark { flex-basis: 100%; font-size: 0.8em; }
+.das-at-cost__cost { display: block; margin: 6px 0 0; padding: 4px 8px; border-left: 3px solid #e0a050; font-style: italic; }

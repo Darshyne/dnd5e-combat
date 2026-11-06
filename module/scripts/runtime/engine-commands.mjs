@@ -31,6 +31,7 @@ import { requestSave } from "./neighbours.mjs";
 import { duplicateEffectsOf } from "../adapter/duplicates.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
 import { log, loc, waitForDice, notice } from "./shared.mjs";
+import { holdForAtCost } from "./success-at-cost.mjs";
 import { waitForAnimations } from "./animations.mjs";
 import { isRangedWeaponAttack } from "../adapter/cover.mjs";
 import { TRANSIENT_LINGER_MS, deserializeDamages, dispatcher, healsDownedToMax, healsMax, hpTierFor, prismaticFor, slotHealBonus, speakerTokenUuid } from "./engine.mjs";
@@ -74,6 +75,18 @@ function killsHere(rule, activity, actor) {
 }
 
 export const COMMANDS = {
+  /**
+   * Issue #32 : succès à un prix — l'attaque rate de 1 ou 2 une cible au moins (CA finale) : la pause du MJ. Accepté : ces cibles sont
+   * touchées ; sinon l'échec reste. Rien n'a encore été appliqué.
+   */
+  async atCostPause(command, carrier, resolution) {
+    const tokenDoc = await fromUuid(speakerTokenUuid(carrier) ?? "");
+    const actor = tokenDoc?.actor ?? await fromUuid(resolution.source ?? "");
+    const by = Math.min(...command.targets.map(t => t.by));
+    const answer = await holdForAtCost({ actor, token: tokenDoc ?? null, what: loc("Inspiration.Attaque"), total: command.total, needed: command.total + by, kind: "attack" });
+    return [{ type: "atCostDecided", accepted: !!answer?.accepted, cost: answer?.cost ?? null }];
+  },
+
   askReactions: (command, carrier, resolution) => askHitReactions(resolution, command.tokens, id => dispatcher.drained(id), {
     auto: autoReactOf(carrier, resolution)
   }),

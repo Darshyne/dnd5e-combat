@@ -14,7 +14,7 @@ const MODULE_ID = "dnd5e-combat";
  * Une case libre où le Guerrier donnerait un abri partiel au Zombi contre l'Ensorceleur, murs ignorés
  * (le moteur les comptera au verdict), la plus proche de la cible ; null s'il n'y en a pas.
  */
-function coveringCell({ sorc, zombi, guerrier, tokens, size }) {
+export function coveringCell({ sorc, zombi, guerrier, tokens, size }) {
   const rect = t => ({ x: t.x, y: t.y, width: (t.width ?? 1) * size, height: (t.height ?? 1) * size });
   const sameLevel = t => (t.level ?? null) === (sorc.level ?? null);
   const others = tokens.filter(t => ![sorc.id, zombi.id, guerrier.id].includes(t.id) && !t.hidden && sameLevel(t));

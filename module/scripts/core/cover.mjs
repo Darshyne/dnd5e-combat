@@ -107,12 +107,14 @@ export function pullBack(centre, corner, hit, margin) {
  * @param {Rect} context.attacker                     Espace de l'attaquant.
  * @param {Rect} context.target                       Espace de la cible.
  * @param {Rect[]} [context.bodies]                   Espaces des autres créatures (ni l'attaquant, ni la cible).
- * @param {(a: {x,y}, b: {x,y}) => boolean} [context.blocked]  Un obstacle (mur, surface) coupe-t-il la ligne ?
+ * @param {(a: {x,y}, b: {x,y}) => boolean|string} [context.blocked]  Un obstacle (mur, surface) coupe-t-il la ligne ? Une chaîne
+ *                                                    (« wall », « surface ») dit lequel (#33 : sources de l'abri) ; `true` vaut « wall ».
  * @param {number} [context.inset]                    Retrait des coins et des corps, en pixels.
  * @param {(centre: {x,y}, corner: {x,y}) => {x,y}} [context.clipAttacker]  §239 : ramène un coin de l'attaquant du côté des murs
  *                                                    où se trouve son centre (un coin dans la roche n'est pas son espace).
  * @param {(centre: {x,y}, corner: {x,y}) => {x,y}} [context.clipTarget]    §239 : de même pour la cible.
- * @returns {{degree: "none"|"half"|"threeQuarters"|"total", bonus: number|null, blockedLines: number, byCreature: boolean}}
+ * @returns {{degree: "none"|"half"|"threeQuarters"|"total", bonus: number|null, blockedLines: number, byCreature: boolean,
+ *            sources: string[]}}  `sources` : ce qui coupe les lignes du coin retenu (« wall », « surface », « creature »).
  */
 export function coverBetween({ attacker, target, bodies=[], blocked=() => false, inset=0, clipAttacker=null, clipTarget=null }) {
   const from = clipped(attacker, inset, clipAttacker);
@@ -122,8 +124,10 @@ export function coverBetween({ attacker, target, bodies=[], blocked=() => false,
   for ( const a of from ) {
     let walls = 0;
     let creatures = 0;
+    const kinds = new Set();
     for ( const b of to ) {
-      if ( blocked(a, b) ) walls++;
+      const hit = blocked(a, b);
+      if ( hit ) { walls++; kinds.add((typeof hit === "string") ? hit : "wall"); }
       else if ( solids.some(r => segmentCrossesRect(a, b, r)) ) creatures++;
     }
     let degree = DEGREES[walls];
@@ -131,8 +135,10 @@ export function coverBetween({ attacker, target, bodies=[], blocked=() => false,
     if ( (degree === "none") && creatures ) { degree = "half"; byCreature = true; }
     const rank = DEGREES.indexOf(degree);
     // L'attaquant choisit le coin qui laisse le moins d'abri à sa cible.
-    if ( !best || (rank < best.rank) ) best = { rank, degree, blockedLines: walls + (byCreature ? creatures : 0), byCreature };
+    if ( byCreature ) kinds.add("creature");
+    if ( !best || (rank < best.rank) ) best = { rank, degree, blockedLines: walls + (byCreature ? creatures : 0), byCreature, sources: [...kinds] };
     if ( best.rank === 0 ) break;
   }
-  return { degree: best.degree, bonus: COVER[best.degree].bonus, blockedLines: best.blockedLines, byCreature: best.byCreature };
+  return { degree: best.degree, bonus: COVER[best.degree].bonus, blockedLines: best.blockedLines, byCreature: best.byCreature,
+    sources: (best.degree === "none") ? [] : best.sources };
 }

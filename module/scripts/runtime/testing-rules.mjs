@@ -25,6 +25,7 @@ import { portentDice, portentOf, rollPortent } from "../adapter/portent.mjs";
 import { aidsFor, isGuided } from "../adapter/skill-aid.mjs";
 import { requestSkillAid } from "./skill-aid.mjs";
 import { coverFor } from "../adapter/cover.mjs";
+import { coverPreviewOf } from "../adapter/cover-preview.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { factionsApi } from "./factions.mjs";
 import { coneOf } from "../adapter/cone.mjs";
@@ -115,6 +116,16 @@ export function cover({ attackerId, targetId, itemId=null, effective=false }) {
   // §353 : `effective` — l'abri qui reste à l'attaque, une fois ôté ce que l'attaquant ignore (dons de tir, ennemi juré).
   if ( effective && activity ) return coverAgainst(attacker, target, activity, null, { quiet: true });
   return coverFor(attacker, target, { quiet: true, activity });
+}
+
+/** #33 : l'aperçu de l'abri (`api.ui.cover`) de la cible contre l'attaque d'un item de l'attaquant, sur ce client (le MJ : tout). */
+export function coverPreview({ attackerId, targetId, itemId }) {
+  const attacker = canvas.scene?.tokens.get(attackerId);
+  const target = canvas.scene?.tokens.get(targetId);
+  if ( !attacker || !target ) throw new Error("token not found on the viewed scene");
+  const activity = attacker.actor?.items.get(itemId)?.system.activities.find(a => a.type === "attack") ?? null;
+  if ( !activity ) throw new Error("attack activity not found");
+  return coverPreviewOf(attacker, target, activity);
 }
 
 /**

@@ -56,7 +56,7 @@ import { aimedAreaOf, aimedShapeData, aimedRegionData, wallAreaOf, rangedAreaOf,
 import { castAimed, placeAimed, placeWall } from "../runtime/self-area.mjs";
 import { clampPolyline, polylineLength, orthogonalize } from "../core/wall.mjs";
 import { closeMenu, onMenuShift, HIGH_JUMP_MENU_SETTING, NONLETHAL_MENU_SETTING } from "./pointer-menu.mjs";
-import { cancellable, clearPreview, forgetHover, lastPointer, onKeyDown, onModifierKey, onPointerDown, onPointerMove, onPointerUp, refusalFor, setCursor, trackPointer } from "./pointer-mouse.mjs";
+import { cancellable, clearPreview, forgetHover, lastPointer, onKeyDown, onModifierKey, onPointerDown, onPointerMove, onPointerUp, refusalFor, replayHover, setCursor, trackPointer } from "./pointer-mouse.mjs";
 import { clearTargets, leftoverTargets, noteInFlight, offerEnchantedAttack, onFlurryUsed, onPostUseActivity, onPreRollDamage, onResolutionSettled, onTurnChange } from "./pointer-offers.mjs";
 export { menuEntriesFor, doorMenuFor, groundMenuFor } from "./pointer-menu.mjs";
 
@@ -911,6 +911,11 @@ function offerTurnStart(combat, prior, current) {
   }
 }
 
+/** #33 : rejoue le survol (bridé) quand l'aperçu de l'abri est en service. */
+const coverReplay = foundry.utils.debounce(() => {
+  if ( game.settings.get(MODULE_ID, "coverPreview") ) replayHover();
+}, 120);
+
 /** À inscrire AVANT `registerTurn()` : la visée suspend une utilisation avant que sa légalité soit jugée. */
 export function registerPointer() {
   registerHitChance();
@@ -958,6 +963,12 @@ export function registerPointer() {
   }, { label: "mouse: reset" });
   route("canvasReady", () => { if ( sceneLeft ) stopDeadMovements(); sceneLeft = false; }, { label: "dead movements stopped" });
   route("controlToken", () => clearPreview(), { label: "path preview cleared" });
+  // #33 : l'aperçu de l'abri suit un token qui bouge ou change d'état d'abri sous une souris immobile.
+  route("updateToken", (doc, change) => {
+    if ( ("x" in change) || ("y" in change) || ("elevation" in change) || ("level" in change) ) coverReplay();
+  }, { label: "cover preview: not refreshed after a move" });
+  route("createActiveEffect", () => coverReplay(), { label: "cover preview: not refreshed after a cover status" });
+  route("deleteActiveEffect", () => coverReplay(), { label: "cover preview: not refreshed after a cover status" });
   route("ready", () => {
     // §220 : pendant le Théâtre de l'esprit, la souris et le clavier reviennent au cœur.
     const live = fn => event => (theaterActive() ? undefined : fn(event));

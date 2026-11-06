@@ -22,6 +22,7 @@ import { ritualModeOf } from "../adapter/grimoire.mjs";
 import { identifierOf } from "../adapter/content.mjs";
 import { startTimer } from "./timers.mjs";
 import { climbingOf } from "../adapter/climb.mjs";
+import { coverPreviewOf } from "../adapter/cover-preview.mjs";
 
 /**
  * Le budget du tour d'un combattant, tel que le moteur le juge : une action reste disponible tant que l'action Attaquer a
@@ -156,6 +157,23 @@ function ritual(activity) {
   try { return ritualModeOf(activity); } catch { return "none"; }
 }
 
+/** Un document par lui-même ou par son uuid ; un Token (objet du canevas) par son document. */
+const docOf = x => (typeof x === "string") ? fromUuidSync(x, { strict: false }) : (x?.document ?? x);
+
+/**
+ * #33 : l'abri qu'aurait `target` contre une attaque de `attacker` avec `activity`, tel que CE client peut le montrer — le calcul
+ * du verdict, mais un joueur ne compte que les créatures qu'il voit (l'invisible ne se trahit pas) ; « none » est un résultat.
+ * @param {TokenDocument|Token|string} attacker
+ * @param {TokenDocument|Token|string} target
+ * @param {Activity|string} activity     Une activité d'attaque.
+ * @param {object} [options]             `posA` : position de l'attaquant au bout d'une approche ; `attackMode`.
+ * @returns {{degree: string, bonus: number|null, sources: string[], zone: string|null, manual: boolean,
+ *            ignored: {degree: string, by: string}|null}|null}  null : pas une attaque, ou la scène n'est pas affichée ici.
+ */
+function cover(attacker, target, activity, options={}) {
+  try { return coverPreviewOf(docOf(attacker), docOf(target), docOf(activity), options); } catch { return null; }
+}
+
 export const uiApi = {
   /**
    * §272 : `timer({ token, seconds, label?, icon?, id? })` — une minuterie au-dessus du token, chez tous les clients qui le voient
@@ -174,6 +192,8 @@ export const uiApi = {
    * §119 : plus `kind`, `item`, `prompt` (consigne traduite) et `picked` / `total` (visée multiple) ; le hook part aussi à chaque
    * créature choisie ou retirée.
    */
+  /** #33 : `cover(attacker, target, activity, { posA?, attackMode? })` — l'aperçu de l'abri pour ce client (voir plus haut). */
+  cover,
   targeting: pendingTargeting,
   /**
    * §121 : `carriedLights(actor)` — les sources de lumière portées de l'acteur : `{ uuid, name, img, lit, left, full, fuel }` (`left`,

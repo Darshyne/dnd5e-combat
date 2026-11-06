@@ -69,7 +69,7 @@ export function eyeElevation(doc, pos=committedPosition(doc)) {
  * @param {TokenDocument} from
  * @param {TokenDocument} to
  * @param {object} [positions]  `posA`, `posB` : positions hypothétiques.
- * @returns {(a: {x: number, y: number}, b: {x: number, y: number}) => boolean}
+ * @returns {(a: {x: number, y: number}, b: {x: number, y: number}) => false|"wall"|"surface"}  #33 : ce qui coupe la ligne.
  */
 export function rayBlocker(from, to, { posA, posB }={}) {
   const scene = from.parent;
@@ -81,8 +81,9 @@ export function rayBlocker(from, to, { posA, posB }={}) {
   const backend = CONFIG.Canvas.polygonBackends.move;
   const surfaces = typeof scene.testSurfaceCollision === "function";
   return (a, b) => {
-    if ( backend.testCollision({ x: a.x, y: a.y, elevation: eyeA }, { x: b.x, y: b.y, elevation: eyeA }, { type: "move", mode: "any", level }) === true ) return true;
-    return surfaces && (scene.testSurfaceCollision({ x: a.x, y: a.y, elevation: eyeA }, { x: b.x, y: b.y, elevation: eyeB }, { type: "move", mode: "any" }) === true);
+    if ( backend.testCollision({ x: a.x, y: a.y, elevation: eyeA }, { x: b.x, y: b.y, elevation: eyeA }, { type: "move", mode: "any", level }) === true ) return "wall";
+    if ( surfaces && (scene.testSurfaceCollision({ x: a.x, y: a.y, elevation: eyeA }, { x: b.x, y: b.y, elevation: eyeB }, { type: "move", mode: "any" }) === true) ) return "surface";
+    return false;
   };
 }
 
@@ -106,10 +107,15 @@ export function spaceClipper(doc, pos, margin) {
   };
 }
 
-/** Les autres créatures qui peuvent s'interposer. */
-function bodiesAround(attacker, target) {
+/**
+ * Les autres créatures qui peuvent s'interposer.
+ * @param {boolean} [seenOnly]  #33 : seulement celles que ce client voit (aperçu d'un joueur : une créature invisible ou cachée
+ *                              ne doit pas se trahir par l'abri qu'elle donne).
+ */
+function bodiesAround(attacker, target, seenOnly=false) {
   return attacker.parent.tokens
     .filter(t => (t !== attacker) && (t !== target) && t.actor && !t.hidden && t.object && !isObjectToken(t)
+      && (!seenOnly || (t.object.isVisible === true))
       && bodyGivesCover({ dead: isDeadActor(t.actor), size: t.actor.system?.traits?.size }))
     .map(t => rectOf(t));
 }
@@ -124,9 +130,9 @@ export function isRangedWeaponAttack(activity, attackMode) {
 
 /**
  * §172 : l'abri que donne une zone de sort `coverThrough` (Barrière de lames : trois quarts) quand la ligne d'un centre à l'autre la
- * traverse, ni l'attaquant ni la cible dedans ; le plus fort de ces zones, ou null.
+ * traverse, ni l'attaquant ni la cible dedans ; le plus fort de ces zones avec le nom de son sort (#33), `{degree, name}`, ou null.
  */
-function zoneCoverBetween(attacker, target, posA, activity=null, attackMode=null) {
+function zoneCoverDetail(attacker, target, posA, activity=null, attackMode=null) {
   const a = rectOf(attacker, posA ? { ...committedPosition(attacker), ...posA } : undefined);
   const b = rectOf(target);
   const path = [{ x: a.x + (a.width / 2), y: a.y + (a.height / 2) }, { x: b.x + (b.width / 2), y: b.y + (b.height / 2) }];
@@ -142,7 +148,7 @@ function zoneCoverBetween(attacker, target, posA, activity=null, attackMode=null
     if ( attacker.testInsideRegion(region, posA ? { ...committedPosition(attacker), ...posA } : committedPosition(attacker))
       || target.testInsideRegion(region, committedPosition(target)) ) continue;
     const geometry = wallGeometryOf(region);
-    if ( geometry && crossesWall(geometry, path) ) best = best ? strongerCover(best, degree) : degree;
+    if ( geometry && crossesWall(geometry, path) && (!best || (strongerCover(best.degree, degree) !== best.degree)) ) best = { degree, name: item.name };
   }
   return best;
 }
@@ -157,33 +163,49 @@ function zoneCoverBetween(attacker, target, posA, activity=null, attackMode=null
  * @param {boolean} [options.quiet]   Pas de trace en console (calcul au survol).
  * @param {Activity} [options.activity]   §173 : l'attaque (un abri de zone peut ne valoir que contre les armes à distance).
  * @param {string} [options.attackMode]
- * @returns {{degree: string, bonus: number|null, byCreature: boolean}|null}
+ * @param {boolean} [options.seenOnly]  #33 : ne compter que les créatures que ce client voit (aperçu côté joueur).
+ * @returns {{degree: string, bonus: number|null, byCreature: boolean, sources: string[], zone: string|null}|null}
+ *          #33 : `sources` — « wall », « surface », « creature », « zone » (`zone` : le nom du sort), « grapple ».
  */
-export function coverFor(attacker, target, { posA, quiet=false, activity=null, attackMode=null }={}) {
+export function coverFor(attacker, target, { posA, quiet=false, activity=null, attackMode=null, seenOnly=false }={}) {
   if ( !attacker?.parent || (attacker.parent !== target?.parent) || !canJudgeCover(attacker.parent) ) return null;
   if ( COVER_STATUSES.some(s => target.actor?.statuses.has(s)) ) return null;
   const grid = attacker.parent.grid;
   const inset = grid.size * INSET_FRACTION;
   const pa = posA ? { ...committedPosition(attacker), ...posA } : undefined;
   const cover = coverBetween({
-    attacker: rectOf(attacker, pa), target: rectOf(target), bodies: bodiesAround(attacker, target),
+    attacker: rectOf(attacker, pa), target: rectOf(target), bodies: bodiesAround(attacker, target, seenOnly),
     blocked: rayBlocker(attacker, target, { posA }), inset,
     clipAttacker: spaceClipper(attacker, pa, inset), clipTarget: spaceClipper(target, undefined, inset)
   });
   // §172 : une zone qui donne un abri à qui est derrière (Barrière de lames) — la ligne entre les deux la traverse.
-  const behind = zoneCoverBetween(attacker, target, posA, activity, attackMode);
-  if ( behind && (strongerCover(cover.degree, behind) !== cover.degree) ) {
-    Object.assign(cover, { degree: behind, bonus: COVER[behind].bonus, byCreature: false });
+  let zone = null;
+  const behind = zoneCoverDetail(attacker, target, posA, activity, attackMode);
+  if ( behind && (strongerCover(cover.degree, behind.degree) !== cover.degree) ) {
+    Object.assign(cover, { degree: behind.degree, bonus: COVER[behind.degree].bonus, byCreature: false, sources: ["zone"] });
+    zone = behind.name;
   }
   // §281 : Bouclier de chair — qui agrippe une créature a cet abri contre les attaques des créatures qu'il n'agrippe pas.
   const held = grappleRulesOf(target.actor).cover;
   if ( held && (strongerCover(cover.degree, held) !== cover.degree) ) {
     const victims = victimsOf(target);
-    if ( victims.length && !victims.includes(attacker) ) Object.assign(cover, { degree: held, bonus: COVER[held].bonus, byCreature: true });
+    if ( victims.length && !victims.includes(attacker) ) {
+      Object.assign(cover, { degree: held, bonus: COVER[held].bonus, byCreature: true, sources: ["grapple"] });
+      zone = null;
+    }
   }
   if ( cover.degree === "none" ) return null;
   if ( !quiet ) console.log(`${MODULE_ID} | cover: ${target.name} against ${attacker.name} — ${cover.degree}${cover.byCreature ? " (creature in between)" : ""}`);
-  return { degree: cover.degree, bonus: cover.bonus, byCreature: cover.byCreature };
+  return { degree: cover.degree, bonus: cover.bonus, byCreature: cover.byCreature, sources: cover.sources ?? [], zone };
+}
+
+/** #33 : l'état d'abri posé à la main sur la cible (`coverHalf`…), en degré, ou null. Le plus fort s'il y en a plusieurs. */
+export function manualCoverOf(target) {
+  const statuses = target?.actor?.statuses;
+  if ( !statuses ) return null;
+  if ( statuses.has("coverTotal") ) return "total";
+  if ( statuses.has("coverThreeQuarters") ) return "threeQuarters";
+  return statuses.has("coverHalf") ? "half" : null;
 }
 
 /**

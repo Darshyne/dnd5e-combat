@@ -68,11 +68,11 @@ export const SETTINGS_TABS = Object.freeze([
     tools: [{ id: "factions", icon: "fa-solid fa-flag" }] },
   { id: "mouse", icon: "fa-solid fa-crosshairs",
     keys: ["clickToAttack", "targetingMode", "fastAttack", "quickRolls", "ammoPrompt", "releaseTargets", "situationalCursor", "targetingBanner",
-      "closeSheetOnUse", "hitChance", "hitChancePlayers"],
+      "closeSheetOnUse", "hitChance", "hitChancePlayers", "coverPreview"],
     groups: [
       g("clickAttack", "fa-solid fa-hand-pointer", ["clickToAttack", "fastAttack", "quickRolls", "ammoPrompt"]),
       g("targeting", "fa-solid fa-crosshairs", ["targetingMode", "releaseTargets", "targetingBanner", "situationalCursor"]),
-      g("hitChance", "fa-solid fa-percent", ["hitChance", "hitChancePlayers"]),
+      g("hitChance", "fa-solid fa-percent", ["hitChance", "hitChancePlayers", "coverPreview"]),
       g("sheet", "fa-solid fa-id-card", ["closeSheetOnUse"])
     ] },
   { id: "chat", icon: "fa-solid fa-comments",

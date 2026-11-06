@@ -112,7 +112,8 @@ export function hitChanceOf(attacker, target, activity, { attackMode=null, posA,
   const disadvantage = !!system.disadvantage || !!keys.disadvantage || (ours.disadvantage.length > 0);
   const mode = netMode({ advantage: advantage ? [1] : [], disadvantage: disadvantage ? [1] : [] });
 
-  const cover = coverAgainst(attacker, target, activity, choices.attackMode, { posA, quiet: true });   // §131
+  const cover = coverAgainst(attacker, target, activity, choices.attackMode, { posA, quiet: true,
+    seenOnly: !game.user?.isGM });   // §131 ; #33 : un joueur ne compte que les créatures qu'il voit
   // O8d (§347) : bonus de CA contre les attaques à distance (Bouclier antiprojectiles).
   const shield = context.ranged ? rangedAcBonus(target.actor) : 0;
   const ac = cover ? ((cover.bonus === null) ? null : baseAc + cover.bonus + shield) : baseAc + shield;

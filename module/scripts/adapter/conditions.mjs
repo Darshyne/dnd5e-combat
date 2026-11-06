@@ -189,13 +189,32 @@ export function rangedFeatsOf(actor, activity, attackMode=null) {
   const rules = Array.from(actor?.items ?? []).map(i => contentOf(i).entry?.rangedFeat).filter(Boolean);
   const none = { cover: false, closeCombat: false, longRange: false, offhandModifier: false, loading: false, spellRange: null };
   if ( !rules.length || (activity?.type !== "attack") ) return none;
+  return rangedFeatsFor(rules, rangedAttackShape(activity, attackMode));
+}
+
+/** La forme d'une attaque que lisent les règles de dons de tir (`rangedFeatsFor`). */
+function rangedAttackShape(activity, attackMode) {
   const item = activity.item;
-  return rangedFeatsFor(rules, {
+  return {
     weapon: item?.type === "weapon",
     ranged: isRangedAttack(activity, attackMode),
     crossbow: (item?.type === "weapon") && CROSSBOWS.includes(item.system?.type?.baseItem),
     spell: isSpellCast(item)
+  };
+}
+
+/**
+ * #33 : le nom de ce qui fait ignorer l'abri partiel ou aux trois quarts à cette attaque (Tireur d'élite, Sniper de sorts,
+ * l'arme de l'Arc du serment contre son ennemi juré), ou null — le même jugement que `coverAgainst`, nommé pour l'aperçu.
+ */
+export function coverIgnoredBy(origin, target, activity, attackMode=null) {
+  if ( activity?.type !== "attack" ) return null;
+  const shape = rangedAttackShape(activity, attackMode);
+  const feat = Array.from(origin?.actor?.items ?? []).find(i => {
+    const rule = contentOf(i).entry?.rangedFeat;
+    return rule && rangedFeatsFor([rule], shape).cover;
   });
+  return feat?.name ?? swornEnemyOf(activity, target, attackMode) ?? null;
 }
 
 /** §131 : l'abri de la cible contre cette attaque — un don de tir peut ignorer l'abri partiel ou aux trois quarts. */

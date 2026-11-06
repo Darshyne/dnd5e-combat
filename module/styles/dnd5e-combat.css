@@ -100,6 +100,15 @@ body.dnd5e-combat-prompt #board { cursor: none !important; }
 .dnd5e-combat-hitchance .detail { opacity: 0.8; }
 .dnd5e-combat-hitchance .advantage { color: #8fd18f; }
 .dnd5e-combat-hitchance .disadvantage { color: #e07a6a; }
+/* #33 : aperçu de l'abri */
+.dnd5e-combat-hitchance .cover { display: flex; align-items: center; gap: 6px; margin-top: 2px; font-weight: bold; }
+.dnd5e-combat-hitchance.cover-only .cover { font-size: 14px; margin-top: 0; }
+.dnd5e-combat-hitchance .cover.clear { color: #8fd18f; }
+.dnd5e-combat-hitchance .cover.half { color: #e6c35c; }
+.dnd5e-combat-hitchance .cover.threeQuarters { color: #e6a35c; }
+.dnd5e-combat-hitchance .cover.total { color: #e07a6a; }
+.dnd5e-combat-hitchance .cover.ignored { color: #9fc4e8; }
+.dnd5e-combat-hitchance .cover-source { opacity: 0.75; font-style: italic; padding-left: 20px; }
 
 /* ---- curseur selon la situation (§15.3) : posé par ui/pointer.mjs sur body ---- */
 body[data-dnd5e-combat-cursor="move"] #board { cursor: url("../assets/cursors/move.svg") 2 2, pointer !important; }

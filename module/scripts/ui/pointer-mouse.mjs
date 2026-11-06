@@ -19,7 +19,7 @@ import { cleaveCandidates } from "../adapter/mastery.mjs";
 import { cancelPendingRoll, pendingRoll } from "../runtime/cancel.mjs";
 import { loc } from "../runtime/shared.mjs";
 import { fireTargetAt, igniteWithActivity } from "../runtime/flammable.mjs";
-import { showHitChance, showSaveChance, hideHitChance, showBadge } from "./hitchance.mjs";
+import { showHitChance, showSaveChance, hideHitChance, showBadge, hitChanceShown } from "./hitchance.mjs";
 import { floatNotice } from "./feedback.mjs";
 import { actingToken, busy, dashing, engageWith, exclusive, finishGroup, inCombat, interruptWalk, markTargeting, openRecall, pickTarget, picking, placing, promptTargeting, recalling, setReticleRefused, setting, stopTargeting, targetTypeRefusal, targeting } from "./pointer.mjs";
 import { closeMenu, doorEntries, groundEntries, hasSelfMenu, hoveredDoor, menu, openMenu, openTokenMenu, selfEntries, stairsEntries } from "./pointer-menu.mjs";
@@ -510,6 +510,17 @@ export let lastPointer = null;
 /** Le dernier mouvement de la souris, pour rejouer le survol quand une touche change (`onModifierKey`). */
 export function trackPointer(event) {
   lastPointer = event;
+}
+
+/**
+ * #33 : un token a bougé pendant que la pastille est affichée (l'attaquant, la cible, une créature interposée) : l'abri a pu
+ * changer sans que la souris bouge — le survol est rejoué au même point. Rien si la pastille est cachée.
+ */
+export function replayHover() {
+  if ( !lastPointer || !hitChanceShown() ) return;
+  lastHoverKey = null;
+  onPointerMove({ target: lastPointer.target, clientX: lastPointer.clientX, clientY: lastPointer.clientY, buttons: 0,
+    altKey: lastPointer.altKey, ctrlKey: lastPointer.ctrlKey, shiftKey: lastPointer.shiftKey, metaKey: lastPointer.metaKey });
 }
 
 export function onModifierKey(event) {

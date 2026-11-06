@@ -10,6 +10,8 @@
 import { MODULE_ID } from "../constants.mjs";
 import { asPercent } from "../core/hitchance.mjs";
 import { hitChanceOf, saveChanceOf } from "../adapter/hitchance.mjs";
+import { coverPreviewOf } from "../adapter/cover-preview.mjs";
+import { coverPreviewText } from "../core/cover-preview.mjs";
 import { loc } from "../runtime/shared.mjs";
 import { describeReason } from "./chat.mjs";
 
@@ -36,6 +38,32 @@ function line(css, text) {
   p.classList.add(css);
   p.textContent = text;
   return p;
+}
+
+/** #33 : l'aperçu de l'abri est-il en service (réglage de monde, désactivé par défaut) ? */
+function previewOn() {
+  try { return game.settings.get(MODULE_ID, "coverPreview") === true; } catch { return false; }
+}
+
+/** #33 : les lignes de l'aperçu de l'abri, ou null (réglage coupé, pas une attaque, canevas indisponible). */
+function previewLines(attacker, target, activity, posA) {
+  if ( !previewOn() ) return null;
+  let preview = null;
+  try { preview = coverPreviewOf(attacker, target, activity, { posA }); }
+  catch(err) { console.warn(`${MODULE_ID} | cover preview`, err); }
+  const text = coverPreviewText(preview, (key, data) => loc(key, data));
+  if ( !text ) return null;
+  const main = line("cover", text.main);
+  main.classList.add(text.css);
+  const icon = document.createElement("i");
+  icon.className = `fa-solid ${text.css === "clear" ? "fa-shield" : (text.css === "total" ? "fa-ban" : "fa-shield-halved")}`;
+  main.prepend(icon);
+  return text.sub ? [main, line("cover-source", text.sub)] : [main];
+}
+
+/** La pastille est-elle affichée ? (#33 : rejouer le survol quand un token bouge) */
+export function hitChanceShown() {
+  return !!badge && !badge.hidden;
 }
 
 function coverText(cover) {
@@ -80,18 +108,22 @@ export function hideHitChance() {
  */
 export function showHitChance(event, attacker, target, activity, { posA, outOfReach=false, keys={} }={}) {
   const level = reveal();
-  if ( (level === "off") || (activity?.type !== "attack") ) return hideHitChance();
+  if ( activity?.type !== "attack" ) return hideHitChance();
+  // #33 : l'aperçu de l'abri s'affiche même quand la chance de toucher est cachée à ce client.
+  const cover = previewLines(attacker, target, activity, posA);
+  if ( (level === "off") && !cover ) return hideHitChance();
   let info = null;
-  if ( !outOfReach ) {
+  if ( !outOfReach && (level !== "off") ) {
     try { info = hitChanceOf(attacker, target, activity, { posA, keys }); }
     catch(err) { console.warn(`${MODULE_ID} | hit chance`, err); }
-    if ( !info ) return hideHitChance();
+    if ( !info && !cover ) return hideHitChance();
   }
 
   const el = element();
   el.replaceChildren();
-  el.classList.remove("good", "fair", "poor");
-  if ( outOfReach ) {
+  el.classList.remove("good", "fair", "poor", "cover-only");
+  if ( (level === "off") || (!outOfReach && !info) ) el.classList.add("cover-only");
+  else if ( outOfReach ) {
     el.classList.add("poor");
     el.append(line("percent", loc("Toucher.HorsDatteinte")));
   }
@@ -101,10 +133,12 @@ export function showHitChance(event, attacker, target, activity, { posA, outOfRe
     el.append(line("percent", `${percent} %`));
     const crit = (info.critical > 0) && (info.critical < 0.005) ? "< 1" : asPercent(info.critical);
     if ( info.hit > 0 ) el.append(line("detail", loc("Toucher.Critique", { percent: crit })));
-    // CA et abri : la CA seulement si le MJ la révèle aux joueurs.
-    if ( info.ac === null ) { if ( info.cover ) el.append(line("detail", coverText(info.cover))); }
-    else if ( level === "full" ) el.append(line("detail", `${loc("Toucher.CA")} ${info.ac}${info.cover ? ` — ${coverText(info.cover)}` : ""}`));
-    else if ( info.cover ) el.append(line("detail", coverText(info.cover)));
+    // CA et abri : la CA seulement si le MJ la révèle aux joueurs. #33 : avec l'aperçu, l'abri a sa propre ligne.
+    const coverNote = cover ? null : coverText(info.cover);
+    if ( info.ac === null ) { if ( coverNote ) el.append(line("detail", coverNote)); }
+    else if ( level === "full" ) el.append(line("detail", `${loc("Toucher.CA")} ${info.ac}${coverNote ? ` — ${coverNote}` : ""}`));
+    else if ( coverNote ) el.append(line("detail", coverNote));
+    if ( cover ) el.append(...cover);
     const advantage = info.advantage.map(describeReason);
     const disadvantage = info.disadvantage.map(describeReason);
     if ( info.system.advantage ) advantage.push(loc("Toucher.Fiche"));
@@ -115,6 +149,7 @@ export function showHitChance(event, attacker, target, activity, { posA, outOfRe
     if ( disadvantage.length ) el.append(line("disadvantage", loc("LabelValue", { label: loc("Desavantage"), value: disadvantage.join(", ") })));
     if ( advantage.length && disadvantage.length ) el.append(line("detail", loc("Toucher.SAnnulent")));
   }
+  if ( cover && !info ) el.append(...cover);
   el.hidden = false;
   placeHitChance(event);
 }
@@ -163,6 +198,9 @@ export function showSaveChance(event, caster, target, activity, { outOfReach=fal
 }
 
 export function registerHitChance() {
+  // #33 : l'aperçu de l'abri dans la pastille — décidé par le MJ pour la table, désactivé par défaut.
+  game.settings.register(MODULE_ID, "coverPreview", { scope: "world", config: true, type: Boolean, default: false,
+    name: "DND5ECOMBAT.Reglage.coverPreview.Nom", hint: "DND5ECOMBAT.Reglage.coverPreview.Aide" });
   game.settings.register(MODULE_ID, "hitChance", { scope: "client", config: true, type: Boolean, default: true,
     name: "DND5ECOMBAT.Reglage.hitChance.Nom", hint: "DND5ECOMBAT.Reglage.hitChance.Aide" });
   game.settings.register(MODULE_ID, "hitChancePlayers", { scope: "world", config: true, type: String, default: "full",

@@ -281,6 +281,8 @@
   "DND5ECOMBAT.Reglage.coverPreview.Aide": "When hovering a target and a click would make an attack, the cursor badge shows the cover the target would have — Clear, Half Cover (+2 AC), Three-Quarters Cover (+5 AC) or Total Cover — and what grants it (obstacle, floor or ceiling, creature, area spell, status set by the GM), or the cover the attack ignores (Sharpshooter…). Shown even when the hit chance is hidden from players. A player only counts the creatures they can see: the attack's verdict is still the engine's. Nothing is placed on the scene.",
   "DND5ECOMBAT.Reglage.attackLine.Nom": "Line of attack",
   "DND5ECOMBAT.Reglage.attackLine.Aide": "When targeting an attack, a line joins the attacker (its arrival square if it has to approach) to the target: green where the view is clear, orange from what grants cover, red from Total Cover or beyond range, blue when the attacker can't see its target. The distance is shown in the middle. A player only sees the line cut by what they perceive. Nothing is placed on the scene.",
+  "DND5ECOMBAT.Reglage.attackLineMelee.Nom": "Line of attack in melee",
+  "DND5ECOMBAT.Reglage.attackLineMelee.Aide": "Also show the line of attack for a melee attack (a thrown weapon always keeps its line). Unticked, the line only appears for ranged attacks.",
   "DND5ECOMBAT.LigneVisee.Longue": "long range",
   "DND5ECOMBAT.LigneVisee.HorsPortee": "out of range",
   "DND5ECOMBAT.Apercu.Degage": "Clear",

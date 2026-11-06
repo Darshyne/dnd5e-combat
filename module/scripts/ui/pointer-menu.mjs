@@ -39,7 +39,8 @@ import { burningEntries } from "../runtime/burning.mjs";
 import { climbEntries } from "../runtime/climb.mjs";
 import { flightEntries } from "../runtime/altitude.mjs";
 import { actingToken, engageWith, exclusive, inCombat, observe } from "./pointer.mjs";
-import { down, startRecall } from "./pointer-mouse.mjs";
+import { down, startRecall, clearPreview, previewMenuAttack } from "./pointer-mouse.mjs";
+import { hideHitChance } from "./hitchance.mjs";
 import { groupRollEntry } from "./group-roll.mjs";
 import { setHeroic } from "../runtime/heroic.mjs";
 import { atCostMenuEntry } from "./success-at-cost.mjs";
@@ -56,10 +57,19 @@ export let menu = null;
  * (relâchée, elles se cachent). `{ point, build(aggressive), hidden, shown }`, ou null.
  */
 let menuSource = null;
+/** #33 : une attaque du menu est survolée — sa pastille (chance de toucher, abri) et sa ligne sont affichées. */
+let menuPreview = false;
 export function closeMenu() {
   menu?.remove();
   menu = null;
   menuSource = null;
+  endMenuPreview();
+}
+
+function endMenuPreview() {
+  if ( !menuPreview ) return;
+  menuPreview = false;
+  hideHitChance();
 }
 
 /** La ligne d'aide d'un menu dont les actions offensives sont cachées. */
@@ -68,6 +78,7 @@ const shiftHint = () => ({ hint: true, icon: "fa-solid fa-keyboard", label: loc(
 export function openMenu(event, entries, source=null) {
   closeMenu();
   if ( !entries.length ) return;
+  clearPreview();   // #33 : la pastille et la ligne du survol du canevas laissent place à celles du menu
   renderMenu({ clientX: event.clientX, clientY: event.clientY }, entries);
   menuSource = source;
 }
@@ -89,6 +100,17 @@ function renderMenu(point, entries) {
     button.innerHTML = `<i class="${entry.icon}"></i> <span></span>`;
     button.querySelector("span").textContent = entry.label;
     button.addEventListener("click", event => { closeMenu(); exclusive(() => entry.run(event)); });
+    // #33 : survoler une attaque montre, sous le menu, la même pastille que le survol de la cible (et la ligne de visée).
+    if ( entry.preview ) {
+      const { token, target, activity, mode } = entry.preview;
+      button.addEventListener("pointerenter", () => {
+        if ( !menu ) return;
+        menuPreview = true;
+        try { previewMenuAttack(menu.getBoundingClientRect(), token, target, activity, mode ?? null); }
+        catch(err) { console.warn(`${MODULE_ID} | menu attack preview`, err); }
+      });
+      button.addEventListener("pointerleave", endMenuPreview);
+    }
     menu.append(button);
   }
   document.body.append(menu);
@@ -164,6 +186,7 @@ export function onMenuShift(event) {
   if ( shown === menuSource.shown ) return;
   const source = menuSource;
   menu.remove();
+  endMenuPreview();   // l'entrée survolée disparaît avec l'ancien menu
   renderMenu(source.point, shown ? source.build(true) : [...source.build(false), shiftHint()]);
   source.shown = shown;
   menuSource = source;
@@ -392,7 +415,7 @@ function tokenEntries(token, target, { aggressive=true }={}) {
     const attack = activity.type === "attack";
     entries.push({ icon: attack ? "fa-solid fa-sword" : "fa-solid fa-wand-sparkles",
       label: loc(attack ? "Menu.Attaquer" : "Menu.Utiliser", { name: commandLabel(activity) }),
-      run: event => engageWith(token, target, activity, { event }) });
+      run: event => engageWith(token, target, activity, { event }), preview: { token, target, activity } });
   }
   if ( pilot ) {   // ni arme, ni mains nues, ni Lutte : un objet n'a que ses commandes
     entries.push({ icon: "fa-solid fa-eye", label: loc("Menu.Observer"), run: () => observe(target) });
@@ -416,21 +439,25 @@ function tokenEntries(token, target, { aggressive=true }={}) {
   }
   for ( const { activity, melee } of weaponAttacks(token.actor) ) {
     entries.push({ icon: melee ? "fa-solid fa-sword" : "fa-solid fa-bow-arrow",
-      label: loc("Menu.Attaquer", { name: activity.item.name }), run: event => engageWith(token, target, activity, { event }) });
+      label: loc("Menu.Attaquer", { name: activity.item.name }), run: event => engageWith(token, target, activity, { event }),
+      preview: { token, target, activity } });
     // §15.2 : une arme Légère offre le mode « main secondaire » de dnd5e (action Bonus, ou Coup double).
     if ( activity.item.system.attackModes?.some(m => m.value === "offhand") ) {
       entries.push({ icon: "fa-solid fa-hand-back-fist",
-        label: loc("Menu.MainSecondaire", { name: activity.item.name }), run: event => engageWith(token, target, activity, { mode: "offhand", event }) });
+        label: loc("Menu.MainSecondaire", { name: activity.item.name }), run: event => engageWith(token, target, activity, { mode: "offhand", event }),
+        preview: { token, target, activity, mode: "offhand" } });
     }
     if ( canBeThrown(activity) ) {
       entries.push({ icon: "fa-solid fa-hand-point-right",
-        label: loc("Menu.Lancer", { name: activity.item.name }), run: event => engageWith(token, target, activity, { mode: "thrown", event }) });
+        label: loc("Menu.Lancer", { name: activity.item.name }), run: event => engageWith(token, target, activity, { mode: "thrown", event }),
+        preview: { token, target, activity, mode: "thrown" } });
       // §240 (issue #13) : une arme Légère et de Lancer offre aussi le lancer de la main secondaire (`thrown-offhand` de dnd5e,
       // weapon.mjs:204) — même coût que la main secondaire (action Bonus, ou Coup double).
       if ( activity.item.system.attackModes?.some(m => m.value === "thrown-offhand") ) {
         entries.push({ icon: "fa-solid fa-hand-point-right",
           label: loc("Menu.LancerMainSecondaire", { name: activity.item.name }),
-          run: event => engageWith(token, target, activity, { mode: "thrown-offhand", event }) });
+          run: event => engageWith(token, target, activity, { mode: "thrown-offhand", event }),
+          preview: { token, target, activity, mode: "thrown-offhand" } });
       }
     }
   }
@@ -438,19 +465,22 @@ function tokenEntries(token, target, { aggressive=true }={}) {
   for ( const item of tetherItems(token.actor) ) {
     const activity = item.system.activities?.get(tetherRuleOf(item)?.activity ?? "");
     if ( activity && (tetheredToken(item) === target) ) {
-      entries.push({ icon: "fa-solid fa-bolt", label: loc("Menu.Utiliser", { name: item.name }), run: event => engageWith(token, target, activity, { event }) });
+      entries.push({ icon: "fa-solid fa-bolt", label: loc("Menu.Utiliser", { name: item.name }), run: event => engageWith(token, target, activity, { event }),
+        preview: { token, target, activity } });
     }
   }
   // §16.41 : une arme de sort invoquée (Lame de feu), tant que sa trace est là.
   for ( const activity of traceAttacks(token.actor) ) {
-    entries.push({ icon: "fa-solid fa-fire", label: loc("Menu.Attaquer", { name: activity.item.name }), run: event => engageWith(token, target, activity, { event }) });
+    entries.push({ icon: "fa-solid fa-fire", label: loc("Menu.Attaquer", { name: activity.item.name }), run: event => engageWith(token, target, activity, { event }),
+      preview: { token, target, activity } });
   }
   // §15.2 : l'attaque à mains nues et sa Lutte / Bousculade (la nôtre, ou celle d'une classe), sur une autre créature.
   // §16.44 : un seul bouton, qui ouvre le choix (attaque à mains nues, Lutte, Bousculade : à terre, Bousculade : repoussé).
   const unarmed = unarmedAttackOf(token.actor);
   const grapple = grappleShoveOf(token.actor);
   const bare = [];
-  if ( unarmed ) bare.push({ icon: "fa-solid fa-hand-fist", label: loc("Menu.MainsNues"), run: event => engageWith(token, target, unarmed, { event }) });
+  if ( unarmed ) bare.push({ icon: "fa-solid fa-hand-fist", label: loc("Menu.MainsNues"), run: event => engageWith(token, target, unarmed, { event }),
+    preview: { token, target, activity: unarmed } });
   // §18.23 : une créature qu'on agrippe déjà ne se ré-agrippe pas — la Lutte laisse place à « Relâcher ».
   const holding = holdsOf(token, target).length > 0;
   if ( holding ) bare.push({ icon: "fa-solid fa-hand-holding", label: loc("Menu.Relacher"), run: () => releaseGrapple(token, target) });

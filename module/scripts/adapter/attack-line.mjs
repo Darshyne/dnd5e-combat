@@ -61,19 +61,19 @@ function firstObstacle(attacker, target, a, b, pa, sources, seenOnly) {
  * @param {boolean} [options.unreachable]  L'approche n'arrive pas, ou la cible est hors de portée : toute la ligne en rouge.
  * @returns {{from: {x,y}, to: {x,y}, segments: Array, distance: {value: number, units: string}, range: string|null}|null}
  */
-export function attackLineOf(attacker, target, activity, { posA, unreachable=false }={}) {
+export function attackLineOf(attacker, target, activity, { posA, unreachable=false, attackMode=null }={}) {
   if ( (activity?.type !== "attack") || !attacker?.parent || (attacker.parent !== target?.parent) ) return null;
   if ( !canJudgeCover(attacker.parent) ) return null;
   const pa = posA ? { ...committedPosition(attacker), ...posA } : committedPosition(attacker);
   const from = centre(rectOf(attacker, pa));
   const to = centre(rectOf(target));
   const seenOnly = !game.user?.isGM;
-  const cover = coverPreviewOf(attacker, target, activity, { posA });
+  const cover = coverPreviewOf(attacker, target, activity, { posA, attackMode });
   const degree = cover?.degree ?? "none";
   const obstacleAt = (degree !== "none") ? firstObstacle(attacker, target, from, to, pa, cover.sources ?? [], seenOnly) : null;
 
   const distance = distanceBetween(attacker, target, { posA });
-  const range = rangeOf(activity);
+  const range = rangeOf(activity, attackMode);
   const factors = readUnitFactors();
   const issue = rangeIssue(distance, range, factors);
   let rangeEnd = null;

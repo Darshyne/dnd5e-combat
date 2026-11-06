@@ -232,6 +232,6 @@ export async function askHitOptions(actor, target, sneak, bonuses=[]) {
       // « Rien » : ni Frappe ni dégâts au choix ; l'Attaque sournoise reste si elle est automatique, et se garde si on la demandait.
       { action: "none", label: t((ask || bonuses.length) ? "Rien" : "Aucune"), callback: () => ({ sneak: eligible ? !ask : null, strikes: [], bonuses: [] }) }
     ]
-  }, { fallback });
+  }, { fallback, awaiting: { actor, kind: "choice" } });
   return (picked && (typeof picked === "object")) ? picked : fallback;
 }

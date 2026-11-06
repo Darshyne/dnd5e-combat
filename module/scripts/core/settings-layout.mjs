@@ -68,11 +68,11 @@ export const SETTINGS_TABS = Object.freeze([
     tools: [{ id: "factions", icon: "fa-solid fa-flag" }] },
   { id: "mouse", icon: "fa-solid fa-crosshairs",
     keys: ["clickToAttack", "targetingMode", "fastAttack", "quickRolls", "ammoPrompt", "releaseTargets", "situationalCursor", "targetingBanner",
-      "closeSheetOnUse", "hitChance", "hitChancePlayers", "coverPreview", "attackLine"],
+      "closeSheetOnUse", "hitChance", "hitChancePlayers", "coverPreview", "attackLine", "attackLineMelee"],
     groups: [
       g("clickAttack", "fa-solid fa-hand-pointer", ["clickToAttack", "fastAttack", "quickRolls", "ammoPrompt"]),
       g("targeting", "fa-solid fa-crosshairs", ["targetingMode", "releaseTargets", "targetingBanner", "situationalCursor"]),
-      g("hitChance", "fa-solid fa-percent", ["hitChance", "hitChancePlayers", "coverPreview", "attackLine"]),
+      g("hitChance", "fa-solid fa-percent", ["hitChance", "hitChancePlayers", "coverPreview", "attackLine", "attackLineMelee"]),
       g("sheet", "fa-solid fa-id-card", ["closeSheetOnUse"])
     ] },
   { id: "chat", icon: "fa-solid fa-comments",
@@ -87,14 +87,17 @@ export const SETTINGS_TABS = Object.freeze([
   // §228 : les textes qui défilent sur les tokens — rythme, puis ce qui s'affiche.
   { id: "float", icon: "fa-solid fa-comment-dots",
     keys: ["feedbackText", "floatDuration", "floatSpacing", "floatDistance", "floatDirection", "floatScale", "floatDice", "floatIcons",
-      "timerHideSeconds", "floatAttacks", "floatHits", "floatAdvantage", "floatSaves", "floatChecks", "floatCover", "floatReactions", "floatStrikes", "floatEffects", "floatResources", "floatPrompts"],
+      "timerHideSeconds", "awaitingShow", "awaitingGm", "awaitingHide", "floatAttacks", "floatHits", "floatAdvantage", "floatSaves", "floatChecks", "floatCover", "floatReactions", "floatStrikes", "floatEffects", "floatResources", "floatPrompts"],
     groups: [
       g("floatLook", "fa-solid fa-sliders", ["feedbackText", "floatDuration", "floatSpacing", "floatDistance", "floatDirection", "floatScale", "floatDice", "floatIcons"],
         { sub: Object.fromEntries(["floatDuration", "floatSpacing", "floatDistance", "floatDirection", "floatScale", "floatDice", "floatIcons"]
           .map(k => [k, offIf("feedbackText", false)])) }),
       g("floatWhat", "fa-solid fa-list-check", ["floatAttacks", "floatHits", "floatAdvantage", "floatSaves", "floatChecks", "floatCover", "floatReactions",
         "floatStrikes", "floatEffects", "floatResources", "floatPrompts"]),
-      g("timers", "fa-solid fa-gear", ["timerHideSeconds"])
+      g("timers", "fa-solid fa-gear", ["timerHideSeconds"]),
+      // §381 (issue #35) : le sablier au-dessus du token qu'on attend.
+      g("awaiting", "fa-solid fa-hourglass-half", ["awaitingShow", "awaitingGm", "awaitingHide"],
+        { sub: { awaitingGm: offIf("awaitingShow", false) } })
     ] },
   { id: "advanced", icon: "fa-solid fa-gears", keys: ["perfWarnMs", "automationBadges", "debugCapture", "debugAllModules", "debugNotify"] }
 ]);

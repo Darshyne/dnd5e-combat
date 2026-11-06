@@ -85,7 +85,7 @@ export async function handleSkillAidQuery(payload) {
       { action: "yes", label: loc("AideTest.Accepter"), icon: "fa-solid fa-hand-holding-heart", default: true },
       { action: "no", label: loc("AideTest.Refuser"), icon: "fa-solid fa-xmark" }
     ]
-  }, { fallback: "no", seconds: windowsUnlimited() ? null : answerSeconds() });   // §290 : sans délai, le MJ force
+  }, { fallback: "no", seconds: windowsUnlimited() ? null : answerSeconds(), awaiting: { actor, kind: "choice" } });   // §290 : sans délai, le MJ force
   if ( answer !== "yes" ) return false;
   return perform(payload);
 }

@@ -19,6 +19,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { atCostMarginFor, cleanCost, holdSeconds, nearMiss, AT_COST_HOLD, AT_COST_MARGIN } from "../core/success-at-cost.mjs";
 import { AT_COST_QUERY, askCost, askPlayerAtCost, handleAtCostQuery } from "../adapter/success-at-cost.mjs";
+import { whileAwaiting } from "../adapter/awaiting.mjs";
 import { route } from "./router.mjs";
 import { esc, isExecutor, loc, locEsc, log, notice, say, tokenOfActor, viaActiveGM } from "./shared.mjs";
 
@@ -130,7 +131,8 @@ async function proposeTo(actor, { what, kind, cost, total, needed, by }) {
   if ( !actor ) return null;
   let text = cost;
   if ( text === undefined ) {
-    const asked = await askCost({ name: actor.name, what, total, needed, by });
+    // §381 : la table voit que le MJ réfléchit au prix (sablier au-dessus du personnage).
+    const asked = await whileAwaiting(actor, "choice", () => askCost({ name: actor.name, what, total, needed, by }));
     if ( !asked ) { log(`success at a cost: the GM keeps ${actor.name}'s failure`); return null; }
     text = asked.cost;
   }

@@ -17,6 +17,18 @@ export function attackLineOn() {
   try { return game.settings.get(MODULE_ID, "attackLine") === true; } catch { return false; }
 }
 
+/**
+ * Une attaque au contact : une attaque de mêlée qui n'est pas lancée (une arme de jet lancée garde sa ligne). Le réglage de monde
+ * `attackLineMelee` (activé par défaut) la montre ou non.
+ */
+export function meleeAttack(activity, attackMode=null) {
+  return (activity?.attack?.type?.value === "melee") && !String(attackMode ?? "").includes("thrown");
+}
+
+function meleeLineOn() {
+  try { return game.settings.get(MODULE_ID, "attackLineMelee") !== false; } catch { return true; }
+}
+
 function container() {
   if ( layer && !layer.destroyed && layer.parent ) return layer;
   if ( !canvas?.controls ) return null;
@@ -51,10 +63,12 @@ function distanceText(line) {
  * @param {TokenDocument} attacker
  * @param {TokenDocument} target
  * @param {Activity} activity
- * @param {object} [options]  `posA` : position d'arrivée de l'attaquant ; `unreachable` : tout en rouge.
+ * @param {object} [options]  `posA` : position d'arrivée de l'attaquant ; `unreachable` : tout en rouge ; `attackMode` : le mode
+ *                            d'attaque de dnd5e (« thrown »…).
  */
 export function showAttackLine(attacker, target, activity, options={}) {
   if ( !attackLineOn() ) return hideAttackLine();
+  if ( !meleeLineOn() && meleeAttack(activity, options.attackMode) ) return hideAttackLine();
   let line = null;
   try { line = attackLineOf(attacker, target, activity, options); }
   catch(err) { console.warn(`${MODULE_ID} | attack line`, err); }
@@ -93,4 +107,6 @@ export function showAttackLine(attacker, target, activity, options={}) {
 export function registerAttackLine() {
   game.settings.register(MODULE_ID, "attackLine", { scope: "world", config: true, type: Boolean, default: false,
     name: "DND5ECOMBAT.Reglage.attackLine.Nom", hint: "DND5ECOMBAT.Reglage.attackLine.Aide" });
+  game.settings.register(MODULE_ID, "attackLineMelee", { scope: "world", config: true, type: Boolean, default: true,
+    name: "DND5ECOMBAT.Reglage.attackLineMelee.Nom", hint: "DND5ECOMBAT.Reglage.attackLineMelee.Aide" });
 }

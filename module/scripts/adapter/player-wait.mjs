@@ -5,7 +5,8 @@
  * joueur de résoudre ses fenêtres comme au bout du délai (`forceOpenWindows`, adapter/dialogs.mjs) : la question revient avec la
  * réponse par défaut. Un joueur qui se déconnecte : la question échoue aussitôt, comme une absence de réponse.
  *
- * Fenêtres avec délai (réglage par défaut) : la requête du cœur, telle quelle (`user.query`, client/documents/user.mjs).
+ * Fenêtres avec délai (réglage par défaut) : la requête du cœur avec ce délai (`user.query`, client/documents/user.mjs) ; §381 : notée elle aussi,
+ * pour que le MJ puisse forcer depuis le menu du token.
  */
 
 import { MODULE_ID } from "../constants.mjs";
@@ -30,7 +31,7 @@ export function playerWaits() {
 }
 
 /**
- * Pose la question `name` au joueur `user`. Avec délai : la requête du cœur. Sans délai : attend sans limite, notée pour le suivi du MJ.
+ * Pose la question `name` au joueur `user`, notée pour le suivi du MJ. Avec délai : la requête du cœur, ce délai. Sans délai : attend sans limite.
  * Lève comme `user.query` quand il n'y a pas de réponse (joueur parti, question lâchée).
  * @param {User} user
  * @param {string} name     La requête (`CONFIG.queries`).
@@ -41,7 +42,8 @@ export function playerWaits() {
  * @param {string} [options.label]       Ce que le joueur a sous les yeux (« Réaction », « Bouclier »…), déjà traduit.
  */
 export async function queryPlayer(user, name, payload, { timeout, actor=null, label="" }={}) {
-  if ( !windowsUnlimited() ) return user.query(name, payload, { timeout });
+  // §381 : notée aussi quand les fenêtres ont un délai — le MJ peut forcer depuis le menu du token sans attendre la fin du compte à rebours.
+  const unlimited = windowsUnlimited();
   const id = foundry.utils.randomID();
   const { promise: abandoned, reject: abandon } = Promise.withResolvers();
   waits.set(id, { id, userId: user.id, userName: user.name, actor: actor?.uuid ?? null, actorName: actor?.name ?? "",
@@ -49,7 +51,7 @@ export async function queryPlayer(user, name, payload, { timeout, actor=null, la
   changed();
   // Un joueur qui part ne répondra plus : comme une absence de réponse.
   const watch = setInterval(() => { if ( !user.active ) abandon(new Error(`${user.name} disconnected`)); }, 1000);
-  try { return await Promise.race([user.query(name, payload, { timeout: UNLIMITED_TIMEOUT }), abandoned]); }
+  try { return await Promise.race([user.query(name, payload, { timeout: unlimited ? UNLIMITED_TIMEOUT : timeout }), abandoned]); }
   finally {
     clearInterval(watch);
     waits.delete(id);

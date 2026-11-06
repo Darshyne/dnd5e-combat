@@ -27,7 +27,7 @@ export async function askLegendary(actor, { total, dc, item }) {
       { action: "yes", label: t("Oui"), icon: "fa-solid fa-shield", default: true },
       { action: "no", label: t("Non"), icon: "fa-solid fa-xmark" }
     ]
-  }, { fallback: "no" });
+  }, { fallback: "no", awaiting: { actor, kind: "choice" } });
   return answer === "yes";
 }
 

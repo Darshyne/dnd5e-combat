@@ -24,6 +24,7 @@ import { contentOf } from "../adapter/content.mjs";
 import { movableZoneOf } from "./zones.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
+import { whileAwaiting } from "../adapter/awaiting.mjs";
 
 export const AUTO_USAGE_SETTING = "autoUsage";
 
@@ -84,13 +85,14 @@ function repairSelfUses(activity) {
 /** §77 : plus de ressources — le MJ choisit de lancer quand même (rien n'est consommé) ou non ; relance l'utilisation d'origine. */
 async function askForced(activity, usageConfig, messageConfig) {
   const name = activity.item.name;
-  const ok = await foundry.applications.api.DialogV2.confirm({
+  // §381 : la table voit que le MJ décide (sablier au-dessus de la créature, ou bandeau discret pour un monstre).
+  const ok = await whileAwaiting(activity.actor ?? null, "choice", () => foundry.applications.api.DialogV2.confirm({
     window: { title: loc("SansCharge.Titre") },
     content: `<p>${loc("SansCharge.Texte", { name })}</p>`,
     yes: { label: loc("SansCharge.Lancer"), icon: "fa-solid fa-wand-sparkles" },
     no: { label: loc("SansCharge.Renoncer") },
     rejectClose: false
-  }).catch(() => false);
+  })).catch(() => false);
   if ( !ok ) return log(`${name}: no charges left, the GM gives up`);
   const original = activity.actor?.items.get(activity.item.id)?.system.activities.get(activity.id);
   if ( !original ) return;

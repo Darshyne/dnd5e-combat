@@ -35,6 +35,7 @@ import { requestSkillAid } from "./skill-aid.mjs";
 import { levelAtLeast } from "./levels.mjs";
 import { route } from "./router.mjs";
 import { log, loc, sleep, isExecutor } from "./shared.mjs";
+import { whileAwaiting } from "../adapter/awaiting.mjs";
 
 export const GROUP_ROLL_QUERY = `${MODULE_ID}.groupRoll`;
 export const SECONDS_SETTING = "groupRollSeconds";
@@ -229,6 +230,13 @@ async function untilApplied(test, ms=10000) {
  * @returns {Promise<"rolled"|"cancelled">}
  */
 export async function promptGroupRoll(message, actor) {
+  if ( !requestOf(message) || !actor || resultOf(message, actor) ) return promptGroupRollNow(message, actor);
+  // §381 : la table voit qu'on attend ce jet (sablier au-dessus du token) jusqu'à ce qu'il parte, soit pris ailleurs ou expire.
+  const seconds = answerSeconds();
+  return whileAwaiting(actor, "roll", () => promptGroupRollNow(message, actor), { seconds: seconds > 0 ? seconds : null });
+}
+
+async function promptGroupRollNow(message, actor) {
   const request = requestOf(message);
   if ( !request || !actor ) return "cancelled";
   if ( resultOf(message, actor) ) return "rolled";

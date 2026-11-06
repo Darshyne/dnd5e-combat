@@ -292,7 +292,7 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
     position: { width: 520 },
     content: `<p>${game.i18n.format(`DND5ECOMBAT.${prompt.key}`, prompt.data)}</p>`,
     buttons
-  }, { fallback: "none" });
+  }, { fallback: "none", awaiting: { actor, kind: "reaction" } });
   const option = options[Number(String(choice ?? "").replace("use", ""))];
   if ( !choice?.startsWith?.("use") || !option ) return null;
 

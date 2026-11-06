@@ -296,7 +296,7 @@ export async function chooseSaveAbility(actor, abilities, { dc, item }) {
     window: { title: game.i18n.format("DND5ECOMBAT.ChoixSauvegarde.Titre", { name: actor.name }) },
     content: `<p>${game.i18n.format("DND5ECOMBAT.ChoixSauvegarde.Texte", { item, dc })}</p>`,
     buttons
-  }, { fallback: best });
+  }, { fallback: best, awaiting: { actor, kind: "roll", token: actor.token ?? null } });
   return abilities.includes(choice) ? choice : best;
 }
 
@@ -315,7 +315,7 @@ export async function handleSaveQuery({ usage, token: tokenUuid, ability, abilit
   if ( ask && (abilities?.length > 1) ) ability = await chooseSaveAbility(actor, abilities, { dc, item });
   // La fenêtre du jet se ferme au bout du délai ; le jet part alors seul (ses dés, sans dialogue).
   let timedOut = false;
-  const cancel = closeRollDialogAfter(actor, () => { timedOut = true; });
+  const cancel = closeRollDialogAfter(actor, () => { timedOut = true; }, null, { awaiting: "roll" });
   const [rollConfig, messageConfig] = saveRollArguments(activity, actor, token, usageMessage, { ability, dc, advantage, disadvantage, foretold });
   let rolls = await actor.rollSavingThrow(rollConfig, { configure: true }, messageConfig);
   cancel();

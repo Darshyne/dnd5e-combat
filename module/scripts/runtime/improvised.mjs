@@ -17,6 +17,7 @@ import { identifierOf } from "../adapter/content.mjs";
 import { tokenOf } from "../adapter/facts.mjs";
 import { route } from "./router.mjs";
 import { esc, log, loc, say, viaActiveGM } from "./shared.mjs";
+import { whileAwaiting } from "../adapter/awaiting.mjs";
 
 export const IMPROVISED_QUERY = `${MODULE_ID}.improvised`;
 const FLAG = "improvised";
@@ -69,14 +70,15 @@ async function handleRequest({ actor: actorUuid, object, mode, user }) {
     <div class="form-group"><label>${loc("Improvise.TypeDegats")}</label><select name="type">
       ${DAMAGE_TYPES.map(t => opt(t, game.i18n.localize(CONFIG.DND5E.damageTypes[t]?.label ?? t))).join("")}</select></div>
     <p class="hint">${loc("Improvise.AideMJ")}</p>`;
-  const answer = await foundry.applications.api.DialogV2.wait({
+  // §381 : la table voit que le MJ tranche (sablier au-dessus du personnage).
+  const answer = await whileAwaiting(actor, "choice", () => foundry.applications.api.DialogV2.wait({
     window: { title: loc("Improvise.TitreMJ") }, content, rejectClose: false, position: { width: 460 },
     buttons: [
       { action: "accept", label: loc("Improvise.Accepter"), icon: "fa-solid fa-check", default: true,
         callback: (event, button) => ({ accepted: true, as: button.form.elements.as.value || null, type: button.form.elements.type.value }) },
       { action: "refuse", label: loc("Improvise.Refuser"), icon: "fa-solid fa-ban", callback: () => ({ accepted: false }) }
     ]
-  });
+  }));
   const verdict = (answer && (typeof answer === "object")) ? answer : { accepted: false };
   log(`improvised weapon asked by ${actor.name} (${object}, ${mode}): ${verdict.accepted ? `accepted${verdict.as ? ` as ${verdict.as}` : ` (1d4 ${verdict.type})`}` : "refused"}`);
   return verdict;

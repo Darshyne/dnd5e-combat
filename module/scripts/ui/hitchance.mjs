@@ -18,6 +18,8 @@ import { describeReason } from "./chat.mjs";
 
 const OFFSET = 18;
 let badge = null;
+/** #33 : la pastille posée sous un menu (son rectangle) au lieu de suivre le curseur ; null : au curseur. */
+let anchor = null;
 
 function element() {
   if ( badge ) return badge;
@@ -47,10 +49,10 @@ function previewOn() {
 }
 
 /** #33 : les lignes de l'aperçu de l'abri, ou null (réglage coupé, pas une attaque, canevas indisponible). */
-function previewLines(attacker, target, activity, posA) {
+function previewLines(attacker, target, activity, posA, attackMode=null) {
   if ( !previewOn() ) return null;
   let preview = null;
-  try { preview = coverPreviewOf(attacker, target, activity, { posA }); }
+  try { preview = coverPreviewOf(attacker, target, activity, { posA, attackMode }); }
   catch(err) { console.warn(`${MODULE_ID} | cover preview`, err); }
   const text = coverPreviewText(preview, (key, data) => loc(key, data));
   if ( !text ) return null;
@@ -76,13 +78,22 @@ function coverText(cover) {
 export function placeHitChance(event) {
   if ( !badge || badge.hidden ) return;
   const { offsetWidth: w, offsetHeight: h } = badge;
+  // #33 : sous le menu contextuel (au-dessus s'il n'y a pas la place), alignée sur son bord gauche.
+  if ( anchor ) {
+    const below = anchor.bottom + 4;
+    badge.style.left = `${Math.max(4, Math.min(anchor.left, window.innerWidth - w - 4))}px`;
+    badge.style.top = `${(below + h <= window.innerHeight - 4) ? below : Math.max(4, anchor.top - h - 4)}px`;
+    return;
+  }
+  if ( !event ) return;
   badge.style.left = `${Math.min(event.clientX + OFFSET, window.innerWidth - w - 4)}px`;
   badge.style.top = `${Math.min(event.clientY + OFFSET, window.innerHeight - h - 4)}px`;
 }
 
 /** Un badge au curseur, sans chance de toucher : « Hors de portée », « Déjà visé » (§16.29). */
-export function showBadge(event, text) {
+export function showBadge(event, text, { at=null }={}) {
   if ( reveal() === "off" ) return hideHitChance();
+  anchor = at;
   const el = element();
   el.replaceChildren();
   el.classList.remove("good", "fair");
@@ -94,6 +105,7 @@ export function showBadge(event, text) {
 
 export function hideHitChance() {
   if ( badge ) badge.hidden = true;
+  anchor = null;
   hideAttackLine();   // #33 : la ligne de visée part avec la pastille
 }
 
@@ -107,16 +119,18 @@ export function hideHitChance() {
  * @param {object} [options.posA]         Position de l'attaquant au bout de son approche.
  * @param {boolean} [options.outOfReach]  L'approche n'arrive pas à portée ce tour-ci.
  * @param {{advantage?: boolean, disadvantage?: boolean}} [options.keys]  Touches d'avantage / désavantage tenues.
+ * @param {string|null} [options.attackMode]  Le mode d'attaque de dnd5e (« thrown »…), quand le menu le choisit.
+ * @param {DOMRect|null} [options.at]         #33 : poser la pastille sous ce rectangle (le menu contextuel) plutôt qu'au curseur.
  */
-export function showHitChance(event, attacker, target, activity, { posA, outOfReach=false, keys={} }={}) {
+export function showHitChance(event, attacker, target, activity, { posA, outOfReach=false, keys={}, attackMode=null, at=null }={}) {
   const level = reveal();
   if ( activity?.type !== "attack" ) return hideHitChance();
   // #33 : l'aperçu de l'abri s'affiche même quand la chance de toucher est cachée à ce client.
-  const cover = previewLines(attacker, target, activity, posA);
+  const cover = previewLines(attacker, target, activity, posA, attackMode);
   if ( (level === "off") && !cover ) return hideHitChance();
   let info = null;
   if ( !outOfReach && (level !== "off") ) {
-    try { info = hitChanceOf(attacker, target, activity, { posA, keys }); }
+    try { info = hitChanceOf(attacker, target, activity, { posA, keys, attackMode }); }
     catch(err) { console.warn(`${MODULE_ID} | hit chance`, err); }
     if ( !info && !cover ) return hideHitChance();
   }
@@ -152,6 +166,7 @@ export function showHitChance(event, attacker, target, activity, { posA, outOfRe
     if ( advantage.length && disadvantage.length ) el.append(line("detail", loc("Toucher.SAnnulent")));
   }
   if ( cover && !info ) el.append(...cover);
+  anchor = at;
   el.hidden = false;
   placeHitChance(event);
 }

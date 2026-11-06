@@ -31,7 +31,7 @@ describe("chargement du module", () => {
   it("expose ses fonctions de test au connecteur sous api.mcp (call-module-api), et elles seules", () => {
     expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "advanceTime", "animations", "atCost", "attackReasons", "awaiting", "barrier", "budget", "burning", "castPicked", "catalyst",
       "chainCheck", "chatCards", "climb", "climbCeiling", "climbDown", "climbHolds", "climbState", "climbToward", "clock", "closeWindow", "concentrate", "controls",
-      "cover", "coverPreview", "damageTypes", "dash", "diagnosticBackups", "diagnosticForget", "diagnosticRepair", "diagnosticRestore", "diagnosticScan",
+      "cover", "coverPreview", "damageTypes", "dash", "debugClear", "debugReport", "debugThrow", "debugVerbose", "diagnosticBackups", "diagnosticForget", "diagnosticRepair", "diagnosticRestore", "diagnosticScan",
       "door", "dropDown", "effectOrigins", "enchant", "endings", "etherealWalls", "factions", "familiar", "familiarPocket", "familiarRecall",
       "flammable", "flight", "follow", "followState", "forcePlayerWait", "foreignSetting", "fortified", "gmAlerts", "grab", "grappleState", "groupRoll", "groupRollBreakdown", "groupRollForce", "groupRollMode", "groupRollState", "hampered", "heal", "hoist", "hood", "hurt", "identify", "inventory", "issues", "itemData", "jump",
       "lightState", "lock", "longRest", "makeScroll", "masteries", "menu", "move", "movement", "naturalOne", "overrideContent", "owners", "perceived", "perf", "pickTargets", "placeItemEffect", "placeMenu", "placeRegionAt",

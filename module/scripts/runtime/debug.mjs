@@ -25,6 +25,9 @@ export const DEBUG_ALL_SETTING = "debugAllModules";
 export const DEBUG_QUERY = `${MODULE_ID}.debug`;
 export const DEBUG_VERBOSE_QUERY = `${MODULE_ID}.debugVerbose`;
 export const DEBUG_HOOK = `${MODULE_ID}.debug`;
+/** Une sonde pour les scénarios : un inscrit du routeur qui échoue exprès (message « DAS debug probe … »). */
+export const DEBUG_PROBE_HOOK = `${MODULE_ID}.debugProbe`;
+export const PROBE_MARK = "DAS debug probe";
 export const RELAY_MS = 3000;
 
 const SELF_FILE = `${MODULE_ID}/scripts/runtime/debug.mjs`;
@@ -429,6 +432,7 @@ export function registerDebug() {
   route("canvasReady", onScene, opts("scene"));
   route("userConnected", (user, connected) => { if ( connected && user?.isGM ) flush(); }, opts("relay"));
   route("setup", () => Hooks.callAll(DEBUG_HOOK, debugApi), opts("neighbours"));
+  route(DEBUG_PROBE_HOOK, ({ message="" }={}) => { throw new Error(`${PROBE_MARK}: ${message}`); }, { label: "debug: probe (deliberate failure)", always: true });
   route("ready", () => {
     if ( state.timer ) clearInterval(state.timer);
     state.timer = setInterval(() => { if ( state.enabled && !game.users.activeGM?.isSelf ) flush(); }, RELAY_MS);

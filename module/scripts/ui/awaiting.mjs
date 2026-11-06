@@ -37,6 +37,9 @@ function layerOf() {
   if ( !layer || layer.destroyed || (layer.parent !== canvas.interface) ) {
     layer = canvas.interface.addChild(new PIXI.Container());
     layer.eventMode = "none";
+    // `canvas.interface` trie ses enfants : le calque des tokens y est à 200 (vu en jeu, V14) — au-dessus des contrôles, pour que le
+    // sablier et le nom ne passent pas sous l'image d'un token.
+    layer.zIndex = 1050;
   }
   return layer;
 }

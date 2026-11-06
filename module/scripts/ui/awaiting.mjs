@@ -147,6 +147,8 @@ function stopTicking() {
 
 function onAwaiting(list) {
   entries = Array.isArray(list) ? list : [];
+  // Le bandeau est du HTML : posé ici aussi, sans attendre le ticker du canevas (arrêté dans un onglet en arrière-plan, vu en jeu).
+  updateBanner(Date.now(), awaitingViewer());
   if ( entries.length ) startTicking();
   else { for ( const id of [...views.keys()] ) drop(id); document.getElementById(BANNER_ID)?.remove(); }
 }

@@ -68,6 +68,7 @@ import { registerActionEnd } from "./runtime/action-end.mjs";
 import { registerActivityChoice } from "./runtime/activity-choice.mjs";
 import { registerMonk } from "./runtime/monk.mjs";
 import { registerSmite } from "./runtime/smite.mjs";
+import { registerFollowUps } from "./runtime/follow-ups.mjs";
 import { registerManeuverDice } from "./runtime/maneuver-dice.mjs";
 import { registerRollBonus } from "./runtime/roll-bonus.mjs";
 import { registerHeroic, setHeroic } from "./runtime/heroic.mjs";
@@ -366,6 +367,7 @@ Hooks.once("init", () => {
   gated(registerEffectWhile);   // §130 : effets de don conditionnels (Défense, Duel…)
   gated(registerMonk);   // §24 : Frappe étourdissante, Technique de la main ouverte
   gated(registerSmite);   // §25 : sorts de châtiment (après registerSneak : les dés du châtiment suivent ceux de l'Attaque sournoise)
+  gated(registerFollowUps);   // §373 : activités proposées après un coup (après registerSmite : la faveur d'abord, puis la prise)
   gated(registerManeuverDice);   // §89, §90 : dés de manœuvre (Fente, Feinte, Jeu de jambes évasif, Balayage, Chassé-croisé, Frappe commandée)
   gated(registerHeroic);   // §282 : Inspiration héroïque — avant les dés d'après le jet (Embuscade, Inspiration bardique), qui l'attendent
   gated(registerRollBonus);      // §90 : un dé ajouté à un test ou à l'initiative (Embuscade, Autorité naturelle, Évaluation tactique)

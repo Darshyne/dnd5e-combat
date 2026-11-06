@@ -24,7 +24,7 @@ import {
   grapplingMarksOf, grapplingMarkData, grappledTokenOf, victimsOf, actorOfEffect
 } from "../adapter/grapple.mjs";
 import { basicActionOf } from "../adapter/basics.mjs";
-import { grappleRulesOf } from "../adapter/grapple-rules.mjs";
+import { inescapableFor } from "../adapter/grapple-rules.mjs";
 import { swallowerOf } from "../adapter/swallow.mjs";
 import { escapeSwallow } from "./swallow.mjs";
 import { escapableRestraintsOf } from "../adapter/escape.mjs";
@@ -233,7 +233,7 @@ async function attemptEscape(actor) {
   const skills = actor.system.skills ?? {};
   const skill = ((skills.acr?.total ?? -Infinity) > (skills.ath?.total ?? -Infinity)) ? "acr" : "ath";
   // §281 : Inexorable — l'agrippeur impose le Désavantage aux tests contre sa prise.
-  const disadvantage = grappleRulesOf(grapplerOf(effect)).inescapable;
+  const disadvantage = await inescapableFor(grapplerOf(effect), actor.name);
   if ( disadvantage ) log(`${actor.name}: Disadvantage on the escape check (${grapplerOf(effect)?.name})`);
   // §304 (repasse C9) : Forte carrure du goliath — « Avantage aux tests pour mettre fin à l'état Agrippé » (drapeau de dnd5e posé par le trait).
   const advantage = actor.flags?.dnd5e?.powerfulBuild === true;

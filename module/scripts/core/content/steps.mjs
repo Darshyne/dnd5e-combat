@@ -150,6 +150,8 @@ export function validateTrigger(declaration, at, facts, errors) {
       // O8d (§347) : `intercept` — le réacteur devient la cible de l'attaque (Bouclier antiprojectiles), avant le jet.
       if ( isObject(s) && (s.type === "intercept") && !(d.on.includes("enemyAttacks") && preAttackReaction) ) errors.push(`${at}.do: "intercept" requires the enemyAttacks moment and a "use" reaction`);
       if ( isObject(s) && (s.type === "absorb") && !(d.on.includes("allyIsDamaged") && d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "absorb" requires the allyIsDamaged moment and a "use" reaction`);
+      // §375 : `redirect` — sur un coup raté, l'attaquant refait la même attaque contre une créature que le réacteur agrippe.
+      if ( isObject(s) && (s.type === "redirect") && !(d.on.includes("isMissed") && d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "redirect" requires the isMissed moment and a "use" reaction`);
       if ( isObject(s) && (s.type === "interpose") && !(d.on.includes("allyIsDamaged") && d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "interpose" requires the allyIsDamaged moment and a "use" reaction`);
       if ( isObject(s) && (s.type === "bonus") && !(d.on.includes("allyAttacks") && preAttackReaction) ) errors.push(`${at}.do: "bonus" requires the allyAttacks moment and a "use" reaction`);
       if ( isObject(s) && (s.type === "endCondition") && (!d.on.includes("gainsCondition") || !d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "endCondition" requires the gainsCondition moment and a "use" reaction`);

@@ -16,7 +16,7 @@ import { originItemOf, tokenOf, comesFromItemEffect } from "../adapter/facts.mjs
 import { duplicatesAgainst } from "../adapter/duplicates.mjs";
 import { announce, matching } from "./triggers.mjs";
 import { route } from "./router.mjs";
-import { log, sleep } from "./shared.mjs";
+import { log, loc, sleep } from "./shared.mjs";
 import { reactionApproach } from "./actions.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { poolsOf } from "../adapter/absorb.mjs";
@@ -26,6 +26,8 @@ import { readyPlanOf, readyTriggered } from "../core/ready.mjs";
 import { readyOption } from "../adapter/ready.mjs";
 import { samePlane } from "../adapter/plane.mjs";
 import { offerCombatInspirationDefense, hasCombatInspiration } from "../adapter/inspiration.mjs";
+import { targetDescriptorsOf } from "../adapter/pick-targets.mjs";
+import { askChoice } from "../adapter/choices.mjs";
 
 /** §134 : Rapide — le nom de l'item qui donne le Désavantage aux attaques d'opportunité contre cet acteur, ou null. */
 export function hamperedBy(actor) {
@@ -277,14 +279,36 @@ function fireTargetWindow(window, tokenUuids, sourceToken, sourceName, { activit
       { publish: true });
     if ( !options.length ) return;
     log(`${actor.name} is ${what}: reaction window (${options.map(o => o.name).join(", ")})`);
-    await askReaction(actor, {
+    const answer = await askReaction(actor, {
       actor: actor.uuid,
       prompt: { key: promptKey, data: { attacker: sourceName } },
       options,
       target: options.some(o => o.targetSource) ? sourceToken : null,
       auto: auto === "first"
     });
+    if ( answer?.redirect ) await redirectAttack(used, attackerToken, tokenDocument);
   })().catch(err => console.error(`${MODULE_ID} | "${what}" window interrupted`, err));
+}
+
+/**
+ * §375 : Bouclier de chair — « la créature refait la même attaque, avec un nouveau jet, contre une créature que vous agrippez ». La même
+ * activité, utilisée par le MJ actif pour l'attaquant, sans rien consommer ni coûter d'action ; le jet porte sa cible (comme une
+ * attaque de réaction, §67 bis). Plusieurs créatures agrippées : le réacteur choisit (sans réponse, la première).
+ */
+async function redirectAttack(activity, attacker, reactor) {
+  if ( (activity?.type !== "attack") || !attacker?.actor || !reactor ) return;
+  const victims = victimsOf(reactor).filter(t => (t !== attacker) && ((t.actor?.system.attributes?.hp?.value ?? 0) > 0));
+  if ( !victims.length ) return;
+  let victim = victims[0];
+  if ( victims.length > 1 ) {
+    const answer = await askChoice(reactor.actor, { actor: reactor.actor.uuid, item: activity.item?.name ?? "",
+      prompt: loc("Detournement.Question", { attacker: attacker.name }), options: victims.map((t, i) => ({ id: `v${i}`, label: t.name })) });
+    victim = victims[Number(String(answer?.id ?? "v0").slice(1))] ?? victims[0];
+  }
+  log(`${attacker.name}: same attack redirected against ${victim.name} (${reactor.name})`);
+  const results = await activity.use({ [MODULE_ID]: { confirmed: true }, consume: false, subsequentActions: false, create: { measuredTemplate: false } },
+    { configure: false }, { data: { flags: { [MODULE_ID]: { cost: "free", redirected: reactor.uuid } } } });
+  if ( results ) await activity.rollAttack({}, { configure: false }, { data: { system: { origin: results.message?.id, targets: targetDescriptorsOf([victim]) } } });
 }
 
 /**

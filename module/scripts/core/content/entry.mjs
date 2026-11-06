@@ -459,7 +459,9 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       errors.push(`${at}grappleSize: { bonus?: positive integer, dragFree?: integer }`);
     }
   }
-  if ( ("inescapable" in entry) && (entry.inescapable !== true) ) errors.push(`${at}inescapable: true or absent`);
+  // §374 : { activity } — le Désavantage se paie, au choix de l'agrippeur, avec ce que coûte cette activité de l'item (Inexorable : 1 Moxie).
+  if ( ("inescapable" in entry) && (entry.inescapable !== true) && !(isObject(entry.inescapable) && isId(entry.inescapable.activity)
+    && (Object.keys(entry.inescapable).length === 1)) ) errors.push(`${at}inescapable: true, { activity } or absent`);
   if ( ("grappleCover" in entry) && !["half", "threeQuarters"].includes(entry.grappleCover) ) errors.push(`${at}grappleCover: half | threeQuarters`);
   if ( "weaponDamageTypes" in entry ) {
     const d = entry.weaponDamageTypes;

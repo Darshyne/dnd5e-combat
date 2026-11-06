@@ -27,6 +27,7 @@ import { originItemOf, comesFromItemEffect } from "./facts.mjs";
 import { resolveCounter } from "./counter.mjs";
 import { polearmFits } from "../core/feats.mjs";
 import { spendItemUses } from "./uses.mjs";
+import { victimsOf } from "./grapple.mjs";
 
 export const REACTION_QUERY = `${MODULE_ID}.reaction`;
 
@@ -90,13 +91,16 @@ export function reactionOptions(actor, window, declarations) {
     disadvantage: stepsOf(d, "disadvantage").length > 0,
     absorb: stepsOf(d, "absorb").length > 0,
     interpose: stepsOf(d, "interpose").length > 0,
+    redirect: stepsOf(d, "redirect").length > 0,   // §375 : Bouclier de chair
     consume: step.consume !== false,
     approach: step.approach === true,
     advantage: step.advantage === true,
     // §88 : l'attaque se fait avec une arme de corps à corps de l'acteur ; l'activité de l'item paie et donne le dé (Riposte).
     weapon: step.weapon === true
   // §133 : une attaque d'arme en réaction n'a pas besoin d'une activité de l'item qui paie (Sentinelle n'en a aucune).
-  })).filter(o => (o.activity || o.weapon) && (!o.activity || affordable(o.activity)) && (!o.weapon || meleeAttacksOf(actor).options.length)));
+  })).filter(o => (o.activity || o.weapon) && (!o.activity || affordable(o.activity)) && (!o.weapon || meleeAttacksOf(actor).options.length)
+    // §375 : une attaque à détourner vers… personne — seulement si le réacteur agrippe une créature.
+    && (!o.redirect || victimsOf(actor.token ?? actor.getActiveTokens?.(false, true)?.[0] ?? null).length)));
 }
 
 /**
@@ -365,7 +369,7 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
   const counter = (results && (castLevel !== null)) ? await resolveCounter(actor, activity.item, castLevel) : null;
   return results ? { counter, reduce, penalty, bonus, disadvantage: option.disadvantage === true, used: option.activity, name: option.name, message: results.message?.id ?? null, halve: option.halve === true,
     uncrit: option.uncrit === true, miss: option.miss === true, absorb: option.absorb === true, interpose: option.interpose === true,
-    endCondition: option.endCondition === true, cancel: option.cancel === true, intercept: option.intercept === true } : null;
+    endCondition: option.endCondition === true, cancel: option.cancel === true, intercept: option.intercept === true, redirect: option.redirect === true } : null;
 }
 
 /** §88 : dépense ce que l'activité consomme d'utilisations d'items (Riposte : un dé de supériorité), sans l'utiliser. */

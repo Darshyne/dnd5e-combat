@@ -23,7 +23,7 @@ import { queryPlayer, waitLabel } from "./player-wait.mjs";
 import { originItemOf, creatureTypeOf } from "./facts.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
 import { hiddenFrom } from "./stealth.mjs";
-import { grappleRulesOf } from "./grapple-rules.mjs";
+import { inescapableFor } from "./grapple-rules.mjs";
 import { fightingAdvantage } from "../core/conditions.mjs";
 import { sizeAtLeast } from "../core/content/enums.mjs";
 import { isObjectToken } from "./bodies.mjs";
@@ -360,7 +360,7 @@ export async function requestSaves(usageMessage, save, targets, { askPlayers=tru
     // §157 : « une Créature artificielle a le Désavantage au jet de sauvegarde » (Fracassement) — `saveDisadvantageFor` du contenu.
     const byType = (contentOf(activity.item).entry?.saveDisadvantageFor ?? []).includes(creatureTypeOf(actor));
     // §281 : Inexorable — les sauvegardes contre la Lutte et la Bousculade d'un agrippeur qui l'a (Frappe à mains nues) ont le Désavantage.
-    const inescapable = unarmedSave(activity) && grappleRulesOf(activity.actor).inescapable;
+    const inescapable = unarmedSave(activity) && await inescapableFor(activity.actor, token.name);
     if ( inescapable ) console.log(`${MODULE_ID} | ${activity.item.name}: ${token.name} has Disadvantage against the grapple or shove`);
     const mode = saveModeFor(given, token.uuid);
     // C12-e : Embuscade magique, Fragilisation occulte — le Désavantage que le lanceur impose.

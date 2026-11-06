@@ -653,12 +653,19 @@
  *                                               ce tour-ci avec une arme de ces genres (`weapons` : "unarmed", "simpleM", "improv"… —
  *                                               WEAPON_KINDS) ; touchée, `refundOnHit` rend les utilisations que l'activité a coûtées ;
  *                                               ratée, la promesse est perdue (runtime/maneuver-dice.mjs)
+ *     hitFollowUp?: { use: [{ item, activity }], choose?, weapons? }
+ *                                               §373 : après un coup qui touche (attaque de ces genres d'arme), l'auteur peut
+ *                                               utiliser gratuitement contre la cible encore debout jusqu'à `choose` (1) des
+ *                                               activités listées (item par identifiant) — Cogneur : Agripper ou Pousser de
+ *                                               l'Attaque à mains nues. Plusieurs items : une seule question, la réunion des
+ *                                               activités, le plus grand `choose`
  *     maxNextHit?: true | <id d'effet>          §279 : le porteur d'un effet de l'item subit le maximum des dés de la prochaine attaque qui
  *                                               le touche, puis l'effet cesse ; §372 : un id — seulement le porteur de cet effet
  *     grappleSize?: { bonus?, dragFree? }       §281 : l'auteur compte comme `bonus` tailles de plus pour Agripper et Pousser ; il traîne
  *                                               sans surcoût une victime d'au plus `dragFree` tailles de plus que lui (Poids lourd : 1 et 0)
- *     inescapable?: true                        §281 : les sauvegardes contre sa Lutte ou sa Bousculade, et les tests pour échapper à sa
- *                                               prise, ont le Désavantage (Inexorable)
+ *     inescapable?: true | { activity }         §281 : les sauvegardes contre sa Lutte ou sa Bousculade, et les tests pour échapper à sa
+ *                                               prise, ont le Désavantage (Inexorable) ; §374 : `{ activity }` — seulement si
+ *                                               l'agrippeur le veut, avant le jet, en payant ce que coûte cette activité de l'item
  *     grappleCover?: "half"|"threeQuarters"     §281 : tant qu'il agrippe une créature, cet abri contre les attaques des créatures qu'il
  *                                               n'agrippe pas (Bouclier de chair) ; fait `source.grappledByTarget` pour réagir à la fin du
  *                                               tour d'un ennemi qu'il agrippe (`enemyTurnEnd`)
@@ -918,6 +925,9 @@
  *                                                        (moment preAttackRoll ; core/conditions.mjs, `declared`)
  *   { type: "interpose" }                                avec une réaction `use` au moment allyIsDamaged : le réacteur prend les dégâts
  *                                                        à la place de la créature (§78, Interposition d'un garou ; les effets restent à elle)
+ *   { type: "redirect" }                                 §375 : avec une réaction `use` au moment isMissed : l'attaquant refait la même
+ *                                                        attaque, gratuite, contre une créature que le réacteur agrippe (Bouclier de
+ *                                                        chair) ; proposée seulement s'il en agrippe une
  *   { type: "absorb" }                                   avec une réaction `use` au moment allyIsDamaged : la réserve du réacteur (clé
  *                                                        `absorb`, Égide arcanique) prend les dégâts de la créature (§38, Égide projetée)
  *   { type: "use", target: "self", activity }          §72 : la réaction vise le réacteur lui-même (Protection contre la mort

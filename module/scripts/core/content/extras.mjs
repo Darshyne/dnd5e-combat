@@ -289,6 +289,16 @@ export function validateExtras(entry, at, errors) {
     : validRider(entry.hitRider)) ) {
     errors.push(`${at}hitRider: { damage?, effect?, status?, sizeAtMost?, slot?: "pact", weapon?, oncePerTurn?: true, save?, item?, pays?, weaponDamage?: true, push?: { distance, units }, unarmed?: true, melee?: true, shield?: true, damageType?, sizeAbove?, formula?, weapons?: [weapon kinds], perTurn?: { count, while } }, or a list of at least two such options, each with name (activity id)`);
   }
+  // §373 : après un coup, des activités d'un item (Agripper, Pousser de l'Attaque à mains nues) proposées gratuitement contre la cible.
+  if ( "hitFollowUp" in entry ) {
+    const f = entry.hitFollowUp;
+    const ok = isObject(f) && Object.keys(f).every(k => ["use", "choose", "weapons"].includes(k))
+      && Array.isArray(f.use) && f.use.length && f.use.every(u => isObject(u) && (typeof u.item === "string") && !!u.item && isId(u.activity)
+        && (Object.keys(u).length === 2))
+      && (!("choose" in f) || (Number.isInteger(f.choose) && (f.choose >= 1)))
+      && (!("weapons" in f) || (Array.isArray(f.weapons) && f.weapons.length && f.weapons.every(k => WEAPON_KINDS.includes(k))));
+    if ( !ok ) errors.push(`${at}hitFollowUp: { use: [{ item: identifier, activity: id }], choose?: integer ≥ 1, weapons?: [weapon kinds] }`);
+  }
   if ( ("flurry" in entry) && !(isObject(entry.flurry) && isId(entry.flurry.activity) && Number.isInteger(entry.flurry.strikes) && (entry.flurry.strikes > 0)
     && (!("weapons" in entry.flurry) || (typeof entry.flurry.weapons === "boolean"))
     && Object.keys(entry.flurry).every(k => ["activity", "strikes", "weapons"].includes(k))) ) {

@@ -181,10 +181,14 @@ export async function rollDamageForAttack(attackMessage, { critical, variant=nul
   const ours = { ...(damageType ? { damageType } : {}), ...(strikes.length ? { strikes } : {}), ...(smite ? { smite } : {}),
     ...(typeof hitOptions.sneak === "boolean" ? { sneak: hitOptions.sneak } : {}), ...(hitOptions.bonuses.length ? { acceptedBonuses: hitOptions.bonuses } : {}),
     ...(criticalTable ? { criticalHit: criticalTable } : {}), ...(inspired ? { combatInspiration: inspired } : {}) };
+  // §373 : les cibles de l'attaque sur la carte de dégâts — dnd5e les lirait dans la sélection de l'utilisateur au moment du jet
+  // (`TargetsField.getDescriptors()`), qu'une autre résolution (une prise après le coup) a pu relâcher entre-temps.
+  const targets = attackMessage?.system?.targets?.length ? attackMessage.system.targets : null;
+  const system = { ...(origin ? { origin } : {}), ...(targets ? { targets } : {}) };
   return activity.rollDamage(
     { ability, ammunition, attackMode, isCritical, ...(Object.keys(ours).length ? { [MODULE_ID]: ours } : {}) },
     { configure: false },
-    origin ? { data: { system: { origin } } } : {}
+    Object.keys(system).length ? { data: { system } } : {}
   );
 }
 

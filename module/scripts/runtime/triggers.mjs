@@ -84,7 +84,11 @@ function onPreRollDamage(config, dialog, message) {
   const source = activity?.actor;
   if ( !activity || !source || !canvas?.ready || !config.rolls ) return true;
   const origin = usageTokenOf(activity);
-  const targets = Array.from(game.user.targets).map(t => t.document).filter(t => (t !== origin) && t.actor);
+  // §373 : les cibles du coup lui-même (carte du jet de dégâts, comme maximizeOnHit) d'abord — la sélection de l'utilisateur peut avoir été
+  // relâchée entre l'attaque et ce jet (une prise après le coup résolue entre-temps) ; sinon la sélection.
+  const carded = (foundry.utils.getProperty(message ?? {}, "data.system.targets") ?? [])
+    .map(t => fromUuidSync(t.token ?? "", { strict: false })).filter(Boolean);
+  const targets = (carded.length ? carded : Array.from(game.user.targets).map(t => t.document)).filter(t => (t !== origin) && t.actor);
   if ( !targets.length ) return true;
 
   // `damageType: "weapon"` : le type de l'arme (première part de dégâts de l'activité, sinon de l'item).

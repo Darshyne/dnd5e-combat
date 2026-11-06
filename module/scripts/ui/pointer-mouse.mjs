@@ -288,12 +288,55 @@ export function refusalFor(me, hover, activity, usageConfig=null) {
   return refusalOf(me, hover, activity, usageConfig)?.text ?? null;
 }
 
+/**
+ * Ce qu'une attaque de `me` sur `hover` ferait, comme `engage` : un refus (`refusal`), ou l'approche (`far`, `plan`), la case
+ * d'arrivée (`posA`) et `outOfReach` quand l'approche n'arrive pas. Partagé par le survol du canevas et le survol du menu (#33).
+ * @param {object} [options]  `mode` : le mode d'attaque de dnd5e (« thrown »…) ; `usage` : la config d'usage en mode visée.
+ */
+export function attackPlanOf(me, hover, activity, { mode=null, usage=null }={}) {
+  const refusal = refusalOf(me, hover, activity, usage, mode);
+  if ( refusal ) return { refusal };
+  const reach = reachCells(activity, mode);
+  // §192 : en trois dimensions — une cible au plafond est hors d'allonge depuis le sol, et l'approche n'y mène pas (`tooHigh`).
+  const gap = reach ? gapCells(me, hover) : 0;
+  const tooHigh = !!reach && approaches(activity, mode) && tooHighFor(me, hover, reach);
+  const far = !!reach && (gap > reach.normal) && approaches(activity, mode) && !tooHigh;
+  const plan = far ? planPath(me, { target: hover, reachCells: reach.normal }, { maxCost: movementCap(me) }) : null;
+  // Comme `engage` : hors de portée si l'approche n'arrive pas et que la cible est au-delà de la portée longue.
+  // §18.22 : un geste de contact (mains nues, Lutte, Soutien) n'avance que s'il arrive.
+  const outOfReach = tooHigh || (far && !plan?.arrives && (contactAction(activity) || (gap > reach.long)));
+  const end = (far && plan?.arrives) ? plan.waypoints.at(-1) : null;
+  return { refusal: null, far, plan, outOfReach, posA: end ? positionOf(end) : undefined };
+}
+
+/**
+ * #33 : le survol d'une attaque du menu contextuel — la même pastille que le survol du canevas (chance de toucher, abri), posée
+ * sous le menu (`rect`), et la ligne de visée.
+ */
+export function previewMenuAttack(rect, me, target, activity, mode=null) {
+  if ( activity?.type !== "attack" ) return hideHitChance();
+  // §39.2 : l'attaque au contact d'une arme de jet ne reprend pas le « lancer » dont dnd5e se souvient — `engage` repart du mode par
+  // défaut de l'arme ; l'aperçu aussi (sinon : désavantage d'une attaque à distance au corps à corps).
+  if ( !mode && approaches(activity) ) {
+    const remembered = activity.item?.getFlag?.("dnd5e", `last.${activity.id}.attackMode`) ?? null;
+    if ( String(remembered ?? "").startsWith("thrown") ) mode = activity.item.system.attackModes?.[0]?.value ?? null;
+  }
+  const { refusal, outOfReach, posA } = attackPlanOf(me, target, activity, { mode });
+  if ( refusal ) {
+    showBadge(null, refusal.text, { at: rect });
+    if ( refusal.kind === "outOfRange" ) showAttackLine(me, target, activity, { unreachable: true, attackMode: mode });
+    return;
+  }
+  showHitChance(null, me, target, activity, { posA, outOfReach, attackMode: mode, at: rect });
+  showAttackLine(me, target, activity, { posA, unreachable: outOfReach, attackMode: mode });
+}
+
 /** Le refus et son genre : `outOfRange` (le curseur « hors de portée ») ou `other` — sans comparer un texte traduit. */
-function refusalOf(me, hover, activity, usageConfig=null) {
+function refusalOf(me, hover, activity, usageConfig=null, mode=null) {
   const status = refusalBeforeRange(me, hover, activity, usageConfig);
   if ( status ) return { text: status, kind: "other" };
-  if ( approaches(activity) ) return null;
-  const range = rangeStatus(me, hover, activity);
+  if ( approaches(activity, mode) ) return null;
+  const range = rangeStatus(me, hover, activity, mode);
   if ( range?.out ) return { text: loc("Retour.HorsDePortee"), kind: "outOfRange" };
   if ( range?.blind ) return { text: loc("Retour.NonVue"), kind: "other" };
   return null;
@@ -416,6 +459,7 @@ function teleportHover(event) {
  * clic ferait d'abord approcher, la chance est calculée depuis la case d'arrivée, comme `engage`.
  */
 export const onPointerMove = foundry.utils.throttle(event => {
+  if ( menu ) return;   // #33 : menu ouvert, sa pastille (survol d'une attaque) reste ; le canevas ne prévisualise rien
   if ( onBoard(event) && teleportHover(event) ) return;
   if ( dashing ) return onBoard(event) ? dashHover(event) : undefined;
   if ( recalling ) return onBoard(event) ? recallHover(event) : undefined;
@@ -443,7 +487,8 @@ export const onPointerMove = foundry.utils.throttle(event => {
   if ( hover && ((hover !== me) || targeting || picking) ) {
     const activity = (picking ?? targeting)?.activity ?? (clickAttackApplies(me, hover) ? basicAttack(me.actor).activity : null);
     // §16.29 : hors du corps à corps, pas d'approche — la portée se lit telle quelle, et un refus s'annonce au curseur.
-    const refusal = activity ? refusalOf(me, hover, activity, targeting?.usage?.[0]) : null;
+    const attempt = activity ? attackPlanOf(me, hover, activity, { usage: targeting?.usage?.[0] }) : {};
+    const { refusal, outOfReach, posA } = attempt;
     setReticleRefused(!!refusal);
     if ( refusal ) {
       setCursor(refusal.kind === "outOfRange" ? "outOfRange" : "invalid");
@@ -454,19 +499,10 @@ export const onPointerMove = foundry.utils.throttle(event => {
       previewed = null;
       return;
     }
-    const reach = activity ? reachCells(activity) : null;
-    // §192 : en trois dimensions — une cible au plafond est hors d'allonge depuis le sol, et l'approche n'y mène pas (`tooHigh`).
-    const gap = reach ? gapCells(me, hover) : 0;
-    const tooHigh = !!reach && approaches(activity) && tooHighFor(me, hover, reach);
-    const far = !!reach && (gap > reach.normal) && approaches(activity) && !tooHigh;
-    if ( far ) plan = planPath(me, { target: hover, reachCells: reach.normal }, { maxCost: movementCap(me) });
-    // Comme `engage` : hors de portée si l'approche n'arrive pas et que la cible est au-delà de la portée longue.
-    // §18.22 : un geste de contact (mains nues, Lutte, Soutien) n'avance que s'il arrive.
-    const outOfReach = tooHigh || (far && !plan?.arrives && (contactAction(activity) || (gap > reach.long)));
+    if ( attempt.far ) plan = attempt.plan;
     if ( activity?.type === "attack" ) {
-      const end = (far && plan?.arrives) ? plan.waypoints.at(-1) : null;
-      showHitChance(event, me, hover, activity, { posA: end ? positionOf(end) : undefined, outOfReach, keys });
-      showAttackLine(me, hover, activity, { posA: end ? positionOf(end) : undefined, unreachable: outOfReach });   // #33
+      showHitChance(event, me, hover, activity, { posA, outOfReach, keys });
+      showAttackLine(me, hover, activity, { posA, unreachable: outOfReach });   // #33
     }
     // §15.3 : une sauvegarde — la chance que la cible la rate (le mode visée ne vise qu'avec une activité choisie).
     else if ( activity?.type === "save" ) showSaveChance(event, me, hover, activity, { outOfReach });

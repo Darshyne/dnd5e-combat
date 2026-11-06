@@ -99,7 +99,7 @@ async function rollToppleSave({ token: uuid, dc, weapon, configure=false }) {
   const roll = configure => actor.rollSavingThrow({ ability: "con", target: dc }, { configure },
     { data: { flavor: loc("Botte.Carte.topple", { weapon: weapon ?? "", name: target.name, dc }),
       flags: { [MODULE_ID]: { mastery: { kind: "topple", target: target.uuid, dc } } } } });
-  const cancel = configure ? closeRollDialogAfter(actor, () => {}) : () => {};
+  const cancel = configure ? closeRollDialogAfter(actor, () => {}, null, { awaiting: "roll" }) : () => {};
   let rolls = await roll(configure);
   cancel();
   if ( !rolls?.length && configure ) rolls = await roll(false);

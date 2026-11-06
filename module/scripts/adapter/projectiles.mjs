@@ -8,6 +8,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
 import { rollerFor } from "./concentration.mjs";
 import { combatWindowSeconds, expireLater } from "./dialogs.mjs";
+import { whileAwaiting } from "./awaiting.mjs";
 import { queryPlayer, waitLabel } from "./player-wait.mjs";
 
 export const ALLOCATION_QUERY = `${MODULE_ID}.allocation`;
@@ -74,7 +75,13 @@ export function targetCount(activity, { level=null }={}) {
  * @param {{item: string, count: number, targets: Array<{token: string, name: string}>}} payload
  * @returns {Promise<{counts: Object<string, number>}|null>}
  */
-export async function handleAllocationQuery({ item, count, targets }) {
+export async function handleAllocationQuery({ item, count, targets, actor: actorUuid=null }) {
+  // §381 : la table voit qu'on attend l'auteur (la question le nomme depuis cette version ; avant, pas de sablier).
+  const actor = actorUuid ? await fromUuid(actorUuid) : null;
+  return whileAwaiting(actor, "choice", () => allocate({ item, count, targets }));
+}
+
+async function allocate({ item, count, targets }) {
   const rows = targets.map((t, i) => `<div class="form-group"><label>${foundry.utils.escapeHTML(t.name)}</label>
     <input type="number" name="t${i}" min="0" max="${count}" step="1" value="${i === 0 ? count - targets.length + 1 : 1}"></div>`).join("");
   let disarm = null;
@@ -96,6 +103,7 @@ export async function handleAllocationQuery({ item, count, targets }) {
 export async function askAllocation(actor, payload) {
   const userId = rollerFor(actor);
   try {
+    payload = { ...payload, actor: actor?.uuid ?? null };
     if ( userId ) return await queryPlayer(game.users.get(userId), ALLOCATION_QUERY, payload, { timeout: ALLOCATION_TIMEOUT, actor,
       label: waitLabel("Repartition", { item: payload.item ?? "" }) });
     return await handleAllocationQuery(payload);

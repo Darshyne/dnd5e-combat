@@ -313,7 +313,7 @@ export async function handleDeathSaveQuery({ actor: actorUuid }) {
   const actor = await fromUuid(actorUuid);
   if ( !actor?.isOwner || !deathSaveDue(actor) ) return false;
   ui.notifications.info(t("DemandeJoueur", { name: actor.name }));
-  const cancel = closeRollDialogAfter(actor, () => {});
+  const cancel = closeRollDialogAfter(actor, () => {}, null, { awaiting: "roll" });
   let rolls = await actor.rollDeathSave({}, { configure: true });
   cancel();
   if ( !rolls?.length && deathSaveDue(actor) ) rolls = await actor.rollDeathSave({}, { configure: false });

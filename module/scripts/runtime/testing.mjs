@@ -9,6 +9,8 @@
  */
 
 import { playerWaits } from "../adapter/player-wait.mjs";
+import { awaitingList } from "../adapter/awaiting.mjs";
+import { timedWait } from "../adapter/dialogs.mjs";
 import { hamperedBy } from "./reactions.mjs";
 import { scrollReadingFor, scrollReadOf } from "../adapter/scrolls.mjs";
 import { forceWait } from "./player-waits.mjs";
@@ -475,6 +477,28 @@ function waits() {
   return { waits: playerWaits(), window: !!foundry.applications.instances.get("das-player-waits") };
 }
 
+/**
+ * §381 (issue #35) : qui la table attend, pour les scénarios — `list` (les attentes connues de ce client), `open` (ouvre ici une fenêtre
+ * à boutons marquée pour le token `tokenId`, de sorte `kind`, délai `seconds` ou celui du réglage ; rend tout de suite, la fenêtre reste
+ * ouverte jusqu'à `answer-dialog` ou au délai), `result` (ce qu'a rendu la dernière fenêtre ouverte, `undefined` tant qu'elle est ouverte).
+ */
+let awaitingProbe = { done: true, value: undefined };
+function awaiting({ action="list", tokenId=null, kind="reaction", seconds=null }={}) {
+  if ( action === "list" ) return awaitingList();
+  if ( action === "result" ) return { done: awaitingProbe.done, value: awaitingProbe.value ?? null };
+  if ( action === "open" ) {
+    const actor = canvas.tokens.get(tokenId)?.actor ?? null;
+    if ( !actor ) throw new Error(`no token ${tokenId}`);
+    const probe = awaitingProbe = { done: false, value: undefined };
+    timedWait({ window: { title: "DAS awaiting probe" }, content: "<p>probe</p>",
+      buttons: [{ action: "yes", label: "Yes", default: true }, { action: "no", label: "No" }] },
+    { fallback: "timeout", awaiting: { actor, kind }, ...(Number(seconds) > 0 ? { seconds: Number(seconds) } : {}) })
+      .then(value => { probe.value = value; }, () => { probe.value = "error"; }).finally(() => { probe.done = true; });
+    return { opened: true };
+  }
+  throw new Error(`unknown action: ${action}`);
+}
+
 /** §290 : forcer une attente (`{ id }`, ou la plus ancienne). */
 async function forcePlayerWait({ id=null }={}) {
   const target = id ?? playerWaits()[0]?.id;
@@ -505,4 +529,4 @@ async function atCost({ action="list", id=null, cost, card=null, tokenId=null, m
   throw new Error(`unknown action: ${action}`);
 }
 
-export const testApi = Object.freeze({ atCost, barrier, gmAlerts, controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, rangeCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, owners, makeScroll, scrollReading, hampered, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, hood, removeItemEffect, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, forcePlayerWait, pickTargets, castPicked });
+export const testApi = Object.freeze({ atCost, barrier, gmAlerts, controls, menu, wall, wallSide, cover, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, rangeCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, owners, makeScroll, scrollReading, hampered, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, hood, removeItemEffect, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, awaiting, forcePlayerWait, pickTargets, castPicked });

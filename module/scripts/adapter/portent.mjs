@@ -113,7 +113,7 @@ export async function handlePortentQuery({ actor: actorUuid, subject, kind, item
     window: { title: game.i18n.format("DND5ECOMBAT.Presage.Titre", { name: actor.name }) },
     content: `<p>${game.i18n.format(`DND5ECOMBAT.Presage.${kind === "save" ? "Sauvegarde" : "Attaque"}`, { subject, item })}</p>`,
     buttons
-  }, { fallback: "none" });
+  }, { fallback: "none", awaiting: { actor, kind: "choice" } });
   const value = Number(String(picked ?? "").replace(/^v/, ""));
   if ( !String(picked ?? "").startsWith("v") || !choices.includes(value) ) return null;
   return (await useForetold(actor, value, { subject, kind })) ? { value } : null;

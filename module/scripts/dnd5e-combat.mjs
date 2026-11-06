@@ -104,6 +104,8 @@ import { registerGroupRoll, rollsApi } from "./runtime/group-roll.mjs";
 import { registerGroupRollUI, openGroupRoll } from "./ui/group-roll.mjs";
 import { registerGroupRollTracker, openTracker } from "./ui/group-roll-tracker.mjs";
 import { registerPlayerWaits, forceWait } from "./runtime/player-waits.mjs";
+import { registerAwaiting } from "./runtime/awaiting.mjs";
+import { registerAwaitingUI } from "./ui/awaiting.mjs";
 import { registerPlayerWaitsUI, openPlayerWaits } from "./ui/player-waits.mjs";
 import { playerWaits } from "./adapter/player-wait.mjs";
 import { registerHelp } from "./runtime/help.mjs";
@@ -387,6 +389,7 @@ Hooks.once("init", () => {
   gated(registerBarbarian);   // §22 : Rage entretenue, Rage implacable, Témérité (après la légalité : la question vient une fois l'usage confirmé)
   gated(registerSwallow);
   gated(registerBasics);
+  gated(registerAwaiting);   // §381 : qui la table attend — réglages, requête entre clients, déconnexions
   gated(registerPlayerWaits);   // §290 : fenêtres du combat sans délai — le réglage, et la requête « forcer » chez chaque joueur
   gated(registerAnimations);   // §112 : l'application attend la fin de l'animation (Sequencer / BLFX)
   gated(registerFamiliars);   // §107 : vision et poche dimensionnelle des familiers (leurs actions de base : registerBasics)
@@ -434,6 +437,7 @@ Hooks.once("init", () => {
   gated(registerGmAlertUi);   // §364 : son bandeau chez le MJ
   gated(registerPurge);
   gated(registerFeedback);
+  gated(registerAwaitingUI);   // §381 : le sablier au-dessus du token qu'on attend, le bandeau « Le MJ décide… »
   gated(registerTimers);   // §272 : minuteries au-dessus des tokens (fouille, désamorçage), vues de toute la table
   gated(registerTracker);
   gated(registerLightIndicator);

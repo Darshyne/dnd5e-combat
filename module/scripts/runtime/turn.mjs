@@ -7,6 +7,7 @@ import {
   distanceBetween, usageTokenOf as usageToken, currentTurnKey, freshBudgetFor, movementOf } from "../adapter/turn.mjs";
 import { usageLimitProblems, markUsedThisTurn, applyLowestSlot } from "../adapter/limits.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
+import { markAwaiting } from "../adapter/awaiting.mjs";
 import { basicActionOf, basicActionOfActivity, basicChoiceOf } from "../adapter/basics.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
@@ -94,14 +95,16 @@ function assessRange(activity, attackMode=null) {
 
 const LEGALITY_CLASS = "dnd5e-combat-legality";
 
-function confirmDialog(title, lines, buttons) {
+/** La fenêtre de légalité. §381 : `actor` — la table voit qu'on attend sa décision (sablier au-dessus de son token). */
+function confirmDialog(title, lines, buttons, actor=null) {
+  const release = actor ? markAwaiting(actor, "choice") : () => {};
   return foundry.applications.api.DialogV2.wait({
     window: { title },
     classes: [LEGALITY_CLASS],
     content: `<ul>${lines.map(l => `<li>${l}</li>`).join("")}</ul>`,
     buttons,
     rejectClose: false
-  });
+  }).finally(release);
 }
 
 /** Mode souple (§6) pour un geste qui n'est pas une utilisation (déplacer une zone, §16.14) : « faire quand même » ? */
@@ -398,7 +401,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   if ( asReaction ) buttons.unshift({ action: "reaction", label: loc("UtiliserMaReaction"), default: true });
   buttons.push({ action: "cancel", label: loc("Renoncer") });
 
-  confirmDialog(`${activity.item.name} — ${combatant?.name ?? activity.actor?.name ?? ""}`, lines, buttons).then(choice => {
+  confirmDialog(`${activity.item.name} — ${combatant?.name ?? activity.actor?.name ?? ""}`, lines, buttons, activity.actor ?? null).then(choice => {
     if ( (choice !== "go") && (choice !== "reaction") ) return;
     acknowledge(range.key);
     // Les options du moteur déjà posées (choix de la lumière, cibles désignées…) repartent avec la confirmation.
@@ -510,7 +513,7 @@ function onPostAttackRollConfiguration(rolls, config, dialogConfig, messageConfi
   const beyondReach = canBeThrown(activity) && !options.attackMode?.startsWith("thrown");
   const lines = range.blocking.map(r => loc((r.issue === "tooClose") ? "Souci.tooClose" : (beyondReach ? "Souci.outOfReach" : "Souci.outOfRange"), { name: r.name }));
   const buttons = [{ action: "go", label: loc("AttaquerQuandMeme"), default: true }, { action: "cancel", label: loc("Renoncer") }];
-  confirmDialog(`${activity.item.name} — ${activity.actor?.name ?? ""}`, lines, buttons).then(choice => {
+  confirmDialog(`${activity.item.name} — ${activity.actor?.name ?? ""}`, lines, buttons, activity.actor ?? null).then(choice => {
     if ( choice !== "go" ) return;
     acknowledge(range.key);
     // On repart d'une configuration neuve, avec les choix déjà faits dans le dialogue.

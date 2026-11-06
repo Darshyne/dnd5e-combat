@@ -14,6 +14,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
+import { markAwaiting } from "./awaiting.mjs";
 
 /** Délai des fenêtres du combat, en secondes. */
 export function combatWindowSeconds() {
@@ -48,12 +49,12 @@ export function forceOpenWindows() {
  * @param {boolean} [unlimited]  Sans délai (par défaut : le réglage).
  */
 export function expireLater(expire, ms, unlimited=windowsUnlimited()) {
-  if ( !unlimited ) {
-    const timer = setTimeout(expire, ms);
-    return () => clearTimeout(timer);
-  }
-  forcers.add(expire);
-  return () => forcers.delete(expire);
+  // §381 : le MJ peut aussi forcer une fenêtre à délai (menu du token) ; elle se résout alors tout de suite, comme au bout du délai.
+  let done = false;
+  const once = () => { if ( done ) return; done = true; forcers.delete(once); clearTimeout(timer); expire(); };
+  const timer = unlimited ? null : setTimeout(once, ms);
+  forcers.add(once);
+  return () => { done = true; clearTimeout(timer); forcers.delete(once); };
 }
 
 const countdownText = n => game.i18n.format("DND5ECOMBAT.Delai.Auto", { n });
@@ -65,14 +66,24 @@ const countdownText = n => game.i18n.format("DND5ECOMBAT.Delai.Auto", { n });
  * @param {*} [options.fallback]    Ce que rend la fenêtre si le délai l'a fermée (l'action d'un bouton…).
  * @param {number} [options.seconds]  Un délai propre ; sans lui, le réglage du monde (§290 : peut-être sans délai).
  * @param {boolean} [options.front]  §282 : la fenêtre passe devant les autres à son ouverture.
+ * @param {{actor: Actor|null, kind: string, token?: object}|null} [options.awaiting]  §381 : la table voit qu'on attend cette créature
+ *   (sablier au-dessus de son token) tant que la fenêtre est ouverte.
  * @returns {Promise<*>}  Le bouton choisi ; `fallback` au bout du délai (ou forcée par le MJ) ; null si on la ferme soi-même.
  */
-export function timedWait(config, { fallback=null, seconds=null, front=false }={}) {
-  if ( (seconds === null) && windowsUnlimited() ) return waitForForce(config, { fallback, front });
-  seconds ??= combatWindowSeconds();
+export function timedWait(config, { fallback=null, seconds=null, front=false, awaiting=null }={}) {
+  const unlimited = (seconds === null) && windowsUnlimited();
+  const shown = unlimited ? null : (seconds ?? combatWindowSeconds());
+  const release = awaiting ? markAwaiting(awaiting.actor ?? null, awaiting.kind, { seconds: shown, token: awaiting.token ?? null }) : null;
+  const waiting = unlimited ? waitForForce(config, { fallback, front }) : countdownWait(config, { fallback, seconds: shown, front });
+  return release ? waiting.finally(release) : waiting;
+}
+
+/** Une fenêtre à compte à rebours : `fallback` au bout de `seconds`. */
+function countdownWait(config, { fallback, seconds, front }) {
   let left = seconds;
   let timer = null;
   let timedOut = false;
+  let disarm = () => {};
   // Barre de progression menée par le même minuteur que la fermeture (une animation CSS sur la durée
   // dérive d'avec lui dans un onglet en arrière-plan) : à chaque seconde, elle part vers la valeur de la
   // seconde suivante, avec une transition d'une seconde — fluide, et vide au moment où la fenêtre se ferme.
@@ -95,6 +106,8 @@ export function timedWait(config, { fallback=null, seconds=null, front=false }={
     render: (event, dialog) => {
       if ( front ) dialog.bringToFront?.();
       if ( timer ) return;
+      // §381 : le MJ force (menu du token) — comme au bout du délai.
+      disarm = expireLater(() => { clearInterval(timer); timedOut = true; dialog.close(); }, 0, true);
       requestAnimationFrame(() => update(dialog));   // après la première peinture, sinon pas de transition
       timer = setInterval(() => {
         left -= 1;
@@ -107,6 +120,7 @@ export function timedWait(config, { fallback=null, seconds=null, front=false }={
     },
     close: () => {
       clearInterval(timer);
+      disarm();
       return timedOut ? fallback : null;
     }
   });
@@ -138,11 +152,15 @@ function waitForForce(config, { fallback, front }) {
  * Ferme au bout du délai la fenêtre de jet de dnd5e d'un acteur (jet de sauvegarde d'un joueur) ; rend
  * une fonction pour annuler le minuteur. `onTimeout` est appelé si c'est le délai qui l'a fermée.
  * §290 : sans délai propre et fenêtres sans délai, c'est le MJ qui la ferme en forçant.
+ * §381 : `awaiting` (une sorte, « roll ») — la table voit qu'on attend ce jet tant que le minuteur n'est ni échu ni annulé.
  */
-export function closeRollDialogAfter(actor, onTimeout, seconds=null) {
+export function closeRollDialogAfter(actor, onTimeout, seconds=null, { awaiting=null }={}) {
   const unlimited = (seconds === null) && windowsUnlimited();
   seconds ??= combatWindowSeconds();
-  return expireLater(() => {
+  // §381 : la table voit qu'on attend ce jet, jusqu'à ce qu'il parte ou que la fenêtre soit fermée.
+  const release = (awaiting && (seconds > 0)) ? markAwaiting(actor, awaiting, { seconds: unlimited ? null : seconds }) : () => {};
+  const disarm = expireLater(() => {
+    release();
     const Dialog = globalThis.dnd5e?.applications?.dice?.RollConfigurationDialog;
     for ( const app of foundry.applications.instances.values() ) {
       if ( !(app instanceof Dialog) || !app.rendered ) continue;
@@ -153,4 +171,5 @@ export function closeRollDialogAfter(actor, onTimeout, seconds=null) {
       }
     }
   }, seconds * 1000, unlimited);
+  return () => { release(); disarm(); };
 }

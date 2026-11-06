@@ -203,7 +203,7 @@ async function pickEscape(actor, options) {
     window: { title: loc("Menu.Echapper"), icon: "fa-solid fa-person-running" },
     content: `<p>${loc("Entrave.Choisir", { name: actor.name })}</p>`,
     buttons: options.map((o, i) => ({ action: String(i), label: o.label, default: i === 0 }))
-  }, { fallback: "0" });
+  }, { fallback: "0", awaiting: { actor, kind: "choice" } });
   return (answer === null) ? null : options[Number(answer)] ?? null;
 }
 

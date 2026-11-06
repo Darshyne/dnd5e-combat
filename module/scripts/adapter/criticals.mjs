@@ -69,7 +69,7 @@ export async function criticalChoice(activity, target) {
         { action: "standard", label: t("Standard"), icon: "fa-solid fa-dice", default: true },
         { action: "table", label: t("Table"), icon: "fa-solid fa-table-list" }
       ]
-    }, { fallback: "standard" });
+    }, { fallback: "standard", awaiting: { actor, kind: "choice" } });
     return (picked === "table") ? "table" : "standard";
   }
   return (mode === "table") ? "table" : "standard";

@@ -263,7 +263,7 @@ async function chosenDamageType(carrier, activity) {
     window: { title: game.i18n.format("DND5ECOMBAT.TypeDegats.Titre", { item: activity.item?.name ?? "" }) },
     content: `<p>${game.i18n.localize("DND5ECOMBAT.TypeDegats.Texte")}</p>`,
     buttons: types.map((t, i) => ({ action: t, label: label(t), default: i === 0 }))
-  }, { fallback: types[0] });
+  }, { fallback: types[0], awaiting: { actor: activity.actor ?? null, kind: "choice" } });
   const type = types.includes(choice) ? choice : types[0];
   if ( carrier?.isOwner ) await carrier.setFlag(MODULE_ID, "damageType", type).catch(() => {});
   return type;

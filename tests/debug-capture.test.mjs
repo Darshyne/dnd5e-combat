@@ -123,6 +123,17 @@ describe("capture (§380)", () => {
     delete globalThis.game;
     expect(isSuitePackage("anything")).toBe(true);
   });
+
+  it("avant que les modules soient lisibles, une erreur attend le tri d'init", () => {
+    const saved = globalThis.game;
+    delete globalThis.game;
+    target.console.error(errorFrom("third-mod"));
+    target.console.error(errorFrom("darsh-loot"));
+    expect(debugApi.errors()).toHaveLength(0);
+    globalThis.game = saved;
+    debug.replayEarly();
+    expect(debugApi.errors().map(g => g.module)).toEqual(["darsh-loot"]);
+  });
 });
 
 describe("voisins (§380)", () => {
@@ -220,5 +231,20 @@ describe("rapport du runtime (§380)", () => {
     target.console.error(errorFrom("darsh-loot"));
     const { report } = debug.buildDebugReport();
     expect(debug.reportRepos(report).map(r => r.repo).slice(0, 2)).toEqual(["Darshyne/darsh-loot", "Darshyne/dnd5e-combat"]);
+  });
+});
+
+describe("bruit écarté (§380, vu en jeu côté joueur)", () => {
+  it("une notification répétée en console n'est pas une erreur ; l'enveloppe ne met pas le moteur en cause", () => {
+    const realError = globalThis.Error;
+    const fake = frames => class extends realError { constructor(m) { super(m); this.stack = `Error\n${frames}`; } };
+    const wrap = "    at c.warn (http://h/modules/dnd5e-combat/scripts/runtime/debug.mjs:144:65)";
+    try {
+      globalThis.Error = fake(`${wrap}\n    at #fetch (http://h/scripts/foundry.mjs:1:1)\n    at Notifications.notify (http://h/scripts/foundry.mjs:2:2)`);
+      target.console.warn("DAS recorded an error.");
+      globalThis.Error = fake(`${wrap}\n    at Fa (http://h/scripts/pixi.min.js:12:34)\n    at x (http://h/modules/tokenmagic/bundle.js:1:1)`);
+      target.console.warn("PixiJS Deprecation Warning");
+    } finally { globalThis.Error = realError; }
+    expect(debugApi.errors()).toEqual([]);
   });
 });

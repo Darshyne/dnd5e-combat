@@ -32,6 +32,8 @@ export const RELAY_MS = 3000;
 
 const SELF_FILE = `${MODULE_ID}/scripts/runtime/debug.mjs`;
 const IGNORE = [SELF_FILE, "lib-wrapper"];
+/** La pile d'une ligne de console écrite par `ui.notifications` (foundry.mjs, Notifications#notify). */
+const NOTIFICATION = /\bNotifications\.(?:notify|info|warn|error)\b/;
 
 const errors = createErrorLog();
 const trailRing = createRing(50);
@@ -69,16 +71,32 @@ function concernsSuite(modules, message) {
 /*  Relevé                                      */
 /* -------------------------------------------- */
 
-const userId = () => globalThis.game?.user?.id ?? null;
+const userId = () => globalThis.game?.user?.id ?? globalThis.game?.userId ?? null;
+
+/** Les erreurs levées avant que la liste des modules soit lisible : triées à `init` (`replayEarly`), 50 au plus. */
+const early = [];
+const modulesReadable = () => typeof globalThis.game?.modules?.get === "function";
+
+/** À `init` : les erreurs du démarrage passent le tri de la suite, comme les autres. */
+export function replayEarly() {
+  for ( const entry of early.splice(0) ) recordError(entry);
+}
 
 /**
  * Une erreur relevée sur ce client. Les champs : `{ kind, message, stack, label, hook, module }`.
  * @returns {object|null} le groupe, ou null si l'erreur est hors de la suite (et le réglage ne garde pas tout).
  */
-export function recordError({ kind="error", message="", stack="", label=null, hook=null, module=null }) {
+export function recordError(entry) {
+  let { kind="error", message="", stack="", label=null, hook=null, module=null } = entry;
   if ( !state.enabled || state.busy ) return null;
+  if ( !modulesReadable() ) {
+    if ( early.length < 50 ) early.push({ ...entry });
+    return null;
+  }
   state.busy = true;     // une erreur pendant le relevé (un écouteur) ne boucle pas
   try {
+    // Les lignes de l'enveloppe de console (ce fichier) ne mettent personne en cause : sans elles, toute pile citerait le moteur.
+    stack = String(stack ?? "").split("\n").filter(l => !l.includes(SELF_FILE)).join("\n");
     const modules = packagesOfStack(stack);
     const owner = module ?? attribute(stack, { ignore: IGNORE }) ?? prefixed(message);
     if ( !state.all && !concernsSuite(owner ? [owner, ...modules] : modules, message) ) return null;
@@ -107,7 +125,10 @@ export function noteRefused(entry) {
 function fromConsole(kind, args) {
   const err = errorIn(args);
   if ( err && (err === lastRouterError) ) { lastRouterError = null; return; }   // déjà relevée par le routeur, avec son libellé
-  recordError({ kind, message: formatArgs(args), stack: err?.stack ?? new Error().stack ?? "" });
+  const here = err ? "" : (new Error().stack ?? "");
+  // Une notification de l'interface (« hors de portée »…) : Foundry la répète en console, ce n'est pas une erreur.
+  if ( NOTIFICATION.test(here) ) return;
+  recordError({ kind, message: formatArgs(args), stack: err?.stack ?? here });
 }
 
 /** En mode détaillé, une ligne de console d'un module de la suite. */
@@ -421,6 +442,7 @@ export function registerDebug() {
     applyCapture(game.settings.get(MODULE_ID, DEBUG_CAPTURE_SETTING));
     state.all = !!game.settings.get(MODULE_ID, DEBUG_ALL_SETTING);
   } catch { /* réglages illisibles : valeurs par défaut */ }
+  replayEarly();
 
   CONFIG.queries[DEBUG_QUERY] = data => receive(data);
   CONFIG.queries[DEBUG_VERBOSE_QUERY] = ({ on }={}) => setVerbose(on);

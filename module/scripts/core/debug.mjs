@@ -214,7 +214,15 @@ export function createErrorLog({ limit=MAX_GROUPS, now=() => Date.now() }={}) {
 /*  Confidentialité                             */
 /* -------------------------------------------- */
 
-const escapeRegExp = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export const escapeRegExp = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Un nom se masque en mot entier : pas collé à une lettre, un chiffre, un tiret, un souligné ou une barre oblique (l'identifiant d'un
+ * module, « darsh-loot », « foundry-connecteur-claude », un chemin), ni précédé d'un point ou suivi d'un point et d'une lettre (un
+ * nom de fichier). « Zoé. » en fin de phrase reste un nom.
+ */
+export const WORD_BEFORE = "(?<![\\p{L}\\p{N}_./-])";
+export const WORD_AFTER = "(?![\\p{L}\\p{N}_/-]|\\.\\w)";
 
 /**
  * Les utilisateurs en rôles : le MJ « MJ » (« MJ 2 » s'il y en a plusieurs), les joueurs « Joueur 1 », « Joueur 2 »… dans l'ordre
@@ -244,7 +252,7 @@ export function roleLabels(users, { gm="GM", player="Player" }={}) {
 export function createScrubber({ names=[] }={}) {
   const pairs = names.filter(([text]) => (typeof text === "string") && (text.trim().length >= 3))
     .sort((a, b) => b[0].length - a[0].length)
-    .map(([text, by]) => [new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(text.trim())}(?![\\p{L}\\p{N}])`, "giu"), by]);
+    .map(([text, by]) => [new RegExp(`${WORD_BEFORE}${escapeRegExp(text.trim())}${WORD_AFTER}`, "giu"), by]);
   return text => {
     if ( typeof text !== "string" ) return text;
     let out = text

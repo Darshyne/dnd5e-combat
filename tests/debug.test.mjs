@@ -125,6 +125,9 @@ describe("confidentialité (§380)", () => {
     const scrub = createScrubber({ names: [["Zoé", "Player 2"], ["Curse of Strahd", "<world>"], ["Al", "Player 3"], ["Zoé Martin", "Player 2"]] });
     expect(scrub("Zoé Martin a lancé un sort ; zoé aussi")).toBe("Player 2 a lancé un sort ; Player 2 aussi");
     expect(scrub("Zoélie reste")).toBe("Zoélie reste");
+    const ids = createScrubber({ names: [["claude", "<actor>"], ["Darsh", "GM"]] });
+    expect(ids("foundry-connecteur-claude 0.32 · darsh-loot · /modules/claude/a.mjs · claude_x · claude.mjs · Darsh joue, claude. Fin"))
+      .toBe("foundry-connecteur-claude 0.32 · darsh-loot · /modules/claude/a.mjs · claude_x · claude.mjs · GM joue, <actor>. Fin");
     expect(scrub("Monde Curse of Strahd chargé, Al ici")).toBe("Monde <world> chargé, Al ici");
     expect(scrub("at f (https://dandd.forge-vtt.com/modules/x/a.mjs?v=12:3:4)")).toBe("at f (/modules/x/a.mjs:3:4)");
     expect(scrub("img https://assets.forge-vtt.com/5f1a2b3c/Visuels/zoe.webp?t=9"))

@@ -37,7 +37,10 @@ export default {
     const rejection = report.errors.find(e => e.kind === "rejection");
     ctx.expect(!!rejection && /promise/.test(rejection.message), `la promesse rejetée est relevée à part (${rejection?.message ?? "absente"})`);
 
-    const leaked = names.filter(n => report.markdown.toLowerCase().includes(n.toLowerCase()));
+    // En mot entier, comme le nettoyage (core/debug.mjs) : « darsh » dans l'identifiant d'un module (« darsh-loot ») n'est pas un nom.
+    const escape = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const word = n => new RegExp(`(?<![\\p{L}\\p{N}_./-])${escape(n)}(?![\\p{L}\\p{N}_/-]|\\.\\w)`, "iu");
+    const leaked = names.filter(n => word(n).test(report.markdown));
     ctx.expect(!leaked.length, `aucun nom d'utilisateur dans le rapport (${leaked.join(", ") || "aucun"})`);
     if ( token ) {
       ctx.expect(!!report.context?.actorType, `le contexte du token est joint (${report.context?.actorType ?? "absent"})`);

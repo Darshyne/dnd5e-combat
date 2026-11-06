@@ -12,6 +12,7 @@ import { asPercent } from "../core/hitchance.mjs";
 import { hitChanceOf, saveChanceOf } from "../adapter/hitchance.mjs";
 import { coverPreviewOf } from "../adapter/cover-preview.mjs";
 import { coverPreviewText } from "../core/cover-preview.mjs";
+import { hideAttackLine, attackLineShown } from "./attack-line.mjs";
 import { loc } from "../runtime/shared.mjs";
 import { describeReason } from "./chat.mjs";
 
@@ -63,7 +64,7 @@ function previewLines(attacker, target, activity, posA) {
 
 /** La pastille est-elle affichée ? (#33 : rejouer le survol quand un token bouge) */
 export function hitChanceShown() {
-  return !!badge && !badge.hidden;
+  return (!!badge && !badge.hidden) || attackLineShown();
 }
 
 function coverText(cover) {
@@ -93,6 +94,7 @@ export function showBadge(event, text) {
 
 export function hideHitChance() {
   if ( badge ) badge.hidden = true;
+  hideAttackLine();   // #33 : la ligne de visée part avec la pastille
 }
 
 /**

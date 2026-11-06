@@ -47,6 +47,7 @@ import { relationForTargeting } from "../adapter/factions.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc, log } from "../runtime/shared.mjs";
 import { registerHitChance, hideHitChance, placeHitChance } from "./hitchance.mjs";
+import { registerAttackLine } from "./attack-line.mjs";
 import { floatNotice } from "./feedback.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { potionCastsOnDrinker } from "../adapter/usage.mjs";
@@ -913,12 +914,13 @@ function offerTurnStart(combat, prior, current) {
 
 /** #33 : rejoue le survol (bridé) quand l'aperçu de l'abri est en service. */
 const coverReplay = foundry.utils.debounce(() => {
-  if ( game.settings.get(MODULE_ID, "coverPreview") ) replayHover();
+  if ( game.settings.get(MODULE_ID, "coverPreview") || game.settings.get(MODULE_ID, "attackLine") ) replayHover();
 }, 120);
 
 /** À inscrire AVANT `registerTurn()` : la visée suspend une utilisation avant que sa légalité soit jugée. */
 export function registerPointer() {
   registerHitChance();
+  registerAttackLine();
   const client = (key, data) => game.settings.register(MODULE_ID, key, { scope: "client", config: true,
     name: `DND5ECOMBAT.Reglage.${key}.Nom`, hint: `DND5ECOMBAT.Reglage.${key}.Aide`, ...data });
   client("clickToMove", { type: String, default: "off",

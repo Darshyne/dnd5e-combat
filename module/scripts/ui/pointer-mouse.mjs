@@ -20,6 +20,7 @@ import { cancelPendingRoll, pendingRoll } from "../runtime/cancel.mjs";
 import { loc } from "../runtime/shared.mjs";
 import { fireTargetAt, igniteWithActivity } from "../runtime/flammable.mjs";
 import { showHitChance, showSaveChance, hideHitChance, showBadge, hitChanceShown } from "./hitchance.mjs";
+import { showAttackLine } from "./attack-line.mjs";
 import { floatNotice } from "./feedback.mjs";
 import { actingToken, busy, dashing, engageWith, exclusive, finishGroup, inCombat, interruptWalk, markTargeting, openRecall, pickTarget, picking, placing, promptTargeting, recalling, setReticleRefused, setting, stopTargeting, targetTypeRefusal, targeting } from "./pointer.mjs";
 import { closeMenu, doorEntries, groundEntries, hasSelfMenu, hoveredDoor, menu, openMenu, openTokenMenu, selfEntries, stairsEntries } from "./pointer-menu.mjs";
@@ -447,6 +448,8 @@ export const onPointerMove = foundry.utils.throttle(event => {
     if ( refusal ) {
       setCursor(refusal.kind === "outOfRange" ? "outOfRange" : "invalid");
       showBadge(event, refusal.text);
+      // #33 : hors de portée, la ligne de visée est toute rouge, avec la distance.
+      if ( (refusal.kind === "outOfRange") && (activity.type === "attack") ) showAttackLine(me, hover, activity, { unreachable: true });
       if ( previewed ) previewPath(previewed, null);
       previewed = null;
       return;
@@ -463,6 +466,7 @@ export const onPointerMove = foundry.utils.throttle(event => {
     if ( activity?.type === "attack" ) {
       const end = (far && plan?.arrives) ? plan.waypoints.at(-1) : null;
       showHitChance(event, me, hover, activity, { posA: end ? positionOf(end) : undefined, outOfReach, keys });
+      showAttackLine(me, hover, activity, { posA: end ? positionOf(end) : undefined, unreachable: outOfReach });   // #33
     }
     // §15.3 : une sauvegarde — la chance que la cible la rate (le mode visée ne vise qu'avec une activité choisie).
     else if ( activity?.type === "save" ) showSaveChance(event, me, hover, activity, { outOfReach });

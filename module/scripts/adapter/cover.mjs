@@ -113,11 +113,15 @@ export function spaceClipper(doc, pos, margin) {
  *                              ne doit pas se trahir par l'abri qu'elle donne).
  */
 function bodiesAround(attacker, target, seenOnly=false) {
+  return coverBodies(attacker, target, seenOnly).map(t => rectOf(t));
+}
+
+/** #33 : les tokens des créatures qui peuvent s'interposer entre l'attaquant et la cible (voir `bodiesAround`). */
+export function coverBodies(attacker, target, seenOnly=false) {
   return attacker.parent.tokens
     .filter(t => (t !== attacker) && (t !== target) && t.actor && !t.hidden && t.object && !isObjectToken(t)
       && (!seenOnly || (t.object.isVisible === true))
-      && bodyGivesCover({ dead: isDeadActor(t.actor), size: t.actor.system?.traits?.size }))
-    .map(t => rectOf(t));
+      && bodyGivesCover({ dead: isDeadActor(t.actor), size: t.actor.system?.traits?.size }));
 }
 
 /** Une attaque à distance avec une arme (tir, ou arme lancée) ? */

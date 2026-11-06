@@ -49,5 +49,5 @@ describe("imports", () => {
       }
     }
     expect(missing).toEqual([]);
-  });
+  }, 30000);   // parcourt tout le code du moteur : plus de 5 s sur la CI (2026-11-06)
 });

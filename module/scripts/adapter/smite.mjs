@@ -291,7 +291,7 @@ export async function askSmite(actor, target, options) {
       // temps.
       buttons: [...options.map((o, i) => ({ action: `smite${i}`, label: o.label })),
         ...groups.map((g, n) => ({ action: `group${n}`, label: g.item.name, default: n === 0 })), none]
-    }, { fallback: "none" });
+    }, { fallback: "none", awaiting: { actor, kind: "choice" } });
     if ( String(first ?? "").startsWith("smite") ) return options[Number(first.replace("smite", ""))] ?? null;
     const group = String(first ?? "").startsWith("group") ? groups[Number(first.replace("group", ""))] : null;
     if ( !group ) return null;
@@ -306,7 +306,7 @@ export async function askSmite(actor, target, options) {
         <p>${t(named ? "QuestionOption" : "QuestionNiveau")}</p><div class="levels">${levels}</div>`,
       buttons: [...group.picks.map(({ i, o }) => ({ action: `smite${i}`, label: o.label })),
         { action: "back", label: t(named ? "AutreFaveur" : "AutreSort"), icon: "fa-solid fa-arrow-left" }, none]
-    }, { fallback: "none" });
+    }, { fallback: "none", awaiting: { actor, kind: "choice" } });
     if ( second === "back" ) continue;
     const i = Number(String(second ?? "").replace("smite", ""));
     return String(second ?? "").startsWith("smite") ? (options[i] ?? null) : null;

@@ -86,7 +86,7 @@ export async function handleConcentrationQuery({ actor: actorUuid, dc, ability=n
   if ( !actor ) return false;
   ui.notifications.info(game.i18n.format("DND5ECOMBAT.DemandeConcentrationJoueur", { name: actor.name, dc }));
   let timedOut = false;
-  const cancel = closeRollDialogAfter(actor, () => { timedOut = true; });
+  const cancel = closeRollDialogAfter(actor, () => { timedOut = true; }, null, { awaiting: "roll" });
   const args = () => {
     const config = { target: dc };
     if ( ability ) config.ability = ability;

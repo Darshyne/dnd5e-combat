@@ -21,6 +21,7 @@ import { toggleCarriedLight } from "../runtime/lights.mjs";
 import { ritualModeOf } from "../adapter/grimoire.mjs";
 import { identifierOf } from "../adapter/content.mjs";
 import { startTimer } from "./timers.mjs";
+import { awaitingState } from "./awaiting.mjs";
 import { climbingOf } from "../adapter/climb.mjs";
 import { coverPreviewOf } from "../adapter/cover-preview.mjs";
 
@@ -180,6 +181,13 @@ export const uiApi = {
    * (engrenage qui tourne, jauge au dégradé DAS) ; rend `{ id, done, stop() }` (`stop` : geste interrompu, partout).
    */
   timer: startTimer,
+  /**
+   * §381 (issue #35) : `awaiting()` — qui la table attend : `[{ id, userId, userName, token, actor, kind, gm, player, since, seconds,
+   * refreshed, shown }]` (uuids ; `kind` : « reaction », « choice » ou « roll » ; `seconds` : le délai de la fenêtre, null sans délai ;
+   * `shown` : ce que CE client en montre, « token », « banner » ou « none »). Jamais ce que la fenêtre demande. Ses changements se
+   * publient par le hook `dnd5e-combat.awaiting` (la liste, sans `shown`), sur chaque client.
+   */
+  awaiting: awaitingState,
   budget, wards, movableZone, movement, issues, cost, cell, ritual, multiattackLeft: multiattack, light: lightState, globalLight: globalLightState,
   /** §41.4 : `tokenMenu(token)` — les entrées du menu contextuel de ce token pour le token en main (ui/pointer.mjs). */
   tokenMenu: menuEntriesFor,

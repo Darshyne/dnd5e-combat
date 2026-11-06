@@ -70,23 +70,29 @@ describe("§290 fenêtres sans délai : le MJ force", () => {
     expect(expire).not.toHaveBeenCalled();
   });
 
-  it("avec délai, le minuteur décide, pas le MJ", () => {
+  it("avec délai, le minuteur décide ; §381 : le MJ peut aussi forcer, une seule fois", () => {
     vi.useFakeTimers();
     const expire = vi.fn();
     expireLater(expire, 1000, false);
-    expect(forceOpenWindows()).toBe(0);
     vi.advanceTimersByTime(1000);
     expect(expire).toHaveBeenCalledTimes(1);
+    expect(forceOpenWindows()).toBe(0);
+    const early = vi.fn();
+    expireLater(early, 1000, false);
+    expect(forceOpenWindows()).toBe(1);
+    vi.advanceTimersByTime(1000);
+    expect(early).toHaveBeenCalledTimes(1);
   });
 
-  it("avec délai, la question part telle quelle et n'est pas suivie", async () => {
+  it("avec délai, la question part avec ce délai ; §381 : elle est notée, pour que le MJ puisse forcer", async () => {
     unlimited = false;
     const user = player();
     const asked = queryPlayer(user, "dnd5e-combat.reaction", { a: 1 }, { timeout: 20000, label: "Réaction" });
     expect(user.query).toHaveBeenCalledWith("dnd5e-combat.reaction", { a: 1 }, { timeout: 20000 });
-    expect(playerWaits()).toEqual([]);
+    expect(playerWaits()).toMatchObject([{ userName: "Alice", label: "Réaction" }]);
     user.answer("ok");
     await expect(asked).resolves.toBe("ok");
+    expect(playerWaits()).toEqual([]);
   });
 
   it("sans délai, l'attente est notée (qui, pour qui, quoi), puis retirée à la réponse", async () => {

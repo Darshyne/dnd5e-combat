@@ -803,7 +803,7 @@ export async function handleClimbQuery({ token: uuid, configure=true, dc=CLIMB_D
   const actor = token?.actor;
   if ( !actor ) return null;
   ui.notifications.info(loc((dc === CEILING_DC) ? "Escalade.TestPlafond" : "Escalade.Test", { name: token.name, dc }));
-  const cancel = configure ? closeRollDialogAfter(actor, () => {}) : () => {};
+  const cancel = configure ? closeRollDialogAfter(actor, () => {}, null, { awaiting: "roll" }) : () => {};
   let rolls = await actor.rollSkill({ skill: "ath", ability: "str", target: dc }, { configure });
   cancel();
   if ( !rolls?.length && configure ) rolls = await actor.rollSkill({ skill: "ath", ability: "str", target: dc }, { configure: false });

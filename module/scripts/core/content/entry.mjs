@@ -61,6 +61,15 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       || Object.keys(m).some(k => !["value", "units"].includes(k)) ) errors.push(`${at}minRange: { value: positive number, units }`);
   }
   // §353 : l'ennemi juré (Arc du serment) — la cible qui porte cet effet de l'arme.
+  // §371 : `endurance` — true, ou ce qui suit le maintien à 1 PV : un effet de l'item posé sur le porteur, des PV temporaires, les
+  // utilisations d'items rendues (par identifiant).
+  if ( "endurance" in entry ) {
+    const x = entry.endurance;
+    const ok = (x === true) || (isObject(x) && Object.keys(x).length && Object.keys(x).every(k => ["effect", "tempHp", "restores"].includes(k))
+      && (!("effect" in x) || isId(x.effect)) && (!("tempHp" in x) || ((typeof x.tempHp === "string") && !!x.tempHp.trim()))
+      && (!("restores" in x) || (Array.isArray(x.restores) && x.restores.length && x.restores.every(id => (typeof id === "string") && !!id))));
+    if ( !ok ) errors.push(`${at}endurance: true or { effect?: effect id, tempHp?: formula, restores?: [identifiers] }`);
+  }
   if ( ("swornEnemy" in entry) && !(isObject(entry.swornEnemy) && isId(entry.swornEnemy.effect) && (Object.keys(entry.swornEnemy).length === 1)) ) {
     errors.push(`${at}swornEnemy: { effect: effect id }`);
   }
@@ -236,7 +245,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       && (!("activities" in k) || (Array.isArray(k.activities) && k.activities.length && k.activities.every(isId)));
     if ( !ok ) errors.push(`${at}killsAtZero: true or { types?, sizeAtMost?, activities? }`);
   }
-  for ( const key of ["singleAttack", "noAttacksOrSpells", "noSpells", "knownToOrigin", "upkeep", "keepsProne", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "avoidance", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "endurance", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails", "critMove", "combatInspiration", "quietPose", "zoneBound", "effectsFirst", "hitDefense", "enterOnPose", "summonEffectsOnCaster", "sniper"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
+  for ( const key of ["singleAttack", "noAttacksOrSpells", "noSpells", "knownToOrigin", "upkeep", "keepsProne", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "avoidance", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails", "critMove", "combatInspiration", "quietPose", "zoneBound", "effectsFirst", "hitDefense", "enterOnPose", "summonEffectsOnCaster", "sniper"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
   // §225, lot 4 : passer du plan matériel à l'Éthéré ou inversement (Saut éthéré) ; `others` : les cibles désignées suivent (Foulée éthérée).
   if ( ("etherealShift" in entry) && !((entry.etherealShift === true) || (isObject(entry.etherealShift)
     && Object.keys(entry.etherealShift).every(k => k === "others") && (entry.etherealShift.others === true))) ) {

@@ -5,8 +5,9 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { contentOf } from "./content.mjs";
+import { contentOf, identifierOf } from "./content.mjs";
 import { spendItemUses } from "./uses.mjs";
+import { placeItemEffect } from "./effects.mjs";
 
 /**
  * §135 : Faveur de récupération, Dernier carré — « quand vous devriez tomber à 0 PV, vous pouvez tomber à 1 PV à la place et regagner
@@ -32,7 +33,7 @@ function lastStandAtZero(actor, updates) {
 
 /** L'item d'Acharnement de l'acteur, s'il lui reste une utilisation ; sinon null. */
 export function enduranceOf(actor) {
-  const item = (actor?.items ?? []).find(i => contentOf(i).entry?.endurance === true);
+  const item = (actor?.items ?? []).find(i => !!contentOf(i).entry?.endurance);
   if ( !item ) return null;
   const uses = item.system.uses ?? {};
   const left = Number.isFinite(Number(uses.value)) ? Number(uses.value) : (Number(uses.max) || 0) - (Number(uses.spent) || 0);
@@ -53,5 +54,29 @@ export function endureAtZero(actor, through, updates) {
   updates["system.attributes.hp.value"] = 1;
   spendItemUses(item)
     .catch(err => console.warn(`${MODULE_ID} | ${item.name}: use not spent`, err));
+  const rule = contentOf(item).entry?.endurance;
+  if ( rule && (typeof rule === "object") ) afterEndurance(actor, item, rule, hp, updates);
   return item;
+}
+
+/**
+ * §371 : ce qui suit le maintien à 1 PV (Esprit combatif : « des PV temporaires égaux à la moitié de votre maximum, vos points regagnés,
+ * Résistance pendant une minute ») — PV temporaires dans la même mise à jour que les PV, s'ils dépassent ceux qui restent ; l'effet de
+ * l'item et les utilisations rendues ensuite.
+ */
+function afterEndurance(actor, item, { effect, tempHp, restores }, hp, updates) {
+  if ( tempHp ) {
+    let amount = 0;
+    try { amount = Math.floor(Roll.safeEval(Roll.replaceFormulaData(tempHp, actor.getRollData(), { missing: "0" }))) || 0; }
+    catch(err) { console.warn(`${MODULE_ID} | ${item.name}: temporary HP formula « ${tempHp} »`, err); }
+    const left = Number(updates["system.attributes.hp.temp"] ?? hp.temp) || 0;
+    if ( amount > left ) updates["system.attributes.hp.temp"] = amount;
+  }
+  if ( effect ) placeItemEffect(item, effect, actor)
+    .catch(err => console.warn(`${MODULE_ID} | ${item.name}: effect not placed`, err));
+  const wanted = new Set(restores ?? []);
+  const refills = (actor.items ?? []).filter(i => wanted.has(identifierOf(i).id) && (Number(i.system.uses?.spent) > 0))
+    .map(i => ({ _id: i.id, "system.uses.spent": 0 }));
+  if ( refills.length ) actor.updateEmbeddedDocuments("Item", refills)
+    .catch(err => console.warn(`${MODULE_ID} | ${item.name}: uses not restored`, err));
 }

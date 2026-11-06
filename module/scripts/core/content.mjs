@@ -726,8 +726,11 @@
  *                                               supérieur : 3), qui peuvent remplacer un Test d20 (core/portent.mjs)
  *     metamagic?: { activity, kind }            option de Métamagie (§32) : l'activité retient `kind` pour le prochain sort de
  *                                               l'ensorceleur (`METAMAGIC_KINDS`)
- *     endurance?: true                          Acharnement (§31) : tombé à 0 PV sans être tué sur le coup, le porteur reste à 1 PV,
- *                                               une utilisation de l'item dépensée
+ *     endurance?: true | { effect?, tempHp?, restores? }
+ *                                               Acharnement (§31) : tombé à 0 PV sans être tué sur le coup, le porteur reste à 1 PV,
+ *                                               une utilisation de l'item dépensée ; §371 : puis `effect` (effet de l'item) posé sur
+ *                                               lui, `tempHp` (formule, données de l'acteur) en PV temporaires s'ils dépassent les
+ *                                               siens, les utilisations des items `restores` (identifiants) rendues
  *     replacesAttack?: true | string[]          l'activité remplace une attaque de l'action Attaquer (Souffle, §31) ; une liste : ces
  *                                               activités seulement (§188, Huile : le lancer, pas l'étalage au sol)
  *     hitRider?: { damage?, effect?, status?, sizeAtMost?, slot?, weapon?, oncePerTurn?, save?, item?, whileActive? }

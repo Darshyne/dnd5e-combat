@@ -1878,8 +1878,6 @@
   "DND5ECOMBAT.Reglage.awaitingGm.Choix.discreet": "Discret : un bandeau « Le MJ décide… »",
   "DND5ECOMBAT.Reglage.awaitingGm.Choix.token": "Le sablier sur le token",
   "DND5ECOMBAT.Reglage.awaitingGm.Choix.hidden": "Rien",
-  "DND5ECOMBAT.Reglage.awaitingNames.Nom": "Nom de qui doit répondre",
-  "DND5ECOMBAT.Reglage.awaitingNames.Aide": "Écrit sous le sablier le nom de l'utilisateur qui a la fenêtre devant lui.",
   "DND5ECOMBAT.Reglage.awaitingHide.Nom": "Masquer le sablier sur cet ordinateur",
   "DND5ECOMBAT.Reglage.awaitingHide.Aide": "Ce poste ne dessine ni le sablier ni le bandeau « Le MJ décide… ». Les autres postes ne changent pas.",
   "DND5ECOMBAT.Heroique.Nom": "Inspiration héroïque",

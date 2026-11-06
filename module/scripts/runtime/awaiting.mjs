@@ -9,7 +9,7 @@ import { AWAITING_GM_MODES, AWAITING_REFRESH_MS } from "../core/awaiting.mjs";
 import { AWAITING_QUERY, changeAwaiting, pruneKnown, receiveAwaiting, refreshAwaiting, syncAwaiting } from "../adapter/awaiting.mjs";
 import { route } from "./router.mjs";
 
-export const AWAITING_SETTINGS = Object.freeze({ show: "awaitingShow", gm: "awaitingGm", names: "awaitingNames", hide: "awaitingHide" });
+export const AWAITING_SETTINGS = Object.freeze({ show: "awaitingShow", gm: "awaitingGm", hide: "awaitingHide" });
 /** Un réglage d'affichage a changé, sur ce client (le dessin se refait). */
 export const AWAITING_SETTINGS_HOOK = `${MODULE_ID}.awaitingSettings`;
 
@@ -24,8 +24,6 @@ export function registerAwaiting() {
   game.settings.register(MODULE_ID, S.gm, { scope: "world", config: true, type: String, default: "discreet",
     choices: Object.fromEntries(AWAITING_GM_MODES.map(m => [m, `${key(S.gm)}.Choix.${m}`])),
     name: `${key(S.gm)}.Nom`, hint: `${key(S.gm)}.Aide`, onChange });
-  game.settings.register(MODULE_ID, S.names, { scope: "world", config: true, type: Boolean, default: true,
-    name: `${key(S.names)}.Nom`, hint: `${key(S.names)}.Aide`, onChange });
   game.settings.register(MODULE_ID, S.hide, { scope: "client", config: true, type: Boolean, default: false,
     name: `${key(S.hide)}.Nom`, hint: `${key(S.hide)}.Aide`, onChange });
   CONFIG.queries[AWAITING_QUERY] = receiveAwaiting;
@@ -51,7 +49,6 @@ export function awaitingViewer() {
     userId: game.user?.id ?? null, isGM: game.user?.isGM === true,
     enabled: get(AWAITING_SETTINGS.show, true) !== false,
     hidden: get(AWAITING_SETTINGS.hide, false) === true,
-    gmMode: get(AWAITING_SETTINGS.gm, "discreet"),
-    names: get(AWAITING_SETTINGS.names, true) !== false
+    gmMode: get(AWAITING_SETTINGS.gm, "discreet")
   };
 }

@@ -1878,8 +1878,6 @@
   "DND5ECOMBAT.Reglage.awaitingGm.Choix.discreet": "Discreet: a « The GM is deciding… » banner",
   "DND5ECOMBAT.Reglage.awaitingGm.Choix.token": "The hourglass on the token",
   "DND5ECOMBAT.Reglage.awaitingGm.Choix.hidden": "Nothing",
-  "DND5ECOMBAT.Reglage.awaitingNames.Nom": "Name of who must answer",
-  "DND5ECOMBAT.Reglage.awaitingNames.Aide": "Writes under the hourglass the name of the user who has the window in front of them.",
   "DND5ECOMBAT.Reglage.awaitingHide.Nom": "Hide the hourglass on this computer",
   "DND5ECOMBAT.Reglage.awaitingHide.Aide": "This computer draws neither the hourglass nor the « The GM is deciding… » banner. Other computers are unchanged.",
   "DND5ECOMBAT.Heroique.Nom": "Heroic Inspiration",

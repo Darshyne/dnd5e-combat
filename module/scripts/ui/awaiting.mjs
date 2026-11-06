@@ -1,7 +1,7 @@
 /**
  * §381 (issue #35) : le sablier au-dessus du token de la créature qu'on attend — une réaction, un choix, un jet ouvert chez un joueur ou
- * chez le MJ —, vu par toute la table sauf celui qui répond. Il se retourne tant que la fenêtre est ouverte ; le nom de qui doit répondre
- * dessous (réglage de monde `awaitingNames`). Il dit seulement que la table attend ce token, jamais ce que la fenêtre demande. (Essais du
+ * chez le MJ —, vu par toute la table sauf celui qui répond. Il se retourne tant que la fenêtre est ouverte, sans nom ni délai.
+ * Il dit seulement que la table attend ce token, jamais ce que la fenêtre demande. (Essais du
  * 2026-11-06 : un anneau rose du délai, puis trois points qui ondulent ; l'utilisateur a gardé le sablier simple.)
  *
  * Une fenêtre du MJ pour une créature sans joueur : selon `awaitingGm`, un bandeau « Le MJ décide… » sans désigner de créature (défaut),
@@ -42,9 +42,9 @@ function layerOf() {
   return layer;
 }
 
-/** Le dessin d'un sablier : disque sombre au filet blanc, sablier, nom. Pas d'anneau de délai (l'utilisateur, 2026-11-06 : il dit
- * seulement que la table attend ce token). */
-function build(entry, names) {
+/** Le dessin d'un sablier : disque sombre au filet blanc, sablier — rien d'autre, ni nom ni anneau de délai (l'utilisateur, 2026-11-06 :
+ * il dit seulement que la table attend ce token). */
+function build() {
   const size = canvas.grid.size;
   const r = Math.max(10, SIZE * size / 2);
   const root = new PIXI.Container();
@@ -56,13 +56,6 @@ function build(entry, names) {
   });
   glass.anchor.set(0.5);
   root.addChild(back, glass);
-  if ( names && entry.userName ) {
-    const name = new PIXI.Text(entry.userName, { fontFamily: CONFIG.canvasTextStyle?.fontFamily ?? "Signika",
-      fontSize: Math.round(Math.max(10, r * 0.75)), fill: 0xffffff, stroke: 0x000000, strokeThickness: 3 });
-    name.anchor.set(0.5, 0);
-    name.position.set(0, r + 2);
-    root.addChild(name);
-  }
   return { root, glass, r, born: Date.now() };
 }
 
@@ -93,7 +86,7 @@ function tick() {
     if ( !token || token.destroyed || (doc.parent !== canvas.scene) ) continue;
     shown.add(entry.id);
     let view = views.get(entry.id);
-    if ( !view ) views.set(entry.id, view = build(entry, viewer.names));
+    if ( !view ) views.set(entry.id, view = build());
     if ( view.root.parent !== layerOf() ) layerOf().addChild(view.root);
     view.root.visible = token.isVisible === true;
     // Coin haut droit du token : la place des minuteries (au-dessus) et des textes qui défilent (au centre) reste libre.
@@ -149,7 +142,7 @@ export function registerAwaitingUI() {
   route(AWAITING_HOOK, onAwaiting, { always: true, label: "awaiting: hourglass not drawn" });
   route("canvasReady", () => onAwaiting(awaitingList()), { always: true, label: "awaiting: hourglass not redrawn with the canvas" });
   route("canvasTearDown", clear, { always: true, label: "awaiting: hourglass not cleared with the canvas" });
-  // Un réglage d'affichage change (monde ou client) : redessiner (nom, mode du MJ).
+  // Un réglage d'affichage change (monde ou client) : redessiner (mode du MJ, masqué chez soi).
   route(AWAITING_SETTINGS_HOOK, () => {
     clear();
     onAwaiting(awaitingList());

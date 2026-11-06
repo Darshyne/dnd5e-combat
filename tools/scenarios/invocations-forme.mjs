@@ -44,6 +44,7 @@ export default {
 
     // L'animation de Convocation de céleste vient de darsh-animations ≥ la version qui publie `previewSummon` (son SPEC §22).
     const summonFx = !!(await ctx.call("call-module-api", { moduleId: "darsh-animations", fn: "previewSummon", args: {} }).catch(() => null));
+    const slots6 = Number((await ctx.call("get-actor", { actorId: mage.actorId })).system?.spells?.spell6?.value) > 0;
     const slots5 = Number((await ctx.call("get-actor", { actorId: mage.actorId })).system?.spells?.spell5?.value) > 0;
     const animated = !!(await ctx.call("call-module-api", { moduleId: "darsh-animations", fn: "renderer", args: {} }).catch(() => null))
       && ((await ctx.engine("sequencer", {})).available);
@@ -89,6 +90,43 @@ export default {
       else if ( animated ) ctx.expect(files.length > 0 && (!fx || files.some(f => f.includes(fx))),
         `${source} : une animation d'apparition joue (${files.map(f => f.split("/").pop()).slice(0, 3).join(", ") || "aucune"})`);
       await pause(2500);
+    }
+
+    // §385 : Création de morts-vivants — sans corps à viser, la fenêtre demande combien de goules (1 à 3 au niveau 6) ; 1 choisie.
+    // Sans emplacement de niveau 6, le MJ passe ensuite par « Plus de charge » (le sort part à son propre niveau, §384).
+    const undead = await ctx.ensureItem(mage, SPELLS + "phbsplCreateUnde");
+    await ctx.engine("castFromBar", { tokenId: mage.id, itemId: undead, sheet: true, x: pos.x + (4 * grid), y: pos.y + grid });
+    let form = null;
+    for ( let i = 0; !form && (i < 8); i++ ) {
+      const found = await ctx.call("list-dialogs", { dialogsOnly: true, waitMs: 1000 });
+      form = (found.windows ?? []).find(d => (d.fields ?? []).some(f => f.name === "count"));
+      if ( !form ) await pause(500);
+    }
+    const countField = form?.fields?.find(f => f.name === "count");
+    if ( ctx.expect(!!form, "Création de morts-vivants : la fenêtre demande le nombre, sans cible à désigner") ) {
+      ctx.expect((countField.options ?? []).map(o => o.value).join(",") === "1,2,3", `de 1 à 3 goules au niveau 6 (${(countField.options ?? []).map(o => o.value).join(",")})`);
+      await ctx.call("answer-dialog", { id: form.id, fields: { count: "1" }, button: "summon" });
+      if ( !slots6 ) {
+        const asked = await ctx.call("list-dialogs", { dialogsOnly: true, waitMs: 6000 });
+        const forced = (asked.windows ?? []).find(d => (d.buttons ?? []).some(b => b.action === "yes"));
+        if ( forced ) await ctx.call("answer-dialog", { id: forced.id, button: "yes" });
+      }
+      let captured = null;
+      for ( let i = 0; i < 20; i++ ) {
+        await pause(500);
+        captured = await ctx.engine("summonCaptured", {});
+        if ( captured?.tokens ) break;
+      }
+      const placed = captured?.tokens ?? [];
+      summoned.push(...placed.map(t => t.id));
+      for ( const t of placed ) if ( t.actorId ) actorsMade.add(t.actorId);
+      ctx.expect(captured?.summoned?.count === 1, `dnd5e pose le nombre choisi : ${captured?.summoned?.count ?? "rien"} (niveau ${captured?.summoned?.level ?? "?"})`);
+      ctx.expect(placed.length === 1, `une seule goule posée (${placed.length})`);
+      ctx.expect(captured?.summoned?.level === 6, `au niveau du sort, 6 (${captured?.summoned?.level})`);
+      // §386 : la goule du Monster Manual 2024 (sinon du SRD 2024), pas celle du SRD 2014 que désignent les données du sort.
+      const mm = (await ctx.call("list-compendiums", {})).some(p => p.id === "dnd-monster-manual.actors");
+      const wanted = mm ? "Compendium.dnd-monster-manual.actors." : "Compendium.dnd5e.actors24.";
+      ctx.expect(String(captured?.summoned?.uuid ?? "").startsWith(wanted), `goule du ${mm ? "Monster Manual 2024" : "SRD 2024"} (${captured?.summoned?.uuid})`);
     }
   }
 };

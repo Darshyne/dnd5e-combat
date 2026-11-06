@@ -2125,5 +2125,8 @@
   "DND5ECOMBAT.Invocation.Choisir": "Choisissez la forme de la créature invoquée, puis « Invoquer ».",
   "DND5ECOMBAT.Invocation.Taille": "Taille",
   "DND5ECOMBAT.Invocation.Type": "Type de créature",
-  "DND5ECOMBAT.Invocation.Invoquer": "Invoquer"
+  "DND5ECOMBAT.Invocation.Invoquer": "Invoquer",
+  "DND5ECOMBAT.Invocation.Niveau": "Niveau",
+  "DND5ECOMBAT.Invocation.NiveauLibelle": "Niveau {level} — {slot} ({left} restant(s))",
+  "DND5ECOMBAT.Invocation.Nombre": "Nombre de créatures"
 }

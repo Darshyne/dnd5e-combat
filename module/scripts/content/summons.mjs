@@ -39,6 +39,9 @@ export const SUMMONS = Object.freeze({
   "summon-aberration": vanishing, "summon-beast": vanishing, "summon-celestial": vanishing, "summon-construct": vanishing,
   "summon-dragon": vanishing, "summon-elemental": vanishing, "summon-fey": vanishing, "summon-fiend": vanishing, "summon-undead": vanishing,
   "animate-objects": after, "giant-insect": vanishing,
+  // §385 (issue #38, décision de l'utilisateur) : Création de morts-vivants sans corps à viser ; le lanceur choisit combien de goules
+  // (« jusqu'à trois », plus au-dessus), ou de blêmes / nécrophages / momies selon le niveau. Elles jouent à leur propre Initiative.
+  "create-undead": { initiative: "own", untargeted: true, chooseCount: true },
   // §259 : « s'il tombe à 0 point de vie, le sort prend fin » — sans concentration, le serviteur disparaît.
   "unseen-servant": { initiative: "none", vanishesAtZero: true },
   // §107 : `familiar` — actions de base sauf l'attaque, vision, poche dimensionnelle. Le Pacte de la chaîne (occultiste, PHB

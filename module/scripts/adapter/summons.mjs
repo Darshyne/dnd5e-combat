@@ -13,7 +13,7 @@ import { initiativeAfter } from "../core/turn.mjs";
 import { contentOf } from "./content.mjs";
 import { expiryTime } from "../core/area.mjs";
 import { readTimeFactors } from "./areas.mjs";
-import { summonChoices } from "../core/summon.mjs";
+import { summonChoices, profilesAtLevel, mmActorId, srdMonsterId } from "../core/summon.mjs";
 
 /**
  * §383 : ce qu'une activité « summon » laisse choisir à la pose (profils disponibles à ce niveau — `availableProfiles`,
@@ -23,6 +23,106 @@ export function summonChoicesOf(activity) {
   if ( activity?.type !== "summon" ) return summonChoices();
   return summonChoices({ profiles: activity.availableProfiles?.length ?? 0, sizes: activity.creatureSizes?.size ?? 0,
     types: activity.creatureTypes?.size ?? 0 });
+}
+
+/**
+ * §386 : où chercher la créature d'un profil du SRD 2014, dans l'ordre (décision de l'utilisateur) : le Monster Manual 2024 (module
+ * premium), puis les créatures du SRD 2024 livrées par dnd5e (`dnd5e.actors24`) — mêmes identifiants `mm…` dans les deux.
+ */
+export const MM_ACTORS = "dnd-monster-manual.actors";
+export const SRD24_ACTORS = "dnd5e.actors24";
+const PREFERRED_PACKS = [MM_ACTORS, SRD24_ACTORS];
+
+/**
+ * §386 (demande de l'utilisateur) : la créature à invoquer pour un profil qui désigne une créature du SRD 2014 de dnd5e
+ * (`dnd5e.monsters` : les goules, blêmes, nécrophages et momies de Création de morts-vivants) — la même (nom anglais → `mmActorId`)
+ * dans le Monster Manual 2024, sinon dans le SRD 2024 de dnd5e, sinon l'uuid du profil. Les index des compendiums sont
+ * chargés au démarrage du monde.
+ */
+export function preferredSummonUuid(uuid) {
+  if ( !srdMonsterId(uuid) ) return uuid;
+  const id = mmActorId(fromUuidSync(uuid, { strict: false })?.name);
+  if ( !id ) return uuid;
+  for ( const packId of PREFERRED_PACKS ) {
+    if ( game.packs?.get(packId)?.index?.has(id) ) return `Compendium.${packId}.Actor.${id}`;
+  }
+  return uuid;
+}
+
+/**
+ * §386 : les profils d'une activité « summon » qui désignent une créature du SRD 2014 pointés sur celle du Monster Manual, sur la
+ * COPIE de l'item que dnd5e utilise (comme le nombre, §385 ; `placeSummons` relit `profile.uuid`). Rend l'activité à jour.
+ */
+export function applyPreferredActors(activity) {
+  const item = activity?.item;
+  const source = item?._source?.system?.activities?.[activity.id]?.profiles;
+  if ( !Array.isArray(source) ) return activity;
+  let changed = false;
+  const profiles = source.map(p => {
+    const uuid = preferredSummonUuid(p.uuid);
+    if ( uuid === p.uuid ) return p;
+    changed = true;
+    return { ...p, uuid };
+  });
+  if ( !changed ) return activity;
+  if ( item.actor ) item.actor._embeddedPreparation = true;
+  item.updateSource({ [`system.activities.${activity.id}.profiles`]: profiles });
+  if ( item.actor ) delete item.actor._embeddedPreparation;
+  item.prepareFinalAttributes?.();
+  return item.system.activities.get(activity.id) ?? activity;
+}
+
+/**
+ * §385 : combien de créatures un profil pose au niveau `level` (sa formule `count` avec `@item.level` à ce niveau, comme `getPlacement`,
+ * documents/activity/summon.mjs). Null si la formule n'est pas fixe (des dés : pas de choix proposé).
+ */
+export function summonCountAt(activity, profile, level) {
+  try {
+    const data = activity.getRollData?.() ?? {};
+    const rollData = { ...data, item: { ...(data.item ?? {}), level } };
+    const roll = new Roll(String(profile?.count || "1"), rollData);
+    if ( !roll.isDeterministic ) return null;
+    return Math.max(0, Math.floor(Number(roll.evaluateSync().total) || 0));
+  } catch(err) { return null; }
+}
+
+/** §385 : les profils d'une activité « summon » permis au niveau `level`. */
+export function summonProfilesAt(activity, level) {
+  return profilesAtLevel(Array.from(activity?.profiles ?? []), level);
+}
+
+/**
+ * §385 : les niveaux auxquels lancer : chaque emplacement qui reste (pacte compris), au moins du niveau du sort ; sans aucun, le niveau
+ * du sort seul (`slot` null : le MJ lancera sans emplacement, §77). `{ slot, level, label }`.
+ */
+export function castLevelsOf(activity) {
+  const base = Number(activity?.item?.system?.level) || 0;
+  const spells = activity?.actor?.system?.spells ?? {};
+  const out = [];
+  for ( const [key, slot] of Object.entries(spells) ) {
+    if ( !/^(spell\d+|pact)$/.test(key) ) continue;
+    const level = Number(slot?.level) || 0;
+    if ( (level >= base) && ((Number(slot?.value) || 0) > 0) ) out.push({ slot: key, level, label: slot.label ?? key, left: Number(slot.value) });
+  }
+  out.sort((a, b) => (a.level - b.level) || (Number(a.slot === "pact") - Number(b.slot === "pact")));
+  return out.length ? out : [{ slot: null, level: base, label: null, left: 0 }];
+}
+
+/**
+ * §385 : le nombre choisi, écrit sur la COPIE de l'item que dnd5e utilise (`Activity#use` clone l'item ; la pose relit le profil :
+ * `placeSummons` → `getPlacement`, `profile.count`) — vérifié en jeu : 1 goule posée au lieu de 3. Comme §77, `repairSelfUses`.
+ * Rend l'activité à jour.
+ */
+export function applySummonCount(activity, profileId, count) {
+  const item = activity?.item;
+  const source = item?._source?.system?.activities?.[activity.id]?.profiles;
+  if ( !Array.isArray(source) || !(count >= 1) ) return activity;
+  const profiles = source.map(p => (p._id === profileId) ? { ...p, count: String(count) } : p);
+  if ( item.actor ) item.actor._embeddedPreparation = true;
+  item.updateSource({ [`system.activities.${activity.id}.profiles`]: profiles });
+  if ( item.actor ) delete item.actor._embeddedPreparation;
+  item.prepareFinalAttributes?.();
+  return item.system.activities.get(activity.id) ?? activity;
 }
 
 /**

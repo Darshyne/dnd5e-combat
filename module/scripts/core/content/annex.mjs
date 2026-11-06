@@ -12,7 +12,7 @@ import { isId, isObject } from "./shared.mjs";
 export function validateSummon(summon, at, errors) {
   if ( !isObject(summon) || !["after", "own", "none"].includes(summon.initiative) ) return errors.push(`${at}.initiative: "after", "own" or "none"`);
   if ( ("endsSpell" in summon) && (summon.endsSpell !== true) ) errors.push(`${at}.endsSpell: true or absent`);
-  for ( const flag of ["endsAtZero", "vanishesAtZero", "mimic", "endsIfIncapacitated", "castFrom", "familiar", "replaces", "vanishesWithCaster", "endsOnLongRest", "hostile"] ) {
+  for ( const flag of ["endsAtZero", "vanishesAtZero", "mimic", "endsIfIncapacitated", "castFrom", "familiar", "replaces", "vanishesWithCaster", "endsOnLongRest", "hostile", "untargeted", "chooseCount"] ) {
     if ( (flag in summon) && (summon[flag] !== true) ) errors.push(`${at}.${flag}: true or absent`);
   }
   if ( ("vanishesAfterDamage" in summon) && !(Number.isInteger(summon.vanishesAfterDamage) && (summon.vanishesAfterDamage > 0)) ) {
@@ -65,7 +65,7 @@ export function validateSummon(summon, at, errors) {
   if ( ("commanded" in summon) && !(isObject(summon.commanded) && isId(summon.commanded.activity) && (Object.keys(summon.commanded).length === 1)) ) {
     errors.push(`${at}.commanded: { activity }`);
   }
-  for ( const key of Object.keys(summon) ) if ( !["initiative", "pilot", "endsSpell", "endsAtZero", "vanishesAtZero", "vanishesAfterDamage", "pulse", "mimic", "endsIfIncapacitated", "castFrom", "lasts", "familiar", "replaces", "minLevels", "vanishesWithCaster", "endsOnLongRest", "commanded", "hostile"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
+  for ( const key of Object.keys(summon) ) if ( !["initiative", "pilot", "endsSpell", "endsAtZero", "vanishesAtZero", "vanishesAfterDamage", "pulse", "mimic", "endsIfIncapacitated", "castFrom", "lasts", "familiar", "replaces", "minLevels", "vanishesWithCaster", "endsOnLongRest", "commanded", "hostile", "untargeted", "chooseCount"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 export function validateAbsorb(absorb, at, errors) {

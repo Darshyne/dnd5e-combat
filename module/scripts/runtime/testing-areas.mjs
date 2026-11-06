@@ -229,8 +229,13 @@ export function castFromBar({ tokenId, itemId, slot=null, x, y, sheet=false }) {
   watch.hook = Hooks.on("dnd5e.preSummon", (a, profile, options) => {
     if ( a.item?.id !== watch.item ) return;
     watch.summoned = { profile: profile?._id ?? null, name: profile?.name ?? null, uuid: profile?.uuid ?? null,
-      creatureSize: options?.creatureSize ?? null, creatureType: options?.creatureType ?? null };
-    a.getPlacement = async () => [{ x, y, elevation: token.elevation ?? 0, rotation: 0 }];
+      creatureSize: options?.creatureSize ?? null, creatureType: options?.creatureType ?? null,
+      count: (() => { try { return new Roll(String(profile?.count || "1"), a.getRollData()).evaluateSync().total; } catch(err) { return null; } })(),
+      level: a.getRollData?.()?.item?.level ?? null };
+    // Autant de cases que de créatures (`count` du profil au niveau lancé, §385), en ligne à partir de la case donnée.
+    const n = Math.max(1, Number(watch.summoned.count) || 1);
+    const step = canvas.grid?.size ?? 100;
+    a.getPlacement = async () => Array.from({ length: n }, (_, i) => ({ x: x + (i * step), y, elevation: token.elevation ?? 0, rotation: 0 }));
     Hooks.off("dnd5e.preSummon", watch.hook);
   });
   watch.tokenHook = Hooks.on("dnd5e.postSummon", (a, profile, tokens) => {

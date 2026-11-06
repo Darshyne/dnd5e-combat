@@ -111,11 +111,14 @@ export function registerSummonHandover() {
  * redemander.
  * @param {Activity} activity
  * @param {[object, object, object]} usage
- * @param {{ profile: string, creatureSize?: string, creatureType?: string }} choice
+ * @param {{ profile: string, creatureSize?: string, creatureType?: string, slot?: string, count?: number }} choice
  */
 export function castWithForm(activity, [config, dialog, message], choice) {
-  const use = { ...config, summons: { ...(config?.summons ?? {}), ...choice },
-    [MODULE_ID]: { ...(config?.[MODULE_ID] ?? {}), summonForm: true } };
+  // §385 : le niveau (emplacement) et le nombre choisis dans la même fenêtre, quand elle les a demandés.
+  const { slot=undefined, count=null, ...summons } = choice ?? {};
+  const use = { ...config, summons: { ...(config?.summons ?? {}), ...summons },
+    ...(slot ? { spell: { ...(config?.spell ?? {}), slot } } : {}),
+    [MODULE_ID]: { ...(config?.[MODULE_ID] ?? {}), summonForm: true, ...(count ? { summonCount: count } : {}) } };
   log(`${activity.item?.name}: form chosen (${activity.profiles?.find(p => p._id === choice.profile)?.name || choice.profile})`);
   return activity.use(use, { ...(dialog ?? {}), configure: false }, message);
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { initiativeAfter } from "../module/scripts/core/turn.mjs";
-import { summonOwnership, summonChoices, asksSummonForm } from "../module/scripts/core/summon.mjs";
+import { summonOwnership, summonChoices, asksSummonForm, profilesAtLevel, countChoices, mmActorId, srdMonsterId } from "../module/scripts/core/summon.mjs";
 
 describe("initiative d'une créature invoquée (§16.13)", () => {
   it("juste sous l'invocateur, au-dessus du suivant", () => {
@@ -164,5 +164,46 @@ describe("§383 : choisir la forme d'une invocation (issue #38)", () => {
   });
   it("une seule forme : jamais", () => {
     expect(asksSummonForm({ configure: false, choices: summonChoices({ profiles: 1 }), willSummon: true })).toBe(false);
+  });
+});
+
+describe("§385 : « jusqu'à N » créatures (Création de morts-vivants)", () => {
+  it("la fenêtre s'ouvre toujours, même depuis la fiche, sauf déjà choisi ou confirmé", () => {
+    const one = summonChoices({ profiles: 1 });
+    expect(asksSummonForm({ configure: true, choices: one, willSummon: true, always: true })).toBe(true);
+    expect(asksSummonForm({ configure: true, choices: one, willSummon: true, always: true, chosen: true })).toBe(false);
+    expect(asksSummonForm({ configure: true, choices: one, willSummon: true, always: true, confirmed: true })).toBe(false);
+    expect(asksSummonForm({ configure: true, choices: one, willSummon: false, always: true })).toBe(false);
+  });
+  const profiles = [{ _id: "goule", level: { min: null, max: null } }, { _id: "blême", level: { min: 8, max: null } },
+    { _id: "momie", level: { min: 9, max: null } }];
+  it("les formes permises suivent le niveau", () => {
+    expect(profilesAtLevel(profiles, 6).map(p => p._id)).toEqual(["goule"]);
+    expect(profilesAtLevel(profiles, 8).map(p => p._id)).toEqual(["goule", "blême"]);
+    expect(profilesAtLevel(profiles, 9).map(p => p._id)).toEqual(["goule", "blême", "momie"]);
+    expect(profilesAtLevel([{ _id: "x", level: { min: 3, max: 5 } }], 6)).toEqual([]);
+  });
+  it("de 1 à N ; rien à choisir sous 2", () => {
+    expect(countChoices(3)).toEqual([1, 2, 3]);
+    expect(countChoices(1)).toEqual([]);
+    expect(countChoices(0)).toEqual([]);
+    expect(countChoices(null)).toEqual([]);
+  });
+});
+
+describe("§386 : créatures du Monster Manual 2024 plutôt que du SRD 2014", () => {
+  it("l'identifiant du Monster Manual d'après le nom anglais", () => {
+    expect(mmActorId("Ghoul")).toBe("mmGhoul000000000");
+    expect(mmActorId("Wight")).toBe("mmWight000000000");
+    expect(mmActorId("Ogre Zombie")).toBe("mmOgreZombie0000");
+    expect(mmActorId("Ghast Gravecaller")).toBe("mmGhastGravecall");
+    expect(mmActorId("")).toBeNull();
+  });
+  it("ne reconnaît que le compendium des monstres du SRD 2014 de dnd5e", () => {
+    expect(srdMonsterId("Compendium.dnd5e.monsters.Actor.OBujQLLPSmlJiZnL")).toBe("OBujQLLPSmlJiZnL");
+    expect(srdMonsterId("Compendium.dnd5e.monsters.OBujQLLPSmlJiZnL")).toBe("OBujQLLPSmlJiZnL");
+    expect(srdMonsterId("Compendium.dnd5e.actors24.Actor.OBujQLLPSmlJiZnL")).toBeNull();
+    expect(srdMonsterId("Compendium.dnd-players-handbook.actors.Actor.phbcesAngelSpiri")).toBeNull();
+    expect(srdMonsterId(null)).toBeNull();
   });
 });

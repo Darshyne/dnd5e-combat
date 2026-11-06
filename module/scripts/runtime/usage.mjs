@@ -26,7 +26,7 @@ import { movableZoneOf } from "./zones.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 import { whileAwaiting } from "../adapter/awaiting.mjs";
-import { summonChoicesOf } from "../adapter/summons.mjs";
+import { summonChoicesOf, applySummonCount, applyPreferredActors } from "../adapter/summons.mjs";
 
 export const AUTO_USAGE_SETTING = "autoUsage";
 
@@ -111,6 +111,14 @@ function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
   // à choisir ou à corriger, ni « plus de charge » chez le MJ. Un appelant qui confirme d'office lance vraiment (même règle).
   if ( !usageConfig[MODULE_ID]?.confirmed && movableZoneOf(activity) ) return;
   activity = repairSelfUses(activity);
+  // §386 : une créature du SRD 2014 invoquée par celle du Monster Manual 2024 quand il est là.
+  if ( activity.type === "summon" ) activity = applyPreferredActors(activity);
+  // §385 : « jusqu'à N » créatures — le nombre choisi dans la fenêtre « Choisir la forme », sur la copie de l'item.
+  const count = Number(usageConfig[MODULE_ID]?.summonCount) || 0;
+  if ( (activity.type === "summon") && (count >= 1) && usageConfig.summons?.profile ) {
+    activity = applySummonCount(activity, usageConfig.summons.profile, count);
+    log(`${activity.item.name}: ${count} creature(s) summoned`);
+  }
   // §77 : relancée par le MJ sans charge — rien n'est consommé, pas de fenêtre.
   if ( usageConfig[MODULE_ID]?.forced ) {
     usageConfig.consume = { ...(usageConfig.consume ?? {}), resources: false, spellSlot: false };

@@ -47,8 +47,50 @@ export function summonChoices({ profiles=0, sizes=0, types=0 }={}) {
  * faux), qu'il y a un choix, que quelque chose sera invoqué (pose prévue, invocation forcée par le contenu, ou reprise sur des cibles),
  * et que l'appelant n'a ni déjà choisi (`chosen`) ni confirmé d'office (`confirmed` : relances du moteur, connecteur, scénarios).
  */
-export function asksSummonForm({ configure, choices, willSummon, chosen=false, confirmed=false, otherChoice=false }) {
-  if ( configure !== false ) return false;
+export function asksSummonForm({ configure, choices, willSummon, chosen=false, confirmed=false, otherChoice=false, always=false }) {
   if ( chosen || confirmed || otherChoice ) return false;
+  // §385 : « jusqu'à N » créatures (contenu `chooseCount`) — la fenêtre du moteur, même depuis la fiche : dnd5e ne demande pas combien.
+  if ( always ) return !!willSummon;
+  if ( configure !== false ) return false;
   return !!choices?.any && !!willSummon;
+}
+
+/**
+ * §385 : les profils d'invocation permis à un niveau de lancement (`level.min` / `level.max` du profil, comme `availableProfiles` de
+ * dnd5e, documents/activity/summon.mjs, mais pour un autre niveau que celui de l'item).
+ * @param {{_id: string, level?: {min?: number|null, max?: number|null}}[]} profiles
+ * @param {number} level
+ */
+export function profilesAtLevel(profiles, level) {
+  return (profiles ?? []).filter(p => {
+    const min = p?.level?.min ?? null;
+    const max = p?.level?.max ?? null;
+    return ((min === null) || (level >= min)) && ((max === null) || (level <= max));
+  });
+}
+
+/** §385 : les nombres proposés, de 1 à `max` (rien à choisir sous 2). */
+export function countChoices(max) {
+  const n = Math.floor(Number(max) || 0);
+  return (n >= 2) ? Array.from({ length: n }, (_, i) => i + 1) : [];
+}
+
+/**
+ * §386 (issue #38, demande de l'utilisateur) : l'identifiant d'une créature dans le compendium du Monster Manual 2024
+ * (`dnd-monster-manual.actors`), d'après son nom anglais — « mm » + le nom en un mot, complété de zéros à 16 caractères
+ * (« Ghoul » → `mmGhoul000000000`, « Ogre Zombie » → `mmOgreZombie0000`, « Ghast Gravecaller » → `mmGhastGravecall`).
+ * @param {string} name
+ * @returns {string|null}
+ */
+export function mmActorId(name) {
+  const words = String(name ?? "").split(/[^A-Za-z0-9]+/).filter(Boolean);
+  if ( !words.length ) return null;
+  const core = words.map(w => w[0].toUpperCase() + w.slice(1)).join("");
+  return `mm${core}`.padEnd(16, "0").slice(0, 16);
+}
+
+/** §386 : l'id d'acteur d'un uuid du compendium des monstres du SRD 2014 de dnd5e (`dnd5e.monsters`), ou null. */
+export function srdMonsterId(uuid) {
+  const m = /^Compendium\.dnd5e\.monsters\.(?:Actor\.)?([A-Za-z0-9]{16})$/.exec(String(uuid ?? ""));
+  return m ? m[1] : null;
 }

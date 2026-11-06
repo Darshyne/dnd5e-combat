@@ -2125,5 +2125,8 @@
   "DND5ECOMBAT.Invocation.Choisir": "Choose the summoned creature's form, then \"Summon\".",
   "DND5ECOMBAT.Invocation.Taille": "Size",
   "DND5ECOMBAT.Invocation.Type": "Creature type",
-  "DND5ECOMBAT.Invocation.Invoquer": "Summon"
+  "DND5ECOMBAT.Invocation.Invoquer": "Summon",
+  "DND5ECOMBAT.Invocation.Niveau": "Level",
+  "DND5ECOMBAT.Invocation.NiveauLibelle": "Level {level} — {slot} ({left} left)",
+  "DND5ECOMBAT.Invocation.Nombre": "Number of creatures"
 }

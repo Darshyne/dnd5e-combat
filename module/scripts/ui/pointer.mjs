@@ -271,6 +271,8 @@ const noDialog = dialogConfig => ({ ...(dialogConfig ?? {}), configure: false })
 
 /** Qui l'activité vise d'un clic (core/targeting.mjs), ou null si elle ne se vise pas ainsi. */
 function ruleOf(activity) {
+  // §385 : une invocation qui se lance sans viser (Création de morts-vivants : pas de corps à désigner).
+  if ( (activity?.type === "summon") && contentOf(activity.item).entry?.summon?.untargeted ) return null;
   // §16.41 : l'arme d'une créature, soi compris (Arme élémentaire : dnd5e vise un « objet »).
   if ( enchantTargetOf(activity) === "weapon" ) return { self: true, side: null };
   // §53 : le sort qu'une potion fait lancer est pour le buveur (adapter/usage.mjs) — rien à viser.
@@ -383,14 +385,18 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   // §383 (issue #38) : une invocation à plusieurs formes (Convocation de céleste : Vengeur / Défenseur), tailles ou types, lancée
   // sans la fenêtre de dnd5e (barre d'actions, manette : `configure: false`) — la forme se choisit dans la fenêtre du moteur, chez
   // celui qui lance, puis l'utilisation repart avec elle. Lumière a sa propre fenêtre (§16.35).
+  // §385 : « jusqu'à N » créatures (`summon.chooseCount`) — toujours cette fenêtre, avec le nombre et, depuis la fiche, le niveau.
+  const chooseCount = (activity?.type === "summon") && !!contentOf(activity.item).entry?.summon?.chooseCount;
   if ( (activity?.type === "summon") && canvas.ready && activity.actor?.isOwner && !lightChoiceOf(activity)
     && asksSummonForm({ configure: dialogConfig?.configure, choices: summonChoicesOf(activity), chosen: !!ours.summonForm,
-      confirmed: !!ours.confirmed, otherChoice: !!ours.lightChoice,
+      confirmed: !!ours.confirmed, otherChoice: !!ours.lightChoice, always: chooseCount,
       willSummon: !!usageConfig.create?.summons || !!contentOf(activity.item).entry?.placesSummons || (game.user.targets.size > 0) }) ) {
     closeSheetFor(activity);
     stopTargeting();
     const usage = [usageConfig, dialogConfig, messageConfig];
-    askSummonForm(activity, usageConfig.summons ?? {}).then(choice => choice ? exclusive(() => castWithForm(activity, usage, choice)) : null)
+    const options = { chooseCount, chooseLevel: chooseCount && (dialogConfig?.configure !== false) && activity.requiresSpellSlot,
+      slot: usageConfig.spell?.slot ?? null };
+    askSummonForm(activity, usageConfig.summons ?? {}, options).then(choice => choice ? exclusive(() => castWithForm(activity, usage, choice)) : null)
       .catch(err => console.error(`${MODULE_ID} | summon form`, err));
     return false;
   }

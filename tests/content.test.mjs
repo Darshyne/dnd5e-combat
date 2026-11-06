@@ -177,7 +177,7 @@ describe("contenu livré", () => {
       "commanding-presence", "compelled-duel", "compulsion", "confusion", "conjure-animals", "conjure-barrage", "conjure-celestial",
       "conjure-elemental", "conjure-fey", "conjure-minor-elementals", "conjure-volley", "conjure-woodland-beings", "consume-life",
       "contact-other-plane", "contagion", "continual-flame", "cordon-of-arrows", "corrosive-form", "cosmic-omen", "countercharm",
-      "counterspell", "coward-spirit", "crossbow-expert", "crown-of-madness", "crusaders-mantle", "crusher", "cunning-action",
+      "counterspell", "coward-spirit", "create-undead", "crossbow-expert", "crown-of-madness", "crusaders-mantle", "crusher", "cunning-action",
       "cunning-strike", "cutting-words", "dagger-of-venom", "dancing-lights", "dark-ones-blessing", "dark-ones-own-luck", "darkness",
       "daylight", "death-burst", "death-curse", "death-throes", "death-ward", "deathless-agility", "deathly-stench",
       "decanter-of-endless-water", "defense", "defensive-duelist", "defensive-tactics", "deflect-attacks", "deflect-blow",

@@ -13,11 +13,32 @@
  */
 export function pickSpellSlot(slots, proposed, spellLevel) {
   const has = key => (Number(slots?.[key]?.value) || 0) > 0;
-  if ( has(proposed) ) return proposed;
+  // §384 : l'emplacement proposé doit aussi être assez haut (un emplacement de pacte de niveau 3 ne lance pas un sort de niveau 6 —
+  // dnd5e le « lancerait » au niveau 3). Un emplacement sans niveau connu est pris tel quel.
+  const highEnough = key => !Number(slots?.[key]?.level) || (Number(slots[key].level) >= spellLevel);
+  if ( has(proposed) && highEnough(proposed) ) return proposed;
   const candidates = Object.entries(slots ?? {})
     .filter(([key, slot]) => /^(spell\d+|pact)$/.test(key) && has(key) && ((Number(slot.level) || 0) >= spellLevel))
     .sort(([ka, a], [kb, b]) => ((Number(a.level) || 0) - (Number(b.level) || 0)) || (Number(ka === "pact") - Number(kb === "pact")));
   return candidates[0]?.[0] ?? null;
+}
+
+/**
+ * §384 (issue #38, suite) : l'emplacement d'un sort que le MJ lance sans emplacement (« Lancer quand même », §77). dnd5e fixe le niveau
+ * de lancement d'après l'emplacement proposé (`_prepareUsageScaling`, documents/activity/mixin.mjs : `scaling` = niveau de l'emplacement
+ * − niveau du sort) — un Occultiste qui n'a que des emplacements de pacte de niveau 3 « lançait » Création de morts-vivants (niveau 6)
+ * au niveau 3 : 3 − 3 = 0 goule, « There must be at least one Token to be placed » ; Convocation de céleste au niveau 3, esprit faux.
+ * Rend l'emplacement à mettre : celui proposé s'il est au moins du niveau du sort, sinon celui du niveau du sort (`spell<n>`, qui
+ * existe toujours dans `system.spells`, même à 0). Null pour un tour de magie ou sans emplacement proposé.
+ * @param {Record<string, {level: number}>} slots
+ * @param {string|null} proposed
+ * @param {number} spellLevel
+ * @returns {string|null}
+ */
+export function forcedSpellSlot(slots, proposed, spellLevel) {
+  if ( !(spellLevel > 0) || !proposed ) return null;
+  const level = Number(slots?.[proposed]?.level) || 0;
+  return (level >= spellLevel) ? proposed : `spell${spellLevel}`;
 }
 
 /**

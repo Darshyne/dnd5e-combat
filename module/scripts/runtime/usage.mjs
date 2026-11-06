@@ -20,7 +20,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { pickSpellSlot, misplacedSelfUses, canCastHigher } from "../core/usage.mjs";
+import { pickSpellSlot, misplacedSelfUses, canCastHigher, forcedSpellSlot } from "../core/usage.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { movableZoneOf } from "./zones.mjs";
 import { route } from "./router.mjs";
@@ -115,6 +115,16 @@ function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
   if ( usageConfig[MODULE_ID]?.forced ) {
     usageConfig.consume = { ...(usageConfig.consume ?? {}), resources: false, spellSlot: false };
     dialogConfig.configure = false;
+    // §384 : au niveau du sort, pas à celui de l'emplacement proposé (pacte de niveau 3 pour un sort de niveau 6).
+    if ( activity.requiresSpellSlot ) {
+      const level = Number(activity.item.system.level) || 0;
+      const slot = forcedSpellSlot(activity.actor?.system.spells, usageConfig.spell?.slot, level);
+      if ( slot && (slot !== usageConfig.spell?.slot) ) {
+        log(`${activity.item.name}: cast anyway at its own level ${level} (not the ${usageConfig.spell?.slot} slot)`);
+        usageConfig.spell = { ...(usageConfig.spell ?? {}), slot };
+        if ( (usageConfig.scaling !== false) && !(usageConfig.scaling > 0) ) usageConfig.scaling = 0;
+      }
+    }
     return;
   }
   let auto = !!dialogConfig?.configure && game.settings.get(MODULE_ID, AUTO_USAGE_SETTING) && !needsChoice(activity);

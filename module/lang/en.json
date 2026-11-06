@@ -2120,5 +2120,10 @@
   "DND5ECOMBAT.Reglages.Groupe.awaiting": "Waiting hourglass",
   "DND5ECOMBAT.Reglages.Groupe.other": "Other settings",
   "DND5ECOMBAT.Reglages.Etiquette.house": "house rule",
-  "DND5ECOMBAT.Reglages.Etiquette.dmg": "Dungeon Master's Guide aid"
+  "DND5ECOMBAT.Reglages.Etiquette.dmg": "Dungeon Master's Guide aid",
+  "DND5ECOMBAT.Invocation.ChoisirClic": "Choose the summoned creature's form: click its card to summon it.",
+  "DND5ECOMBAT.Invocation.Choisir": "Choose the summoned creature's form, then \"Summon\".",
+  "DND5ECOMBAT.Invocation.Taille": "Size",
+  "DND5ECOMBAT.Invocation.Type": "Creature type",
+  "DND5ECOMBAT.Invocation.Invoquer": "Summon"
 }

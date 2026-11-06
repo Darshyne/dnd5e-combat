@@ -148,6 +148,9 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .dnd5e-combat-form .name { font-weight: bold; font-size: 0.9em; line-height: 1.1; margin-top: 4px; }
 .dnd5e-combat-form .cr { font-size: 0.8em; opacity: 0.8; }
 .dnd5e-combat-form.refused { opacity: 0.4; cursor: not-allowed; }
+/* §383 : la fenêtre « Choisir la forme » d'une invocation — la carte cochée. */
+.dnd5e-combat-summon-form .dnd5e-combat-form { cursor: pointer; }
+.dnd5e-combat-summon-form .dnd5e-combat-form.picked { border-color: var(--color-border-highlight, #ff6400); box-shadow: 0 0 8px var(--color-shadow-highlight, #ff6400); }
 .dnd5e-combat-form .forget { position: absolute; top: 2px; right: 4px; opacity: 0.6; cursor: pointer; }
 .dnd5e-combat-form .forget:hover { opacity: 1; }
 

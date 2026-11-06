@@ -103,3 +103,19 @@ export function registerSummonHandover() {
   route("dnd5e.postSummon", (activity, profile, tokens) => { onPostSummon(activity, profile, tokens).catch(err => console.error(`${MODULE_ID} | summon owners`, err)); },
     { label: "summon: the caster's players not made owners" });
 }
+
+/**
+ * §383 (issue #38) : intention « invoquer cette forme » (fenêtre « Choisir la forme », ui/summon-form.mjs) — l'utilisation suspendue
+ * repart telle quelle (emplacement choisi dans la barre, consommations), sans la fenêtre de dnd5e, avec la forme choisie
+ * (`usageConfig.summons`, lu par `placeSummons`, documents/activity/summon.mjs) et marquée choisie (`summonForm`) pour ne pas
+ * redemander.
+ * @param {Activity} activity
+ * @param {[object, object, object]} usage
+ * @param {{ profile: string, creatureSize?: string, creatureType?: string }} choice
+ */
+export function castWithForm(activity, [config, dialog, message], choice) {
+  const use = { ...config, summons: { ...(config?.summons ?? {}), ...choice },
+    [MODULE_ID]: { ...(config?.[MODULE_ID] ?? {}), summonForm: true } };
+  log(`${activity.item?.name}: form chosen (${activity.profiles?.find(p => p._id === choice.profile)?.name || choice.profile})`);
+  return activity.use(use, { ...(dialog ?? {}), configure: false }, message);
+}

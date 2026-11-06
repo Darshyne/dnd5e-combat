@@ -26,3 +26,29 @@ export function summonOwnership(casterOwnership, current, isGM) {
   if ( !missing.length ) return null;
   return { ...(current ?? {}), ...Object.fromEntries(missing.map(id => [id, OWNER])) };
 }
+
+/**
+ * §383 (issue #38) : ce qu'une activité « summon » laisse choisir — plusieurs profils (Convocation de céleste : Vengeur / Défenseur),
+ * plusieurs tailles (illusions) ou plusieurs types de créature (Appel de familier : céleste, fée, fiélon). dnd5e ne le demande que
+ * dans sa fenêtre d'utilisation (applications/activity/summon-usage-dialog.mjs) ; un appel qui la saute (`configure: false` : barre
+ * d'actions, manette) garde le premier de chaque, sans rien demander.
+ * @param {{ profiles?: number, sizes?: number, types?: number }} counts
+ * @returns {{ profile: boolean, size: boolean, type: boolean, any: boolean }}
+ */
+export function summonChoices({ profiles=0, sizes=0, types=0 }={}) {
+  const profile = profiles > 1;
+  const size = (profiles > 0) && (sizes > 1);
+  const type = (profiles > 0) && (types > 1);
+  return { profile, size, type, any: profile || size || type };
+}
+
+/**
+ * §383 : faut-il ouvrir la fenêtre « Choisir la forme » du moteur à ce lancement ? Seulement si dnd5e ne la montre pas (`configure`
+ * faux), qu'il y a un choix, que quelque chose sera invoqué (pose prévue, invocation forcée par le contenu, ou reprise sur des cibles),
+ * et que l'appelant n'a ni déjà choisi (`chosen`) ni confirmé d'office (`confirmed` : relances du moteur, connecteur, scénarios).
+ */
+export function asksSummonForm({ configure, choices, willSummon, chosen=false, confirmed=false, otherChoice=false }) {
+  if ( configure !== false ) return false;
+  if ( chosen || confirmed || otherChoice ) return false;
+  return !!choices?.any && !!willSummon;
+}

@@ -209,3 +209,43 @@ export function damageTypes({ tokenId, itemId }) {
   if ( !activity ) throw new Error("attack activity not found");
   return { name: item.name, base: Array.from(item.system.damage?.base?.types ?? []), choices: damageTypeChoices(activity) };
 }
+
+/**
+ * §383 (issue #38) : lancer une invocation comme la barre d'actions de DAS · Combat UI (`activity.use({ spell: { slot } },
+ * { configure: false })`, sans `confirmed` : la fenêtre « Choisir la forme » du moteur doit s'ouvrir), sans rien consommer. La pose
+ * qui suivra est notée et faite à la case donnée (le placement interactif de dnd5e, `getPlacement`, est remplacé sur l'instance
+ * d'activité que `dnd5e.preSummon` reçoit — la copie mise à l'échelle). Ne fait pas attendre la fenêtre : rend tout de suite.
+ * `sheet: true` : comme depuis la fiche (voir plus bas).
+ */
+let summonWatch = null;
+export function castFromBar({ tokenId, itemId, slot=null, x, y, sheet=false }) {
+  gmOnly();
+  const token = canvas.scene?.tokens.get(tokenId);
+  const item = token?.actor?.items.get(itemId);
+  const activity = item?.system.activities.find(a => a.type === "summon");
+  if ( !activity ) throw new Error("summon activity not found");
+  if ( summonWatch ) Hooks.off("dnd5e.preSummon", summonWatch.hook);
+  const watch = summonWatch = { item: item.id, summoned: null, tokens: null };
+  watch.hook = Hooks.on("dnd5e.preSummon", (a, profile, options) => {
+    if ( a.item?.id !== watch.item ) return;
+    watch.summoned = { profile: profile?._id ?? null, name: profile?.name ?? null, uuid: profile?.uuid ?? null,
+      creatureSize: options?.creatureSize ?? null, creatureType: options?.creatureType ?? null };
+    a.getPlacement = async () => [{ x, y, elevation: token.elevation ?? 0, rotation: 0 }];
+    Hooks.off("dnd5e.preSummon", watch.hook);
+  });
+  watch.tokenHook = Hooks.on("dnd5e.postSummon", (a, profile, tokens) => {
+    if ( a.item?.id !== watch.item ) return;
+    watch.tokens = (tokens ?? []).map(t => ({ id: t.id, name: t.name, actorId: t.actorId }));
+    Hooks.off("dnd5e.postSummon", watch.tokenHook);
+  });
+  // `sheet` : comme un clic dans la fiche (`activity.use()` ordinaire, fenêtre de dnd5e, consommation) — sans emplacement, le MJ reçoit
+  // « Plus de charge » (§77), dont la relance saute la fenêtre de dnd5e.
+  (sheet ? activity.use() : activity.use({ consume: false, ...(slot ? { spell: { slot } } : {}) }, { configure: false }))
+    .catch(err => console.error(`${MODULE_ID} | castFromBar`, err));
+  return { started: true, profiles: activity.availableProfiles.map(p => ({ id: p._id, name: p.name })) };
+}
+
+/** §383 : ce que la dernière `castFromBar` a invoqué (profil reçu par dnd5e, tokens posés), ou null tant que rien n'est parti. */
+export function summonCaptured() {
+  return summonWatch ? { summoned: summonWatch.summoned, tokens: summonWatch.tokens } : null;
+}

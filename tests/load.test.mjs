@@ -29,7 +29,7 @@ describe("chargement du module", () => {
   });
 
   it("expose ses fonctions de test au connecteur sous api.mcp (call-module-api), et elles seules", () => {
-    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "advanceTime", "animations", "atCost", "attackReasons", "awaiting", "barrier", "budget", "burning", "castPicked", "catalyst",
+    expect(Object.keys(api.api.mcp).sort()).toEqual(["actionEnd", "advanceTime", "animations", "atCost", "attackReasons", "awaiting", "barrier", "budget", "burning", "castFromBar", "castPicked", "catalyst",
       "chainCheck", "chatCards", "climb", "climbCeiling", "climbDown", "climbHolds", "climbState", "climbToward", "clock", "closeWindow", "concentrate", "controls",
       "cover", "coverPreview", "damageTypes", "dash", "debugClear", "debugReport", "debugThrow", "debugVerbose", "diagnosticBackups", "diagnosticForget", "diagnosticRepair", "diagnosticRestore", "diagnosticScan",
       "door", "dropDown", "effectOrigins", "enchant", "endings", "etherealWalls", "factions", "familiar", "familiarPocket", "familiarRecall",
@@ -37,7 +37,7 @@ describe("chargement du module", () => {
       "lightState", "lock", "longRest", "makeScroll", "masteries", "menu", "move", "movement", "naturalOne", "overrideContent", "owners", "perceived", "perf", "pickTargets", "placeItemEffect", "placeMenu", "placeRegionAt",
       "plan", "planning", "portent", "range", "rangeCheck", "rangedPlacement", "rawMove", "reachCheck", "ready", "reload", "removeItemEffect", "reports", "restoreItem", "rollCard",
       "rollCheck", "rollSave", "runMacro", "saveChance", "scatter", "scrollReading", "sees", "sequencer", "setting", "settingsChanged", "shortRest", "skillAid", "skillAids",
-      "stairs", "stairsAt", "stand", "stats", "status", "stealth", "storm", "stormStrike", "summonAt", "takeStairs", "teleport",
+      "stairs", "stairsAt", "stand", "stats", "status", "stealth", "storm", "stormStrike", "summonAt", "summonCaptured", "takeStairs", "teleport",
       "teleportPick", "threats", "timer", "toggleLight", "tokenLight", "transpose", "unfollow", "upkeep", "use", "view", "viewScene", "waits", "wall", "wallSide", "windows"]);
     expect(Object.isFrozen(api.api.mcp)).toBe(true);
   });

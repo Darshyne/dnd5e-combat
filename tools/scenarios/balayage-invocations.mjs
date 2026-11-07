@@ -104,6 +104,7 @@ export default {
         const profiles = started.profiles ?? [];
         // Les fenêtres, jusqu'à ce que dnd5e invoque (ou abandonne) : on choisit la dernière forme, et 2 créatures s'il y a un nombre.
         let chose = null;
+        let wanted = null;
         let sawChoice = false;
         let captured = null;
         for ( let i = 0; i < 24; i++ ) {
@@ -118,9 +119,12 @@ export default {
             if ( radio.length || count ) {
               sawChoice = sawChoice || (radio.length > 1) || !!count;
               chose = radio.length ? radio[radio.length - 1].value : (chose ?? null);
-              const answer = { ...(radio.length ? { profile: chose } : {}),
-                ...(count && (count.options ?? []).some(o => o.value === "2") ? { count: "2" } : {}) };
-              await ctx.call("answer-dialog", { id: w.id, fields: answer, button: "summon" }).catch(() => {});
+              // En deux temps, comme un joueur : la forme d'abord (elle redessine la liste des nombres), puis le nombre.
+              let state = w;
+              if ( radio.length ) state = (await ctx.call("answer-dialog", { id: w.id, fields: { profile: chose }, waitMs: 300 }).catch(() => null))?.window ?? w;
+              const counts = (state.fields ?? []).find(f => f.name === "count");
+              wanted = (counts && (counts.options ?? []).some(o => o.value === "2")) ? 2 : null;
+              await ctx.call("answer-dialog", { id: w.id, fields: wanted ? { count: "2" } : {}, button: "summon" }).catch(() => {});
             } else if ( select ) {
               sawChoice = sawChoice || ((select.options ?? []).length > 1);
               chose = (select.options ?? []).at(-1)?.value ?? null;
@@ -140,6 +144,7 @@ export default {
         if ( chose && captured?.summoned?.profile && (captured.summoned.profile !== chose) ) problems.push(`forme invoquée ${captured.summoned.name || captured.summoned.profile}, pas celle choisie`);
         if ( !tokensOut.length ) problems.push("aucune créature posée");
         const expected = Number(captured?.summoned?.count) || null;
+        if ( wanted && expected && (expected !== wanted) ) problems.push(`${wanted} créature(s) choisie(s), dnd5e en compte ${expected}`);
         if ( tokensOut.length && expected && (tokensOut.length !== expected) ) problems.push(`${tokensOut.length} posée(s) pour ${expected} attendue(s)`);
         if ( captured?.summoned?.level && (captured.summoned.level < level) ) problems.push(`lancé au niveau ${captured.summoned.level} (sort de niveau ${level})`);
         if ( mm && String(captured?.summoned?.uuid ?? "").startsWith("Compendium.dnd5e.monsters.") ) problems.push("créature du SRD 2014");

@@ -38,7 +38,9 @@ const hand = piloted(60, "command", { pilot: { occupies: false }, summon: { ends
 export const SUMMONS = Object.freeze({
   "summon-aberration": vanishing, "summon-beast": vanishing, "summon-celestial": vanishing, "summon-construct": vanishing,
   "summon-dragon": vanishing, "summon-elemental": vanishing, "summon-fey": vanishing, "summon-fiend": vanishing, "summon-undead": vanishing,
-  "animate-objects": after, "giant-insect": vanishing,
+  // §390 (issue #38, décision de l'utilisateur) : Animation des objets sans objet à viser ; la taille (TG, G, M, P, TP — une seule par
+  // lancement, simplification) et le nombre au choix, jusqu'au `count` de son profil (« floor(@attributes.spell.mod / 3) » pour TG…).
+  "animate-objects": { ...after, untargeted: true, chooseCount: true }, "giant-insect": vanishing,
   // §385 (issue #38, décision de l'utilisateur) : Création de morts-vivants sans corps à viser ; le lanceur choisit combien de goules
   // (« jusqu'à trois », plus au-dessus), ou de blêmes / nécrophages / momies selon le niveau. Elles jouent à leur propre Initiative.
   "create-undead": { initiative: "own", untargeted: true, chooseCount: true },

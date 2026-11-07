@@ -72,7 +72,10 @@ export async function askSummonForm(activity, current={}, { chooseCount=false, c
   let level = levels.length ? levels[0].level : fixedLevel;
   let slotKey = levels.length ? levels[0].slot : null;
   const rollAt = lvl => ({ ...baseRollData, item: { ...(baseRollData.item ?? {}), level: lvl } });
-  const profilesAt = lvl => (chooseCount ? summonProfilesAt(activity, lvl) : Array.from(activity.availableProfiles ?? []));
+  // §390 : une forme dont le nombre tombe à 0 à ce niveau (objet TG avec un modificateur d'incantation de 2) n'est pas proposée.
+  const profilesAt = lvl => (chooseCount
+    ? summonProfilesAt(activity, lvl).filter(p => summonCountAt(activity, p, lvl, countFormula) !== 0)
+    : Array.from(activity.availableProfiles ?? []));
   if ( !profilesAt(level).length ) return null;
 
   let picked = profilesAt(level).some(p => p._id === current.profile) ? current.profile : profilesAt(level)[0]._id;

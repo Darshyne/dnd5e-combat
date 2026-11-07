@@ -94,3 +94,14 @@ export function srdMonsterId(uuid) {
   const m = /^Compendium\.dnd5e\.monsters\.(?:Actor\.)?([A-Za-z0-9]{16})$/.exec(String(uuid ?? ""));
   return m ? m[1] : null;
 }
+
+/**
+ * §391 (issue #38, suite) : faut-il ouvrir la fenêtre du moteur pour choisir un profil d'**enchantement** (Arme élémentaire : l'élément ;
+ * Arme magique, armes +1/+2/+3 : le bonus) ou de **transformation** (Métamorphose suprême) ? Comme `asksSummonForm` : seulement quand
+ * la fenêtre de dnd5e est sautée (`configure` faux : barre ; relance « Lancer quand même »), plusieurs profils, ni déjà choisi, ni
+ * confirmé d'office, ni un chemin du moteur qui choisit lui-même (`own` : Forme sauvage).
+ */
+export function asksProfile({ configure, profiles=0, chosen=false, confirmed=false, own=false }) {
+  if ( (configure !== false) || chosen || confirmed || own ) return false;
+  return profiles > 1;
+}

@@ -157,3 +157,50 @@ export async function askSummonForm(activity, current={}, { chooseCount=false, c
   const answer = await whileAwaiting(activity.actor ?? null, "choice", ask);
   return (answer && (typeof answer === "object")) ? answer : null;
 }
+
+/**
+ * §391 : la même fenêtre pour un enchantement ou une transformation à plusieurs profils (Arme élémentaire, Arme magique, armes +1/+2/+3,
+ * Métamorphose suprême), quand la fenêtre de dnd5e est sautée. Une carte par profil : l'effet d'enchantement (nom, icône) ou la forme de
+ * transformation (nom, créature). Un clic choisit. Rend `{ enchantmentProfile }` ou `{ transform: { profile } }`, ou null.
+ * @param {Activity} activity  Une activité « enchant » ou « transform ».
+ * @param {object} usageConfig  Ce que dnd5e a préparé (le profil coché d'avance).
+ */
+export async function askProfile(activity, usageConfig={}) {
+  const enchant = activity.type === "enchant";
+  const list = Array.from((enchant ? activity.availableEnchantments : activity.availableProfiles) ?? []);
+  if ( list.length < 2 ) return null;
+  const forms = list.map(p => {
+    if ( enchant ) {
+      const effect = p.effect ?? activity.item?.effects?.get?.(p._id) ?? null;
+      return { id: p._id, label: effect?.name ?? p._id, creature: null, img: effect?.img || activity.item?.img || "icons/svg/aura.svg" };
+    }
+    const actor = p.uuid ? fromUuidSync(p.uuid, { strict: false }) : null;
+    const label = p.name || actor?.name || p.effect?.name || p._id;
+    return { id: p._id, label, creature: (actor?.name && (actor.name !== label)) ? actor.name : null,
+      img: actor?.img || p.effect?.img || activity.item?.img || "icons/svg/mystery-man.svg" };
+  });
+  const current = enchant ? usageConfig.enchantmentProfile : usageConfig.transform?.profile;
+  const picked = forms.some(f => f.id === current) ? current : forms[0].id;
+  const content = `<p class="hint">${esc(loc("Invocation.ChoisirProfil"))}</p>
+    <div class="dnd5e-combat-forms">${cardsHtml(forms, picked)}</div>`;
+  const ask = () => foundry.applications.api.DialogV2.wait({
+    window: { title: activity.item.name, icon: enchant ? "fa-solid fa-wand-magic-sparkles" : "fa-solid fa-paw" },
+    classes: ["dnd5e-combat-summon-form"],
+    position: { width: Math.min(140 * Math.max(forms.length, 2) + 60, 760) },
+    content,
+    buttons: [{ action: "summon", label: loc("Invocation.Choisir1"), icon: "fa-solid fa-check", default: true,
+      callback: (event, button) => new foundry.applications.ux.FormDataExtended(button.form).object.profile || picked }],
+    render: (event, dialog) => {
+      const root = dialog.element;
+      for ( const card of root.querySelectorAll(".dnd5e-combat-form") ) card.addEventListener("click", () => {
+        const radio = card.querySelector("input[type=radio]");
+        if ( radio ) radio.checked = true;
+        root.querySelector('button[data-action="summon"]')?.click();
+      });
+    },
+    rejectClose: false
+  }).catch(() => null);
+  const id = await whileAwaiting(activity.actor ?? null, "choice", ask);
+  if ( !id || (typeof id !== "string") ) return null;
+  return enchant ? { enchantmentProfile: id } : { transform: { ...(usageConfig.transform ?? {}), profile: id } };
+}

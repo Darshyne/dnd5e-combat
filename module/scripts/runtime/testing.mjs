@@ -47,6 +47,21 @@ async function closeWindow({ id }) {
   return { closed: true };
 }
 
+/**
+ * §391 : clique la carte n° `index` (les grisées exclues) d'une fenêtre du moteur à cartes (`.dnd5e-combat-form` : arme d'Arme
+ * élémentaire, forme d'invocation, forme sauvage…), comme un joueur — le connecteur sait remplir un champ et cliquer un bouton, pas une
+ * carte. Rend ce qui a été cliqué.
+ */
+function clickCard({ id, index=0 }) {
+  gmOnly();
+  const app = foundry.applications.instances.get(id);
+  const cards = [...(app?.element?.querySelectorAll(".dnd5e-combat-form:not(.refused)") ?? [])];
+  const card = cards[index] ?? null;
+  if ( !card ) return { clicked: false, cards: cards.length };
+  card.click();
+  return { clicked: true, cards: cards.length, uuid: card.dataset.uuid ?? card.dataset.profile ?? null };
+}
+
 /** Les items signalés en partie par le MJ (SPEC §9.2), pour le bilan relu par Claude. */
 function reports() {
   return { entries: itemReports(), text: reportsText(itemReports()) };
@@ -532,4 +547,4 @@ async function atCost({ action="list", id=null, cost, card=null, tokenId=null, m
   throw new Error(`unknown action: ${action}`);
 }
 
-export const testApi = Object.freeze({ atCost, barrier, gmAlerts, controls, menu, wall, wallSide, cover, coverPreview, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, rangeCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, summonAt, castFromBar, summonCaptured, owners, makeScroll, scrollReading, hampered, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, hood, removeItemEffect, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, awaiting, forcePlayerWait, pickTargets, castPicked , debugThrow, debugReport, debugClear, debugVerbose, connectionTest });
+export const testApi = Object.freeze({ atCost, barrier, gmAlerts, controls, menu, wall, wallSide, cover, coverPreview, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, rangeCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, clickCard, summonAt, castFromBar, summonCaptured, owners, makeScroll, scrollReading, hampered, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, hood, removeItemEffect, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, awaiting, forcePlayerWait, pickTargets, castPicked , debugThrow, debugReport, debugClear, debugVerbose, connectionTest });

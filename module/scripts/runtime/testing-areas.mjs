@@ -218,14 +218,24 @@ export function damageTypes({ tokenId, itemId }) {
  * `sheet: true` : comme depuis la fiche (voir plus bas).
  */
 let summonWatch = null;
-export function castFromBar({ tokenId, itemId, slot=null, x, y, sheet=false }) {
+export function castFromBar({ tokenId, itemId, slot=null, x, y, sheet=false, type="summon", targetIds=null }) {
   gmOnly();
   const token = canvas.scene?.tokens.get(tokenId);
   const item = token?.actor?.items.get(itemId);
-  const activity = item?.system.activities.find(a => a.type === "summon");
-  if ( !activity ) throw new Error("summon activity not found");
-  if ( summonWatch ) Hooks.off("dnd5e.preSummon", summonWatch.hook);
-  const watch = summonWatch = { item: item.id, summoned: null, tokens: null };
+  // §391 : aussi une activité d'enchantement ou de transformation (`type`) ; le profil reçu par dnd5e est relevé à `postUseActivity`.
+  const activity = item?.system.activities.find(a => a.type === type);
+  if ( !activity ) throw new Error(`${type} activity not found`);
+  if ( summonWatch ) {
+    Hooks.off("dnd5e.preSummon", summonWatch.hook);
+    if ( summonWatch.useHook ) Hooks.off("dnd5e.postUseActivity", summonWatch.useHook);
+  }
+  const watch = summonWatch = { item: item.id, summoned: null, tokens: null, used: null };
+  watch.useHook = Hooks.on("dnd5e.postUseActivity", (a, usage) => {
+    if ( (a.item?.id !== watch.item) || (a.type !== type) ) return;
+    watch.used = { enchantmentProfile: usage?.enchantmentProfile ?? null, transformProfile: usage?.transform?.profile ?? null,
+      level: a.item?.system?.level ?? null };
+    Hooks.off("dnd5e.postUseActivity", watch.useHook);
+  });
   watch.hook = Hooks.on("dnd5e.preSummon", (a, profile, options) => {
     if ( a.item?.id !== watch.item ) return;
     watch.summoned = { profile: profile?._id ?? null, name: profile?.name ?? null, uuid: profile?.uuid ?? null,
@@ -245,12 +255,18 @@ export function castFromBar({ tokenId, itemId, slot=null, x, y, sheet=false }) {
   });
   // `sheet` : comme un clic dans la fiche (`activity.use()` ordinaire, fenêtre de dnd5e, consommation) — sans emplacement, le MJ reçoit
   // « Plus de charge » (§77), dont la relance saute la fenêtre de dnd5e.
+  // §391 : les cibles désignées avant de lancer (Métamorphose suprême vise une créature ; sans elles, le moteur attend un clic).
+  if ( Array.isArray(targetIds) ) {
+    for ( const t of game.user.targets ) t.setTarget(false, { releaseOthers: false });
+    for ( const id of targetIds ) canvas.tokens.get(id)?.setTarget(true, { releaseOthers: false });
+  }
   (sheet ? activity.use() : activity.use({ consume: false, ...(slot ? { spell: { slot } } : {}) }, { configure: false }))
     .catch(err => console.error(`${MODULE_ID} | castFromBar`, err));
-  return { started: true, profiles: activity.availableProfiles.map(p => ({ id: p._id, name: p.name })) };
+  const list = (type === "enchant") ? activity.availableEnchantments : activity.availableProfiles;
+  return { started: true, profiles: Array.from(list ?? []).map(p => ({ id: p._id, name: p.name || p.effect?.name || "" })) };
 }
 
 /** §383 : ce que la dernière `castFromBar` a invoqué (profil reçu par dnd5e, tokens posés), ou null tant que rien n'est parti. */
 export function summonCaptured() {
-  return summonWatch ? { summoned: summonWatch.summoned, tokens: summonWatch.tokens } : null;
+  return summonWatch ? { summoned: summonWatch.summoned, tokens: summonWatch.tokens, used: summonWatch.used } : null;
 }

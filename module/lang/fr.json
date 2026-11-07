@@ -2227,5 +2227,7 @@
   "DND5ECOMBAT.Invocation.Invoquer": "Invoquer",
   "DND5ECOMBAT.Invocation.Niveau": "Niveau",
   "DND5ECOMBAT.Invocation.NiveauLibelle": "Niveau {level} — {slot} ({left} restant(s))",
-  "DND5ECOMBAT.Invocation.Nombre": "Nombre de créatures"
+  "DND5ECOMBAT.Invocation.Nombre": "Nombre de créatures",
+  "DND5ECOMBAT.Invocation.ChoisirProfil": "Choisissez une option : un clic sur sa carte la prend.",
+  "DND5ECOMBAT.Invocation.Choisir1": "Choisir"
 }

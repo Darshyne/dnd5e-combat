@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { initiativeAfter } from "../module/scripts/core/turn.mjs";
-import { summonOwnership, summonChoices, asksSummonForm, profilesAtLevel, countChoices, mmActorId, srdMonsterId } from "../module/scripts/core/summon.mjs";
+import { summonOwnership, summonChoices, asksSummonForm, profilesAtLevel, countChoices, mmActorId, srdMonsterId, asksProfile } from "../module/scripts/core/summon.mjs";
 
 describe("initiative d'une créature invoquée (§16.13)", () => {
   it("juste sous l'invocateur, au-dessus du suivant", () => {
@@ -205,5 +205,18 @@ describe("§386 : créatures du Monster Manual 2024 plutôt que du SRD 2014", ()
     expect(srdMonsterId("Compendium.dnd5e.actors24.Actor.OBujQLLPSmlJiZnL")).toBeNull();
     expect(srdMonsterId("Compendium.dnd-players-handbook.actors.Actor.phbcesAngelSpiri")).toBeNull();
     expect(srdMonsterId(null)).toBeNull();
+  });
+});
+
+describe("§391 : profil d'enchantement ou de transformation sans la fenêtre de dnd5e", () => {
+  it("demandé quand la fenêtre est sautée et qu'il y a plusieurs profils", () => {
+    expect(asksProfile({ configure: false, profiles: 3 })).toBe(true);
+  });
+  it("pas avec la fenêtre de dnd5e, un seul profil, déjà choisi, confirmé ou la Forme sauvage", () => {
+    expect(asksProfile({ configure: true, profiles: 3 })).toBe(false);
+    expect(asksProfile({ configure: false, profiles: 1 })).toBe(false);
+    expect(asksProfile({ configure: false, profiles: 3, chosen: true })).toBe(false);
+    expect(asksProfile({ configure: false, profiles: 3, confirmed: true })).toBe(false);
+    expect(asksProfile({ configure: false, profiles: 3, own: true })).toBe(false);
   });
 });

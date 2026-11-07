@@ -117,7 +117,9 @@ for ( const { pack, ownerName, item } of items ) {
     const sizes = (a.creatureSizes ?? []).length;
     const types = (a.creatureTypes ?? []).length;
     // Une invocation à plusieurs formes a la fenêtre « Choisir la forme » du moteur (§383) : signalée à part, couverte.
-    if ( (profiles.length > 1) || (sizes > 1) || (types > 1) ) flags.push(a.type === "summon" ? "formes (couvert §383)" : `formes ${a.type}`);
+    // Enchantements et transformations : la même fenêtre du moteur (§391) ; la Forme sauvage a la sienne (§16.39).
+    if ( (profiles.length > 1) || (sizes > 1) || (types > 1) ) flags.push(a.type === "summon" ? "formes (couvert §383)"
+      : (["wild-shape", "circle-forms"].includes(identifier) ? "formes (couvert §16.39)" : `formes (couvert §391) ${a.type}`));
     if ( profiles.some(p => (p.level?.min ?? null) !== null || (p.level?.max ?? null) !== null) ) flags.push("par-niveau");
     const targetCount = (a.target?.override ? a.target?.affects?.count : s.target?.affects?.count) ?? "";
     if ( a.type === "summon" ) {
@@ -154,7 +156,7 @@ const risky = rows.filter(r => r.flags.some(f => !covered(f)));
 writeFileSync(out, JSON.stringify({ at: new Date().toISOString(), rows }, null, 1));
 const by = key => rows.filter(r => r.flags.some(f => (key === "srd-2014 (") ? (f.startsWith("srd-2014 ") && f.includes("sans équivalent")) : f.startsWith(key))).length;
 console.log(`${rows.length} activités (summon / transform / enchant), ${risky.length} à risque`);
-for ( const key of ["formes (couvert", "formes transform", "formes enchant", "par-niveau", "nombre", "srd-2014 couvert", "srd-2014 (", "introuvable", "ne-pose-rien", "vise"] ) console.log(`  ${key} : ${by(key)}`);
+for ( const key of ["formes (couvert", "par-niveau", "nombre", "srd-2014 couvert", "srd-2014 (", "introuvable", "ne-pose-rien", "vise"] ) console.log(`  ${key} : ${by(key)}`);
 
 if ( md ) {
   const line = r => `| ${r.item}${r.owner ? ` (${r.owner})` : ""} | \`${r.identifier ?? "—"}\` | ${r.type} | ${r.profiles.length} | ${r.flags.join(" ; ")} | ${r.engine.join(", ") || "—"} |`;

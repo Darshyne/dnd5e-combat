@@ -2227,5 +2227,7 @@
   "DND5ECOMBAT.Invocation.Invoquer": "Summon",
   "DND5ECOMBAT.Invocation.Niveau": "Level",
   "DND5ECOMBAT.Invocation.NiveauLibelle": "Level {level} — {slot} ({left} left)",
-  "DND5ECOMBAT.Invocation.Nombre": "Number of creatures"
+  "DND5ECOMBAT.Invocation.Nombre": "Number of creatures",
+  "DND5ECOMBAT.Invocation.ChoisirProfil": "Choose an option: click its card to take it.",
+  "DND5ECOMBAT.Invocation.Choisir1": "Choose"
 }

@@ -122,3 +122,13 @@ export function castWithForm(activity, [config, dialog, message], choice) {
   log(`${activity.item?.name}: form chosen (${activity.profiles?.find(p => p._id === choice.profile)?.name || choice.profile})`);
   return activity.use(use, { ...(dialog ?? {}), configure: false }, message);
 }
+
+/**
+ * §391 : intention « prendre ce profil » (enchantement, transformation) — l'utilisation repart telle quelle, sans la fenêtre de dnd5e,
+ * avec le profil choisi (`enchantmentProfile` ou `transform.profile`, documents/activity/enchant.mjs et transform.mjs) et marquée choisie.
+ */
+export function castWithProfile(activity, [config, dialog, message], choice) {
+  const use = { ...config, ...choice, [MODULE_ID]: { ...(config?.[MODULE_ID] ?? {}), summonForm: true } };
+  log(`${activity.item?.name}: profile chosen (${choice?.enchantmentProfile ?? choice?.transform?.profile})`);
+  return activity.use(use, { ...(dialog ?? {}), configure: false }, message);
+}

@@ -41,9 +41,9 @@ import { enchantWith, pactWith } from "../runtime/enchant.mjs";
 import { askPact } from "./pact.mjs";
 import { askEnchantWeapon } from "./enchant.mjs";
 import { takeForm } from "../runtime/wildshape.mjs";
-import { askSummonForm } from "./summon-form.mjs";
-import { castWithForm } from "../runtime/summon-handover.mjs";
-import { asksSummonForm } from "../core/summon.mjs";
+import { askSummonForm, askProfile } from "./summon-form.mjs";
+import { castWithForm, castWithProfile } from "../runtime/summon-handover.mjs";
+import { asksSummonForm, asksProfile } from "../core/summon.mjs";
 import { shapeCenter } from "../core/area.mjs";
 import { targetRule, targetRefusal } from "../core/targeting.mjs";
 import { relationForTargeting } from "../adapter/factions.mjs";
@@ -342,6 +342,25 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     const usage = [usageConfig, dialogConfig, messageConfig];
     askPickTargets(activity).then(choice => !choice ? null : exclusive(() => castOnPicked(activity, usage, choice)))
       .catch(err => console.error(`${MODULE_ID} | creatures of your choice`, err));
+    return false;
+  }
+  // §391 (issue #38) : un enchantement ou une transformation à plusieurs profils lancé sans la fenêtre de dnd5e (barre, « Lancer quand
+  // même ») — le profil (l'élément d'Arme élémentaire, le bonus d'une arme +1/+2/+3…) se choisit dans la fenêtre du moteur, avant ses
+  // chemins propres (Pacte de la lame, Arme élémentaire). La Forme sauvage a déjà la sienne (§16.39).
+  // Les chemins du moteur qui relancent eux-mêmes sans la fenêtre de dnd5e : l'arme d'une créature déjà désignée (Arme élémentaire,
+  // Arme magique : `enchantWith`, `configure: false`) et le Pacte de la lame (`pactWith`) — sans ceci, l'élément n'était jamais
+  // demandé quand une cible était déjà désignée (balayage des enchantements).
+  const enchantKind = (activity?.type === "enchant") ? enchantTargetOf(activity) : null;
+  const skipsDialog = (dialogConfig?.configure === false) || (enchantKind === "ownWeapon")
+    || ((enchantKind === "weapon") && (!!ours.engaged || (game.user.targets.size > 0)));
+  if ( ["enchant", "transform"].includes(activity?.type) && canvas.ready && activity.actor?.isOwner
+    && asksProfile({ configure: skipsDialog ? false : dialogConfig?.configure, chosen: !!ours.summonForm, confirmed: !!ours.confirmed, own: isWildShape(activity),
+      profiles: ((activity.type === "enchant") ? activity.availableEnchantments : activity.availableProfiles)?.length ?? 0 }) ) {
+    closeSheetFor(activity);
+    stopTargeting();
+    const usage = [usageConfig, dialogConfig, messageConfig];
+    askProfile(activity, usageConfig).then(choice => choice ? exclusive(() => castWithProfile(activity, usage, choice)) : null)
+      .catch(err => console.error(`${MODULE_ID} | profile choice`, err));
     return false;
   }
   // §16.41 : Arme élémentaire — le niveau et l'élément (fenêtre de dnd5e), puis la créature (visée), puis son arme.

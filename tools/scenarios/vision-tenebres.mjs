@@ -9,6 +9,7 @@
  *  - Vision véritable (120 ft) : voit dans et à travers. Vision aveugle (30 ft) : la cible dans les ténèbres (25 ft), pas celle derrière.
  * Puis Aveuglé (Occultiste, Vision véritable, Vision aveugle) et Assourdi (Humain) : seule la vision aveugle perçoit encore, le reste
  * s'entend (contour de l'ouïe) ; l'Assourdi n'entend plus rien.
+ * Puis Lumière du jour à côté : les Ténèbres sont dissipées, l'Humain voit de nouveau.
  * Écran : ce que les règles voient s'affiche net (« seen ») ou par le contour de son sens (« outline » : vision aveugle, vision
  * véritable, filtres de dnd5e) ; ce qu'elles ne voient pas n'est jamais net (caché, ou contour de l'ouïe, « heard », §62). Puis le même relevé réglage « Vision simulée » coupé, pour comparer avec le rendu du cœur seul (journal, sans attente).
  *
@@ -161,6 +162,24 @@ export default {
     await status("Rôdeur elfe", "blinded", false);
     await ctx.engine("controlToken", { tokenId: null });
     await pause(800);
+
+    // 4 quater. Lumière du jour (niveau 3) posée à 20 ft des Ténèbres (niveau 2) : elles sont dissipées, l'Humain voit la cible.
+    const human = tokens["Humain"];
+    await ctx.ensureItem(human, "Compendium.dnd-players-handbook.spells.phbsplDaylight00", { system: { method: "atwill" } });
+    ctx.restore(() => ctx.removeEffectsNamed(human, /concentr/i));
+    const day = await ctx.use({ tokenId: human.id, identifier: "daylight", area: { shape: "circle", x: centre.x - (4 * grid), y: centre.y, radius: 12 * grid } });
+    ctx.expect(day.used && !!day.regionId, "Lumière du jour posée");
+    if ( day.regionId ) {
+      ctx.restore(() => ctx.call("delete-scene-object", { type: "Region", objectId: day.regionId }).catch(() => {}));
+      await pause(2500);
+      const regions = (await ctx.call("list-scene-objects", { sceneId, types: ["Region"] })).objects?.Region ?? [];
+      ctx.expect(!regions.some(r => r.id === dark.regionId), "les Ténèbres sont dissipées");
+      const after = (await ctx.engine("visionMatrix", { observerIds: [human.id], targetIds: [tokens["Cible dans les ténèbres"].id, tokens["Cible derrière les ténèbres"].id] })).rows;
+      show(after);
+      for ( const r of after ) ctx.expect(r.rules.sees && (r.screen === "seen"), `Ténèbres dissipées : l'Humain voit ${r.target} (écran : ${r.screen})`);
+      await ctx.call("delete-scene-object", { type: "Region", objectId: day.regionId }).catch(() => {});
+      await pause(1000);
+    }
 
     // 4. Réglage « Vision simulée » coupé : le rendu du cœur seul, pour comparaison (journal).
     const setting = await ctx.call("get-setting", { namespace: "dnd5e-combat", key: "vision" });

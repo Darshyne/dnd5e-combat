@@ -23,13 +23,17 @@ import { CONTENT } from "../../module/scripts/content/index.mjs";
 
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const only = (process.env.SORTS ?? "").split(",").filter(Boolean);
-const PATHS = (process.env.CHEMINS ?? "barre,fiche,sans-empl.").split(",").filter(Boolean);
+// §392 : `OBJETS=1` balaie les objets magiques (DMG, SRD 2024) au lieu des sorts — pour un objet, la barre et la fiche passent par le
+// même chemin (la fenêtre de dnd5e) : « fiche » seul.
+const ITEMS = !!process.env.OBJETS;
+const PACKS = ITEMS ? ["dnd-dungeon-masters-guide.equipment", "dnd5e.equipment24"] : ["dnd-players-handbook.spells"];
+const PATHS = (process.env.CHEMINS ?? (process.env.OBJETS ? "fiche" : "barre,fiche,sans-empl.")).split(",").filter(Boolean);
 const FULL = Object.fromEntries(Array.from({ length: 9 }, (_, i) => [`spell${i + 1}`, { value: 9, override: 9 }]));
 const EMPTY = Object.fromEntries(Array.from({ length: 9 }, (_, i) => [`spell${i + 1}`, { value: 0, override: 0 }]));
 const OWN_WINDOW = new Set(["light", "continual-flame"]);
 
 export default {
-  name: "balayage des invocations par les vrais chemins (barre, fiche, sans emplacement)",
+  name: process.env.OBJETS ? "balayage des invocations des objets magiques (DMG, SRD 2024)" : "balayage des invocations par les vrais chemins (barre, fiche, sans emplacement)",
   scene: ARENE_SORTS.name,
   audit: true,
 
@@ -65,9 +69,8 @@ export default {
     });
 
     // Les sorts du Manuel qui invoquent (activité « summon »).
-    const index = await ctx.call("list-compendium-entries", { packId: "dnd-players-handbook.spells" });
     const spells = [];
-    for ( const e of (Array.isArray(index) ? index : []) ) {
+    for ( const packId of PACKS ) for ( const e of (await ctx.call("list-compendium-entries", { packId }).catch(() => [])) ?? [] ) {
       const { data } = await ctx.call("get-compendium-entry", { uuid: e.uuid });
       const id = data.system?.identifier;
       if ( only.length && !only.includes(id) ) continue;
@@ -143,6 +146,8 @@ export default {
         if ( (forms > 1) && !sawChoice ) problems.push(`${forms} formes, aucune fenêtre de choix`);
         if ( chose && captured?.summoned?.profile && (captured.summoned.profile !== chose) ) problems.push(`forme invoquée ${captured.summoned.name || captured.summoned.profile}, pas celle choisie`);
         if ( !tokensOut.length ) problems.push("aucune créature posée");
+        // §392 : la créature réellement invoquée existe (lien du DMG réparé) — dnd5e l'a posée sous ce nom.
+        if ( tokensOut.length ) ctx.log(`${label} : ${tokensOut.map(t => t.name).join(", ")} (${String(captured?.summoned?.uuid ?? "").split(".").slice(1, 3).join(".")})`);
         const expected = Number(captured?.summoned?.count) || null;
         if ( wanted && expected && (expected !== wanted) ) problems.push(`${wanted} créature(s) choisie(s), dnd5e en compte ${expected}`);
         if ( tokensOut.length && expected && (tokensOut.length !== expected) ) problems.push(`${tokensOut.length} posée(s) pour ${expected} attendue(s)`);

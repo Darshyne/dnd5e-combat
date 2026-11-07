@@ -105,3 +105,9 @@ export function asksProfile({ configure, profiles=0, chosen=false, confirmed=fal
   if ( (configure !== false) || chosen || confirmed || own ) return false;
   return profiles > 1;
 }
+
+/** §392 : l'id d'acteur (16 caractères) au bout d'un uuid de compendium (`Compendium.p.k.Actor.<id>` ou `Compendium.p.k.<id>`), ou null. */
+export function actorIdOf(uuid) {
+  const m = /^Compendium\.[^.]+\.[^.]+\.(?:Actor\.)?([A-Za-z0-9]{16})$/.exec(String(uuid ?? ""));
+  return m ? m[1] : null;
+}

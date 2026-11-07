@@ -13,7 +13,7 @@ import { initiativeAfter } from "../core/turn.mjs";
 import { contentOf } from "./content.mjs";
 import { expiryTime } from "../core/area.mjs";
 import { readTimeFactors } from "./areas.mjs";
-import { summonChoices, profilesAtLevel, mmActorId, srdMonsterId } from "../core/summon.mjs";
+import { summonChoices, profilesAtLevel, mmActorId, srdMonsterId, actorIdOf } from "../core/summon.mjs";
 
 /**
  * §383 : ce qu'une activité « summon » laisse choisir à la pose (profils disponibles à ce niveau — `availableProfiles`,
@@ -31,6 +31,19 @@ export function summonChoicesOf(activity) {
  */
 export const MM_ACTORS = "dnd-monster-manual.actors";
 export const SRD24_ACTORS = "dnd5e.actors24";
+/** §392 : les créatures du SRD 2014 de dnd5e — le dernier recours, et la cible des liens cassés du DMG. */
+export const SRD14_ACTORS = "dnd5e.monsters";
+const REPAIR_PACKS = [MM_ACTORS, SRD24_ACTORS, "dnd-players-handbook.actors", "dnd-dungeon-masters-guide.actors"];
+
+/** §392 : l'uuid d'un acteur au même id qu'un lien cassé, dans le premier compendium d'acteurs qui l'a ; null sinon. */
+function repairedActorUuid(uuid) {
+  const id = actorIdOf(uuid);
+  if ( !id || !game.packs ) return null;
+  const actorPacks = game.packs.filter(p => p.documentName === "Actor");
+  const rank = p => { const i = REPAIR_PACKS.indexOf(p.collection); return (i >= 0) ? i : ((p.collection === SRD14_ACTORS) ? 99 : 50); };
+  const found = actorPacks.filter(p => p.index?.has(id)).sort((a, b) => rank(a) - rank(b))[0];
+  return found ? `Compendium.${found.collection}.Actor.${id}` : null;
+}
 const PREFERRED_PACKS = [MM_ACTORS, SRD24_ACTORS];
 
 /**
@@ -40,13 +53,20 @@ const PREFERRED_PACKS = [MM_ACTORS, SRD24_ACTORS];
  * chargés au démarrage du monde.
  */
 export function preferredSummonUuid(uuid) {
-  if ( !srdMonsterId(uuid) ) return uuid;
-  const id = mmActorId(fromUuidSync(uuid, { strict: false })?.name);
-  if ( !id ) return uuid;
-  for ( const packId of PREFERRED_PACKS ) {
-    if ( game.packs?.get(packId)?.index?.has(id) ) return `Compendium.${packId}.Actor.${id}`;
+  // §392 : un lien cassé vers une créature du SRD 2014 (le DMG pointe `dnd-dungeon-masters-guide.actors.Actor.<id>` pour un id qui
+  // n'existe que dans `dnd5e.monsters` : Hache des seigneurs nains, Sacs à malices, Cors du Valhalla… n'invoquaient rien).
+  // Les objets du SRD 2024 de dnd5e font l'inverse (`dnd5e.actors24.Actor.phbmobWeasel0000`, une créature du Manuel des joueurs) : le
+  // même id est cherché dans tous les compendiums d'acteurs, dans l'ordre de `REPAIR_PACKS`, puis les autres, le SRD 2014 en dernier.
+  let source = uuid;
+  if ( uuid && !srdMonsterId(uuid) && !fromUuidSync(uuid, { strict: false }) ) source = repairedActorUuid(uuid) ?? uuid;
+  if ( !srdMonsterId(source) ) return source;
+  const id = mmActorId(fromUuidSync(source, { strict: false })?.name);
+  if ( id ) {
+    for ( const packId of PREFERRED_PACKS ) {
+      if ( game.packs?.get(packId)?.index?.has(id) ) return `Compendium.${packId}.Actor.${id}`;
+    }
   }
-  return uuid;
+  return source;
 }
 
 /**

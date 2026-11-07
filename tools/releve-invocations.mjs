@@ -128,12 +128,30 @@ for ( const { pack, ownerName, item } of items ) {
       if ( (countVaries || hiddenCount) && !content?.summon?.chooseCount ) flags.push(hiddenCount ? "nombre (dans la cible)" : "nombre");
       for ( const p of profiles ) {
         if ( a.summon?.mode === "cr" ) continue;
+        // §392 : un lien cassé vers un id du SRD 2014 (DMG) — le moteur le répare comme un profil du SRD 2014.
+        const lostId = (p.uuid && !knownActor(p.uuid)) ? String(p.uuid).split(".").pop() : null;
+        if ( lostId ) {
+          const order = ["dnd-monster-manual.actors", "dnd5e.actors24", "dnd-players-handbook.actors", "dnd-dungeon-masters-guide.actors"];
+          const hits = [...actors.keys()].filter(k => k.endsWith(`.Actor.${lostId}`));
+          const rank = k => { const pk = k.split(".").slice(1, 3).join("."); const i = order.indexOf(pk); return (i >= 0) ? i : (pk === "dnd5e.monsters" ? 99 : 50); };
+          const hit = hits.sort((a, b) => rank(a) - rank(b))[0];
+          if ( hit ) {
+            const to = srdMonsterId(hit) ? preferred(hit) : null;
+            flags.push(`lien cassé couvert §392 ${actors.get(hit)} → ${to ?? hit.split(".").slice(1, 3).join(".")} (redirigé en jeu par le module, ou réparé par le moteur)`);
+            continue;
+          }
+        }
         if ( p.uuid && srdMonsterId(p.uuid) ) {
           const to = preferred(p.uuid);
           // Le moteur prend l'équivalent 2024 quand il existe (§386) : couvert ; sans équivalent, la créature 2014 reste.
           flags.push(to ? `srd-2014 couvert §386 ${knownActor(p.uuid) ?? "?"} → ${to}` : `srd-2014 ${knownActor(p.uuid) ?? "?"} (sans équivalent)`);
         }
-        if ( p.uuid && !knownActor(p.uuid) ) flags.push(`introuvable ${p.uuid}`);
+        if ( p.uuid && !knownActor(p.uuid) ) {
+          // Le même id dans un autre compendium (un lien vers le mauvais pack) ?
+          const id = String(p.uuid).split(".").pop();
+          const elsewhere = [...actors.keys()].find(k => k.endsWith(`.Actor.${id}`));
+          flags.push(`introuvable ${p.uuid}${elsewhere ? ` (même id : ${elsewhere} « ${actors.get(elsewhere)} »)` : ""}${p.name ? ` « ${p.name} »` : ""}`);
+        }
       }
       // Lumière, Flamme éternelle : le moteur pose l'objet lui-même (§16.35, contenu `light` « on: summon »).
       if ( (a.summon?.prompt === false) && !PLACES.has(identifier) && (content?.light?.on !== "summon") ) flags.push("ne-pose-rien");
@@ -151,12 +169,12 @@ for ( const { pack, ownerName, item } of items ) {
 }
 
 // « À risque » : au moins un drapeau qui n'est pas couvert par le moteur.
-const covered = f => f.startsWith("formes (couvert") || f.startsWith("srd-2014 couvert");
+const covered = f => f.startsWith("formes (couvert") || f.startsWith("srd-2014 couvert") || f.startsWith("lien cassé couvert");
 const risky = rows.filter(r => r.flags.some(f => !covered(f)));
 writeFileSync(out, JSON.stringify({ at: new Date().toISOString(), rows }, null, 1));
 const by = key => rows.filter(r => r.flags.some(f => (key === "srd-2014 (") ? (f.startsWith("srd-2014 ") && f.includes("sans équivalent")) : f.startsWith(key))).length;
 console.log(`${rows.length} activités (summon / transform / enchant), ${risky.length} à risque`);
-for ( const key of ["formes (couvert", "par-niveau", "nombre", "srd-2014 couvert", "srd-2014 (", "introuvable", "ne-pose-rien", "vise"] ) console.log(`  ${key} : ${by(key)}`);
+for ( const key of ["formes (couvert", "par-niveau", "nombre", "srd-2014 couvert", "srd-2014 (", "lien cassé couvert", "introuvable", "ne-pose-rien", "vise"] ) console.log(`  ${key} : ${by(key)}`);
 
 if ( md ) {
   const line = r => `| ${r.item}${r.owner ? ` (${r.owner})` : ""} | \`${r.identifier ?? "—"}\` | ${r.type} | ${r.profiles.length} | ${r.flags.join(" ; ")} | ${r.engine.join(", ") || "—"} |`;

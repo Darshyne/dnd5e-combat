@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { initiativeAfter } from "../module/scripts/core/turn.mjs";
-import { summonOwnership, summonChoices, asksSummonForm, profilesAtLevel, countChoices, mmActorId, srdMonsterId, asksProfile } from "../module/scripts/core/summon.mjs";
+import { summonOwnership, summonChoices, asksSummonForm, profilesAtLevel, countChoices, mmActorId, srdMonsterId, asksProfile, actorIdOf } from "../module/scripts/core/summon.mjs";
 
 describe("initiative d'une créature invoquée (§16.13)", () => {
   it("juste sous l'invocateur, au-dessus du suivant", () => {
@@ -218,5 +218,14 @@ describe("§391 : profil d'enchantement ou de transformation sans la fenêtre de
     expect(asksProfile({ configure: false, profiles: 3, chosen: true })).toBe(false);
     expect(asksProfile({ configure: false, profiles: 3, confirmed: true })).toBe(false);
     expect(asksProfile({ configure: false, profiles: 3, own: true })).toBe(false);
+  });
+});
+
+describe("§392 : l'id d'un acteur au bout d'un lien (liens cassés du DMG)", () => {
+  it("formes longue et courte", () => {
+    expect(actorIdOf("Compendium.dnd-dungeon-masters-guide.actors.Actor.sApYLZj9PTZ40wJr")).toBe("sApYLZj9PTZ40wJr");
+    expect(actorIdOf("Compendium.dnd5e.actors24.phbmobWeasel0000")).toBe("phbmobWeasel0000");
+    expect(actorIdOf("Actor.sApYLZj9PTZ40wJr")).toBeNull();
+    expect(actorIdOf(null)).toBeNull();
   });
 });

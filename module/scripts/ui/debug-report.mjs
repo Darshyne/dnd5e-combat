@@ -62,12 +62,15 @@ const ReportApp = () => ReportClass ??= class DebugReport extends foundry.applic
     const { report, markdown } = this.#build();
     const r = roles({ gm: loc("Debogueur.RoleMJ"), player: loc("Debogueur.RoleJoueur") });
     const who = id => (id ? (r.get(id) ?? "?") : "?");
-    const groups = debugApi.errors();
+    // Les erreurs de la suite d'abord ; celles des autres modules (gardées par « tous les modules ») après, décochées par défaut.
+    const groups = debugApi.errors().sort((a, b) => Number(!!a.thirdParty) - Number(!!b.thirdParty));
     const selected = this.choices.selected ? new Set(this.choices.selected) : null;
-    const list = groups.length ? `<ul class="das-debug__errors">${groups.map(g => `<li>
-        <label><input type="checkbox" data-sig="${esc(g.sig)}" ${(!selected || selected.has(g.sig)) ? "checked" : ""}>
+    const badge = (on, key) => (on ? `<span class="das-debug__badge">${esc(loc(key))}</span>` : "");
+    const list = groups.length ? `<ul class="das-debug__errors">${groups.map(g => `<li${g.thirdParty ? ` class="das-debug__other"` : ""}>
+        <label><input type="checkbox" data-sig="${esc(g.sig)}" ${(selected ? selected.has(g.sig) : !g.thirdParty) ? "checked" : ""}>
         <span class="das-debug__count">×${g.count}</span>
         <span class="das-debug__module">${esc(g.module ?? "?")}</span>
+        ${badge(g.thirdParty, "Debogueur.HorsSuite")}${badge(g.deprecation, "Debogueur.Depreciation")}
         <span class="das-debug__message" data-tooltip="${esc(g.stack.slice(0, 4).join("\n"))}">${esc(g.label ? `${g.label} — ` : "")}${esc(g.message)}</span>
         <small class="das-muted">${esc(g.clients.map(who).join(", "))}</small></label></li>`).join("")}</ul>`
       : `<p class="das-muted">${esc(loc("Debogueur.AucuneErreur"))}</p>`;

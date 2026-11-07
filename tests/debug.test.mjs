@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   stackFrames, packagesOfStack, attribute, formatArgs, errorIn, signature, createRing, createErrorLog, roleLabels,
   createScrubber, scrubDeep, safeSettings, buildReport, reportMarkdown, reportJson, githubRepo, pickRepo, truncateForUrl,
-  issueUrl, MAX_FRAMES, MAX_MESSAGE, formatAgo, errorTitle
+  issueUrl, MAX_FRAMES, MAX_MESSAGE, formatAgo, errorTitle, isBareStack, isDeprecation
 } from "../module/scripts/core/debug.mjs";
 
 const CHROME = `TypeError: Cannot read properties of undefined (reading 'x')
@@ -258,5 +258,51 @@ describe("lisibilité du rapport (§380, après un vrai rapport)", () => {
     expect(md).toContain("### error ×1 — first line");
     expect(md).toContain("```\nError: first line\nsecond line\n```");
     expect(md).toContain("<summary>DAS settings changed from their default (2)</summary>");
+  });
+});
+
+describe("modules hors de la suite et dépréciations dans le rapport", () => {
+  it("les arguments de console à substitutions perdent leurs styles", () => {
+    expect(formatArgs(["%cPixiJS Deprecation Warning: %c%s", "color:red", "font-weight:normal", "moved"]))
+      .toBe("PixiJS Deprecation Warning: moved");
+    expect(formatArgs(["%d%% done", 50, "extra"])).toBe("50% done extra");
+    expect(formatArgs(["%s and %s", "one"])).toBe("one and %s");
+  });
+
+  it("reconnaît une pile seule et une dépréciation", () => {
+    expect(isBareStack("    at Fa (http://x/scripts/pixi.min.js:12:34)\n    at y (http://x/modules/m/a.js:1:2)")).toBe(true);
+    expect(isBareStack("Error\n    at f (http://x/a.js:1:1)")).toBe(true);
+    expect(isBareStack("Firefox: f@http://x/a.js:1:1")).toBe(false);
+    expect(isBareStack(["f@http://x/a.js:1:1", "g@http://x/b.js:2:3"].join("\n"))).toBe(true);
+    expect(isBareStack("Something went wrong")).toBe(false);
+    expect(isDeprecation("You are accessing X which is deprecated. Deprecated since Version 13")).toBe(true);
+    expect(isDeprecation("PixiJS Deprecation Warning: moved")).toBe(true);
+    expect(isDeprecation("boom")).toBe(false);
+  });
+
+  it("le journal garde les marques, à l'ajout comme à la fusion", () => {
+    const log = createErrorLog({ now: () => 1 });
+    const { group } = log.add({ kind: "warn", message: "m", stack: "", thirdParty: true, deprecation: true });
+    expect(group).toMatchObject({ thirdParty: true, deprecation: true });
+    log.merge([{ sig: "other", kind: "warn", message: "n", thirdParty: true, added: 1 }], "u2");
+    expect(log.get("other")).toMatchObject({ thirdParty: true, deprecation: false });
+  });
+
+  it("le Markdown range les autres modules dans une section repliée, après celles de la suite", () => {
+    const errors = [
+      { sig: "a", kind: "warn", module: "tokenmagic", message: "PixiJS Deprecation Warning: moved", thirdParty: true, deprecation: true,
+        count: 1, first: 0, last: 0, clients: [], stack: [], trail: [] },
+      { sig: "b", kind: "error", module: "dnd5e-combat", message: "boom", count: 2, first: 0, last: 0, clients: [], stack: [], trail: [] }
+    ];
+    const md = reportMarkdown(buildReport({ now: 0, errors }));
+    const ours = md.indexOf("[dnd5e-combat] error ×2");
+    const other = md.indexOf("## Other modules (not DAS)");
+    expect(ours).toBeGreaterThan(-1);
+    expect(other).toBeGreaterThan(ours);
+    expect(md).toContain("<details><summary>Other modules (not DAS) (1)</summary>");
+    expect(md).toContain("[tokenmagic] warn deprecation ×1 — PixiJS Deprecation Warning: moved");
+    expect((md.match(/^```/gm) ?? []).length % 2).toBe(0);
+    const only = reportMarkdown(buildReport({ now: 0, errors: [errors[0]] }));
+    expect(only).toContain("No error recorded.");
   });
 });

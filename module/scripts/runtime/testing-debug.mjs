@@ -16,16 +16,21 @@ export function debugThrow({ message="test", via="route" }={}) {
   return { total: debugApi.total() };
 }
 
-/** Le rapport de ce client (MJ) : groupes relevés, Markdown, longueur du JSON et de l'adresse GitHub, dépôts proposés. */
-export function debugReport({ description="", includeNames=false, token=null }={}) {
+/**
+ * Le rapport de ce client (MJ) : groupes relevés, Markdown, longueur du JSON et de l'adresse GitHub, dépôts proposés. Par défaut, comme
+ * la fenêtre, sans les entrées hors de la suite ; `all` les retient toutes.
+ */
+export function debugReport({ description="", includeNames=false, token=null, all=false }={}) {
   gmOnly();
   const doc = token ? canvas.scene?.tokens.get(token) ?? null : null;
-  const { report, markdown } = buildDebugReport({ description, includeNames, token: doc });
+  const { report, markdown } = buildDebugReport({ description, includeNames, token: doc,
+    selected: all ? debugApi.errors().map(g => g.sig) : undefined });
   const repos = reportRepos(report);
   const url = issueUrl({ repo: repos[0]?.repo, title: "test", body: markdown, note: "(cut)" });
   return {
     total: debugApi.total(),
     errors: report.errors.map(e => ({ sig: e.sig, module: e.module, kind: e.kind, label: e.label, hook: e.hook, count: e.count,
+      thirdParty: e.thirdParty, deprecation: e.deprecation,
       clients: e.clients, message: e.message, trail: e.trail.length })),
     trail: report.trail.length, context: report.context, environment: { ...report.environment, modules: report.environment.modules?.length },
     markdown, jsonLength: reportJson(report).length, urlLength: url?.length ?? 0, repos: repos.map(r => r.repo)

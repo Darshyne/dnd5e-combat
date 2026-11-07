@@ -13,8 +13,8 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { attribute, buildReport, createErrorLog, createRing, createScrubber, errorIn, formatArgs, githubRepo, packagesOfStack, pickRepo,
-  reportMarkdown, roleLabels, safeSettings } from "../core/debug.mjs";
+import { attribute, buildReport, createErrorLog, createRing, createScrubber, errorIn, formatArgs, githubRepo, isBareStack, isDeprecation,
+  packagesOfStack, pickRepo, reportMarkdown, roleLabels, safeSettings } from "../core/debug.mjs";
 import { isSuiteTitle } from "../core/settings-layout.mjs";
 import { identifierOf } from "../adapter/content.mjs";
 import { reports as itemReports } from "../adapter/automation.mjs";
@@ -42,6 +42,8 @@ const registered = new Map();     // module → { module, repo, collect }
 const listeners = new Set();
 const state = { installed: false, enabled: true, all: false, verbose: false, busy: false, pending: [], timer: null, original: null };
 let lastRouterError = null;
+/** Les libellés des groupes de console ouverts (`console.group` / `groupCollapsed`), le plus récent en dernier. */
+const consoleGroups = [];
 
 /* -------------------------------------------- */
 /*  Filtre                                      */
@@ -99,9 +101,11 @@ export function recordError(entry) {
     stack = String(stack ?? "").split("\n").filter(l => !l.includes(SELF_FILE)).join("\n");
     const modules = packagesOfStack(stack);
     const owner = module ?? attribute(stack, { ignore: IGNORE }) ?? prefixed(message);
-    if ( !state.all && !concernsSuite(owner ? [owner, ...modules] : modules, message) ) return null;
+    const suite = concernsSuite(owner ? [owner, ...modules] : modules, message);
+    if ( !state.all && !suite ) return null;
+    // Hors de la suite (gardée parce que « tous les modules » est coché) : rangée à part dans le rapport, décochée par défaut.
     const { group, isNew } = errors.add({ kind, message, stack, label, hook, module: owner, modules, client: userId(),
-      trail: trailRing.last(10) });
+      thirdParty: !suite, deprecation: isDeprecation(message), trail: trailRing.last(10) });
     for ( const fn of listeners ) {
       try { fn(group, isNew); } catch { /* un écouteur fautif ne casse pas le relevé */ }
     }
@@ -128,7 +132,30 @@ function fromConsole(kind, args) {
   const here = err ? "" : (new Error().stack ?? "");
   // Une notification de l'interface (« hors de portée »…) : Foundry la répète en console, ce n'est pas une erreur.
   if ( NOTIFICATION.test(here) ) return;
-  recordError({ kind, message: formatArgs(args), stack: err?.stack ?? here });
+  let message = formatArgs(args);
+  let stack = err?.stack ?? here;
+  // Dans un groupe de console, le texte est souvent dans le libellé du groupe : PixiJS y met son avertissement de dépréciation et
+  // n'écrit que la pile dans `console.warn` (pixi.min.js, `deprecation`). Le libellé passe devant ; une pile seule devient la pile.
+  const group = consoleGroups.at(-1);
+  if ( group ) {
+    if ( !err && isBareStack(message) ) {
+      stack = message;
+      message = group;
+    }
+    else message = `${group} — ${message}`;
+  }
+  recordError({ kind, message, stack });
+}
+
+/** Un groupe de console ouvert : son libellé (styles `%c` retirés), 20 niveaux au plus. */
+function openConsoleGroup(args) {
+  consoleGroups.push(formatArgs(args));
+  if ( consoleGroups.length > 20 ) consoleGroups.shift();
+}
+
+/** Un groupe de console fermé. */
+function closeConsoleGroup() {
+  consoleGroups.pop();
 }
 
 /** En mode détaillé, une ligne de console d'un module de la suite. */
@@ -159,8 +186,15 @@ const onRejection = event => {
 export function installCapture(target=globalThis) {
   if ( state.installed || !target.console ) return;
   const c = target.console;
-  const original = { error: c.error, warn: c.warn, log: c.log };
+  const original = { error: c.error, warn: c.warn, log: c.log, group: c.group, groupCollapsed: c.groupCollapsed, groupEnd: c.groupEnd };
   state.original = { target, ...original };
+  for ( const name of ["group", "groupCollapsed"] ) {
+    if ( typeof original[name] !== "function" ) continue;
+    c[name] = function(...args) { original[name].apply(this, args); openConsoleGroup(args); };
+  }
+  if ( typeof original.groupEnd === "function" ) {
+    c.groupEnd = function(...args) { original.groupEnd.apply(this, args); closeConsoleGroup(); };
+  }
   c.error = function(...args) { original.error.apply(this, args); fromConsole("error", args); };
   c.warn = function(...args) { original.warn.apply(this, args); fromConsole("warn", args); };
   c.log = function(...args) { original.log.apply(this, args); if ( state.verbose ) fromLog(args); };
@@ -175,14 +209,18 @@ export function installCapture(target=globalThis) {
  */
 export function uninstallCapture() {
   if ( !state.installed ) return;
-  const { target, error, warn, log } = state.original;
+  const { target, error, warn, log, group, groupCollapsed, groupEnd } = state.original;
   target.removeEventListener?.("error", onWindowError);
   target.removeEventListener?.("unhandledrejection", onRejection);
   const c = target.console;
-  const ours = fn => fn.toString().includes("fromConsole") || fn.toString().includes("fromLog");
+  const ours = fn => ["fromConsole", "fromLog", "ConsoleGroup"].some(k => fn?.toString().includes(k));
   if ( ours(c.error) ) c.error = error;
   if ( ours(c.warn) ) c.warn = warn;
   if ( ours(c.log) ) c.log = log;
+  if ( ours(c.group) ) c.group = group;
+  if ( ours(c.groupCollapsed) ) c.groupCollapsed = groupCollapsed;
+  if ( ours(c.groupEnd) ) c.groupEnd = groupEnd;
+  consoleGroups.length = 0;
   state.installed = false;
 }
 
@@ -407,7 +445,7 @@ function scrubberFor({ includeNames=false }={}) {
  * Le rapport complet, nettoyé, et son Markdown. Les clients (identifiants d'utilisateurs) deviennent des rôles.
  * @param {object} [options]
  * @param {string} [options.description]
- * @param {string[]} [options.selected]       Signatures des erreurs retenues (toutes si absent).
+ * @param {string[]} [options.selected]       Signatures des erreurs retenues (si absent : toutes, sauf celles hors de la suite).
  * @param {boolean} [options.includeNames]    Garder les noms d'acteurs et de tokens.
  * @param {boolean} [options.includeFlagged]  Joindre les items signalés (identifiant et note).
  * @param {boolean} [options.includeLogs]     Joindre les lignes du mode détaillé.
@@ -425,8 +463,13 @@ export function buildDebugReport({ description="", selected, includeNames=false,
   trailNow.sort((a, b) => a.t - b.t);
   const flagged = includeFlagged ? Object.values(itemReports() ?? {}).map(f => ({ identifier: f.identifier ?? "?", note: f.note ?? "" })) : [];
   const report = buildReport({ now: Date.now(), description, environment: environment(), context: tokenContext(token),
-    errors: errorsNow, selected, trail: trailNow, flagged, sections: collectSections() }, scrubberFor({ includeNames }));
+    errors: errorsNow, selected: selected ?? defaultSelection(), trail: trailNow, flagged, sections: collectSections() }, scrubberFor({ includeNames }));
   return { report, markdown: reportMarkdown(report, labels) };
+}
+
+/** Les erreurs retenues par défaut : celles de la suite (une entrée hors suite se coche à la main). */
+export function defaultSelection() {
+  return errors.list().filter(g => !g.thirdParty).map(g => g.sig);
 }
 
 /** Les dépôts GitHub proposés (« propriétaire/dépôt »), le plus mis en cause en premier. */
@@ -452,11 +495,11 @@ export function registerDebug() {
   game.settings.register(MODULE_ID, DEBUG_ALL_SETTING, {
     name: "DND5ECOMBAT.Reglage.debugAllModules.Nom", hint: "DND5ECOMBAT.Reglage.debugAllModules.Aide",
     scope: "client", config: true, type: Boolean, default: false,
-    onChange: value => { state.all = !!value; }
+    onChange: value => setCaptureAll(value)
   });
   try {
     applyCapture(game.settings.get(MODULE_ID, DEBUG_CAPTURE_SETTING));
-    state.all = !!game.settings.get(MODULE_ID, DEBUG_ALL_SETTING);
+    setCaptureAll(game.settings.get(MODULE_ID, DEBUG_ALL_SETTING));
   } catch { /* réglages illisibles : valeurs par défaut */ }
   replayEarly();
 
@@ -475,6 +518,11 @@ export function registerDebug() {
     if ( state.timer ) clearInterval(state.timer);
     state.timer = setInterval(() => { if ( state.enabled && !game.users.activeGM?.isSelf ) flush(); }, RELAY_MS);
   }, opts("relay"));
+}
+
+/** Garder aussi les erreurs des modules hors de la suite (réglage client `debugAllModules`). */
+export function setCaptureAll(on) {
+  state.all = !!on;
 }
 
 function applyCapture(on) {

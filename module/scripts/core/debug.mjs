@@ -73,10 +73,38 @@ export function formatArg(arg) {
   return String(arg);
 }
 
-/** Les arguments d'un appel de console en un message, coupé à `MAX_MESSAGE`. */
+/**
+ * Les arguments d'un appel de console en un message, coupé à `MAX_MESSAGE`. Un premier argument chaîne avec des substitutions de
+ * console (`%c` styles, `%s` `%d` `%i` `%f` `%o` `%O`) est d'abord rempli : les styles disparaissent, les valeurs prennent leur place
+ * (PixiJS écrit « %cPixiJS Deprecation Warning: %c%s », styles, texte).
+ */
 export function formatArgs(args) {
-  return clip(Array.from(args ?? [], formatArg).join(" ").trim(), MAX_MESSAGE);
+  const list = Array.from(args ?? []);
+  const parts = [];
+  if ( (typeof list[0] === "string") && /%[cdifoOs]/.test(list[0]) ) {
+    let i = 1;
+    parts.push(list[0].replace(/%([%cdifoOs])/g, (whole, k) => {
+      if ( k === "%" ) return "%";
+      if ( i >= list.length ) return whole;
+      const value = list[i++];
+      return k === "c" ? "" : formatArg(value);
+    }));
+    list.splice(0, i);
+  }
+  parts.push(...list.map(formatArg));
+  return clip(parts.join(" ").trim(), MAX_MESSAGE);
 }
+
+/** Un texte qui n'est qu'une pile d'appels (lignes « at … » ou « f@url », « Error » en tête au plus) : PixiJS l'écrit seul. */
+export function isBareStack(text) {
+  const lines = String(text ?? "").split("\n").map(l => l.trim()).filter(Boolean);
+  if ( !lines.length ) return false;
+  const body = /^Error\b/.test(lines[0]) ? lines.slice(1) : lines;
+  return (body.length > 0) && body.every(l => /^at\s/.test(l) || /^[^\s@]*@\S+:\d+:\d+$/.test(l));
+}
+
+/** Un avertissement de dépréciation (Foundry « Deprecated since Version », PixiJS « Deprecation Warning », « is deprecated »). */
+export const isDeprecation = message => /\bdeprecat/i.test(String(message ?? ""));
 
 /** La première erreur parmi des arguments de console (pour sa pile), sinon null. */
 export function errorIn(args) {
@@ -160,7 +188,7 @@ export function createErrorLog({ limit=MAX_GROUPS, now=() => Date.now() }={}) {
       if ( isNew ) {
         group = { sig, kind, message, stack: stackFrames(entry.stack).slice(0, MAX_FRAMES), module: entry.module ?? null,
           modules: entry.modules ?? packagesOfStack(entry.stack), label: entry.label ?? null, hook: entry.hook ?? null,
-          count: 0, first: t, last: t, clients: [], trail: (entry.trail ?? []).slice(-TRAIL_SNAPSHOT) };
+          thirdParty: !!entry.thirdParty, deprecation: !!entry.deprecation, count: 0, first: t, last: t, clients: [], trail: (entry.trail ?? []).slice(-TRAIL_SNAPSHOT) };
         groups.set(sig, group);
       }
       group.count += Math.max(1, entry.count ?? 1);
@@ -194,7 +222,8 @@ export function createErrorLog({ limit=MAX_GROUPS, now=() => Date.now() }={}) {
         }
         groups.set(item.sig, { sig: item.sig, kind: item.kind ?? "error", message: clip(String(item.message ?? ""), MAX_MESSAGE),
           stack: (item.stack ?? []).slice(0, MAX_FRAMES), module: item.module ?? null, modules: item.modules ?? [],
-          label: item.label ?? null, hook: item.hook ?? null, count: Math.max(1, item.added ?? 1), first: now(), last: now(),
+          label: item.label ?? null, hook: item.hook ?? null, thirdParty: !!item.thirdParty, deprecation: !!item.deprecation,
+          count: Math.max(1, item.added ?? 1), first: now(), last: now(),
           clients: client ? [client] : [], trail: (item.trail ?? []).slice(-TRAIL_SNAPSHOT) });
         trim();
       }
@@ -321,7 +350,7 @@ export function buildReport(input, scrub=t => t) {
   const step = s => ({ ago: ago(s.t), client: s.client ?? null, module: s.module ?? null, kind: s.kind, text: s.text ?? "" });
   const errors = (input.errors ?? []).filter(g => !selected || selected.has(g.sig)).map(g => ({
     sig: g.sig, kind: g.kind, module: g.module, modules: g.modules ?? [], label: g.label, hook: g.hook, message: g.message,
-    count: g.count, firstAgo: ago(g.first), lastAgo: ago(g.last), clients: g.clients ?? [], stack: g.stack ?? [],
+    thirdParty: !!g.thirdParty, deprecation: !!g.deprecation, count: g.count, firstAgo: ago(g.first), lastAgo: ago(g.last), clients: g.clients ?? [], stack: g.stack ?? [],
     trail: (g.trail ?? []).map(step)
   }));
   const report = {
@@ -345,7 +374,9 @@ export const MARKDOWN_LABELS = {
   description: "Description", noDescription: "(none)", environment: "Environment", context: "Token context", errors: "Errors",
   noErrors: "No error recorded.", trail: "Recent DAS actions", flagged: "Flagged items", sections: "Modules",
   times: "×", clients: "clients", hook: "hook", lastSeen: "last", ago: "ago", before: "Before this error",
-  settings: "DAS settings changed from their default"
+  settings: "DAS settings changed from their default", others: "Other modules (not DAS)",
+  othersHint: "Raised by modules outside the suite; kept because « all modules » is ticked in the DAS debugger.",
+  deprecation: "deprecation"
 };
 
 /** Une durée écoulée lisible : « 12 s », « 47 min », « 2 h 05 ». */
@@ -397,19 +428,15 @@ export function reportMarkdown(report, labels={}) {
   }
   out.push("");
   if ( report.context ) out.push(`## ${L.context}`, "", ...bullets(report.context), "");
+  const ours = report.errors.filter(e => !e.thirdParty);
+  const others = report.errors.filter(e => e.thirdParty);
   out.push(`## ${L.errors}`, "");
-  if ( !report.errors.length ) out.push(L.noErrors, "");
-  for ( const e of report.errors ) {
-    const head = [e.module ? `[${e.module}]` : null, e.kind, `${L.times}${e.count}`].filter(Boolean).join(" ");
-    const { title, whole } = errorTitle(e.message);
-    out.push(`### ${head} — ${line(title)}`, "");
-    const meta = [e.label ? line(e.label) : null, e.hook ? `${L.hook} \`${line(e.hook)}\`` : null,
-      e.clients.length ? `${L.clients}: ${e.clients.join(", ")}` : null,
-      Number.isFinite(e.lastAgo) ? `${L.lastSeen} ${formatAgo(e.lastAgo)} ${L.ago}` : null].filter(Boolean);
-    if ( meta.length ) out.push(meta.join(" · "), "");
-    if ( !whole ) out.push("```", fence(e.message), "```", "");
-    if ( e.stack.length ) out.push("```", ...e.stack.map(fence), "```", "");
-    if ( e.trail.length ) out.push(`<details><summary>${L.before}</summary>`, "", ...e.trail.map(s => stepLine(s, L)), "", "</details>", "");
+  if ( !ours.length ) out.push(L.noErrors, "");
+  for ( const e of ours ) out.push(...errorMarkdown(e, L));
+  if ( others.length ) {
+    out.push(`## ${L.others}`, "", L.othersHint, "", `<details><summary>${L.others} (${others.length})</summary>`, "");
+    for ( const e of others ) out.push(...errorMarkdown(e, L));
+    out.push("</details>", "");
   }
   if ( report.trail.length ) out.push(`## ${L.trail}`, "", ...report.trail.map(s => stepLine(s, L)), "");
   if ( report.flagged.length ) out.push(`## ${L.flagged}`, "", ...report.flagged.map(f => `- \`${line(f.identifier)}\`${f.note ? ` — ${line(f.note)}` : ""}`), "");
@@ -418,6 +445,23 @@ export function reportMarkdown(report, labels={}) {
     for ( const s of report.sections ) out.push(`### ${line(s.module)}`, "", ...bullets(s.data), "");
   }
   return `${out.join("\n").replace(/\n{3,}/g, "\n\n").trim()}\n`;
+}
+
+/** Une erreur du rapport en lignes de Markdown : titre, contexte, message entier s'il est long, pile, gestes d'avant. */
+function errorMarkdown(e, L) {
+  const out = [];
+  const head = [e.module ? `[${e.module}]` : null, e.kind, e.deprecation ? L.deprecation : null, `${L.times}${e.count}`]
+    .filter(Boolean).join(" ");
+  const { title, whole } = errorTitle(e.message);
+  out.push(`### ${head} — ${line(title)}`, "");
+  const meta = [e.label ? line(e.label) : null, e.hook ? `${L.hook} \`${line(e.hook)}\`` : null,
+    e.clients.length ? `${L.clients}: ${e.clients.join(", ")}` : null,
+    Number.isFinite(e.lastAgo) ? `${L.lastSeen} ${formatAgo(e.lastAgo)} ${L.ago}` : null].filter(Boolean);
+  if ( meta.length ) out.push(meta.join(" · "), "");
+  if ( !whole ) out.push("```", fence(e.message), "```", "");
+  if ( e.stack.length ) out.push("```", ...e.stack.map(fence), "```", "");
+  if ( e.trail.length ) out.push(`<details><summary>${L.before}</summary>`, "", ...e.trail.map(s => stepLine(s, L)), "", "</details>", "");
+  return out;
 }
 
 /** Le rapport en JSON lisible (le fichier à joindre). */

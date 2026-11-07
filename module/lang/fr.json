@@ -332,6 +332,8 @@
   "DND5ECOMBAT.Debogueur.AvecToken": "Le contexte du token choisi est joint (type, niveau, états, identifiants de ses objets — sans son nom).",
   "DND5ECOMBAT.Debogueur.Erreurs": "Erreurs relevées ({count})",
   "DND5ECOMBAT.Debogueur.AucuneErreur": "Aucune erreur relevée depuis le chargement. Le rapport peut quand même décrire un comportement inattendu.",
+  "DND5ECOMBAT.Debogueur.HorsSuite": "hors DAS",
+  "DND5ECOMBAT.Debogueur.Depreciation": "dépréciation",
   "DND5ECOMBAT.Debogueur.ToutCocher": "Tout cocher",
   "DND5ECOMBAT.Debogueur.Description": "Ce que vous faisiez",
   "DND5ECOMBAT.Debogueur.DescriptionAide": "Ce que vous attendiez, ce qui s'est passé, comment le reproduire.",

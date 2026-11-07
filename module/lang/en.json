@@ -332,6 +332,8 @@
   "DND5ECOMBAT.Debogueur.AvecToken": "The chosen token's context is attached (type, level, statuses, its items' identifiers — not its name).",
   "DND5ECOMBAT.Debogueur.Erreurs": "Recorded errors ({count})",
   "DND5ECOMBAT.Debogueur.AucuneErreur": "No error recorded since loading. The report can still describe unexpected behaviour.",
+  "DND5ECOMBAT.Debogueur.HorsSuite": "not DAS",
+  "DND5ECOMBAT.Debogueur.Depreciation": "deprecation",
   "DND5ECOMBAT.Debogueur.ToutCocher": "Select all",
   "DND5ECOMBAT.Debogueur.Description": "What you were doing",
   "DND5ECOMBAT.Debogueur.DescriptionAide": "What you expected, what happened, how to reproduce it.",

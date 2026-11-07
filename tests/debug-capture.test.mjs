@@ -268,3 +268,71 @@ describe("entrée du menu contextuel (§380)", () => {
     expect(debugMenuEntry(mine)).toBeNull();
   });
 });
+
+describe("modules hors de la suite et dépréciations", () => {
+  const pixiStack = "    at Fa (http://localhost:30000/scripts/pixi.min.js:12:34)\n"
+    + "    at Object.get [as DisplacementFilter] (http://localhost:30000/scripts/pixi.min.js:869:471)\n"
+    + "    at 956 (http://localhost:30000/modules/tokenmagic/module/bundle/tokenmagic.js:1:104936)";
+  const pixiWarn = () => {
+    target.console.groupCollapsed("%cPixiJS Deprecation Warning: %c%s", "color:#614108", "font-weight:normal",
+      "filters.DisplacementFilter has moved to DisplacementFilter\nDeprecated since v7.1.0");
+    target.console.warn(pixiStack);
+    target.console.groupEnd();
+  };
+  beforeEach(() => {
+    target.console.group = () => {};
+    target.console.groupCollapsed = () => {};
+    target.console.groupEnd = () => {};
+    uninstallCapture();
+    installCapture(target);
+  });
+  afterEach(() => debug.setCaptureAll(false));
+
+  it("sans « tous les modules », un avertissement d'un autre module reste ignoré", () => {
+    pixiWarn();
+    expect(debugApi.errors()).toHaveLength(0);
+  });
+
+  it("avec « tous les modules », le texte vient du groupe de console, la pile reste la pile, marqué hors suite et dépréciation", () => {
+    debug.setCaptureAll(true);
+    pixiWarn();
+    const [g] = debugApi.errors();
+    expect(g.message).toBe("PixiJS Deprecation Warning: filters.DisplacementFilter has moved to DisplacementFilter\nDeprecated since v7.1.0");
+    expect(g.module).toBe("tokenmagic");
+    expect(g.stack[0]).toContain("pixi.min.js");
+    expect(g).toMatchObject({ kind: "warn", thirdParty: true, deprecation: true });
+  });
+
+  it("une erreur de la suite n'est pas hors suite ; le groupe fermé ne colore plus les lignes suivantes", () => {
+    debug.setCaptureAll(true);
+    target.console.group("Something");
+    target.console.groupEnd();
+    target.console.error(errorFrom("darsh-loot"));
+    const [g] = debugApi.errors();
+    expect(g).toMatchObject({ module: "darsh-loot", thirdParty: false, deprecation: false, message: "Error: boom" });
+  });
+
+  it("dans un groupe ouvert, une ligne ordinaire garde son texte, précédé du libellé du groupe", () => {
+    target.console.group("darsh-loot | sweep");
+    target.console.warn("darsh-loot | odd value");
+    target.console.groupEnd();
+    expect(debugApi.errors()[0].message).toBe("darsh-loot | sweep — darsh-loot | odd value");
+  });
+
+  it("par défaut seules les erreurs de la suite sont retenues ; un joueur transmet les marques au MJ", () => {
+    debug.setCaptureAll(true);
+    pixiWarn();
+    target.console.error(errorFrom("darsh-loot"));
+    const loot = debugApi.errors().find(g => g.module === "darsh-loot");
+    expect(debug.defaultSelection()).toEqual([loot.sig]);
+    debugApi.clear();
+    receive({ userId: "u-player", items: [{ sig: "s1", kind: "warn", message: "x", thirdParty: true, deprecation: true, added: 1 }] });
+    expect(debugApi.errors()[0]).toMatchObject({ thirdParty: true, deprecation: true });
+  });
+
+  it("uninstallCapture rend aussi les fonctions de groupe", () => {
+    expect(target.console.groupCollapsed.toString()).toContain("ConsoleGroup");
+    uninstallCapture();
+    for ( const name of ["group", "groupCollapsed", "groupEnd"] ) expect(target.console[name].toString()).not.toContain("ConsoleGroup");
+  });
+});

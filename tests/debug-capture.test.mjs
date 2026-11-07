@@ -336,3 +336,26 @@ describe("modules hors de la suite et dépréciations", () => {
     for ( const name of ["group", "groupCollapsed", "groupEnd"] ) expect(target.console[name].toString()).not.toContain("ConsoleGroup");
   });
 });
+
+describe("pastille : erreurs DAS et hors DAS comptées à part, bruit du navigateur écarté", () => {
+  afterEach(() => debug.setCaptureAll(false));
+
+  it("total(\"suite\") ne compte que les erreurs DAS, total(\"others\") les autres", () => {
+    debug.setCaptureAll(true);
+    target.console.error(errorFrom("foreign-mod"));
+    target.console.error(errorFrom("foreign-mod"));
+    expect(debugApi.total("suite")).toBe(0);
+    expect(debugApi.total("others")).toBe(2);
+    target.console.error(errorFrom("darsh-loot"));
+    expect(debugApi.total("suite")).toBe(1);
+    expect(debugApi.total()).toBe(3);
+  });
+
+  it("ResizeObserver (fenêtre ou console) n'est jamais relevé, même avec « tous les modules »", () => {
+    debug.setCaptureAll(true);
+    target.listeners.error({ message: "ResizeObserver loop completed with undelivered notifications." });
+    target.listeners.error({ message: "ResizeObserver loop limit exceeded" });
+    target.console.error("Uncaught ResizeObserver loop completed with undelivered notifications.");
+    expect(debugApi.errors()).toEqual([]);
+  });
+});

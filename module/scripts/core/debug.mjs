@@ -106,6 +106,14 @@ export function isBareStack(text) {
 /** Un avertissement de dépréciation (Foundry « Deprecated since Version », PixiJS « Deprecation Warning », « is deprecated »). */
 export const isDeprecation = message => /\bdeprecat/i.test(String(message ?? ""));
 
+/**
+ * Un avis connu du navigateur, sans gravité, qui n'est l'erreur de personne : « ResizeObserver loop completed with undelivered
+ * notifications » (ou « …limit exceeded ») part quand une mise en page se redimensionne pendant sa propre observation.
+ */
+export const isBrowserNoise = message =>
+  /^(?:Uncaught\s+)?(?:Error:\s*)?ResizeObserver loop (?:completed with undelivered notifications|limit exceeded)/i
+    .test(String(message ?? "").trim());
+
 /** La première erreur parmi des arguments de console (pour sa pile), sinon null. */
 export function errorIn(args) {
   return Array.from(args ?? []).find(a => a instanceof Error) ?? null;
@@ -232,8 +240,14 @@ export function createErrorLog({ limit=MAX_GROUPS, now=() => Date.now() }={}) {
     /** Les groupes, les plus récents d'abord. */
     list() { return Array.from(groups.values()).sort((a, b) => b.last - a.last); },
     get(sig) { return groups.get(sig) ?? null; },
-    /** Le nombre total d'erreurs relevées (répétitions comprises). */
-    total() { return Array.from(groups.values()).reduce((n, g) => n + g.count, 0); },
+    /**
+     * Le nombre d'erreurs relevées (répétitions comprises). `which` : "suite" (les erreurs DAS seulement), "others" (hors DAS,
+     * gardées par « tous les modules »), absent : toutes.
+     */
+    total(which) {
+      const keep = which === "suite" ? g => !g.thirdParty : which === "others" ? g => !!g.thirdParty : () => true;
+      return Array.from(groups.values()).filter(keep).reduce((n, g) => n + g.count, 0);
+    },
     clear() { groups = new Map(); sent = new Map(); },
     get size() { return groups.size; }
   };

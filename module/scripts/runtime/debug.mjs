@@ -13,7 +13,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { attribute, buildReport, createErrorLog, createRing, createScrubber, errorIn, formatArgs, githubRepo, isBareStack, isDeprecation,
+import { attribute, buildReport, createErrorLog, createRing, createScrubber, errorIn, formatArgs, githubRepo, isBareStack, isBrowserNoise, isDeprecation,
   packagesOfStack, pickRepo, reportMarkdown, roleLabels, safeSettings } from "../core/debug.mjs";
 import { isSuiteTitle } from "../core/settings-layout.mjs";
 import { identifierOf } from "../adapter/content.mjs";
@@ -91,6 +91,7 @@ export function replayEarly() {
 export function recordError(entry) {
   let { kind="error", message="", stack="", label=null, hook=null, module=null } = entry;
   if ( !state.enabled || state.busy ) return null;
+  if ( isBrowserNoise(message) ) return null;   // bruit connu du navigateur (ResizeObserver) : l'erreur de personne
   if ( !modulesReadable() ) {
     if ( early.length < 50 ) early.push({ ...entry });
     return null;
@@ -313,7 +314,8 @@ export const debugApi = Object.freeze({
   /** Un geste d'un voisin dans la piste : `trail(module, kind, text)`. */
   trail: (module, kind, text) => trail(kind, text, { module }),
   errors: () => errors.list(),
-  total: () => errors.total(),
+  /** `total()` : toutes ; `total("suite")` : les erreurs DAS ; `total("others")` : hors DAS. */
+  total: which => errors.total(which),
   trailList: () => trailRing.list(),
   logs: () => logRing.list(),
   registered: () => Array.from(registered.values()),

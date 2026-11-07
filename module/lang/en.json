@@ -359,6 +359,7 @@
   "DND5ECOMBAT.Debogueur.Effacer": "Clear",
   "DND5ECOMBAT.Debogueur.Menu": "Bug report…",
   "DND5ECOMBAT.Debogueur.Pastille": "{count} error(s) recorded: bug report in the DAS Settings",
+  "DND5ECOMBAT.Debogueur.PastilleHorsSuite": "{count} error(s) from other modules (not DAS): nothing wrong with DAS, details in the bug report",
   "DND5ECOMBAT.Debogueur.Avis": "DAS recorded an error. If something went wrong: DAS Settings → DAS bug report.",
   "DND5ECOMBAT.Debogueur.RoleMJ": "GM",
   "DND5ECOMBAT.Debogueur.RoleJoueur": "Player",

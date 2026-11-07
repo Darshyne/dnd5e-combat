@@ -359,6 +359,7 @@
   "DND5ECOMBAT.Debogueur.Effacer": "Effacer",
   "DND5ECOMBAT.Debogueur.Menu": "Rapport de bug…",
   "DND5ECOMBAT.Debogueur.Pastille": "{count} erreur(s) relevée(s) : rapport de bug dans les réglages DAS",
+  "DND5ECOMBAT.Debogueur.PastilleHorsSuite": "{count} erreur(s) hors DAS relevée(s) (autres modules) : sans gravité pour DAS, détail dans le rapport de bug",
   "DND5ECOMBAT.Debogueur.Avis": "DAS a relevé une erreur. Si quelque chose ne va pas : Réglages DAS → Rapport de bug DAS.",
   "DND5ECOMBAT.Debogueur.RoleMJ": "MJ",
   "DND5ECOMBAT.Debogueur.RoleJoueur": "Joueur",

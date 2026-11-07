@@ -237,24 +237,32 @@ export function debugMenuEntry(target) {
 /*  Retour visuel                               */
 /* -------------------------------------------- */
 
-/** La pastille du bouton « Réglages DAS » : le nombre d'erreurs relevées (répétitions comprises), cachée à zéro. */
+/**
+ * La pastille du bouton « Réglages DAS » : le nombre d'erreurs DAS relevées (répétitions comprises), en rouge. Les erreurs hors DAS
+ * (gardées par « tous les modules ») ne la font pas monter : sans erreur DAS, une pastille grise discrète les compte à part.
+ * Cachée à zéro.
+ */
 export function updateBadge() {
   const button = document.querySelector(".das-sidebar-settings");
   if ( !button ) return;
-  const total = debugApi.total();
+  const suite = debugApi.total("suite");
+  const others = debugApi.total("others");
   let badge = button.querySelector(".das-debug-badge");
-  if ( !total ) { badge?.remove(); return; }
+  if ( !suite && !others ) { badge?.remove(); return; }
   if ( !badge ) {
     badge = document.createElement("span");
     badge.className = "das-debug-badge";
     button.append(badge);
   }
-  badge.textContent = total > 99 ? "99+" : String(total);
-  badge.dataset.tooltip = loc("Debogueur.Pastille", { count: total });
+  const count = suite || others;
+  badge.classList.toggle("das-debug-badge--others", !suite);
+  badge.textContent = count > 99 ? "99+" : String(count);
+  badge.dataset.tooltip = suite ? loc("Debogueur.Pastille", { count }) : loc("Debogueur.PastilleHorsSuite", { count });
 }
 
 function onError(group, isNew) {
   updateBadge();   // la fenêtre ouverte n'est pas redessinée : l'aperçu retouché serait perdu (« Actualiser » le fait)
+  if ( group?.thirdParty ) return;   // une erreur hors DAS n'alarme pas : ni avis, seulement la pastille grise
   if ( !isNew || notified || !globalThis.ui?.notifications ) return;
   let on = true;
   try { on = game.settings.get(MODULE_ID, DEBUG_NOTIFY_SETTING); } catch { /* réglage pas encore déclaré */ }
@@ -278,7 +286,7 @@ export function registerDebugReport() {
   });
   route("ready", () => {
     updateBadge();
-    if ( debugApi.total() ) onError(null, true);
+    if ( debugApi.total("suite") ) onError(null, true);
   }, { always: true, label: "debug report: errors raised during loading not shown" });
   route("renderSettings", () => updateBadge(), { always: true, label: "debug report: sidebar badge not updated" });
 }

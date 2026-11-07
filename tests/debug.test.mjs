@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   stackFrames, packagesOfStack, attribute, formatArgs, errorIn, signature, createRing, createErrorLog, roleLabels,
   createScrubber, scrubDeep, safeSettings, buildReport, reportMarkdown, reportJson, githubRepo, pickRepo, truncateForUrl,
-  issueUrl, MAX_FRAMES, MAX_MESSAGE, formatAgo, errorTitle, isBareStack, isDeprecation
+  issueUrl, MAX_FRAMES, MAX_MESSAGE, formatAgo, errorTitle, isBareStack, isDeprecation, isBrowserNoise
 } from "../module/scripts/core/debug.mjs";
 
 const CHROME = `TypeError: Cannot read properties of undefined (reading 'x')
@@ -304,5 +304,22 @@ describe("modules hors de la suite et dépréciations dans le rapport", () => {
     expect((md.match(/^```/gm) ?? []).length % 2).toBe(0);
     const only = reportMarkdown(buildReport({ now: 0, errors: [errors[0]] }));
     expect(only).toContain("No error recorded.");
+  });
+});
+
+describe("bruit du navigateur et totaux par origine", () => {
+  it("isBrowserNoise reconnaît ResizeObserver et rien d'autre", () => {
+    expect(isBrowserNoise("ResizeObserver loop completed with undelivered notifications.")).toBe(true);
+    expect(isBrowserNoise("Uncaught Error: ResizeObserver loop limit exceeded")).toBe(true);
+    expect(isBrowserNoise("dnd5e-combat | ResizeObserver loop in my code")).toBe(false);
+    expect(isBrowserNoise("boom")).toBe(false);
+  });
+
+  it("total(which) sépare les erreurs de la suite des autres", () => {
+    const log = createErrorLog();
+    log.add({ kind: "error", message: "a", stack: "", module: "dnd5e-combat" });
+    log.add({ kind: "warn", message: "b", stack: "", module: "tokenmagic", thirdParty: true });
+    log.add({ kind: "warn", message: "b", stack: "", module: "tokenmagic", thirdParty: true });
+    expect([log.total(), log.total("suite"), log.total("others")]).toEqual([3, 1, 2]);
   });
 });

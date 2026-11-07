@@ -11,6 +11,7 @@ import { originItemOf, factsFor, comesFromItemEffect, weaponKind, swornEnemyOf }
 import { hasReactionAdvantage, takeReactionAdvantage, hasReactionDisadvantage, takeReactionDisadvantage } from "./marks.mjs";
 import { markModifiers } from "./mastery.mjs";
 import { exclusiveWeaponHindrances } from "../core/attack.mjs";
+import { isVanilla } from "./vanilla-state.mjs";
 export { factsFor, originItemOf, tokenOf, comesFromItemEffect } from "./facts.mjs";
 
 /**
@@ -57,6 +58,8 @@ export function declarationsOfEffects(actor) {
   const out = [];
   for ( const effect of actor?.effects ?? [] ) {
     if ( effect.disabled || effect.isSuppressed ) continue;
+    // §395 : un effet posé par une action lancée sans DAS reste l'affaire de dnd5e jusqu'à sa fin.
+    if ( isVanilla(effect) ) continue;
     // L'effet de CONCENTRATION du lanceur vient du même item : il ne porte pas la règle de la cible. Vu en jeu le
     // 2026-09-24 : le Magicien « rejouait » la sauvegarde d'Immobilisation de personne à la fin de son tour, la
     // réussissait, et sa concentration tombait — avec le Paralysé du Zombi.

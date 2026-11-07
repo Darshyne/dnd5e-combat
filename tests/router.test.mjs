@@ -103,3 +103,19 @@ describe("§220 Théâtre de l'esprit", () => {
     expect(seen).toEqual(["normal", "always", "ready", "always", "ready"]);
   });
 });
+
+describe("§395 Lancer sans DAS", () => {
+  it("le routeur passe les arguments du hook à `paused`, et relit l'état après un inscrit qui marque", async () => {
+    const { createRouter } = await import("../module/scripts/runtime/router.mjs");
+    const hooks = {};
+    const router = createRouter({ subscribe: (h, fn) => { hooks[h] = fn; }, isExecutor: () => true, report: () => {},
+      paused: (hook, args) => !!args[0]?.vanilla });
+    const seen = [];
+    router.on("preCreateRegion", doc => { if ( doc.mine ) doc.vanilla = true; }, { always: true, marks: true });
+    router.on("preCreateRegion", () => seen.push("engine"));
+    hooks.preCreateRegion({ mine: false });
+    hooks.preCreateRegion({ mine: true });
+    hooks.preCreateRegion({ vanilla: true });
+    expect(seen).toEqual(["engine"]);
+  });
+});

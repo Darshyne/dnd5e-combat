@@ -132,6 +132,11 @@ import { registerFlanking } from "./runtime/flanking.mjs";
 import { registerFalls } from "./runtime/falls.mjs";
 import { registerKnockout } from "./runtime/knockout.mjs";
 import { registerTheater, theaterApi } from "./runtime/theater.mjs";
+import { registerVanilla, vanillaApi } from "./runtime/vanilla.mjs";
+import { registerCorrection, correctionApi } from "./runtime/correction.mjs";
+import { registerCorrectionUi, openCorrection } from "./ui/correction.mjs";
+import { registerCombatLaunch, launchApi } from "./runtime/combat-launch.mjs";
+import { registerCombatLaunchUI, openCombatLaunch } from "./ui/combat-launch.mjs";
 import { registerClimbSystem } from "./runtime/climb-system.mjs";
 import { registerReady } from "./runtime/ready.mjs";
 import { registerBurning } from "./runtime/burning.mjs";
@@ -243,6 +248,9 @@ const state = {
   sneak: stealthApi,
   climb: climbApi,
   ethereal: etherealApi,   // §225 : `is(token)`, `perceives(observer, target)`, `toggle(tokens?, active?)`
+  correction: { ...correctionApi, open: openCorrection },   // §396 : `apply({ activity, level, targets, damage, attack, save, concentration, effects, consume, zone, public })`, `shape(activity)`, `open(item|activity)`
+  combatLaunch: { ...launchApi, open: openCombatLaunch },   // §397 : `open()`, `candidates()`, `launch({ participants, npcAuto, grouped, playlist })`, `pending()`
+  vanilla: vanillaApi,   // §395 : `use(itemOrActivity, { event })` — lancer par dnd5e seul ; `is(docOrConfig)` — vient-il d'un tel lancement ?
   theater: theaterApi,   // §220 : Théâtre de l'esprit — `active()`, `set(on)` ; hook `dnd5e-combat.theater`
   gm: { alert: alertGM },   // §364 : alerte MJ (`api.gm.alert({ text, item, actor })`) ; hook `dnd5e-combat.gmAlert`
   rolls: { ...rollsApi, open: openGroupRoll, tracker: openTracker },   // §242 : jets demandés par le MJ — hooks `groupRoll`, `groupRollPrompt`
@@ -308,6 +316,8 @@ Hooks.once("init", () => {
   // §117 : le niveau d'automatisation d'abord (son réglage en tête de la fenêtre) ; chaque fonction s'inscrit selon lui.
   registerLevel();
   gated(registerTheater);   // §220 : Théâtre de l'esprit — hors des niveaux d'automatisation : son bouton existe toujours
+  gated(registerVanilla);   // §395 : « sans DAS » — marque ce qui découle d'une action lancée sans DAS, avant toute autre inscription
+  gated(registerCorrection);   // §396 : correction du MJ — la zone remise ne résout rien à la pose
   gated(registerClimbSystem);   // §224 : l'interrupteur de l'escalade et des chutes — avant l'altitude et l'escalade, qui le lisent
   gated(registerPerf);   // §98 : le seuil du relevé des temps, avant que les hooks ne tournent
   gated(registerContent);
@@ -426,6 +436,7 @@ Hooks.once("init", () => {
   gated(registerHelp);
   gated(registerSkillAid);   // §113 : Assistance et Soutien demandés pour un test de compétence (requête à l'aidant)
   gated(registerGroupRoll);   // §242 : jets demandés par le MJ (requête au joueur, carte de demande de dnd5e)
+  gated(registerCombatLaunch);   // §397 : lancer un combat (pause, participants, initiative par la demande de jets, musique)
   gated(registerHide);
   gated(registerSearch);
   gated(registerPassivePerception);
@@ -461,6 +472,8 @@ Hooks.once("init", () => {
   gated(registerGroupRollUI);   // §242 : fenêtre de demande, dé de la barre d'outils, HUD du token, carte
   gated(registerSuccessAtCostUI);   // issue #32 : pastille du MJ, boutons et marques des cartes
   gated(registerPlayerWaitsUI);   // §290 : fenêtre de suivi du MJ (qui il attend, forcer)
+  gated(registerCombatLaunchUI);   // §397 : fenêtre « Lancer un combat » et son bouton
+  gated(registerCorrectionUi);   // §395 / §396 : « Lancer sans DAS » et « Correction du MJ » dans le menu d'un objet de la fiche
   gated(registerGroupRollTracker);   // §242 : fenêtre de suivi du MJ (jets en cours, lancer pour un joueur qui tarde)
   gated(registerAutomation);
   gated(registerMasteryUI);   // §222 : pastille de botte sur la fiche, fenêtre des bottes

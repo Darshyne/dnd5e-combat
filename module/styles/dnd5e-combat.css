@@ -757,3 +757,30 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-connection__actions { display: flex; gap: 6px; justify-content: flex-end; }
 .das-connection__consent { margin: 4px 0 6px; padding-left: 1.2em; font-size: 0.92em; }
 .das-connection__consent li { margin: 2px 0; }
+
+/* ---------- §397 : « Lancer un combat » — grille de vignettes (clic = participe, « ! » = surpris) ---------- */
+.das-combat-launch .das-launch__list { border: 1px solid var(--das-line); border-radius: 8px; padding: 0.4em 0.6em 0.6em; margin: 0; }
+.das-combat-launch .das-launch__list legend { color: var(--das-muted); font-size: 0.85em; padding: 0 0.3em; }
+.das-combat-launch .das-launch__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 0.4em; max-height: 182px; overflow-y: auto; padding: 0.2em; }
+.das-combat-launch .window-content { max-height: calc(100vh - 80px); overflow-y: auto; }
+.das-combat-launch .das-group-roll__body { gap: 0.45em; padding: 0.8em 1em; }
+.das-launch__tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.2em; min-width: 0; }
+.das-launch__portrait { position: relative; width: 64px; height: 64px; padding: 0; border: 2px solid var(--das-line); border-radius: 10px;
+  background: var(--das-surface-2); cursor: pointer; overflow: hidden; opacity: 0.45; filter: grayscale(0.8); transition: opacity 120ms, filter 120ms, border-color 120ms; }
+.das-launch__portrait img { width: 100%; height: 100%; object-fit: cover; border: none; display: block; }
+.das-launch__tile.on .das-launch__portrait { opacity: 1; filter: none; border-color: var(--das-accent); box-shadow: 0 0 0 2px var(--das-accent-soft); }
+.das-launch__portrait:hover { opacity: 0.85; filter: none; }
+.das-launch__surprise { position: absolute; top: -4px; right: calc(50% - 38px); width: 22px; height: 22px; min-height: 0; padding: 0; border-radius: 50%;
+  border: 1px solid var(--das-line); background: var(--das-surface); color: var(--das-muted); font-weight: 800; line-height: 1; cursor: pointer; font-size: 0.85em; }
+.das-launch__surprise:disabled { opacity: 0.25; cursor: default; }
+.das-launch__tile.surprised .das-launch__surprise { background: #f0b43c; border-color: #f0b43c; color: #1a1205; }
+.das-launch__name { max-width: 100%; font-size: 0.78em; color: var(--das-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+.das-launch__badges { position: absolute; left: calc(50% - 36px); bottom: 22px; display: flex; gap: 2px; font-size: 0.7em; color: var(--das-ink); }
+.das-launch__badges i { background: rgba(0, 0, 0, 0.65); border-radius: 4px; padding: 2px 3px; }
+.das-combat-launch .das-launch__legend { display: flex; gap: 1em; color: var(--das-muted); font-size: 0.8em; }
+
+/* ---------- §396 : carte « Correction du MJ » et son bouton « Annuler » ---------- */
+.das-correction-card__title { font-weight: 700; margin: 0 0 0.2em; }
+.das-correction-card ul { margin: 0.2em 0 0; padding-left: 1.1em; }
+.das-correction-undo { display: flex; align-items: center; justify-content: center; gap: 0.4em; width: 100%; margin-top: 0.4em; }
+.das-correction-undone { margin-top: 0.4em; font-style: italic; opacity: 0.7; text-align: center; }

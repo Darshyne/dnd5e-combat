@@ -17,5 +17,7 @@ export const MACROS = [
   { file: "reparer-creatures.js", name: "6. Repair creature sheets (identifiers, CPR basic actions)",
     img: "icons/creatures/abilities/paw-print-pair-purple.webp" },
   { file: "basculer-ethere.js", name: "Toggle Ethereal Plane (selected tokens)",
-    img: "systems/dnd5e/icons/svg/statuses/ethereal.svg" }
+    img: "systems/dnd5e/icons/svg/statuses/ethereal.svg" },
+  { file: "lancer-combat.js", name: "Start a combat",
+    img: "icons/skills/melee/weapons-crossed-swords-black-gray.webp" }
 ];

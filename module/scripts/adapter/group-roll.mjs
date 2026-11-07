@@ -23,6 +23,8 @@ export const toolLabel = key => globalThis.dnd5e?.documents?.Trait?.keyLabel?.(k
 /** La caractéristique du test : celle demandée, sinon celle de la compétence ou de l'outil (sur la fiche, à défaut dans la config). */
 export function abilityOf(request, actor=null) {
   if ( (request.type === "check") || (request.type === "save") ) return request.key;
+  // §397 : l'initiative se lance avec la caractéristique de la fiche (Dextérité par défaut).
+  if ( request.type === "initiative" ) return actor?.system?.attributes?.init?.ability || CONFIG.DND5E.defaultAbilities?.initiative || "dex";
   if ( request.ability ) return request.ability;
   if ( request.type === "skill" ) return actor?.system?.skills?.[request.key]?.ability ?? CONFIG.DND5E.skills?.[request.key]?.ability ?? "";
   return actor?.system?.tools?.[request.key]?.ability ?? CONFIG.DND5E.tools?.[request.key]?.ability ?? "int";
@@ -35,6 +37,7 @@ export function testTitle(request) {
     case "check": return game.i18n.format("DND5E.AbilityPromptTitle", { ability });
     case "save": return game.i18n.format("DND5E.SavePromptTitle", { ability });
     case "skill": return game.i18n.format("DND5E.SkillPromptTitle", { skill: skillLabel(request.key), ability });
+    case "initiative": return game.i18n.localize("DND5E.InitiativeRoll");
     default: return game.i18n.format("DND5E.ToolPromptTitle", { tool: toolLabel(request.key) });
   }
 }
@@ -43,6 +46,7 @@ export function testTitle(request) {
 export function keyLabel(request) {
   if ( request.type === "skill" ) return skillLabel(request.key);
   if ( request.type === "tool" ) return toolLabel(request.key);
+  if ( request.type === "initiative" ) return game.i18n.localize("DND5E.Initiative");
   return abilityLabel(request.key);
 }
 
@@ -66,7 +70,7 @@ export function canRoll(actor, request) {
 export function rollArguments(request, { requestId, actor, showDc=true, extra={}, flags={} }) {
   const config = {};
   if ( (request.type === "check") || (request.type === "save") ) config.ability = request.key;
-  else config[request.type] = request.key;
+  else if ( request.type !== "initiative" ) config[request.type] = request.key;
   if ( request.ability && ((request.type === "skill") || (request.type === "tool")) ) config.ability = request.ability;
   if ( (extra.mode === "advantage") || (extra.mode === "disadvantage") ) {
     // Forcé : les deux écrits, pour l'emporter sur la fiche (dnd5e fusionne `config` par-dessus, actor.mjs:1394).
@@ -105,6 +109,11 @@ export function rollArguments(request, { requestId, actor, showDc=true, extra={}
 function rollContext(actor, request) {
   const ability = abilityOf(request, actor);
   const rollData = actor.getRollData({ roll: true });
+  // §397 : les chemins du jet d'initiative de dnd5e (actor.mjs:1858).
+  if ( request.type === "initiative" ) {
+    rollData.roll = { ...(rollData.roll ?? {}), ability, type: "initiative" };
+    return { category: "check", rollData, paths: [`abilities.${ability}.check.roll`, "attributes.init.roll", "rolls.ability.check"] };
+  }
   if ( (request.type === "check") || (request.type === "save") ) {
     rollData.roll = { ...(rollData.roll ?? {}), ability, type: "ability" };
     return { category: request.type, rollData, paths: [`abilities.${ability}.${request.type}.roll`, `rolls.ability.${request.type}`] };
@@ -137,8 +146,32 @@ export function systemModeOf(actor, request) {
 
 /** La méthode de jet de dnd5e pour ce type. */
 export function rollMethodOf(actor, type) {
+  if ( type === "initiative" ) return actor?.getInitiativeRollConfig ? (config, dialog, message) => rollInitiativeOf(actor, config, dialog, message) : null;
   const name = { check: "rollAbilityCheck", save: "rollSavingThrow", skill: "rollSkill", tool: "rollToolCheck" }[type];
   return actor?.[name]?.bind(actor) ?? null;
+}
+
+/**
+ * §397 : le jet d'initiative d'un acteur pour une demande — la configuration de dnd5e (`Actor5e#getInitiativeRollConfig`, actor.mjs:1846 :
+ * caractéristique, maîtrise, bonus, Surpris, Désavantage d'un ennemi caché…), l'Avantage / le Désavantage de la demande, son bonus, puis
+ * le jet construit par dnd5e (`D20Roll.build`, sa fenêtre si `configure`) et son message, porteur des drapeaux de la demande. Le résultat
+ * devient l'initiative du combattant chez le MJ actif (runtime/group-roll.mjs `link`).
+ */
+async function rollInitiativeOf(actor, config, dialog, message) {
+  const rollConfig = actor.getInitiativeRollConfig({
+    ...(config.advantage ? { advantage: true } : {}), ...(config.disadvantage ? { disadvantage: true } : {}),
+    ...(config.advantage === false ? { advantage: false } : {}), ...(config.disadvantage === false ? { disadvantage: false } : {})
+  });
+  const extra = config.rolls?.[0] ?? {};
+  rollConfig.parts = [...(rollConfig.parts ?? []), ...(extra.parts ?? [])];
+  rollConfig.options = { ...(rollConfig.options ?? {}), ...(extra.options ?? {}) };
+  if ( rollConfig.options.fixed !== undefined ) delete rollConfig.options.fixed;
+  return CONFIG.Dice.D20Roll.build(
+    { evaluate: true, hookNames: ["initiativeDialog", "abilityCheck", "d20Test"], rolls: [rollConfig], subject: actor },
+    { configure: !!dialog?.configure, options: { title: game.i18n.localize("DND5E.InitiativeRoll") } },
+    { create: true, rollMode: CONFIG.Dice.BasicRoll.getMessageMode?.(),
+      data: { ...(message?.data ?? {}), speaker: ChatMessage.implementation.getSpeaker({ actor }) } }
+  );
 }
 
 /* -------------------------------------------- */
@@ -156,6 +189,7 @@ function bonusPaths(request, ability) {
     case "save": return [`abilities.${ability}.save.roll.bonus`, "rolls.ability.save.bonus"];
     case "skill": return [`skills.${request.key}.roll.bonus`, ...check, "rolls.ability.skill.bonus"];
     case "tool": return [`tools.${request.key}.roll.bonus`, ...check, "rolls.ability.tool.bonus"];
+    case "initiative": return ["attributes.init.roll.bonus", ...check];
     default: return check;
   }
 }
@@ -209,12 +243,14 @@ export function breakdownOf(actor, request) {
   if ( request.type === "check" ) source = system.abilities[ability]?.check;
   else if ( request.type === "save" ) source = system.abilities[ability]?.save;
   else if ( request.type === "skill" ) source = system.skills?.[request.key];
+  else if ( request.type === "initiative" ) source = system.attributes?.init;
   else source = system.tools?.[request.key];
   const prof = source?.prof;
   if ( prof && (Number(prof.multiplier) > 0) && (Number(prof.flat) !== 0) ) {
     tiles.push({ kind: "proficiency", label: keyLabel(request), value: signed(Number(prof.flat)), multiplier: Number(prof.multiplier) });
   }
-  const numeric = Number(source?.bonus ?? 0);
+  // §397 : l'initiative garde son bonus sous `roll.bonus` (dnd5e 6 : `attributes.init.bonus` est obsolète) ; des dés y sont lus plus bas.
+  const numeric = Number((request.type === "initiative") ? (source?.roll?.bonus || 0) : (source?.bonus ?? 0)) || 0;
   if ( numeric ) tiles.push({ kind: "bonus", label: game.i18n.localize("DND5E.Bonus"), value: signed(numeric) });
 
   for ( const path of bonusPaths(request, ability) ) {

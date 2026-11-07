@@ -17,13 +17,13 @@ const offIf = (parent, ...off) => ({ parent, off });
 
 /** Les onglets, dans l'ordre. `tools` : les fenêtres qu'un bouton de l'onglet ouvre (MJ seulement) ; `groups` : les cadres. */
 export const SETTINGS_TABS = Object.freeze([
-  { id: "general", icon: "fa-solid fa-dragon", keys: ["automationLevel", "theaterOfMind", "etherealPlane", "provideBasicActions", "autoUsage", "autoTranslate", "dataFixes", "realTimeClock", "groupRollSeconds", "sidebarButton"],
+  { id: "general", icon: "fa-solid fa-dragon", keys: ["automationLevel", "theaterOfMind", "etherealPlane", "provideBasicActions", "autoUsage", "autoTranslate", "dataFixes", "realTimeClock", "groupRollSeconds", "combatLaunchButton", "sidebarButton"],
     groups: [
       g("automation", "fa-solid fa-gauge", ["automationLevel", "theaterOfMind", "autoUsage", "provideBasicActions"]),
       g("ethereal", "fa-solid fa-ghost", ["etherealPlane"]),
       g("data", "fa-solid fa-language", ["autoTranslate", "dataFixes"]),
       g("time", "fa-solid fa-clock", ["realTimeClock"]),
-      g("groupRoll", "fa-solid fa-dice-d20", ["groupRollSeconds"]),
+      g("groupRoll", "fa-solid fa-dice-d20", ["groupRollSeconds", "combatLaunchButton"]),
       g("interface", "fa-solid fa-window-maximize", ["sidebarButton"])
     ],
     tools: [{ id: "welcome", icon: "fa-solid fa-dragon" }, { id: "diagnostic", icon: "fa-solid fa-stethoscope" },

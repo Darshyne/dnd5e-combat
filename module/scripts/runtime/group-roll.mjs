@@ -173,6 +173,8 @@ async function decideBonus(message, actor, posted) {
   const request = requestOf(message);
   const roll = posted?.rolls?.[0];
   if ( !request || !Number.isFinite(roll?.total) || posted.getFlag(MODULE_ID, "groupRollBonus") ) return none;
+  // §397 : l'initiative n'a pas de DD — aucun dé « après avoir vu le jet » n'est proposé (le jet donne l'ordre du tour, rien d'autre).
+  if ( request.type === "initiative" ) return none;
   const dc = request.dc;
   const shownDc = request.hideDc ? null : dc;
   const what = keyLabel(request);
@@ -381,7 +383,25 @@ function link(result) {
     }
     targets[index].result = result.id;
     await message.update({ "system.targets": targets });
+    await initiativeFrom(message, actorUuid, result);
   }).catch(err => console.error(`${MODULE_ID} | group roll: result not linked`, err));
+}
+
+/**
+ * §397 : une demande d'initiative — le total devient l'initiative des combattants de cet acteur dans le combat de la demande (le combat
+ * actif à défaut), puis dnd5e recharge ce qui revient à l'initiative (`Combat5e#_recoverUses`, combat.mjs:86, comme son propre jet).
+ */
+async function initiativeFrom(message, actorUuid, result) {
+  const request = requestOf(message);
+  if ( request?.type !== "initiative" ) return;
+  const total = result.rolls?.[0]?.total;
+  if ( !Number.isFinite(total) ) return;
+  const combat = game.combats.get(request.combat ?? "") ?? game.combat;
+  const mine = combat?.combatants.filter(c => (c.actor?.uuid === actorUuid) && !Number.isFinite(c.initiative)) ?? [];
+  if ( !mine.length ) return;
+  await combat.updateEmbeddedDocuments("Combatant", mine.map(c => ({ _id: c.id, initiative: total })));
+  for ( const c of mine ) await combat._recoverUses?.({ initiative: c });
+  log(`group roll: ${mine[0].name}'s initiative is ${total}`);
 }
 
 /** Le point d'une carte, annoncé sur ce client. */

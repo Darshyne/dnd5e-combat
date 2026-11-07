@@ -17,6 +17,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { recordTiming } from "./perf.mjs";
 import { isExecutor } from "./shared.mjs";
 import { theaterActive } from "./theater-state.mjs";
+import { concernsVanilla } from "../adapter/vanilla-state.mjs";
 import { noteRouterError, noteRefused } from "./debug.mjs";
 
 /** §220 : les hooks de démarrage passent toujours — leurs écoutes doivent être posées pour qu'on puisse rallumer sans recharger. */
@@ -30,8 +31,8 @@ export const STARTUP_HOOKS = Object.freeze(["init", "i18nInit", "setup", "ready"
  * @param {(entry: {hook: string, label: string}) => void} [deps.refused]  Un inscrit a annulé l'opération (trace).
  * @param {{now: () => number, record: (hook: string, label: string, kind: "sync"|"async", ms: number) => void}} [deps.timing]
  *   §98 : chronomètre chaque appel — le temps synchrone, et pour une promesse, le temps jusqu'à sa fin (core/perf.mjs).
- * @param {() => boolean} [deps.paused]  §220 : Théâtre de l'esprit — rien ne passe, sauf les hooks de démarrage et les inscriptions
- *   `always`.
+ * @param {(hook: string, args: any[]) => boolean} [deps.paused]  §220 : Théâtre de l'esprit — rien ne passe, sauf les hooks de
+ *   démarrage et les inscriptions `always`. §395 : reçoit le hook et ses arguments (une action lancée sans DAS ne fait taire que ses hooks).
  */
 export function createRouter({ subscribe, isExecutor, report, refused=() => {}, timing=null, paused=() => false }) {
   const routes = new Map();
@@ -40,7 +41,8 @@ export function createRouter({ subscribe, isExecutor, report, refused=() => {}, 
   const skipped = [];
 
   function dispatch(hook, args) {
-    const off = !STARTUP_HOOKS.includes(hook) && paused();
+    const startup = STARTUP_HOOKS.includes(hook);
+    let off = !startup && paused(hook, args);
     for ( const entry of routes.get(hook) ) {
       if ( off && !entry.always ) continue;
       if ( entry.executor && !isExecutor() ) continue;
@@ -49,6 +51,8 @@ export function createRouter({ subscribe, isExecutor, report, refused=() => {}, 
       try { result = entry.handler(...args); }
       catch(err) { report(entry, err); continue; }
       finally { if ( timing ) timing.record(hook, entry.label, "sync", timing.now() - t0); }
+      // §395 : un inscrit qui marque ce qui se crée (« sans DAS ») — les suivants relisent l'état.
+      if ( entry.marks && !off ) off = !startup && paused(hook, args);
       if ( typeof result?.then === "function" ) {
         result.then(timing ? () => timing.record(hook, entry.label, "async", timing.now() - t0) : null, err => report(entry, err));
       }
@@ -71,14 +75,15 @@ export function createRouter({ subscribe, isExecutor, report, refused=() => {}, 
      * @param {string} [options.notify]       Clé de traduction d'une notification d'erreur.
      * @param {"error"|"warn"} [options.level]
      * @param {boolean} [options.always]      §220 : passe aussi pendant le Théâtre de l'esprit (son propre bouton).
+     * @param {boolean} [options.marks]       §395 : marque le document en création ; les inscrits suivants relisent `paused`.
      */
-    on(hook, handler, { label=hook, executor=false, cancellable=false, notify=null, level="error", always=false }={}) {
+    on(hook, handler, { label=hook, executor=false, cancellable=false, notify=null, level="error", always=false, marks=false }={}) {
       if ( suspended ) { skipped.push({ hook, label, feature: suspended }); return; }
       if ( !routes.has(hook) ) {
         routes.set(hook, []);
         subscribe(hook, (...args) => dispatch(hook, args));
       }
-      routes.get(hook).push({ hook, handler, label, executor, cancellable, notify, level, always });
+      routes.get(hook).push({ hook, handler, label, executor, cancellable, notify, level, always, marks });
     },
 
     /**
@@ -120,8 +125,8 @@ const router = createRouter({
   },
   // §98 : relevé des temps (runtime/perf.mjs).
   timing: { now: () => performance.now(), record: recordTiming },
-  // §220 : Théâtre de l'esprit.
-  paused: theaterActive
+  // §220 : Théâtre de l'esprit ; §395 : une action lancée sans DAS, et ce qui en découle.
+  paused: (hook, args) => theaterActive() || concernsVanilla(args)
 });
 
 export const route = router.on;

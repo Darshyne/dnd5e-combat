@@ -85,7 +85,8 @@ const GroupRollApp = () => GroupRollClass ??= class GroupRollApp extends foundry
 
   async _renderHTML() {
     const v = this.values;
-    const types = ROLL_TYPES.map(t => `<option value="${t}" ${v.type === t ? "selected" : ""}>${esc(loc(`JetGroupe.Type.${t}`))}</option>`).join("");
+    // §397 : l'initiative se demande par le lancement du combat (ui/combat-launch.mjs), pas ici.
+    const types = ROLL_TYPES.filter(t => t !== "initiative").map(t => `<option value="${t}" ${v.type === t ? "selected" : ""}>${esc(loc(`JetGroupe.Type.${t}`))}</option>`).join("");
     const keys = keyChoices(v.type);
     if ( !keys.some(k => k.value === v.key) ) v.key = keys[0]?.value ?? "";
     const keyOptions = keys.map(k => `<option value="${esc(k.value)}" ${v.key === k.value ? "selected" : ""}>${esc(k.label)}</option>`).join("");

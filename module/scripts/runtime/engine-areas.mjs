@@ -3,6 +3,7 @@
  * instantanées. Extrait de runtime/engine.mjs.
  */
 
+import { MODULE_ID } from "../constants.mjs";
 import { selectAreaTargets, openArea, turnKeyOf, actsOnPose } from "../core/area.mjs";
 import { readActivityRegion, repairSaveAbility, showTargetsTo } from "../adapter/saves.mjs";
 import { readUsage } from "../adapter/usage.mjs";
@@ -92,7 +93,8 @@ export async function onRegionCreated(region) {
       const key = turnKeyOf(game.combat?.started ? game.combat.round : null, game.combat?.turn);
       // §300 (repasse C5) : une zone dont le texte ne prévoit rien à l'incantation (`quietPose` : Tempête de neige, Nuage nauséabond)
       // n'agit qu'aux moments déclarés — ceux qui sont déjà dedans sauvegardent en commençant leur tour.
-      const quiet = contentOf(activity.item).entry?.quietPose === true;
+      // §396 : une zone remise par la correction du MJ n'agit pas à la pose non plus (carte marquée `quietPose`).
+      const quiet = (contentOf(activity.item).entry?.quietPose === true) || (message.getFlag(MODULE_ID, "quietPose") === true);
       await writeAreaState(region, {
         ...openArea(rules.on, key, (usage?.area && actsOnPose(rules.on) && !scatter && !quiet) ? targets.map(t => t.token) : []),
         usage: message.id,

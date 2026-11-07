@@ -7,7 +7,10 @@
  * Pur : aucune dépendance à Foundry.
  */
 
-export const ROLL_TYPES = Object.freeze(["check", "save", "skill", "tool"]);
+export const ROLL_TYPES = Object.freeze(["check", "save", "skill", "tool", "initiative"]);
+
+/** §397 : la clé d'une demande d'initiative (le jet d'initiative de la fiche, sa caractéristique comprise). */
+export const INITIATIVE_KEY = "init";
 
 /**
  * La demande, normalisée ; une erreur (texte anglais, pour la console) si elle ne se joue pas.
@@ -22,12 +25,14 @@ export const ROLL_TYPES = Object.freeze(["check", "save", "skill", "tool"]);
  * @param {string} [input.label]
  * @param {boolean} [input.group]      Test de groupe (2024).
  * @param {string|null} [input.ability] Pour une compétence ou un outil : une autre caractéristique que celle par défaut.
+ * @param {string|null} [input.combat] §397 : pour l'initiative, le combat dont les combattants reçoivent le résultat.
  * @returns {{request: object|null, error: string|null}}
  */
 export function normalizeRequest(input={}) {
   const type = String(input.type ?? "");
   if ( !ROLL_TYPES.includes(type) ) return { request: null, error: `unknown roll type "${type}"` };
-  const key = String(input.key ?? "").trim();
+  const initiative = type === "initiative";
+  const key = initiative ? INITIATIVE_KEY : String(input.key ?? "").trim();
   if ( !key ) return { request: null, error: "no ability, skill or tool given" };
   const dcNumber = Number(input.dc);
   const dc = ((input.dc === null) || (input.dc === undefined) || (input.dc === "") || !Number.isFinite(dcNumber)) ? null
@@ -41,7 +46,8 @@ export function normalizeRequest(input={}) {
   return {
     request: {
       type, key, ability, dc, hideDc: (dc !== null) && !!input.hideDc, advantage, disadvantage, bonus,
-      label: String(input.label ?? "").trim().slice(0, 120), group: !!input.group
+      label: String(input.label ?? "").trim().slice(0, 120), group: !initiative && !!input.group,
+      ...(initiative ? { combat: input.combat ? String(input.combat) : null } : {})
     },
     error: null
   };

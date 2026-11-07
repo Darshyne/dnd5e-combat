@@ -720,6 +720,12 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-debug__module { font-family: var(--font-mono, monospace); font-size: 0.85em; opacity: 0.8; }
 .das-debug__message { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .das-debug-report textarea { width: 100%; resize: vertical; font-size: 0.92em; }
+.das-debug-report textarea, .das-debug-report select {
+  background: var(--das-surface); color: var(--das-ink); border: 1px solid var(--das-line);
+}
+.das-debug-report textarea::placeholder { color: var(--das-muted); opacity: 1; }
+.das-debug-report textarea:focus, .das-debug-report select:focus { border-color: var(--das-accent); outline: none; box-shadow: none; }
+.das-debug-report select option { background: var(--das-surface); color: var(--das-ink); }
 .das-debug__preview { min-height: 200px; flex: 1; font-family: var(--font-mono, monospace); font-size: 0.82em !important; white-space: pre; }
 .das-debug__options { flex-direction: row !important; flex-wrap: wrap; gap: 4px 14px !important; }
 .das-debug__option { display: flex; align-items: center; gap: 4px; font-size: 0.92em; }

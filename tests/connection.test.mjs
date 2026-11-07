@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { apiShape, browserFamily, compareClients, connectionMarkdown, diagnose, fingerprint, pingStats, worstLevel } from "../module/scripts/core/connection.mjs";
+import { apiShape, browserFamily, browserName, compareClients, connectionMarkdown, diagnose, fingerprint, pingStats, worstLevel } from "../module/scripts/core/connection.mjs";
 
 const ids = list => list.map(f => `${f.level} ${f.id}`);
 
@@ -23,8 +23,11 @@ describe("§388 empreinte du code", () => {
     const a = { ui: { cost() {}, cell() {} }, open() {} };
     const b = { open() {}, ui: { cell() {}, cost() {} } };
     expect(apiShape(a)).toEqual(["open", "ui", "ui.cell", "ui.cost"]);
+    // Une instance et des valeurs simples : leur état vivant n'entre pas dans l'empreinte.
+    class Bar { constructor() { this.pending = 1; } render() {} }
+    expect(apiShape({ bar: new Bar(), state: { ready: true }, open() {} })).toEqual(["open", "state"]);
     expect(fingerprint(apiShape(a))).toBe(fingerprint(apiShape(b)));
-    expect(fingerprint(apiShape({ ...a, extra: 1 }))).not.toBe(fingerprint(apiShape(a)));
+    expect(fingerprint(apiShape({ ...a, extra() {} }))).not.toBe(fingerprint(apiShape(a)));
     expect(fingerprint([])).toBeNull();
   });
 });
@@ -88,6 +91,16 @@ describe("§388 diagnose", () => {
 });
 
 describe("§388 divers", () => {
+  it("nom du navigateur sans les marques leurres", () => {
+    expect(browserName([{ brand: "Not?A_Brand", version: "24" }, { brand: "Chromium", version: "152" }], "ua")).toBe("Chromium 152");
+    expect(browserName([{ brand: "Chromium", version: "130" }, { brand: "Google Chrome", version: "130" }, { brand: "Not_A Brand", version: "8" }])).toBe("Google Chrome 130");
+    expect(browserName(undefined, "Mozilla Firefox")).toBe("Mozilla Firefox");
+  });
+  it("affichage figé (0 image par seconde, fenêtre pas cachée)", () => {
+    const f = diagnose({ pings: { count: 1, lost: 0, min: 1, median: 1, worst: 1, jitter: 0 }, probe: { canvas: true, fps: 0, hidden: false }, reference: {} });
+    expect(f.map(x => x.id)).toContain("frozen");
+    expect(f.map(x => x.id)).not.toContain("fps");
+  });
   it("famille du navigateur", () => {
     expect(browserFamily("Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36 Chrome/130.0 Safari/537.36")).toBe("chromium");
     expect(browserFamily("Mozilla/5.0 (Windows NT 10.0; rv:131.0) Gecko/20100101 Firefox/131.0")).toBe("firefox");

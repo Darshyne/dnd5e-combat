@@ -52,19 +52,29 @@ export function pingStats(samples=[]) {
   };
 }
 
-/** Les chemins des clés d'une API publique, jusqu'à `depth` niveaux (« ui.cost », « rolls.request »…), triés. */
+/**
+ * Les chemins des fonctions d'une API publique, jusqu'à `depth` niveaux (« ui.cost », « rolls.request »…), triés. Seuls les objets
+ * simples sont parcourus : une instance (une barre, une fenêtre) porte un état vivant qui change d'un client à l'autre (vu en jeu :
+ * `bar.pending`, `bar.popupRef`) et ferait croire à un autre code.
+ */
 export function apiShape(api, depth=2, prefix="") {
   if ( !api || ((typeof api !== "object") && (typeof api !== "function")) || (depth <= 0) ) return [];
   const out = [];
   for ( const key of Object.keys(api).sort() ) {
     const path = prefix ? `${prefix}.${key}` : key;
-    out.push(path);
     let value;
     try { value = api[key]; } catch { continue; }
-    if ( value && (typeof value === "object") && !Array.isArray(value) ) out.push(...apiShape(value, depth - 1, path));
+    if ( typeof value === "function" ) out.push(path);
+    else if ( isPlain(value) ) {
+      out.push(path);
+      out.push(...apiShape(value, depth - 1, path));
+    }
   }
   return out;
 }
+
+const isPlain = v => !!v && (typeof v === "object") && !Array.isArray(v)
+  && [Object.prototype, null].includes(Object.getPrototypeOf(v));
 
 /** L'empreinte d'une liste de chaînes (ordre indifférent). Rien à lire : `null`. */
 export function fingerprint(parts) {
@@ -157,6 +167,7 @@ export function diagnose({ pings, probe=null, reference={}, thresholds=THRESHOLD
   if ( probe.webgl2 === false ) add("webgl2", "bad");
   if ( Number.isFinite(probe.maxTextureSize) && (probe.maxTextureSize <= T.textureWarn) ) add("texture", "warn", { size: probe.maxTextureSize });
   if ( probe.canvas === false ) add("noCanvas", "info");
+  else if ( (probe.fps === 0) && !probe.hidden ) add("frozen", "warn");
   else if ( Number.isFinite(probe.fps) && !probe.hidden ) {
     const level = (probe.fps < T.fpsBad) ? "bad" : (probe.fps < T.fpsWarn) ? "warn" : "ok";
     add("fps", level, { fps: probe.fps });
@@ -177,6 +188,13 @@ function sortFindings(list) {
 /** Le niveau le plus grave d'une liste de constats. */
 export function worstLevel(findings=[]) {
   return findings.reduce((w, f) => (LEVELS.indexOf(f.level) > LEVELS.indexOf(w) ? f.level : w), "ok");
+}
+
+/** Le nom du navigateur : la marque de `navigator.userAgentData` (sans les marques leurres « Not?A_Brand »), sinon le « user agent ». */
+export function browserName(brands=[], userAgent="") {
+  const real = (brands ?? []).filter(b => !/not.?a.?brand/i.test(b.brand ?? ""));
+  const pick = real.find(b => b.brand !== "Chromium") ?? real[0];
+  return pick ? `${pick.brand} ${pick.version}` : userAgent;
 }
 
 /** La famille du navigateur, depuis son « user agent » : chromium, firefox, safari ou other. */

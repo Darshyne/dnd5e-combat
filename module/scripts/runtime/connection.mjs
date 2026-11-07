@@ -11,7 +11,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { apiShape, browserFamily, diagnose, fingerprint, pingStats } from "../core/connection.mjs";
+import { apiShape, browserFamily, browserName, diagnose, fingerprint, pingStats } from "../core/connection.mjs";
 import { safeSettings } from "../core/debug.mjs";
 import { addReportSection, debugApi, isSuitePackage, roles } from "./debug.mjs";
 import { describeRoutes } from "./router.mjs";
@@ -105,7 +105,7 @@ export async function probeClient({ fps=true }={}) {
   return {
     ...referenceClient(),
     now: Date.now(),
-    client: support.client ?? navigator.userAgent,
+    client: browserName(navigator.userAgentData?.fullVersionList ?? navigator.userAgentData?.brands, navigator.userAgent),
     browserFamily: browserFamily(navigator.userAgent),
     os: support.os ?? null,
     gpu: support.gpu ?? null,

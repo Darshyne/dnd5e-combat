@@ -7,8 +7,8 @@
  *  - Humain, Rôdeur elfe (vision dans le noir) : ne voient ni la cible dans les ténèbres, ni celle derrière ; voient le témoin au loin.
  *  - Occultiste du diable (Vision du diable, 120 ft) : voit dans les ténèbres et à travers ; plus au-delà de 120 ft.
  *  - Vision véritable (120 ft) : voit dans et à travers. Vision aveugle (30 ft) : la cible dans les ténèbres (25 ft), pas celle derrière.
- * Puis Aveuglé (Occultiste, Vision véritable, Vision aveugle) et Assourdi (Humain) : seule la vision aveugle perçoit encore, l'Assourdi
- * n'entend plus rien.
+ * Puis Aveuglé (Occultiste, Vision véritable, Vision aveugle) et Assourdi (Humain) : seule la vision aveugle perçoit encore, le reste
+ * s'entend (contour de l'ouïe) ; l'Assourdi n'entend plus rien.
  * Écran : ce que les règles voient s'affiche net (« seen ») ou par le contour de son sens (« outline » : vision aveugle, vision
  * véritable, filtres de dnd5e) ; ce qu'elles ne voient pas n'est jamais net (caché, ou contour de l'ouïe, « heard », §62). Puis le même relevé réglage « Vision simulée » coupé, pour comparer avec le rendu du cœur seul (journal, sans attente).
  *
@@ -138,7 +138,9 @@ export default {
       const want = BLIND_EXPECTED[r.observer][TARGETS.indexOf(r.target)];
       ctx.expect(r.rules.sees === want, `${r.observer} Aveuglé ${want ? "perçoit" : "ne voit pas"} ${r.target} (règles)`);
       if ( r.rules.sees ) ctx.expect(["seen", "outline"].includes(r.screen), `${r.observer} Aveuglé : ${r.target} affichée par son sens (écran : ${r.screen})`);
-      else ctx.expect(r.screen !== "seen", `${r.observer} Aveuglé : ${r.target} jamais nette (écran : ${r.screen})`);
+      // Ce qu'il ne perçoit pas, il l'entend : le contour de l'ouïe, même Aveuglé (le cœur saute la perception de la lumière d'une
+      // source aveuglée ; le mode `dasHearing` du moteur prend le relais).
+      else ctx.expect(r.screen === (r.rules.hears ? "heard" : "hidden"), `${r.observer} Aveuglé : ${r.target} ${r.rules.hears ? "entendue" : "absente"} à l'écran (écran : ${r.screen})`);
     }
     for ( const name of BLINDED ) await status(name, "blinded", false);
     await status("Humain", "deafened", false);

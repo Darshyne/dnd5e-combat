@@ -18,6 +18,8 @@
  *  - un mode de détection « Vision du diable » (`devilsSight`), enregistré à `setup` et donné EN MÉMOIRE (rien n'est écrit) aux tokens
  *    dont l'acteur a l'invocation (`devils-sight`), à chaque mise en place des sources de vision (`initializeVisionSources`) : la cible
  *    à 120 ft s'affiche nette, comme vue normalement — la règle est celle de `canSee` (adapter/vision.mjs, `devilsSightSeesToken`) ;
+ *  - l'ouïe d'un observateur Aveuglé passe par un mode spécial donné en mémoire (`dasHearing`) : le cœur saute la perception de la
+ *    lumière d'une source aveuglée, et un personnage Aveuglé ne voyait plus ce qu'il entend ;
  *  - une créature entendue (contour) porte une petite oreille au-dessus de son token, et, au survol, « Entendu, pas vu » : de loin, le
  *    contour d'un token à anneau passait pour une créature vue. (L'anneau dynamique ne se retire pas côté client sans patcher le cœur.)
  */
@@ -161,21 +163,52 @@ function devilsSightMode() {
  * dnd5e projette les sens de la fiche (documents/token.mjs `applySenseOverrides`), sans rien écrire. Les données préparées du token sont
  * refaites à chaque mise à jour ; le cœur rappelle ce hook à chaque mise en place des sources (groups/visibility.mjs:192).
  */
-function grantDevilsSight(sources) {
-  if ( !CONFIG.Canvas.detectionModes[DEVILS_SIGHT.mode] ) return;
+function grantModes(sources) {
+  const modes = CONFIG.Canvas.detectionModes;
   for ( const source of sources?.values?.() ?? [] ) {
     const doc = source.object?.document;
     if ( !doc?.detectionModes ) continue;
-    const range = devilsSightRange(doc);
-    if ( range > 0 ) doc.detectionModes[DEVILS_SIGHT.mode] = { enabled: true, range };
-    else delete doc.detectionModes[DEVILS_SIGHT.mode];
+    if ( modes[DEVILS_SIGHT.mode] ) {
+      const range = devilsSightRange(doc);
+      if ( range > 0 ) doc.detectionModes[DEVILS_SIGHT.mode] = { enabled: true, range };
+      else delete doc.detectionModes[DEVILS_SIGHT.mode];
+    }
+    // L'ouïe d'un Aveuglé, en DERNIER : le cœur essaie les modes spéciaux dans l'ordre (visibility.mjs) — un vrai sens passe avant.
+    if ( modes[HEARING_MODE] ) {
+      delete doc.detectionModes[HEARING_MODE];
+      doc.detectionModes[HEARING_MODE] = { enabled: true, range: Infinity };
+    }
   }
+}
+
+/**
+ * Issue #42 : l'ouïe d'un observateur Aveuglé. Le cœur saute la vue de base et la perception de la lumière d'une source aveuglée
+ * (groups/visibility.mjs, `if ( visionSource.isBlinded ) continue`) — or l'ouïe passe par la perception de la lumière (`heard`) : un
+ * personnage Aveuglé ne voyait plus à l'écran les créatures qu'il entend. Ce mode spécial (SOUND, ni murs ni angle : `canHear` juge
+ * murs de son, surdité, cible cachée ou morte), donné en mémoire à chaque token avec une source de vision, n'agit que pour une source
+ * aveuglée et jamais pour les sources jetables des règles (entendre n'est pas voir) ; le cœur pose son filtre, le contour de l'ouïe.
+ */
+const HEARING_MODE = "dasHearing";
+function hearingMode() {
+  const DetectionMode = foundry.canvas.perception.DetectionMode;
+  class DetectionModeHearing extends DetectionMode {
+    static getDetectionFilter() { return filter(); }
+    testVisibility(visionSource, mode, config) {
+      if ( !mode?.enabled || !visionSource?.isBlinded || !isVisionAvailable() ) return false;
+      if ( String(visionSource.sourceId ?? "").startsWith(SIMULATED) ) return false;
+      const p = pair(visionSource, config.object);
+      return !!p && canHear(p.observer, p.target);
+    }
+  }
+  return new DetectionModeHearing({ id: HEARING_MODE, label: "DND5ECOMBAT.Vision.Ouie", tokenConfig: false,
+    type: DetectionMode.DETECTION_TYPES.SOUND, walls: false, angle: false });
 }
 
 /** À `setup` : après le cœur et le système (dnd5e ajoute ses modes à `init`). */
 function installModes() {
   const modes = CONFIG.Canvas.detectionModes;
   modes[DEVILS_SIGHT.mode] ??= devilsSightMode();
+  modes[HEARING_MODE] ??= hearingMode();
   for ( const [id, mode] of Object.entries(modes) ) {
     const extended = mode ? extend(id, mode) : null;
     if ( extended ) modes[id] = extended;
@@ -191,7 +224,7 @@ function refreshVisibility() {
 
 export function registerPerception() {
   route("setup", installModes, { label: "perception: detection modes not installed" });
-  route("initializeVisionSources", grantDevilsSight, { label: "perception: Devil's Sight not granted" });
+  route("initializeVisionSources", grantModes, { label: "perception: Devil's Sight or blind hearing not granted" });
   registerHeardMarks();
   const refresh = { label: "perception: display not refreshed" };
   for ( const hook of ["createRegion", "updateRegion", "deleteRegion", "createActiveEffect", "updateActiveEffect", "deleteActiveEffect"] ) {

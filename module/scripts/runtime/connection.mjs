@@ -95,6 +95,13 @@ function setting(ns, key) {
   try { return game.settings.get(ns, key); } catch { return undefined; }
 }
 
+/** Le nombre de fichiers de traduction que le MJ a publiés pour Babele (`null` : Babele absent). */
+function babelePublished() {
+  if ( !game.modules.get("babele")?.active ) return null;
+  const files = setting("babele", "translationFiles");
+  return Array.isArray(files) ? files.length : null;
+}
+
 /** La sonde : ce client se décrit. `fps: false` : sans la mesure de 2 s. */
 export async function probeClient({ fps=true }={}) {
   const support = await supportReport();
@@ -124,7 +131,8 @@ export async function probeClient({ fps=true }={}) {
     audioLocked,
     diceSoNice: !!dsn?.active && (setting("dice-so-nice", "enabled") !== false),
     babele: !!game.modules.get("babele")?.active,
-    filesBrowse: game.user.can("FILES_BROWSE"),
+    babeleBrowses: game.user.isGM && game.user.can("FILES_BROWSE"),
+    babelePublished: babelePublished(),
     character: !character ? "none" : character.isOwner ? "owned" : "notOwned",
     errors: debugApi.total(),
     settings: clientSettings()

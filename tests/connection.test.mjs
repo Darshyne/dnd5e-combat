@@ -75,12 +75,12 @@ describe("§388 diagnose", () => {
     const f = diagnose({
       pings: { ...pings, median: 450, worst: 1200, jitter: 1150, lost: 1, offset: -12500 },
       probe: { ...probe, modules: [{ id: "dnd5e-combat", version: "1", code: "y" }], gpu: "Google SwiftShader", fps: 15, hidden: false,
-        babele: true, filesBrowse: false, language: "en", character: "none", audioLocked: true, viewedScene: "s2", errors: 3,
+        babele: true, babeleBrowses: false, babelePublished: 0, language: "en", character: "none", audioLocked: true, viewedScene: "s2", errors: 3,
         browserFamily: "firefox", diceSoNice: true },
       reference
     });
-    expect(ids(f)).toEqual(["bad clock", "bad browserCache", "bad softwareGpu", "warn ping", "warn jitter", "warn lost", "warn filesBrowse",
-      "warn audioLocked", "warn fps", "warn errors", "info language", "info noCharacter", "info diceSoNice", "info browser", "info scene"]);
+    expect(ids(f)).toEqual(["bad clock", "bad browserCache", "bad softwareGpu", "warn ping", "warn jitter", "warn lost", "warn babeleEmpty",
+      "warn audioLocked", "warn fps", "warn errors", "info babeleLanguage", "info noCharacter", "info diceSoNice", "info browser", "info scene"]);
     expect(f.find(x => x.id === "clock").data.seconds).toBe(-12.5);
   });
 

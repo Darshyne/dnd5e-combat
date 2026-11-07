@@ -152,9 +152,12 @@ export function diagnose({ pings, probe=null, reference={}, thresholds=THRESHOLD
   if ( !stale.length && !cached.length && !diff.foundry && !diff.system ) add("versions", "ok", { count: (probe.modules ?? []).length });
 
   // Pièges connus
-  if ( probe.babele && (probe.filesBrowse === false) ) add("filesBrowse", "warn");
+  // Babele (2.9.1) : seul un client MJ avec « Parcourir les fichiers » cherche les traductions ; il en publie la liste (réglages de monde
+  // `babele.translationFiles` / `mappingFiles`, à chaque `ready`, dans SA langue). Les autres clients lisent cette liste.
+  const published = probe.babele && (probe.babeleBrowses === false);
+  if ( published && (probe.babelePublished === 0) ) add("babeleEmpty", "warn");
   if ( probe.language && reference.language && (probe.language !== reference.language) ) {
-    add("language", "info", { player: probe.language, gm: reference.language });
+    add(published ? "babeleLanguage" : "language", "info", { player: probe.language, gm: reference.language });
   }
   if ( probe.hidden ) add("hidden", "warn");
   if ( probe.audioLocked ) add("audioLocked", "warn");

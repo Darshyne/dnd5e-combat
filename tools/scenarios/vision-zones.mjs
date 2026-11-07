@@ -10,6 +10,7 @@
  *     (le son passe, pas la vue). Sense All ignore les murs.
  *  4. Une cible en vol dans le noir : les vibrations ne la perçoivent plus (detection-modes/tremor-perception.mjs), la vision dans le
  *     noir, si.
+ *  5. L'Invisible révélé : Détection de l'invisibilité (l'Humain, sur lui-même) ; Lueurs féeriques sur la Cible invisible — tous la voient.
  * Écran : ce que les règles voient s'affiche (net ou par le contour de son sens) ; le reste est entendu (contour de l'ouïe) ou absent.
  */
 import { ARENE_VISION } from "../lib/stages.mjs";
@@ -129,5 +130,46 @@ export default {
     ctx.log("dans le noir, en vol :"); show(rows);
     for ( const r of rows ) check(r, r.observer === "Rôdeur elfe", true, "en vol");
     await fly(false);
+    await ctx.call("delete-scene-object", { type: "Region", objectId: nightId }).catch(() => {});
+    await pause(1000);
+
+    // 5. L'Invisible révélé : Détection de l'invisibilité (sur soi, l'Humain) ; Lueurs féeriques sur la Cible invisible (Occultiste).
+    const invisible = "Cible invisible";
+    await ctx.call("set-status", { tokenId: tokens[invisible].id, statusId: "invisible", active: true });
+    await ctx.removeEffectsNamed(tokens[invisible], /outlined|silhouette|faerie|lueur/i);
+    await pause(1000);
+    let rowsInv = await matrix(["Humain", "Rôdeur elfe"], [invisible]);
+    for ( const r of rowsInv ) check(r, false, true, "Invisible");
+    const human = tokens["Humain"];
+    await ctx.ensureItem(human, `${SPELLS}phbsplSeeInvisib`, { system: { method: "atwill" } });
+    ctx.restore(() => ctx.removeEffectsNamed(human, /see invisib|détection|concentr/i));
+    // L'effet du sort (sens spécial « Invisible creatures ») se pose au bouton de la carte de dnd5e : posé ici directement.
+    const seeItem = await ctx.itemId(human.id, "see-invisibility");
+    await ctx.engine("placeItemEffect", { tokenId: human.id, casterId: human.id, itemId: seeItem, effectId: "BRwB0T8buWhJAuDx" });
+    await pause(1500);
+    rowsInv = await matrix(["Humain", "Rôdeur elfe"], [invisible]);
+    ctx.log("Détection de l'invisibilité (Humain) :"); show(rowsInv);
+    for ( const r of rowsInv ) check(r, r.observer === "Humain", true, "Détection de l'invisibilité");
+    await ctx.removeEffectsNamed(human, /see invisib|détection|concentr/i);
+    await pause(1000);
+    // Lueurs féeriques : sauvegarde de Dextérité de la cible — rejouée jusqu'à l'échec (10 essais au plus).
+    await ctx.ensureItem(caster, `${SPELLS}phbsplFaerieFire`, { system: { method: "atwill" } });
+    const ib = await ctx.box(tokens[invisible]);
+    let lit = false;
+    for ( let n = 1; (n <= 10) && !lit; n++ ) {
+      const used = await ctx.use({ tokenId: caster.id, identifier: "faerie-fire",
+        area: { shape: "rectangle", x: ib.x - (grid / 2), y: ib.y - (grid / 2), width: grid * 2, height: grid * 2 } });
+      if ( used.regionId ) ctx.restore(() => ctx.call("delete-scene-object", { type: "Region", objectId: used.regionId }).catch(() => {}));
+      await pause(2500);
+      lit = (await ctx.effects(tokens[invisible])).some(e => /outlined|silhouette|faerie|lueur/i.test(e.name ?? ""));
+      if ( !lit ) { await ctx.removeEffectsNamed(caster, /concentr/i); if ( used.regionId ) await ctx.call("delete-scene-object", { type: "Region", objectId: used.regionId }).catch(() => {}); }
+    }
+    ctx.expect(lit, "Lueurs féeriques : la Cible invisible a raté sa sauvegarde");
+    if ( lit ) {
+      ctx.restore(() => ctx.removeEffectsNamed(tokens[invisible], /outlined|silhouette|faerie|lueur/i));
+      rowsInv = await matrix(["Humain", "Rôdeur elfe", "Voir l'invisible"], [invisible]);
+      ctx.log("Lueurs féeriques sur la Cible invisible :"); show(rowsInv);
+      for ( const r of rowsInv ) check(r, true, true, "Lueurs féeriques");
+    }
   }
 };

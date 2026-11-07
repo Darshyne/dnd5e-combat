@@ -130,7 +130,20 @@ function testsFor(target, observer=null) {
   const level = canvas.scene.levels?.get?.(target.level) ?? canvas.level;
   const tests = target.getVisibilityTestPoints(pos).map(point => ({ point, level, los: new Map() }));
   // §161 : l'observateur qui voit l'Invisible (Détection de l'invisibilité) la voit comme une autre.
-  return { object: (revealedInvisible(target.actor, observer?.actor) || seesInvisible(observer?.actor)) ? unveiled(target.object) : target.object, level, tests };
+  return { object: asSeenBy(observer, target.object), level, tests };
+}
+
+/**
+ * §161, issue #42 : la cible telle que la présenter aux modes de détection de l'observateur — dévoilée (`unveiled`) quand il voit
+ * l'Invisible (Détection de l'invisibilité, Troisième œil) ou qu'elle ne peut pas bénéficier de l'état (Lueurs féeriques, Poussière
+ * d'étoile) ; sinon telle quelle. Partagé par les règles (`testsFor`) et l'écran (ui/perception.mjs) : à l'écran, la vue de base refusait
+ * l'Invisible alors que les règles la voyaient.
+ * @param {TokenDocument|null} observer
+ * @param {Token} target  Le token dessiné.
+ */
+export function asSeenBy(observer, target) {
+  if ( !target?.document ) return target;
+  return (revealedInvisible(target.document.actor, observer?.actor) || seesInvisible(observer?.actor)) ? unveiled(target) : target;
 }
 
 /**

@@ -25,7 +25,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { blockedBetween, isVisionAvailable, devilsSightRange, devilsSightSeesToken, senseReachesToken } from "../adapter/vision.mjs";
+import { blockedBetween, isVisionAvailable, devilsSightRange, devilsSightSeesToken, senseReachesToken, asSeenBy } from "../adapter/vision.mjs";
 import { canHear } from "../adapter/hearing.mjs";
 import { sensesThrough, CORE_JUDGED, DEVILS_SIGHT } from "../core/light.mjs";
 import { route } from "../runtime/router.mjs";
@@ -128,10 +128,21 @@ function extend(id, mode) {
         catch(err) { reportOnce(err); }
       }
       if ( !sight && !listens ) return super.testVisibility(visionSource, tokenMode, config);
+      // Issue #42 : un observateur qui voit l'Invisible (Détection de l'invisibilité) — la vue de base du cœur refuse toute cible Invisible
+      // (detection-mode.mjs `_canDetect`) ; on lui présente la cible dévoilée, comme les règles (`asSeenBy`).
+      const original = config;   // l'ouïe pose son filtre sur le vrai token, jamais sur la vue dévoilée
+      if ( sight ) {
+        try {
+          const p = pair(visionSource, config.object);
+          const seen = p ? asSeenBy(p.observer, config.object) : config.object;
+          if ( seen !== config.object ) config = { ...config, object: seen };
+        }
+        catch(err) { reportOnce(err); }
+      }
       const blocked = sight && (block === "blocked");
       if ( !blocked && super.testVisibility(visionSource, tokenMode, config) ) return true;
       if ( !listens || !tokenMode.enabled ) return false;
-      try { return heard(visionSource, config); }
+      try { return heard(visionSource, original); }
       catch(err) { reportOnce(err); return false; }
     }
   };

@@ -94,12 +94,14 @@ export default {
         ctx.log(`${id} : sauté (vise ${affects} : attend un clic)`);
         continue;
       }
-      const itemId = await ctx.ensureItem(caster, uuid);
+      // §393 : un objet est prêté par son uuid (DMG et SRD 2024 partagent des identifiants), équipé et harmonisé.
+      const itemId = await ctx.ensureItem(caster, uuid, ITEMS ? { byUuid: true, ready: true } : {});
       const forms = (summon.profiles ?? []).filter(p => ((p.level?.min ?? 0) <= level) && ((p.level?.max ?? 99) >= level)).length;
       for ( const path of PATHS ) {
         if ( (path === "sans-empl.") && (level < 1) ) continue;
         if ( (path === "barre") && (level < 1) ) continue;
         await slots(path === "sans-empl." ? EMPTY : FULL);
+        await ctx.refill(caster, itemId);   // §393 : les charges du passage précédent
         await ctx.call("get-client-errors", { clear: true }).catch(() => {});
         const label = `${id} [${path}]`;
         const started = await ctx.engine("castFromBar", { tokenId: caster.id, itemId, sheet: path !== "barre",

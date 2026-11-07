@@ -23,7 +23,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { connect } from "./lib/connector.mjs";
-import { ARENA, ARENE_PRIX, ARENE_SORTS, RESTORED_KEEP } from "./lib/stages.mjs";
+import { ARENA, ARENE_INVOCATIONS, ARENE_PRIX, ARENE_SORTS, RESTORED_KEEP } from "./lib/stages.mjs";
 
 const MODULE_ID = "dnd5e-combat";
 const TERMINAL = new Set(["done", "missed", "undone"]);
@@ -285,19 +285,42 @@ function makeContext(mcp) {
      * S'assure qu'un token porte l'item d'un compendium (par son uuid), pour un scénario qui a besoin d'un sort
      * que la fiche n'a pas ; ajouté pour le scénario, retiré à la fin. Rend l'id de l'item sur la fiche.
      */
-    async ensureItem(token, uuid, { system={} }={}) {
+    async ensureItem(token, uuid, { system={}, byUuid=false, ready=false }={}) {
       const { data } = await mcp.call("get-compendium-entry", { uuid });
       Object.assign(data.system ??= {}, system);   // retouches (ex. { method: "atwill" } : un sort sans emplacement)
       const identifier = data.system?.identifier;
+      // §393 : `byUuid` reconnaît l'objet prêté par son uuid d'origine, pas par son identifiant — la Hache des seigneurs nains du DMG
+      // et celle du SRD 2024 ont le même identifiant, et la seconde réutilisait la première (charge déjà dépensée).
+      const match = byUuid ? { path: "flags.dnd5e-combat.lentFrom", value: uuid } : { path: "system.identifier", value: identifier };
+      if ( byUuid ) foundry_set(data, "flags.dnd5e-combat.lentFrom", uuid);
+      // §393 : `ready` prête un objet magique prêt à servir — équipé, harmonisé s'il le demande (dnd5e refuse sinon ses activités).
+      if ( ready && PHYSICAL.has(data.type) ) {
+        data.system.equipped = true;
+        if ( data.system.attunement ) data.system.attuned = true;
+      }
       const { data: tok } = await mcp.call("get-scene-object", { type: "Token", objectId: token.id });
       const items = (await mcp.call("get-actor", { actorId: tok.actorId })).items ?? [];
-      const existing = items.find(i => i.system?.identifier === identifier);
+      const existing = items.find(i => foundry_get(i, match.path) === match.value);
       if ( existing ) return existing._id;
       const { _id, folder, ownership, _stats, ...itemData } = data;
-      const r = await mcp.call("upsert-actor-item", { actorId: tok.actorId, itemData, match: { path: "system.identifier", value: identifier } });
+      const r = await mcp.call("upsert-actor-item", { actorId: tok.actorId, itemData, match });
       const id = r.itemId ?? r.id ?? r.item?._id ?? (await ctx.itemId(token.id, identifier));
       ctx.restore(() => mcp.call("remove-embedded-item", { documentType: "Actor", id: tok.actorId, itemId: id }).catch(() => {}));
       return id;
+    },
+
+    /**
+     * §393 : remet à zéro les charges d'un item d'un token — celles de l'item et celles de chacune de ses activités —, pour qu'un
+     * balayage qui le relance par plusieurs chemins (barre, fiche…) ne bute pas sur « plus de charge » au deuxième.
+     */
+    async refill(token, itemId) {
+      const { data: tok } = await mcp.call("get-scene-object", { type: "Token", objectId: token.id });
+      const item = ((await mcp.call("get-actor", { actorId: tok.actorId })).items ?? []).find(i => i._id === itemId);
+      if ( !item ) return false;
+      const itemData = { "system.uses.spent": 0 };
+      for ( const id of Object.keys(item.system?.activities ?? {}) ) itemData[`system.activities.${id}.uses.spent`] = 0;
+      await mcp.call("upsert-actor-item", { actorId: tok.actorId, itemData, match: { path: "_id", value: itemId } });
+      return true;
     },
 
     /** Position (coin haut-gauche, pixels) et élévation d'un token, lues sur le document. */
@@ -546,6 +569,7 @@ async function standUpDowned(mcp, ctx, previousName) {
   const { objects } = await mcp.call("list-scene-objects", { types: ["Token"] }).catch(() => ({ objects: {} }));
   for ( const t of objects.Token ?? [] ) {
     if ( !t.actorId ) continue;
+    if ( ARENE_INVOCATIONS.corpses.includes(t.name) ) continue;   // §393 : les cadavres de l'arène sont morts exprès
     const stats = await ctx.engine("stats", { tokenId: t.id }).catch(() => null);
     const max = stats?.hp?.max;
     if ( !Number.isFinite(max) || (max <= 0) || !(Number(stats.hp.value) <= 0) ) continue;
@@ -723,6 +747,17 @@ const climbSystem = await mcp.call("call-module-api", { moduleId: "dnd5e-combat"
 // fenêtre de choix du moteur ne s'ouvrait pas et le défaut a été cru dans le moteur), utilisation sans fenêtre par défaut. Mis le temps de
 // la passe, remis ensuite ; ce qui était autrement est dit en tête de passe. Le niveau d'automatisation, lui, recharge le monde quand il
 // change (`requiresReload`) : il n'est que signalé s'il n'est pas « Complet ».
+/** §393 : les types d'item physiques (équipables, harmonisables) — un sort ou une capacité ne s'équipe pas. */
+const PHYSICAL = new Set(["weapon", "equipment", "consumable", "tool", "loot", "container"]);
+/** Lecture / écriture par chemin pointé sur des données simples (pas de `foundry.utils` hors de Foundry). */
+const foundry_get = (obj, path) => path.split(".").reduce((o, k) => o?.[k], obj);
+function foundry_set(obj, path, value) {
+  const keys = path.split(".");
+  let o = obj;
+  for ( const k of keys.slice(0, -1) ) o = (o[k] ??= {});
+  o[keys.at(-1)] = value;
+}
+
 const PINNED = { sneakAttackMode: "auto", combatWindowSeconds: 10, realTimeClock: false, flanking: "off",
   theaterOfMind: false, autoUsage: true };
 const pinned = {};
@@ -764,7 +799,7 @@ for ( const file of files ) {
     if ( own.id !== activeNow ) previous = null;
     await useScene(own.id);
     // Les arènes dont les positions sont en cases : chaque token remis à sa place avant le scénario.
-    const layout = [ARENE_SORTS, ARENE_PRIX].find(l => l.name === own.name);
+    const layout = [ARENE_SORTS, ARENE_PRIX, ARENE_INVOCATIONS].find(l => l.name === own.name);
     if ( layout ) await arrangeArena(layout);
   }
   else if ( arenaScene ) {

@@ -59,3 +59,19 @@ export const ARENE_PRIX = Object.freeze({
   cols: 12, rows: 8, grid: 140,
   tokens: Object.freeze({ "Héros du prix": [4, 4], "Mannequin": [5, 4], "Lanceur du prix": [4, 8] })
 });
+
+/**
+ * §393 : l'« Arène des invocations » (`tools/arene-invocations.mjs`) — scène plate de 20 × 12 cases de 140 px (5 ft), pour ce que le
+ * balayage des invocations ne peut pas tester dans l'Arène des sorts : ce qui vise une créature ou un objet. Le Lanceur (PNJ sans item,
+ * emplacements 9 partout) ; à 2 cases le Cadavre (roturier mort : un humanoïde Moyen que darsh-loot sait relever — Doigt de mort,
+ * Animation des morts sur un corps) et la Bête morte (loup mort : pas un humanoïde, refusée) ; le Héros (Barbare pré-tiré, porteur
+ * d'armes : Arme élémentaire, enchantements) au contact du Lanceur ; la Victime (1 PV) à 4 cases. Les cases à droite restent libres
+ * pour les créatures invoquées. Positions en cases.
+ */
+export const ARENE_INVOCATIONS = Object.freeze({
+  name: "Arène des invocations",
+  cols: 20, rows: 12, grid: 140,
+  tokens: Object.freeze({ "Lanceur": [4, 6], "Héros": [4, 7], "Cadavre": [6, 6], "Bête morte": [6, 8], "Victime": [8, 5] }),
+  // Morts par construction : le lanceur de scénarios ne les relève pas (`standUpDowned`).
+  corpses: Object.freeze(["Cadavre", "Bête morte"])
+});

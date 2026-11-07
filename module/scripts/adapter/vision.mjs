@@ -284,9 +284,14 @@ function seesThroughBlock(observer, target, source, config, blocked) {
       continue;
     }
     // Issue #42 : la ligne de vue sans les bords des ténèbres — sinon ni la vision aveugle ni la vision véritable n'y voyaient.
-    if ( senseReaches({ distance, range: mode.range, lineOfSight: lineOfSightThrough(observer, target) }) ) return true;
+    if ( senseReaches({ distance, range: mode.range, lineOfSight: lineOfSightThrough(observer, target), sense: id, blind: isBlind(observer) }) ) return true;
   }
   return devilsSightSeesToken(observer, target, blocked);
+}
+
+/** L'observateur est-il Aveuglé (état du cœur) ? */
+function isBlind(observer) {
+  return !!observer?.hasStatusEffect?.(CONFIG.specialStatusEffects.BLIND);
 }
 
 /** Issue #42 : depuis les yeux de l'observateur, la ligne de vue sur la cible, sans les bords des sources de ténèbres. */
@@ -308,7 +313,7 @@ export function devilsSightSeesToken(observer, target, blocked=null) {
   const fog = (blocked ?? blockedBetween(observer, target)).fog;
   const invisible = !!target.hasStatusEffect?.(CONFIG.specialStatusEffects.INVISIBLE)
     && !revealedInvisible(target.actor, observer.actor) && !seesInvisible(observer.actor);
-  const blind = !!observer.hasStatusEffect?.(CONFIG.specialStatusEffects.BLIND);
+  const blind = isBlind(observer);
   const distance = distanceBetween(observer, target).value;
   if ( !devilsSightSees({ distance, range, invisible, blind, fog }) ) return false;
   return lineOfSightThrough(observer, target);
@@ -316,10 +321,11 @@ export function devilsSightSeesToken(observer, target, blocked=null) {
 
 /**
  * Issue #42 : un sens qui perce les ténèbres (vision aveugle, vision véritable) atteint-il la cible, pour l'écran ? Portée du mode et
- * ligne de vue sans les bords des ténèbres.
+ * ligne de vue sans les bords des ténèbres ; Aveuglé, seule la vision aveugle perce encore.
  */
-export function senseReachesToken(observer, target, range) {
-  return senseReaches({ distance: distanceBetween(observer, target).value, range: range ?? null, lineOfSight: lineOfSightThrough(observer, target) });
+export function senseReachesToken(observer, target, range, sense=null) {
+  return senseReaches({ distance: distanceBetween(observer, target).value, range: range ?? null, lineOfSight: lineOfSightThrough(observer, target),
+    sense, blind: isBlind(observer) });
 }
 
 /**

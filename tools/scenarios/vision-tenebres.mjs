@@ -7,6 +7,8 @@
  *  - Humain, Rôdeur elfe (vision dans le noir) : ne voient ni la cible dans les ténèbres, ni celle derrière ; voient le témoin au loin.
  *  - Occultiste du diable (Vision du diable, 120 ft) : voit dans les ténèbres et à travers ; plus au-delà de 120 ft.
  *  - Vision véritable (120 ft) : voit dans et à travers. Vision aveugle (30 ft) : la cible dans les ténèbres (25 ft), pas celle derrière.
+ * Puis Aveuglé (Occultiste, Vision véritable, Vision aveugle) et Assourdi (Humain) : seule la vision aveugle perçoit encore, l'Assourdi
+ * n'entend plus rien.
  * Écran : ce que les règles voient s'affiche net (« seen ») ou par le contour de son sens (« outline » : vision aveugle, vision
  * véritable, filtres de dnd5e) ; ce qu'elles ne voient pas n'est jamais net (caché, ou contour de l'ouïe, « heard », §62). Puis le même relevé réglage « Vision simulée » coupé, pour comparer avec le rendu du cœur seul (journal, sans attente).
  *
@@ -108,6 +110,38 @@ export default {
     ctx.expect(away.screen !== "seen", `au-delà de 120 ft, la cible n'est pas nette à l'écran (écran : ${away.screen})`);
     const [x0, y0] = ARENE_VISION.tokens["Occultiste du diable"];
     await ctx.call("move-token", { tokenId: warlock.id, x: x0 * grid, y: y0 * grid, elevation: 0 });
+    await pause(800);
+
+    // 4 bis. Aveuglé et Assourdi : la Vision du diable et la vision véritable s'éteignent, la vision aveugle reste ; l'Assourdi n'entend
+    // plus rien (pas de contour, pas d'oreille).
+    const status = (name, statusId, active) => ctx.call("set-status", { tokenId: tokens[name].id, statusId, active });
+    const BLINDED = ["Occultiste du diable", "Vision véritable", "Vision aveugle"];
+    for ( const name of BLINDED ) { ctx.restore(() => status(name, "blinded", false).catch(() => {})); await status(name, "blinded", true); }
+    ctx.restore(() => status("Humain", "deafened", false).catch(() => {}));
+    await status("Humain", "deafened", true);
+    await pause(1000);
+    const BLIND_EXPECTED = {
+      "Occultiste du diable": [false, false, false, false, false],
+      "Vision véritable":     [false, false, false, false, false],
+      "Vision aveugle":       [true,  false, true,  true,  true]    // 30 ft : dans les Ténèbres, le témoin, le noir, l'Invisible
+    };
+    const impaired = (await ctx.engine("visionMatrix", { observerIds: [...BLINDED, "Humain"].map(n => tokens[n].id), targetIds: TARGETS.map(n => tokens[n].id) })).rows;
+    ctx.log("Aveuglé (Occultiste, Vision véritable, Vision aveugle), Assourdi (Humain) :");
+    show(impaired);
+    for ( const r of impaired ) {
+      if ( r.observer === "Humain" ) {
+        const want = EXPECTED.Humain[r.target];
+        ctx.expect(r.rules.hears === false, `Humain Assourdi : n'entend pas ${r.target}`);
+        if ( !want ) ctx.expect(r.screen === "hidden", `Humain Assourdi : ${r.target} ni vue ni entendue à l'écran (écran : ${r.screen})`);
+        continue;
+      }
+      const want = BLIND_EXPECTED[r.observer][TARGETS.indexOf(r.target)];
+      ctx.expect(r.rules.sees === want, `${r.observer} Aveuglé ${want ? "perçoit" : "ne voit pas"} ${r.target} (règles)`);
+      if ( r.rules.sees ) ctx.expect(["seen", "outline"].includes(r.screen), `${r.observer} Aveuglé : ${r.target} affichée par son sens (écran : ${r.screen})`);
+      else ctx.expect(r.screen !== "seen", `${r.observer} Aveuglé : ${r.target} jamais nette (écran : ${r.screen})`);
+    }
+    for ( const name of BLINDED ) await status(name, "blinded", false);
+    await status("Humain", "deafened", false);
     await pause(800);
 
     // 4. Réglage « Vision simulée » coupé : le rendu du cœur seul, pour comparaison (journal).

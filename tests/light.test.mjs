@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { areaLightRadii, tokenLightChanges, dispelledBy, sensesThrough, devilsSightSees, senseReaches, DEVILS_SIGHT, CORE_JUDGED } from "../module/scripts/core/light.mjs";
+import { areaLightRadii, tokenLightChanges, dispelledBy, sensesThrough, devilsSightSees, senseReaches, DEVILS_SIGHT, CORE_JUDGED, WORKS_BLIND } from "../module/scripts/core/light.mjs";
 import { validateEntry, mergeEntries } from "../module/scripts/core/content.mjs";
 
 describe("lumière des zones", () => {
@@ -90,6 +90,17 @@ describe("issue #42 : sens qui percent, portée et ligne de vue", () => {
   it("portée illimitée", () => {
     expect(senseReaches({ distance: 500, range: null })).toBe(true);
     expect(senseReaches({ distance: 500, range: Infinity })).toBe(true);
+  });
+  it("Aveuglé : la vision véritable ne perce plus, la vision aveugle si", () => {
+    expect(senseReaches({ distance: 25, range: 120, sense: "seeAll", blind: true })).toBe(false);
+    expect(senseReaches({ distance: 25, range: 120, sense: "seeAll", blind: false })).toBe(true);
+    expect(senseReaches({ distance: 25, range: 30, sense: "blindsight", blind: true })).toBe(true);
+    expect(senseReaches({ distance: 55, range: 30, sense: "blindsight", blind: true })).toBe(false);
+  });
+  it("les sens qui ne sont pas une vue restent à un Aveuglé", () => {
+    expect(WORKS_BLIND).toEqual(["blindsight", "feelTremor", "senseAll", "senseInvisibility"]);
+    expect(WORKS_BLIND).not.toContain("seeAll");
+    expect(WORKS_BLIND).not.toContain("devilsSight");
   });
 });
 

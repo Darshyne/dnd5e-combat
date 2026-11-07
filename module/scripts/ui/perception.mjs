@@ -121,7 +121,7 @@ function extend(id, mode) {
         if ( !tokenMode.enabled ) return false;
         try {
           const p = pair(visionSource, config.object);
-          return !!p && senseReachesToken(p.observer, p.target, tokenMode.range);
+          return !!p && senseReachesToken(p.observer, p.target, tokenMode.range, id);
         }
         catch(err) { reportOnce(err); }
       }

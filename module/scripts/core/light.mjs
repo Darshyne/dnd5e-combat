@@ -107,11 +107,16 @@ export function devilsSightSees({ distance, range, lineOfSight=true, invisible=f
   return !!lineOfSight && !invisible && !blind && !fog;
 }
 
+/** Les sens qui ne sont pas une vue : un observateur Aveuglé les garde (vision aveugle, et les modes du cœur sans murs). */
+export const WORKS_BLIND = Object.freeze(["blindsight", ...CORE_JUDGED]);
+
 /**
  * Issue #42 : un sens qui perce une zone qui bloque la vue (vision aveugle, vision véritable) atteint-il la cible ? Sa portée et la ligne
- * de vue (sans les bords des ténèbres) seules ; `range` null ou absent = illimité.
+ * de vue (sans les bords des ténèbres) ; `range` null ou absent = illimité. Un observateur Aveuglé (`blind`) ne voit plus par un sens qui
+ * est une vue (`sense` hors de `WORKS_BLIND` : la vision véritable) — la vision aveugle, elle, le reste.
  */
-export function senseReaches({ distance, range=null, lineOfSight=true }) {
+export function senseReaches({ distance, range=null, lineOfSight=true, sense=null, blind=false }) {
+  if ( blind && !WORKS_BLIND.includes(sense) ) return false;
   if ( !lineOfSight || !Number.isFinite(distance) ) return false;
   return (range === null) || (range === Infinity) || (distance <= range);
 }

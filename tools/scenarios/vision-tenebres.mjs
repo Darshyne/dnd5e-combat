@@ -146,6 +146,22 @@ export default {
     await status("Humain", "deafened", false);
     await pause(800);
 
+    // 4 ter. Le geste du MJ : le Rôdeur elfe déjà sélectionné, puis Aveuglé à la main — le cœur ne refait que sa source de vision
+    // (placeables/token.mjs:4580), pas toutes : l'ouïe en mémoire doit survivre (elle disparaissait, vu le 2026-11-08).
+    const ranger = tokens["Rôdeur elfe"];
+    ctx.restore(() => ctx.engine("controlToken", { tokenId: null }).catch(() => {}));
+    await ctx.engine("controlToken", { tokenId: ranger.id });
+    await pause(800);
+    ctx.restore(() => status("Rôdeur elfe", "blinded", false).catch(() => {}));
+    await status("Rôdeur elfe", "blinded", true);
+    await pause(1500);
+    const heardBlind = await ctx.engine("screenHere", { targetIds: TARGETS.map(n => tokens[n].id) });
+    ctx.log(`Rôdeur elfe sélectionné puis Aveuglé : ${heardBlind.tokens.map(t => `${t.name} ${t.shown}`).join(", ")}`);
+    ctx.expect(heardBlind.tokens.every(t => t.shown === "heard"), "Rôdeur elfe Aveuglé à la main : chaque cible entendue (contour de l'ouïe)");
+    await status("Rôdeur elfe", "blinded", false);
+    await ctx.engine("controlToken", { tokenId: null });
+    await pause(800);
+
     // 4. Réglage « Vision simulée » coupé : le rendu du cœur seul, pour comparaison (journal).
     const setting = await ctx.call("get-setting", { namespace: "dnd5e-combat", key: "vision" });
     const was = setting?.value ?? setting;

@@ -35,6 +35,22 @@ function shownAs(token) {
   return filter ? ((filter === "hearing") ? "heard" : "outline") : "seen";
 }
 
+/**
+ * Attend que la vue de ce client soit celle de l'observateur : sources de vision refaites tout de suite (sans image, fenêtre du MJ en
+ * arrière-plan, `isVisible` lisait encore celles de l'observateur précédent), puis sa source ACTIVE — tant qu'aucune ne l'est, un MJ voit
+ * tout (`Token#isVisible`, placeables/token.mjs:639), et un observateur sans vue passait pour « voir » chaque cible. 3 s au plus.
+ */
+async function settleVision(token) {
+  for ( const until = Date.now() + 3000; Date.now() < until; ) {
+    canvas.perception.update({ initializeVision: true });
+    canvas.perception.applyRenderFlags();
+    const active = canvas.effects.visionSources.some(s => s.active && (s.object === token));
+    if ( active ) break;
+    await sleep(100);
+  }
+  await sleep(300);
+}
+
 /** Les ingrédients des règles pour une paire (positions validées). */
 function rulesFor(observer, target) {
   const blocked = blockedBetween(observer, target);
@@ -70,11 +86,7 @@ export async function visionMatrix({ observerIds=[], targetIds=[], screen=true }
       let shown = null;
       if ( screen ) {
         observer.object.control({ releaseOthers: true });
-        canvas.perception.update({ initializeVision: true });
-        // Les sources de vision refaites tout de suite : sans image (fenêtre du MJ en arrière-plan), `isVisible` lisait encore celles de
-        // l'observateur précédent.
-        canvas.perception.applyRenderFlags();
-        await sleep(400);
+        await settleVision(observer.object);
         shown = Object.fromEntries(targets.map(t => [t.id, shownAs(t.object)]));
       }
       for ( const target of targets ) {
@@ -138,4 +150,15 @@ export function sightIssues({ tokenId, identifier, targetIds=[] }) {
   const requires = sightRequired(activity);
   const targets = targetIds.map(id => viewedToken({ tokenId: id }));
   return { requiresSight: requires, unseen: requires ? targets.filter(t => canSee(origin, t) === false).map(t => t.name) : [] };
+}
+
+/**
+ * Issue #42 : sélectionne un token sur le client du MJ (sa vision devient celle de l'écran), ou relâche tout (`tokenId` null) — pour
+ * rejouer le geste d'un MJ : le token déjà sélectionné, puis un état posé, sans remise en place de toutes les sources (`screenHere`).
+ */
+export function control({ tokenId=null }={}) {
+  gmOnly();
+  if ( !tokenId ) { canvas.tokens.releaseAll(); return { controlled: [] }; }
+  viewedToken({ tokenId }).object.control({ releaseOthers: true });
+  return { controlled: canvas.tokens.controlled.map(t => t.name) };
 }

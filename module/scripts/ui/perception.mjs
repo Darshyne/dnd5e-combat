@@ -164,21 +164,33 @@ function devilsSightMode() {
  * refaites à chaque mise à jour ; le cœur rappelle ce hook à chaque mise en place des sources (groups/visibility.mjs:192).
  */
 function grantModes(sources) {
+  for ( const source of sources?.values?.() ?? [] ) grantOn(source.object?.document);
+}
+
+/**
+ * Les modes en mémoire d'un token. Aussi rejoué sur TOUS les tokens de la scène à chaque rafraîchissement de la vue (`grantAll`,
+ * `sightRefresh`) : un état posé ou retiré (Aveuglé : `Token#_onApplyStatusEffect` ne refait que la source de ce token,
+ * placeables/token.mjs:4580), un acteur ou un token mis à jour refont les données préparées sans remettre en place toutes les sources —
+ * ces modes disparaissaient jusqu'à la mise en place suivante (vu le 2026-11-08 : un Rôdeur Aveuglé à la main n'entendait rien).
+ */
+function grantOn(doc) {
   const modes = CONFIG.Canvas.detectionModes;
-  for ( const source of sources?.values?.() ?? [] ) {
-    const doc = source.object?.document;
-    if ( !doc?.detectionModes ) continue;
-    if ( modes[DEVILS_SIGHT.mode] ) {
-      const range = devilsSightRange(doc);
-      if ( range > 0 ) doc.detectionModes[DEVILS_SIGHT.mode] = { enabled: true, range };
-      else delete doc.detectionModes[DEVILS_SIGHT.mode];
-    }
-    // L'ouïe d'un Aveuglé, en DERNIER : le cœur essaie les modes spéciaux dans l'ordre (visibility.mjs) — un vrai sens passe avant.
-    if ( modes[HEARING_MODE] ) {
-      delete doc.detectionModes[HEARING_MODE];
-      doc.detectionModes[HEARING_MODE] = { enabled: true, range: Infinity };
-    }
+  if ( !doc?.detectionModes || !doc.sight?.enabled ) return;
+  if ( modes[DEVILS_SIGHT.mode] ) {
+    const range = devilsSightRange(doc);
+    if ( range > 0 ) doc.detectionModes[DEVILS_SIGHT.mode] = { enabled: true, range };
+    else delete doc.detectionModes[DEVILS_SIGHT.mode];
   }
+  // L'ouïe d'un Aveuglé, en DERNIER : le cœur essaie les modes spéciaux dans l'ordre (visibility.mjs) — un vrai sens passe avant.
+  if ( modes[HEARING_MODE] ) {
+    delete doc.detectionModes[HEARING_MODE];
+    doc.detectionModes[HEARING_MODE] = { enabled: true, range: Infinity };
+  }
+}
+
+function grantAll() {
+  if ( !canvas?.ready ) return;
+  for ( const token of canvas.tokens.placeables ) grantOn(token.document);
 }
 
 /**
@@ -225,6 +237,10 @@ function refreshVisibility() {
 export function registerPerception() {
   route("setup", installModes, { label: "perception: detection modes not installed" });
   route("initializeVisionSources", grantModes, { label: "perception: Devil's Sight or blind hearing not granted" });
+  // À chaque rafraîchissement de la vue : `restrictVisibility` demande `refreshVisibility` à chaque token puis appelle `sightRefresh`
+  // (groups/visibility.mjs:809-828) — les tokens n'appliquent ce drapeau qu'après. Les modes en mémoire sont donc là au moment du test,
+  // quoi qu'ait refait le cœur entre-temps (données préparées refaites après un état, un acteur, un token mis à jour).
+  route("sightRefresh", grantAll, { label: "perception: Devil's Sight or blind hearing not granted again" });
   registerHeardMarks();
   const refresh = { label: "perception: display not refreshed" };
   for ( const hook of ["createRegion", "updateRegion", "deleteRegion", "createActiveEffect", "updateActiveEffect", "deleteActiveEffect"] ) {

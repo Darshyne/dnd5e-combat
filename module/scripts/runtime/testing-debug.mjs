@@ -6,6 +6,7 @@
 import { issueUrl, reportJson } from "../core/debug.mjs";
 import { buildDebugReport, debugApi, DEBUG_PROBE_HOOK, flush, reportRepos } from "./debug.mjs";
 import { gmOnly } from "./testing-shared.mjs";
+import { testConnection } from "./connection.mjs";
 
 /** Fait échouer la sonde du routeur (`via: "route"`) ou rejette une promesse non attrapée (`via: "rejection"`). */
 export function debugThrow({ message="test", via="route" }={}) {
@@ -44,4 +45,13 @@ export async function debugVerbose({ on }={}) {
   const verbose = debugApi.verbose(on);
   await flush();
   return { verbose };
+}
+
+/** §388 : le test de connexion d'un joueur connecté, comme l'entrée du menu de la liste des joueurs le lance (sans la fenêtre). */
+export async function connectionTest({ userId, count=5 }={}) {
+  gmOnly();
+  const user = game.users.get(userId) ?? game.users.find(u => u.active && !u.isGM);
+  if ( !user ) throw new Error("no connected player");
+  const r = await testConnection(user, { count });
+  return { role: r.role, pings: r.pings, findings: r.findings, probe: r.probe ? { ...r.probe, settings: r.probe.settings } : null };
 }

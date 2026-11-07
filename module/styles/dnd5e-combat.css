@@ -738,3 +738,22 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 @keyframes das-awaiting-in { from { opacity: 0; transform: translate(-50%, -6px); } to { opacity: 1; transform: translateX(-50%); } }
 @keyframes das-awaiting-flip { 0% { transform: rotate(0deg); } 19% { transform: rotate(180deg); } 100% { transform: rotate(180deg); } }
 @media (prefers-reduced-motion: reduce) { .das-awaiting-banner, .das-awaiting-banner > i { animation: none; } }
+
+/* §388 : test de connexion d'un joueur */
+.das-connection-test .window-content { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.das-connection__who { margin: 0; font-weight: 600; }
+.das-connection__step { margin: 0; }
+.das-connection__summary { margin: 0; padding: 6px 10px; border-radius: 6px; font-weight: 600; background: var(--das-surface-2); }
+.das-connection__findings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.das-connection__finding { display: grid; grid-template-columns: 18px 1fr; column-gap: 6px; align-items: baseline; margin: 0; }
+.das-connection__finding small { grid-column: 2; }
+.das-connection-test .ok > i { color: #3a9a5b; }
+.das-connection-test .info > i { color: #4a86c5; }
+.das-connection-test .warn > i { color: #d08a1e; }
+.das-connection-test .bad > i { color: #c0392b; }
+.das-connection__details table { width: 100%; font-size: 0.88em; border-collapse: collapse; margin: 4px 0 0; }
+.das-connection__details th { text-align: left; font-weight: 600; padding: 2px 8px 2px 0; white-space: nowrap; vertical-align: top; }
+.das-connection__details td { padding: 2px 0; word-break: break-word; }
+.das-connection__actions { display: flex; gap: 6px; justify-content: flex-end; }
+.das-connection__consent { margin: 4px 0 6px; padding-left: 1.2em; font-size: 0.92em; }
+.das-connection__consent li { margin: 2px 0; }

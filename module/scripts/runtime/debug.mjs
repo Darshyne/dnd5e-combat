@@ -287,9 +287,19 @@ export const debugApi = Object.freeze({
   enabled: () => state.enabled
 });
 
+const internalSections = new Map();
+/** Une section du moteur lui-même dans le rapport (§388 : les derniers tests de connexion). Vide : absente. */
+export function addReportSection(name, collect) {
+  internalSections.set(name, collect);
+}
+
 /** Les sections des voisins, chacune lue à part (une section qui échoue est notée, pas fatale). */
 export function collectSections() {
   const out = [];
+  for ( const [module, collect] of internalSections ) {
+    try { const data = collect(); if ( data && Object.keys(data).length ) out.push({ module, data }); }
+    catch(err) { out.push({ module, data: { error: formatArgs([err]) } }); }
+  }
   for ( const { module, collect } of registered.values() ) {
     if ( !collect ) continue;
     try { out.push({ module, data: collect() ?? {} }); }

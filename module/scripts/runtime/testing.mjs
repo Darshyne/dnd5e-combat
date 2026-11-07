@@ -157,7 +157,9 @@ const BOOTED_AT = Date.now();
  */
 function status() {
   return { version: game.modules.get(MODULE_ID)?.version ?? null, bootedAt: BOOTED_AT, ready: game.ready === true, hidden: document.hidden === true, worldTime: game.time?.worldTime ?? null,
-    user: game.user.name, activeGM: game.users.activeGM?.id === game.user.id };
+    user: game.user.name, activeGM: game.users.activeGM?.id === game.user.id,
+    // §389 : la langue du client du MJ (les noms d'activité sans nom propre et Babele en dépendent) et le nombre de joueurs connectés.
+    lang: game.i18n?.lang ?? null, players: game.users.filter(u => u.active && !u.isGM).length };
 }
 
 /**

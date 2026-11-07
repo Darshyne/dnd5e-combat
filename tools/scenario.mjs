@@ -421,7 +421,8 @@ function makeContext(mcp) {
       // « reading 'position' » à `set y` puis `CanvasAnimation#animateFrame` : un texte flottant du cœur (`createScrollingText`) animé
       // sur un objet détruit par le redessin du canevas au changement de niveau — `suivre`, 2/2 et déjà sur 0.259.0 (passe de nuit du
       // 2026-10-28). Le cœur V14, pas le moteur ; ignorée sur décision de l'utilisateur (2026-10-29).
-      const thirdPartyAnimation = /Cannot (read|set) properties of null[\s\S]*(modules\/sequencer\/dist\/sequencer\.js|modules\/boss-loot-assets-premium\/)/;
+      // §389 : la même erreur de BLFX signalée par le cœur sous la forme « [Detected 1 package: boss-loot-assets-premium(…)] ».
+      const thirdPartyAnimation = /Cannot (read|set) properties of null[\s\S]*(modules\/sequencer\/dist\/sequencer\.js|modules\/boss-loot-assets-premium\/|Detected 1 package: boss-loot-assets-premium)/;
       return (r.entries ?? r.errors ?? r ?? []).filter?.(e => !thirdPartyAnimation.test(e.message ?? e.text ?? "")).filter?.(e => !/reading 'chain'\)[\s\S]*#animate|Failed to load audio element "(modules\/blfx-|sounds\/)|Codec reclaimed due to inactivity|triggerItems is not iterable|reading 'off'\)[\s\S]*PreciseText\.destroy|screen resolution|usable window dimensions|ResizeObserver loop|search for 'turn' in undefined|does not exist in the EmbeddedCollection|"auraeffects.aura" is not a valid type|Cannot set properties of null \(setting 'hidden'\)|bg3-hud-dnd5e\/scripts\/components\/containers\/DnD5e(Passives|ActionButtons|Info)Container|ChatLog5e\.updateMessage|reading 'querySelector'\)[\s\S]*ThrowPipeline\._revealMessage|setCombatVisibility[\s\S]*reading 'querySelector'|reading 'position'\)[\s\S]*set y[\s\S]*#animateFrame|DAS debug probe/i.test(e.message ?? e.text ?? "")) ?? [];
     },
 
@@ -718,11 +719,27 @@ const climbSystem = await mcp.call("call-module-api", { moduleId: "dnd5e-combat"
 // les 10 s par défaut (une réaction se fermait avant la réponse du scénario). Mis à leur défaut le temps de la passe, puis remis.
 // §251 : l'horloge en temps réel du moteur, comme Simple Timekeeping plus bas, arrêtée le temps de la passe.
 // §369 : la prise en tenaille (règle maison) donnerait un Avantage que les autres scénarios ne supposent pas : coupée le temps de la passe.
-const PINNED = { sneakAttackMode: "auto", combatWindowSeconds: 10, realTimeClock: false, flanking: "off" };
+// §389 (issue #38) : l'état du moteur que tous les scénarios supposent — Théâtre de l'esprit coupé (activé, le moteur se tait : une
+// fenêtre de choix du moteur ne s'ouvrait pas et le défaut a été cru dans le moteur), utilisation sans fenêtre par défaut. Mis le temps de
+// la passe, remis ensuite ; ce qui était autrement est dit en tête de passe. Le niveau d'automatisation, lui, recharge le monde quand il
+// change (`requiresReload`) : il n'est que signalé s'il n'est pas « Complet ».
+const PINNED = { sneakAttackMode: "auto", combatWindowSeconds: 10, realTimeClock: false, flanking: "off",
+  theaterOfMind: false, autoUsage: true };
 const pinned = {};
 for ( const [key, value] of Object.entries(PINNED) ) {
   pinned[key] = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key, value }, waitMs: 8000 })
     .then(r => r?.result?.before).catch(() => undefined);
+}
+{
+  const unusual = Object.entries(pinned).filter(([key, before]) => (before !== undefined) && (JSON.stringify(before) !== JSON.stringify(PINNED[key])))
+    .map(([key, before]) => `${key} ${JSON.stringify(before)} → ${JSON.stringify(PINNED[key])}`);
+  const client = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "status", args: {}, waitMs: 8000 }).then(r => r?.result).catch(() => null);
+  console.log(`Préconditions : client du MJ ${client?.lang ?? "?"}, ${client?.players ?? "?"} joueur(s) connecté(s)`
+    + (unusual.length ? ` ; remis pour la passe : ${unusual.join(", ")}` : " ; réglages du moteur à leur valeur de passe"));
+  if ( client?.players ) console.log("  ⚠ des joueurs sont connectés : un clic de leur part peut fermer une fenêtre attendue par un scénario");
+  const level = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key: "automationLevel" }, waitMs: 8000 })
+    .then(r => r?.result?.now).catch(() => null);
+  if ( level && (level !== "full") ) console.log(`  ⚠ niveau d'automatisation « ${level} » : les scénarios supposent « full » (Complet) ; beaucoup échoueront`);
 }
 // Relevé des trous (2026-10-22) : une horloge qui avance le temps du monde hors combat (Simple Timekeeping de `dnd-6` : 600 s par
 // intervalle) fait expirer en quelques secondes une concentration ou un effet d'une minute, que dnd5e supprime hors combat — 61 faux

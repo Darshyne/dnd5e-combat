@@ -5,6 +5,7 @@
   "scripts": {
     "test": "vitest run",
     "scenario": "node tools/scenario.mjs",
+    "releve-invocations": "node tools/releve-invocations.mjs \"F:/Foundry V14/Data\" \"C:/Users/rapha/AppData/Local/das-atlas/releve-invocations.json\" --md prive/RELEVE_INVOCATIONS.md",
     "packs": "node tools/packs.mjs"
   },
   "devDependencies": {

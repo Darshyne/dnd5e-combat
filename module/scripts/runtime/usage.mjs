@@ -105,6 +105,22 @@ async function askForced(activity, usageConfig, messageConfig) {
   await original.use({ ...usageConfig, [MODULE_ID]: { ...(usageConfig[MODULE_ID] ?? {}), forced: true } }, { configure: false }, messageConfig);
 }
 
+/**
+ * §109 : un sort qui invoque toujours, dont la case « placer » part décochée (`summon.prompt: false`) — cochée ici, comme on
+ * l'aurait fait dans la fenêtre ; `create.summons` est déjà préparé à ce hook (documents/activity/summon.mjs:65-70).
+ * §116 : un appelant qui place lui-même les invocations le dit (`{ "dnd5e-combat": { placeSummons: false } }`) — à ce hook, son
+ * `create.summons: false` explicite ne se distingue pas de celui que dnd5e prépare (`??=`, summon.mjs:67).
+ * §389 : aussi à la relance « Lancer quand même » (§77), qui sortait avant — Animation des morts, Invocation d'animaux, Destrier
+ * fantôme… ne posaient rien (balayage des invocations).
+ */
+function placeAlways(activity, usageConfig) {
+  if ( (activity.type === "summon") && (usageConfig[MODULE_ID]?.placeSummons !== false)
+    && (usageConfig.create?.summons === false || !usageConfig.create?.summons)
+    && contentOf(activity.item).entry?.placesSummons && activity.canSummon && canvas.scene && activity.availableProfiles?.length ) {
+    usageConfig.create = { ...(usageConfig.create ?? {}), summons: true };
+  }
+}
+
 function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
   if ( !activity?.item ) return;
   // §111 : une zone déplaçable déjà posée — l'utilisation la déplace (ui/pointer.mjs, §16.14), rien n'est lancé : ni emplacement
@@ -133,6 +149,7 @@ function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
         if ( (usageConfig.scaling !== false) && !(usageConfig.scaling > 0) ) usageConfig.scaling = 0;
       }
     }
+    placeAlways(activity, usageConfig);
     return;
   }
   let auto = !!dialogConfig?.configure && game.settings.get(MODULE_ID, AUTO_USAGE_SETTING) && !needsChoice(activity);
@@ -159,15 +176,7 @@ function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
     return false;
   }
   if ( auto ) dialogConfig.configure = false;
-  // §109 : un sort qui invoque toujours, dont la case « placer » part décochée (`summon.prompt: false`) — cochée ici, comme on
-  // l'aurait fait dans la fenêtre ; `create.summons` est déjà préparé à ce hook (documents/activity/summon.mjs:65-70).
-  // §116 : un appelant qui place lui-même les invocations le dit (`{ "dnd5e-combat": { placeSummons: false } }`) — à ce hook, son
-  // `create.summons: false` explicite ne se distingue pas de celui que dnd5e prépare (`??=`, summon.mjs:67).
-  if ( (activity.type === "summon") && (usageConfig[MODULE_ID]?.placeSummons !== false)
-    && (usageConfig.create?.summons === false || !usageConfig.create?.summons)
-    && contentOf(activity.item).entry?.placesSummons && activity.canSummon && canvas.scene && activity.availableProfiles?.length ) {
-    usageConfig.create = { ...(usageConfig.create ?? {}), summons: true };
-  }
+  placeAlways(activity, usageConfig);
 }
 
 export function registerUsage() {

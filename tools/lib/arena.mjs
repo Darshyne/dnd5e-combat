@@ -7,6 +7,7 @@
  *            disposition, system, statuses } } }
  * `statuses` : les états posés sur le token après la pose (« dead » : un cadavre que darsh-loot reconnaît).
  * `owners` : noms d'utilisateurs qui possèdent l'acteur (issue #42 : `claude player`, pour voir la scène par ses yeux).
+ * `scene` (à côté de `actors`) : données ajoutées à la scène.
  * `token` : données du token posé et du prototype (issue #42 : `{ sight: { enabled: true } }`, pour qu'un roturier ait une vue).
  * `items` : uuids (ou { uuid, system }) d'items de compendium ajoutés à la fiche (issue #42 : la Vision du diable du Manuel des joueurs), gardés à la remise.
  */
@@ -23,7 +24,7 @@ const merge = (a, b) => {
   return a;
 };
 
-export async function buildArena({ stage, folder: FOLDER, flag, actors: ACTORS }) {
+export async function buildArena({ stage, folder: FOLDER, flag, actors: ACTORS, scene: sceneExtra={} }) {
 const mcp = await connect();
 try {
   const folder = await mcp.call("create-folder", { name: FOLDER, type: "Actor" });
@@ -94,6 +95,8 @@ try {
     environment: { darknessLevel: 0, darknessLock: true, globalLight: { enabled: true, bright: true } },
     flags: { "dnd5e-combat": { arena: flag } }
   };
+  // Issue #42 : ce qu'une arène ajoute à la scène (la plage d'obscurité de la lumière globale, pour qu'une région sombre le soit).
+  merge(sceneData, sceneExtra);
   if ( !scene ) {
     const r = await mcp.call("create-scene", { name: stage.name, kind: "battlemap", width: cols * grid, height: rows * grid, gridSize: grid, padding: 0.1, sceneData });
     scene = { id: r.id ?? r.sceneId ?? r.scene?.id };

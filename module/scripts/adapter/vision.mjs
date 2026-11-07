@@ -27,7 +27,7 @@
 
 import { committedPosition, distanceBetween, tokenCenter } from "./turn.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
-import { sensesThrough, DEVILS_SIGHT, devilsSightSees, senseReaches } from "../core/light.mjs";
+import { sensesThrough, CORE_JUDGED, DEVILS_SIGHT, devilsSightSees, senseReaches } from "../core/light.mjs";
 import { revealedInvisible, seesInvisible } from "./facts.mjs";
 import { outsideCone } from "./cone.mjs";
 import { hiddenFrom } from "./stealth.mjs";
@@ -279,7 +279,7 @@ function seesThroughBlock(observer, target, source, config, blocked) {
     if ( id === DEVILS_SIGHT.mode ) continue;   // jugée par l'invocation elle-même, ci-dessous (un PNJ n'a pas forcément le mode)
     const mode = own[id];
     if ( !mode || (mode.enabled === false) ) continue;
-    if ( id === "feelTremor" ) {
+    if ( CORE_JUDGED.includes(id) ) {
       if ( CONFIG.Canvas.detectionModes[id]?.testVisibility(source, mode, config) === true ) return true;
       continue;
     }
@@ -342,7 +342,9 @@ export function canSeePoint(observer, point) {
     const grid = observer.parent.grid;
     const from = tokenCenter(observer);
     const distance = grid.measurePath([from, { x: point.x, y: point.y, elevation: point.elevation ?? from.elevation }]).distance;
-    const ranges = sensesThrough(blocked).filter(id => (id !== "feelTremor") && own[id] && (own[id].enabled !== false))
+    // Un point (« un espace que vous pouvez voir ») se voit : les modes du cœur sans murs (vibrations, Sense All, Sense Invisibility) ne
+    // comptent pas.
+    const ranges = sensesThrough(blocked).filter(id => !CORE_JUDGED.includes(id) && own[id] && (own[id].enabled !== false))
       .map(id => own[id].range);
     if ( blocked.darkness && !blocked.fog ) ranges.push(devilsSightRange(observer));
     if ( !ranges.some(r => r && (distance <= r)) ) return false;

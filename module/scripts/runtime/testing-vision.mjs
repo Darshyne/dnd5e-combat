@@ -71,6 +71,9 @@ export async function visionMatrix({ observerIds=[], targetIds=[], screen=true }
       if ( screen ) {
         observer.object.control({ releaseOthers: true });
         canvas.perception.update({ initializeVision: true });
+        // Les sources de vision refaites tout de suite : sans image (fenêtre du MJ en arrière-plan), `isVisible` lisait encore celles de
+        // l'observateur précédent.
+        canvas.perception.applyRenderFlags();
         await sleep(400);
         shown = Object.fromEntries(targets.map(t => [t.id, shownAs(t.object)]));
       }

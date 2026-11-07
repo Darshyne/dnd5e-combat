@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { areaLightRadii, tokenLightChanges, dispelledBy, sensesThrough, devilsSightSees, senseReaches, DEVILS_SIGHT } from "../module/scripts/core/light.mjs";
+import { areaLightRadii, tokenLightChanges, dispelledBy, sensesThrough, devilsSightSees, senseReaches, DEVILS_SIGHT, CORE_JUDGED } from "../module/scripts/core/light.mjs";
 import { validateEntry, mergeEntries } from "../module/scripts/core/content.mjs";
 
 describe("lumière des zones", () => {
@@ -41,10 +41,17 @@ describe("Lumière du jour dissipe les Ténèbres", () => {
 
 describe("sens qui percent", () => {
   it("la brume : vision aveugle et vibrations ; les ténèbres : aussi la vision véritable", () => {
-    expect(sensesThrough({ fog: true, darkness: false })).toEqual(["blindsight", "feelTremor"]);
-    expect(sensesThrough({ fog: true, darkness: true })).toEqual(["blindsight", "feelTremor"]);
-    expect(sensesThrough({ fog: false, darkness: true })).toEqual(["blindsight", "feelTremor", "seeAll", "devilsSight"]);
+    expect(sensesThrough({ fog: true, darkness: false })).toEqual(["blindsight", "feelTremor", "senseAll", "senseInvisibility"]);
+    expect(sensesThrough({ fog: true, darkness: true })).toEqual(["blindsight", "feelTremor", "senseAll", "senseInvisibility"]);
+    expect(sensesThrough({ fog: false, darkness: true })).toEqual(["blindsight", "feelTremor", "senseAll", "senseInvisibility", "seeAll", "devilsSight"]);
     expect(sensesThrough({ fog: false, darkness: false })).toBe(null);
+  });
+
+  it("issue #42 : les modes du cœur sans murs (vibrations, Sense All, Sense Invisibility) percent brume et ténèbres", () => {
+    for ( const blocked of [{ fog: true, darkness: false }, { fog: false, darkness: true }] ) {
+      for ( const id of CORE_JUDGED ) expect(sensesThrough(blocked)).toContain(id);
+    }
+    expect(CORE_JUDGED).not.toContain("seeInvisibility");   // voir l'invisible est une vue : les ténèbres l'arrêtent
   });
 
   it("issue #42 : la Vision du diable perce les ténèbres, pas la brume", () => {

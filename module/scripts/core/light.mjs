@@ -63,16 +63,25 @@ export function dispelledBy(light, maxLevel, darkness) {
 }
 
 /**
- * Les sens qui percent une zone qui bloque la vue. Brume (`obscures`) : ceux qui ne voient pas. Ténèbres magiques : ceux-là,
- * plus la vision véritable (`seeAll` de dnd5e) — la vision dans le noir, elle, n'y voit rien (PHB 2024, Ténèbres).
+ * Les sens qui percent une zone qui bloque la vue. Brume (`obscures`) : ceux qui ne voient pas (vision aveugle, et les modes du cœur sans
+ * murs : `CORE_JUDGED`). Ténèbres magiques : ceux-là, plus la vision véritable (`seeAll` de dnd5e) et la Vision du diable — la vision
+ * dans le noir, elle, n'y voit rien (PHB 2024, Ténèbres).
  * La Vision du diable se juge à part (portée, adapter/vision.mjs).
  * @param {{fog: boolean, darkness: boolean}} blocked
  */
 export function sensesThrough({ fog, darkness }) {
-  if ( fog ) return ["blindsight", "feelTremor"];
-  if ( darkness ) return ["blindsight", "feelTremor", "seeAll", DEVILS_SIGHT_MODE];
+  if ( fog ) return ["blindsight", ...CORE_JUDGED];
+  if ( darkness ) return ["blindsight", ...CORE_JUDGED, "seeAll", DEVILS_SIGHT_MODE];
   return null;
 }
+
+/**
+ * Les modes de détection du cœur sans murs ni lumière (`walls: false`, client/config.mjs:1312-1337) : la perception des vibrations, et
+ * les modes génériques « Sense All » / « Sense Invisibility » qu'un MJ coche à la main. Ils percent brume et ténèbres, et le test du cœur
+ * les juge tels quels (ni bords de ténèbres ni aveuglement : `DetectionMode#_canDetect`, detection-mode.mjs). Issue #42 : les deux
+ * derniers étaient perçus à l'écran à travers des Ténèbres, mais pas par les règles.
+ */
+export const CORE_JUDGED = Object.freeze(["feelTremor", "senseAll", "senseInvisibility"]);
 
 /**
  * Portée de la Vision du diable (« dans un rayon de 36 m »), en pieds. `mode` : l'id du mode de détection que le moteur enregistre

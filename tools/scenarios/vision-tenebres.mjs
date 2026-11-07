@@ -15,17 +15,21 @@
 import { ARENE_VISION } from "../lib/stages.mjs";
 
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-const OBSERVERS = ["Humain", "Occultiste du diable", "Rôdeur elfe", "Vision véritable", "Vision aveugle"];
-const TARGETS = ["Cible dans les ténèbres", "Cible derrière les ténèbres", "Cible au loin"];
+const OBSERVERS = ["Humain", "Occultiste du diable", "Rôdeur elfe", "Vision véritable", "Vision aveugle", "Vibrations", "Sens tout", "Voir l'invisible"];
+const TARGETS = ["Cible dans les ténèbres", "Cible derrière les ténèbres", "Cible au loin", "Cible dans le noir", "Cible invisible"];
 
-// observateur → cible → les règles voient-elles ?
-const EXPECTED = {
-  "Humain": { "Cible dans les ténèbres": false, "Cible derrière les ténèbres": false, "Cible au loin": true },
-  "Rôdeur elfe": { "Cible dans les ténèbres": false, "Cible derrière les ténèbres": false, "Cible au loin": true },
-  "Occultiste du diable": { "Cible dans les ténèbres": true, "Cible derrière les ténèbres": true, "Cible au loin": true },
-  "Vision véritable": { "Cible dans les ténèbres": true, "Cible derrière les ténèbres": true, "Cible au loin": true },
-  "Vision aveugle": { "Cible dans les ténèbres": true, "Cible derrière les ténèbres": false, "Cible au loin": true }
-};
+// observateur → [dans les ténèbres, derrière les ténèbres, au loin (témoin), dans le noir (obscurité ordinaire), invisible] : les règles
+// voient-elles ? Distances (diagonales à 5 ft) : voir ARENE_VISION.
+const EXPECTED = Object.fromEntries(Object.entries({
+  "Humain":               [false, false, true, false, false],
+  "Rôdeur elfe":          [false, false, true, true,  false],   // vision dans le noir 60 ft : le noir ordinaire, pas les Ténèbres
+  "Occultiste du diable": [true,  true,  true, true,  false],   // Vision du diable 120 ft : « voit normalement », pas l'invisible
+  "Vision véritable":     [true,  true,  true, true,  true],
+  "Vision aveugle":       [true,  false, true, true,  true],    // 30 ft : la cible derrière les Ténèbres est à 55 ft
+  "Vibrations":           [true,  true,  true, true,  true],    // 60 ft, ni murs ni lumière
+  "Sens tout":            [true,  true,  true, true,  true],    // mode générique du cœur, 120 ft, ni murs ni lumière
+  "Voir l'invisible":     [false, false, true, false, true]     // une vue : ni Ténèbres ni noir, mais l'invisible en pleine lumière
+}).map(([name, row]) => [name, Object.fromEntries(TARGETS.map((t, i) => [t, row[i]]))]));
 
 export default {
   name: "vision — Ténèbres, Vision du diable, vision dans le noir, vision véritable, vision aveugle (Arène de la vision)",
@@ -48,10 +52,10 @@ export default {
       }
     };
 
-    // 0. Avant les Ténèbres : tout le monde voit tout (pleine lumière).
-    const before = await matrix();
-    ctx.expect(before.every(r => r.rules.sees === true), "pleine lumière : chaque observateur voit chaque cible (règles)");
-    ctx.expect(before.every(r => r.screen === "seen"), "pleine lumière : chaque cible s'affiche nette");
+    // 0. Avant les Ténèbres et le noir : tout le monde voit tout (pleine lumière), sauf la Cible invisible.
+    const before = (await matrix()).filter(r => r.target !== "Cible invisible");
+    ctx.expect(before.every(r => r.rules.sees === true), "pleine lumière : chaque observateur voit chaque cible visible (règles)");
+    ctx.expect(before.every(r => ["seen", "outline"].includes(r.screen)), "pleine lumière : chaque cible visible s'affiche");
 
     // 1. Ténèbres depuis la fiche de l'Occultiste du diable, centrées sur la Cible dans les ténèbres.
     const box = await ctx.box(tokens[ARENE_VISION.darknessOn]);
@@ -60,6 +64,15 @@ export default {
     ctx.expect(dark.used && !!dark.regionId, "Ténèbres posées");
     if ( !dark.regionId ) return;
     ctx.restore(() => ctx.call("delete-scene-object", { type: "Region", objectId: dark.regionId }).catch(() => {}));
+
+    // 1 bis. Obscurité ordinaire (sans sort) autour de la Cible dans le noir : une région « Ajuster l'obscurité », comme `furtivite-bg3`.
+    const { sceneId } = await ctx.scene();
+    const [dx, dy, dw, dh] = ARENE_VISION.dark;
+    const night = await ctx.call("create-region", { sceneId, name: "Obscurité (essai)", color: "#000000",
+      shapes: [{ type: "rectangle", x: dx * grid, y: dy * grid, width: dw * grid, height: dh * grid }],
+      behaviors: [{ type: "adjustDarknessLevel", name: "Obscurité", system: { mode: 0, modifier: 1 } }] });
+    const nightId = night?.id ?? night?.regionId ?? night?.region?.id;
+    ctx.restore(() => ctx.call("delete-scene-object", { type: "Region", objectId: nightId }).catch(() => {}));
     await pause(2000);
 
     // 2. Règles et écran, observateur par observateur. Le témoin : la Vision du diable et la vision véritable traversent les ténèbres.

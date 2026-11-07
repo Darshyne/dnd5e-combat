@@ -25,7 +25,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { blockedBetween, isVisionAvailable, devilsSightRange, devilsSightSeesToken, senseReachesToken } from "../adapter/vision.mjs";
 import { canHear } from "../adapter/hearing.mjs";
-import { sensesThrough, DEVILS_SIGHT } from "../core/light.mjs";
+import { sensesThrough, CORE_JUDGED, DEVILS_SIGHT } from "../core/light.mjs";
 import { route } from "../runtime/router.mjs";
 import { theaterActive } from "../runtime/theater-state.mjs";
 import { perceivesPlane } from "../adapter/plane.mjs";
@@ -52,7 +52,8 @@ function pair(visionSource, object) {
 /**
  * Ce qu'une brume ou des ténèbres entre l'observateur et la cible font à ce mode : `"blocked"` (la vue ne passe pas), `"pierce"` (un sens
  * qui perce des ténèbres, jugé par le moteur : portée et ligne de vue sans les bords des ténèbres — issue #42), ou null (rien entre les
- * deux, ou le test du cœur suffit : perception des vibrations, qui ignore murs et aveuglement ; un sens qui perce une brume seule).
+ * deux, ou le test du cœur suffit : les modes sans murs, `CORE_JUDGED` — vibrations, Sense All, Sense Invisibility ; un sens qui perce
+ * une brume seule).
  */
 function blockFor(id, visionSource, object) {
   if ( !isVisionAvailable() ) return null;
@@ -61,7 +62,7 @@ function blockFor(id, visionSource, object) {
   const blocked = blockedBetween(p.observer, p.target);
   if ( !blocked.fog && !blocked.darkness ) return null;
   if ( !(sensesThrough(blocked) ?? []).includes(id) ) return "blocked";
-  return ((id === "feelTremor") || !blocked.darkness) ? null : "pierce";
+  return (CORE_JUDGED.includes(id) || !blocked.darkness) ? null : "pierce";
 }
 
 /** Un mode spécial de l'observateur (vision aveugle, voir l'invisible…) la détecte-t-il ? Il a priorité : son propre rendu. */

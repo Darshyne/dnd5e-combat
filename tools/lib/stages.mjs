@@ -82,7 +82,9 @@ export const ARENE_INVOCATIONS = Object.freeze({
  * l'Humain (Druide pré-tiré, aucune vision dans le noir), l'Occultiste du diable (Occultiste pré-tiré, gnome, + Vision du diable et
  * Ténèbres), le Rôdeur elfe (vision dans le noir 60 ft), la Vision véritable (120 ft) ; la Vision aveugle (30 ft) à 25 ft de la Cible
  * dans les ténèbres, au centre des Ténèbres que pose le scénario (sphère de 15 ft) ; la Cible derrière les ténèbres, éclairée, de l'autre
- * côté ; la Cible au loin, éclairée, en haut à gauche, qu'aucune ligne de vue ne fait passer par les Ténèbres (témoin). Positions en cases
+ * côté ; les observateurs ajoutés ensuite (Vibrations 60 ft, Sens tout et Voir l'invisible à 120 ft, modes du cœur posés sur le token) ;
+ * la Cible dans le noir (obscurité ordinaire posée par le scénario), la Cible invisible (état Invisible, en pleine lumière) ; la Cible
+ * au loin, éclairée, en haut à gauche, qu'aucune ligne de vue ne fait passer par les Ténèbres (témoin). Positions en cases
  * du canevas : la marge de la scène (10 % : 4 colonnes, 2 lignes) est exclue de la vision par le cœur (`visibility.mjs`, `inBuffer`) —
  * un observateur posé dedans ne voit rien de la scène.
  */
@@ -91,8 +93,13 @@ export const ARENE_VISION = Object.freeze({
   cols: 40, rows: 12, grid: 140,
   tokens: Object.freeze({
     "Humain": [6, 6], "Occultiste du diable": [6, 8], "Rôdeur elfe": [6, 10], "Vision véritable": [6, 12], "Vision aveugle": [12, 8],
-    "Cible dans les ténèbres": [17, 8], "Cible derrière les ténèbres": [23, 8], "Cible au loin": [10, 2]
+    "Vibrations": [12, 12], "Sens tout": [6, 4], "Voir l'invisible": [6, 2],
+    "Cible dans les ténèbres": [17, 8], "Cible derrière les ténèbres": [23, 8], "Cible au loin": [10, 2],
+    "Cible dans le noir": [14, 3], "Cible invisible": [10, 4]
   }),
   // La cible au centre des Ténèbres que pose le scénario `vision-tenebres`.
-  darknessOn: "Cible dans les ténèbres"
+  darknessOn: "Cible dans les ténèbres",
+  // L'obscurité ordinaire (région « Ajuster l'obscurité », sans sort) que pose le scénario autour de la Cible dans le noir : cases
+  // [x, y, largeur, hauteur], loin des observateurs et des Ténèbres.
+  dark: Object.freeze([13, 2, 4, 3])
 });

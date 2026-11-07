@@ -208,8 +208,8 @@ function umbralTo(target) {
 
 /**
  * Les régions de la scène qui bloquent la vue : brume (`obscures`, §16.24) ou ténèbres magiques (`light.darkness`,
- * §16.31), posées par l'activité d'un item (`flags.dnd5e.activity`).
- * @returns {Array<{region: RegionDocument, kind: "fog"|"darkness"}>}
+ * §16.31), posées par l'activité d'un item (`flags.dnd5e.activity`) — et celles qui bloquent le son (Silence, `silences`, issue #42).
+ * @returns {Array<{region: RegionDocument, kind: "fog"|"darkness"|"silence"}>}
  */
 export function blockingRegions(scene) {
   const out = [];
@@ -220,6 +220,7 @@ export function blockingRegions(scene) {
     const entry = contentOf(activity.item).entry;
     if ( entry?.obscures === true ) out.push({ region, kind: "fog" });
     else if ( entry?.light?.darkness === true ) out.push({ region, kind: "darkness" });
+    if ( entry?.silences === true ) out.push({ region, kind: "silence" });   // issue #42 : ne bloque pas la vue, le son (adapter/hearing.mjs)
   }
   return out;
 }
@@ -230,7 +231,7 @@ export function blockingRegions(scene) {
  * @returns {{fog: boolean, darkness: boolean}}
  */
 function blockedAlong(scene, from, to) {
-  const out = { fog: false, darkness: false };
+  const out = { fog: false, darkness: false, silence: false };
   const regions = blockingRegions(scene);
   if ( !regions.length ) return out;
   const grid = scene.grid;
@@ -240,7 +241,7 @@ function blockedAlong(scene, from, to) {
     const point = { x: from.x + ((to.x - from.x) * t), y: from.y + ((to.y - from.y) * t),
       elevation: (from.elevation ?? 0) + (((to.elevation ?? 0) - (from.elevation ?? 0)) * t) };
     for ( const { region, kind } of regions ) if ( !out[kind] && region.testPoint?.(point) ) out[kind] = true;
-    if ( out.fog && out.darkness ) break;
+    if ( out.fog && out.darkness && out.silence ) break;
   }
   return out;
 }

@@ -95,6 +95,9 @@
  *     obscures?: true                           la zone posée par l'item obscurcit fortement (Nappe de brouillard, §16.24) :
  *                                               la vue ne la traverse pas ; vision aveugle et perception des vibrations, si
  *                                               (§14.1, adapter/vision.mjs)
+ *     silences?: true                           la zone posée par l'item fait le silence (Silence, issue #42) : aucun son n'y
+ *                                               naît ni ne la traverse — on n'entend ni ce qui est dedans, ni à travers
+ *                                               (adapter/hearing.mjs)
  *     usageLimits?: { <id d'activité>: { oncePerTurn?, whenEmpty?, lowestSlot?, noDialog?, cost?, unmoved? } }
  *                                               limites d'utilisation que dnd5e ne contrôle pas (§16.40, core/limits.mjs) :
  *                                               une fois à chacun de vos tours ; seulement si l'item `whenEmpty` n'a plus

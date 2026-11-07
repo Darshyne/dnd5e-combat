@@ -53,11 +53,15 @@ export function sightingOf(observer, target) {
   const sensed = canSee(observer, target) === true;
   if ( sensed || observer.actor?.statuses?.has("blinded") ) return { sensed, seeable: false, disadvantage: false };
   const eye = observer.getVisionOrigin?.(committedPosition(observer)) ?? tokenPoint(observer);
-  if ( !hasLineOfSight(eye, target, observer.parent.levels?.get?.(observer.level)) ) return { sensed, seeable: false, disadvantage: false };
-  if ( outsideCone(observer, target) ) return { sensed, seeable: false, disadvantage: false };   // §182 : dans son dos
   const blocked = blockedBetween(observer, target);
   const senses = sensesToward(observer, tokenPoint(target));
   const throughDarkness = senses.devilsSight || senses.truesight;
+  // Issue #42 : à travers des ténèbres, la ligne de vue sans leurs bords (adapter/vision.mjs, `throughDarkness`) — sinon la Vision du
+  // diable et la vision véritable ne repéraient jamais une créature cachée dans des Ténèbres.
+  if ( !hasLineOfSight(eye, target, observer.parent.levels?.get?.(observer.level), { throughDarkness: throughDarkness && blocked.darkness }) ) {
+    return { sensed, seeable: false, disadvantage: false };
+  }
+  if ( outsideCone(observer, target) ) return { sensed, seeable: false, disadvantage: false };   // §182 : dans son dos
   const light = perceivedOnToken(observer, target);
   const seeable = !blocked.fog && (!blocked.darkness || throughDarkness) && !!light && (light.perceived !== LIGHT.DARK);
   return { sensed, seeable, disadvantage: seeable && light.perceptionDisadvantage };

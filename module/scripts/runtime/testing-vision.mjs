@@ -59,7 +59,7 @@ function rulesFor(observer, target) {
   const devil = devilsSightRange(observer);
   return {
     sees: canSee(observer, target),
-    blocked: (blocked.fog || blocked.darkness) ? Object.keys(blocked).filter(k => blocked[k]) : [],
+    blocked: Object.keys(blocked).filter(k => blocked[k]),   // brume, ténèbres, silence
     distance: Math.round(distanceBetween(observer, target).value * 10) / 10,
     lineOfSight: hasLineOfSight(eye, target, level),
     lineOfSightThroughDarkness: hasLineOfSight(eye, target, level, { throughDarkness: true }),

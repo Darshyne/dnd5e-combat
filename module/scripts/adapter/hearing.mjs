@@ -9,6 +9,7 @@ import { tokenCenter } from "./turn.mjs";
 import { hiddenDcOf } from "./search.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { trapLike } from "./content.mjs";
+import { blockedBetween } from "./vision.mjs";
 
 /**
  * Un mur ou un plancher qui arrête le son sépare-t-il les deux tokens ? Comme la vue du cœur (detection-mode.mjs:211-259), les
@@ -49,6 +50,8 @@ export function canHear(observer, target) {
     // §255 : un objet (piège posé, arme spirituelle) ou un acteur piège ne fait pas de bruit — un piège repéré hors de vue se
     // montrait « entendu ».
     silent: statuses("dead") || isObjectToken(target) || trapLike(target.actor),
-    soundBlocked: soundBlocked(observer, target)
+    // Issue #42 : Silence — « aucun son ne peut naître dans la Sphère ni la traverser » : la cible dedans, ou le trait qui les relie
+    // la traversant (l'observateur dedans est déjà Assourdi par la zone, §37.4).
+    soundBlocked: soundBlocked(observer, target) || blockedBetween(observer, target).silence
   });
 }

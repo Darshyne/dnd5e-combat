@@ -28,7 +28,7 @@ let ReportClass = null;
 const ReportApp = () => ReportClass ??= class DebugReport extends foundry.applications.api.ApplicationV2 {
   static DEFAULT_OPTIONS = {
     id: WINDOW_ID,
-    classes: ["das-debug-report"],
+    classes: ["das-screen", "das-debug-report"],
     window: { icon: "fa-solid fa-bug", resizable: true },
     position: { width: 640, height: 720 },
     actions: {

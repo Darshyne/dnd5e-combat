@@ -20,7 +20,7 @@ const t = (key, data) => loc(`Connexion.${key}`, data);
 let TestClass = null;
 const TestApp = () => TestClass ??= class ConnectionTest extends foundry.applications.api.ApplicationV2 {
   static DEFAULT_OPTIONS = {
-    classes: ["das-connection-test"],
+    classes: ["das-screen", "das-connection-test"],
     window: { icon: "fa-solid fa-tower-broadcast", resizable: true },
     position: { width: 520, height: "auto" },
     actions: { copy: ConnectionTest.#copy, retry: ConnectionTest.#retry }

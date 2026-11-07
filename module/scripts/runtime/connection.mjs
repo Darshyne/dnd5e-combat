@@ -18,10 +18,42 @@ import { describeRoutes } from "./router.mjs";
 
 export const CONNECTION_PING_QUERY = `${MODULE_ID}.connectionPing`;
 export const CONNECTION_PROBE_QUERY = `${MODULE_ID}.connectionProbe`;
+export const CONNECTION_CONSENT_QUERY = `${MODULE_ID}.connectionConsent`;
+/** Réglage de monde (onglet Avancé) : le test existe. Coupé par défaut ; coupé, les clients refusent ses requêtes. */
+export const CONNECTION_SETTING = "connectionTest";
+/** Le temps laissé au joueur pour répondre, et la durée de son accord (le test entier tient dedans). */
+export const CONSENT_MS = 60000;
+export const CONSENT_VALID_MS = 120000;
 export const PING_COUNT = 10;
 export const FPS_MS = 2000;
 
 const results = new Map();   // userId → dernier résultat
+const consent = { until: 0, prompt: null, pending: null };
+
+/** Le test est-il permis dans ce monde ? */
+export function connectionTestEnabled() {
+  try { return !!game.settings.get(MODULE_ID, CONNECTION_SETTING); } catch { return false; }
+}
+
+/** L'interface fournit la fenêtre d'accord (ui/connection-test.mjs) : `async ({ gm }) => "allowed" | "refused" | "timeout"`. */
+export function setConsentPrompt(fn) {
+  consent.prompt = typeof fn === "function" ? fn : null;
+}
+
+/** Chez le joueur : demander son accord (une seule fenêtre à la fois). Accordé, les mesures sont permises pendant `CONSENT_VALID_MS`. */
+async function askConsent({ gm=null }={}) {
+  if ( !connectionTestEnabled() ) return { answer: "disabled" };
+  if ( !consent.prompt ) return { answer: "refused" };
+  consent.pending ??= Promise.resolve(consent.prompt({ gm })).catch(() => "refused").finally(() => { consent.pending = null; });
+  const answer = await consent.pending;
+  if ( answer === "allowed" ) consent.until = Date.now() + CONSENT_VALID_MS;
+  return { answer };
+}
+
+/** Les mesures ne partent que pendant un accord en cours (une requête envoyée sans passer par la fenêtre est refusée). */
+function requireConsent() {
+  if ( !connectionTestEnabled() || (Date.now() > consent.until) ) throw new Error("connection test not allowed by this player");
+}
 
 /** L'empreinte du code chargé d'un module de la suite : pour le moteur, ses inscriptions au routeur et ses requêtes ; pour un voisin,
  *  la forme de son API publique. Indépendante de la langue. */
@@ -149,6 +181,18 @@ export async function probeClient({ fps=true }={}) {
 export async function testConnection(target, { count=PING_COUNT, progress=() => {} }={}) {
   const user = (typeof target === "string") ? game.users.get(target) : target;
   if ( !user?.active ) throw new Error("user not connected");
+  const base = { userId: user.id, role: roles().get(user.id) ?? "user", at: Date.now() };
+  progress("consent");
+  let answer;
+  try { answer = (await user.query(CONNECTION_CONSENT_QUERY, { gm: game.user.name }, { timeout: CONSENT_MS + 10000 }))?.answer; }
+  catch { answer = "noAnswer"; }
+  if ( answer !== "allowed" ) {
+    const id = { refused: "refused", timeout: "consentTimeout", disabled: "disabled" }[answer] ?? "noConsent";
+    const result = { ...base, pings: null, probe: null, reference: null,
+      findings: [{ id, level: (id === "refused") ? "info" : "warn", data: {} }] };
+    results.set(user.id, result);
+    return result;
+  }
   const samples = [];
   for ( let i = 0; i < count; i++ ) {
     progress("ping", i + 1, count);
@@ -166,9 +210,7 @@ export async function testConnection(target, { count=PING_COUNT, progress=() => 
   // Les erreurs que ce joueur a déjà remontées au MJ actif (§380), si sa propre sonde n'a pas répondu.
   if ( probe && !probe.errors ) probe.errors = debugApi.errors().filter(g => g.clients.includes(user.id)).reduce((n, g) => n + g.count, 0);
   const result = {
-    userId: user.id,
-    role: roles().get(user.id) ?? "user",
-    at: Date.now(),
+    ...base,
     pings, probe, reference,
     findings: diagnose({ pings, probe, reference })
   };
@@ -187,9 +229,14 @@ export function lastConnectionTests() {
   return out;
 }
 
-/** À `init`, même en veille : les deux requêtes auxquelles un client répond. */
+/** À `init`, même en veille : le réglage et les trois requêtes auxquelles un client répond (accord, puis mesures sous accord). */
 export function registerConnection() {
-  CONFIG.queries[CONNECTION_PING_QUERY] = () => ({ now: Date.now() });
-  CONFIG.queries[CONNECTION_PROBE_QUERY] = () => probeClient();
+  game.settings.register(MODULE_ID, CONNECTION_SETTING, {
+    name: "DND5ECOMBAT.Reglage.connectionTest.Nom", hint: "DND5ECOMBAT.Reglage.connectionTest.Aide",
+    scope: "world", config: true, type: Boolean, default: false
+  });
+  CONFIG.queries[CONNECTION_CONSENT_QUERY] = data => askConsent(data);
+  CONFIG.queries[CONNECTION_PING_QUERY] = () => { requireConsent(); return { now: Date.now() }; };
+  CONFIG.queries[CONNECTION_PROBE_QUERY] = () => { requireConsent(); return probeClient(); };
   addReportSection("connection tests", lastConnectionTests);
 }

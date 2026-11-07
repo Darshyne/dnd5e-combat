@@ -6,7 +6,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { connectionMarkdown, worstLevel } from "../core/connection.mjs";
-import { testConnection } from "../runtime/connection.mjs";
+import { CONSENT_MS, connectionTestEnabled, setConsentPrompt, testConnection } from "../runtime/connection.mjs";
 import { roles } from "../runtime/debug.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc, esc } from "../runtime/shared.mjs";
@@ -54,7 +54,7 @@ const TestApp = () => TestClass ??= class ConnectionTest extends foundry.applica
     try {
       this.result = await testConnection(this.userId, {
         progress: (kind, i, n) => {
-          this.step = (kind === "ping") ? t("Ping", { i, n }) : t("Sonde");
+          this.step = (kind === "consent") ? t("Accord") : (kind === "ping") ? t("Ping", { i, n }) : t("Sonde");
           const el = this.element?.querySelector(".das-connection__step");
           if ( el ) el.textContent = this.step;
         }
@@ -147,12 +147,42 @@ function onUserContext(app, options) {
     icon: "fa-solid fa-tower-broadcast",
     visible: li => {
       const user = game.users.get(li?.dataset?.userId);
-      return !!user && game.user.isGM && user.active && !user.isSelf && menuShown();
+      return !!user && game.user.isGM && user.active && !user.isSelf && menuShown() && connectionTestEnabled();
     },
     onClick: (event, li) => openConnectionTest(li.dataset.userId)
   });
 }
 
+/**
+ * Chez le joueur : la fenêtre d'accord. « Autoriser » ou « Refuser » ; fermée ou sans réponse en `CONSENT_MS`, c'est non.
+ * Le nom du MJ qui demande est affiché (la demande vient de sa table).
+ */
+async function consentPrompt({ gm=null }={}) {
+  let dialog = null;
+  let timer = null;
+  const content = `<p>${esc(t("Consentement.Texte", { gm: gm ?? t("Consentement.LeMJ") }))}</p>
+    <ul class="das-connection__consent">${["Connexion", "Versions", "Machine", "Jeu"].map(k => `<li>${esc(t(`Consentement.${k}`))}</li>`).join("")}</ul>
+    <p class="das-muted">${esc(t("Consentement.Rien"))}</p>`;
+  const answer = await Promise.race([
+    foundry.applications.api.DialogV2.wait({
+      window: { title: t("Consentement.Titre"), icon: "fa-solid fa-tower-broadcast" },
+      classes: ["das-connection-consent"],
+      content,
+      buttons: [
+        { action: "allowed", label: t("Consentement.Autoriser"), icon: "fa-solid fa-check", default: true },
+        { action: "refused", label: t("Consentement.Refuser"), icon: "fa-solid fa-xmark" }
+      ],
+      rejectClose: false,
+      render: (event, d) => { dialog = d ?? event?.target ?? null; }
+    }).then(a => a ?? "refused"),
+    new Promise(resolve => { timer = setTimeout(() => resolve("timeout"), CONSENT_MS); })
+  ]);
+  clearTimeout(timer);
+  if ( answer === "timeout" ) dialog?.close?.();
+  return answer;
+}
+
 export function registerConnectionTest() {
+  setConsentPrompt(consentPrompt);
   route("getUserContextOptions", onUserContext, { always: true, label: "connection test: player list menu entry missing" });
 }

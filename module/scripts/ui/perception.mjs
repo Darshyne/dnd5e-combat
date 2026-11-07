@@ -11,15 +11,25 @@
  * sont testées pour chaque source avant les modes spéciaux (canvas/groups/visibility.mjs, `testVisibility`) : l'ouïe passe par
  * la perception de la lumière, en dernier recours, après avoir laissé les modes spéciaux de l'observateur répondre. Les sources
  * jetables de la vision simulée (`dnd5e-combat.…`) n'entendent pas : pour les règles, entendre n'est pas voir.
+ *
+ * Issue #42 :
+ *  - les sens qui percent les ténèbres (vision aveugle, vision véritable) se jugent ici par leur portée et une ligne de vue SANS les bords
+ *    des sources de ténèbres : le test du cœur les comptait, et rien ne se voyait dans des Ténèbres ;
+ *  - un mode de détection « Vision du diable » (`devilsSight`), enregistré à `setup` et donné EN MÉMOIRE (rien n'est écrit) aux tokens
+ *    dont l'acteur a l'invocation (`devils-sight`), à chaque mise en place des sources de vision (`initializeVisionSources`) : la cible
+ *    à 120 ft s'affiche nette, comme vue normalement — la règle est celle de `canSee` (adapter/vision.mjs, `devilsSightSeesToken`) ;
+ *  - une créature entendue (contour) porte une petite oreille au-dessus de son token, et, au survol, « Entendu, pas vu » : de loin, le
+ *    contour d'un token à anneau passait pour une créature vue. (L'anneau dynamique ne se retire pas côté client sans patcher le cœur.)
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { blockedBetween, isVisionAvailable } from "../adapter/vision.mjs";
+import { blockedBetween, isVisionAvailable, devilsSightRange, devilsSightSeesToken, senseReachesToken } from "../adapter/vision.mjs";
 import { canHear } from "../adapter/hearing.mjs";
-import { sensesThrough } from "../core/light.mjs";
+import { sensesThrough, DEVILS_SIGHT } from "../core/light.mjs";
 import { route } from "../runtime/router.mjs";
 import { theaterActive } from "../runtime/theater-state.mjs";
 import { perceivesPlane } from "../adapter/plane.mjs";
+import { loc } from "../runtime/shared.mjs";
 
 const SIMULATED = `${MODULE_ID}.`;   // préfixe des sources de vision jetables (adapter/vision.mjs, SOURCE_PREFIX)
 const SIGHT = 0;                      // DetectionMode.DETECTION_TYPES.SIGHT
@@ -39,14 +49,19 @@ function pair(visionSource, object) {
   return (observer && object.document) ? { observer, target: object.document } : null;
 }
 
-/** La vue de ce mode est-elle coupée par une brume ou des ténèbres entre l'observateur et la cible ? */
-function blockedFor(id, visionSource, object) {
-  if ( !isVisionAvailable() ) return false;
+/**
+ * Ce qu'une brume ou des ténèbres entre l'observateur et la cible font à ce mode : `"blocked"` (la vue ne passe pas), `"pierce"` (un sens
+ * qui perce des ténèbres, jugé par le moteur : portée et ligne de vue sans les bords des ténèbres — issue #42), ou null (rien entre les
+ * deux, ou le test du cœur suffit : perception des vibrations, qui ignore murs et aveuglement ; un sens qui perce une brume seule).
+ */
+function blockFor(id, visionSource, object) {
+  if ( !isVisionAvailable() ) return null;
   const p = pair(visionSource, object);
-  if ( !p ) return false;
+  if ( !p ) return null;
   const blocked = blockedBetween(p.observer, p.target);
-  if ( !blocked.fog && !blocked.darkness ) return false;
-  return !(sensesThrough(blocked) ?? []).includes(id);
+  if ( !blocked.fog && !blocked.darkness ) return null;
+  if ( !(sensesThrough(blocked) ?? []).includes(id) ) return "blocked";
+  return ((id === "feelTremor") || !blocked.darkness) ? null : "pierce";
 }
 
 /** Un mode spécial de l'observateur (vision aveugle, voir l'invisible…) la détecte-t-il ? Il a priorité : son propre rendu. */
@@ -96,11 +111,21 @@ function extend(id, mode) {
       if ( theaterActive() ) return super.testVisibility(visionSource, tokenMode, config);
       try { if ( offPlane(visionSource, config.object) ) return false; }
       catch(err) { reportOnce(err); }
-      if ( !sight && !listens ) return super.testVisibility(visionSource, tokenMode, config);
       // Ce que le moteur ajoute ne doit jamais casser l'affichage du cœur : une erreur → le test du cœur seul, et la pile une fois.
-      let blocked = false;
-      try { blocked = sight && blockedFor(id, visionSource, config.object); }
+      let block = null;
+      try { block = blockFor(id, visionSource, config.object); }
       catch(err) { reportOnce(err); }
+      // Issue #42 : un sens qui perce des ténèbres (vision aveugle, vision véritable) — le test du cœur compte leurs bords comme des murs.
+      if ( (block === "pierce") && (id !== DEVILS_SIGHT.mode) ) {
+        if ( !tokenMode.enabled ) return false;
+        try {
+          const p = pair(visionSource, config.object);
+          return !!p && senseReachesToken(p.observer, p.target, tokenMode.range);
+        }
+        catch(err) { reportOnce(err); }
+      }
+      if ( !sight && !listens ) return super.testVisibility(visionSource, tokenMode, config);
+      const blocked = sight && (block === "blocked");
       if ( !blocked && super.testVisibility(visionSource, tokenMode, config) ) return true;
       if ( !listens || !tokenMode.enabled ) return false;
       try { return heard(visionSource, config); }
@@ -111,9 +136,45 @@ function extend(id, mode) {
   return new Extended(mode.toObject());
 }
 
+/**
+ * Issue #42 : le mode de détection « Vision du diable ». Une vue (`SIGHT`) bornée par les murs, qui ne s'arrête pas aux ténèbres : son test
+ * est celui des règles (`devilsSightSeesToken` : 120 ft, ligne de vue sans les bords des ténèbres, ni Invisible, ni Aveuglé, ni brume).
+ * Sans filtre : la cible s'affiche nette, « vue normalement ». Pas proposé dans la configuration du token (donné par l'invocation).
+ */
+function devilsSightMode() {
+  const DetectionMode = foundry.canvas.perception.DetectionMode;
+  class DetectionModeDevilsSight extends DetectionMode {
+    testVisibility(visionSource, mode, config) {
+      if ( !mode?.enabled ) return false;
+      const p = pair(visionSource, config.object);
+      if ( !p ) return false;
+      return devilsSightSeesToken(p.observer, p.target);
+    }
+  }
+  return new DetectionModeDevilsSight({ id: DEVILS_SIGHT.mode, label: "DND5ECOMBAT.Vision.DevilsSight", tokenConfig: false,
+    type: DetectionMode.DETECTION_TYPES.SIGHT, walls: true, angle: true });
+}
+
+/**
+ * Issue #42 : le mode « Vision du diable » donné en mémoire aux tokens qui ont une source de vision et dont l'acteur a l'invocation — comme
+ * dnd5e projette les sens de la fiche (documents/token.mjs `applySenseOverrides`), sans rien écrire. Les données préparées du token sont
+ * refaites à chaque mise à jour ; le cœur rappelle ce hook à chaque mise en place des sources (groups/visibility.mjs:192).
+ */
+function grantDevilsSight(sources) {
+  if ( !CONFIG.Canvas.detectionModes[DEVILS_SIGHT.mode] ) return;
+  for ( const source of sources?.values?.() ?? [] ) {
+    const doc = source.object?.document;
+    if ( !doc?.detectionModes ) continue;
+    const range = devilsSightRange(doc);
+    if ( range > 0 ) doc.detectionModes[DEVILS_SIGHT.mode] = { enabled: true, range };
+    else delete doc.detectionModes[DEVILS_SIGHT.mode];
+  }
+}
+
 /** À `setup` : après le cœur et le système (dnd5e ajoute ses modes à `init`). */
 function installModes() {
   const modes = CONFIG.Canvas.detectionModes;
+  modes[DEVILS_SIGHT.mode] ??= devilsSightMode();
   for ( const [id, mode] of Object.entries(modes) ) {
     const extended = mode ? extend(id, mode) : null;
     if ( extended ) modes[id] = extended;
@@ -129,8 +190,87 @@ function refreshVisibility() {
 
 export function registerPerception() {
   route("setup", installModes, { label: "perception: detection modes not installed" });
+  route("initializeVisionSources", grantDevilsSight, { label: "perception: Devil's Sight not granted" });
+  registerHeardMarks();
   const refresh = { label: "perception: display not refreshed" };
   for ( const hook of ["createRegion", "updateRegion", "deleteRegion", "createActiveEffect", "updateActiveEffect", "deleteActiveEffect"] ) {
     route(hook, refreshVisibility, refresh);
   }
+}
+
+/* -------------------------------------------- */
+/*  Issue #42 : l'oreille des créatures entendues */
+/* -------------------------------------------- */
+
+/** L'oreille de Font Awesome 6 (`ear-listen`). */
+const EAR = "\uf2a2";
+const marks = new Map();   // id du token → { root, label, r }
+let markLayer = null;
+
+function markLayerOf() {
+  if ( !markLayer || markLayer.destroyed || (markLayer.parent !== canvas.interface) ) {
+    markLayer = canvas.interface.addChild(new PIXI.Container());
+    markLayer.eventMode = "none";
+    markLayer.zIndex = 1040;   // au-dessus du calque des tokens (200), sous le sablier (1050, ui/awaiting.mjs)
+  }
+  return markLayer;
+}
+
+/** Une pastille sombre au filet bleu pâle (la couleur du contour de l'ouïe), une oreille ; au survol, « Entendu, pas vu ». */
+function buildMark() {
+  const r = Math.max(9, canvas.grid.size * 0.13);
+  const root = new PIXI.Container();
+  const back = new PIXI.Graphics().beginFill(0x000000, 0.6).drawCircle(0, 0, r).endFill()
+    .lineStyle(2, 0x8ccdff, 0.95).drawCircle(0, 0, r);
+  const ear = new PIXI.Text(EAR, {
+    fontFamily: ["Font Awesome 6 Pro", "Font Awesome 6 Free", "FontAwesome"], fontWeight: "900", fontSize: Math.round(r * 1.1),
+    fill: 0xd6ecff, stroke: 0x000000, strokeThickness: 2
+  });
+  ear.anchor.set(0.5);
+  const label = new PIXI.Text(loc("Vision.Entendu"), {
+    fontFamily: "Signika", fontSize: Math.round(Math.max(12, r * 1.05)), fill: 0xffffff, stroke: 0x000000, strokeThickness: 4,
+    align: "left"
+  });
+  label.anchor.set(0, 0.5);
+  label.position.set(r + 4, 0);
+  label.visible = false;
+  root.addChild(back, ear, label);
+  return { root, label, r };
+}
+
+function dropMark(id) {
+  const mark = marks.get(id);
+  if ( !mark ) return;
+  marks.delete(id);
+  if ( !mark.root.destroyed ) mark.root.destroy({ children: true });
+}
+
+/** Le token est-il affiché parce qu'on l'entend (le contour de l'ouïe), sur ce client ? */
+function isHeard(token) {
+  return !!token && !token.destroyed && (token.isVisible === true) && !!hearingFilter && (token.detectionFilter === hearingFilter);
+}
+
+function refreshMark(token) {
+  if ( !canvas?.ready || !token?.document ) return;
+  if ( !isHeard(token) ) { dropMark(token.id); return; }
+  let mark = marks.get(token.id);
+  if ( !mark ) marks.set(token.id, mark = buildMark());
+  if ( mark.root.parent !== markLayerOf() ) markLayerOf().addChild(mark.root);
+  // Coin haut gauche du token (le sablier prend le haut droit, les minuteries le dessus).
+  mark.root.position.set(token.x + (mark.r * 0.6), token.y + (mark.r * 0.6));
+  mark.label.visible = !!token.hover;
+}
+
+function clearMarks() {
+  for ( const id of [...marks.keys()] ) dropMark(id);
+  markLayer = null;
+}
+
+/** Issue #42 : chaque client pose l'oreille sur les tokens qu'il entend, à leur position affichée ; rien n'est écrit. */
+function registerHeardMarks() {
+  const opts = { label: "perception: hearing mark not drawn" };
+  route("refreshToken", token => refreshMark(token), opts);
+  route("hoverToken", token => refreshMark(token), opts);
+  route("destroyToken", token => dropMark(token.id), opts);
+  route("canvasTearDown", clearMarks, opts);
 }

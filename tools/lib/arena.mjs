@@ -6,6 +6,9 @@
  *   spec : { stage (tools/lib/stages.mjs), folder, flag (flags.dnd5e-combat.arena), actors: { nom: { pack, base, keepItems,
  *            disposition, system, statuses } } }
  * `statuses` : les états posés sur le token après la pose (« dead » : un cadavre que darsh-loot reconnaît).
+ * `owners` : noms d'utilisateurs qui possèdent l'acteur (issue #42 : `claude player`, pour voir la scène par ses yeux).
+ * `token` : données du token posé et du prototype (issue #42 : `{ sight: { enabled: true } }`, pour qu'un roturier ait une vue).
+ * `items` : uuids (ou { uuid, system }) d'items de compendium ajoutés à la fiche (issue #42 : la Vision du diable du Manuel des joueurs), gardés à la remise.
  */
 import { connect } from "./connector.mjs";
 
@@ -32,10 +35,19 @@ try {
     const { data } = await mcp.call("get-compendium-entry", { uuid: (spec.pack ?? MM) + spec.base });
     const { _id, folder: f, ownership, _stats, items, effects, ...rest } = data;
     const actorData = merge(rest, { name, system: spec.system, prototypeToken: { name, actorLink: true, disposition: spec.disposition,
-      displayName: 30, appendNumber: false, prependAdjective: false } });
+      displayName: 30, appendNumber: false, prependAdjective: false, ...(spec.token ?? {}) } });
     // Les ids d'items gardés : `details.race` d'un personnage désigne son espèce par id — sans elle, plus de Vitesse (prepareRace).
-    const baseItems = items ?? [];
-    actorData.items = spec.keepItems ? baseItems : [];
+    const extra = [];
+    for ( const entry of spec.items ?? [] ) {
+      // Un uuid, ou { uuid, system } : le système remplacé en partie (un sort à volonté).
+      const { uuid, system: patch } = (typeof entry === "string") ? { uuid: entry } : entry;
+      const { data: item } = await mcp.call("get-compendium-entry", { uuid });
+      const { _id: _i, folder: _f, ownership: _o, ...itemData } = item;
+      if ( patch ) merge(itemData.system, patch);
+      extra.push({ ...itemData, _stats: { ...(itemData._stats ?? {}), compendiumSource: uuid } });
+    }
+    const baseItems = [...(spec.keepItems ? (items ?? []) : []), ...extra];
+    actorData.items = baseItems;
     actorData.effects = [];
     const found = existing.find(a => (a.name === name) && (a.folderId === folderId));
     if ( found ) {
@@ -44,7 +56,7 @@ try {
       // Un acteur qui garde ses items ne perd que ceux qu'un balayage ou un scénario a prêtés (absents de sa base).
       const own = new Set(baseItems.map(i => `${i.type}|${i.name}`));
       for ( const i of actor.items ?? [] ) {
-        if ( spec.keepItems && own.has(`${i.type}|${i.name}`) ) continue;
+        if ( own.has(`${i.type}|${i.name}`) ) continue;
         await mcp.call("remove-embedded-item", { documentType: "Actor", id: found.id, itemId: i._id ?? i.id });
       }
       for ( const e of actor.effects ?? [] ) await mcp.call("remove-embedded-effect", { documentType: "Actor", id: found.id, effectId: e._id ?? e.id });
@@ -52,6 +64,11 @@ try {
       const race = spec.keepItems ? (actor.items ?? []).find(i => i.type === "race") : null;
       const system = race ? mergeCopy(spec.system, { details: { race: race._id ?? race.id } }) : spec.system;
       await mcp.call("update-actor", { actorId: found.id, actorData: { system, prototypeToken: actorData.prototypeToken } });
+      // Un item ajouté (`items`) qu'un essai aurait retiré revient.
+      const present = new Set((actor.items ?? []).map(i => `${i.type}|${i.name}`));
+      for ( const item of extra ) {
+        if ( !present.has(`${item.type}|${item.name}`) ) await mcp.call("upsert-embedded-item", { documentType: "Actor", id: found.id, itemData: item });
+      }
       ids[name] = found.id;
       console.log(`acteur « ${name} » remis en état (${found.id})`);
     }
@@ -60,6 +77,13 @@ try {
       ids[name] = r.id ?? r.actorId ?? r.actor?.id;
       console.log(`acteur « ${name} » créé (${ids[name]})`);
     }
+  }
+
+  // Les propriétaires (`owners`) : le connecteur ignore `ownership` — la fonction de test du moteur s'en charge (« Outils de test »).
+  for ( const [name, spec] of Object.entries(ACTORS) ) {
+    if ( !spec.owners?.length ) continue;
+    await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setOwners", args: { actorId: ids[name], users: spec.owners } })
+      .catch(err => console.log(`propriétaires de « ${name} » : ${err.message}`));
   }
 
   const scenes = await mcp.call("list-scenes", {});
@@ -86,11 +110,12 @@ try {
   for ( const [name, [cx, cy]] of Object.entries(stage.tokens) ) {
     const x = cx * grid, y = cy * grid;
     const found = tokens.find(t => t.name === name);
-    if ( found ) await mcp.call("update-scene-object", { sceneId: scene.id, type: "Token", objectId: found.id, data: { x, y, elevation: 0, ...(level?.id ? { level: level.id } : {}) } });
+    const extra = ACTORS[name]?.token ?? {};
+    if ( found ) await mcp.call("update-scene-object", { sceneId: scene.id, type: "Token", objectId: found.id, data: { x, y, elevation: 0, ...(level?.id ? { level: level.id } : {}), ...extra } });
     else {
       const r = await mcp.call("place-token", { sceneId: scene.id, actorId: ids[name], x, y });
       const tokenId = r.id ?? r.tokenId ?? r.token?.id;
-      if ( level?.id && tokenId ) await mcp.call("update-scene-object", { sceneId: scene.id, type: "Token", objectId: tokenId, data: { x, y, level: level.id } });
+      if ( tokenId && (level?.id || Object.keys(extra).length) ) await mcp.call("update-scene-object", { sceneId: scene.id, type: "Token", objectId: tokenId, data: { x, y, ...(level?.id ? { level: level.id } : {}), ...extra } });
       console.log(`token « ${name} » posé`);
     }
   }

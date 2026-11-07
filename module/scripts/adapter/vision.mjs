@@ -27,7 +27,7 @@
 
 import { committedPosition, distanceBetween, tokenCenter } from "./turn.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
-import { sensesThrough, DEVILS_SIGHT } from "../core/light.mjs";
+import { sensesThrough, DEVILS_SIGHT, devilsSightSees, senseReaches } from "../core/light.mjs";
 import { revealedInvisible, seesInvisible } from "./facts.mjs";
 import { outsideCone } from "./cone.mjs";
 import { hiddenFrom } from "./stealth.mjs";
@@ -275,24 +275,51 @@ export function devilsSightRange(observer) {
 function seesThroughBlock(observer, target, source, config, blocked) {
   const own = detectionModesOf(observer);
   const distance = distanceBetween(observer, target).value;
-  const eye = observer.getVisionOrigin?.(committedPosition(observer)) ?? tokenCenter(observer);
-  const inSight = () => hasLineOfSight(eye, target, canvas.scene.levels?.get?.(observer.level));
   for ( const id of sensesThrough(blocked) ) {
+    if ( id === DEVILS_SIGHT.mode ) continue;   // jugée par l'invocation elle-même, ci-dessous (un PNJ n'a pas forcément le mode)
     const mode = own[id];
     if ( !mode || (mode.enabled === false) ) continue;
     if ( id === "feelTremor" ) {
       if ( CONFIG.Canvas.detectionModes[id]?.testVisibility(source, mode, config) === true ) return true;
       continue;
     }
-    if ( (distance <= mode.range) && inSight() ) return true;
+    // Issue #42 : la ligne de vue sans les bords des ténèbres — sinon ni la vision aveugle ni la vision véritable n'y voyaient.
+    if ( senseReaches({ distance, range: mode.range, lineOfSight: lineOfSightThrough(observer, target) }) ) return true;
   }
-  if ( blocked.darkness && !blocked.fog ) {
-    const range = devilsSightRange(observer);
-    const invisible = target.hasStatusEffect?.(CONFIG.specialStatusEffects.INVISIBLE) && !revealedInvisible(target.actor, observer.actor) && !seesInvisible(observer.actor);
-    const blind = observer.hasStatusEffect?.(CONFIG.specialStatusEffects.BLIND);
-    if ( range && !invisible && !blind && (distance <= range) && inSight() ) return true;
-  }
-  return false;
+  return devilsSightSeesToken(observer, target, blocked);
+}
+
+/** Issue #42 : depuis les yeux de l'observateur, la ligne de vue sur la cible, sans les bords des sources de ténèbres. */
+function lineOfSightThrough(observer, target) {
+  const eye = observer.getVisionOrigin?.(committedPosition(observer)) ?? tokenCenter(observer);
+  return hasLineOfSight(eye, target, canvas.scene.levels?.get?.(observer.level), { throughDarkness: true });
+}
+
+/**
+ * Issue #42 : la Vision du diable de l'observateur voit-elle la cible (« voit normalement dans les ténèbres, magiques ou non, à 120 ft ») ?
+ * Pour les règles (`canSee`) comme pour l'écran (le mode de détection `devilsSight`, ui/perception.mjs). Positions validées.
+ * @param {TokenDocument} observer
+ * @param {TokenDocument} target
+ * @param {{fog: boolean}} [blocked]  Ce qui coupe la vue entre les deux, s'il est déjà connu.
+ */
+export function devilsSightSeesToken(observer, target, blocked=null) {
+  const range = devilsSightRange(observer);
+  if ( !range || !observer || !target ) return false;
+  const fog = (blocked ?? blockedBetween(observer, target)).fog;
+  const invisible = !!target.hasStatusEffect?.(CONFIG.specialStatusEffects.INVISIBLE)
+    && !revealedInvisible(target.actor, observer.actor) && !seesInvisible(observer.actor);
+  const blind = !!observer.hasStatusEffect?.(CONFIG.specialStatusEffects.BLIND);
+  const distance = distanceBetween(observer, target).value;
+  if ( !devilsSightSees({ distance, range, invisible, blind, fog }) ) return false;
+  return lineOfSightThrough(observer, target);
+}
+
+/**
+ * Issue #42 : un sens qui perce les ténèbres (vision aveugle, vision véritable) atteint-il la cible, pour l'écran ? Portée du mode et
+ * ligne de vue sans les bords des ténèbres.
+ */
+export function senseReachesToken(observer, target, range) {
+  return senseReaches({ distance: distanceBetween(observer, target).value, range: range ?? null, lineOfSight: lineOfSightThrough(observer, target) });
 }
 
 /**
@@ -320,8 +347,9 @@ export function canSeePoint(observer, point) {
     if ( blocked.darkness && !blocked.fog ) ranges.push(devilsSightRange(observer));
     if ( !ranges.some(r => r && (distance <= r)) ) return false;
     const eye = observer.getVisionOrigin?.(committedPosition(observer)) ?? from;
+    // Issue #42 : sans les bords des sources de ténèbres (clockwise-sweep.mjs:116-124, 163-175) — ils coupaient tout rayon qui y entre.
     return CONFIG.Canvas.polygonBackends.sight.testCollision(eye, { x: point.x, y: point.y, elevation: point.elevation ?? eye.elevation },
-      { type: "sight", mode: "any", level: level ?? undefined }) !== true;
+      { type: "sight", mode: "any", level: level ?? undefined, edgeTypes: { source: false } }) !== true;
   }
   for ( const light of canvas.effects.lightSources ) {
     if ( !light.data.vision || !light.active ) continue;
@@ -372,13 +400,18 @@ export function seesBetween(observerActor, targetActor) {
  * @param {{x: number, y: number, elevation?: number}} point
  * @param {TokenDocument} target
  * @param {Level} [level]  Niveau dont on prend les murs (celui de l'observateur) ; à défaut, le niveau affiché.
+ * @param {{throughDarkness?: boolean}} [options]  Issue #42 : sans les bords des sources de ténèbres.
  */
-export function hasLineOfSight(point, target, level=undefined) {
+export function hasLineOfSight(point, target, level=undefined, { throughDarkness=false }={}) {
   if ( !canvas?.ready || !target?.object ) return true;
   const backend = CONFIG.Canvas.polygonBackends.sight;
   const origin = { x: point.x, y: point.y, elevation: point.elevation ?? committedPosition(target).elevation ?? 0 };
   // P2 : les murs du niveau de l'observateur (sans `level`, le cœur prend le niveau affiché, source-polygon.mjs:187).
-  const config = { type: "sight", mode: "any", level: level ?? undefined };
+  // Issue #42 : un rayon `sight` du cœur compte aussi les bords des sources de ténèbres (clockwise-sweep.mjs:163-175, bords `sight`
+  // de point-darkness-source.mjs:98-107) — tout rayon qui entre dans des Ténèbres était coupé. Pour un sens qui les perce (Vision du
+  // diable, vision véritable, vision aveugle), `throughDarkness` les écarte (`edgeTypes`, clockwise-sweep.mjs:116-124) : murs et
+  // planchers comptent toujours.
+  const config = { type: "sight", mode: "any", level: level ?? undefined, ...(throughDarkness ? { edgeTypes: { source: false } } : {}) };
   // P2 : un plancher ou un plafond (Surface `sight`) coupe la ligne de vue comme un mur — entre la hauteur
   // du point et celle des yeux de la cible (Scene#testSurfaceCollision, un lancer de rayon 3D).
   const scene = target.parent;

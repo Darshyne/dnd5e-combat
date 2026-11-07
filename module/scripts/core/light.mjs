@@ -70,12 +70,42 @@ export function dispelledBy(light, maxLevel, darkness) {
  */
 export function sensesThrough({ fog, darkness }) {
   if ( fog ) return ["blindsight", "feelTremor"];
-  if ( darkness ) return ["blindsight", "feelTremor", "seeAll"];
+  if ( darkness ) return ["blindsight", "feelTremor", "seeAll", DEVILS_SIGHT_MODE];
   return null;
 }
 
-/** Portée de la Vision du diable (« dans un rayon de 36 m »), en pieds. */
-export const DEVILS_SIGHT = Object.freeze({ identifier: "devils-sight", range: 120, units: "ft" });
+/**
+ * Portée de la Vision du diable (« dans un rayon de 36 m »), en pieds. `mode` : l'id du mode de détection que le moteur enregistre
+ * (issue #42, ui/perception.mjs) et donne en mémoire aux tokens dont l'acteur a l'invocation.
+ */
+export const DEVILS_SIGHT_MODE = "devilsSight";
+export const DEVILS_SIGHT = Object.freeze({ identifier: "devils-sight", range: 120, units: "ft", mode: DEVILS_SIGHT_MODE });
+
+/**
+ * Issue #42 : la Vision du diable voit-elle la cible ? « Vous voyez normalement dans les ténèbres, magiques ou non, jusqu'à 36 m » :
+ * à portée, ligne de vue (murs, planchers — pas les bords des ténèbres), observateur non Aveuglé, cible ni Invisible (sauf révélée) ni
+ * dans une brume (la Vision du diable perce les ténèbres, pas la brume).
+ * @param {object} state
+ * @param {number} state.distance   Distance observateur → cible, unité de la grille.
+ * @param {number} state.range      Portée de la Vision du diable, même unité ; 0 : pas d'invocation.
+ * @param {boolean} [state.lineOfSight]  Ligne de vue sans les bords des sources de ténèbres.
+ * @param {boolean} [state.invisible]    Cible Invisible, non révélée à l'observateur.
+ * @param {boolean} [state.blind]        Observateur Aveuglé.
+ * @param {boolean} [state.fog]          Une brume coupe la vue entre les deux.
+ */
+export function devilsSightSees({ distance, range, lineOfSight=true, invisible=false, blind=false, fog=false }) {
+  if ( !(range > 0) || !Number.isFinite(distance) || (distance > range) ) return false;
+  return !!lineOfSight && !invisible && !blind && !fog;
+}
+
+/**
+ * Issue #42 : un sens qui perce une zone qui bloque la vue (vision aveugle, vision véritable) atteint-il la cible ? Sa portée et la ligne
+ * de vue (sans les bords des ténèbres) seules ; `range` null ou absent = illimité.
+ */
+export function senseReaches({ distance, range=null, lineOfSight=true }) {
+  if ( !lineOfSight || !Number.isFinite(distance) ) return false;
+  return (range === null) || (range === Infinity) || (distance <= range);
+}
 
 /* -------------------------------------------- */
 /*  Durée et combustible des sources portées    */

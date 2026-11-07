@@ -96,6 +96,8 @@
   "DND5ECOMBAT.Reglage.vision.Nom": "Vision simulée",
   "DND5ECOMBAT.Reglage.vision.Aide": "Le moteur juge qui voit qui (vision, lumière, murs, sens) : attaquer une cible qu'on ne voit pas donne le désavantage, attaquer sans être vu donne l'avantage ; Aveuglé et Invisible sont jugés par les sens de l'observateur. Désactivé : ces états gardent leur effet forfaitaire.",
   "DND5ECOMBAT.VisionHorsService": "dnd5e-combat : vision simulée hors service, l'API du cœur a changé ({missing}). Les états gardent leur effet forfaitaire.",
+  "DND5ECOMBAT.Vision.Entendu": "Entendu, pas vu (Désavantage)",
+  "DND5ECOMBAT.Vision.DevilsSight": "Vision du diable",
   "DND5ECOMBAT.Reglage.volumes.Nom": "Élévation et volumes",
   "DND5ECOMBAT.Reglage.volumes.Aide": "Les zones de sort reçoivent une hauteur d'après leur forme (sphère centrée sur le lanceur, cube et cylindre posés, cône et ligne à plat) : une créature en vol au-dessus d'une Boule de feu n'est plus touchée. Un plancher ou un plafond (région « Surface » qui arrête le déplacement) coupe la ligne d'effet des zones, des auras et des attaques d'opportunité, et compte comme un abri total. Les distances se mesurent en trois dimensions quel que soit ce réglage.",
   "DND5ECOMBAT.Reglage.altitude.Nom": "Modes de déplacement et élévation",

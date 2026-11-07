@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { areaLightRadii, tokenLightChanges, dispelledBy, sensesThrough } from "../module/scripts/core/light.mjs";
+import { areaLightRadii, tokenLightChanges, dispelledBy, sensesThrough, devilsSightSees, senseReaches, DEVILS_SIGHT } from "../module/scripts/core/light.mjs";
 import { validateEntry, mergeEntries } from "../module/scripts/core/content.mjs";
 
 describe("lumière des zones", () => {
@@ -43,8 +43,46 @@ describe("sens qui percent", () => {
   it("la brume : vision aveugle et vibrations ; les ténèbres : aussi la vision véritable", () => {
     expect(sensesThrough({ fog: true, darkness: false })).toEqual(["blindsight", "feelTremor"]);
     expect(sensesThrough({ fog: true, darkness: true })).toEqual(["blindsight", "feelTremor"]);
-    expect(sensesThrough({ fog: false, darkness: true })).toEqual(["blindsight", "feelTremor", "seeAll"]);
+    expect(sensesThrough({ fog: false, darkness: true })).toEqual(["blindsight", "feelTremor", "seeAll", "devilsSight"]);
     expect(sensesThrough({ fog: false, darkness: false })).toBe(null);
+  });
+
+  it("issue #42 : la Vision du diable perce les ténèbres, pas la brume", () => {
+    expect(sensesThrough({ fog: false, darkness: true })).toContain(DEVILS_SIGHT.mode);
+    expect(sensesThrough({ fog: true, darkness: true })).not.toContain(DEVILS_SIGHT.mode);
+    expect(DEVILS_SIGHT).toMatchObject({ identifier: "devils-sight", range: 120, units: "ft", mode: "devilsSight" });
+  });
+});
+
+describe("issue #42 : Vision du diable", () => {
+  it("voit à 120 ft, pas au-delà", () => {
+    expect(devilsSightSees({ distance: 55, range: 120 })).toBe(true);
+    expect(devilsSightSees({ distance: 120, range: 120 })).toBe(true);
+    expect(devilsSightSees({ distance: 125, range: 120 })).toBe(false);
+  });
+  it("sans invocation, rien", () => {
+    expect(devilsSightSees({ distance: 5, range: 0 })).toBe(false);
+  });
+  it("ni un Invisible, ni Aveuglé, ni à travers une brume ou un mur", () => {
+    expect(devilsSightSees({ distance: 30, range: 120, invisible: true })).toBe(false);
+    expect(devilsSightSees({ distance: 30, range: 120, blind: true })).toBe(false);
+    expect(devilsSightSees({ distance: 30, range: 120, fog: true })).toBe(false);
+    expect(devilsSightSees({ distance: 30, range: 120, lineOfSight: false })).toBe(false);
+  });
+  it("distance inconnue : non", () => {
+    expect(devilsSightSees({ distance: NaN, range: 120 })).toBe(false);
+  });
+});
+
+describe("issue #42 : sens qui percent, portée et ligne de vue", () => {
+  it("à portée et en vue", () => {
+    expect(senseReaches({ distance: 25, range: 30 })).toBe(true);
+    expect(senseReaches({ distance: 55, range: 30 })).toBe(false);
+    expect(senseReaches({ distance: 25, range: 30, lineOfSight: false })).toBe(false);
+  });
+  it("portée illimitée", () => {
+    expect(senseReaches({ distance: 500, range: null })).toBe(true);
+    expect(senseReaches({ distance: 500, range: Infinity })).toBe(true);
   });
 });
 

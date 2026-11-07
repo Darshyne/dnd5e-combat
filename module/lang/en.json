@@ -96,6 +96,8 @@
   "DND5ECOMBAT.Reglage.vision.Nom": "Simulated vision",
   "DND5ECOMBAT.Reglage.vision.Aide": "The engine judges who sees whom (vision, light, walls, senses): attacking a target you cannot see gives Disadvantage, attacking while unseen gives Advantage; Blinded and Invisible are judged through the observer's senses. Off: those conditions keep their flat effect.",
   "DND5ECOMBAT.VisionHorsService": "dnd5e-combat: simulated vision is unavailable, the core API changed ({missing}). Conditions keep their flat effect.",
+  "DND5ECOMBAT.Vision.Entendu": "Heard, not seen (Disadvantage)",
+  "DND5ECOMBAT.Vision.DevilsSight": "Devil's Sight",
   "DND5ECOMBAT.Reglage.volumes.Nom": "Elevation and volumes",
   "DND5ECOMBAT.Reglage.volumes.Aide": "Spell areas get a height from their shape (sphere centered on the caster, cube and cylinder resting on the ground, cone and line flat): a creature flying above a Fireball is no longer hit. A floor or ceiling (a Surface region that blocks movement) cuts the line of effect of areas, auras and Opportunity Attacks, and counts as Total Cover. Distances are measured in three dimensions regardless of this setting.",
   "DND5ECOMBAT.Reglage.altitude.Nom": "Movement modes and elevation",

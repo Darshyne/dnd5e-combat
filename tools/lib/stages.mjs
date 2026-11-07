@@ -75,3 +75,24 @@ export const ARENE_INVOCATIONS = Object.freeze({
   // Morts par construction : le lanceur de scénarios ne les relève pas (`standUpDowned`).
   corpses: Object.freeze(["Cadavre", "Bête morte"])
 });
+
+/**
+ * Issue #42 : l'« Arène de la vision » (`tools/arene-vision.mjs`) — scène plate de 40 × 12 cases de 140 px (5 ft), en pleine lumière,
+ * pour juger qui voit qui (règles) et ce que montre l'écran d'un joueur. Les observateurs (possédés par `claude player`) à gauche :
+ * l'Humain (Druide pré-tiré, aucune vision dans le noir), l'Occultiste du diable (Occultiste pré-tiré, gnome, + Vision du diable et
+ * Ténèbres), le Rôdeur elfe (vision dans le noir 60 ft), la Vision véritable (120 ft) ; la Vision aveugle (30 ft) à 25 ft de la Cible
+ * dans les ténèbres, au centre des Ténèbres que pose le scénario (sphère de 15 ft) ; la Cible derrière les ténèbres, éclairée, de l'autre
+ * côté ; la Cible au loin, éclairée, en haut à gauche, qu'aucune ligne de vue ne fait passer par les Ténèbres (témoin). Positions en cases
+ * du canevas : la marge de la scène (10 % : 4 colonnes, 2 lignes) est exclue de la vision par le cœur (`visibility.mjs`, `inBuffer`) —
+ * un observateur posé dedans ne voit rien de la scène.
+ */
+export const ARENE_VISION = Object.freeze({
+  name: "Arène de la vision",
+  cols: 40, rows: 12, grid: 140,
+  tokens: Object.freeze({
+    "Humain": [6, 6], "Occultiste du diable": [6, 8], "Rôdeur elfe": [6, 10], "Vision véritable": [6, 12], "Vision aveugle": [12, 8],
+    "Cible dans les ténèbres": [17, 8], "Cible derrière les ténèbres": [23, 8], "Cible au loin": [10, 2]
+  }),
+  // La cible au centre des Ténèbres que pose le scénario `vision-tenebres`.
+  darknessOn: "Cible dans les ténèbres"
+});

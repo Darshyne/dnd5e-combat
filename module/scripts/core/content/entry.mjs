@@ -169,6 +169,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   if ( ("noOpportunity" in entry) && !["always", "flying", "afterUse", "whileEffect"].includes(entry.noOpportunity) ) errors.push(`${at}noOpportunity: always, flying, afterUse, whileEffect`);
   if ( ("sharesSpace" in entry) && !["enter", "mutual"].includes(entry.sharesSpace) ) errors.push(`${at}sharesSpace: enter, mutual`);
   if ( ("placesSummons" in entry) && (entry.placesSummons !== true) ) errors.push(`${at}placesSummons: true or absent`);
+  if ( ("targetedSummon" in entry) && (entry.targetedSummon !== true) ) errors.push(`${at}targetedSummon: true or absent`);
   if ( ("savedEffects" in entry) && (!Array.isArray(entry.savedEffects) || !entry.savedEffects.length || !entry.savedEffects.every(isId)) ) {
     errors.push(`${at}savedEffects: list of effect ids (16 characters)`);
   }

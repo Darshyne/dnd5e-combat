@@ -17,7 +17,7 @@ import { TARGETS, EFFECT_EXPIRIES, USAGE_LIMITS, ENCHANT_TARGETS, PACTS } from "
 import { TRACES, TRACE_RULES } from "./traces.mjs";
 import { TELEPORTS } from "./teleports.mjs";
 import { ABSORBS } from "./absorbs.mjs";
-import { SUMMONS, PLACES_SUMMONS } from "./summons.mjs";
+import { SUMMONS, PLACES_SUMMONS, TARGETED_SUMMONS } from "./summons.mjs";
 import { MOVABLES } from "./movables.mjs";
 import { LIGHTS, REVEALS_INVISIBLE } from "./lights.mjs";
 import { TETHERS } from "./tethers.mjs";
@@ -56,7 +56,7 @@ import { BURSTS, RECASTS, TURN_STARTS, BOLTS, OBSCURES, HEAL_MAX, DUPLICATES, SA
 export const BRICKS = Object.freeze([
   [TRIGGERS, "triggers"], [AURAS, "aura"], [EMANATIONS, "emanation"], [REGENERATIONS, "regeneration"],
   [FORTITUDES, "fortitude"], [MONSTER_BASIC_ACTIONS, "basicActions"], [NO_OPPORTUNITY, "noOpportunity"], [DRAINS, "drain"],
-  [SWALLOWS, "swallow"], [SPACE_SHARERS, "sharesSpace"], [PLACES_SUMMONS, "placesSummons"], [CHOICES, "choice"],
+  [SWALLOWS, "swallow"], [SPACE_SHARERS, "sharesSpace"], [PLACES_SUMMONS, "placesSummons"], [TARGETED_SUMMONS, "targetedSummon"], [CHOICES, "choice"],
   [TARGETS, "targets"], [EFFECT_EXPIRIES, "effectsExpire"], [USAGE_LIMITS, "usageLimits"],
   [ENCHANT_TARGETS, "enchantTarget"], [PACTS, "pact"], [TRACES, "trace"], [TRACE_RULES, "trace"], [TELEPORTS, "teleport"],
   [ABSORBS, "absorb"], [SUMMONS, "summon"], [MOVABLES, "movable"], [BURSTS, "burst"], [RECASTS, "recast"], [BOLTS, "bolt"],

@@ -86,10 +86,10 @@ export default {
       const level = Number(data.system.level) || 0;
       if ( summon.summon?.mode === "cr" ) { report.push(`${id} : sauté (invocation par FP, navigateur de compendium)`); continue; }
       if ( OWN_WINDOW.has(id) ) { report.push(`${id} : sauté (sa propre fenêtre, §16.35)`); continue; }
-      // Une invocation qui vise un objet ou une créature attend un clic sur la carte (Animation des objets ; Doigt de mort relève la
-      // créature tuée) — hors de ce balayage, sauf si le moteur la lance sans viser (`summon.untargeted`).
+      // §394 : seules les invocations que le contenu fait viser (`targetedSummon` : Doigt de mort relève un cadavre) attendent un
+      // clic — scénario `invocations-ciblees`, dans l'Arène des invocations.
       const affects = (summon.target?.override ? summon.target?.affects?.type : data.system.target?.affects?.type) ?? "";
-      if ( ["object", "creature", "creatureOrObject"].includes(affects) && !CONTENT[id]?.summon?.untargeted ) {
+      if ( CONTENT[id]?.targetedSummon ) {
         report.push(`${id} : sauté (vise ${affects} : attend un clic)`);
         ctx.log(`${id} : sauté (vise ${affects} : attend un clic)`);
         continue;

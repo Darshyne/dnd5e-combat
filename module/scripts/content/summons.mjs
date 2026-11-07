@@ -120,3 +120,11 @@ export const SUMMONS = Object.freeze({
  * l'invocation est facultative : Lumière et Flamme éternelle (sur un objet), Animation des morts (relever un cadavre).
  */
 export const PLACES_SUMMONS = Object.freeze(["conjure-animals", "summon-undead", "grasping-vine", "phantom-steed", "project-image", "animate-dead"]);
+
+/**
+ * §394 : les seules invocations qui se visent d'un clic. Depuis le §394, une activité « summon » ne passe plus en visée d'après sa
+ * cible dans les données : le Tapis volant et la Driftglobe s'y désignent eux-mêmes (« object »), la Bouteille d'éfrit dit
+ * « creature » pour une case libre — le moteur attendait un clic sur une cible qui n'existe pas, et l'objet ne s'utilisait pas.
+ * Doigt de mort, lui, relève la créature tuée : sa cible est un cadavre, qu'un voisin relève à sa place (§118, darsh-loot).
+ */
+export const TARGETED_SUMMONS = Object.freeze(["finger-of-death"]);

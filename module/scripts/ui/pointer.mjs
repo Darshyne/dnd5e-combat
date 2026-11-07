@@ -271,8 +271,10 @@ const noDialog = dialogConfig => ({ ...(dialogConfig ?? {}), configure: false })
 
 /** Qui l'activité vise d'un clic (core/targeting.mjs), ou null si elle ne se vise pas ainsi. */
 function ruleOf(activity) {
-  // §385 : une invocation qui se lance sans viser (Création de morts-vivants : pas de corps à désigner).
-  if ( (activity?.type === "summon") && contentOf(activity.item).entry?.summon?.untargeted ) return null;
+  // §394 : une invocation ne se vise que si le contenu le demande (Doigt de mort : le cadavre). Ses données désignent souvent
+  // l'objet lui-même (Tapis volant, Driftglobe) ou une case libre (Bouteille d'éfrit) : le moteur attendait un clic impossible.
+  // (§385 : `summon.untargeted`, Création de morts-vivants, en est désormais un cas particulier.)
+  if ( (activity?.type === "summon") && !contentOf(activity.item).entry?.targetedSummon ) return null;
   // §16.41 : l'arme d'une créature, soi compris (Arme élémentaire : dnd5e vise un « objet »).
   if ( enchantTargetOf(activity) === "weapon" ) return { self: true, side: null };
   // §53 : le sort qu'une potion fait lancer est pour le buveur (adapter/usage.mjs) — rien à viser.

@@ -9,7 +9,7 @@
  *   srd-2014      une créature du SRD 2014 de dnd5e (`dnd5e.monsters`) ; « → MM » / « → SRD 2024 » si l'équivalent existe (§386)
  *   introuvable   un profil dont la créature n'est dans aucun compendium relevé
  *   ne-pose-rien  `summon.prompt` faux et pas dans `PLACES_SUMMONS` (rien n'apparaît, sauf un voisin qui reprend l'invocation)
- *   vise          l'activité vise un objet ou une créature : le moteur ouvre sa visée (cadavres, os…), sauf `untargeted`
+ *   vise          l'invocation se vise d'un clic : seulement si le contenu le dit (`targetedSummon`, §394 : Doigt de mort)
  * Et ce que le moteur déclare pour l'identifiant (`CONTENT[identifier].summon`, `placesSummons`).
  *
  * Lit une COPIE des bases LevelDB (Foundry les verrouille), n'écrit rien dans le dépôt public : le détail (noms premium) va dans le
@@ -102,8 +102,7 @@ function preferred(uuid) {
 
 const PLACES = new Set(Object.entries(CONTENT).filter(([, e]) => e?.placesSummons).map(([id]) => id));
 const variable = f => /@|d\d/i.test(String(f ?? ""));
-// Ce qui ouvre la visée du moteur (un « espace » se pose sans viser : Main du mage, Œil du mage).
-const AIMED = new Set(["object", "creature", "creatureOrObject", "ally", "enemy", "willing"]);
+// §394 : la visée d'une invocation ne dépend plus de sa cible dans les données (`targetedSummon` du contenu).
 
 const rows = [];
 for ( const { pack, ownerName, item } of items ) {
@@ -157,7 +156,7 @@ for ( const { pack, ownerName, item } of items ) {
       if ( (a.summon?.prompt === false) && !PLACES.has(identifier) && (content?.light?.on !== "summon") ) flags.push("ne-pose-rien");
     }
     const affects = (a.target?.override ? a.target?.affects?.type : s.target?.affects?.type) ?? "";
-    if ( (a.type === "summon") && AIMED.has(affects) && !content?.summon?.untargeted ) flags.push(`vise (${affects})`);
+    if ( (a.type === "summon") && content?.targetedSummon ) flags.push(`vise (${affects || "contenu"})`);
     rows.push({
       pack, owner: ownerName ?? null, item: item.name, identifier, activity: a._id, type: a.type, name: a.name || "",
       level: s.level ?? null, profiles: profiles.map(p => p.name || knownActor(p.uuid) || p._id), sizes, types,

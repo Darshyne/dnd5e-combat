@@ -34,7 +34,7 @@ export const MERGE = Object.freeze({
   bolt: "shallow", light: "shallow", atTurnStart: "shallow", breaksOn: "list", breaksOnOrigin: "list", noReactions: "replace",
   actionOrBonus: "replace", pickTargets: "replace", flurryStrikes: "replace", effectDurations: "shallow", grantsConditionImmunities: "list", zoneMax: "replace", healPool: "copy", spellsInAttack: "copy", duringRage: "copy", quietPose: "replace", zoneBound: "replace", effectsFirst: "replace", hitDefense: "replace", brutalStrike: "replace", enterOnPose: "replace", killsAtZero: "replace", retort: "replace", grants: "replace", summonEffectsOnCaster: "replace", sniper: "replace", regainOnShortRest: "list", absorbsDamage: "list", dataFixes: "replace", includesOrigin: "replace", cures: "list", curesAll: "list", potionEffect: "replace", castTargets: "replace",
   effectChanges: "shallow", advantageIfFighting: "replace", emanation: "shallow", regeneration: "replace",
-  fortitude: "replace", noOpportunity: "replace", sharesSpace: "replace", placesSummons: "replace", drain: "replace",
+  fortitude: "replace", noOpportunity: "replace", sharesSpace: "replace", placesSummons: "replace", targetedSummon: "replace", drain: "replace",
   swallow: "replace", savedEffects: "list", ignoresCloseCombat: "replace", sharedHp: "replace", failMargins: "shallow",
   resize: "shallow", orders: "list", reactions: "copy", lastStand: "copy", counter: "copy", difficultTerrain: "copy",
   storm: "copy", stableAtZero: "replace", wardsAtZero: "replace", zoneCharges: "replace", noDamage: "list", dropsEffects: "list",

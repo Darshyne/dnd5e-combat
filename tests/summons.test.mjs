@@ -229,3 +229,11 @@ describe("§392 : l'id d'un acteur au bout d'un lien (liens cassés du DMG)", ()
     expect(actorIdOf(null)).toBeNull();
   });
 });
+
+describe("§394 : invocations visées", () => {
+  it("seul Doigt de mort se vise d'un clic ; les autres invocations non", async () => {
+    const { CONTENT } = await import("../module/scripts/content/index.mjs");
+    expect(CONTENT["finger-of-death"]?.targetedSummon).toBe(true);
+    for ( const id of ["create-undead", "animate-dead", "animate-objects", "summon-celestial"] ) expect(CONTENT[id]?.targetedSummon).toBeUndefined();
+  });
+});

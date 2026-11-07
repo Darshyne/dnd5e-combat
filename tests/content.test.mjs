@@ -194,7 +194,7 @@ describe("contenu livré", () => {
       "entangling-trail", "esoteric-ward", "essence-of-ether", "ethereal-jaunt", "ethereal-stride", "evards-black-tentacles", "evasion",
       "evasive-footwork", "eversmoking-bottle", "executioners-axe-enchanted", "expeditious-retreat", "eye-and-hand-of-vecna", "eyebite",
       "faerie-fire", "faithful-hound", "fanatical-focus", "fear", "fear-aura", "feather-fall", "feign-death", "feinting-attack",
-      "fell-word", "feral-pounce", "feral-strike", "fetid-aura", "fetid-cloud", "fey-ancestry", "find-familiar", "find-steed", "fire-aura",
+      "fell-word", "feral-pounce", "feral-strike", "fetid-aura", "fetid-cloud", "fey-ancestry", "find-familiar", "find-steed", "finger-of-death", "fire-aura",
       "fire-element", "fire-form", "fire-shield", "fires-burn", "flame-aura", "flame-blade", "flame-tongue-enchanted", "flaming-sphere",
       "flask-of-holy-water", "fleet-step", "flesh-to-stone", "flyby", "foe-slayer", "fog-cloud", "font-of-inspiration", "fool",
       "forbiddance", "forbidden-knowledge", "forcecage", "forceful-hand", "foresight", "form-of-dread", "fortitude-ioun-stone",

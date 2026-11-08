@@ -25,7 +25,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { blockedBetween, isVisionAvailable, devilsSightRange, devilsSightSeesToken, senseReachesToken, asSeenBy } from "../adapter/vision.mjs";
+import { blockedBetween, isVisionAvailable, devilsSightRange, devilsSightSeesToken, senseReachesToken, asSeenBy, isSenseless } from "../adapter/vision.mjs";
 import { canHear } from "../adapter/hearing.mjs";
 import { sensesThrough, CORE_JUDGED, DEVILS_SIGHT } from "../core/light.mjs";
 import { route } from "../runtime/router.mjs";
@@ -114,6 +114,9 @@ function extend(id, mode) {
       if ( theaterActive() ) return super.testVisibility(visionSource, tokenMode, config);
       try { if ( offPlane(visionSource, config.object) ) return false; }
       catch(err) { reportOnce(err); }
+      // Réglage `unconsciousSenses` : un observateur Inconscient ne perçoit plus rien, par aucun mode.
+      try { if ( isSenseless(visionSource?.object?.document) ) return false; }
+      catch(err) { reportOnce(err); }
       // Ce que le moteur ajoute ne doit jamais casser l'affichage du cœur : une erreur → le test du cœur seul, et la pile une fois.
       let block = null;
       try { block = blockFor(id, visionSource, config.object); }
@@ -187,6 +190,7 @@ function grantModes(sources) {
 function grantOn(doc) {
   const modes = CONFIG.Canvas.detectionModes;
   if ( !doc?.detectionModes || !doc.sight?.enabled ) return;
+  blindIfSenseless(doc.object);
   if ( modes[DEVILS_SIGHT.mode] ) {
     const range = devilsSightRange(doc);
     if ( range > 0 ) doc.detectionModes[DEVILS_SIGHT.mode] = { enabled: true, range };
@@ -197,6 +201,20 @@ function grantOn(doc) {
     delete doc.detectionModes[HEARING_MODE];
     doc.detectionModes[HEARING_MODE] = { enabled: true, range: Infinity };
   }
+}
+
+/**
+ * Réglage `unconsciousSenses` : la source de vision d'un Inconscient est aveuglée (`blinded.unconscious`, point-vision-source.mjs:172-182) —
+ * son écran passe en mode « cécité », comme Aveuglé. Le cœur ne remet que ses propres clés (`blind`, `burrow`, placeables/token.mjs:936) :
+ * la nôtre reste jusqu'au réveil ; changée, la source est refaite (elle seule).
+ */
+function blindIfSenseless(token) {
+  const vision = token?.vision;
+  if ( !vision?.blinded ) return;
+  const want = isSenseless(token.document);
+  if ( !!vision.blinded.unconscious === want ) return;
+  vision.blinded.unconscious = want;
+  token.initializeVisionSource();
 }
 
 function grantAll() {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { areaLightRadii, tokenLightChanges, dispelledBy, sensesThrough, devilsSightSees, senseReaches, DEVILS_SIGHT, CORE_JUDGED, WORKS_BLIND } from "../module/scripts/core/light.mjs";
+import { areaLightRadii, tokenLightChanges, dispelledBy, sensesThrough, devilsSightSees, senseReaches, DEVILS_SIGHT, CORE_JUDGED, WORKS_BLIND, senseless } from "../module/scripts/core/light.mjs";
 import { validateEntry, mergeEntries } from "../module/scripts/core/content.mjs";
 
 describe("lumière des zones", () => {
@@ -148,5 +148,14 @@ describe("§52 : sources de lumière portées", () => {
     expect(validateEntry({ carriedLight: { bright: 20, dim: 40, units: "ft", angle: 400 } })).toHaveLength(1);
     expect(validateEntry({ kindles: true })).toEqual([]);
     expect(validateEntry({ kindles: "oui" })).toHaveLength(1);
+  });
+});
+
+describe("Inconscient : ni vue ni ouïe (réglage unconsciousSenses)", () => {
+  it("seulement Inconscient ET réglage coché", () => {
+    expect(senseless({ unconscious: true, rule: true })).toBe(true);
+    expect(senseless({ unconscious: true, rule: false })).toBe(false);
+    expect(senseless({ unconscious: false, rule: true })).toBe(false);
+    expect(senseless()).toBe(false);
   });
 });

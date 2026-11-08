@@ -11,6 +11,11 @@
  *  4. Une cible en vol dans le noir : les vibrations ne la perçoivent plus (detection-modes/tremor-perception.mjs), la vision dans le
  *     noir, si.
  *  5. L'Invisible révélé : Détection de l'invisibilité (l'Humain, sur lui-même) ; Lueurs féeriques sur la Cible invisible — tous la voient.
+ *  6. Lumière faible : la Cible dans le noir, d'abord dans l'obscurité, puis sous une lumière faible. Dans le noir, l'Humain ne la voit
+ *     pas et le Rôdeur (vision dans le noir) la voit comme en lumière faible (Désavantage en Perception) ; en lumière faible, l'Humain la
+ *     voit, avec Désavantage en Perception, le Rôdeur et l'Occultiste (Vision du diable) comme en lumière vive, sans Désavantage.
+ *  7. Réglage « Inconscient : ni vue ni ouïe » : le Rôdeur Inconscient ne voit ni n'entend plus rien (règles et écran) ; réglage
+ *     décoché, il garde ses sens.
  * Écran : ce que les règles voient s'affiche (net ou par le contour de son sens) ; le reste est entendu (contour de l'ouïe) ou absent.
  */
 import { ARENE_VISION } from "../lib/stages.mjs";
@@ -171,5 +176,65 @@ export default {
       ctx.log("Lueurs féeriques sur la Cible invisible :"); show(rowsInv);
       for ( const r of rowsInv ) check(r, true, true, "Lueurs féeriques");
     }
+
+    // 6. Lumière faible : obscurité sur la Cible dans le noir, puis une lumière faible sur elle.
+    const LIGHTS = ["Humain", "Rôdeur elfe", "Occultiste du diable"];
+    const DIM = 1, BRIGHT = 2;
+    const night2 = await ctx.call("create-region", { sceneId, name: "Obscurité (lumière faible)", color: "#000000",
+      shapes: [{ type: "rectangle", x: dx * grid, y: dy * grid, width: dw * grid, height: dh * grid }],
+      behaviors: [{ type: "adjustDarknessLevel", name: "Obscurité", system: { mode: 0, modifier: 1 } }] });
+    const night2Id = night2?.id ?? night2?.regionId ?? night2?.region?.id;
+    ctx.restore(() => ctx.call("delete-scene-object", { type: "Region", objectId: night2Id }).catch(() => {}));
+    await pause(1500);
+    rows = await matrix(LIGHTS, ["Cible dans le noir"]);
+    ctx.log("obscurité :"); show(rows);
+    for ( const r of rows ) {
+      ctx.log(`    lumière ${r.rules.light.level} perçue ${r.rules.light.perceived}, Désavantage en Perception : ${r.rules.light.perceptionDisadvantage}`);
+      if ( r.observer === "Humain" ) check(r, false, true, "obscurité");
+      if ( r.observer === "Rôdeur elfe" ) {
+        check(r, true, true, "obscurité");
+        ctx.expect(r.rules.light.perceived === DIM && r.rules.light.perceptionDisadvantage === true,
+          "obscurité : le Rôdeur la perçoit comme en lumière faible, Désavantage en Perception");
+      }
+    }
+    const listLights = async () => ((await ctx.call("list-scene-objects", { sceneId, types: ["AmbientLight"] })).objects?.AmbientLight ?? []).map(l => l.id);
+    const beforeLights = new Set(await listLights());
+    const db = await ctx.box(dark);
+    await ctx.call("place-light", { sceneId, x: db.x + (db.width / 2), y: db.y + (db.height / 2), bright: 0, dim: 1.5 * grid });
+    const addedLights = (await listLights()).filter(id => !beforeLights.has(id));
+    ctx.restore(async () => { for ( const id of addedLights ) await ctx.call("delete-scene-object", { type: "AmbientLight", objectId: id }).catch(() => {}); });
+    ctx.expect(addedLights.length === 1, "lumière faible posée");
+    await pause(1500);
+    rows = await matrix(LIGHTS, ["Cible dans le noir"]);
+    ctx.log("lumière faible :"); show(rows);
+    for ( const r of rows ) {
+      ctx.log(`    lumière ${r.rules.light.level} perçue ${r.rules.light.perceived}, Désavantage en Perception : ${r.rules.light.perceptionDisadvantage}`);
+      check(r, true, true, "lumière faible");
+      ctx.expect(r.rules.light.level === DIM, `lumière faible : la cible est en lumière faible (${r.observer})`);
+      const human = r.observer === "Humain";
+      ctx.expect(r.rules.light.perceived === (human ? DIM : BRIGHT) && r.rules.light.perceptionDisadvantage === human,
+        `lumière faible : ${r.observer} ${human ? "a" : "n'a pas"} le Désavantage en Perception`);
+    }
+    for ( const id of addedLights ) await ctx.call("delete-scene-object", { type: "AmbientLight", objectId: id }).catch(() => {});
+    await ctx.call("delete-scene-object", { type: "Region", objectId: night2Id }).catch(() => {});
+    await pause(1000);
+
+    // 7. Réglage « Inconscient : ni vue ni ouïe ».
+    const ranger = tokens["Rôdeur elfe"];
+    const got = await ctx.call("get-setting", { namespace: "dnd5e-combat", key: "unconsciousSenses" });
+    const wasRule = got?.value ?? got ?? false;
+    ctx.restore(() => ctx.call("set-setting", { namespace: "dnd5e-combat", key: "unconsciousSenses", value: wasRule }));
+    const asleep = active => ctx.call("set-status", { tokenId: ranger.id, statusId: "unconscious", active });
+    ctx.restore(async () => { await asleep(false).catch(() => {}); await ctx.call("set-status", { tokenId: ranger.id, statusId: "prone", active: false }).catch(() => {}); });
+    await asleep(true);
+    for ( const rule of [true, false] ) {
+      await ctx.call("set-setting", { namespace: "dnd5e-combat", key: "unconsciousSenses", value: rule });
+      await pause(1500);
+      rows = await matrix(["Rôdeur elfe"], [FAR, "Cible dans le noir"]);
+      ctx.log(`Rôdeur Inconscient, réglage ${rule ? "coché" : "décoché"} :`); show(rows);
+      for ( const r of rows ) check(r, !rule, !rule, `Inconscient (réglage ${rule ? "coché" : "décoché"})`);
+    }
+    await asleep(false);
+    await ctx.call("set-status", { tokenId: ranger.id, statusId: "prone", active: false }).catch(() => {});
   }
 };

@@ -605,6 +605,8 @@
   "DND5ECOMBAT.Reglage.passivePerception.off": "Désactivée",
   "DND5ECOMBAT.Reglage.lightIndicator.Nom": "Indicateur de lumière",
   "DND5ECOMBAT.Reglage.lightIndicator.Aide": "Sur le portrait de la barre d'actions (Darsh UI DnD5), un témoin (soleil, demi-lune, lune) dit dans quelle lumière se tient votre token et, au survol, ce que ça change : Désavantage en Perception pour vous voir en lumière faible, invisible sans vision dans le noir en ténèbres.",
+  "DND5ECOMBAT.Reglage.unconsciousSenses.Nom": "Inconscient : ni vue ni ouïe",
+  "DND5ECOMBAT.Reglage.unconsciousSenses.Aide": "Une créature Inconsciente est inconsciente de ce qui l'entoure (règles 2024) : cochée, elle ne voit et n'entend plus rien, pour le moteur comme à l'écran de son joueur, jusqu'à son réveil. Décochée, elle garde ses sens.",
   "DND5ECOMBAT.Reglage.twilightDarkness.Nom": "Crépuscule : seuil d'obscurité",
   "DND5ECOMBAT.Reglage.twilightDarkness.Aide": "Au-delà de cette obscurité de la scène, une lumière globale vive compte comme de la lumière faible pour le moteur (aube et crépuscule), jusqu'à ce qu'elle s'éteigne à la fin de sa plage. Utile avec un module d'heure qui fait varier l'obscurité (Simple Timekeeping). 1 : jamais. L'affichage de Foundry ne change pas.",
   "DND5ECOMBAT.ChoixSauvegarde.Titre": "{name} : quelle sauvegarde ?",

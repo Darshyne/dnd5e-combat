@@ -57,10 +57,10 @@ export const SETTINGS_TABS = Object.freeze([
       g("doors", "fa-solid fa-door-closed", ["lockFailure"])
     ] },
   { id: "vision", icon: "fa-solid fa-eye",
-    keys: ["vision", "passivePerception", "twilightDarkness", "visionCones", "coneAngles", "stealthRules", "surpriseFromStealth", "factionRules", "factionIcons",
+    keys: ["vision", "passivePerception", "twilightDarkness", "unconsciousSenses", "visionCones", "coneAngles", "stealthRules", "surpriseFromStealth", "factionRules", "factionIcons",
       "lightIndicator"],
     groups: [
-      g("sight", "fa-solid fa-eye", ["vision", "passivePerception", "twilightDarkness", "lightIndicator"]),
+      g("sight", "fa-solid fa-eye", ["vision", "passivePerception", "twilightDarkness", "unconsciousSenses", "lightIndicator"]),
       g("cones", "fa-solid fa-binoculars", ["visionCones", "coneAngles"], { sub: { coneAngles: offIf("visionCones", false) } }),
       g("stealth", "fa-solid fa-user-ninja", ["stealthRules", "surpriseFromStealth"]),
       g("factions", "fa-solid fa-flag", ["factionRules", "factionIcons"])

@@ -27,7 +27,8 @@
 
 import { committedPosition, distanceBetween, tokenCenter } from "./turn.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
-import { sensesThrough, CORE_JUDGED, DEVILS_SIGHT, devilsSightSees, senseReaches } from "../core/light.mjs";
+import { sensesThrough, CORE_JUDGED, DEVILS_SIGHT, devilsSightSees, senseReaches, senseless } from "../core/light.mjs";
+import { MODULE_ID } from "../constants.mjs";
 import { revealedInvisible, seesInvisible } from "./facts.mjs";
 import { outsideCone } from "./cone.mjs";
 import { hiddenFrom } from "./stealth.mjs";
@@ -173,6 +174,7 @@ function unveiled(token) {
 export function canSee(observer, target, { ignoreHidden=false }={}) {
   if ( !canvas?.ready || !observer || !target ) return null;
   if ( observer === target ) return true;
+  if ( isSenseless(observer) ) return false;   // réglage `unconsciousSenses` : Inconscient, ni vue ni ouïe
   if ( !target.object || target.hidden ) return false;   // un token caché par le MJ est hors jeu pour tout le monde
   if ( outsideCone(observer, target) ) return false;   // §182 : hors combat, une créature du MJ ne voit que devant elle
   if ( !ignoreHidden && hiddenFrom(observer, target) ) return false;   // §185 : caché, pour un ennemi qui ne l'a pas repéré
@@ -303,6 +305,18 @@ function seesThroughBlock(observer, target, source, config, blocked) {
   return devilsSightSeesToken(observer, target, blocked);
 }
 
+/**
+ * Réglage `unconsciousSenses` : l'observateur est-il Inconscient, et le réglage du monde lui retire-t-il ses sens ?
+ * @param {TokenDocument} observer
+ */
+export function isSenseless(observer) {
+  const unconscious = observer?.actor?.statuses?.has?.("unconscious") ?? false;
+  if ( !unconscious ) return false;
+  let rule = false;
+  try { rule = !!game.settings.get(MODULE_ID, "unconsciousSenses"); } catch { rule = false; }
+  return senseless({ unconscious, rule });
+}
+
 /** L'observateur est-il Aveuglé (état du cœur) ? */
 function isBlind(observer) {
   return !!observer?.hasStatusEffect?.(CONFIG.specialStatusEffects.BLIND);
@@ -351,6 +365,7 @@ export function senseReachesToken(observer, target, range, sense=null) {
  */
 export function canSeePoint(observer, point) {
   if ( !available || !canvas?.ready || !observer ) return null;
+  if ( isSenseless(observer) ) return false;
   const source = sourceFor(observer);
   if ( !source ) return null;
   const level = canvas.scene.levels?.get?.(observer.level) ?? canvas.level;

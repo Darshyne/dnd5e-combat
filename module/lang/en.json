@@ -605,6 +605,8 @@
   "DND5ECOMBAT.Reglage.passivePerception.off": "Off",
   "DND5ECOMBAT.Reglage.lightIndicator.Nom": "Light indicator",
   "DND5ECOMBAT.Reglage.lightIndicator.Aide": "On the action bar portrait (Darsh UI DnD5), a badge (sun, half moon, moon) shows the light your token stands in and, on hover, what it means: Disadvantage on Perception to see you in Dim Light, unseen by creatures without Darkvision in Darkness.",
+  "DND5ECOMBAT.Reglage.unconsciousSenses.Nom": "Unconscious: no sight or hearing",
+  "DND5ECOMBAT.Reglage.unconsciousSenses.Aide": "An Unconscious creature is unaware of its surroundings (2024 rules): when ticked, it sees and hears nothing, for the engine and on its player's screen, until it wakes up. Unticked, it keeps its senses.",
   "DND5ECOMBAT.Reglage.twilightDarkness.Nom": "Twilight: darkness threshold",
   "DND5ECOMBAT.Reglage.twilightDarkness.Aide": "Above this scene darkness level, a bright global light counts as Dim Light for the engine (dawn and dusk), until it goes out at the end of its range. Useful with a time module that changes darkness (Simple Timekeeping). 1: never. Foundry's display does not change.",
   "DND5ECOMBAT.ChoixSauvegarde.Titre": "{name}: which saving throw?",

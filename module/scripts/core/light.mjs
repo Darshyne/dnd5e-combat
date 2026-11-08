@@ -108,6 +108,15 @@ export function devilsSightSees({ distance, range, lineOfSight=true, invisible=f
 }
 
 /** Les sens qui ne sont pas une vue : un observateur Aveuglé les garde (vision aveugle, et les modes du cœur sans murs). */
+/**
+ * Réglage `unconsciousSenses` : une créature Inconsciente est « inconsciente de ce qui l'entoure » (PHB 2024, glossaire) — avec le
+ * réglage, elle ne voit ni n'entend plus rien. Sans lui (défaut), ses sens restent ceux d'une créature éveillée.
+ * @param {{unconscious: boolean, rule: boolean}} state
+ */
+export function senseless({ unconscious=false, rule=false }={}) {
+  return !!(unconscious && rule);
+}
+
 export const WORKS_BLIND = Object.freeze(["blindsight", ...CORE_JUDGED]);
 
 /**

@@ -9,7 +9,7 @@ import { tokenCenter } from "./turn.mjs";
 import { hiddenDcOf } from "./search.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { trapLike } from "./content.mjs";
-import { blockedBetween } from "./vision.mjs";
+import { blockedBetween, isSenseless } from "./vision.mjs";
 
 /**
  * Un mur ou un plancher qui arrête le son sépare-t-il les deux tokens ? Comme la vue du cœur (detection-mode.mjs:211-259), les
@@ -45,7 +45,8 @@ export function canHear(observer, target) {
   if ( !observer || !target || (observer === target) || target.hidden || (observer.parent !== target.parent) ) return false;
   const statuses = s => target.actor?.statuses?.has(s) ?? false;
   return hears({
-    deafened: observer.actor?.statuses?.has("deafened") ?? false,
+    // Réglage `unconsciousSenses` : Inconscient, il n'entend plus rien non plus.
+    deafened: (observer.actor?.statuses?.has("deafened") ?? false) || isSenseless(observer),
     hidden: hiddenDcOf(target.actor) !== null,
     // §255 : un objet (piège posé, arme spirituelle) ou un acteur piège ne fait pas de bruit — un piège repéré hors de vue se
     // montrait « entendu ».

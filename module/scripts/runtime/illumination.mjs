@@ -16,4 +16,14 @@ export function registerIllumination() {
     name: "DND5ECOMBAT.Reglage.twilightDarkness.Nom", hint: "DND5ECOMBAT.Reglage.twilightDarkness.Aide",
     scope: "world", config: true, type: Number, default: 0.6, range: { min: 0, max: 1, step: 0.05 }
   });
+  // Inconscient « de ce qui l'entoure » (PHB 2024) : avec ce réglage, ni vue ni ouïe (adapter/vision.mjs `isSenseless`). Éteint par défaut.
+  game.settings.register(MODULE_ID, "unconsciousSenses", {
+    name: "DND5ECOMBAT.Reglage.unconsciousSenses.Nom", hint: "DND5ECOMBAT.Reglage.unconsciousSenses.Aide",
+    scope: "world", config: true, type: Boolean, default: false,
+    onChange: () => {
+      if ( !canvas?.ready ) return;
+      canvas.perception.update({ refreshVision: true });
+      for ( const token of canvas.tokens.placeables ) token.renderFlags.set({ refreshVisibility: true });
+    }
+  });
 }

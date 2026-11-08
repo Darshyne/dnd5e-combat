@@ -11,6 +11,7 @@
 
 import { canSee, blockedBetween, devilsSightRange, isVisionAvailable, hasLineOfSight } from "../adapter/vision.mjs";
 import { canHear } from "../adapter/hearing.mjs";
+import { perceivedOnToken } from "../adapter/illumination.mjs";
 import { sightRequired } from "../adapter/conditions.mjs";
 import { committedPosition, distanceBetween, tokenCenter } from "../adapter/turn.mjs";
 import { sleep } from "./shared.mjs";
@@ -66,6 +67,8 @@ function rulesFor(observer, target) {
     devilsSight: devil || null,
     hears: canHear(observer, target),
     darkvision: observer.actor?.system.attributes?.senses?.ranges?.darkvision ?? null,
+    // La lumière sur la cible, telle que l'observateur la perçoit (sombre 0, faible 1, vive 2) et le Désavantage en Perception.
+    light: (({ level, perceived, perceptionDisadvantage } = {}) => ({ level, perceived, perceptionDisadvantage }))(perceivedOnToken(observer, target) ?? {}),
     modes: Object.keys(observer.detectionModes ?? {})
   };
 }

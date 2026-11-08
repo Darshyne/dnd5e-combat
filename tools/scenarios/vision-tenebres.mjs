@@ -48,7 +48,7 @@ export default {
     const matrix = async () => (await ctx.engine("visionMatrix", { observerIds: OBSERVERS.map(n => tokens[n].id), targetIds: TARGETS.map(n => tokens[n].id) })).rows;
     const show = rows => {
       for ( const r of rows ) {
-        const why = [r.rules.blocked.length ? `zone ${r.rules.blocked.join("+")}` : null, `${r.rules.distance} ft`,
+        const why = [r.rules.blocked.length ? `zone ${r.rules.blocked.join("+")}` : null, `${r.rules.distance} ${r.rules.units ?? "ft"}`,
           r.rules.devilsSight ? `Vision du diable ${r.rules.devilsSight}` : null, r.rules.lineOfSight ? null : (r.rules.lineOfSightThroughDarkness ? "vue coupée par les ténèbres seules" : "pas de ligne de vue"),
           r.rules.hears ? "entend" : null].filter(Boolean).join(", ");
         ctx.log(`  ${r.observer} → ${r.target} : règles ${r.rules.sees ? "voit" : "ne voit pas"} (${why}) ; écran ${r.screen}`);
@@ -99,6 +99,60 @@ export default {
     ctx.expect(!seer.unseen.length, `l'Occultiste du diable peut viser dans et derrière les Ténèbres (refusées : ${seer.unseen.join(", ") || "aucune"})`);
     const blind = await ctx.engine("sightIssues", { tokenId: tokens["Humain"].id, identifier: "hex", targetIds: aimed });
     ctx.expect(blind.unseen.length === 2, `l'Humain, lui, ne peut pas (refusées : ${blind.unseen.join(", ") || "aucune"})`);
+
+    // 2 ter. Issue #42, suite (Archibald, 0.281.0) : le curseur de visée (`rangeStatus`) — de l'extérieur des Ténèbres, il refusait « pas en
+    // vue » la cible que les règles voyaient (rond barré). Les bords des Ténèbres ne sont plus une ligne de vue coupée : voir, c'est `canSee`.
+    ctx.expect(!seer.cursorRefused.length, `de l'extérieur, le curseur de l'Occultiste du diable accepte les cibles dans et derrière les Ténèbres (refusées : ${seer.cursorRefused.join(", ") || "aucune"})`);
+    ctx.expect(!blind.cursorRefused.length, `le curseur ne refuse plus l'Humain sur les seules Ténèbres — la légalité juge la vue (refusées : ${blind.cursorRefused.join(", ") || "aucune"})`);
+
+    // 2 quater. L'effet d'Archibald (`token.detectionModes.devilsSight.range` en override, à la place de celui du PHB) : avec lui, chaque
+    // mise à jour de l'acteur refait les données du token et effaçait la Vision du diable donnée en mémoire — contour de l'ouïe à l'écran.
+    // Relevé sans remise en place de toutes les sources (`screenAfterUpdate`), ce que `visionMatrix` ne voit pas.
+    const archibald = async () => {
+      const after = await ctx.engine("screenAfterUpdate", { observerId: warlock.id, targetIds: aimed });
+      ctx.log(`  après une mise à jour de l'acteur : ${Object.entries(after.after).map(([n, v]) => `${n} ${v}`).join(", ")} (modes : ${after.modes.join(", ")})`);
+      return after;
+    };
+    const plain = await archibald();
+    ctx.expect(Object.values(plain.after).every(v => v === "seen"), "effet du PHB : après une mise à jour de l'acteur, les cibles dans et derrière les Ténèbres restent nettes");
+    const { data: wtok } = await ctx.call("get-scene-object", { type: "Token", objectId: warlock.id });
+    const sightId = await ctx.itemId(warlock.id, "devils-sight");
+    const sightItem = ((await ctx.call("get-actor", { actorId: wtok.actorId })).items ?? []).find(i => i._id === sightId);
+    const itemUuid = `Actor.${wtok.actorId}.Item.${sightId}`;
+    const phb = (sightItem?.effects ?? []).find(e => JSON.stringify(e.system?.changes ?? e.changes ?? []).includes("senses.darkvision"));
+    if ( phb ) {
+      ctx.restore(() => ctx.call("upsert-embedded-effect", { uuid: itemUuid, effectData: { disabled: false }, match: { path: "_id", value: phb._id } }).catch(() => {}));
+      await ctx.call("upsert-embedded-effect", { uuid: itemUuid, effectData: { disabled: true }, match: { path: "_id", value: phb._id } });
+    }
+    const PLAYER = "Vision du diable (effet du joueur, issue 42)";
+    ctx.restore(() => ctx.call("remove-embedded-effect", { uuid: itemUuid, match: { path: "name", value: PLAYER } }).catch(() => {}));
+    await ctx.call("upsert-embedded-effect", { uuid: itemUuid, effectData: { name: PLAYER, transfer: true,
+      system: { changes: [{ key: "token.detectionModes.devilsSight.range", value: "120", type: "override", phase: "initial" }] } } });
+    await pause(1500);
+    const withEffect = await archibald();
+    ctx.expect(Object.values(withEffect.after).every(v => v === "seen"), "effet du joueur : après une mise à jour de l'acteur, les cibles dans et derrière les Ténèbres restent nettes (pas le contour de l'ouïe)");
+    ctx.expect(withEffect.modes.includes("devilsSight") && withEffect.modes.includes("dasHearing"), "effet du joueur : la Vision du diable et l'ouïe sont redonnées après la mise à jour");
+    const withRules = await ctx.engine("sightIssues", { tokenId: warlock.id, identifier: "hex", targetIds: aimed });
+    ctx.expect(!withRules.unseen.length && !withRules.cursorRefused.length, "effet du joueur : visée acceptée dans et derrière les Ténèbres");
+    await ctx.call("remove-embedded-effect", { uuid: itemUuid, match: { path: "name", value: PLAYER } }).catch(() => {});
+    if ( phb ) await ctx.call("upsert-embedded-effect", { uuid: itemUuid, effectData: { disabled: false }, match: { path: "_id", value: phb._id } });
+    await pause(1000);
+
+    // 2 quinquies. En mètres (la table d'Archibald) : la scène passe à des cases de 1,5 m — 120 ft valent 36 m ; règles, curseur, écran.
+    const { data: sceneData } = await ctx.call("get-scene", { sceneId }).then(r => ({ data: r.data ?? r })).catch(() => ({ data: null }));
+    const grid0 = { units: sceneData?.grid?.units ?? "ft", distance: sceneData?.grid?.distance ?? 5 };
+    ctx.restore(() => ctx.call("update-scene", { sceneId, sceneData: { "grid.units": grid0.units, "grid.distance": grid0.distance } }).catch(() => {}));
+    await ctx.call("update-scene", { sceneId, sceneData: { "grid.units": "m", "grid.distance": 1.5 } });
+    await pause(2500);
+    const metric = (await ctx.engine("visionMatrix", { observerIds: [warlock.id], targetIds: aimed })).rows;
+    show(metric);
+    for ( const r of metric ) ctx.expect(r.rules.sees && (r.screen === "seen"), `en mètres : l'Occultiste du diable voit ${r.target} de l'extérieur (${r.rules.distance} m, écran : ${r.screen})`);
+    const metricAim = await ctx.engine("sightIssues", { tokenId: warlock.id, identifier: "hex", targetIds: aimed });
+    ctx.expect(!metricAim.unseen.length && !metricAim.cursorRefused.length, "en mètres : visée de l'extérieur acceptée (règles et curseur)");
+    const metricAfter = await archibald();
+    ctx.expect(Object.values(metricAfter.after).every(v => v === "seen"), "en mètres : après une mise à jour de l'acteur, les cibles restent nettes");
+    await ctx.call("update-scene", { sceneId, sceneData: { "grid.units": grid0.units, "grid.distance": grid0.distance } });
+    await pause(2500);
 
     // 3. Portée de la Vision du diable : l'Occultiste à 125 ft de la cible dans les ténèbres (colonne 42).
     const [, row] = ARENE_VISION.tokens["Occultiste du diable"];

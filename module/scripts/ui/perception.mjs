@@ -27,7 +27,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { blockedBetween, isVisionAvailable, devilsSightRange, devilsSightSeesToken, senseReachesToken, asSeenBy, isSenseless } from "../adapter/vision.mjs";
 import { canHear } from "../adapter/hearing.mjs";
-import { sensesThrough, CORE_JUDGED, DEVILS_SIGHT } from "../core/light.mjs";
+import { sensesThrough, CORE_JUDGED, DEVILS_SIGHT, HEARING_MODE, grantInMemoryModes } from "../core/light.mjs";
 import { route } from "../runtime/router.mjs";
 import { theaterActive } from "../runtime/theater-state.mjs";
 import { perceivesPlane } from "../adapter/plane.mjs";
@@ -189,18 +189,32 @@ function grantModes(sources) {
  */
 function grantOn(doc) {
   const modes = CONFIG.Canvas.detectionModes;
-  if ( !doc?.detectionModes || !doc.sight?.enabled ) return;
+  if ( !doc?.detectionModes || !doc.sight?.enabled ) return false;
   blindIfSenseless(doc.object);
-  if ( modes[DEVILS_SIGHT.mode] ) {
-    const range = devilsSightRange(doc);
-    if ( range > 0 ) doc.detectionModes[DEVILS_SIGHT.mode] = { enabled: true, range };
-    else delete doc.detectionModes[DEVILS_SIGHT.mode];
-  }
-  // L'ouïe d'un Aveuglé, en DERNIER : le cœur essaie les modes spéciaux dans l'ordre (visibility.mjs) — un vrai sens passe avant.
-  if ( modes[HEARING_MODE] ) {
-    delete doc.detectionModes[HEARING_MODE];
-    doc.detectionModes[HEARING_MODE] = { enabled: true, range: Infinity };
-  }
+  // L'ouïe d'un Aveuglé en DERNIER (core/light.mjs `grantInMemoryModes`) : le cœur essaie les modes spéciaux dans l'ordre.
+  return grantInMemoryModes(doc.detectionModes, {
+    devilsSight: modes[DEVILS_SIGHT.mode] ? devilsSightRange(doc) : 0,
+    hearing: !!modes[HEARING_MODE]
+  });
+}
+
+/**
+ * Issue #42, suite (Archibald, 0.281.0) : la préparation des données d'un token (`TokenDocument#reset`) refait `detectionModes` depuis la
+ * source — les modes en mémoire disparaissent, et rien ne refait la vue avant le prochain `sightRefresh` (une cible qui bouge ne le
+ * déclenche pas) : la cible dans les Ténèbres passait au contour de l'ouïe. Un effet qui vise le token (`token.…`, celui du joueur sur
+ * `token.detectionModes.devilsSight.range`) fait refaire le token à CHAQUE mise à jour de l'acteur (`_onRelatedUpdate`,
+ * documents/token.mjs:3810) et laissait `{ range }` sans `enabled`. Le hook de la mise à jour vient après cette préparation : on redonne
+ * les modes aux tokens touchés, et, s'il en manquait, la vue se refait.
+ */
+function regrant(docs) {
+  if ( !canvas?.ready ) return;
+  let changed = false;
+  for ( const doc of docs ) if ( doc?.parent === canvas.scene ) changed = grantOn(doc) || changed;
+  if ( changed ) refreshVisibility();
+}
+
+function tokensOfActor(actor) {
+  return actor?.getActiveTokens?.(false, true) ?? [];
 }
 
 /**
@@ -229,7 +243,6 @@ function grantAll() {
  * murs de son, surdité, cible cachée ou morte), donné en mémoire à chaque token avec une source de vision, n'agit que pour une source
  * aveuglée et jamais pour les sources jetables des règles (entendre n'est pas voir) ; le cœur pose son filtre, le contour de l'ouïe.
  */
-const HEARING_MODE = "dasHearing";
 function hearingMode() {
   const DetectionMode = foundry.canvas.perception.DetectionMode;
   class DetectionModeHearing extends DetectionMode {
@@ -270,6 +283,10 @@ export function registerPerception() {
   // (groups/visibility.mjs:809-828) — les tokens n'appliquent ce drapeau qu'après. Les modes en mémoire sont donc là au moment du test,
   // quoi qu'ait refait le cœur entre-temps (données préparées refaites après un état, un acteur, un token mis à jour).
   route("sightRefresh", grantAll, { label: "perception: Devil's Sight or blind hearing not granted again" });
+  const again = { label: "perception: Devil's Sight or blind hearing not granted after an update" };
+  route("updateActor", actor => regrant(tokensOfActor(actor)), again);
+  route("updateToken", doc => regrant([doc]), again);
+  for ( const hook of ["createItem", "updateItem", "deleteItem"] ) route(hook, item => regrant(tokensOfActor(item?.parent)), again);
   registerHeardMarks();
   const refresh = { label: "perception: display not refreshed" };
   for ( const hook of ["createRegion", "updateRegion", "deleteRegion", "createActiveEffect", "updateActiveEffect", "deleteActiveEffect"] ) {

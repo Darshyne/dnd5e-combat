@@ -90,6 +90,35 @@ export const CORE_JUDGED = Object.freeze(["feelTremor", "senseAll", "senseInvisi
 export const DEVILS_SIGHT_MODE = "devilsSight";
 export const DEVILS_SIGHT = Object.freeze({ identifier: "devils-sight", range: 120, units: "ft", mode: DEVILS_SIGHT_MODE });
 
+/** Issue #42 : le mode spécial de l'ouïe d'un observateur Aveuglé (ui/perception.mjs), donné en mémoire comme la Vision du diable. */
+export const HEARING_MODE = "dasHearing";
+
+/**
+ * Issue #42 : pose sur les modes de détection PRÉPARÉS d'un token (objet ordinaire, jamais la source) ceux que le moteur donne en mémoire —
+ * la Vision du diable (portée, unité de la grille ; 0 = pas d'invocation : retirée) et l'ouïe d'un Aveuglé, posée en dernier (le cœur
+ * essaie les modes spéciaux dans l'ordre : un vrai sens passe avant). Rend true si quelque chose manquait ou différait : la préparation
+ * des données du token (`TokenDocument#reset`) les avait effacés, ou un effet `token.detectionModes.devilsSight.range` avait laissé un mode
+ * sans `enabled` — la vue doit alors se refaire.
+ * @param {Record<string, {enabled?: boolean, range?: number|null}>} modes
+ * @param {{devilsSight?: number, hearing?: boolean}} wanted
+ */
+export function grantInMemoryModes(modes, { devilsSight=0, hearing=false }={}) {
+  let changed = false;
+  const had = modes[DEVILS_SIGHT_MODE];
+  if ( devilsSight > 0 ) {
+    changed ||= (had?.enabled !== true) || (had.range !== devilsSight);
+    modes[DEVILS_SIGHT_MODE] = { enabled: true, range: devilsSight };
+  }
+  else if ( had ) { changed = true; delete modes[DEVILS_SIGHT_MODE]; }
+  if ( hearing ) {
+    const keys = Object.keys(modes);
+    changed ||= (modes[HEARING_MODE]?.enabled !== true) || (keys.at(-1) !== HEARING_MODE);
+    delete modes[HEARING_MODE];
+    modes[HEARING_MODE] = { enabled: true, range: Infinity };
+  }
+  return changed;
+}
+
 /**
  * Issue #42 : la Vision du diable voit-elle la cible ? « Vous voyez normalement dans les ténèbres, magiques ou non, jusqu'à 36 m » :
  * à portée, ligne de vue (murs, planchers — pas les bords des ténèbres), observateur non Aveuglé, cible ni Invisible (sauf révélée) ni

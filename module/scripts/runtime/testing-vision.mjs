@@ -2,19 +2,22 @@
  * Fonctions de test (api.mcp) : la vision (issue #42). Pour chaque paire observateur → cible, ce que jugent les règles (`canSee`, ce qui
  * décide d'un souci « n'est pas en vue » et des raisons d'Avantage / Désavantage) et ses ingrédients (zone qui bloque la vue, distance,
  * Vision du diable, ouïe, ligne de vue), puis ce que montre l'écran par les yeux de l'observateur (`Token#isVisible` et le filtre de
- * détection : contour de l'ouïe ou d'un mode spécial). Rien n'est écrit dans un document.
+ * détection : contour de l'ouïe ou d'un mode spécial). Rien n'est écrit dans un document (sauf `screenAfterUpdate` : un drapeau posé
+ * puis retiré).
  *
  *  - `visionMatrix` : sur le client du MJ (le contrôle de chaque observateur est pris le temps de la lecture, puis rendu) ;
  *  - `screenHere` : sur N'IMPORTE QUEL client (un joueur dans le navigateur intégré) — ce que ce client voit, avec les tokens qu'il
  *    contrôle, sans rien changer.
  */
 
+import { MODULE_ID } from "../constants.mjs";
 import { canSee, blockedBetween, devilsSightRange, isVisionAvailable, hasLineOfSight } from "../adapter/vision.mjs";
 import { canHear } from "../adapter/hearing.mjs";
 import { perceivedOnToken } from "../adapter/illumination.mjs";
 import { sightRequired } from "../adapter/conditions.mjs";
 import { committedPosition, distanceBetween, tokenCenter } from "../adapter/turn.mjs";
 import { sleep } from "./shared.mjs";
+import { rangeStatus } from "./actions.mjs";
 import { gmOnly, viewedToken } from "./testing-shared.mjs";
 
 const HEARING = [0.55, 0.8, 1, 1];   // ui/perception.mjs, contour de l'ouïe
@@ -62,6 +65,7 @@ function rulesFor(observer, target) {
     sees: canSee(observer, target),
     blocked: Object.keys(blocked).filter(k => blocked[k]),   // brume, ténèbres, silence
     distance: Math.round(distanceBetween(observer, target).value * 10) / 10,
+    units: observer.parent?.grid?.units ?? null,
     lineOfSight: hasLineOfSight(eye, target, level),
     lineOfSightThroughDarkness: hasLineOfSight(eye, target, level, { throughDarkness: true }),
     devilsSight: devil || null,
@@ -152,7 +156,35 @@ export function sightIssues({ tokenId, identifier, targetIds=[] }) {
   if ( !activity ) throw new Error(`no activity for ${identifier}`);
   const requires = sightRequired(activity);
   const targets = targetIds.map(id => viewedToken({ tokenId: id }));
-  return { requiresSight: requires, unseen: requires ? targets.filter(t => canSee(origin, t) === false).map(t => t.name) : [] };
+  // Issue #42, suite : le verdict du curseur de visée (`rangeStatus`, ui/pointer-mouse.mjs) — il refusait « pas en vue » ce que les règles voyaient.
+  const cursorRefused = targets.filter(t => { const s = rangeStatus(origin, t, activity); return !!(s?.out || s?.blind); }).map(t => t.name);
+  return { requiresSight: requires, unseen: requires ? targets.filter(t => canSee(origin, t) === false).map(t => t.name) : [], cursorRefused };
+}
+
+/**
+ * Issue #42, suite (Archibald) : l'écran de l'observateur APRÈS une mise à jour de son acteur, sans remise en place de toutes les sources —
+ * la préparation des données du token effaçait les modes en mémoire (Vision du diable, ouïe d'un Aveuglé). `visionMatrix`, qui refait toute
+ * la vision, ne le voyait pas. L'observateur est sélectionné, sa vue posée, puis un drapeau de son acteur est posé et retiré (une mise à jour
+ * sans effet de jeu : rendre des PV temporaires compterait comme des dégâts, jet de concentration compris).
+ */
+export async function screenAfterUpdate({ observerId, targetIds=[] }) {
+  gmOnly();
+  const observer = viewedToken({ tokenId: observerId });
+  const targets = targetIds.map(id => viewedToken({ tokenId: id }));
+  observer.object.control({ releaseOthers: true });
+  await settleVision(observer.object);
+  const before = Object.fromEntries(targets.map(t => [t.name, shownAs(t.object)]));
+  try {
+    await observer.actor.setFlag(MODULE_ID, "visionProbe", Date.now());
+    await sleep(800);
+    canvas.perception.applyRenderFlags();
+    const after = Object.fromEntries(targets.map(t => [t.name, shownAs(t.object)]));
+    return { before, after, modes: Object.keys(observer.detectionModes ?? {}) };
+  }
+  finally {
+    await observer.actor.unsetFlag(MODULE_ID, "visionProbe");
+    canvas.tokens.releaseAll();
+  }
 }
 
 /**

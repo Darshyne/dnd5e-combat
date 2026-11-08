@@ -667,13 +667,16 @@ export function contactRefusal(token, target, activity) {
 /**
  * Où en est une cible pour une activité qui ne s'approche pas : `out` au-delà de la portée longue, `blind` à portée d'une
  * arme à distance ou d'un sort mais sans ligne de vue. null : pas de portée à tenir.
+ * Issue #42 (suite) : la ligne de vue SANS les bords des sources de ténèbres (`throughDarkness`) — murs et planchers seuls. Voir la
+ * cible est l'affaire de `canSee` (Vision du diable, ouïe au Désavantage) ; les bords des Ténèbres refusaient toute cible dedans ou
+ * derrière, curseur « interdit », même à l'occultiste qui la voyait.
  */
 export function rangeStatus(token, target, activity, mode=null) {
   const reach = reachCells(activity, mode);
   if ( !reach ) return null;
   const gap = gapCells(token, target);   // §192 : en trois dimensions (une cible au plafond est hors d'allonge)
   const out = gap > reach.long;
-  const blind = !out && (reach.normal > 1) && !hasLineOfSight(tokenCenter(token), target);
+  const blind = !out && (reach.normal > 1) && !hasLineOfSight(tokenCenter(token), target, undefined, { throughDarkness: true });
   return { out, blind, gap, reach };
 }
 
@@ -746,7 +749,7 @@ export async function engage(token, target, activity, { mode=null, fast=false, u
     // déjà à portée sans la voir, on cherche une telle case.
     const ranged = reach.normal > 1;
     const seeing = ranged;
-    const blind = ranged && (gap <= reach.normal) && !hasLineOfSight(tokenCenter(token), target);
+    const blind = ranged && (gap <= reach.normal) && !hasLineOfSight(tokenCenter(token), target, undefined, { throughDarkness: true });   // issue #42 : comme `rangeStatus`
     if ( (gap > reach.normal) || blind ) {
       const plan = planPath(token, { target, reachCells: reach.normal, seeing }, { maxCost: movementCap(token) });
       const withinLong = !blind && (gap <= reach.long);

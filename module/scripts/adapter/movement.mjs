@@ -141,7 +141,8 @@ export function planPath(token, to, { maxCost=Infinity, throughDoors=false }={})
     const targetLevel = to.target._source.level;
     const near = approach(footprintOf(to.target), sizeOf(token), Math.max(1, to.reachCells ?? 1));
     goal = { isGoal: cell => ((cell.level ?? world.ownLevel) === targetLevel) && near.isGoal(cell), heuristic: near.heuristic };
-    // P1 : ne s'approcher à distance que jusqu'à une case d'où l'on VOIT la cible (ligne de vue, murs `sight`, surfaces).
+    // P1 : ne s'approcher à distance que jusqu'à une case d'où l'on VOIT la cible (ligne de vue, murs `sight`, surfaces) — issue #42 :
+    // sans les bords des sources de ténèbres (des Ténèbres ne sont pas un mur ; voir la cible, c'est `canSee`).
     if ( to.seeing ) {
       const grid = token.parent.grid;
       const { w, h } = sizeOf(token);
@@ -151,7 +152,7 @@ export function planPath(token, to, { maxCost=Infinity, throughDoors=false }={})
         if ( !within(cell) ) return false;
         const topLeft = grid.getTopLeftPoint(cell);
         const level = token.parent.levels?.get?.(cell.level ?? world.ownLevel);   // P2 : les murs de ce niveau-là
-        return hasLineOfSight({ x: topLeft.x + (w * grid.sizeX) / 2, y: topLeft.y + (h * grid.sizeY) / 2, elevation }, to.target, level);
+        return hasLineOfSight({ x: topLeft.x + (w * grid.sizeX) / 2, y: topLeft.y + (h * grid.sizeY) / 2, elevation }, to.target, level, { throughDarkness: true });
       };
     }
   }

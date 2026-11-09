@@ -19,7 +19,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { feedbackBetween } from "../core/feedback.mjs";
 import { FLOAT_CATEGORY_DEFAULTS, FLOAT_DEFAULTS, FLOAT_ICONS, floatLine, floatLabel, floatFrame, floatDelays, checkKind, floatStyleOf, floatOffset,
-  floatEntrance, hpFloat } from "../core/float-text.mjs";
+  floatEntrance, hpFloat, floatOutcome, floatRolled, spinPhase } from "../core/float-text.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc, NOTICE_QUERY, receiveNotice, waitForDice, isExecutor } from "../runtime/shared.mjs";
 import { resourceChangesOf } from "../adapter/limits.mjs";
@@ -126,9 +126,9 @@ async function iconSprite(src, size, tint) {
 }
 
 /** §400 : le cadre d'un pictogramme (hexagone pointe en haut, ou cercle), rempli et bordé aux couleurs du thème. */
-function badgeShape(kind, size, fill, border) {
+function badgeShape(kind, size, fill, border, weight=1) {
   const g = new PIXI.Graphics();
-  g.lineStyle(Math.max(1.5, size * 0.06), border, 1).beginFill(fill, 1);
+  g.lineStyle(Math.max(1.5, size * 0.06) * weight, border, 1).beginFill(fill, 1);
   const r = size / 2;
   if ( kind === "circle" ) g.drawCircle(r, r, r * 0.92);
   else g.drawPolygon(Array.from({ length: 6 }, (_, i) => {
@@ -152,11 +152,53 @@ async function themedIcon(style, fontSize) {
 }
 
 /**
+ * §400, lot 2 : l’hexagone de jet (façon BG3) — fond et bordure du thème, le pictogramme de dé au centre. `step(phase)` (core/float-text.mjs,
+ * `spinPhase`) : pendant le lancer, l’hexagone et le dé tournent ; à la révélation, le dé laisse la place au total, la bordure prend la
+ * couleur de l’issue (`okColor` / `failColor`, gardée pour un jet neutre) et s’épaissit, et l’ensemble bat une fois.
+ * @returns {Promise<{box: PIXI.Container, step: Function}>}
+ */
+async function spinner(look, fontSize, roll, kind) {
+  const size = fontSize * 1.9;
+  const box = new PIXI.Container();
+  const inner = box.addChild(new PIXI.Container());
+  inner.pivot.set(size / 2, size / 2);
+  inner.position.set(size / 2, size / 2);
+  const hex = inner.addChild(badgeShape("hex", size, hexNumber(look.badgeColor), hexNumber(look.badgeBorder)));
+  const die = await iconSprite("icons/svg/d20.svg", size * 0.55, hexNumber(look.badgeBorder));
+  if ( die ) { die.position.set(size * 0.225, size * 0.225); inner.addChild(die); }
+  const { PreciseText } = foundry.canvas.containers;
+  const number = new PreciseText(String(roll), PreciseText.getTextStyle({ fill: 0xffffff, fontSize: Math.round(fontSize * 0.9),
+    fontFamily: look.font, fontWeight: "700", stroke: 0x000000, strokeThickness: 3 }));
+  number.anchor.set(0.5);
+  number.position.set(size / 2, size / 2);
+  number.visible = false;
+  box.addChild(number);
+  const outcome = floatOutcome(kind);
+  const border = hexNumber((outcome === "ok") ? look.okColor : (outcome === "fail") ? look.failColor : look.badgeBorder);
+  let revealed = false;
+  const step = phase => {
+    if ( phase.spinning ) { inner.rotation = phase.angle; return; }
+    if ( !revealed ) {
+      revealed = true;
+      inner.rotation = 0;
+      if ( die ) die.visible = false;
+      number.visible = true;
+      hex.clear();
+      inner.removeChild(hex);
+      inner.addChildAt(badgeShape("hex", size, hexNumber(look.badgeColor), border, 2.2), 0);
+    }
+    inner.scale.set(phase.pulse);
+    number.scale.set(phase.pulse);
+  };
+  return { box, step };
+}
+
+/**
  * Une ligne (pictogrammes, total du jet, texte) près du token, puis son animation, à l'allure de sa sorte dans le thème (§400) : police,
  * contour, halo, pictogramme encadré, apparition, et trajet — défile (vers le bas depuis le pied, ou vers le haut depuis la tête), reste
  * au-dessus de la tête, ou part en arc sur le côté (les arcs d'un même token alternent gauche / droite).
  */
-async function drawLine(token, line, kind, options, { factor=1 }={}) {
+async function drawLine(token, line, kind, options, { factor=1, roll=null }={}) {
   const look = floatStyleOf(theme(), kind);
   const fontSize = Math.round(look.size * options.scale * factor);
   const fill = hexNumber(look.color);
@@ -168,15 +210,22 @@ async function drawLine(token, line, kind, options, { factor=1 }={}) {
     dropShadowDistance: 0, dropShadowAlpha: 1, padding: Math.ceil(look.glow * 1.5) });
   const style = PreciseText.getTextStyle(textStyle);
   const parts = [];
-  const icon = options.icons ? await themedIcon(look, fontSize) : null;
-  if ( line.dieIcon && (look.icon !== "d20") ) {
-    const die = await iconSprite("icons/svg/d20.svg", fontSize * 1.15, fill);
-    if ( die ) parts.push(die);
+  // §400, lot 2 : un jet dont la sorte a l'hexagone qui tourne — le dé tourne, puis le total s'inscrit au centre et la bordure prend la
+  // couleur de l'issue ; le texte vient ensuite. Le total y est montré même sans « Résultat des dés » : c'est le sens de l'hexagone.
+  const spin = (look.spin && floatRolled(kind) && Number.isFinite(roll)) ? await spinner(look, fontSize, roll, kind) : null;
+  if ( spin ) parts.push(spin.box);
+  else {
+    const icon = options.icons ? await themedIcon(look, fontSize) : null;
+    if ( line.dieIcon && (look.icon !== "d20") ) {
+      const die = await iconSprite("icons/svg/d20.svg", fontSize * 1.15, fill);
+      if ( die ) parts.push(die);
+    }
+    if ( icon ) parts.push(icon);
   }
-  if ( icon ) parts.push(icon);
-  let label = floatLabel(line, options.modeText, options.modeJoiner);
+  let label = floatLabel(spin ? { ...line, roll: null } : line, options.modeText, options.modeJoiner);
   if ( look.upper ) label = label.toLocaleUpperCase(game.i18n.lang);
-  if ( label ) parts.push(new PreciseText(label, style));
+  const text = label ? new PreciseText(label, style) : null;
+  if ( text ) parts.push(text);
   if ( !parts.length || !canvas?.ready || !token.visible ) return;
   // Côte à côte, centrés verticalement.
   const box = new PIXI.Container();
@@ -185,6 +234,7 @@ async function drawLine(token, line, kind, options, { factor=1 }={}) {
   let x = 0;
   for ( const part of parts ) {
     part.position.set(x, (height - part.height) / 2);
+    part.baseX = x;
     x += part.width + gap;
     box.addChild(part);
   }
@@ -212,11 +262,19 @@ async function drawLine(token, line, kind, options, { factor=1 }={}) {
   box.alpha = 0;
   layerOf().addChild(box);
   const state = { p: 0 };
+  // L’hexagone tourne puis se révèle : le texte reste lisible au moins 2,2 s après.
+  const duration = spin ? Math.max(options.duration * 1000, look.spinMs + 2200) : options.duration * 1000;
+  if ( spin && text ) text.alpha = 0;
   try {
     await foundry.canvas.animation.CanvasAnimation.animate([{ parent: state, attribute: "p", from: 0, to: 1 }], {
-      context: box, duration: options.duration * 1000,
+      context: box, duration,
       ontick: () => {
         if ( box.destroyed ) return;
+        if ( spin ) {
+          const phase = spinPhase(state.p * duration, look.spinMs);
+          spin.step(phase);
+          if ( text ) { text.alpha = phase.text; text.x = text.baseX - ((1 - phase.text) * fontSize * 0.4); }
+        }
         const f = floatFrame(state.p);
         const e = floatEntrance(state.p, look.entrance);
         const o = floatOffset(state.p, motion, path);
@@ -250,7 +308,7 @@ function show(feedback) {
     if ( !canvas?.ready || !token.visible ) return;
     // §41.3 : si la vue change pendant le défilement (un escalier : autre niveau, le canevas est redessiné), le texte part avec le
     // canevas. Rien à rattraper.
-    drawLine(token, line, f.kind, options, { factor: f.factor ?? 1 }).catch(() => {});
+    drawLine(token, line, f.kind, options, { factor: f.factor ?? 1, roll: Number.isFinite(f.roll) ? f.roll : null }).catch(() => {});
   }, delays[i]));
 }
 
@@ -351,7 +409,7 @@ function showStrikes(message) {
 
 /**
  * §292 : chez tout le monde, un test de caractéristique, de compétence ou d'outil lancé par dnd5e (message `check`, check-message-data.mjs
- * — l'initiative exceptée) : « 15 · Athlétisme », et avec un DD connu du jet (`options.target` : un DD caché aux joueurs n'en pose pas,
+ * — §400 : l'initiative aussi, à part) : « 15 · Athlétisme », et avec un DD connu du jet (`options.target` : un DD caché aux joueurs n'en pose pas,
  * adapter/group-roll.mjs) « 15 · Athlétisme · Réussite ». Au-dessus du token qui a lancé, après les dés 3D ; un jet privé ou aveugle ne
  * s'affiche que chez qui peut le lire (`isContentVisible`).
  */
@@ -359,10 +417,16 @@ async function showCheck(message) {
   if ( !game.settings.get(MODULE_ID, "feedbackText") || !canvas?.ready || ((Date.now() - (message.timestamp ?? 0)) > FRESH_MS) ) return;
   const data = message.system ?? {};
   const roll = message.rolls?.[0];
-  if ( (data.type === "initiative") || !roll || !message.isContentVisible ) return;
+  if ( !roll || !message.isContentVisible ) return;
   const actor = message.getAssociatedActor?.();
   const token = message.getAssociatedToken?.() ?? actor?.token ?? actor?.getActiveTokens?.(false, true)?.[0];
   if ( !token ) return;
+  // §400, lot 2 : l’initiative, son total au-dessus du token (réglage « Afficher : initiative »).
+  if ( data.type === "initiative" ) {
+    await waitForDice(message);
+    show([{ token: token.uuid, kind: "initiative", roll: roll.total, mode: d20Mode(roll), text: loc("Retour.Initiative") }]);
+    return;
+  }
   const label = data.skill ? keyLabel({ type: "skill", key: data.skill })
     : data.tool ? keyLabel({ type: "tool", key: data.tool }) : keyLabel({ type: "check", key: data.ability });
   const kind = checkKind({ total: roll.total, target: roll.options?.target, isSuccess: roll.isSuccess, isFailure: roll.isFailure });

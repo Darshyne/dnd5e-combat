@@ -50,7 +50,7 @@ export async function resetTheme() {
 
 /** Un exemple par sorte, pour l'essai : texte, et jet pour celles qui en portent un. */
 function sample(kind) {
-  const rolled = { critical: 20, miss: 8, hit: 17, saveSuccess: 15, saveFail: 6, check: 14, checkSuccess: 18, checkFail: 9 };
+  const rolled = { critical: 20, miss: 8, hit: 17, saveSuccess: 15, saveFail: 6, check: 14, checkSuccess: 18, checkFail: 9, initiative: 17 };
   const texts = {
     critical: loc("Retour.Critique"), miss: loc("Retour.Rate"), cover: loc("Retour.AbriTotal"), reaction: loc("ThemeFlottant.Exemple.Reaction"),
     saveSuccess: loc("Retour.SauvegardeReussie"), saveFail: loc("Retour.SauvegardeRatee"), duplicate: loc("Retour.Replique"),
@@ -58,7 +58,7 @@ function sample(kind) {
     ended: loc("Retour.FinEffet", { item: loc("ThemeFlottant.Exemple.Effet") }), gain: loc("Retour.Utilisation", { sign: "+", n: 1, item: loc("ThemeFlottant.Exemple.Ressource") }),
     spend: loc("Retour.Emplacement", { sign: "−", n: 1, level: 2 }), strike: loc("Retour.AttaqueSournoise", { n: 3, faces: 6 }),
     heroic: loc("ThemeFlottant.Exemple.Heroique"), atCost: loc("ThemeFlottant.Exemple.Prix"), check: loc("ThemeFlottant.Exemple.Test"),
-    checkSuccess: loc("Retour.TestReussi"), checkFail: loc("Retour.TestRate"), damage: "-12", healing: "+8", temp: "+5",
+    checkSuccess: loc("Retour.TestReussi"), checkFail: loc("Retour.TestRate"), initiative: loc("Retour.Initiative"), damage: "-12", healing: "+8", temp: "+5",
     effectOn: `+(${loc("ThemeFlottant.Exemple.Effet")})`, effectOff: `−(${loc("ThemeFlottant.Exemple.Effet")})`
   };
   return { text: texts[kind] ?? kind, extra: (kind in rolled) ? { roll: rolled[kind], mode: (kind === "saveFail") ? "advantage" : null } : {} };

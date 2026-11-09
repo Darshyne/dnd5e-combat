@@ -62,3 +62,30 @@ describe("thème des textes flottants (§400)", () => {
     expect(hpFloat({ hp: -100, temp: 0, total: -100 }, 10).factor).toBeCloseTo(1.8);
   });
 });
+
+import { floatOutcome, floatRolled, spinPhase, FLOAT_CATEGORIES, FLOAT_CATEGORY_DEFAULTS, floatLine } from "../module/scripts/core/float-text.mjs";
+
+describe("hexagone de jet et initiative (§400, lot 2)", () => {
+  it("l'issue colore la bordure : réussi, raté, neutre", () => {
+    expect(floatOutcome("saveSuccess")).toBe("ok");
+    expect(floatOutcome("checkSuccess")).toBe("ok");
+    expect(floatOutcome("saveFail")).toBe("fail");
+    expect(floatOutcome("miss")).toBe("fail");
+    expect(floatOutcome("initiative")).toBeNull();
+    expect(floatOutcome("check")).toBeNull();
+  });
+  it("l'hexagone tourne pendant le lancer, puis bat une fois et le texte vient", () => {
+    expect(spinPhase(450, 900)).toMatchObject({ spinning: true, text: 0, pulse: 1 });
+    expect(spinPhase(450, 900).angle).toBeGreaterThan(0);
+    expect(spinPhase(900, 900)).toEqual({ spinning: false, angle: 0, pulse: 1.4, text: 0 });
+    expect(spinPhase(1300, 900)).toEqual({ spinning: false, angle: 0, pulse: 1, text: 1 });
+  });
+  it("l'initiative porte un jet et a son propre réglage", () => {
+    expect(floatRolled("initiative")).toBe(true);
+    expect(floatRolled("cover")).toBe(false);
+    expect(FLOAT_CATEGORIES.initiative).toBe("floatInitiative");
+    expect(FLOAT_CATEGORY_DEFAULTS.floatInitiative).toBe(true);
+    expect(floatLine({ kind: "initiative", roll: 17 }, "Initiative")).toMatchObject({ text: "Initiative", roll: 17 });
+    expect(floatLine({ kind: "initiative", roll: 17 }, "Initiative", { show: { floatInitiative: false } })).toBeNull();
+  });
+});

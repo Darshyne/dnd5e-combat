@@ -16,20 +16,21 @@ export const FLOAT_CATEGORIES = Object.freeze({
   ended: "floatEffects", unaffected: "floatEffects", duplicate: "floatEffects",
   gain: "floatResources", spend: "floatResources",
   strike: "floatStrikes",
-  check: "floatChecks", checkSuccess: "floatChecks", checkFail: "floatChecks"
+  check: "floatChecks", checkSuccess: "floatChecks", checkFail: "floatChecks",
+  initiative: "floatInitiative"   // §400, lot 2
 });
 
 /** Les réglages de catégorie, dans l'ordre de la fenêtre, avec leur valeur par défaut. */
 export const FLOAT_CATEGORY_DEFAULTS = Object.freeze({
   floatAttacks: true, floatHits: false, floatAdvantage: true, floatSaves: true, floatChecks: true, floatCover: true, floatReactions: true, floatStrikes: true,
-  floatEffects: true, floatResources: true, floatPrompts: true
+  floatEffects: true, floatResources: true, floatPrompts: true, floatInitiative: true
 });
 
 /** Le rythme par défaut : durée (s), écart entre deux textes d'un même token (s), course (cases), taille (%). */
 export const FLOAT_DEFAULTS = Object.freeze({ duration: 4, spacing: 1, distance: 1.5, scale: 100, direction: "down" });
 
 /** Les sortes dont le pictogramme est celui d'un dé (le résultat du jet, réglage `floatDice`). */
-const ROLLED = new Set(["hit", "critical", "miss", "saveSuccess", "saveFail", "check", "checkSuccess", "checkFail"]);
+const ROLLED = new Set(["hit", "critical", "miss", "saveSuccess", "saveFail", "check", "checkSuccess", "checkFail", "initiative"]);
 
 /**
  * §292 : la sorte du texte d'un test de caractéristique, de compétence ou d'outil lancé par dnd5e, d'après son d20 — réussi ou raté
@@ -144,7 +145,7 @@ const BASE = {
   duplicate: ["#c49bff", 22, "none"], unaffected: ["#d0d0d0", 20, "none"], prompt: ["#ffb347", 24, "none"], refused: ["#ff7070", 22, "none"],
   ended: ["#9ecbff", 20, "none"], gain: ["#8fd18f", 22, "none"], spend: ["#ffb347", 20, "none"], strike: ["#e0453a", 26, "none"],
   heroic: ["#ffd24a", 28, "none"], atCost: ["#e0a050", 26, "none"], check: ["#f0e6c8", 22, "none"], checkSuccess: ["#8fd18f", 22, "none"],
-  checkFail: ["#e07a6a", 22, "none"],
+  checkFail: ["#e07a6a", 22, "none"], initiative: ["#f0e6c8", 22, "none"],
   // §400 : ce que le système dessinait (dnd5e `tokenHPColors`, documents/actor/actor.mjs:3557 ; cœur, active-effect.mjs:1039).
   damage: ["#ff3030", 28, "none"], healing: ["#30ff50", 28, "none"], temp: ["#66ccff", 26, "none"],
   effectOn: ["#f0e6c8", 22, "none"], effectOff: ["#a8a29a", 20, "none"]
@@ -295,4 +296,33 @@ export function hpFloat(changes, max) {
   if ( !kind || !value ) return null;
   const pct = Math.min(1, Math.max(0, Math.abs(value) / (Number(max) || Math.abs(value))));
   return { kind, value, factor: 0.6 + (1.2 * pct) };
+}
+
+/**
+ * §400, lot 2 : l’issue d’un jet, pour la bordure de l’hexagone qui tourne — « ok » (bleu par défaut), « fail » (rouge), ou null (neutre :
+ * test sans DD, initiative), la bordure gardant alors sa couleur.
+ * @param {string} kind
+ * @returns {"ok"|"fail"|null}
+ */
+export function floatOutcome(kind) {
+  if ( ["saveSuccess", "checkSuccess", "critical", "hit"].includes(kind) ) return "ok";
+  if ( ["saveFail", "checkFail", "miss"].includes(kind) ) return "fail";
+  return null;
+}
+
+/** §400, lot 2 : la sorte porte-t-elle un jet (son total va dans l’hexagone) ? */
+export function floatRolled(kind) {
+  return ROLLED.has(kind);
+}
+
+/**
+ * §400, lot 2 : la phase de l’hexagone à `ms` millisecondes : il tourne pendant `spinMs` (`angle` en radians, un tour par seconde environ),
+ * puis se révèle — `pulse` (1,4 → 1 sur 240 ms) et `text` (opacité du texte, 0 → 1 sur 260 ms).
+ * @returns {{spinning: boolean, angle: number, pulse: number, text: number}}
+ */
+export function spinPhase(ms, spinMs) {
+  const t = Math.max(0, Number(ms) || 0);
+  if ( t < spinMs ) return { spinning: true, angle: t * 0.0157, pulse: 1, text: 0 };
+  const after = t - spinMs;
+  return { spinning: false, angle: 0, pulse: 1 + (0.4 * Math.max(0, 1 - (after / 240))), text: Math.min(1, after / 260) };
 }

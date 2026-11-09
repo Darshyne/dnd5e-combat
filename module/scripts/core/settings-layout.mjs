@@ -89,13 +89,13 @@ export const SETTINGS_TABS = Object.freeze([
     // §400 : l'interrupteur de la table (coupe les textes du système), et la fenêtre du thème importé.
     tools: [{ id: "floatTheme", icon: "fa-solid fa-palette" }],
     keys: ["floatSystem", "feedbackText", "floatDuration", "floatSpacing", "floatDistance", "floatDirection", "floatScale", "floatDice", "floatIcons",
-      "timerHideSeconds", "awaitingShow", "awaitingGm", "awaitingHide", "floatAttacks", "floatHits", "floatAdvantage", "floatSaves", "floatChecks", "floatCover", "floatReactions", "floatStrikes", "floatEffects", "floatResources", "floatPrompts"],
+      "timerHideSeconds", "awaitingShow", "awaitingGm", "awaitingHide", "floatAttacks", "floatHits", "floatAdvantage", "floatSaves", "floatChecks", "floatCover", "floatReactions", "floatStrikes", "floatEffects", "floatResources", "floatPrompts", "floatInitiative"],
     groups: [
       g("floatLook", "fa-solid fa-sliders", ["floatSystem", "feedbackText", "floatDuration", "floatSpacing", "floatDistance", "floatDirection", "floatScale", "floatDice", "floatIcons"],
         { sub: Object.fromEntries(["floatDuration", "floatSpacing", "floatDistance", "floatDirection", "floatScale", "floatDice", "floatIcons"]
           .map(k => [k, offIf("feedbackText", false)])) }),
       g("floatWhat", "fa-solid fa-list-check", ["floatAttacks", "floatHits", "floatAdvantage", "floatSaves", "floatChecks", "floatCover", "floatReactions",
-        "floatStrikes", "floatEffects", "floatResources", "floatPrompts"]),
+        "floatStrikes", "floatEffects", "floatResources", "floatPrompts", "floatInitiative"]),
       g("timers", "fa-solid fa-gear", ["timerHideSeconds"]),
       // §381 (issue #35) : le sablier au-dessus du token qu'on attend.
       g("awaiting", "fa-solid fa-hourglass-half", ["awaitingShow", "awaitingGm", "awaitingHide"],

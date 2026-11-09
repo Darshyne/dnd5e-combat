@@ -176,7 +176,7 @@ const SEGMENTS = {
 };
 const RANGES = { size: [10, 64], tracking: [0, 0.4], strokeW: [0, 10], glow: [0, 30], spread: [0.2, 3], spinMs: [200, 3000] };
 const COLORS = ["color", "stroke", "glowColor", "badgeColor", "badgeBorder", "okColor", "failColor"];
-const FLAGS = ["show", "upper", "italic", "spin"];
+const FLAGS = ["show", "upper", "italic", "spin", "strike"];
 
 /** L'allure par défaut d'une sorte (police du cœur, Signika). */
 export function floatStyleDefault(kind) {
@@ -185,7 +185,9 @@ export function floatStyleDefault(kind) {
   const hit = (kind === "damage") || kind.startsWith("dmg-");
   return { show: true, color, size, font: "Signika", weight: hit ? 700 : 600, upper: false, tracking: 0, italic: false, stroke: "#000000", strokeW: 4,
     glow: 0, glowColor: color, icon, badge: "none", badgeColor: "#1a1a1a", badgeBorder: color, entrance: hit ? "pop" : "grow", motion: hit ? "arc" : "float", spread: 1,
-    spin: false, spinMs: 900, okColor: "#3f9cff", failColor: "#e0453a" };
+    spin: false, spinMs: 900, okColor: "#3f9cff", failColor: "#e0453a",
+    // §400 : un état perdu est barré — la barre traverse le texte de gauche à droite (demande de l’utilisateur).
+    strike: kind === "effectOff" };
 }
 
 /** Une couleur `#rrggbb`, ou null. */
@@ -378,4 +380,14 @@ export function damageParts(damages) {
 /** §400, lot 3 : la sorte d’un type de dégâts — la sienne s’il en a une, sinon « damage ». */
 export function damageKind(type) {
   return DAMAGE_KINDS.includes(type) ? `dmg-${type}` : "damage";
+}
+
+/**
+ * §400 : la part du texte barrée à `ms` millisecondes de son apparition — la barre attend que le texte soit là (`delay`), puis le traverse
+ * de gauche à droite en `length` ms, en ralentissant à la fin.
+ * @returns {number}  0 → 1.
+ */
+export function strikeProgress(ms, { delay=350, length=450 }={}) {
+  const t = Math.min(1, Math.max(0, ((Number(ms) || 0) - delay) / length));
+  return 1 - ((1 - t) ** 3);
 }

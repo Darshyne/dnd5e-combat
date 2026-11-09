@@ -65,7 +65,7 @@ function sample(kind) {
     spend: loc("Retour.Emplacement", { sign: "−", n: 1, level: 2 }), strike: loc("Retour.AttaqueSournoise", { n: 3, faces: 6 }),
     heroic: loc("ThemeFlottant.Exemple.Heroique"), atCost: loc("ThemeFlottant.Exemple.Prix"), check: loc("ThemeFlottant.Exemple.Test"),
     checkSuccess: loc("Retour.TestReussi"), checkFail: loc("Retour.TestRate"), initiative: loc("Retour.Initiative"), save: loc("Retour.Sauvegarde"), damage: "-12", healing: "+8", temp: "+5",
-    effectOn: `+(${loc("ThemeFlottant.Exemple.Effet")})`, effectOff: `−(${loc("ThemeFlottant.Exemple.Effet")})`
+    effectOn: `+(${loc("ThemeFlottant.Exemple.Effet")})`, effectOff: (floatStyleOf(game.settings.get(MODULE_ID, THEME_SETTING) ?? {}, "effectOff").strike ? loc("ThemeFlottant.Exemple.Effet") : `−(${loc("ThemeFlottant.Exemple.Effet")})`)
   };
   if ( kind.startsWith("dmg-") ) return { text: "-7", extra: { factor: 1.2 } };
   return { text: texts[kind] ?? kind, extra: (kind in rolled) ? { roll: rolled[kind], mode: (kind === "saveFail") ? "advantage" : null } : {} };

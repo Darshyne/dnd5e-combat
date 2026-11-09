@@ -19,7 +19,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { feedbackBetween } from "../core/feedback.mjs";
 import { FLOAT_CATEGORY_DEFAULTS, FLOAT_DEFAULTS, FLOAT_ICONS, floatLine, floatLabel, floatFrame, floatDelays, checkKind, floatStyleOf, floatOffset,
-  floatEntrance, hpFloat, floatOutcome, floatRolled, spinPhase, damageParts, damageKind, saveKind } from "../core/float-text.mjs";
+  floatEntrance, hpFloat, floatOutcome, floatRolled, spinPhase, damageParts, damageKind, saveKind, strikeProgress } from "../core/float-text.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc, NOTICE_QUERY, receiveNotice, waitForDice, isExecutor } from "../runtime/shared.mjs";
 import { resourceChangesOf } from "../adapter/limits.mjs";
@@ -288,6 +288,19 @@ async function drawLine(token, line, kind, options, { factor=1, roll=null, waitF
     await spinWithDice(box, { spin, text, waitFor, look, options, motion, path, x0, start, scale: s, fontSize });
     return;
   }
+  // §400 : un état perdu, barré de gauche à droite une fois le texte apparu — la barre à la couleur du texte, sur un trait sombre.
+  const strike = (look.strike && text) ? box.addChild(new PIXI.Graphics()) : null;
+  const drawStrike = k => {
+    const pad = Number(text.style?.padding) || 0;
+    const x1 = text.x + pad;
+    const w = Math.max(0, text.width - (2 * pad)) * k;
+    const y = text.y + (text.height * 0.56);
+    const thick = Math.max(2, fontSize * 0.09);
+    strike.clear();
+    if ( w <= 0 ) return;
+    strike.lineStyle(thick + Math.max(2, look.strokeW), (look.strokeW > 0) ? hexNumber(look.stroke) : 0x000000, 0.7).moveTo(x1, y).lineTo(x1 + w, y);
+    strike.lineStyle(thick, fill, 1).moveTo(x1, y).lineTo(x1 + w, y);
+  };
   const state = { p: 0 };
   // L’hexagone tourne puis se révèle : le texte reste lisible au moins 2,2 s après.
   const duration = spin ? Math.max(options.duration * 1000, look.spinMs + 2200) : options.duration * 1000;
@@ -302,6 +315,7 @@ async function drawLine(token, line, kind, options, { factor=1, roll=null, waitF
           spin.step(phase);
           if ( text ) { text.alpha = phase.text; text.x = text.baseX - ((1 - phase.text) * fontSize * 0.4); }
         }
+        if ( strike ) drawStrike(strikeProgress(state.p * duration));
         const f = floatFrame(state.p);
         const e = floatEntrance(state.p, look.entrance);
         const o = floatOffset(state.p, motion, path);
@@ -615,7 +629,9 @@ function onEffect(effect, options, enabled) {
   if ( !floatsActive() || !canvas?.ready || !game.settings.get(MODULE_ID, "feedbackText") || (options?.animate === false) ) return;
   const actor = effect.target;
   if ( !(actor instanceof Actor) || !(effect.statuses?.size || effect.system?.changes?.length) ) return;
-  const text = `${enabled ? "+" : "−"}(${effect.name})`;
+  // §400 : barré, l’état perdu se lit à son seul nom ; sans la barre, « −(Nom) » comme le cœur.
+  const struck = !enabled && floatStyleOf(theme(), "effectOff").strike;
+  const text = struck ? effect.name : `${enabled ? "+" : "−"}(${effect.name})`;
   show(actor.getActiveTokens(true).map(t => ({ token: t.document.uuid, kind: enabled ? "effectOn" : "effectOff", text })));
 }
 

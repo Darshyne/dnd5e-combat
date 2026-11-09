@@ -142,3 +142,20 @@ describe("tests comme les sauvegardes (§400)", () => {
     expect(floatOutcome("checkFail")).toBe("fail");
   });
 });
+
+import { strikeProgress } from "../module/scripts/core/float-text.mjs";
+
+describe("état perdu barré (§400)", () => {
+  it("barré par défaut pour l'effet qui cesse seulement, réglable au thème", () => {
+    expect(floatStyleDefault("effectOff").strike).toBe(true);
+    expect(floatStyleDefault("effectOn").strike).toBe(false);
+    expect(floatThemeFrom({ types: { effectOff: { strike: false } } }).theme.effectOff.strike).toBe(false);
+  });
+  it("la barre attend le texte, puis le traverse de gauche à droite", () => {
+    expect(strikeProgress(0)).toBe(0);
+    expect(strikeProgress(350)).toBe(0);
+    expect(strikeProgress(575)).toBeGreaterThan(0.5);
+    expect(strikeProgress(800)).toBe(1);
+    expect(strikeProgress(5000)).toBe(1);
+  });
+});

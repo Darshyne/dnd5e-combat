@@ -130,7 +130,7 @@ async function iconSprite(src, size, tint) {
 /** §400 : le cadre d'un pictogramme (hexagone pointe en haut, ou cercle), rempli et bordé aux couleurs du thème. */
 function badgeShape(kind, size, fill, border, weight=1) {
   const g = new PIXI.Graphics();
-  g.lineStyle(Math.max(1.5, size * 0.06) * weight, border, 1).beginFill(fill, 1);
+  g.lineStyle(Math.max(1.2, size * 0.04) * weight, border, 1).beginFill(fill, 1);
   const r = size / 2;
   if ( kind === "circle" ) g.drawCircle(r, r, r * 0.92);
   else g.drawPolygon(Array.from({ length: 6 }, (_, i) => {
@@ -140,15 +140,33 @@ function badgeShape(kind, size, fill, border, weight=1) {
   return g.endFill();
 }
 
-/** §400 : le pictogramme du thème (un nom de l'atelier ou un chemin), éventuellement dans son cadre. */
+/**
+ * §400 : le d20 de l'atelier, en traits fins (demande de l'utilisateur : plus simple que l'icône du cœur) — le contour à dix côtés vu de
+ * face, le triangle de la face avant et ses arêtes, dessinés à `size` px (dessin d'origine sur 24 px).
+ */
+function d20Shape(size, color) {
+  const k = size / 24;
+  const p = (x, y) => [x * k, y * k];
+  const g = new PIXI.Graphics();
+  g.lineStyle(Math.max(1, 1.5 * k), color, 1).drawPolygon([...p(12, 1.5), ...p(21.5, 7), ...p(21.5, 17), ...p(12, 22.5), ...p(2.5, 17), ...p(2.5, 7)]);
+  g.lineStyle(Math.max(1, 1.3 * k), color, 1).drawPolygon([...p(12, 5.5), ...p(17.8, 15), ...p(6.2, 15)]);
+  g.lineStyle(Math.max(0.8, 1.05 * k), color, 1);
+  for ( const [[x1, y1], [x2, y2]] of [[[12, 1.5], [12, 5.5]], [[2.5, 7], [6.2, 15]], [[21.5, 7], [17.8, 15]], [[6.2, 15], [12, 22.5]], [[12, 22.5], [17.8, 15]]] ) {
+    g.moveTo(...p(x1, y1)).lineTo(...p(x2, y2));
+  }
+  return g;
+}
+
+/** §400 : le pictogramme du thème (un nom de l'atelier ou un chemin), éventuellement dans son cadre ; le d20 est celui de l'atelier. */
 async function themedIcon(style, fontSize) {
   const src = FLOAT_ICONS[style.icon] ?? ((style.icon in FLOAT_ICONS) ? null : style.icon);
   if ( !src ) return null;
-  if ( style.badge === "none" ) return iconSprite(src, fontSize * 1.15, hexNumber(style.color));
+  const d20 = style.icon === "d20";
+  if ( style.badge === "none" ) return d20 ? d20Shape(fontSize * 1.15, hexNumber(style.color)) : iconSprite(src, fontSize * 1.15, hexNumber(style.color));
   const size = fontSize * 1.7;
   const box = new PIXI.Container();
   box.addChild(badgeShape(style.badge, size, hexNumber(style.badgeColor), hexNumber(style.badgeBorder)));
-  const sprite = await iconSprite(src, size * 0.56, hexNumber(style.badgeBorder));
+  const sprite = d20 ? d20Shape(size * 0.56, hexNumber(style.badgeBorder)) : await iconSprite(src, size * 0.56, hexNumber(style.badgeBorder));
   if ( sprite ) { sprite.position.set(size * 0.22, size * 0.22); box.addChild(sprite); }
   return box;
 }
@@ -166,8 +184,8 @@ async function spinner(look, fontSize, roll, kind) {
   inner.pivot.set(size / 2, size / 2);
   inner.position.set(size / 2, size / 2);
   const hex = inner.addChild(badgeShape("hex", size, hexNumber(look.badgeColor), hexNumber(look.badgeBorder)));
-  const die = await iconSprite("icons/svg/d20.svg", size * 0.55, hexNumber(look.badgeBorder));
-  if ( die ) { die.position.set(size * 0.225, size * 0.225); inner.addChild(die); }
+  const die = inner.addChild(d20Shape(size * 0.55, hexNumber(look.badgeBorder)));
+  die.position.set(size * 0.225, size * 0.225);
   const { PreciseText } = foundry.canvas.containers;
   const number = new PreciseText(String(roll), PreciseText.getTextStyle({ fill: 0xffffff, fontSize: Math.round(fontSize * 0.9),
     fontFamily: look.font, fontWeight: "700", stroke: 0x000000, strokeThickness: 3 }));
@@ -187,7 +205,7 @@ async function spinner(look, fontSize, roll, kind) {
       number.visible = true;
       hex.clear();
       inner.removeChild(hex);
-      inner.addChildAt(badgeShape("hex", size, hexNumber(look.badgeColor), border, 2.2), 0);
+      inner.addChildAt(badgeShape("hex", size, hexNumber(look.badgeColor), border, 1.5), 0);
     }
     inner.scale.set(phase.pulse);
     number.scale.set(phase.pulse);
@@ -219,8 +237,7 @@ async function drawLine(token, line, kind, options, { factor=1, roll=null }={}) 
   else {
     const icon = options.icons ? await themedIcon(look, fontSize) : null;
     if ( line.dieIcon && (look.icon !== "d20") ) {
-      const die = await iconSprite("icons/svg/d20.svg", fontSize * 1.15, fill);
-      if ( die ) parts.push(die);
+      parts.push(d20Shape(fontSize * 1.15, fill));
     }
     if ( icon ) parts.push(icon);
   }

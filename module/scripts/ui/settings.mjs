@@ -19,6 +19,7 @@ import { loc, esc } from "../runtime/shared.mjs";
 import { openWelcome } from "./welcome.mjs";
 import { openDiagnostic } from "./diagnostic.mjs";
 import { openFactions } from "./factions.mjs";
+import { openFloatTheme } from "./float-theme.mjs";
 import { reportsApi } from "./automation.mjs";
 import { openDebugReport } from "./debug-report.mjs";
 import { replaceKeepingScroll } from "./scroll.mjs";
@@ -400,7 +401,8 @@ const ENGINE_TOOLS = Object.freeze({
   diagnostic: () => openDiagnostic(),
   reports: () => reportsApi.open(),
   debugReport: () => openDebugReport(),
-  factions: () => openFactions()
+  factions: () => openFactions(),
+  floatTheme: () => openFloatTheme()
 });
 
 /** §291 : le bouton « DAS » de l'onglet Réglages de la barre latérale, sous « Paramètres du jeu ». */

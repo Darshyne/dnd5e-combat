@@ -116,3 +116,183 @@ export function floatDelays(tokens, spacing, now, busyUntil) {
     return start - now;
   });
 }
+
+/* -------------------------------------------- */
+/*  §400 : le thème des textes flottants         */
+/* -------------------------------------------- */
+
+/*
+ * §400 : chaque sorte de texte a son allure (police, couleur, contour, halo, pictogramme et son cadre, apparition, trajet), réglée pour la
+ * table par un JSON importé (l'« Atelier des textes flottants », format `das-float-theme`). Les PV (`damage`, `healing`, `temp`) et les
+ * effets qui commencent ou cessent (`effectOn`, `effectOff`) sont dessinés par le moteur quand ses textes flottants remplacent ceux du
+ * système (réglage `floatSystem`). Les `dmg-<type>` (dégâts par type) et l'hexagone qui tourne (`spin`) sont gardés à l'import pour les
+ * lots suivants, sans effet pour l'instant.
+ */
+
+/** Les pictogrammes du thème : un nom de l'atelier → une icône du cœur (public/icons/svg). Un chemin d'image est aussi accepté. */
+export const FLOAT_ICONS = Object.freeze({
+  none: null, d20: "icons/svg/d20.svg", shield: "icons/svg/shield.svg", lightning: "icons/svg/lightning.svg", explosion: "icons/svg/explosion.svg",
+  skull: "icons/svg/skull.svg", sun: "icons/svg/sun.svg", hand: "icons/svg/holy-shield.svg", sword: "icons/svg/sword.svg", heart: "icons/svg/heal.svg",
+  moon: "icons/svg/sleep.svg", eye: "icons/svg/eye.svg", ban: "icons/svg/cancel.svg", hourglass: "icons/svg/clockwork.svg", plus: "icons/svg/upgrade.svg",
+  minus: "icons/svg/downgrade.svg", star: "icons/svg/aura.svg", target: "icons/svg/target.svg"
+});
+
+/** L'allure de départ de chaque sorte : celle du moteur avant le thème (ui/feedback.mjs, STYLES et pictogrammes). */
+const BASE = {
+  critical: ["#ffd24a", 30, "explosion"], miss: ["#d0d0d0", 24, "none"], hit: ["#ffffff", 22, "none"], cover: ["#9ecbff", 20, "shield"],
+  reaction: ["#c49bff", 22, "lightning"], saveSuccess: ["#8fd18f", 22, "none"], saveFail: ["#e07a6a", 22, "skull"],
+  duplicate: ["#c49bff", 22, "none"], unaffected: ["#d0d0d0", 20, "none"], prompt: ["#ffb347", 24, "none"], refused: ["#ff7070", 22, "none"],
+  ended: ["#9ecbff", 20, "none"], gain: ["#8fd18f", 22, "none"], spend: ["#ffb347", 20, "none"], strike: ["#e0453a", 26, "none"],
+  heroic: ["#ffd24a", 28, "none"], atCost: ["#e0a050", 26, "none"], check: ["#f0e6c8", 22, "none"], checkSuccess: ["#8fd18f", 22, "none"],
+  checkFail: ["#e07a6a", 22, "none"],
+  // §400 : ce que le système dessinait (dnd5e `tokenHPColors`, documents/actor/actor.mjs:3557 ; cœur, active-effect.mjs:1039).
+  damage: ["#ff3030", 28, "none"], healing: ["#30ff50", 28, "none"], temp: ["#66ccff", 26, "none"],
+  effectOn: ["#f0e6c8", 22, "none"], effectOff: ["#a8a29a", 20, "none"]
+};
+/** Les sortes que le thème connaît, dans l'ordre de la fenêtre. */
+export const FLOAT_KINDS = Object.freeze(Object.keys(BASE));
+
+const SEGMENTS = {
+  weight: [400, 500, 600, 700], badge: ["none", "hex", "circle"], entrance: ["fade", "grow", "pop", "slide"], motion: ["float", "anchor", "arc"]
+};
+const RANGES = { size: [10, 64], tracking: [0, 0.4], strokeW: [0, 10], glow: [0, 30], spread: [0.2, 3], spinMs: [200, 3000] };
+const COLORS = ["color", "stroke", "glowColor", "badgeColor", "badgeBorder", "okColor", "failColor"];
+const FLAGS = ["show", "upper", "italic", "spin"];
+
+/** L'allure par défaut d'une sorte (police du cœur, Signika). */
+export function floatStyleDefault(kind) {
+  const [color, size, icon] = BASE[kind] ?? ["#f0e6c8", 22, "none"];
+  return { show: true, color, size, font: "Signika", weight: 600, upper: false, tracking: 0, italic: false, stroke: "#000000", strokeW: 4,
+    glow: 0, glowColor: color, icon, badge: "none", badgeColor: "#1a1a1a", badgeBorder: color, entrance: "grow", motion: "float", spread: 1,
+    spin: false, spinMs: 900, okColor: "#3f9cff", failColor: "#e0453a" };
+}
+
+/** Une couleur `#rrggbb`, ou null. */
+function hexColor(value) {
+  return ((typeof value === "string") && /^#[0-9a-f]{6}$/i.test(value)) ? value.toLowerCase() : null;
+}
+
+/**
+ * Une allure lue d'un JSON : chaque champ vérifié, borné, ou ignoré ; ce qui manque garde la valeur par défaut. Les noms de police de
+ * l'atelier (« Signika (Foundry) ») sont ramenés à la famille ; une police inconnue de ce monde (`fonts`) est refusée.
+ * @param {object} raw
+ * @param {string} kind
+ * @param {{fonts?: string[]}} [options]
+ * @returns {{style: object, problems: string[]}}
+ */
+export function floatStyleFrom(raw, kind, { fonts=null }={}) {
+  const style = floatStyleDefault(kind);
+  const problems = [];
+  if ( !raw || (typeof raw !== "object") ) return { style, problems };
+  for ( const key of COLORS ) if ( key in raw ) {
+    const c = hexColor(raw[key]);
+    if ( c ) style[key] = c; else problems.push(`${kind}.${key}`);
+  }
+  for ( const key of FLAGS ) if ( typeof raw[key] === "boolean" ) style[key] = raw[key];
+  for ( const [key, [min, max]] of Object.entries(RANGES) ) if ( key in raw ) {
+    const n = Number(raw[key]);
+    if ( Number.isFinite(n) ) style[key] = Math.min(max, Math.max(min, n)); else problems.push(`${kind}.${key}`);
+  }
+  for ( const [key, values] of Object.entries(SEGMENTS) ) if ( key in raw ) {
+    const v = (key === "weight") ? Number(raw[key]) : raw[key];
+    if ( values.includes(v) ) style[key] = v; else problems.push(`${kind}.${key}`);
+  }
+  if ( "icon" in raw ) {
+    const icon = raw.icon;
+    if ( (icon in FLOAT_ICONS) || ((typeof icon === "string") && /\.(svg|webp|png|jpe?g)$/i.test(icon)) ) style.icon = icon;
+    else problems.push(`${kind}.icon`);
+  }
+  if ( typeof raw.font === "string" ) {
+    const font = raw.font.replace(/\s*\(.*\)\s*$/, "").trim();
+    if ( !fonts || fonts.includes(font) ) style.font = font; else problems.push(`${kind}.font: ${font}`);
+  }
+  return { style, problems };
+}
+
+/** Les réglages de rythme qu'un thème peut porter, avec leurs bornes (celles des réglages du monde, ui/feedback.mjs). */
+export const FLOAT_GLOBAL_RANGES = Object.freeze({
+  floatDuration: [1, 10], floatSpacing: [0.2, 3], floatDistance: [0.5, 4], floatScale: [50, 250]
+});
+
+/**
+ * Un thème importé : le JSON de l'atelier (`format: "das-float-theme"`) ou un objet `{ types }`. Rend les allures des sortes (une sorte que
+ * le moteur ne dessine pas encore, comme `dmg-fire`, est gardée pour plus tard), les réglages de rythme bornés, et ce qui a été refusé.
+ * @param {object|string} json
+ * @param {{fonts?: string[]}} [options]
+ * @returns {{theme: Record<string, object>, global: Record<string, number|string|boolean>, problems: string[]}}
+ */
+export function floatThemeFrom(json, { fonts=null }={}) {
+  const data = (typeof json === "string") ? JSON.parse(json) : json;
+  if ( !data || (typeof data !== "object") || !data.types || (typeof data.types !== "object") ) throw new Error("expected { types: { … } }");
+  if ( data.format && (data.format !== "das-float-theme") ) throw new Error(`unknown format ${data.format}`);
+  const theme = {};
+  const problems = [];
+  for ( const [kind, raw] of Object.entries(data.types) ) {
+    if ( !/^[a-zA-Z][\w-]{0,40}$/.test(kind) ) { problems.push(kind); continue; }
+    const result = floatStyleFrom(raw, kind, { fonts });
+    theme[kind] = result.style;
+    problems.push(...result.problems);
+  }
+  const global = {};
+  const g = data.global ?? {};
+  for ( const [key, [min, max]] of Object.entries(FLOAT_GLOBAL_RANGES) ) if ( key in g ) {
+    const n = Number(g[key]);
+    if ( Number.isFinite(n) ) global[key] = Math.min(max, Math.max(min, n));
+  }
+  if ( ["up", "down"].includes(g.floatDirection) ) global.floatDirection = g.floatDirection;
+  for ( const key of ["floatDice", "floatIcons", "floatAdvantage"] ) if ( typeof g[key] === "boolean" ) global[key] = g[key];
+  return { theme, global, problems };
+}
+
+/** Le thème d'export : toutes les sortes connues, avec leur allure courante. */
+export function floatThemeExport(theme={}, global={}) {
+  const types = {};
+  for ( const kind of new Set([...FLOAT_KINDS, ...Object.keys(theme)]) ) types[kind] = { ...floatStyleDefault(kind), ...(theme[kind] ?? {}) };
+  return { format: "das-float-theme", version: 1, global, types };
+}
+
+/** L'allure d'une sorte d'après le thème du monde (ce qui manque : la valeur par défaut). */
+export function floatStyleOf(theme, kind) {
+  return { ...floatStyleDefault(kind), ...(theme?.[kind] ?? {}) };
+}
+
+const easeInOut = x => 0.5 - (Math.cos(Math.PI * x) / 2);
+
+/**
+ * Le décalage d'un texte à l'avancement `p` (0 → 1), selon son trajet : `float` court `travel` (px, signé), `anchor` reste en place,
+ * `arc` part sur le côté (`side` ±1, `spread` px), monte de `rise` px puis retombe de `drop` px.
+ * @returns {{dx: number, dy: number}}
+ */
+export function floatOffset(p, motion, { travel=0, side=1, spread=0, rise=0, drop=0 }={}) {
+  const t = Math.min(1, Math.max(0, Number(p) || 0));
+  if ( motion === "anchor" ) return { dx: 0, dy: 0 };
+  if ( motion === "arc" ) return { dx: side * spread * easeInOut(Math.min(1, t * 1.25)), dy: (-rise * 4 * t * (1 - t)) + (t * drop) };
+  return { dx: 0, dy: travel * easeInOut(t) };
+}
+
+/** L'échelle et le glissement d'apparition à l'avancement `p`, selon l'entrée choisie (`grow` : celle de `floatFrame`). */
+export function floatEntrance(p, entrance) {
+  const t = Math.min(1, Math.max(0, Number(p) || 0));
+  if ( entrance === "pop" ) return { scale: (t < 0.1) ? 0.4 + easeInOut(t / 0.1) : (t < 0.2) ? 1.4 - (0.4 * easeInOut((t - 0.1) / 0.1)) : 1, dx: 0 };
+  if ( entrance === "slide" ) return { scale: 1, dx: (t < 0.15) ? -30 * (1 - easeInOut(t / 0.15)) : 0 };
+  if ( entrance === "fade" ) return { scale: 1, dx: 0 };
+  return { scale: (t < 0.15) ? 0.6 + (0.4 * easeInOut(t / 0.15)) : 1, dx: 0 };
+}
+
+/**
+ * §400 : le texte d'un changement de PV, comme dnd5e le choisit (documents/actor/actor.mjs:3532, `_displayTokenEffect`) : dégâts si les
+ * PV baissent, soins s'ils montent, PV temporaires sinon ; la taille suit la part des PV max (dnd5e : 16 → 48 px, ici × 0,6 → 1,8).
+ * @param {{hp: number, temp: number, total: number}} changes
+ * @param {number} max   PV max.
+ * @returns {{kind: "damage"|"healing"|"temp", value: number, factor: number}|null}
+ */
+export function hpFloat(changes, max) {
+  let kind = null;
+  let value = 0;
+  if ( changes?.hp < 0 ) { kind = "damage"; value = changes.total; }
+  else if ( changes?.hp > 0 ) { kind = "healing"; value = changes.total; }
+  else if ( changes?.temp ) { kind = "temp"; value = changes.temp; }
+  if ( !kind || !value ) return null;
+  const pct = Math.min(1, Math.max(0, Math.abs(value) / (Number(max) || Math.abs(value))));
+  return { kind, value, factor: 0.6 + (1.2 * pct) };
+}

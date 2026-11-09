@@ -86,10 +86,12 @@ export const SETTINGS_TABS = Object.freeze([
     ] },
   // §228 : les textes qui défilent sur les tokens — rythme, puis ce qui s'affiche.
   { id: "float", icon: "fa-solid fa-comment-dots",
-    keys: ["feedbackText", "floatDuration", "floatSpacing", "floatDistance", "floatDirection", "floatScale", "floatDice", "floatIcons",
+    // §400 : l'interrupteur de la table (coupe les textes du système), et la fenêtre du thème importé.
+    tools: [{ id: "floatTheme", icon: "fa-solid fa-palette" }],
+    keys: ["floatSystem", "feedbackText", "floatDuration", "floatSpacing", "floatDistance", "floatDirection", "floatScale", "floatDice", "floatIcons",
       "timerHideSeconds", "awaitingShow", "awaitingGm", "awaitingHide", "floatAttacks", "floatHits", "floatAdvantage", "floatSaves", "floatChecks", "floatCover", "floatReactions", "floatStrikes", "floatEffects", "floatResources", "floatPrompts"],
     groups: [
-      g("floatLook", "fa-solid fa-sliders", ["feedbackText", "floatDuration", "floatSpacing", "floatDistance", "floatDirection", "floatScale", "floatDice", "floatIcons"],
+      g("floatLook", "fa-solid fa-sliders", ["floatSystem", "feedbackText", "floatDuration", "floatSpacing", "floatDistance", "floatDirection", "floatScale", "floatDice", "floatIcons"],
         { sub: Object.fromEntries(["floatDuration", "floatSpacing", "floatDistance", "floatDirection", "floatScale", "floatDice", "floatIcons"]
           .map(k => [k, offIf("feedbackText", false)])) }),
       g("floatWhat", "fa-solid fa-list-check", ["floatAttacks", "floatHits", "floatAdvantage", "floatSaves", "floatChecks", "floatCover", "floatReactions",

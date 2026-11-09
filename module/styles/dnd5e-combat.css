@@ -793,3 +793,17 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-correction-card ul { margin: 0.2em 0 0; padding-left: 1.1em; }
 .das-correction-undo { display: flex; align-items: center; justify-content: center; gap: 0.4em; width: 100%; margin-top: 0.4em; }
 .das-correction-undone { margin-top: 0.4em; font-style: italic; opacity: 0.7; text-align: center; }
+
+/* §400 : la fenêtre « Thème des textes flottants ». */
+.das-float-theme .das-float-theme__body { display: grid; gap: 12px; padding: 4px 2px; }
+.das-float-theme fieldset { display: grid; gap: 8px; }
+.das-float-theme textarea { width: 100%; font-family: var(--font-mono, monospace); font-size: 12px; resize: vertical; }
+.das-float-theme .das-float-theme__row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.das-float-theme .das-float-theme__row input[type="file"] { flex: 1; min-width: 0; }
+.das-float-theme .das-float-theme__state i { color: var(--das-accent); }
+.das-float-theme .das-float-theme__report { margin: 0; font-size: 12px; }
+.das-float-theme .das-float-theme__report.bad { color: #e07a6a; }
+.das-float-theme .das-float-theme__kinds { display: flex; flex-wrap: wrap; gap: 6px; }
+.das-float-theme .das-float-theme__kind { display: inline-flex; align-items: center; gap: 6px; width: auto; padding: 3px 9px; font-size: 12px; line-height: 1.4; }
+.das-float-theme .das-float-theme__kind .sw { width: 10px; height: 10px; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5); }
+.das-float-theme .das-float-theme__kind.off { opacity: 0.45; }

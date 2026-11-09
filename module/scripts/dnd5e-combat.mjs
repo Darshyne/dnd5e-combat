@@ -155,7 +155,8 @@ import { registerGmAlertUi } from "./ui/gm-alert.mjs";
 import { registerCompact } from "./ui/compact.mjs";
 import { registerPurge } from "./runtime/purge.mjs";
 import { registerPerf, perfApi } from "./runtime/perf.mjs";
-import { registerFeedback } from "./ui/feedback.mjs";
+import { registerFeedback, playFloat, floatFonts } from "./ui/feedback.mjs";
+import { openFloatTheme, importTheme, exportTheme, resetTheme, tryKind } from "./ui/float-theme.mjs";
 import { registerTimers, startTimer } from "./ui/timers.mjs";
 import { registerTracker } from "./ui/tracker.mjs";
 import { registerLightIndicator, lightState } from "./ui/illumination.mjs";
@@ -256,6 +257,8 @@ const state = {
   rolls: { ...rollsApi, open: openGroupRoll, tracker: openTracker },   // §242 : jets demandés par le MJ — hooks `groupRoll`, `groupRollPrompt`
   combat: combatApi,   // §250 : évènements dans l'initiative — `addEvent`, `removeEvent`, `events`, `isEvent` ; hook `dnd5e-combat.eventTurn`
   gap: publicGap,
+  // §400 : textes flottants — `play(token, kind, text, { roll, mode })`, `open()`, `import(json)`, `export()`, `reset()`, `try(kind)`, `fonts()`
+  floats: { play: playFloat, open: openFloatTheme, import: importTheme, export: exportTheme, reset: resetTheme, try: tryKind, fonts: floatFonts },
   // §274 : munitions d'une arme — `options(item)` : `{ options: [{ id, name, img, quantity }], current, ask }` (null si l'arme n'en tire
   // pas) ; `set(item, ammoId)` : la munition retenue pour ses prochaines attaques. Hook `dnd5e-combat.ammunition` `(item, ammoId)`.
   ammo: { options: (item, activity=null) => ammoState(item, activity), set: setAmmo },

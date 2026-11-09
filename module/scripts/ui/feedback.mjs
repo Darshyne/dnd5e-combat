@@ -172,6 +172,47 @@ async function themedIcon(style, fontSize) {
 }
 
 /**
+ * §400 : un son de l'hexagone (module/sounds : générés avec ElevenLabs, choisis par l'utilisateur), sur le canal Interface de ce client — chacun
+ * entend les textes qu'il voit, rien n'est diffusé. Réglages de ce poste : `floatSounds`, `floatSoundVolume`. Rend la promesse du son.
+ */
+function floatSound(name, { loop=false }={}) {
+  let volume = 0;
+  try {
+    if ( !game.settings.get(MODULE_ID, "floatSounds") ) return null;
+    volume = (Number(game.settings.get(MODULE_ID, "floatSoundVolume")) || 0) / 100;
+  } catch { return null; }
+  if ( volume <= 0 ) return null;
+  const played = foundry.audio.AudioHelper.play({ src: `modules/${MODULE_ID}/sounds/float-${name}.ogg`, volume, loop, channel: "interface" }, false);
+  return Promise.resolve(played).catch(() => null);
+}
+
+/**
+ * §400 : un seul son à la fois (demande de l’utilisateur : une initiative de toute la table tournait en cacophonie) — un seul cliquetis,
+ * partagé par les hexagones qui tournent (il part avec le premier, s’arrête avec le dernier), et un seul son d’issue par salve : un
+ * autre qui arrive moins de `RESULT_GAP` ms après le précédent se tait.
+ */
+const spinning = new Set();
+let rattle = null;
+let lastResult = -Infinity;
+const RESULT_GAP = 400;
+function rattleOn(id) {
+  spinning.add(id);
+  rattle ??= floatSound("spin", { loop: true }) ?? Promise.resolve(null);
+}
+function rattleOff(id) {
+  if ( !spinning.delete(id) || spinning.size || !rattle ) return;
+  const sound = rattle;
+  rattle = null;
+  sound.then(s => s?.stop?.({ fade: 60 })).catch(() => {});
+}
+function resultSound(name) {
+  const now = performance.now();
+  if ( (now - lastResult) < RESULT_GAP ) return;
+  lastResult = now;
+  floatSound(name);
+}
+
+/**
  * §400, lot 2 : l’hexagone de jet (façon BG3) — fond et bordure du thème, le pictogramme de dé au centre. `step(phase)` (core/float-text.mjs,
  * `spinPhase`) : pendant le lancer, l’hexagone et le dé tournent ; à la révélation, le dé laisse la place au total, la bordure prend la
  * couleur de l’issue (`okColor` / `failColor`, gardée pour un jet neutre) et s’épaissit, et l’ensemble bat une fois.
@@ -196,10 +237,19 @@ async function spinner(look, fontSize, roll, kind) {
   const outcome = floatOutcome(kind);
   const border = hexNumber((outcome === "ok") ? look.okColor : (outcome === "fail") ? look.failColor : look.badgeBorder);
   let revealed = false;
+  // §400 : le cliquetis de dé partagé tant que l'hexagone tourne, puis le son de l'issue (carillon, coup sourd, claquement neutre).
+  const id = Symbol("spinner");
+  const quiet = () => rattleOff(id);
   const step = phase => {
-    if ( phase.spinning ) { inner.rotation = phase.angle; return; }
+    if ( phase.spinning ) {
+      rattleOn(id);
+      inner.rotation = phase.angle;
+      return;
+    }
     if ( !revealed ) {
       revealed = true;
+      quiet();
+      resultSound((outcome === "ok") ? "success" : (outcome === "fail") ? "fail" : "neutral");
       inner.rotation = 0;
       if ( die ) die.visible = false;
       number.visible = true;
@@ -210,7 +260,7 @@ async function spinner(look, fontSize, roll, kind) {
     inner.scale.set(phase.pulse);
     number.scale.set(phase.pulse);
   };
-  return { box, step };
+  return { box, step, dispose: quiet };
 }
 
 /**
@@ -325,6 +375,7 @@ async function drawLine(token, line, kind, options, { factor=1, roll=null, waitF
       }
     });
   } finally {
+    spin?.dispose?.();
     // Les textures des pictogrammes sont celles du cache du cœur : on ne les détruit pas.
     if ( !box.destroyed ) box.destroy({ children: true, texture: false });
   }
@@ -346,6 +397,7 @@ function spinWithDice(box, { spin, text, waitFor, look, options, motion, path, x
   return new Promise(resolve => {
     const done = () => {
       ticker.remove(tick);
+      spin.dispose?.();
       if ( !box.destroyed ) box.destroy({ children: true, texture: false });
       resolve();
     };
@@ -687,6 +739,11 @@ export function registerFeedback() {
     onChange: () => { themeCache = null; } });
   game.settings.register(MODULE_ID, "feedbackText", { scope: "client", config: true, type: Boolean, default: true,
     name: "DND5ECOMBAT.Reglage.feedbackText.Nom", hint: "DND5ECOMBAT.Reglage.feedbackText.Aide" });
+  // §400 : les sons de l'hexagone, sur ce poste.
+  game.settings.register(MODULE_ID, "floatSounds", { scope: "client", config: true, type: Boolean, default: true,
+    name: "DND5ECOMBAT.Reglage.floatSounds.Nom", hint: "DND5ECOMBAT.Reglage.floatSounds.Aide" });
+  game.settings.register(MODULE_ID, "floatSoundVolume", { scope: "client", config: true, type: Number, default: 40,
+    range: { min: 0, max: 100, step: 5 }, name: "DND5ECOMBAT.Reglage.floatSoundVolume.Nom", hint: "DND5ECOMBAT.Reglage.floatSoundVolume.Aide" });
   // Le MJ actif n'est connu qu'un peu après `ready` (`game.users.activeGM`) : le réglage du cœur s'accorde ensuite.
   route("ready", () => { setTimeout(() => syncCoreText().catch(() => {}), 1500); }, { always: true, label: "floating texts: system texts muted" });
   route("dnd5e.damageActor", onHpChange, { always: true, label: "floating texts: hit points" });

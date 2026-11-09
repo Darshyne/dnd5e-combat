@@ -1082,7 +1082,7 @@
   "DND5ECOMBAT.Rage.Fin": "{name}: Rage ends ({why})",
   "DND5ECOMBAT.Rage.Pourquoi.entretien": "no attack, no forced save, no Bonus Action",
   "DND5ECOMBAT.Rage.Pourquoi.etat": "Incapacitated",
-  "DND5ECOMBAT.Rage.Retour": "Rage ends",
+  "DND5ECOMBAT.Rage.Retour": "Rage",
   "DND5ECOMBAT.Rage.Implacable": "Relentless Rage: {name} stays up with {hp} HP",
   "DND5ECOMBAT.Rage.ImplacableCarte": "Relentless Rage: {name}'s Constitution saving throw, DC {dc}",
   "DND5ECOMBAT.Rage.Temerite.Titre": "Reckless Attack — {name}",

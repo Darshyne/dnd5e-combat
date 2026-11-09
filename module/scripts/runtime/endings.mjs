@@ -148,7 +148,7 @@ async function endEntry({ actor, effect, item, rule }, reason, scene, done) {
   log(`${item.name}: ends${rule.spell ? "" : ` on ${actor.name}`} (${reason})`);
   // §252 : un texte flottant chez chaque client, et un son.
   const token = tokenIn(actor, scene);
-  if ( token ) notice(token, { key: "Retour.FinEffet", data: { item: item.name } }, "ended", { all: true, action: "spellEnds", outcome: "success" });
+  if ( token ) notice(token, item.name, "effectOff", { all: true, action: "spellEnds", outcome: "success" });
   await say({ actor: item.actor ?? actor }, locEsc(`FinGenerique.${reason}`, { item: item.name, name: actor.name }),
     { ended: { item: item.uuid, actor: actor.uuid, reason } });
 }
@@ -303,7 +303,7 @@ async function onResolution(resolution) {
   await concentration.delete();
   log(`${item.name}: nobody affected, concentration ends`);
   const caster = item.actor.isToken ? item.actor.token : item.actor.getActiveTokens?.(false, true)?.[0];
-  if ( caster ) notice(caster, { key: "Retour.FinEffet", data: { item: item.name } }, "ended", { all: true, action: "spellEnds", outcome: "success" });
+  if ( caster ) notice(caster, item.name, "effectOff", { all: true, action: "spellEnds", outcome: "success" });
   await say({ actor: item.actor }, locEsc("FinGenerique.unaffected", { item: item.name, name: item.actor.name }),
     { ended: { item: item.uuid, actor: item.actor.uuid, reason: "unaffected" } });
 }
@@ -319,7 +319,7 @@ async function onUsedEnding(activity) {
   if ( !concentration ) return;
   await activity.actor.endConcentration(concentration);
   const token = activity.actor.getActiveTokens?.(false, true)?.[0] ?? null;
-  if ( token ) notice(token, { key: "Retour.FinEffet", data: { item: activity.item.name } }, "ended", { all: true, action: "spellEnds", outcome: "success" });
+  if ( token ) notice(token, activity.item.name, "effectOff", { all: true, action: "spellEnds", outcome: "success" });
   log(`${activity.item.name}: ${activity.name || activity.id} used, the spell ends`);
 }
 

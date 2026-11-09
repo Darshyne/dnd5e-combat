@@ -428,9 +428,28 @@ function diceDone(message) {
   return new Promise(resolve => setTimeout(resolve, 120)).then(() => waitForDice(message));
 }
 
+/**
+ * §400 : une fin d’effet annoncée deux fois — l’avis du moteur « Fin : Sommeil » (`ended`) et le retrait de l’effet « Sommeil » barré
+ * (`effectOff`) — ne s’affiche qu’une fois : sur un même token, à moins de `END_WINDOW` ms, la seconde dont le texte contient le nom de
+ * la première (ou l’inverse) est écartée.
+ */
+const recentEnds = [];
+const END_WINDOW = 2000;
+function duplicateEnd(f) {
+  if ( !["ended", "effectOff"].includes(f.kind) || !f.text ) return false;
+  const now = Date.now();
+  while ( recentEnds.length && ((now - recentEnds[0].at) > END_WINDOW) ) recentEnds.shift();
+  const plain = String(f.text).replace(/^[−+](|)$/g, "").toLocaleLowerCase();
+  // Deux annonces de la même fin (l'avis du moteur et le retrait de l'effet), quelle que soit leur sorte.
+  const twin = recentEnds.find(e => (e.token === f.token) && (e.plain.includes(plain) || plain.includes(e.plain)));
+  recentEnds.push({ token: f.token, kind: f.kind, plain, at: now });
+  return !!twin;
+}
+
 function show(feedback, { burst=false }={}) {
   // §400 : les textes du moteur dépendent de son interrupteur de monde (qui coupe ceux du cœur), plus du réglage du cœur.
   if ( !canvas?.ready || !floatsActive() ) return;
+  feedback = feedback.filter(f => !duplicateEnd(f));
   const options = floatOptions();
   // §400, lot 3 : les dégâts d'un même coup partent presque ensemble (un tiers de l'écart réglé).
   if ( burst ) options.spacing *= 0.3;
@@ -528,7 +547,7 @@ function onCreateMessage(message) {
   if ( (Date.now() - (message.timestamp ?? 0)) > FRESH_MS ) return;
   const actor = fromUuidSync(ended.actor, { strict: false });
   const token = actor?.getActiveTokens?.(false, true)?.[0];
-  if ( token ) show([{ token: token.uuid, kind: "ended", text: loc("Retour.FinEffet", { item: fromUuidSync(ended.effect, { strict: false })?.name ?? ended.item ?? "" }) }]);
+  if ( token ) show([{ token: token.uuid, kind: "effectOff", text: fromUuidSync(ended.effect, { strict: false })?.name ?? ended.item ?? "" }]);
 }
 
 /**
@@ -690,7 +709,10 @@ function receiveDamageParts({ actor, parts }={}) {
 function onEffect(effect, options, enabled) {
   if ( !floatsActive() || !canvas?.ready || !game.settings.get(MODULE_ID, "feedbackText") || (options?.animate === false) ) return;
   const actor = effect.target;
-  if ( !(actor instanceof Actor) || !(effect.statuses?.size || effect.system?.changes?.length) ) return;
+  // Le cœur ne montre qu’un effet qui pose un état ou change l’acteur ; §400 : aussi un effet à durée (sort, châtiment : la fournaise
+  // n’avait de texte ni à la pose ni au retrait — vu par l’utilisateur). Un effet posé inactif (suspendu) ne s’annonce pas.
+  if ( !(actor instanceof Actor) || !(effect.statuses?.size || effect.system?.changes?.length || effect.isTemporary) ) return;
+  if ( enabled && !effect.active ) return;
   // §400 : barré, l’état perdu se lit à son seul nom ; sans la barre, « −(Nom) » comme le cœur.
   const struck = !enabled && floatStyleOf(theme(), "effectOff").strike;
   const text = struck ? effect.name : `${enabled ? "+" : "−"}(${effect.name})`;

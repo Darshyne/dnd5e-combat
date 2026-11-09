@@ -41,7 +41,7 @@ function hostileTarget(message, token) {
 async function stopRage(actor, why) {
   if ( !(await endRage(actor)) ) return;
   const token = tokenOf(actor);
-  if ( token ) notice(token, loc("Rage.Retour"), "ended");
+  if ( token ) notice(token, loc("Rage.Retour"), "effectOff");
   await say({ actor }, locEsc("Rage.Fin", { name: actor.name, why: loc(`Rage.Pourquoi.${why}`) }), { rageEnded: { actor: actor.uuid, why } });
   log(`${actor.name}: Rage ends (${why})`);
 }

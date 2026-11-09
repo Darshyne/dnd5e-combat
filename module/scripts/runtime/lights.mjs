@@ -153,7 +153,7 @@ async function tellDispelled(region, dispelled) {
   const darkness = fromUuidSync(region.getFlag("dnd5e", "item") ?? "", { strict: false });
   const origin = fromUuidSync(region.getFlag("dnd5e", "origin") ?? "", { strict: false });
   for ( const { item, token } of dispelled ) {
-    if ( token ) notice(token, { key: "Retour.LumiereDissipee", data: { item } }, "ended", { all: true, action: "spellEnds", outcome: "success" });
+    if ( token ) notice(token, item, "effectOff", { all: true, action: "spellEnds", outcome: "success" });
   }
   await say(origin ? { token: origin } : { alias: darkness?.name ?? "" },
     dispelled.map(({ item }) => locEsc("Lumiere.Dissipee", { item, by: darkness?.name ?? "" })),

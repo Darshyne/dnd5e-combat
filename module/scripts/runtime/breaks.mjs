@@ -33,7 +33,7 @@ async function breakEffects(actor, moments, exceptItem=null, { before=null }={})
   const token = tokenOnViewedScene(actor);
   for ( const e of broken ) {
     log(`${actor.name}: ${e.name} ends (${moments.join(", ")})`);
-    if ( token ) notice(token, loc("Retour.FinEffet", { item: e.name }), "ended");
+    if ( token ) notice(token, e.name, "effectOff");
   }
 }
 
@@ -66,7 +66,7 @@ async function breakOnOrigin(message) {
     await actor.deleteEmbeddedDocuments("ActiveEffect", broken.map(e => e.id));
     for ( const e of broken ) {
       log(`${actor.name}: ${e.name} ends (${caster.name}: ${moment})`);
-      if ( token.object ) notice(token.object, loc("Retour.FinEffet", { item: e.name }), "ended");
+      if ( token.object ) notice(token.object, e.name, "effectOff");
     }
   }
 }

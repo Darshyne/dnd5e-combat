@@ -1082,7 +1082,7 @@
   "DND5ECOMBAT.Rage.Fin": "{name} : la Rage prend fin ({why})",
   "DND5ECOMBAT.Rage.Pourquoi.entretien": "ni attaque, ni sauvegarde imposée, ni action Bonus",
   "DND5ECOMBAT.Rage.Pourquoi.etat": "Neutralisé",
-  "DND5ECOMBAT.Rage.Retour": "Fin de la Rage",
+  "DND5ECOMBAT.Rage.Retour": "Rage",
   "DND5ECOMBAT.Rage.Implacable": "Rage implacable : {name} reste debout à {hp} PV",
   "DND5ECOMBAT.Rage.ImplacableCarte": "Rage implacable : sauvegarde de Constitution de {name}, DD {dc}",
   "DND5ECOMBAT.Rage.Temerite.Titre": "Témérité — {name}",

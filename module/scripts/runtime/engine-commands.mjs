@@ -375,7 +375,7 @@ export const COMMANDS = {
           const said = loc("Compteur.Etat", { successes: after.successes, successesMax: resave.tally.successes, failures: after.failures, failuresMax: resave.tally.failures });
           if ( after.outcome === "ended" ) {
             log(`tally: ${t.name} reaches ${after.successes} success(es), "${effect.name}" removed`);
-            notice(t.token, loc("Retour.FinEffet", { item: effect.name }), "ended");
+            notice(t.token, effect.name, "effectOff");
             await effect.delete();
             continue;
           }

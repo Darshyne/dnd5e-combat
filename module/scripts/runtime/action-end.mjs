@@ -44,7 +44,7 @@ async function handleActionEnd({ effect: uuid }) {
     return true;
   }
   log(`${ending.item.name}: "${effect.name}" ends on ${actor.name} (action)`);
-  if ( token ) notice(token, loc("Retour.FinEffet", { item: effect.name }), "ended");
+  if ( token ) notice(token, effect.name, "effectOff");
   await effect.delete();
   // §49 : « en vous infligeant l'état À terre et en vous roulant par terre » (feu grégeois).
   if ( ending.rule.status ) await setStatus(actor, ending.rule.status, true);

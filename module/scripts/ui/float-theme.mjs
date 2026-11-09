@@ -61,7 +61,7 @@ function sample(kind) {
     critical: loc("Retour.Critique"), miss: loc("Retour.Rate"), cover: loc("Retour.AbriTotal"), reaction: loc("ThemeFlottant.Exemple.Reaction"),
     saveSuccess: loc("Retour.SauvegardeReussie"), saveFail: loc("Retour.SauvegardeRatee"), duplicate: loc("Retour.Replique"),
     unaffected: loc("Retour.NonAffecte"), prompt: loc("Retour.Rebond"), refused: loc("Retour.TropLoin"),
-    ended: loc("Retour.FinEffet", { item: loc("ThemeFlottant.Exemple.Effet") }), gain: loc("Retour.Utilisation", { sign: "+", n: 1, item: loc("ThemeFlottant.Exemple.Ressource") }),
+    ended: loc("Retour.Desarme", { item: loc("ThemeFlottant.Exemple.Ressource") }), gain: loc("Retour.Utilisation", { sign: "+", n: 1, item: loc("ThemeFlottant.Exemple.Ressource") }),
     spend: loc("Retour.Emplacement", { sign: "−", n: 1, level: 2 }), strike: loc("Retour.AttaqueSournoise", { n: 3, faces: 6 }),
     heroic: loc("ThemeFlottant.Exemple.Heroique"), atCost: loc("ThemeFlottant.Exemple.Prix"), check: loc("ThemeFlottant.Exemple.Test"),
     checkSuccess: loc("Retour.TestReussi"), checkFail: loc("Retour.TestRate"), initiative: loc("Retour.Initiative"), save: loc("Retour.Sauvegarde"), damage: "-12", healing: "+8", temp: "+5",

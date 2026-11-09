@@ -62,7 +62,7 @@ export async function cureStatus(target, status) {
   const n = Number(await onTarget(target, (status === "exhaustion") ? "exhaustion-1" : status)) || 0;
   const label = game.i18n.localize(CONFIG.DND5E.conditionTypes[status]?.name ?? status);
   log(`${target.name}: ${label} ends (${n} effect(s))`);
-  if ( n > 0 ) notice(target, loc("Retour.FinEffet", { item: label }), "ended");
+  if ( n > 0 ) notice(target, label, "effectOff");
   return n;
 }
 

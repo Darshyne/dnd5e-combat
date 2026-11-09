@@ -369,6 +369,7 @@
   "DND5ECOMBAT.ThemeFlottant.Sorte.checkSuccess": "Test réussi",
   "DND5ECOMBAT.ThemeFlottant.Sorte.checkFail": "Test raté",
   "DND5ECOMBAT.ThemeFlottant.Sorte.initiative": "Initiative",
+  "DND5ECOMBAT.ThemeFlottant.Degats": "Dégâts : {type}",
   "DND5ECOMBAT.ThemeFlottant.Sorte.damage": "PV perdus",
   "DND5ECOMBAT.ThemeFlottant.Sorte.healing": "PV rendus",
   "DND5ECOMBAT.ThemeFlottant.Sorte.temp": "PV temporaires",

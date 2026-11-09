@@ -19,7 +19,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { feedbackBetween } from "../core/feedback.mjs";
 import { FLOAT_CATEGORY_DEFAULTS, FLOAT_DEFAULTS, FLOAT_ICONS, floatLine, floatLabel, floatFrame, floatDelays, checkKind, floatStyleOf, floatOffset,
-  floatEntrance, hpFloat, floatOutcome, floatRolled, spinPhase } from "../core/float-text.mjs";
+  floatEntrance, hpFloat, floatOutcome, floatRolled, spinPhase, damageParts, damageKind } from "../core/float-text.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc, NOTICE_QUERY, receiveNotice, waitForDice, isExecutor } from "../runtime/shared.mjs";
 import { resourceChangesOf } from "../adapter/limits.mjs";
@@ -60,9 +60,11 @@ export function floatsActive() {
 }
 
 /** Une couleur `#rrggbb` en nombre PIXI. */
-const hexNumber = c => Number.parseInt(String(c ?? "#ffffff").slice(1), 16) || 0xffffff;
+// Le noir vaut 0 : seul un texte illisible retombe sur le blanc.
+const hexNumber = c => { const n = Number.parseInt(String(c ?? "#ffffff").slice(1), 16); return Number.isFinite(n) ? n : 0xffffff; };
 
 function textOf(f) {
+  if ( f.kind?.startsWith?.("dmg-") ) return f.text;   // §400, lot 3 : dégâts par type
   switch ( f.kind ) {
     case "critical": return loc("Retour.Critique");
     case "miss": return loc("Retour.Rate");
@@ -229,6 +231,7 @@ async function drawLine(token, line, kind, options, { factor=1, roll=null }={}) 
   if ( !parts.length || !canvas?.ready || !token.visible ) return;
   // Côte à côte, centrés verticalement.
   const box = new PIXI.Container();
+  box.name = kind;   // la sorte, lisible par les outils de test
   const gap = fontSize * 0.25;
   const height = Math.max(...parts.map(p => p.height));
   let x = 0;
@@ -289,10 +292,12 @@ async function drawLine(token, line, kind, options, { factor=1, roll=null }={}) 
   }
 }
 
-function show(feedback) {
+function show(feedback, { burst=false }={}) {
   // §400 : les textes du moteur dépendent de son interrupteur de monde (qui coupe ceux du cœur), plus du réglage du cœur.
   if ( !canvas?.ready || !floatsActive() ) return;
   const options = floatOptions();
+  // §400, lot 3 : les dégâts d'un même coup partent presque ensemble (un tiers de l'écart réglé).
+  if ( burst ) options.spacing *= 0.3;
   const lines = [];
   for ( const f of feedback ) {
     const token = fromUuidSync(f.token)?.object;
@@ -454,10 +459,59 @@ function onUpdateMessage(message, changes) {
  */
 function onHpChange(actor, changes) {
   if ( !floatsActive() || !canvas?.ready || !game.settings.get(MODULE_ID, "feedbackText") ) return;
-  const hp = hpFloat(changes, actor?.system?.attributes?.hp?.max);
+  const max = actor?.system?.attributes?.hp?.max;
+  const hp = hpFloat(changes, max);
   if ( !hp ) return;
-  const tokens = actor.isToken ? [actor.token] : actor.getActiveTokens(true, true);
-  show(tokens.filter(Boolean).map(t => ({ token: t.uuid, kind: hp.kind, text: hp.value.signedString(), factor: hp.factor })));
+  const tokens = (actor.isToken ? [actor.token] : actor.getActiveTokens(true, true)).filter(Boolean);
+  const generic = () => show(tokens.map(t => ({ token: t.uuid, kind: hp.kind, text: hp.value.signedString(), factor: hp.factor })));
+  if ( hp.kind !== "damage" ) return generic();
+  // §400, lot 3 : des dégâts — le détail par type, relayé par le client qui les a appliqués, arrive avant ou juste après la mise à jour des
+  // PV ; on l'attend un court instant. Sans détail (dégâts saisis à la main, détail perdu) : un seul nombre, comme dnd5e.
+  setTimeout(() => {
+    const entry = pendingDamage.get(actor.uuid);
+    pendingDamage.delete(actor.uuid);
+    if ( !entry || ((Date.now() - entry.at) > 3000) || !entry.parts.length ) return generic();
+    const facts = [];
+    for ( const t of tokens ) for ( const part of entry.parts ) {
+      const factor = hpFloat({ hp: -part.value, temp: 0, total: -part.value }, max)?.factor ?? 1;
+      facts.push({ token: t.uuid, kind: damageKind(part.type), text: `-${part.value}`, factor });
+    }
+    show(facts, { burst: true });
+  }, DAMAGE_WAIT);
+}
+
+/**
+ * §400, lot 3 : le détail des dégâts par type, pris au calcul de dnd5e chez le client qui les applique (`dnd5e.calculateDamage` : chaque
+ * partie a sa valeur après immunités, résistances et vulnérabilités, documents/actor/actor.mjs:957) et relayé à toute la table juste avant
+ * la mise à jour des PV (`dnd5e.preApplyDamage`, actor.mjs:819) — les aperçus de dnd5e (carte de dégâts) calculent aussi, mais
+ * n'appliquent pas, et ne sont pas relayés. Rien n'est écrit sur l'acteur.
+ */
+const DAMAGE_QUERY = `${MODULE_ID}.damageParts`;
+const DAMAGE_WAIT = 250;
+const pendingDamage = new Map();
+const lastCalculated = new Map();
+
+function onCalculateDamage(actor, damages) {
+  // Le tableau lui-même : un autre écouteur peut encore le modifier (partage, réduction) avant l’application.
+  if ( actor?.uuid ) lastCalculated.set(actor.uuid, damages);
+}
+
+function onPreApplyDamage(actor) {
+  const parts = damageParts(lastCalculated.get(actor?.uuid));
+  lastCalculated.delete(actor?.uuid);
+  if ( !parts?.length || !floatsActive() ) return;
+  pendingDamage.set(actor.uuid, { parts, at: Date.now() });
+  for ( const user of game.users ) {
+    if ( !user.active || user.isSelf ) continue;
+    user.query(DAMAGE_QUERY, { actor: actor.uuid, parts }, { timeout: 5000 }).catch(() => {});
+  }
+}
+
+function receiveDamageParts({ actor, parts }={}) {
+  if ( (typeof actor === "string") && Array.isArray(parts) ) {
+    pendingDamage.set(actor, { parts: parts.filter(p => p && (typeof p.type === "string") && Number.isFinite(p.value)).slice(0, 14), at: Date.now() });
+  }
+  return true;
 }
 
 /**
@@ -554,5 +608,9 @@ export function registerFeedback() {
   }, { label: "visual feedback: engine notice" });
   // §252 : l'avis d'une action d'un autre client (runtime/shared.mjs, `notice(…, { all: true })`), dessiné ici.
   CONFIG.queries[NOTICE_QUERY] = receiveNotice;
+  // §400, lot 3 : le détail des dégâts par type.
+  CONFIG.queries[DAMAGE_QUERY] = receiveDamageParts;
+  route("dnd5e.calculateDamage", onCalculateDamage, { always: true, label: "floating texts: damage by type" });
+  route("dnd5e.preApplyDamage", onPreApplyDamage, { always: true, label: "floating texts: damage by type" });
   route("createChatMessage", onCreateMessage, { label: "visual feedback: effect ending" });
 }

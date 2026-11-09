@@ -89,3 +89,22 @@ describe("hexagone de jet et initiative (§400, lot 2)", () => {
     expect(floatLine({ kind: "initiative", roll: 17 }, "Initiative", { show: { floatInitiative: false } })).toBeNull();
   });
 });
+
+import { damageParts, damageKind, DAMAGE_KINDS } from "../module/scripts/core/float-text.mjs";
+
+describe("dégâts par type (§400, lot 3)", () => {
+  it("les parties de dnd5e regroupées par type, soins et PV temporaires écartés, le plus fort d'abord", () => {
+    const damages = [{ type: "slashing", value: 7 }, { type: "fire", value: 9 }, { type: "fire", value: 3 }, { type: "cold", value: 0 },
+      { type: "healing", value: -5 }, { type: "temphp", value: 4 }, { type: "radiant", value: 2.7 }];
+    expect(damageParts(damages)).toEqual([{ type: "fire", value: 12 }, { type: "slashing", value: 7 }, { type: "radiant", value: 2 }]);
+    expect(damageParts(null)).toEqual([]);
+  });
+  it("chaque type de dnd5e a sa sorte, un type inconnu prend « damage »", () => {
+    expect(DAMAGE_KINDS).toEqual(expect.arrayContaining(["fire", "cold", "necrotic", "slashing", "thunder"]));
+    expect(damageKind("fire")).toBe("dmg-fire");
+    expect(damageKind("homebrew")).toBe("damage");
+    expect(floatStyleOf({}, "dmg-fire")).toMatchObject({ color: "#ff7a2a", motion: "arc", entrance: "pop", weight: 700 });
+    expect(floatStyleOf({}, "damage").motion).toBe("arc");
+    expect(floatStyleOf({}, "healing").motion).toBe("float");
+  });
+});

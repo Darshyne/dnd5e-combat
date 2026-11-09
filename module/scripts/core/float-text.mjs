@@ -148,8 +148,16 @@ const BASE = {
   checkFail: ["#e07a6a", 22, "none"], initiative: ["#f0e6c8", 22, "none"],
   // §400 : ce que le système dessinait (dnd5e `tokenHPColors`, documents/actor/actor.mjs:3557 ; cœur, active-effect.mjs:1039).
   damage: ["#ff3030", 28, "none"], healing: ["#30ff50", 28, "none"], temp: ["#66ccff", 26, "none"],
-  effectOn: ["#f0e6c8", 22, "none"], effectOff: ["#a8a29a", 20, "none"]
+  effectOn: ["#f0e6c8", 22, "none"], effectOff: ["#a8a29a", 20, "none"],
+  // §400, lot 3 : les dégâts par type (dnd5e `CONFIG.DND5E.damageTypes`), à la couleur du type — mêmes teintes que l’atelier.
+  "dmg-acid": ["#a5e03a", 28, "none"], "dmg-bludgeoning": ["#ece6da", 28, "none"], "dmg-cold": ["#8fdcff", 28, "none"],
+  "dmg-fire": ["#ff7a2a", 28, "none"], "dmg-force": ["#e866d8", 28, "none"], "dmg-lightning": ["#5e8bff", 28, "none"],
+  "dmg-necrotic": ["#5fcf9f", 28, "none"], "dmg-piercing": ["#ece6da", 28, "none"], "dmg-poison": ["#4fcf5f", 28, "none"],
+  "dmg-psychic": ["#ff7cc0", 28, "none"], "dmg-radiant": ["#ffe47a", 28, "none"], "dmg-slashing": ["#ece6da", 28, "none"],
+  "dmg-thunder": ["#b39bff", 28, "none"]
 };
+/** §400, lot 3 : les types de dégâts qui ont leur sorte (`dmg-<type>`). */
+export const DAMAGE_KINDS = Object.freeze(Object.keys(BASE).filter(k => k.startsWith("dmg-")).map(k => k.slice(4)));
 /** Les sortes que le thème connaît, dans l'ordre de la fenêtre. */
 export const FLOAT_KINDS = Object.freeze(Object.keys(BASE));
 
@@ -163,8 +171,10 @@ const FLAGS = ["show", "upper", "italic", "spin"];
 /** L'allure par défaut d'une sorte (police du cœur, Signika). */
 export function floatStyleDefault(kind) {
   const [color, size, icon] = BASE[kind] ?? ["#f0e6c8", 22, "none"];
-  return { show: true, color, size, font: "Signika", weight: 600, upper: false, tracking: 0, italic: false, stroke: "#000000", strokeW: 4,
-    glow: 0, glowColor: color, icon, badge: "none", badgeColor: "#1a1a1a", badgeBorder: color, entrance: "grow", motion: "float", spread: 1,
+  // §400, lot 3 : les PV perdus partent en arc sur le côté, en gras, avec un rebond (BG3) ; le reste défile comme avant.
+  const hit = (kind === "damage") || kind.startsWith("dmg-");
+  return { show: true, color, size, font: "Signika", weight: hit ? 700 : 600, upper: false, tracking: 0, italic: false, stroke: "#000000", strokeW: 4,
+    glow: 0, glowColor: color, icon, badge: "none", badgeColor: "#1a1a1a", badgeBorder: color, entrance: hit ? "pop" : "grow", motion: hit ? "arc" : "float", spread: 1,
     spin: false, spinMs: 900, okColor: "#3f9cff", failColor: "#e0453a" };
 }
 
@@ -325,4 +335,26 @@ export function spinPhase(ms, spinMs) {
   if ( t < spinMs ) return { spinning: true, angle: t * 0.0157, pulse: 1, text: 0 };
   const after = t - spinMs;
   return { spinning: false, angle: 0, pulse: 1 + (0.4 * Math.max(0, 1 - (after / 240))), text: Math.min(1, after / 260) };
+}
+
+/**
+ * §400, lot 3 : les dégâts subis, par type, d’après le résultat de dnd5e après immunités, résistances et vulnérabilités
+ * (documents/actor/actor.mjs, `calculateDamage` : chaque partie a sa `value` finale et son `type`). Les soins, PV temporaires et maximum
+ * sont écartés ; un même type est additionné ; le plus fort d’abord.
+ * @param {Array<{type: string, value: number}>} damages
+ * @returns {Array<{type: string, value: number}>}
+ */
+export function damageParts(damages) {
+  const sums = new Map();
+  for ( const d of damages ?? [] ) {
+    const value = Math.trunc(Number(d?.value) || 0);
+    if ( !d?.type || (value <= 0) || ["healing", "temphp", "maximum"].includes(d.type) ) continue;
+    sums.set(d.type, (sums.get(d.type) ?? 0) + value);
+  }
+  return [...sums].map(([type, value]) => ({ type, value })).sort((a, b) => b.value - a.value);
+}
+
+/** §400, lot 3 : la sorte d’un type de dégâts — la sienne s’il en a une, sinon « damage ». */
+export function damageKind(type) {
+  return DAMAGE_KINDS.includes(type) ? `dmg-${type}` : "damage";
 }

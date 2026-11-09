@@ -48,6 +48,12 @@ export async function resetTheme() {
   await game.settings.set(MODULE_ID, THEME_SETTING, {});
 }
 
+/** Le nom d’une sorte ; un type de dégâts prend le nom que lui donne dnd5e (`CONFIG.DND5E.damageTypes`). */
+function kindLabel(kind) {
+  if ( kind.startsWith("dmg-") ) return loc("ThemeFlottant.Degats", { type: CONFIG.DND5E?.damageTypes?.[kind.slice(4)]?.label ?? kind.slice(4) });
+  return loc(`ThemeFlottant.Sorte.${kind}`);
+}
+
 /** Un exemple par sorte, pour l'essai : texte, et jet pour celles qui en portent un. */
 function sample(kind) {
   const rolled = { critical: 20, miss: 8, hit: 17, saveSuccess: 15, saveFail: 6, check: 14, checkSuccess: 18, checkFail: 9, initiative: 17 };
@@ -61,6 +67,7 @@ function sample(kind) {
     checkSuccess: loc("Retour.TestReussi"), checkFail: loc("Retour.TestRate"), initiative: loc("Retour.Initiative"), damage: "-12", healing: "+8", temp: "+5",
     effectOn: `+(${loc("ThemeFlottant.Exemple.Effet")})`, effectOff: `−(${loc("ThemeFlottant.Exemple.Effet")})`
   };
+  if ( kind.startsWith("dmg-") ) return { text: "-7", extra: { factor: 1.2 } };
   return { text: texts[kind] ?? kind, extra: (kind in rolled) ? { roll: rolled[kind], mode: (kind === "saveFail") ? "advantage" : null } : {} };
 }
 
@@ -102,7 +109,7 @@ const ThemeApp = () => ThemeClass ??= class FloatThemeApp extends foundry.applic
     const kinds = FLOAT_KINDS.map(kind => {
       const look = floatStyleOf(theme, kind);
       return `<button type="button" class="das-float-theme__kind${look.show === false ? " off" : ""}" data-action="tryKind" data-kind="${kind}"
-        data-tooltip="${esc(loc("ThemeFlottant.Essayer"))}"><span class="sw" style="background:${esc(look.color)}"></span>${esc(loc(`ThemeFlottant.Sorte.${kind}`))}</button>`;
+        data-tooltip="${esc(loc("ThemeFlottant.Essayer"))}"><span class="sw" style="background:${esc(look.color)}"></span>${esc(kindLabel(kind))}</button>`;
     }).join("");
     const report = this.report ? `<p class="das-float-theme__report ${this.report.ok ? "ok" : "bad"}">${esc(this.report.text)}</p>` : "";
     return `<div class="das-float-theme__body">

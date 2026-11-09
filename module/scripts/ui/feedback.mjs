@@ -590,7 +590,14 @@ async function showSave(message) {
   // `system.origin` est un champ de document de dnd5e (data/chat-message/roll-message-data.mjs:38) : il rend le message, pas son id — l’id
   // se lit dans la source. Sans cela, la relance du Châtiment de fournaise s’affichait deux fois (vu par l’utilisateur).
   const originId = message._source?.system?.origin ?? data.origin?.id ?? data.origin?._id ?? ((typeof data.origin === "string") ? data.origin : null);
-  if ( originId && game.messages.get(originId)?.getFlag(MODULE_ID, "resolution") ) return;
+  // Le moteur peut marquer sa carte un instant après la création du jet (relance du Châtiment de fournaise : `resave` à la création,
+  // `resolution` juste après) : la marque de relance suffit, sinon on redemande après un court délai.
+  const byEngine = () => { const o = originId ? game.messages.get(originId) : null; return !!(o?.getFlag(MODULE_ID, "resolution") || o?.getFlag(MODULE_ID, "resave") || o?.getFlag(MODULE_ID, "areaTick")); };
+  if ( byEngine() ) return;
+  if ( originId ) {
+    await new Promise(resolve => setTimeout(resolve, 400));
+    if ( byEngine() ) return;
+  }
   const actor = message.getAssociatedActor?.();
   const token = message.getAssociatedToken?.() ?? actor?.token ?? actor?.getActiveTokens?.(false, true)?.[0];
   if ( !token ) return;

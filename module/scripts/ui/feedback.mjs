@@ -587,7 +587,10 @@ async function showSave(message) {
   const data = message.system ?? {};
   const roll = message.rolls?.[0];
   if ( !roll || !message.isContentVisible ) return;
-  if ( data.origin && game.messages.get(data.origin)?.getFlag(MODULE_ID, "resolution") ) return;
+  // `system.origin` est un champ de document de dnd5e (data/chat-message/roll-message-data.mjs:38) : il rend le message, pas son id — l’id
+  // se lit dans la source. Sans cela, la relance du Châtiment de fournaise s’affichait deux fois (vu par l’utilisateur).
+  const originId = message._source?.system?.origin ?? data.origin?.id ?? data.origin?._id ?? ((typeof data.origin === "string") ? data.origin : null);
+  if ( originId && game.messages.get(originId)?.getFlag(MODULE_ID, "resolution") ) return;
   const actor = message.getAssociatedActor?.();
   const token = message.getAssociatedToken?.() ?? actor?.token ?? actor?.getActiveTokens?.(false, true)?.[0];
   if ( !token ) return;

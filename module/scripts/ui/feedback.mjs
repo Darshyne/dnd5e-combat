@@ -19,7 +19,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { feedbackBetween } from "../core/feedback.mjs";
 import { FLOAT_CATEGORY_DEFAULTS, FLOAT_DEFAULTS, FLOAT_ICONS, floatLine, floatLabel, floatFrame, floatDelays, checkKind, floatStyleOf, floatOffset,
-  floatEntrance, hpFloat, floatOutcome, floatRolled, spinPhase, damageParts, damageKind } from "../core/float-text.mjs";
+  floatEntrance, hpFloat, floatOutcome, floatRolled, spinPhase, damageParts, damageKind, saveKind } from "../core/float-text.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc, NOTICE_QUERY, receiveNotice, waitForDice, isExecutor } from "../runtime/shared.mjs";
 import { resourceChangesOf } from "../adapter/limits.mjs";
@@ -71,12 +71,12 @@ function textOf(f) {
     case "hit": return null;   // §228 : « Touché » ou le jet seul (core/float-text.mjs, `floatLine`)
     case "cover": return (f.degree === "total") ? loc("Retour.AbriTotal") : loc(`Abri.${f.degree}`);
     case "reaction": return f.name;
-    case "saveSuccess": return loc("Retour.SauvegardeReussie");
-    case "saveFail": return loc(f.auto ? "Retour.SauvegardeRateeOffice" : "Retour.SauvegardeRatee");
+    case "saveSuccess": return f.text ?? loc("Retour.SauvegardeReussie");   // §400 : une sauvegarde de la fiche porte son libellé
+    case "saveFail": return f.text ?? loc(f.auto ? "Retour.SauvegardeRateeOffice" : "Retour.SauvegardeRatee");
     case "duplicate": return loc("Retour.Replique");
     case "unaffected": return loc("Retour.NonAffecte");
     case "prompt": case "refused": case "ended": case "gain": case "spend": case "strike": case "heroic": case "atCost":
-    case "check": case "checkSuccess": case "checkFail":
+    case "check": case "checkSuccess": case "checkFail": case "save": case "initiative":
     case "damage": case "healing": case "temp": case "effectOn": case "effectOff": return f.text;
   }
   return null;
@@ -218,8 +218,11 @@ async function spinner(look, fontSize, roll, kind) {
  * contour, halo, pictogramme encadré, apparition, et trajet — défile (vers le bas depuis le pied, ou vers le haut depuis la tête), reste
  * au-dessus de la tête, ou part en arc sur le côté (les arcs d'un même token alternent gauche / droite).
  */
-async function drawLine(token, line, kind, options, { factor=1, roll=null }={}) {
+async function drawLine(token, line, kind, options, { factor=1, roll=null, waitFor=null }={}) {
   const look = floatStyleOf(theme(), kind);
+  // §400 : un texte qui suit un jet attend la fin des dés 3D (`waitFor`) — sauf l'hexagone, qui tourne pendant qu'ils roulent.
+  const spinning = look.spin && floatRolled(kind) && Number.isFinite(roll);
+  if ( waitFor && !spinning ) await waitFor.catch(() => {});
   const fontSize = Math.round(look.size * options.scale * factor);
   const fill = hexNumber(look.color);
   const { PreciseText } = foundry.canvas.containers;
@@ -281,6 +284,10 @@ async function drawLine(token, line, kind, options, { factor=1, roll=null }={}) 
   box.position.set(x0, start);
   box.alpha = 0;
   layerOf().addChild(box);
+  if ( spin && waitFor ) {
+    await spinWithDice(box, { spin, text, waitFor, look, options, motion, path, x0, start, scale: s, fontSize });
+    return;
+  }
   const state = { p: 0 };
   // L’hexagone tourne puis se révèle : le texte reste lisible au moins 2,2 s après.
   const duration = spin ? Math.max(options.duration * 1000, look.spinMs + 2200) : options.duration * 1000;
@@ -309,6 +316,52 @@ async function drawLine(token, line, kind, options, { factor=1, roll=null }={}) 
   }
 }
 
+/**
+ * §400 : l'hexagone d'un jet calé sur Dice So Nice — il apparaît au lancer et tourne tant que les dés 3D roulent (`waitFor`, borné par
+ * `waitForDice`), `spinMs` au moins ; puis il se révèle et le texte reste lisible le temps réglé (2,2 s au moins), et s'efface sur son
+ * dernier tiers. Animé par le ticker du canevas, la durée totale n'étant pas connue d'avance.
+ */
+function spinWithDice(box, { spin, text, waitFor, look, options, motion, path, x0, start, scale, fontSize }) {
+  const ease = x => 0.5 - (Math.cos(Math.PI * x) / 2);
+  const ticker = canvas.app.ticker;
+  const t0 = performance.now();
+  let revealAt = null;
+  waitFor.catch(() => {}).then(() => { revealAt = Math.max(performance.now(), t0 + look.spinMs); });
+  const hold = Math.max((options.duration * 1000) - look.spinMs, 2200);
+  if ( text ) text.alpha = 0;
+  return new Promise(resolve => {
+    const done = () => {
+      ticker.remove(tick);
+      if ( !box.destroyed ) box.destroy({ children: true, texture: false });
+      resolve();
+    };
+    const tick = () => {
+      if ( box.destroyed || !canvas?.ready ) return done();
+      const now = performance.now();
+      const elapsed = now - t0;
+      const phase = spinPhase(elapsed, (revealAt ?? Infinity) - t0);
+      spin.step(phase);
+      if ( text ) { text.alpha = phase.text; text.x = text.baseX - ((1 - phase.text) * fontSize * 0.4); }
+      const q = revealAt ? Math.min(1, Math.max(0, now - revealAt) / hold) : 0;
+      const fadeOut = (q > 0.67) ? 1 - ease((q - 0.67) / 0.33) : 1;
+      const o = floatOffset(q, motion, path);
+      box.alpha = Math.min(1, elapsed / 250) * fadeOut;
+      box.scale.set(scale);
+      box.position.set(x0 + o.dx, start + o.dy);
+      if ( q >= 1 ) done();
+    };
+    ticker.add(tick);
+  });
+}
+
+/**
+ * §400 : la fin des dés 3D d'un message de jet. Dice So Nice ne marque le message comme animé (`_dice3danimating`) qu'après sa propre
+ * prise en charge, juste après la création : demandée trop tôt, l'attente rendait la main tout de suite, une fois sur deux (vu en jeu).
+ */
+function diceDone(message) {
+  return new Promise(resolve => setTimeout(resolve, 120)).then(() => waitForDice(message));
+}
+
 function show(feedback, { burst=false }={}) {
   // §400 : les textes du moteur dépendent de son interrupteur de monde (qui coupe ceux du cœur), plus du réglage du cœur.
   if ( !canvas?.ready || !floatsActive() ) return;
@@ -330,7 +383,7 @@ function show(feedback, { burst=false }={}) {
     if ( !canvas?.ready || !token.visible ) return;
     // §41.3 : si la vue change pendant le défilement (un escalier : autre niveau, le canevas est redessiné), le texte part avec le
     // canevas. Rien à rattraper.
-    drawLine(token, line, f.kind, options, { factor: f.factor ?? 1, roll: Number.isFinite(f.roll) ? f.roll : null }).catch(() => {});
+    drawLine(token, line, f.kind, options, { factor: f.factor ?? 1, roll: Number.isFinite(f.roll) ? f.roll : null, waitFor: f.waitFor ?? null }).catch(() => {});
   }, delays[i]));
 }
 
@@ -403,6 +456,7 @@ function onCreateMessage(message) {
   }
   if ( message.type === "damage" ) showStrikes(message);
   if ( message.type === "check" ) showCheck(message).catch(() => {});
+  if ( message.type === "save" ) showSave(message).catch(() => {});
   const ended = message.getFlag?.(MODULE_ID, "ended");
   if ( !ended?.actor || !game.settings.get(MODULE_ID, "feedbackText") || !canvas?.ready ) return;
   if ( (Date.now() - (message.timestamp ?? 0)) > FRESH_MS ) return;
@@ -445,16 +499,38 @@ async function showCheck(message) {
   if ( !token ) return;
   // §400, lot 2 : l’initiative, son total au-dessus du token (réglage « Afficher : initiative »).
   if ( data.type === "initiative" ) {
-    await waitForDice(message);
-    show([{ token: token.uuid, kind: "initiative", roll: roll.total, mode: d20Mode(roll), text: loc("Retour.Initiative") }]);
+    show([{ token: token.uuid, kind: "initiative", roll: roll.total, mode: d20Mode(roll), text: loc("Retour.Initiative"), waitFor: diceDone(message) }]);
     return;
   }
   const label = data.skill ? keyLabel({ type: "skill", key: data.skill })
     : data.tool ? keyLabel({ type: "tool", key: data.tool }) : keyLabel({ type: "check", key: data.ability });
   const kind = checkKind({ total: roll.total, target: roll.options?.target, isSuccess: roll.isSuccess, isFailure: roll.isFailure });
   const verdict = { checkSuccess: loc("Retour.TestReussi"), checkFail: loc("Retour.TestRate") }[kind];
-  await waitForDice(message);
-  show([{ token: token.uuid, kind, roll: roll.total, mode: d20Mode(roll), text: [label, verdict].filter(Boolean).join(" · ") }]);
+  show([{ token: token.uuid, kind, roll: roll.total, mode: d20Mode(roll), text: [label, verdict].filter(Boolean).join(" · "), waitFor: diceDone(message) }]);
+}
+
+/**
+ * §400 : chez tout le monde, une sauvegarde lancée par dnd5e hors d'une résolution du moteur (message `save`, data/chat-message/
+ * save-message-data.mjs) — depuis la fiche, la concentration, un jet contre la mort : « 14 · Dextérité · Sauvegarde réussie », réussie ou
+ * ratée quand le jet porte un DD (`options.target` ; 10 pour un jet contre la mort). Une sauvegarde rattachée à une carte du moteur
+ * (`system.origin` porteur d'une résolution, adapter/saves.mjs) est déjà montrée par la résolution : pas deux fois. Après les dés 3D ; un jet
+ * privé ou aveugle ne s'affiche que chez qui peut le lire.
+ */
+async function showSave(message) {
+  if ( !game.settings.get(MODULE_ID, "feedbackText") || !canvas?.ready || ((Date.now() - (message.timestamp ?? 0)) > FRESH_MS) ) return;
+  const data = message.system ?? {};
+  const roll = message.rolls?.[0];
+  if ( !roll || !message.isContentVisible ) return;
+  if ( data.origin && game.messages.get(data.origin)?.getFlag(MODULE_ID, "resolution") ) return;
+  const actor = message.getAssociatedActor?.();
+  const token = message.getAssociatedToken?.() ?? actor?.token ?? actor?.getActiveTokens?.(false, true)?.[0];
+  if ( !token ) return;
+  const kind = saveKind({ total: roll.total, target: roll.options?.target, isSuccess: roll.isSuccess, isFailure: roll.isFailure });
+  const label = (data.type === "death") ? loc("Retour.JetMort")
+    : (data.type === "concentration") ? game.i18n.localize("DND5E.Concentration")
+    : (CONFIG.DND5E.abilities[data.ability]?.label ?? data.ability ?? "");
+  const verdict = { saveSuccess: loc("Retour.SauvegardeReussie"), saveFail: loc("Retour.SauvegardeRatee"), save: loc("Retour.Sauvegarde") }[kind];
+  show([{ token: token.uuid, kind, roll: roll.total, mode: d20Mode(roll), text: [label, verdict].filter(Boolean).join(" · "), waitFor: diceDone(message) }]);
 }
 
 function onUpdateMessage(message, changes) {

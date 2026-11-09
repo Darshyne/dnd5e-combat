@@ -17,7 +17,8 @@ export const FLOAT_CATEGORIES = Object.freeze({
   gain: "floatResources", spend: "floatResources",
   strike: "floatStrikes",
   check: "floatChecks", checkSuccess: "floatChecks", checkFail: "floatChecks",
-  initiative: "floatInitiative"   // §400, lot 2
+  initiative: "floatInitiative",   // §400, lot 2
+  save: "floatSaves"   // §400 : une sauvegarde de la fiche sans DD connu
 });
 
 /** Les réglages de catégorie, dans l'ordre de la fenêtre, avec leur valeur par défaut. */
@@ -30,7 +31,16 @@ export const FLOAT_CATEGORY_DEFAULTS = Object.freeze({
 export const FLOAT_DEFAULTS = Object.freeze({ duration: 4, spacing: 1, distance: 1.5, scale: 100, direction: "down" });
 
 /** Les sortes dont le pictogramme est celui d'un dé (le résultat du jet, réglage `floatDice`). */
-const ROLLED = new Set(["hit", "critical", "miss", "saveSuccess", "saveFail", "check", "checkSuccess", "checkFail", "initiative"]);
+const ROLLED = new Set(["hit", "critical", "miss", "saveSuccess", "saveFail", "check", "checkSuccess", "checkFail", "initiative", "save"]);
+
+/**
+ * §400 : la sorte du texte d'une sauvegarde lancée par dnd5e hors du moteur (fiche, concentration, jet contre la mort) — réussie, ratée, ou
+ * neutre (`save`) sans DD connu ; même lecture que `checkKind`.
+ * @returns {"save"|"saveSuccess"|"saveFail"}
+ */
+export function saveKind(roll) {
+  return { check: "save", checkSuccess: "saveSuccess", checkFail: "saveFail" }[checkKind(roll)];
+}
 
 /**
  * §292 : la sorte du texte d'un test de caractéristique, de compétence ou d'outil lancé par dnd5e, d'après son d20 — réussi ou raté
@@ -145,7 +155,7 @@ const BASE = {
   duplicate: ["#c49bff", 22, "none"], unaffected: ["#d0d0d0", 20, "none"], prompt: ["#ffb347", 24, "none"], refused: ["#ff7070", 22, "none"],
   ended: ["#9ecbff", 20, "none"], gain: ["#8fd18f", 22, "none"], spend: ["#ffb347", 20, "none"], strike: ["#e0453a", 26, "none"],
   heroic: ["#ffd24a", 28, "none"], atCost: ["#e0a050", 26, "none"], check: ["#f0e6c8", 22, "none"], checkSuccess: ["#8fd18f", 22, "none"],
-  checkFail: ["#e07a6a", 22, "none"], initiative: ["#f0e6c8", 22, "none"],
+  checkFail: ["#e07a6a", 22, "none"], initiative: ["#f0e6c8", 22, "none"], save: ["#f0e6c8", 22, "none"],
   // §400 : ce que le système dessinait (dnd5e `tokenHPColors`, documents/actor/actor.mjs:3557 ; cœur, active-effect.mjs:1039).
   damage: ["#ff3030", 28, "none"], healing: ["#30ff50", 28, "none"], temp: ["#66ccff", 26, "none"],
   effectOn: ["#f0e6c8", 22, "none"], effectOff: ["#a8a29a", 20, "none"],
@@ -263,8 +273,19 @@ export function floatThemeExport(theme={}, global={}) {
 }
 
 /** L'allure d'une sorte d'après le thème du monde (ce qui manque : la valeur par défaut). */
+/** §400 : une sorte que l’atelier ne connaît pas prend, si le thème ne la définit pas, l’allure d’une voisine (même hexagone). */
+const STYLE_FALLBACK = Object.freeze({ save: "saveSuccess" });
+/**
+ * §400 : les tests de caractéristique, de compétence et d’outil ont toujours l’allure des sauvegardes (demande de l’utilisateur : même
+ * animation) — réussi comme une sauvegarde réussie, raté comme une ratée, sans DD comme une sauvegarde sans DD. Leur issue garde sa couleur
+ * de bordure (`floatOutcome` lit la sorte du test).
+ */
+const STYLE_ALIAS = Object.freeze({ check: "save", checkSuccess: "saveSuccess", checkFail: "saveFail" });
+
 export function floatStyleOf(theme, kind) {
-  return { ...floatStyleDefault(kind), ...(theme?.[kind] ?? {}) };
+  if ( STYLE_ALIAS[kind] ) return floatStyleOf(theme, STYLE_ALIAS[kind]);
+  const own = theme?.[kind] ?? (STYLE_FALLBACK[kind] ? theme?.[STYLE_FALLBACK[kind]] : null);
+  return { ...floatStyleDefault(kind), ...(own ?? {}) };
 }
 
 const easeInOut = x => 0.5 - (Math.cos(Math.PI * x) / 2);

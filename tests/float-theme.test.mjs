@@ -108,3 +108,37 @@ describe("dégâts par type (§400, lot 3)", () => {
     expect(floatStyleOf({}, "healing").motion).toBe("float");
   });
 });
+
+import { saveKind } from "../module/scripts/core/float-text.mjs";
+
+describe("sauvegarde de la fiche (§400)", () => {
+  it("réussie, ratée, ou neutre sans DD", () => {
+    expect(saveKind({ total: 14, target: 13 })).toBe("saveSuccess");
+    expect(saveKind({ total: 9, target: 13, isFailure: true })).toBe("saveFail");
+    expect(saveKind({ total: 12 })).toBe("save");
+    expect(floatOutcome("save")).toBeNull();
+    expect(floatRolled("save")).toBe(true);
+  });
+});
+
+describe("allure héritée (§400)", () => {
+  it("une sauvegarde sans DD prend l'allure de la sauvegarde réussie si le thème ne la définit pas", () => {
+    const theme = { saveSuccess: { ...floatStyleDefault("saveSuccess"), spin: true, motion: "anchor" } };
+    expect(floatStyleOf(theme, "save")).toMatchObject({ spin: true, motion: "anchor" });
+    expect(floatStyleOf({ ...theme, save: { ...floatStyleDefault("save"), spin: false } }, "save").spin).toBe(false);
+  });
+});
+
+describe("tests comme les sauvegardes (§400)", () => {
+  it("un test prend l'allure de la sauvegarde de même issue, son thème propre est ignoré", () => {
+    const theme = {
+      saveSuccess: { ...floatStyleDefault("saveSuccess"), spin: true, motion: "anchor", color: "#111111" },
+      saveFail: { ...floatStyleDefault("saveFail"), spin: true, motion: "anchor", color: "#222222" },
+      checkSuccess: { ...floatStyleDefault("checkSuccess"), spin: false, motion: "float" }
+    };
+    expect(floatStyleOf(theme, "checkSuccess")).toMatchObject({ spin: true, motion: "anchor", color: "#111111" });
+    expect(floatStyleOf(theme, "checkFail")).toMatchObject({ spin: true, motion: "anchor", color: "#222222" });
+    expect(floatStyleOf(theme, "check")).toMatchObject({ spin: true, motion: "anchor", color: "#111111" });
+    expect(floatOutcome("checkFail")).toBe("fail");
+  });
+});

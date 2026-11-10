@@ -28,6 +28,7 @@ import { resolveCounter } from "./counter.mjs";
 import { polearmFits } from "../core/feats.mjs";
 import { spendItemUses } from "./uses.mjs";
 import { victimsOf } from "./grapple.mjs";
+import { isSpellCast } from "./scrolls.mjs";
 
 export const REACTION_QUERY = `${MODULE_ID}.reaction`;
 
@@ -280,6 +281,10 @@ function targetDescriptors(tokenDoc) {
 }
 export function setReactionApproach(fn) { approachSource = fn; }
 
+/** §403 : le contre-Contresort — la porte (runtime/gates.mjs) qu'un sort lancé en réaction passe avant de partir ; false : contré. */
+let reactionSpellGate = null;
+export function setReactionSpellGate(fn) { reactionSpellGate = fn; }
+
 export async function handleReactionQuery({ actor: actorUuid, prompt, options, target, auto=false, castLevel=null }) {
   const actor = await fromUuid(actorUuid);
   const buttons = options.map((o, i) => ({ action: `use${i}`, label: o.name, icon: "fa-solid fa-bolt", default: i === 0 }));
@@ -338,6 +343,12 @@ export async function handleReactionQuery({ actor: actorUuid, prompt, options, t
   // §211 : une action préparée (Se tenir prêt) — l'effet de concentration qui retenait le sort tombe avant qu'il parte ; le sort part
   // sans emplacement, au niveau dépensé (`usage`), et sa zone se pose (`template` : la fenêtre n'attend pas de résolution).
   for ( const uuid of option.drop ?? [] ) await (await fromUuid(uuid))?.delete?.();
+  // §403 : un sort lancé en réaction (Contresort, Bouclier) peut lui-même être contré — la porte consulte les ennemis qui le voient ; contré,
+  // il ne part pas (la Réaction est perdue, l'emplacement non) et la fenêtre qui l'a ouvert continue comme sans réaction.
+  if ( reactionSpellGate && isSpellCast(activity.item) ) {
+    const goes = await reactionSpellGate(activity, actor).catch(err => { console.error(`${MODULE_ID} | counter-counterspell`, err); return true; });
+    if ( goes === false ) return null;
+  }
   const results = await activity.use({ [MODULE_ID]: { confirmed: true }, ...(option.template ? {} : { create: { measuredTemplate: false } }),
     ...(option.consume === false ? { consume: false } : {}), ...(option.usage ?? {}),
     ...(aimed ? { subsequentActions: false } : {}) }, { configure: false }, {

@@ -16,6 +16,10 @@
  *    nécrotiques de plus » — sur l'item du lanceur, comme Maléfice.
  */
 const BESTOW_CURSE = {
+  // §403 : « avec un emplacement de niveau 4, Concentration jusqu'à 10 minutes ; de niveau 5 ou plus, le sort ne demande pas de
+  // Concentration et dure 8 heures (niveau 5–6) ou 24 heures (niveau 7–8) ; de niveau 9, jusqu'à ce qu'il soit dissipé ».
+  durationByLevel: [{ from: 4, seconds: 600 }, { from: 5, seconds: 28800, concentration: false },
+    { from: 7, seconds: 86400, concentration: false }, { from: 9, concentration: false }],
   // §295 : « Curse Resilience » porte 1d8 nécrotiques sur sa sauvegarde dans la donnée ; ces dés ne tombent qu'aux coups suivants.
   noDamage: ["fkQUKM8bxHgAUcg5"],
   choice: {
@@ -108,7 +112,10 @@ export const SPELL_RULES = Object.freeze({
   "hypnotic-pattern": { actionEnds: { mjAs8ssQlgp0AQOp: { by: "other", verb: "wake" } } },
   "eyebite": { actionEnds: { "5btX5iwwleMMzkvj": { by: "other", verb: "wake" } }, targets: { unaffectedIf: { "target.hasMark": "eyebite-saved" } } },
   // §91 : Symbole, Discorde — « ses tests de caractéristique s'effectuent avec le Désavantage » (l'effet de la donnée est vide).
+  // §403 : « … la magie du glyphe agit pendant 10 minutes : une créature qui entre dans la sphère, ou qui y finit son tour, y est soumise
+  // (une fois par tour) » — la sphère de l'activité déclenchée dure 10 minutes (`zoneLasts`) et rejoue (content/triggers.mjs).
   "symbol": {
+    zoneLasts: { seconds: 600 },
     actionEnds: { A1VA7t5gB7ODNsr6: { by: "other", verb: "wake" } },
     effectChanges: { YAwLt85sPQpUCIBI: ["str", "dex", "con", "int", "wis", "cha"].map(a => ({ key: `system.abilities.${a}.check.roll.mode`, type: "add", value: "-1" })) }
   },
@@ -133,6 +140,15 @@ export const SPELL_RULES = Object.freeze({
   // Dissipation de la magie (niveau 3, Clerc, Druide…), `phbsplDispelMagi` : une activité utilitaire sans effet ; le moteur fait
   // cesser les sorts en cours sur les cibles désignées (§37.2, runtime/dispel.mjs).
   "dispel-magic": { dispel: true },
+  // §403 : Bourrasque — « chaque mètre parcouru en direction de vous coûte 2 m de déplacement » dans la Ligne (runtime/move-gate.mjs).
+  "gust-of-wind": { windward: true },
+  // §403 : Rayon de lune — « tant qu'elle reste dans la lumière, elle ne peut pas prendre une autre forme » : une transformation lancée
+  // depuis le cylindre est refusée (la créature qui en vise une autre dedans : au MJ).
+  "moonbeam": { formLock: true },
+  // §403 : Liberté de mouvement — « la Vitesse de la cible ne peut pas être réduite par la magie » (l'immunité à Paralysé et
+  // Entravé, le terrain difficile ignoré : l'effet « Unrestricted Movement » de la donnée). Une réduction déjà posée avant le sort
+  // reste ; « 1,50 m de déplacement pour échapper à une empoignade » : au MJ.
+  "freedom-of-movement": { keepsSpeed: true },
   // Silence (niveau 2, Clerc, Barde, Rôdeur), `phbsplSilence000` : « une créature entièrement dans la Sphère est immunisée contre les
   // dégâts de tonnerre et Assourdie ; on ne peut pas y lancer de sort à composante verbale » — l'effet « Silenced » de l'item (Assourdi,
   // `silenced` que la légalité lit déjà, §17 ; immunité au tonnerre), porté dans la zone (§37.4).
@@ -394,9 +410,11 @@ export const SPELL_RULES = Object.freeze({
   // Foulée éthérée emmène aussi les créatures désignées.
   "ethereal-jaunt": { etherealShift: true },
   "ethereal-stride": { etherealShift: { others: true } },
-  // Injonction (Compulsion) : « à la fin de chacun de ses tours, la cible refait le JS de Sagesse » (le déplacement dans la direction
-  // choisie par une action Bonus : au MJ).
-  "compulsion": { triggers: [{ on: "endOfTurn", via: "effect", do: [{ type: "resave" }] }] },
+  // Injonction (Compulsion) : §403 — « vous pouvez prendre une action Bonus pour désigner une direction… chaque cible doit utiliser autant
+  // de déplacement que possible pour aller dans cette direction à son prochain tour… après s'être déplacée ainsi, elle refait le JS de
+  // Sagesse » : la direction demandée au début du tour du lanceur, la marche au tour de la cible (runtime/compulsion.mjs), la sauvegarde
+  // à sa fin de tour seulement après cette marche (`ifCompelled`).
+  "compulsion": { compels: true, triggers: [{ on: "endOfTurn", via: "effect", do: [{ type: "resave", ifCompelled: true }] }] },
   // Télékinésie : sur un JS de Force raté, « … Entravée jusqu'à la fin de votre prochain tour » ; relancée par une action Magie pendant
   // la concentration, sans emplacement (le déplacement de 9 m dans la direction choisie : au MJ).
   "telekinesis": {
@@ -418,8 +436,10 @@ export const SPELL_RULES = Object.freeze({
   // Clignotement : 1d6 en fin de tour, 4–6 → Éthéré jusqu'au début du tour suivant (runtime/blink.mjs).
   "blink": { blink: "La5ofK0TnPSTL3iq" },
   // Invocation d'élémentaires mineurs : « tant que le sort dure, vos attaques infligent 2d8 dégâts de plus (acide, froid, feu ou foudre,
-  // au choix) à une créature dans l'Émanation de 4,50 m » (le terrain difficile pour les ennemis : non repris).
-  "conjure-minor-elementals": { triggers: [{ on: "preDamageRoll",
+  // au choix) à une créature dans l'Émanation de 4,50 m ». §403 : « l'Émanation est un terrain difficile pour vos ennemis » — l'activité
+  // « Cast » pose l'émanation sur le lanceur (`selfZone`, rattachée à son token), terrain difficile sauf pour sa disposition.
+  "conjure-minor-elementals": { selfZone: { VSwMJFQoi3KU3Ais: { type: "radius", size: 15, units: "ft" } }, difficultTerrain: { enemiesOnly: true },
+    triggers: [{ on: "preDamageRoll",
     if: { "activity.isAttack": true, "source.hasEffect": "conjure-minor-elementals", "target.within": { distance: 15, units: "ft" } },
     do: [{ type: "damage", formula: "2d8", damageType: ["acid", "cold", "fire", "lightning"] }] }] },
   // §162 : les murs se posent par points (ui/pointer.mjs, `aimWall`) et lèvent les murs du cœur qu'ils sont. Mur de force, Mur de glace,

@@ -3,7 +3,7 @@
  * Chaque partie prête ses items depuis le Manuel des joueurs (ou Ravenloft) et remet tout.
  *  - Invocation de céleste : l'Allié à 1 PV, déjà dans le Cylindre quand il apparaît, est soigné sans attendre sa fin de tour ;
  *  - Métal brûlant : la Cible tient une massue ; ratée, elle la lâche (pas de Désavantage) ; réussie, elle la garde avec « Heated Metal » ;
- *  - Choc de vie (Ravenloft) : le soin donné à l'Allié fait jaillir la foudre de lui, sur la Cible (ennemie) à côté, pas sur le Lanceur ;
+ *  - Choc de vie (Ravenloft) : le soin donné au Héros à 0 PV (un PJ : un PNJ à 0 PV est mort, §403) fait jaillir la foudre de lui, sur la Cible (ennemie) à côté, pas sur le Lanceur ;
  *  - Aura de protection contre la magie : l'Allié dans l'aura du Lanceur reçoit les résistances ;
  *  - Rage : le Héros en armure lourde ne peut pas entrer en Rage (souci de légalité).
  */
@@ -122,20 +122,20 @@ export default {
       const packs = JSON.stringify(await ctx.call("list-compendiums", {}).catch(() => ""));
       if ( !packs.includes("dnd-ravenloft-horrors-within") ) { ctx.log("Ravenloft absent : non applicable"); return; }
       const jolt = await lend(caster, `${RAVENLOFT}.options.Item.AVoqeXk2ZFHWZzQB`, { "system.uses.spent": 0 });
-      const a = homes.get(ally.id);
+      const a = homes.get(hero.id);
       await ctx.call("move-token", { tokenId: target.id, x: a.x + grid, y: a.y, elevation: 0 });
       await pause(800);
-      await ctx.setHp(ally, 0);
+      await ctx.setHp(hero, 0);
       await pause(800);
       const since = await ctx.lastMessageId();
-      await cast({ tokenId: caster.id, itemId: jolt, activityId: "xg84KvaBJVjFZQpV", targetTokenIds: [ally.id], consume: false });
+      await cast({ tokenId: caster.id, itemId: jolt, activityId: "xg84KvaBJVjFZQpV", targetTokenIds: [hero.id], consume: false });
       let burst = null;
       for ( let n = 0; (n < 24) && !burst; n++ ) { await pause(500); burst = (await ctx.messagesSince(since)).find(m => m.flags?.[MODULE_ID]?.areaTick?.event === "burst"); }
       if ( !ctx.expect(!!burst, "la foudre jaillit après le soin") ) return;
       const r = await ctx.settle(burst.id, { timeoutMs: 30000 }).catch(() => null);
       const hit = (r?.targets ?? []).map(t => t.name);
-      ctx.expect(hit.includes("Cible") && !hit.includes("Lanceur") && !hit.includes("Allié"), `elle frappe la Cible, ni le Lanceur ni l'Allié (${hit.join(", ")})`);
-      ctx.expect(burst.flags?.[MODULE_ID]?.areaTick?.token?.includes(ally.id), "centrée sur l'Allié ranimé");
+      ctx.expect(hit.includes("Cible") && !hit.includes("Lanceur") && !hit.includes("Héros"), `elle frappe la Cible, ni le Lanceur ni le Héros (${hit.join(", ")})`);
+      ctx.expect(burst.flags?.[MODULE_ID]?.areaTick?.token?.includes(hero.id), "centrée sur le Héros ranimé");
     });
 
     await part("Aura de protection contre la magie", async () => {

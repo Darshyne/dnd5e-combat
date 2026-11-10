@@ -30,9 +30,11 @@ export const RAVENLOFT = Object.freeze({
 
   // C12-b : Choc de vie — « touchez une créature à 0 PV » : le soin (portée personnelle dans la donnée) se donne au contact ; puis la
   // foudre jaillit de la créature ranimée, pas du lanceur (l'émanation de la donnée est centrée sur lui) : la sauvegarde de Dextérité de
-  // « Lightning Emanation » joue sur les ennemis à 3 m d'elle. (L'exigence de 0 PV reste au joueur.)
+  // « Lightning Emanation » joue sur les ennemis à 3 m d'elle. §403 : « une créature à 0 point de vie qui n'est pas morte » (comme
+  // Stabilisation) — sur une autre cible, ni soin ni foudre.
   "jolt-to-life": {
     ranges: { xg84KvaBJVjFZQpV: { value: 5, units: "ft" } },
+    targets: { unaffectedIf: { "activity.id": "xg84KvaBJVjFZQpV", any: [{ "target.atZero": false }, { "target.isDead": true }] } },
     burst: { activity: "hTK04U7m016p6lf6", radius: 10, units: "ft", from: ["xg84KvaBJVjFZQpV"], affects: "enemy" }
   },
 

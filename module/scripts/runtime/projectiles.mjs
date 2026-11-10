@@ -81,11 +81,14 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
 
 /** Les rayons restants, dans l'ordre : répartis par l'auteur, moins celui qui est déjà parti vers la première cible. */
 async function remainingShots(activity, usage, resolution, count) {
-  const designated = usage.getFlag(MODULE_ID, "projectileQueue");   // la visée multiple a déjà tout désigné
-  if ( Array.isArray(designated) ) return [...designated];
+  // §403 : « une attaque contre chacune » (Frappe du vent d'acier, `onePerTarget`) — jamais deux sur la même créature.
+  const unique = !!projectilesOf(activity.item)?.onePerTarget;
   const first = resolution.targets?.[0]?.token ?? null;
+  const designated = usage.getFlag(MODULE_ID, "projectileQueue");   // la visée multiple a déjà tout désigné
+  if ( Array.isArray(designated) ) return unique ? [...new Set(designated)].filter(t => t !== first).slice(0, count - 1) : [...designated];
   const listed = usage.getFlag(MODULE_ID, "projectileTargets") ?? (first ? [first] : []);
   if ( !listed.length ) return [];
+  if ( unique ) return [...new Set(listed)].filter(t => t !== (first ?? listed[0])).slice(0, count - 1);
   let counts = { [listed[0]]: count };
   if ( listed.length > 1 ) {
     const targets = await Promise.all(listed.map(async token => ({ token, name: (await fromUuid(token))?.name ?? token })));
@@ -128,7 +131,7 @@ async function chain(usage, resolution) {
   }
   // §402 : « vous pouvez ensuite vous téléporter… à 1,50 m de l'une des cibles » (Frappe du vent d'acier) — sur ce client, l'auteur.
   const near = projectilesOf(base.item)?.teleportNear;
-  const caster = speakerTokenOf(usage) ?? usage.getAssociatedActor?.()?.getActiveTokens?.(false, true)?.[0]?.document ?? null;
+  const caster = speakerTokenOf(usage) ?? usage.getAssociatedActor?.()?.getActiveTokens?.(false, true)?.[0] ?? null;
   const struck = [...new Set([resolution.targets?.[0]?.token, ...queue].filter(Boolean))];
   if ( near && caster && struck.length ) {
     await handleNearSpace({ token: caster.uuid, distance: near.distance, units: near.units, item: base.item.name, near: struck })

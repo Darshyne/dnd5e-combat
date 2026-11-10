@@ -121,6 +121,7 @@ import { registerTether } from "./runtime/tether.mjs";
 import { registerDefenses } from "./runtime/defenses.mjs";
 import { registerSize } from "./runtime/size.mjs";
 import { registerOrders } from "./runtime/orders.mjs";
+import { registerCompulsion } from "./runtime/compulsion.mjs";
 import { registerControl } from "./runtime/control.mjs";
 import { registerCatalyst } from "./runtime/catalyst.mjs";
 import { registerSummonHandover } from "./runtime/summon-handover.mjs";
@@ -451,6 +452,7 @@ Hooks.once("init", () => {
   gated(registerTether);
   gated(registerDefenses);
   gated(registerSize);
+  gated(registerCompulsion);   // §403 : Compulsion, la direction et la marche (après le budget, comme les ordres)
   gated(registerOrders);   // après le budget (registerTurn) : un ordre achève le tour que la remise à neuf vient d'ouvrir
   gated(registerControl);   // §285 : sorts de contrôle (panique, Confusion, Couronne du dément), même place que les ordres
   gated(registerCatalyst);   // §289 : Seconde peau, le changement involontaire

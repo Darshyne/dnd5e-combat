@@ -20,6 +20,8 @@ import { STEPS } from "../core/action.mjs";
 import { contentOf, entryOfIdentifier } from "../adapter/content.mjs";
 import { potionOfCast } from "../adapter/potions.mjs";
 import { durationSeconds } from "../core/rolled-duration.mjs";
+import { durationAtLevel } from "../core/durations.mjs";
+import { reducesSpeed, withoutSpeedReductions } from "../core/speed-floor.mjs";
 import { originItemOf, isWounded } from "../adapter/facts.mjs";
 import { comesFromItemEffect } from "../adapter/triggers.mjs";
 import { currentTurnKey, combatSceneActors, turnKeyAt } from "../adapter/turn.mjs";
@@ -89,6 +91,22 @@ function onPreCreateEffect(effect) {
   const wanted = durations ? Object.entries(durations).find(([id]) => comesFromItemEffect(effect, id))?.[1] : null;
   const seconds = wanted ? drawnDuration(effect, item, wanted) : castDurationOf(item);
   if ( seconds ) effect.updateSource({ duration: { value: seconds, units: "seconds", expiry: null } });
+  // §403 : `keepsSpeed` — Liberté de mouvement : « sa Vitesse ne peut pas être réduite par la magie ». Un effet magique (sort, objet
+  // magique) posé sur un porteur protégé arrive sans ses réductions de Vitesse (Rayon de givre, Lenteur, Danse irrésistible).
+  const changes = effect.system?.changes ?? effect.changes ?? [];
+  if ( changes.some(reducesSpeed) && magicalOrigin(item) && speedKept(effect.parent) ) {
+    effect.updateSource({ "system.changes": withoutSpeedReductions(changes) });
+    log(`${effect.parent.name}: ${effect.name} cannot reduce its Speed (magic)`);
+  }
+  // §403 : `durationByLevel` — la durée selon l'emplacement de lancement (Malédiction), sur les effets posés et sur la concentration.
+  const byLevel = item ? contentOf(item).entry?.durationByLevel : null;
+  if ( byLevel ) {
+    const tier = durationAtLevel(byLevel, (Number(item.system?.level) || 0) + (Number(effect.flags?.dnd5e?.scaling) || 0));
+    if ( tier ) {
+      effect.updateSource({ duration: { value: tier.seconds, units: tier.seconds ? "seconds" : "", expiry: null } });
+      log(`${item.name}: ${effect.name} lasts ${tier.seconds ? `${tier.seconds} s` : "until dispelled"} (cast level)`);
+    }
+  }
   if ( !game.combat?.started ) return true;
   if ( !endRuleOf(effect) && !removedAtTurn(effect) ) return true;
   effect.updateSource({ [`flags.${MODULE_ID}.placedOn`]: currentTurnKey(), duration: { value: 60, units: "seconds", expiry: null } });
@@ -119,6 +137,31 @@ async function expire(combat, prior, current) {
 }
 
 /* -------------------------------------------- */
+
+/** Un sort, ou un objet à la propriété Magique. */
+function magicalOrigin(item) {
+  return !!item && ((item.type === "spell") || (item.system?.properties?.has?.("mgc") === true));
+}
+
+/** §403 : l'acteur porte-t-il un effet d'un item `keepsSpeed` (Liberté de mouvement) ? */
+function speedKept(actor) {
+  return (actor?.effects ?? []).some(e => !e.disabled && !e.isSuppressed && (contentOf(originItemOf(e)).entry?.keepsSpeed === true));
+}
+
+/**
+ * §403 : `durationByLevel` — à l'emplacement où le sort ne demande plus de Concentration (Malédiction au niveau 5+), dnd5e ne la
+ * commence pas : `usageConfig.concentration.begin` est lu juste après ce hook (activity/mixin.mjs:338, puis 278).
+ */
+function onPreActivityConsumption(activity, usageConfig) {
+  const rule = activity?.item ? contentOf(activity.item).entry?.durationByLevel : null;
+  if ( !rule || !usageConfig?.concentration?.begin ) return true;
+  const level = (Number(activity.item.system?.level) || 0) + (Number(usageConfig.scaling) || 0);
+  if ( durationAtLevel(rule, level)?.concentration === false ) {
+    usageConfig.concentration.begin = false;
+    log(`${activity.item.name}: cast at level ${level}, no Concentration`);
+  }
+  return true;
+}
 
 /** Contact glacial : pas de PV regagnés tant que l'effet tient. */
 function onPreApplyDamage(actor, amount, updates) {
@@ -184,6 +227,7 @@ async function onResolution(resolution) {
 
 export function registerCantrips() {
   route("preCreateActiveEffect", onPreCreateEffect, { cancellable: true, label: "spell effect end not recorded" });
+  route("dnd5e.preActivityConsumption", onPreActivityConsumption, { cancellable: true, label: "spell without Concentration at a higher level" });
   route("preUpdateActiveEffect", onPreUpdateEffect, { cancellable: true, label: "True Strike: enchantment expired too early" });
   route("combatTurnChange", (combat, prior, current) => enqueue("cantrips:ends", () => expire(combat, prior, current)),
     { executor: true, label: "spell effect end not played" });

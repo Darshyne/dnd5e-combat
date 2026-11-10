@@ -466,7 +466,12 @@ export async function pushAway(source, target, { distance, units }, factors, { t
   const world = worldFor(target);
   let cell = { ...cellOf(target), level: world.ownLevel };
   let cells = 0;
+  // §403 : tirée vers la source, la créature s'arrête à son contact — la source peut ne pas occuper son espace (Liane avide), rien ne
+  // l'arrêtait alors : elle passait au travers et finissait de l'autre côté.
+  const from = towards ? footprintOf(source) : null;
+  const size = sizeOf(target);
   for ( ; cells < wanted; cells++ ) {
+    if ( from && (footprintGap({ i: cell.i, j: cell.j, ...size }, from) <= 1) ) break;
     const next = { i: cell.i + dir.di, j: cell.j + dir.dj, level: cell.level };
     if ( !world.canStep(cell, next) || !world.canEnd(next) ) break;
     cell = next;

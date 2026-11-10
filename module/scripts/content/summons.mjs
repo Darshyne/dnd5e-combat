@@ -70,10 +70,15 @@ export const SUMMONS = Object.freeze({
   "primal-companion": { initiative: "after", replaces: true, vanishesWithCaster: true, commanded: { activity: "Jtr7GXnCHb85xHg8" } },
   "reanimated-companion": { initiative: "after", replaces: true, vanishesWithCaster: true },
   "spiritual-weapon": piloted(20, "use"),
+  // §403 : Liane avide — « faites une attaque de sort au corps à corps contre une créature à 9 m de la liane… Par une action Bonus à vos
+  // tours suivants, vous pouvez refaire l'attaque » : la liane, posée (`placesSummons`), ne bouge pas (commande de 0 m) ; son attaque
+  // part au lancement (`onCast: "use"`), puis par une action Bonus ; elle n'occupe pas d'espace. La traction et l'Agrippé : l'item
+  // « Vine Attack » (content/triggers.mjs).
+  "grasping-vine": piloted(0, "use", { pilot: { occupies: false } }),
   // §402 : « si vous la faites rouler sur une créature, celle-ci fait la sauvegarde » — approchée comme la meute : la sphère qui arrive à
-  // 1,50 m d'une créature en la déplaçant (`moves`), en plus de la fin de tour (une fois par tour et par créature ; l'arrêt du
-  // déplacement au contact : non fait).
-  "flaming-sphere": piloted(30, null, { summon: { pulse: { item: "flames", radius: 5, units: "ft", on: ["turnEnd", "moves"] } } }),
+  // 1,50 m d'une créature en la déplaçant (`moves`), en plus de la fin de tour (une fois par tour et par créature). §403 : « et la
+  // sphère s'arrête de bouger ce tour-ci » (`stopsOnContact`).
+  "flaming-sphere": piloted(30, null, { summon: { pulse: { item: "flames", radius: 5, units: "ft", on: ["turnEnd", "moves"], stopsOnContact: true } } }),
   "bigbys-hand": hand,
   "arcane-hand": hand,
   "invoke-duplicity": {

@@ -285,13 +285,13 @@ export async function openingFor(message, usage, extra={}) {
     const activity = fromUuidSync(usage.activity, { strict: false });
     // §402 : le token qui parle d'abord — un PNJ non lié n'a pas de token « actif » par son acteur synthétique.
     targets = await askWilling(activity, targets, fromUuidSync(speakerTokenUuid(message) ?? "", { strict: false })
-      ?? activity?.actor?.getActiveTokens?.(false, true)?.[0]?.document ?? null);
+      ?? activity?.actor?.getActiveTokens?.(false, true)?.[0] ?? null);
     // §402 : `saveAutoSuccess` — `types` : ces types de créature réussissent d'office (Pétrification : Créatures artificielles) ;
     // `fighting` : une créature que le lanceur combat aussi (en combat, ennemie : Discours captivant, Faux amis).
     const rule = contentOf(activity?.item).entry?.saveAutoSuccess ?? null;
     // Le token qui parle (un PNJ non lié n'a pas de token « actif » par son acteur synthétique).
     const caster = rule?.fighting ? (fromUuidSync(speakerTokenUuid(message) ?? "", { strict: false })
-      ?? activity?.actor?.getActiveTokens?.(false, true)?.[0]?.document ?? null) : null;
+      ?? activity?.actor?.getActiveTokens?.(false, true)?.[0] ?? null) : null;
     // Un combat commencé (pas forcément celui qu'affiche ce client) où les deux se trouvent, ennemis l'un de l'autre.
     const fighting = token => !!(caster && token && areEnemies(caster, token) && game.combats.some(c => c.started
       && c.combatants.some(k => k.tokenId === token.id) && c.combatants.some(k => k.tokenId === caster.id)));

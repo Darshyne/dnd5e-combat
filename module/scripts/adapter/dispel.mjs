@@ -8,7 +8,9 @@
  *    `getDependents` :1105) : faire cesser un sort de concentration, c'est retirer la concentration de son lanceur.
  */
 
+import { MODULE_ID } from "../constants.mjs";
 import { originItemOf } from "./facts.mjs";
+import { zoneCenter } from "./areas.mjs";
 import { isSpellCast, spellLevelOf } from "./scrolls.mjs";
 import { identifierOf } from "./content.mjs";
 
@@ -38,10 +40,14 @@ export function spellsOn(actor, { except=null }={}) {
   return [...groups.values()];
 }
 
-/** Le sort cesse : sa concentration retirée (dnd5e retire tout ce qui en dépend), sinon ses effets sur la créature. MJ actif. */
+/**
+ * Le sort cesse : sa concentration retirée (dnd5e retire tout ce qui en dépend ; le moteur retire ses zones), sinon ses effets sur la
+ * créature, ou sa zone (§403). MJ actif.
+ */
 export async function endSpell(group) {
   const concentration = group.concentration ? await fromUuid(group.concentration) : null;
   if ( concentration ) return concentration.delete();
+  if ( group.region?.parent?.regions?.has(group.region.id) ) await group.region.delete();
   for ( const effect of group.effects ) if ( effect.parent?.effects?.has(effect.id) ) await effect.delete();
 }
 
@@ -55,4 +61,31 @@ export async function castingCheck(actor, ability, dc, { bonus=0 }={}) {
   const rolls = await actor.rollAbilityCheck({ ability, target: dc }, { configure: false });
   const total = rolls?.[0]?.total ?? null;
   return (total === null) ? null : total + bonus;
+}
+
+/**
+ * §403 : les zones de sort de la scène (régions posées par une activité de sort : `flags.dnd5e.activity`) à portée du lanceur — mesurée
+ * de son token au centre de la zone, dans l'unité de la grille —, chacune comme un sort en cours : son niveau de lancement
+ * (`flags.dnd5e.spellLevel`, sinon celui de l'item), la concentration qui la tient (`flags.dnd5e-combat.concentration`).
+ * @param {TokenDocument} caster
+ * @param {number} range  Dans l'unité de la grille.
+ * @param {{except?: Item|null}} [options]
+ * @returns {Array<{key: string, level: number, name: string, concentration: string|null, effects: ActiveEffect[], region: RegionDocument}>}
+ */
+export function spellZonesNear(caster, range, { except=null }={}) {
+  const scene = caster?.parent;
+  if ( !scene ) return [];
+  const from = caster.object?.center ?? caster.getCenterPoint?.(caster._source);
+  const pxPerUnit = scene.grid.size / scene.grid.distance;
+  const out = [];
+  for ( const region of scene.regions ) {
+    const uuid = region.getFlag?.("dnd5e", "activity");
+    const item = uuid ? fromUuidSync(uuid, { strict: false })?.item : null;
+    if ( !isSpellCast(item) || (except && (item === except)) ) continue;
+    const center = zoneCenter(region);
+    if ( from && center && (Math.hypot(center.x - from.x, center.y - from.y) / pxPerUnit > range + 1e-6) ) continue;
+    const level = Number(region.getFlag("dnd5e", "spellLevel")) || spellLevelOf(item);
+    out.push({ key: region.uuid, level, name: item.name, caster: item.actor?.name ?? "", concentration: region.getFlag(MODULE_ID, "concentration") ?? null, effects: [], region });
+  }
+  return out;
 }

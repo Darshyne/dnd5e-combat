@@ -177,6 +177,15 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       && Array.isArray(r.statuses) && r.statuses.length && r.statuses.every(s => typeof s === "string") && (Object.keys(r).length === 2);
     if ( !ok ) errors.push(`${at}saveAdvantageFrom: { types: [creature types], statuses: [conditions] }`);
   }
+  if ( ("zoneLasts" in entry) && !(isObject(entry.zoneLasts) && Number.isFinite(entry.zoneLasts.seconds) && (entry.zoneLasts.seconds > 0)
+    && (Object.keys(entry.zoneLasts).length === 1)) ) errors.push(`${at}zoneLasts: { seconds }`);
+  if ( "durationByLevel" in entry ) {
+    const d = entry.durationByLevel;
+    const ok = Array.isArray(d) && d.length && d.every(t => isObject(t) && Number.isInteger(t.from) && (t.from >= 1) && (t.from <= 9)
+      && (!("seconds" in t) || (Number.isFinite(t.seconds) && (t.seconds > 0))) && (!("concentration" in t) || (typeof t.concentration === "boolean"))
+      && Object.keys(t).every(k => ["from", "seconds", "concentration"].includes(k)));
+    if ( !ok ) errors.push(`${at}durationByLevel: [{ from: spell level, seconds?, concentration? }]`);
+  }
   if ( ("fadesOnLongRest" in entry) && (!Array.isArray(entry.fadesOnLongRest) || !entry.fadesOnLongRest.length || !entry.fadesOnLongRest.every(isId)) ) {
     errors.push(`${at}fadesOnLongRest: list of effect ids (16 characters)`);
   }
@@ -264,7 +273,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       && (!("activities" in k) || (Array.isArray(k.activities) && k.activities.length && k.activities.every(isId)));
     if ( !ok ) errors.push(`${at}killsAtZero: true or { types?, sizeAtMost?, activities? }`);
   }
-  for ( const key of ["singleAttack", "noAttacksOrSpells", "noSpells", "knownToOrigin", "upkeep", "keepsProne", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "avoidance", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails", "critMove", "combatInspiration", "quietPose", "zoneBound", "effectsFirst", "hitDefense", "enterOnPose", "summonEffectsOnCaster", "sniper", "checkPoses", "magicEvasion"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
+  for ( const key of ["singleAttack", "noAttacksOrSpells", "noSpells", "knownToOrigin", "upkeep", "keepsProne", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "avoidance", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails", "critMove", "combatInspiration", "quietPose", "zoneBound", "effectsFirst", "hitDefense", "enterOnPose", "summonEffectsOnCaster", "sniper", "checkPoses", "magicEvasion", "compels", "keepsSpeed", "windward", "formLock"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
   // §225, lot 4 : passer du plan matériel à l'Éthéré ou inversement (Saut éthéré) ; `others` : les cibles désignées suivent (Foulée éthérée).
   if ( ("etherealShift" in entry) && !((entry.etherealShift === true) || (isObject(entry.etherealShift)
     && Object.keys(entry.etherealShift).every(k => k === "others") && (entry.etherealShift.others === true))) ) {
@@ -523,7 +532,8 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       if ( ("types" in t) && (!Array.isArray(t.types) || !t.types.every(x => (typeof x === "string") && x)) ) errors.push(`${at}difficultTerrain.types: list of strings`);
       if ( ("cost" in t) && !(Number.isFinite(t.cost) && (t.cost > 1) && (t.cost <= 5)) ) errors.push(`${at}difficultTerrain.cost: a multiplier, more than 1, up to 5`);
       if ( ("lingers" in t) && (t.lingers !== "casterNextTurnEnd") ) errors.push(`${at}difficultTerrain.lingers: casterNextTurnEnd`);
-      for ( const key of Object.keys(t) ) if ( !["types", "cost", "lingers"].includes(key) ) errors.push(`${at}difficultTerrain.${key}: unknown key`);
+      if ( ("enemiesOnly" in t) && (t.enemiesOnly !== true) ) errors.push(`${at}difficultTerrain.enemiesOnly: true or absent`);
+      for ( const key of Object.keys(t) ) if ( !["types", "cost", "lingers", "enemiesOnly"].includes(key) ) errors.push(`${at}difficultTerrain.${key}: unknown key`);
     }
   }
   if ( "lineDash" in entry ) {
@@ -628,7 +638,8 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       if ( ("teleportNear" in p) && !(isObject(near) && Number.isFinite(near.distance) && (near.distance > 0) && (typeof near.units === "string")) ) {
         errors.push(`${at}projectiles.teleportNear: { distance, units }`);
       }
-      for ( const key of Object.keys(p) ) if ( !["count", "attack", "teleportNear"].includes(key) ) errors.push(`${at}projectiles.${key}: unknown key`);
+      if ( ("onePerTarget" in p) && (p.onePerTarget !== true) ) errors.push(`${at}projectiles.onePerTarget: true or absent`);
+      for ( const key of Object.keys(p) ) if ( !["count", "attack", "teleportNear", "onePerTarget"].includes(key) ) errors.push(`${at}projectiles.${key}: unknown key`);
     }
   }
   if ( "bonusAttack" in entry ) {

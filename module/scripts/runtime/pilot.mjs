@@ -17,7 +17,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { spendUse } from "../core/turn.mjs";
 import { castCommand, nextPlayableTurn } from "../core/pilot.mjs";
 import { INCAPACITATING } from "../core/conditions.mjs";
-import { readBudget, writeBudget, isOwnTurn, distanceBetween, positionOf, turnKeyAt } from "../adapter/turn.mjs";
+import { readBudget, writeBudget, isOwnTurn, distanceBetween, positionOf, turnKeyAt, currentTurnKey } from "../adapter/turn.mjs";
 import {
   pilotOf, commandPlan, summonerCombatant, writeCommand, readCommand, turnKey, isPilotedCombatant, pulseOf, commandKey,
   summonerToken, summonsOfWith
@@ -320,7 +320,14 @@ async function pulseOnMove(tokenDoc, movement) {
   const own = pulseOf(tokenDoc);
   if ( own && (own.rule.on ?? []).includes("moves") ) {
     for ( const other of tokenDoc.parent.tokens ) {
-      if ( pulseReaches(tokenDoc, own, other) && !pulseReaches(tokenDoc, own, other, { posSource: from }) ) await pulseOnce(tokenDoc, own, other, "moves");
+      if ( !pulseReaches(tokenDoc, own, other) || pulseReaches(tokenDoc, own, other, { posSource: from }) ) continue;
+      await pulseOnce(tokenDoc, own, other, "moves");
+      // §403 : Sphère de feu — rouler sur une créature l'arrête pour le tour (`stopsOnContact`) : plus de commande de déplacement.
+      if ( own.rule.stopsOnContact && (tokenDoc.getFlag(MODULE_ID, "stoppedOn") !== currentTurnKey()) ) {
+        await tokenDoc.setFlag(MODULE_ID, "stoppedOn", currentTurnKey());
+        log(`${tokenDoc.name}: rolled into ${other.name}, stops for this turn`);
+        notice(tokenDoc, loc("Pilote.ArreteeCourt"), "reaction");
+      }
     }
   }
   for ( const source of tokenDoc.parent.tokens ) {

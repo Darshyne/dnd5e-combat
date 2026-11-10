@@ -81,7 +81,8 @@
  *                                               item `item` (identifiant ; Sphère de feu : « flames ») ; `on` : les
  *                                               moments (turnEnd par défaut ; enter : une créature arrive à portée ; turnStart : elle commence son tour à portée ;
  *                                               casterTurnStart : au début du tour du lanceur, contre UN ennemi à portée (§159) ;
- *                                               moves : l'objet arrive à portée d'elle), une fois par tour et par
+ *                                               moves : l'objet arrive à portée d'elle ; `stopsOnContact` (§403) : il s'arrête
+ *                                               alors pour le tour, Sphère de feu), une fois par tour et par
  *                                               créature ; `affects: "enemy"` : seulement les ennemis du lanceur ;
  *                                               `seenBy: "caster"` : seulement une créature que le lanceur voit (§368)
  *     burst?: { activity, radius, units, from?, affects? } après le jet d'attaque, touché ou raté, le moteur joue l'activité sœur
@@ -144,7 +145,8 @@
  *     projectiles?: { count, attack }           plusieurs projectiles par lancement (§16.27) — `count` : formule (données de
  *                                               l'activité mise à l'échelle : `@item.level`, `@details.level`) ; `attack` :
  *                                               false = ils touchent d'office, répartis entre les cibles (Projectile
- *                                               magique) ; true = une attaque par projectile, enchaînées par le moteur
+ *                                               magique) ; true = une attaque par projectile, enchaînées par le moteur ;
+ *                                               `onePerTarget` (§403) : jamais deux sur la même créature (Frappe du vent d'acier)
  *                                               (Rayon ardent, Décharge occulte)
  *     chain?: { radius, units }                §286 : les cibles après la première doivent être à `radius` d'elle (Chaîne
  *                                               d'éclairs) — refusées à la visée, signalées au contrôle de légalité
@@ -235,6 +237,19 @@
  *     magicEvasion?: true                  §402 : l'effet porté du sort annule la moitié des dégâts d'une sauvegarde réussie contre la magie (Cercle de pouvoir)
  *     saveAdvantageFrom?: { types, statuses }  §402 : Avantage aux sauvegardes contre ces états posés par ces types (Protection contre le mal et le bien)
  *     leash?: { distance, units }        §402 : la créature qui porte un effet de l'item ne s'éloigne pas volontairement du lanceur au-delà (Duel forcé)
+ *     durationByLevel?: [{ from, seconds?, concentration? }]  §403 : durée des effets et de la concentration selon l'emplacement ;
+ *                                               sans `seconds` : jusqu'à dissipation ; `concentration: false` : dnd5e ne la commence pas
+ *                                               (Malédiction : 10 min au niveau 4, 8 h sans Concentration au niveau 5…) — runtime/cantrips.mjs
+ *     zoneLasts?: { seconds }              §403 : la zone d'une activité de l'item dure ce temps (heure du monde), même instantanée, et
+ *                                               rejoue ce que ses déclencheurs disent (Symbole : la sphère de 18 m, 10 minutes)
+ *     formLock?: true                      §403 : dans la zone qui dure, pas d'activité « transform » (Rayon de lune : « ne peut pas
+ *                                               prendre une autre forme » — souci de légalité, runtime/turn.mjs)
+ *     windward?: true                      §403 : dans la zone qui dure, chaque mètre vers le lanceur en coûte deux (Bourrasque ;
+ *                                               core/windward.mjs, refus avant le pas, surcoût noté au budget : `windward`)
+ *     keepsSpeed?: true                    §403 : le porteur d'un effet de l'item ne voit pas sa Vitesse réduite par un effet magique posé
+ *                                               ensuite (Liberté de mouvement ; core/speed-floor.mjs, à la pose dans runtime/cantrips.mjs)
+ *     compels?: true                       §403 : Compulsion — au tour du lanceur, une direction (action Bonus) ; la cible y marche à son
+ *                                               tour, puis rejoue sa sauvegarde (`resave` avec `ifCompelled`, runtime/compulsion.mjs)
  *     checkPoses?: true                    §402 : une activité de test (check) pose ses effets sur la cible, sans test (Dédale : « Banished »)
  *     quietPose?: true                          §300 : la zone qui dure n'agit pas à sa pose — seulement aux moments déclarés
  *                                               (Tempête de neige, Nuage nauséabond : ceux qui sont déjà dedans sauvegardent au début de leur tour)
@@ -721,7 +736,9 @@
  *                                               `dnd5e.difficultTerrain` posé sur la région si les données ne l'ont pas
  *                                               (Manuel des joueurs premium : Enchevêtrement, Croissance d'épines…) ; magique ;
  *                                               `lingers: "casterNextTurnEnd"` (§261) : une zone instantanée laisse ce
- *                                               terrain jusqu'à la fin du prochain tour du lanceur (Tempête de grêle)
+ *                                               terrain jusqu'à la fin du prochain tour du lanceur (Tempête de grêle) ;
+ *                                               `enemiesOnly` (§403) : la disposition du lanceur passe sans frais
+ *                                               (Invocation d'élémentaires mineurs : « pour vos ennemis »)
  *     encloses?: true                           §232 : un effet de cet item enferme sa cible (Sphère résiliente d'Otiluke) — rien ne
  *                                               l'atteint du dehors, elle n'atteint rien dehors (résolutions « non affecté », clics refusés).
  *     willingFails?: true                       §232 : une créature consentante peut rater la sauvegarde d'office — le lanceur dit, à
@@ -902,7 +919,8 @@
  *                                                        true` : il reste) ; `onFail: "dodge"` : ratée, elle prend l'action
  *                                                        Esquiver (§37, Malédiction : « Cursed Actions ») ;
  *                                                        `unlessSeesOrigin: true` : seulement si elle ne voit pas le lanceur
- *                                                        (Terreur : « termine son tour sans ligne de vue sur vous », §42.2)
+ *                                                        (Terreur : « termine son tour sans ligne de vue sur vous », §42.2) ;
+ *                                                        `ifCompelled: true` : seulement après la marche imposée (§403, Compulsion)
  *                                                        (moments startOfTurn, endOfTurn, isDamaged, avec `via: "effect"`)
  *   { type: "consume", side: "target"|"source" }         la marque tombe au premier jet d'attaque qu'elle concerne (§16.12,
  *                                                        B10) : `target` = celle que porte la cible (Rayon traçant : « la

@@ -14,6 +14,9 @@ const ADVANTAGE_ATTACKS_AND_SAVES = ["str", "dex", "con", "int", "wis", "cha"].f
 const ADVANTAGE_SAVES = ["str", "dex", "con", "int", "wis", "cha"].map(a => ({ key: `system.abilities.${a}.save.roll.mode`, value: "1", type: "add" }));
 
 export const AURAS = Object.freeze({
+  // §403 : Invocation d'animaux — « vous avez l'Avantage aux jets de sauvegarde de Force tant que vous êtes à 1,50 m de la meute » :
+  // l'item « Grant Save Advantage » de la meute (PHB, `phbSpectralAnima`) porte l'effet ; il ne va qu'à l'invocateur.
+  "grant-save-advantage": { radius: 5, units: "ft", affects: "summoner", effect: "gUQO2xiVpjFo7gDz" },
   // §86 : Aura sacrée (PHB 2024) — « vous émettez une aura (Émanation de 9 m) : les créatures de votre choix y ont l'Avantage à
   // tous leurs jets de sauvegarde » ; l'effet « Holy Protection » de la donnée est vide et « Create Aura » n'a pas de gabarit.
   // Le Désavantage des attaquants et la sauvegarde d'un Fiélon ou d'un Mort-vivant : content/triggers.mjs.

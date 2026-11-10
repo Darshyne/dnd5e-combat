@@ -14,7 +14,8 @@ import { alliedSides } from "./factions.mjs";
  * @property {number} disposition
  * @property {boolean} inactive      Porteur neutralisé ou mort : l'aura est éteinte.
  * @property {number} radius         Dans la même unité que les distances fournies.
- * @property {"ally"|"enemy"|"any"} affects
+ * @property {"ally"|"enemy"|"any"|"summoner"} affects
+ * @property {string[]} [summoners]  §403 : avec `summoner`, les tokens de celui qui a invoqué le porteur.
  * @property {boolean} includeSelf   Le porteur reçoit-il lui aussi la copie ? (non s'il a déjà l'effet d'origine)
  * @property {number} value          Force de l'aura, pour départager deux auras de même nom.
  * @property {string[]} [types]      Seulement ces types de créature (« les morts-vivants de son choix »).
@@ -32,6 +33,7 @@ export function auraRecipients(source, candidates) {
     // Une émanation est arrêtée par un abri total (règles 2024) : plancher, plafond, mur plein — P2 (§14.2).
     if ( c.lineOfEffect === false ) return false;
     if ( source.types?.length && !source.types.includes(c.type) ) return false;
+    if ( source.affects === "summoner" ) return (source.summoners ?? []).includes(c.token);
     if ( source.affects === "ally" ) return alliedSides(c, source);     // §181 : factions, sinon dispositions
     if ( source.affects === "enemy" ) return !alliedSides(c, source);
     return true;

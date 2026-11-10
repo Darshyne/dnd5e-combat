@@ -91,7 +91,10 @@ export async function onRegionCreated(region) {
     // §188 : l'huile étalée au sol reste aussi (sans rejeu : elle n'agit qu'une fois embrasée, runtime/flammable.mjs).
     const ground = flammableOf(activity)?.ground === true;
     const lasting = rules ?? (ground ? { on: [], activity: null } : null);
-    if ( lasting && (!isInstantaneous(activity) || scatter || ground) ) {
+    // §403 : une zone que le contenu fait durer (`zoneLasts` : Symbole, la sphère de 18 m pendant 10 minutes), même instantanée.
+    // Pas une activité utilitaire (Symbole : « Inscribe Glyph » pose le glyphe, il n'a rien à rejouer).
+    const lasts = !!contentOf(activity.item).entry?.zoneLasts && (activity.type !== "utility");
+    if ( lasting && (!isInstantaneous(activity) || scatter || ground || lasts) ) {
       const rules = lasting;
       // Zone qui dure : elle rejouera son activité (runtime/areas.mjs). Ceux qu'elle touche à la
       // pose l'ont été pour ce tour de jeu — sauf si c'est une sœur qui agit et que la pose ne fait rien.

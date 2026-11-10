@@ -96,3 +96,17 @@ export function expiryFromText(html, statuses=[], { alone=false, fallback=false 
   }
   return (alone || fallback) ? unique() : null;
 }
+
+/**
+ * §403 : la durée et la concentration d'un sort selon l'emplacement (Malédiction : « niveau 4, Concentration jusqu'à 10 minutes ;
+ * niveau 5+, sans Concentration, 8 heures (5–6) ou 24 heures (7–8) ; niveau 9, jusqu'à dissipation »). `rule` : paliers
+ * `{ from, seconds?, concentration? }` ; le dernier dont `from` ≤ `level` s'applique. Rend null sous le premier palier, sinon
+ * `{ seconds: number|null, concentration: boolean }` — `seconds` null : jusqu'à dissipation ; `concentration` vrai par défaut.
+ * @param {Array<{from: number, seconds?: number, concentration?: boolean}>} rule
+ * @param {number} level
+ */
+export function durationAtLevel(rule, level) {
+  const tier = [...(rule ?? [])].sort((a, b) => a.from - b.from).filter(t => t.from <= level).pop();
+  if ( !tier ) return null;
+  return { seconds: Number.isFinite(tier.seconds) ? tier.seconds : null, concentration: tier.concentration !== false };
+}

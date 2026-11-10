@@ -15,7 +15,8 @@ import { route } from "./router.mjs";
 import { announce } from "./triggers.mjs";
 import { log } from "./shared.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
-import { sideOf } from "../adapter/factions.mjs";
+import { sideOf, areEnemies } from "../adapter/factions.mjs";
+import { zoneChoiceMode, askZoneChoice } from "../adapter/zone-choice.mjs";
 import { alliedSides } from "../core/factions.mjs";
 import { lengthIn } from "../adapter/units.mjs";
 import { burnTick } from "./flammable.mjs";
@@ -127,7 +128,11 @@ function casterPulse(region, caster, at) {
       return;
     }
     const inside = region.parent.tokens.filter(t => isInside(t, region) && isAffectable(t, state) && (!rule.ground || grounded(t)));
-    const tokens = pulseTargets(inside.map(t => ({ ...sideOf(t), doc: t })), sideOf(caster), entry.max).map(t => t.doc);
+    let tokens = pulseTargets(inside.map(t => ({ ...sideOf(t), doc: t })), sideOf(caster), entry.max).map(t => t.doc);
+    // §403 : « six éclairs… sur six créatures de votre choix sous le nuage » (Tempête vengeresse, tour 3) — plus de créatures que
+    // d'éclairs, ou des alliés dessous : le lanceur choisit (fenêtre de zone au choix, cochée d'office comme avant).
+    if ( Number.isInteger(entry.max) && (zoneChoiceMode() !== "never")
+      && ((inside.length > tokens.length) || tokens.some(t => !areEnemies(caster, t)) || (zoneChoiceMode() === "always")) ) tokens = await pickPulseTargets(caster, item, entry.max, inside, tokens);
     if ( !tokens.length ) log(`${region.name}: caster's turn ${n}, nobody in the area`);
     if ( tokens.length ) {
       log(`${region.name}: caster's turn ${n}, "${sibling.name}" on ${tokens.map(t => t.name).join(", ")}`);
@@ -142,6 +147,17 @@ function casterPulse(region, caster, at) {
       else if ( region.parent?.regions.get(region.id) ) await region.delete().catch(() => {});
     }
   });
+}
+
+/** §403 : le lanceur choisit au plus `max` créatures dans la zone ; sans réponse, le choix d'office. */
+async function pickPulseTargets(caster, item, max, inside, chosen) {
+  const checked = new Set(chosen.map(t => t.uuid));
+  const candidates = inside.map(t => ({ token: t.uuid, name: t.name, img: t.texture?.src ?? "", checked: checked.has(t.uuid), enemy: areEnemies(caster, t) }));
+  const answer = await askZoneChoice(caster.actor, { item: item.name, max, candidates });
+  if ( !answer ) return chosen;
+  const keep = new Set(answer.tokens.slice(0, max));
+  log(`${item.name}: the caster chose ${keep.size} creature(s) of ${inside.length}`);
+  return inside.filter(t => keep.has(t.uuid));
 }
 
 /** §91 : la zone s'éloigne du lanceur de `distance` (Tsunami : 15 m à chacun de ses tours). */

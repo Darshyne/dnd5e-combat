@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ORDERS, orderPlan, footprintDistance, cellsAtGap } from "../module/scripts/core/orders.mjs";
+import { ORDERS, orderPlan, footprintDistance, cellsAtGap, DIRECTIONS, directionTarget } from "../module/scripts/core/orders.mjs";
 import { validateEntry } from "../module/scripts/core/content.mjs";
 
 describe("ordre imposé (§16.59)", () => {
@@ -47,5 +47,25 @@ describe("ordre imposé (§16.59)", () => {
   it("schéma : orders, liste d'ordres connus", () => {
     expect(validateEntry({ orders: ["grovel", "halt"] }, { facts: {} })).toEqual([]);
     expect(validateEntry({ orders: ["grovel", "dance"] }, { facts: {} })).toHaveLength(1);
+  });
+});
+
+describe("Compulsion : marcher dans une direction (§403)", () => {
+  it("huit directions, la case la plus loin que le déplacement atteint", () => {
+    expect(Object.keys(DIRECTIONS)).toHaveLength(8);
+    expect(directionTarget({ i: 5, j: 5 }, "n", 6)).toEqual({ i: -1, j: 5 });
+    expect(directionTarget({ i: 5, j: 5 }, "se", 2)).toEqual({ i: 7, j: 7 });
+  });
+  it("bornée au bord de la scène ; rien sans pas ou sans direction", () => {
+    expect(directionTarget({ i: 2, j: 5 }, "n", 6, { rows: 10, columns: 10 })).toEqual({ i: 0, j: 5 });
+    expect(directionTarget({ i: 2, j: 8 }, "ne", 6, { rows: 10, columns: 10 })).toEqual({ i: 1, j: 9 });
+    expect(directionTarget({ i: 0, j: 5 }, "n", 6, { rows: 10, columns: 10 })).toBeNull();
+    expect(directionTarget({ i: 5, j: 5 }, "up", 6)).toBeNull();
+    expect(directionTarget({ i: 5, j: 5 }, "e", 0)).toBeNull();
+  });
+  it("la clé de contenu et l'option de sauvegarde", () => {
+    expect(validateEntry({ compels: true, triggers: [{ on: "endOfTurn", via: "effect", do: [{ type: "resave", ifCompelled: true }] }] })).toEqual([]);
+    expect(validateEntry({ compels: 1 })).toHaveLength(1);
+    expect(validateEntry({ triggers: [{ on: "endOfTurn", via: "effect", do: [{ type: "resave", ifCompelled: "yes" }] }] })).toHaveLength(1);
   });
 });

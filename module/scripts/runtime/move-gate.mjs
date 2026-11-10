@@ -6,7 +6,7 @@
 import { barrierCrossed } from "../adapter/barriers.mjs";
 import { isEthereal, etherealWallBetween } from "../adapter/plane.mjs";
 import { MODULE_ID } from "../constants.mjs";
-import { combatantFor, distanceBetween, positionOf } from "../adapter/turn.mjs";
+import { combatantFor, distanceBetween, positionOf, readBudget, writeBudget } from "../adapter/turn.mjs";
 import { pilotOf, summonerToken, groupTokens } from "../adapter/pilot.mjs";
 import { lengthIn } from "../adapter/units.mjs";
 import { continuedFlags, walkOptions } from "../adapter/movement.mjs";
@@ -15,7 +15,8 @@ import { movesCloser } from "../core/conditions.mjs";
 import { opportunityThreats, resolveOpportunity, splitForReady } from "./reactions.mjs";
 import { scatterStop } from "./scatter.mjs";
 import { levelAtLeast } from "./levels.mjs";
-import { loc } from "./shared.mjs";
+import { loc, log } from "./shared.mjs";
+import { windwardCost } from "../adapter/windward.mjs";
 import { isGrappled, movementCap, occupiedAt, pilotMove } from "./actions.mjs";
 
 /* -------------------------------------------- */
@@ -155,12 +156,29 @@ function playerMayMove(token, movement) {
   if ( pilot ) return pilotMayMove(token, movement, pilot);
   if ( !combatantFor(token.actor) ) return true;
   const allowance = movementCap(token);
-  const total = movement.history.cost + movement.passed.cost + movement.pending.cost;
+  // §403 : Bourrasque — vers le lanceur dans la Ligne, chaque mètre en coûte deux (le surcoût des pas déjà faits est dans le budget).
+  const total = movement.history.cost + movement.passed.cost + movement.pending.cost
+    + windwardCost(token, movement.origin ?? token._source, [...movement.passed.waypoints, ...movement.pending.waypoints]);
   if ( total > allowance + 1e-6 ) {
     ui.notifications.warn(loc("Deplacement.Epuise"));
     return false;
   }
   return true;
+}
+
+/**
+ * §403 : Bourrasque — après un pas, le MJ actif ajoute au budget du tour (`windward`) le surcoût de ce qui a été parcouru vers le lanceur
+ * dans la Ligne ; `movementCap` le retire du plafond. Téléportation et déplacement forcé : pas une marche.
+ */
+export async function noteWindward(token, movement) {
+  const combatant = token?.actor ? combatantFor(token.actor) : null;
+  if ( !combatant ) return;
+  const steps = (movement?.passed?.waypoints ?? []).filter(w => !CONFIG.Token.movement.actions[w.action]?.teleport && (w.action !== "displace"));
+  const extra = steps.length ? windwardCost(token, movement.origin, steps) : 0;
+  if ( !(extra > 0) ) return;
+  const budget = readBudget(combatant);
+  await writeBudget(combatant, { ...budget, windward: (Number(budget.windward) || 0) + extra });
+  log(`${token.name}: ${extra} more movement spent against the wind`);
 }
 
 /** §16.15 : un objet piloté ne bouge qu'au tour de son lanceur, dans la distance d'une commande qu'il peut payer. */

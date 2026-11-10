@@ -29,7 +29,7 @@ import { route } from "./router.mjs";
 import { log, loc, sleep, viaActiveGM } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { antimagicAround, barrierBetween } from "../adapter/barriers.mjs";
-import { rangedBanAround } from "../adapter/areas.mjs";
+import { rangedBanAround, formLockAround } from "../adapter/areas.mjs";
 import { isRangedWeaponAttack } from "../adapter/cover.mjs";
 import { selfTeleportOf, tooBrightFor } from "./teleport.mjs";
 import { windowDisengaged } from "./reactions.mjs";
@@ -190,10 +190,13 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
   const unarmored = isSpellCast(activity.item) ? untrainedArmor(activity.actor) : null;
   // §367 : Tempête de vengeance — pas d'attaque à distance avec une arme depuis la zone ; Marche dans l'ombre — pas depuis un lieu éclairé.
   const storm = (!pilot && isRangedWeaponAttack(activity, attackMode)) ? rangedBanAround(usageToken(activity)) : null;
+  // §403 : Rayon de lune — pas d'autre forme dans la lumière (une activité « transform » de dnd5e : Forme sauvage, Métamorphose sur soi).
+  const formLocked = ((activity.type === "transform") && usageToken(activity)) ? formLockAround(usageToken(activity)) : null;
   const bright = (!pilot && usageToken(activity) && selfTeleportOf(activity)) ? (tooBrightFor(activity, usageToken(activity)) === "from") : false;
   const lines = [
     ...issues.map(i => loc(`Souci.${i}`)),
     ...(storm ? [loc("Souci.noRangedWeapons", { item: storm.name })] : []),
+    ...(formLocked ? [loc("Souci.formLocked", { item: formLocked.name })] : []),
     ...(bright ? [loc("Souci.tooBright", { item: activity.item.name })] : []),
     ...(outOfAmmunition(activity, attackMode) ? [loc("Souci.noAmmunition", { item: activity.item.name })] : []),
     ...(silenced ? [loc("Souci.silenced")] : []),

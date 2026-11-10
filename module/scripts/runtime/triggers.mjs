@@ -180,6 +180,11 @@ function turnMoment(moment, combatant, turnKey=null) {
         if ( !effect || ((activity?.type !== "save") && !declared) ) { log(`${d.name}: repeated saving throw impossible (effect or save activity not found)`); continue; }
         // §43.1 : le seuil d'échecs du compteur est atteint — plus de sauvegarde.
         if ( step.tally && tallySettled(effect.getFlag(MODULE_ID, "tally")) ) continue;
+        // §403 : Compulsion — la sauvegarde n'est rejouée qu'après la marche imposée par le lanceur (runtime/compulsion.mjs).
+        if ( step.ifCompelled ) {
+          if ( !effect.getFlag(MODULE_ID, "compelled")?.moved ) { log(`${d.name}: ${token.name} was not directed this turn, no saving throw`); continue; }
+          await effect.unsetFlag(MODULE_ID, "compelled");
+        }
         // §42.2 : Terreur — la sauvegarde n'est rejouée que si la créature finit son tour sans voir le lanceur.
         if ( step.unlessSeesOrigin && (seesBetween(actor, activity.item?.actor ?? null) !== false) ) {
           log(`${d.name}: ${token.name} still sees the caster, no saving throw (${moment})`);

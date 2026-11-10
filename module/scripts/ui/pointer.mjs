@@ -809,7 +809,8 @@ async function startGroup(token, activity, usageConfig, dialogConfig, messageCon
 
 /** §16.33 : la visée de groupe est close (complète, ou Entrée) — le sort part sur les créatures choisies. */
 export function finishGroup() {
-  if ( !picking?.group || !picking.picks.length ) return;
+  if ( !(picking?.group || picking?.unique) || !picking.picks.length ) return;
+  if ( !picking.group ) return launchPicks();   // §403 : projectiles « une par créature », clos avant le compte
   const { activity, usage, picks } = picking;
   stopTargeting();
   exclusive(() => castOnTargets(activity, usage, picks));
@@ -822,7 +823,9 @@ async function startPicking(token, activity, usageConfig, dialogConfig, messageC
   const { config, level } = chosen;
   const count = projectileCount(activity, { level });
   clearTargets();
-  picking = { token, activity, count, picks: [], usage: [config, noDialog(dialogConfig), messageConfig] };
+  // §403 : Frappe du vent d'acier — « jusqu'à cinq créatures », une attaque contre chacune (`onePerTarget`).
+  const unique = !!projectilesOf(activity.item)?.onePerTarget;
+  picking = { token, activity, count, picks: [], unique, usage: [config, noDialog(dialogConfig), messageConfig] };
   markTargeting();
   showReticle(counterText());
   promptTargeting(loc("Projectiles.Choisir", { item: activity.item.name, count }));
@@ -886,7 +889,7 @@ function stopPicking() {
 export function pickTarget(hover) {
   if ( !picking || !hover?.object ) return;
   // §16.33 : en visée de groupe, une créature ne compte qu'une fois — la recliquer la retire.
-  if ( picking.group && picking.picks.includes(hover.uuid) ) {
+  if ( (picking.group || picking.unique) && picking.picks.includes(hover.uuid) ) {
     picking.picks.splice(picking.picks.indexOf(hover.uuid), 1);
     hover.object.setTarget(false, { releaseOthers: false, groupSelection: true });
     announceTargeting();
@@ -903,6 +906,11 @@ export function pickTarget(hover) {
   announceTargeting();
   if ( picking.picks.length < picking.count ) return;
   if ( picking.group ) return finishGroup();
+  launchPicks();
+}
+
+/** Les projectiles désignés partent : le premier comme une attaque cliquée, les autres enchaînés par le moteur. */
+function launchPicks() {
   const { token, activity, usage: [config, dialog, message], picks } = picking;
   stopTargeting();
   // Rayons : le premier part comme une attaque cliquée (jet enchaîné, attaque rapide), les autres seront enchaînés par le moteur.

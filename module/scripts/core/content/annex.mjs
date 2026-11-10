@@ -39,7 +39,8 @@ export function validateSummon(summon, at, errors) {
       if ( ("on" in u) && (!Array.isArray(u.on) || !u.on.length || !u.on.every(m => PULSE_MOMENTS.includes(m))) ) errors.push(`${at}.pulse.on: ${PULSE_MOMENTS.join(", ")}`);
       if ( ("affects" in u) && !["any", "enemy"].includes(u.affects) ) errors.push(`${at}.pulse.affects: any, enemy`);
       if ( ("seenBy" in u) && (u.seenBy !== "caster") ) errors.push(`${at}.pulse.seenBy: caster`);
-      for ( const key of Object.keys(u) ) if ( !["item", "radius", "units", "on", "affects", "seenBy"].includes(key) ) errors.push(`${at}.pulse.${key}: unknown key`);
+      if ( ("stopsOnContact" in u) && (u.stopsOnContact !== true) ) errors.push(`${at}.pulse.stopsOnContact: true or absent`);
+      for ( const key of Object.keys(u) ) if ( !["item", "radius", "units", "on", "affects", "seenBy", "stopsOnContact"].includes(key) ) errors.push(`${at}.pulse.${key}: unknown key`);
     }
   }
   if ( "pilot" in summon ) {

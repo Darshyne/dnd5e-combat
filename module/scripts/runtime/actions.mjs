@@ -11,7 +11,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { movementAllowance } from "../core/turn.mjs";
 import { footprintGap, chooseBasicAttack, dragMultiplier, dragMultiplierWith, dragAllowance } from "../core/movement.mjs";
-import { combatantFor, readBudget, writeBudget, movementOf, speedOf, rangeOf, historyCosts, tokenCenter, positionOf, committedPosition, distanceBetween } from "../adapter/turn.mjs";
+import { combatantFor, readBudget, writeBudget, movementOf, speedOf, rangeOf, historyCosts, tokenCenter, positionOf, committedPosition, distanceBetween, currentTurnKey } from "../adapter/turn.mjs";
 import { jumpCost, LANDING_DC } from "../core/jump.mjs";
 import { jumpOptionsOf, landsOnDifficult } from "../adapter/jump.mjs";
 import { groundUnder, boundsUnder } from "../adapter/altitude.mjs";
@@ -33,7 +33,7 @@ import { loc, notice, log, rolledAndShown } from "./shared.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { onTeleport } from "./teleport.mjs";
 import { onDashTemplate, onDashUsed } from "./dash.mjs";
-import { onPreMoveToken } from "./move-gate.mjs";
+import { onPreMoveToken, noteWindward } from "./move-gate.mjs";
 import { identifierOf } from "../adapter/content.mjs";
 import { samePlane } from "../adapter/plane.mjs";
 import { enclosureBetween } from "../adapter/facts.mjs";
@@ -60,7 +60,9 @@ export function movementCap(token) {
   if ( budget.stopped ) return movement.spent + historyCosts(token).excluded;
   // §17.2 : le cœur ne connaît que son historique ; la hauteur des escaliers et le relevé s'en retirent ici.
   // §208 : un saut fixe (9 m pour 3 m) rend la différence au plafond, comparé à l'historique du cœur qui compte toute la distance.
-  const cap = movementAllowance(budget, movement.speed) - (Number(budget.climbed) || 0) - (Number(budget.stood) || 0) + (Number(budget.jumped) || 0);
+  // §403 : le surcoût de la Bourrasque (`windward`) s'en retire aussi.
+  const cap = movementAllowance(budget, movement.speed) - (Number(budget.climbed) || 0) - (Number(budget.stood) || 0) + (Number(budget.jumped) || 0)
+    - (Number(budget.windward) || 0);
   // Le plafond se compare à l'historique du CŒUR, qui compte aussi les téléportations (§16.10) : on les y rajoute.
   const excluded = historyCosts(token).excluded;
   const victims = victimsOf(token);
@@ -81,6 +83,8 @@ export function pilotMove(token, pilot) {
   const { spent, excluded } = historyCosts(token);
   const stuck = issue => ({ cap: spent + excluded, issue });
   if ( !plan.ownTurn ) return stuck("PasSonTour");
+  // §403 : Sphère de feu — « si vous la faites rouler sur une créature… la sphère s'arrête de bouger ce tour-ci » (runtime/pilot.mjs).
+  if ( token.getFlag?.(MODULE_ID, "stoppedOn") === currentTurnKey() ) return stuck("Arretee");
   if ( plan.pay && !((readBudget(plan.combatant)[plan.pay] ?? 0) > 0) ) return stuck("PasDeCommande");
   return { cap: commandDistance(pilot, readUnitFactors()) + excluded, issue: null };
 }
@@ -804,6 +808,7 @@ export function registerActions() {
   route("dnd5e.postUseActivity", onDashUsed, { label: "straight-line dash: movement" });
   route("dnd5e.preCreateMeasuredTemplate", onDashTemplate, { cancellable: true, label: "straight-line dash: no area" });
   route("preMoveToken", onPreMoveToken, { cancellable: true, label: "movement: cap and opportunity attacks" });
+  route("moveToken", (token, movement) => noteWindward(token, movement), { executor: true, label: "Gust of Wind: extra cost not counted" });
   // §99 : la pause arrête les marches du moteur lancées depuis ce client (chacun arrête les siennes, Hooks.callAll partout).
   route("pauseGame", paused => { if ( paused ) stopAllWalks(); }, { label: "pause: walks stopped" });
 }

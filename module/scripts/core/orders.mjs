@@ -53,3 +53,32 @@ export function cellsAtGap(anchor, size, gap, bounds) {
   }
   return out;
 }
+
+/**
+ * §403 : Compulsion — « une direction horizontale » désignée par le lanceur ; les huit de la grille (`n` = vers le haut de la scène).
+ * `{ di, dj }` : pas en lignes (i, vers le bas) et en colonnes (j, vers la droite) — les décalages de grille du cœur.
+ */
+export const DIRECTIONS = Object.freeze({
+  n: { di: -1, dj: 0 }, ne: { di: -1, dj: 1 }, e: { di: 0, dj: 1 }, se: { di: 1, dj: 1 },
+  s: { di: 1, dj: 0 }, sw: { di: 1, dj: -1 }, w: { di: 0, dj: -1 }, nw: { di: -1, dj: -1 }
+});
+
+/**
+ * §403 : la case visée par « autant de déplacement que possible dans cette direction » — `cells` pas depuis `cell`, bornée à la
+ * scène (`bounds` : { rows, columns } ; i de 0 à rows-1, j de 0 à columns-1). Null si la direction est inconnue ou sans pas.
+ * @param {{i: number, j: number}} cell
+ * @param {string} dir
+ * @param {number} cells
+ * @param {{rows: number, columns: number}} [bounds]
+ */
+export function directionTarget(cell, dir, cells, bounds=null) {
+  const d = DIRECTIONS[dir];
+  if ( !d || !(cells > 0) ) return null;
+  let steps = Math.floor(cells);
+  if ( bounds ) {
+    const room = (v, dv, size) => (dv > 0) ? (size - 1 - v) : (dv < 0) ? v : Infinity;
+    steps = Math.min(steps, room(cell.i, d.di, bounds.rows), room(cell.j, d.dj, bounds.columns));
+  }
+  if ( !(steps > 0) ) return null;
+  return { i: cell.i + (d.di * steps), j: cell.j + (d.dj * steps) };
+}

@@ -33,8 +33,12 @@ export async function holdDifficultTerrain(region) {
     const [behavior] = await region.createEmbeddedDocuments("RegionBehavior", [{ type: "modifyMovementCost", name: activity.item.name, system: { difficulties } }]);
     return behavior;
   }
+  // §403 : `enemiesOnly` — « terrain difficile pour vos ennemis » (Invocation d'élémentaires mineurs) : la disposition du lanceur
+  // passe sans frais (`ignoredDispositions` du comportement de dnd5e, data/region-behavior/difficult-terrain.mjs:27).
+  const caster = rule.enemiesOnly ? (activity.actor?.token ?? activity.actor?.getActiveTokens?.(false, true)?.[0] ?? null) : null;
+  const ignoredDispositions = caster ? [caster.disposition] : [];
   const [behavior] = await region.createEmbeddedDocuments("RegionBehavior", [{
-    type: "dnd5e.difficultTerrain", name: activity.item.name, system: { magical: true, types: rule.types ?? [] }
+    type: "dnd5e.difficultTerrain", name: activity.item.name, system: { magical: true, types: rule.types ?? [], ignoredDispositions }
   }]);
   return behavior;
 }

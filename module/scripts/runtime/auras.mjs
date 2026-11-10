@@ -22,6 +22,14 @@ const isInactive = actor => actor.statuses.has("incapacitated") || actor.statuse
  * en exploration, sur une grande scène, c'est du travail pour un bonus qui ne sert qu'aux rares
  * sauvegardes hors combat — que le MJ peut alors compter à la main.
  */
+/** §403 : les tokens de celui qui a invoqué ce token (`flags.dnd5e.summon.origin` : l'item de l'invocateur). */
+function summonerTokens(token) {
+  const origin = token.actor?.getFlag?.("dnd5e", "summon")?.origin;
+  const actor = origin ? fromUuidSync(origin, { strict: false })?.actor : null;
+  if ( !actor ) return [];
+  return (actor.token ? [actor.token] : actor.getActiveTokens(false, true)).map(t => t.uuid);
+}
+
 function aurasActiveOn(scene) {
   if ( !game.settings.get(MODULE_ID, "aurasOnlyInCombat") ) return true;
   return game.combats.some(c => c.started && (!c.scene || (c.scene.id === scene.id)));
@@ -34,6 +42,9 @@ function aurasActiveOn(scene) {
  */
 async function refreshScene(scene) {
   const tokens = scene.tokens.filter(t => t.actor && !t.hidden && !isObjectToken(t));
+  // §403 : une invocation tenue pour un objet (la meute d'Invocation d'animaux : pilotée, sans espace) peut porter une aura ; elle n'en
+  // reçoit aucune.
+  const sources = scene.tokens.filter(t => t.actor && !t.hidden);
   const active = aurasActiveOn(scene);
   const factors = readUnitFactors();
   const gridUnits = scene.grid.units;
@@ -41,12 +52,13 @@ async function refreshScene(scene) {
   const auraBySlot = new Map();   // `${source}|${key}` -> { aura, sourceToken }
 
   const auras = [];
-  for ( const sourceToken of (active ? tokens : []) ) for ( const aura of aurasOf(sourceToken.actor) ) {
+  for ( const sourceToken of (active ? sources : []) ) for ( const aura of aurasOf(sourceToken.actor) ) {
     let radius = lengthIn(aura.radius, aura.units, gridUnits, factors);
     const source = {
       ...sideOf(sourceToken), token: sourceToken.uuid, key: aura.key,
       inactive: isInactive(sourceToken.actor), radius, affects: aura.affects,
-      includeSelf: aura.includeSelf === true, value: auraValue(aura, sourceToken.actor), types: aura.types ?? null
+      includeSelf: aura.includeSelf === true, value: auraValue(aura, sourceToken.actor), types: aura.types ?? null,
+      ...(aura.affects === "summoner" ? { summoners: summonerTokens(sourceToken) } : {})
     };
     // P2 : distance en 3D ; une émanation est arrêtée par un abri total (plancher, mur plein) — testé
     // seulement pour qui est à portée, la ligne d'effet coûte des rayons.

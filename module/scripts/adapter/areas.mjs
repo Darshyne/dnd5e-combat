@@ -123,6 +123,19 @@ export function rangedBanAround(token) {
   return null;
 }
 
+/**
+ * §403 : la zone qui dure (`formLock`, Rayon de lune) dans laquelle se tient ce token — « tant qu'elle reste dans la lumière, elle ne
+ * peut pas prendre une autre forme ». Rend l'item, ou null.
+ */
+export function formLockAround(token) {
+  for ( const region of lastingRegions(token?.parent) ) {
+    const uuid = region.getFlag?.("dnd5e", "activity");
+    const item = uuid ? fromUuidSync(uuid, { strict: false })?.item : null;
+    if ( item && (contentOf(item).entry?.formLock === true) && isInside(token, region) ) return item;
+  }
+  return null;
+}
+
 /** Ce token est-il dans la région, à sa position actuelle ou à une position donnée ? */
 export function isInside(token, region, position) {
   // Sans position donnée : la position validée, pas la position visuelle (voir committedPosition).
@@ -335,8 +348,9 @@ export async function noteExpiry(region, now=game.time.worldTime) {
   // O9h (§363) : le sort qu'un objet a fait lancer dure ce que l'objet déclare (Huile d'insaisissabilité : Graisse, 8 heures) — la zone
   // posée par la copie du sort, ou par l'activité « cast » de l'objet elle-même (pose directe).
   const potion = potionOfCast(item);
+  // §403 : `zoneLasts` — la durée que le contenu donne à la zone (Symbole : 10 minutes, quelle que soit celle de l'activité).
   const declared = potion?.identifier ? entryOfIdentifier(potion.identifier)?.castDuration?.seconds
-    : ((activity.type === "cast") ? contentOf(item).entry?.castDuration?.seconds : null);
+    : ((activity.type === "cast") ? contentOf(item).entry?.castDuration?.seconds : (contentOf(item).entry?.zoneLasts?.seconds ?? null));
   if ( !Number.isFinite(declared) && isInstantaneous(activity) ) return null;
   if ( activity.duration?.concentration || item.requiresConcentration || item.system?.properties?.has?.("concentration") ) return null;
   const at = Number.isFinite(declared) ? now + declared : expiryTime(now, activity.duration ?? {}, readTimeFactors());

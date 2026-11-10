@@ -83,7 +83,7 @@ describe("validation d'une entrée", () => {
 
   it("aura : rayon positif, camp connu, id d'effet à 16 caractères, pas de clé inventée", () => {
     expect(validateEntry({ aura: { radius: -5, affects: "friends", effect: "abc", color: "red" } }, { facts })).toEqual([
-      "aura.radius: positive number", "aura.affects: ally, enemy, any", "aura.effect: effect id (16 characters)", "aura.color: unknown key"
+      "aura.radius: positive number", "aura.affects: ally, enemy, any, summoner", "aura.effect: effect id (16 characters)", "aura.color: unknown key"
     ]);
     expect(validateEntry({ aura: { radius: 10 } }, { facts })).toEqual([]);
   });
@@ -198,10 +198,10 @@ describe("contenu livré", () => {
       "fire-element", "fire-form", "fire-shield", "fires-burn", "flame-aura", "flame-blade", "flame-tongue-enchanted", "flaming-sphere",
       "flask-of-holy-water", "fleet-step", "flesh-to-stone", "flyby", "foe-slayer", "fog-cloud", "font-of-inspiration", "fool",
       "forbiddance", "forbidden-knowledge", "forcecage", "forceful-hand", "foresight", "form-of-dread", "fortitude-ioun-stone",
-      "fortune-teller-spirit", "fount-of-moonlight", "frenzied-rush", "frenzy", "friends", "frosts-chill", "full-of-stars", "gaseous-form",
+      "fortune-teller-spirit", "fount-of-moonlight", "freedom-of-movement", "frenzied-rush", "frenzy", "friends", "frosts-chill", "full-of-stars", "gaseous-form",
       "gate", "gathered-whispers", "geas", "gem-of-brightness", "gem-of-seeing", "ghost-walk", "giant-insect", "giant-slayer-enchanted",
       "gibbering", "globe-of-invulnerability", "gloves-of-missile-snaring", "gloves-of-swimming-and-climbing", "goading-attack",
-      "golden-lions-rare", "grappler", "grasping-hand", "grasping-vine", "grave-dust-flight", "grease", "great-weapon-fighting",
+      "golden-lions-rare", "grant-save-advantage", "grappler", "grasping-hand", "grasping-vine", "grave-dust-flight", "grease", "great-weapon-fighting",
       "great-weapon-master", "greater-absorption-ioun-stone", "greater-portent", "greater-restoration", "grenade-smoke",
       "guardian-of-faith", "guidance", "guiding-bolt", "gust-of-wind", "hail-of-thorns", "hammer-of-thunderbolts-enchanted",
       "hand-of-healing", "hand-of-ultimate-mercy", "harkons-bite", "haste", "heal", "healer", "healers-kit", "heat-aura", "heat-metal",
@@ -275,7 +275,7 @@ describe("contenu livré", () => {
       "thunderous-smite", "thunderwave", "tinderbox", "toll-the-dead", "torch", "torpor", "toxic-escape", "trampling-charge",
       "travel-along-the-tree", "trebuchet", "tricksters-transposition", "trip-attack", "true-resurrection", "true-strike", "tsunami",
       "twinned-spell", "umbral-dagger", "unarmed-fighting", "unarmed-strike", "uncanny-dodge", "undead-fortitude", "unraveling-flesh",
-      "unseen-servant", "valor-extra-attack", "vampiric-bite", "vampiric-touch", "vanish", "vicious-mockery", "vile-appearance",
+      "unseen-servant", "valor-extra-attack", "vampiric-bite", "vampiric-touch", "vanish", "vicious-mockery", "vile-appearance", "vine-attack",
       "viral-aura", "vitality-of-the-tree", "vitriolic-sphere", "vow-of-enmity", "wails-from-the-grave", "wall-of-fire", "wall-of-force",
       "wall-of-ice", "wall-of-stone", "wall-of-thorns", "wand-of-paralysis", "wand-of-polymorph", "wand-of-web", "wand-of-wonder",
       "war-caster", "war-magic", "war-priest", "warding-bond", "warding-flare", "warp-body", "watchers", "water-element", "water-form",
@@ -1204,7 +1204,7 @@ describe("§317 : repasse, lot C12-j (divers)", () => {
       expect(validateEntry(CONTENT[id], { facts }), id).toEqual([]);
     }
     expect(CONTENT["font-of-inspiration"].regainOnShortRest).toEqual(["bardic-inspiration"]);
-    expect(CONTENT["steel-wind-strike"].projectiles).toEqual({ count: "5", attack: true, teleportNear: { distance: 5, units: "ft" } });
+    expect(CONTENT["steel-wind-strike"].projectiles).toEqual({ count: "5", attack: true, onePerTarget: true, teleportNear: { distance: 5, units: "ft" } });
     expect(validateEntry({ regainOnShortRest: [""] })).toHaveLength(1);
   });
 });
@@ -1222,5 +1222,63 @@ describe("§353 : swornEnemy", () => {
     expect(validateEntry({ swornEnemy: { effect: "EWoLqkPJeK9dwYhn" } })).toEqual([]);
     expect(validateEntry({ swornEnemy: { effect: "x" } }).length).toBe(1);
     expect(validateEntry({ swornEnemy: true }).length).toBe(1);
+  });
+});
+
+describe("§403 : écarts moyens, second lot", () => {
+  it("durationByLevel : Malédiction", async () => {
+    const { durationAtLevel } = await import("../module/scripts/core/durations.mjs");
+    const rule = CONTENT["bestow-curse"].durationByLevel;
+    expect(durationAtLevel(rule, 3)).toBeNull();
+    expect(durationAtLevel(rule, 4)).toEqual({ seconds: 600, concentration: true });
+    expect(durationAtLevel(rule, 6)).toEqual({ seconds: 28800, concentration: false });
+    expect(durationAtLevel(rule, 8)).toEqual({ seconds: 86400, concentration: false });
+    expect(durationAtLevel(rule, 9)).toEqual({ seconds: null, concentration: false });
+    expect(validateEntry({ durationByLevel: [{ from: 10 }] })).toHaveLength(1);
+    expect(validateEntry({ durationByLevel: [{ from: 4, seconds: 600, extra: 1 }] })).toHaveLength(1);
+  });
+  it("Frappe du vent d'acier, Choc de vie, Compulsion", () => {
+    expect(CONTENT["steel-wind-strike"].projectiles.onePerTarget).toBe(true);
+    expect(CONTENT["jolt-to-life"].targets.unaffectedIf["activity.id"]).toBe("xg84KvaBJVjFZQpV");
+    expect(CONTENT["compulsion"].compels).toBe(true);
+    expect(validateEntry({ projectiles: { count: "5", attack: true, onePerTarget: 1 } })).toHaveLength(1);
+  });
+});
+
+describe("§403 : aura de l'invocateur", () => {
+  it("Invocation d'animaux : seul l'invocateur, à 1,50 m", async () => {
+    const { auraRecipients } = await import("../module/scripts/core/aura.mjs");
+    expect(CONTENT["grant-save-advantage"].aura.affects).toBe("summoner");
+    const source = { token: "pack", disposition: 1, inactive: false, radius: 5, affects: "summoner", includeSelf: false, value: 0, summoners: ["caster"] };
+    const near = { disposition: 1, distance: 5, lineOfEffect: true };
+    expect(auraRecipients(source, [{ ...near, token: "caster" }, { ...near, token: "ally" }, { token: "pack", distance: 0 }])).toEqual(["caster"]);
+    expect(auraRecipients(source, [{ ...near, token: "caster", distance: 10 }])).toEqual([]);
+  });
+});
+
+describe("§403 : Liberté de mouvement", () => {
+  it("les réductions de Vitesse se reconnaissent", async () => {
+    const { reducesSpeed, withoutSpeedReductions } = await import("../module/scripts/core/speed-floor.mjs");
+    expect(reducesSpeed({ key: "system.attributes.movement.speed", type: "add", value: -10 })).toBe(true);
+    expect(reducesSpeed({ key: "system.attributes.movement.speed", type: "multiply", value: 0.5 })).toBe(true);
+    expect(reducesSpeed({ key: "system.attributes.movement.walk", type: "override", value: 0 })).toBe(true);
+    expect(reducesSpeed({ key: "system.attributes.movement.swim", type: "upgrade", value: 1 })).toBe(false);
+    expect(reducesSpeed({ key: "system.attributes.movement.speed", type: "add", value: 10 })).toBe(false);
+    expect(reducesSpeed({ key: "system.attributes.ac.bonus", type: "add", value: -2 })).toBe(false);
+    expect(withoutSpeedReductions([{ key: "system.attributes.ac.bonus", type: "add", value: -2 },
+      { key: "system.attributes.movement.speed", type: "multiply", value: 0.5 }])).toHaveLength(1);
+    expect(CONTENT["freedom-of-movement"].keepsSpeed).toBe(true);
+  });
+});
+
+describe("§403 : Bourrasque", () => {
+  it("vers le lanceur dans la ligne : le coût une fois de plus", async () => {
+    const { windwardExtra } = await import("../module/scripts/core/windward.mjs");
+    const caster = { x: 0, y: 0 };
+    const toward = [{ x: 300, y: 0, inside: true }, { x: 200, y: 0, inside: true, cost: 5 }, { x: 100, y: 0, inside: true, cost: 5 }];
+    expect(windwardExtra(toward, caster)).toBe(10);
+    expect(windwardExtra([...toward].reverse().map((p, i, a) => ({ ...p, cost: i ? 5 : 0 })), caster)).toBe(0);
+    expect(windwardExtra([{ x: 300, y: 0, inside: false }, { x: 200, y: 0, inside: false, cost: 5 }], caster)).toBe(0);
+    expect(CONTENT["gust-of-wind"].windward).toBe(true);
   });
 });

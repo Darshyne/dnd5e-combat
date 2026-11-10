@@ -23,7 +23,7 @@ import { stepsOf } from "../core/triggers.mjs";
 import { rangeIssue } from "../core/range.mjs";
 import { usageTokenOf as usageToken, distanceBetween, rangeOf, currentTurnKey } from "../adapter/turn.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
-import { reactionOptions, askReaction } from "../adapter/reactions.mjs";
+import { reactionOptions, askReaction, setReactionSpellGate } from "../adapter/reactions.mjs";
 import { spellCommandOf } from "../adapter/pilot.mjs";
 import { matching } from "./triggers.mjs";
 import { attackReactors, askAttackReactions, rememberAttackMods } from "./reactions.mjs";
@@ -349,7 +349,8 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     targets = Array.from(game.user.targets).map(t => t.document).filter(t => t !== origin);
   }
   const wards = wardsAgainst(activity, origin, targets);
-  // Un sort lancé en réaction (Contresort lui-même, Bouclier) n'ouvre pas de fenêtre : pas de contre-contre (limite assumée).
+  // Un sort lancé en réaction (Contresort lui-même, Bouclier) ne passe pas par cette porte : §403, sa propre porte avant qu'il parte
+  // (`passReactionSpell`, appelée par la fenêtre de réaction), qui permet le contre-Contresort.
   // Commander les objets d'un sort déjà lancé (« Move Lights », §16.17) n'est pas lancer un sort : rien à contrer.
   // §119 : un projectile enchaîné (Projectile magique, Rayon ardent) ou un rebond (Orbe chromatique) n'est pas un nouveau sort :
   // le Contresort se joue au lancement, une fois (il se proposait de nouveau à chaque projectile enchaîné).
@@ -429,6 +430,22 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   return false;
 }
 
+/**
+ * §403 : contre-Contresort — « un sort lancé en réaction peut être contré ». Le sort de réaction d'un acteur (Contresort, Bouclier) est
+ * soumis aux mêmes Contresorts que les autres, avant de partir ; contré, sa Réaction est perdue (`wasteUse`) et il ne part pas. Le lanceur
+ * d'origine, qui a déjà lancé ce tour, n'a en général qu'une Réaction : la chaîne s'arrête d'elle-même.
+ */
+async function passReactionSpell(activity, actor) {
+  const origin = usageToken(activity) ?? actor?.token ?? actor?.getActiveTokens?.(false, true)?.[0] ?? null;
+  if ( !origin?.parent || !canvas?.ready ) return true;
+  const candidates = counterCandidates(activity, origin);
+  if ( !candidates.length ) return true;
+  const passed = await passCounters(activity, origin, candidates, { auto: false, castLevel: Number(activity.item.system?.level) || 0 });
+  if ( !passed ) await wasteUse(activity);
+  return passed;
+}
+
 export function registerGates() {
+  setReactionSpellGate(passReactionSpell);
   route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "gates: Sanctuary, Counterspell, pre-attack reactions, Portent" });
 }

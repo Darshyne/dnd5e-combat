@@ -139,7 +139,7 @@ export const TRIGGERS = Object.freeze({
   // long de la Ligne en cas d'échec ; qui finit son tour dans la Ligne la refait. La pose
   // est la sauvegarde de l'activité ; la zone dure et rejoue en fin de tour. Au joueur : le déplacement doublé vers le lanceur, le
   // changement de direction par action Bonus.
-  "gust-of-wind": [
+  "gust-of-wind": [   // §403 : le déplacement doublé vers le lanceur — `windward`, content/spell-rules.mjs
     { on: "turnEnd", do: [{ type: "replay" }] },
     { on: "failedSave", do: [{ type: "move", mode: "push", distance: 15, units: "ft" }] }
   ],
@@ -147,6 +147,11 @@ export const TRIGGERS = Object.freeze({
   // repoussé de 1,50 m…
   "telekinetic": [{ on: "failedSave", do: [{ type: "move", mode: "push", distance: 5, units: "ft" }] }],
   // …Fouet d'épines (PHB, spells) : une cible de taille G au plus est tirée de 3 m au plus vers le lanceur.
+  // §403 : Liane avide, l'attaque de la liane (« Vine Attack ») — « tirée jusqu'à 9 m vers la liane » (au choix du lanceur, `upTo`) ;
+  // « Agrippée si elle est de taille TG ou inférieure » (DD d'évasion : celui de l'évasion du moteur). « Une seule créature agrippée à
+  // la fois », la libérer sans action : au MJ.
+  "vine-attack": [{ on: "hit", do: [{ type: "move", mode: "pull", distance: 30, units: "ft", upTo: true }] },
+    { on: "hit", if: { "target.sizeAtMost": "huge" }, do: [{ type: "status", status: "grappled" }] }],
   "thorn-whip": [{ on: "hit", if: { "target.sizeAtMost": "lg" }, do: [{ type: "move", mode: "pull", distance: 10, units: "ft", upTo: true }] }],
 
   // Sauvegarde répétée (SPEC §16) : « la cible réitère le JS à la fin de chacun de ses tours et met un terme
@@ -308,6 +313,7 @@ export const TRIGGERS = Object.freeze({
   // §91 : Symbole — Sommeil : « reprend connaissance si elle subit des dégâts » ; Discorde : « ses jets d'attaque … avec le
   // Désavantage » (les tests : content/spell-rules.mjs, `effectChanges`).
   "symbol": [
+    { on: ["enter", "turnEnd"], do: [{ type: "replay" }] },   // §403 : la sphère de 18 m, pendant 10 minutes
     { on: "isDamaged", via: "effect", fromEffect: "A1VA7t5gB7ODNsr6", do: [{ type: "remove" }] },
     { on: "preAttackRoll", via: "effect", fromEffect: "YAwLt85sPQpUCIBI", if: { "source.hasEffect": "symbol" }, do: [{ type: "disadvantage" }] }
   ],

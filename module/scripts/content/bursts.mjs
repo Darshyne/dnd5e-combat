@@ -75,7 +75,8 @@ export const PROJECTILES = Object.freeze({
   "eldritch-blast": { count: "floor((@details.level + 1) / 6) + 1", attack: true },
   // C12-j : Frappe du vent d'acier — « jusqu'à cinq créatures : un jet d'attaque de sort au corps à corps contre chacune ». §402 :
   // « vous pouvez ensuite vous téléporter dans un espace inoccupé que vous voyez, à 1,50 m de l'une des cibles » (`teleportNear`).
-  "steel-wind-strike": { count: "5", attack: true, teleportNear: { distance: 5, units: "ft" } }
+  // §403 : « jusqu'à cinq créatures… contre chacune » — une attaque au plus par créature (`onePerTarget`), moins de cinq possible.
+  "steel-wind-strike": { count: "5", attack: true, onePerTarget: true, teleportNear: { distance: 5, units: "ft" } }
 });
 
 /**

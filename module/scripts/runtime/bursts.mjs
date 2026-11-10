@@ -38,6 +38,8 @@ async function onResolution(resolution) {
   // C12-b : après un soin (Choc de vie), sans condition de dégâts.
   const afterHeal = activity.type === "heal";
   if ( rule.from ? !rule.from.includes(activity.id) || (!afterHeal && !((resolution.targets?.[0]?.damage?.applied ?? 0) > 0)) : !resolution.plan?.attack ) return;
+  // §403 : un soin sur une cible qu'il ne peut pas affecter (Choc de vie sur une créature debout ou morte) ne déclenche rien.
+  if ( afterHeal && resolution.targets?.[0]?.unaffected ) return;
   const sibling = rule ? activity.item.system.activities?.get(rule.activity) : null;
   const center = resolution.targets?.[0]?.token ? fromUuidSync(resolution.targets[0].token, { strict: false }) : null;
   if ( !sibling || !center ) return;

@@ -574,7 +574,7 @@ export function onModifierKey(event) {
 export function onKeyDown(event) {
   onModifierKey(event);
   // §16.33 : Entrée lance un sort de groupe avec les créatures déjà choisies (« jusqu'à cinq créatures »).
-  if ( (event.key === "Enter") && picking?.group && picking.picks.length ) { swallow(event); return finishGroup(); }
+  if ( (event.key === "Enter") && (picking?.group || picking?.unique) && picking.picks.length ) { swallow(event); return finishGroup(); }
   if ( event.key !== "Escape" ) return;
   if ( menu ) { closeMenu(); swallow(event); }
   else if ( aimingByClick() ) {   // une zone en cours de pose : Échap est au cœur

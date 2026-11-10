@@ -200,8 +200,8 @@ export function applicationPlan(resolution) {
  *           elle reste dans la résolution pour qu'on le lise, mais ni sauvegarde, ni dégâts, ni effet.
  */
 
-function blankTarget({ token, actor, name, ac=null, defenceless=false, canReact=false, autoFail=null, cover=null, unaffected=null, duplicates=0, times=1, evasion=false, sculpted=false, noCrit=false }) {
-  return { token, actor, name, ac, defenceless, canReact, autoFail, cover, unaffected, duplicates, times, evasion, sculpted, noCrit, halved: false,
+function blankTarget({ token, actor, name, ac=null, defenceless=false, canReact=false, autoFail=null, autoSucceed=null, cover=null, unaffected=null, duplicates=0, times=1, evasion=false, sculpted=false, noCrit=false }) {
+  return { token, actor, name, ac, defenceless, canReact, autoFail, autoSucceed, cover, unaffected, duplicates, times, evasion, sculpted, noCrit, halved: false,
     hit: null, critical: false, reason: null, reaction: null, duplicate: null, save: null, damage: null, effects: [] };
 }
 
@@ -371,6 +371,10 @@ function afterVerdict(resolution) {
     // §28 (avant les échecs d'office) : Façonneur de sorts — les créatures épargnées « réussissent automatiquement leur jet de sauvegarde ».
     next = { ...next, targets: next.targets.map(t => (affected.has(t.token) && t.sculpted && (t.save === null))
       ? { ...t, save: { total: null, success: true, messageId: null, auto: "sculpted" } } : t) };
+    // §402 : une réussite d'office par type de créature (`saveAutoSuccess` : Pétrification — « une Créature artificielle réussit
+    // automatiquement ») ; l'effet sur réussite reste posé, les dégâts suivent la règle de la sauvegarde.
+    next = { ...next, targets: next.targets.map(t => (affected.has(t.token) && t.autoSucceed && (t.save === null))
+      ? { ...t, save: { total: null, success: true, messageId: null, auto: t.autoSucceed } } : t) };
     next = { ...next, targets: next.targets.map(t => (affected.has(t.token) && t.autoFail && (t.save === null))
       ? { ...t, save: { total: null, success: false, messageId: null, auto: t.autoFail } } : t) };
     const waiting = pendingSaves(next);

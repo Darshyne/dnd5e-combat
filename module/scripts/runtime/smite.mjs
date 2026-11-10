@@ -10,7 +10,7 @@
  *    `strikeAgainst`).
  *    §42.2 : l'effet du sort posé sans sauvegarde sur la cible touchée (`smite.effect` : brûlure du Châtiment de fournaise,
  *    aveuglement du Châtiment de cécité), dont le contenu déclare la suite (dégâts au début du tour, sauvegarde répétée).
- * Limite : la concentration des châtiments qui en demandent une et la lueur du Châtiment lumineux restent au MJ.
+ * §402 : un châtiment à concentration la commence au coup, ses effets en dépendent. Limite : la lueur du Châtiment lumineux reste au MJ.
  */
 
 import { MODULE_ID } from "../constants.mjs";
@@ -27,6 +27,21 @@ import { log, loc, locEsc, notice, say, waitForDice } from "./shared.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { rangedWeaponHit, smiteOptions, spendSmite } from "../adapter/smite.mjs";
 import { requestSave } from "./neighbours.mjs";
+
+/**
+ * §402 : la concentration d'un châtiment qui en demande une (Frappe piégeuse, Châtiment courroucé…) — celles qui dépassent la limite
+ * de l'acteur cessent d'abord (dnd5e : une seule à la fois), puis dnd5e l'ouvre sur l'activité de sauvegarde (ou la première).
+ */
+async function beginSmiteConcentration(actor, item, smite) {
+  const activity = item.system.activities?.get(smite.save) ?? item.system.activities?.contents?.[0] ?? null;
+  if ( !activity || !actor.beginConcentrating ) return null;
+  const limit = Number(actor.system.attributes?.concentration?.limit) || 1;
+  const held = Array.from(actor.concentration?.effects ?? []);
+  for ( const effect of held.slice(0, Math.max(0, held.length - limit + 1)) ) await actor.endConcentration(effect);
+  const effect = await actor.beginConcentrating(activity).catch(() => null);
+  if ( effect ) log(`${item.name}: ${actor.name} concentrates`);
+  return effect ?? null;
+}
 
 function onPreRollDamage(config, dialog, message) {
   const smite = config[MODULE_ID]?.smite;
@@ -172,8 +187,11 @@ async function onResolution(resolution) {
   const down = (target.actor.system.attributes?.hp?.value ?? 0) <= 0;
   if ( down ) log(`${smite.name}: ${target.name} is at 0 Hit Points, no effect and no saving throw`);
   if ( down && !burst ) return;
+  // §402 : un châtiment à concentration (Frappe piégeuse) la commence maintenant — l'emplacement est dépensé sans `use()` de dnd5e,
+  // qui l'aurait ouverte ; les effets posés en dépendent et tombent avec elle.
+  const concentration = (!down && item.requiresConcentration) ? await beginSmiteConcentration(actor, item, smite) : null;
   // §42.2 : l'effet que le sort pose en touchant, sans sauvegarde (« Seared », « Blinded »), au niveau lancé.
-  if ( smite.effect && !down ) await placeItemEffect(item, smite.effect, target.actor, { scaling: smite.scaling ?? 0 });
+  if ( smite.effect && !down ) await placeItemEffect(item, smite.effect, target.actor, { scaling: smite.scaling ?? 0, dependentOn: concentration?.uuid ?? null });
   if ( !smite.save ) return;
   const save = item.system.activities?.get(smite.save);
   if ( !save ) return;
@@ -185,7 +203,7 @@ async function onResolution(resolution) {
   if ( !down && ceiling && (hp > ceiling) ) { log(`${smite.name}: ${target.name} still has ${hp} HP (> ${ceiling}), no saving throw`); return; }
   if ( !down ) {
     log(`${smite.name}: ${target.name} makes their saving throw`);
-    await strikeAgainst(save, source, target, { flavor: "DND5ECOMBAT.Chatiment.Carte" });
+    await strikeAgainst(save, source, target, { flavor: "DND5ECOMBAT.Chatiment.Carte", scaling: smite.scaling ?? 0, concentration: concentration?.id ?? null });
   }
   // §164 : « la cible et chaque créature à 1,50 m d'elle » (Grêle d'épines).
   if ( !burst ) return;
@@ -194,7 +212,7 @@ async function onResolution(resolution) {
     if ( (other === target) || !other.actor || other.hidden || ((other.actor.system.attributes?.hp?.value ?? 0) <= 0) ) continue;
     if ( distanceBetween(target, other).value > radius + 1e-6 ) continue;
     log(`${smite.name}: ${other.name}, within ${burst.radius} ${burst.units} of ${target.name}, makes their saving throw`);
-    await strikeAgainst(save, source, other, { flavor: "DND5ECOMBAT.Chatiment.Carte" });
+    await strikeAgainst(save, source, other, { flavor: "DND5ECOMBAT.Chatiment.Carte", scaling: smite.scaling ?? 0, concentration: concentration?.id ?? null });
   }
 }
 
@@ -229,7 +247,7 @@ async function applyRider(smite, item, resolution) {
   const source = save ? (item.actor?.getActiveTokens(false, true)[0] ?? null) : null;
   if ( save && source && ((target.actor.system.attributes?.hp?.value ?? 0) > 0) ) {
     log(`${smite.name}: ${target.name} makes their saving throw`);
-    await strikeAgainst(save, source, target, { flavor: "DND5ECOMBAT.Chatiment.Carte" });
+    await strikeAgainst(save, source, target, { flavor: "DND5ECOMBAT.Chatiment.Carte", scaling: smite.scaling ?? 0 });
   }
 }
 

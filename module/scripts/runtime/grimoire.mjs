@@ -16,6 +16,7 @@ import { route } from "./router.mjs";
 import { log, loc, notice } from "./shared.mjs";
 import { spendItemUses } from "../adapter/uses.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
+import { comesFromItemEffect, originItemOf } from "../adapter/facts.mjs";
 
 const tokenOfActor = actor => actor?.getActiveTokens?.(false, true)?.[0] ?? null;
 
@@ -69,6 +70,29 @@ async function shortRestRegain(actor, result, config) {
   }
 }
 
+/**
+ * §402 : `fadesOnLongRest: [ids d'effets]` — à chaque Repos long, le porteur perd un de ces effets de l'item, le premier présent dans
+ * l'ordre de la liste (Rappel à la vie, Résurrection : « le malus diminue de 1 à chaque Repos long » — quatre effets de −1).
+ */
+async function longRestFade(actor, result, config) {
+  if ( (config?.type !== "long") || !actor?.isOwner ) return;
+  const byItem = new Map();
+  for ( const effect of actor.effects ) {
+    const item = originItemOf(effect);
+    const ids = item ? contentOf(item).entry?.fadesOnLongRest : null;
+    const rank = ids?.findIndex(id => comesFromItemEffect(effect, id)) ?? -1;
+    if ( rank < 0 ) continue;
+    const best = byItem.get(item);
+    if ( !best || (rank < best.rank) ) byItem.set(item, { effect, rank });
+  }
+  for ( const [item, { effect }] of byItem ) {
+    const name = effect.name;
+    await effect.delete();
+    notice(tokenOfActor(actor), loc("Retour.Estompe", { item: item.name }), "gain");
+    log(`${actor.name}: ${name} fades after a Long Rest (${item.name})`);
+  }
+}
+
 async function onRestCompleted(actor, result, config) {
   if ( (config?.type !== "short") || !actor?.isOwner ) return;
   const recovery = slotRecoveryOf(actor);
@@ -106,4 +130,5 @@ export function registerGrimoire() {
   // Sur le client qui a lancé le repos (documents/actor/actor.mjs) : propriétaire de l'acteur ; la question va à son joueur.
   route("dnd5e.restCompleted", onRestCompleted, { label: "Arcane Recovery not offered" });
   route("dnd5e.restCompleted", shortRestRegain, { label: "uses not regained on a Short Rest" });
+  route("dnd5e.restCompleted", longRestFade, { label: "effect not faded on a Long Rest" });
 }

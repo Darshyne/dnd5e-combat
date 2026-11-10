@@ -5,7 +5,7 @@ import { effectHolds } from "../module/scripts/core/feats.mjs";
 
 const facts = Object.fromEntries(["activity.type", "activity.isAttack", "activity.isSpell", "activity.isWeapon", "activity.weaponKind", "activity.identifier", "activity.id",
   "activity.hasProperty", "source.hasStatus", "source.hasEffect", "source.creatureType", "source.allyNearTarget", "source.summonNearTarget", "source.seesTarget",
-  "target.hasStatus", "target.hasEffect", "target.hasEffectFrom", "hit.stoppableBy", "hit.critical", "damage.resisted", "target.grappledBySource", "target.wieldsProperty", "target.isSelf", "self.hasShield", "self.wieldsWeapon", "target.hasFeature", "activity.ability", "target.sizeAtMost", "target.within", "target.seesSource", "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "target.atZero", "target.isDead", "damage.hasType", "target.hpAtMost", "condition.gained",
+  "target.hasStatus", "target.hasMark", "target.hasEffect", "target.hasEffectFrom", "hit.stoppableBy", "hit.critical", "damage.resisted", "target.grappledBySource", "target.wieldsProperty", "target.isSelf", "self.hasShield", "self.wieldsWeapon", "target.hasFeature", "activity.ability", "target.sizeAtMost", "target.within", "target.seesSource", "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "target.atZero", "target.isDead", "damage.hasType", "target.hpAtMost", "condition.gained",
   "target.wounded", "target.bloodied", "source.classLevelAtLeast", "target.nearSelf", "self.seesTarget", "target.hasNotActed", "source.onOwnTurn", "activity.dealsType", "source.hasFeature", "activity.cantripOf", "activity.school", "activity.enchantedBy", "source.wildShaped", "activity.classSpell", "source.resists", "source.nearSelf", "self.seesSource", "source.hasEffectFromTarget", "source.hasSense", "target.allied"].map(k => [k, true]));
 const MOMENTS_LIST = "isHit, isDamaged, leavesReach, enemyDisengages, enter, turnStart, turnEnd, moves, preDamageRoll, hit, failedSave, savedSave, startOfTurn, endOfTurn, originTurnStart, preAttackRoll, castsSpell, isMissed, enemyTurnEnd, isTargeted, isAttacked, enemyAttacks, allyAttacks, gainsCondition, allyIsHit, allyIsDamaged, enemyAttacked, falls, allyFalls";
 
@@ -27,7 +27,7 @@ describe("validation d'une entrée", () => {
     const errors = validateEntry({ triggers: [{ on: "onHit", if: { "moon.phase": "full" }, do: [{ type: "smite" }] }] }, { facts });
     expect(errors).toEqual([
       `triggers[0].on: unknown moment "onHit" (${MOMENTS_LIST})`,
-      "triggers[0].do[0].type: unknown \"smite\" (lift, disarm, use, replay, damage, move, status, resave, remove, halve, uncrit, consume, advantage, disadvantage, ward, attackBonus, endCondition, reduce, miss, penalty, bonus, absorb, interpose, mark, save, breakConcentration, cancel, intercept, redirect)",
+      "triggers[0].do[0].type: unknown \"smite\" (lift, disarm, use, replay, damage, move, status, resave, remove, halve, uncrit, consume, advantage, disadvantage, ward, attackBonus, endCondition, reduce, miss, penalty, bonus, absorb, interpose, mark, save, breakConcentration, cancel, intercept, redirect, banish, revertForm)",
       "triggers[0].if: unknown fact \"moon.phase\""
     ]);
     expect(validateEntry({ triggers: [{ on: "isHit" }] }, { facts })).toEqual(["triggers[0].do: at least one step"]);
@@ -191,7 +191,7 @@ describe("contenu livré", () => {
       "elemental-affinity", "elemental-attunement", "elemental-epitome", "elemental-fury", "elemental-fury-potent-spellcasting",
       "elemental-gem", "elemental-weapon", "elixir-of-health", "elusive", "emerald-elemental-gem", "empowered-channeling",
       "empowered-evocation", "energy-drain", "engulf", "enhance-ability", "enlarge-reduce", "ensnaring-strike", "entangle",
-      "entangling-trail", "esoteric-ward", "essence-of-ether", "ethereal-jaunt", "ethereal-stride", "evards-black-tentacles", "evasion",
+      "entangling-trail", "enthrall", "esoteric-ward", "essence-of-ether", "ethereal-jaunt", "ethereal-stride", "evards-black-tentacles", "evasion",
       "evasive-footwork", "eversmoking-bottle", "executioners-axe-enchanted", "expeditious-retreat", "eye-and-hand-of-vecna", "eyebite",
       "faerie-fire", "faithful-hound", "fanatical-focus", "fear", "fear-aura", "feather-fall", "feign-death", "feinting-attack",
       "fell-word", "feral-pounce", "feral-strike", "fetid-aura", "fetid-cloud", "fey-ancestry", "find-familiar", "find-steed", "finger-of-death", "fire-aura",
@@ -1204,7 +1204,7 @@ describe("§317 : repasse, lot C12-j (divers)", () => {
       expect(validateEntry(CONTENT[id], { facts }), id).toEqual([]);
     }
     expect(CONTENT["font-of-inspiration"].regainOnShortRest).toEqual(["bardic-inspiration"]);
-    expect(CONTENT["steel-wind-strike"].projectiles).toEqual({ count: "5", attack: true });
+    expect(CONTENT["steel-wind-strike"].projectiles).toEqual({ count: "5", attack: true, teleportNear: { distance: 5, units: "ft" } });
     expect(validateEntry({ regainOnShortRest: [""] })).toHaveLength(1);
   });
 });

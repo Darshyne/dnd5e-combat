@@ -252,3 +252,18 @@ describe("O8h (§351) : portée minimale des armes de siège", () => {
     expect(validateEntry({ minRange: { value: 60 } }).length).toBe(1);
   });
 });
+
+describe("§402 : chaque Foncer ajoute la Vitesse", () => {
+  it("Repli expéditif (Foncer en action Bonus) puis Foncer avec l'action : trois fois la Vitesse", async () => {
+    const { basicAction, movementAllowance, freshBudget, addDash } = await import("../module/scripts/core/turn.mjs");
+    const bonusDash = addDash(freshBudget());
+    expect(movementAllowance(bonusDash, 30)).toBe(60);
+    const both = basicAction(bonusDash, "dash");
+    expect(both).toMatchObject({ action: 0, dashed: true, dashes: 2 });
+    expect(movementAllowance(both, 30)).toBe(90);
+  });
+  it("un budget d'avant le compte (drapeau seul) vaut un Foncer", async () => {
+    const { movementAllowance, freshBudget } = await import("../module/scripts/core/turn.mjs");
+    expect(movementAllowance({ ...freshBudget(), dashed: true }, 30)).toBe(60);
+  });
+});

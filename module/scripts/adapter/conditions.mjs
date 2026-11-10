@@ -58,6 +58,23 @@ export function fearSources(token) {
   return out;
 }
 
+/**
+ * §402 : les laisses que portent les effets de ce token (`leash` du contenu de l'item d'origine : Duel forcé — « elle ne peut pas se
+ * déplacer volontairement à plus de 9 m de vous ») : `{ source, distance, units, item }` pour chaque lanceur présent sur la scène.
+ */
+export function leashesOf(token) {
+  const out = [];
+  for ( const effect of token?.actor?.effects ?? [] ) {
+    if ( effect.disabled || effect.isSuppressed ) continue;
+    const item = originItemOf(effect);
+    const leash = item ? contentOf(item).entry?.leash : null;
+    if ( !leash ) continue;
+    const source = tokenOnViewedScene(item.actor);
+    if ( source && (source.parent === token.parent) && (source !== token) ) out.push({ source, ...leash, item });
+  }
+  return out;
+}
+
 /** §17.3 : les uuids des acteurs qui ont charmé cet acteur (origine des effets Charmé). */
 export function charmersOf(actor) {
   const out = new Set();

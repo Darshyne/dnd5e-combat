@@ -1,5 +1,5 @@
 import { MODULE_ID } from "../constants.mjs";
-import { checkUse, spendUse, refundUse, basicAction, BASIC_ACTION_FLAGS, effectiveCost } from "../core/turn.mjs";
+import { checkUse, spendUse, refundUse, basicAction, BASIC_ACTION_FLAGS, effectiveCost, addDash } from "../core/turn.mjs";
 import { rangeIssue, tooClose } from "../core/range.mjs";
 import { throwableAttackMode, versatileGrip } from "../core/attack.mjs";
 import {
@@ -606,7 +606,7 @@ async function onUsageMessage(message) {
   }
   let after = kind ? basicAction(before, kind)
     : spendUse(before, request, { isOwnTurn: isOwnTurn(combatant), attacksPerAction: attacksPerAction(combatant.actor), turnKey: currentTurnKey() });
-  for ( const k of [declared].flat() ) if ( k && BASIC_ACTION_FLAGS[k] ) after = { ...after, [BASIC_ACTION_FLAGS[k]]: true };
+  for ( const k of [declared].flat() ) if ( k && BASIC_ACTION_FLAGS[k] ) after = (k === "dash") ? addDash(after) : { ...after, [BASIC_ACTION_FLAGS[k]]: true };
   if ( request?.commanded ) after = { ...after, commanded: null };   // §90 : l'ordre est servi
   // §211 : l'action préparée est libérée — le plan est servi avec la Réaction (écrit ici, d'une seule écriture, pour ne pas croiser).
   if ( message.getFlag(MODULE_ID, "readiedRelease") ) after = { ...after, readied: false };

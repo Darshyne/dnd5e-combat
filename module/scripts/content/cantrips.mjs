@@ -34,9 +34,10 @@ export const CANTRIPS = Object.freeze({
   // §295 : Poussière d'étoile — « jusqu'à la fin de votre prochain tour » (la donnée : un tour, au début d'un tour quelconque).
   "starry-wisp": { effectEnds: { T9kBIL7LS3j0Upwz: "casterTurnEnd" } },
   // Amitié : sans effet sur une cible qui n'est pas Humanoïde ; des dégâts subis par la cible mettent fin au sort ; §366 : la fin
-  // aussi quand le lanceur fait un jet d'attaque, inflige des dégâts ou impose une sauvegarde (`breaksOnOrigin`). (La réussite
-  // d'office si le lanceur la combat, ou s'il la lui a lancé dans les 24 h : au MJ.)
-  "friends": { targets: { types: ["humanoid"] }, breaksOnOrigin: ["attack", "damage", "forcesSave"],
+  // aussi quand le lanceur fait un jet d'attaque, inflige des dégâts ou impose une sauvegarde (`breaksOnOrigin`). §402 : « la cible
+  // réussit d'office si elle n'est pas Humanoïde, si vous la combattez » (`saveAutoSuccess.fighting`) ; s'il la lui a lancé dans les
+  // 24 h : au MJ.
+  "friends": { targets: { types: ["humanoid"] }, breaksOnOrigin: ["attack", "damage", "forcesSave"], saveAutoSuccess: { fighting: true },
     triggers: [{ on: "isDamaged", via: "effect", do: [{ type: "remove" }] }] },
   // Main de mage, Illusion mineure : ni l'une ni l'autre n'agit au combat.
   "mage-hand": { summon: { initiative: "none" } },

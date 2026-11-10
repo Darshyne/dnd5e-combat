@@ -229,6 +229,13 @@
  *                                               s'il y a quelque chose à regagner)
  *     grantsConditionImmunities?: string[]      §295 : immunités d'état que l'item donne sans effet dans ses données (Protégé de dame
  *                                               Nature : Empoisonné) — dans l'effet tenu de `grantsSpeeds` (runtime/speed-grants.mjs)
+ *     saveAutoSuccess?: { types?, fighting? }  §402 : réussite d'office — ces types de créature (Pétrification), ou une créature
+ *                                               que le lanceur combat (`fighting` : Discours captivant, Faux amis)
+ *     fadesOnLongRest?: [ids d'effets]   §402 : un de ces effets tombe à chaque Repos long (Rappel à la vie : −4 qui diminue)
+ *     magicEvasion?: true                  §402 : l'effet porté du sort annule la moitié des dégâts d'une sauvegarde réussie contre la magie (Cercle de pouvoir)
+ *     saveAdvantageFrom?: { types, statuses }  §402 : Avantage aux sauvegardes contre ces états posés par ces types (Protection contre le mal et le bien)
+ *     leash?: { distance, units }        §402 : la créature qui porte un effet de l'item ne s'éloigne pas volontairement du lanceur au-delà (Duel forcé)
+ *     checkPoses?: true                    §402 : une activité de test (check) pose ses effets sur la cible, sans test (Dédale : « Banished »)
  *     quietPose?: true                          §300 : la zone qui dure n'agit pas à sa pose — seulement aux moments déclarés
  *                                               (Tempête de neige, Nuage nauséabond : ceux qui sont déjà dedans sauvegardent au début de leur tour)
  *     brutalStrike?: { options?, count? }       C12-e : Coup brutal — options offertes avec Témérité (`push` : poussée ; `effect` :

@@ -19,6 +19,7 @@ export function validateSummon(summon, at, errors) {
   if ( ("chooseCount" in summon) && (summon.chooseCount !== true) && !((typeof summon.chooseCount === "string") && summon.chooseCount.trim()) ) {
     errors.push(`${at}.chooseCount: true or a count formula`);
   }
+  if ( ("vanishesWhenHurt" in summon) && (summon.vanishesWhenHurt !== true) ) errors.push(`${at}.vanishesWhenHurt: true or absent`);
   if ( ("vanishesAfterDamage" in summon) && !(Number.isInteger(summon.vanishesAfterDamage) && (summon.vanishesAfterDamage > 0)) ) {
     errors.push(`${at}.vanishesAfterDamage: a positive whole number`);
   }
@@ -69,7 +70,7 @@ export function validateSummon(summon, at, errors) {
   if ( ("commanded" in summon) && !(isObject(summon.commanded) && isId(summon.commanded.activity) && (Object.keys(summon.commanded).length === 1)) ) {
     errors.push(`${at}.commanded: { activity }`);
   }
-  for ( const key of Object.keys(summon) ) if ( !["initiative", "pilot", "endsSpell", "endsAtZero", "vanishesAtZero", "vanishesAfterDamage", "pulse", "mimic", "endsIfIncapacitated", "castFrom", "lasts", "familiar", "replaces", "minLevels", "vanishesWithCaster", "endsOnLongRest", "commanded", "hostile", "untargeted", "chooseCount"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
+  for ( const key of Object.keys(summon) ) if ( !["initiative", "pilot", "endsSpell", "endsAtZero", "vanishesAtZero", "vanishesWhenHurt", "vanishesAfterDamage", "pulse", "mimic", "endsIfIncapacitated", "castFrom", "lasts", "familiar", "replaces", "minLevels", "vanishesWithCaster", "endsOnLongRest", "commanded", "hostile", "untargeted", "chooseCount"].includes(key) ) errors.push(`${at}.${key}: unknown key`);
 }
 
 export function validateAbsorb(absorb, at, errors) {

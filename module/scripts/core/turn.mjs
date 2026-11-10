@@ -30,7 +30,7 @@ export function freshBudget({ reactions=1 }={}) {
     action: 1, bonus: 1, reaction: reactions, attacks: { granted: 0, used: 0 },
     perTurnReaction: reactions > 1,   // plusieurs réactions par round : pas deux dans le même tour de jeu
     reactedAt: null,                  // le tour de jeu (combat.round.turn) de la dernière réaction
-    dashed: false, disengaged: false, dodging: false, slotCast: false,
+    dashed: false, dashes: 0, disengaged: false, dodging: false, slotCast: false,   // §402 : `dashes`, les Foncer du tour
     lightAttack: false,
     loadedFired: false,   // O5a (§339) : une arme à Chargement a tiré dans l'action Attaquer en cours (« un seul projectile par action »)   // §15.2 : une attaque d'arme Légère faite dans l'action Attaquer ouvre l'attaque de la main secondaire
     nickUsed: false,      // Coup double : l'attaque de la main secondaire, sans action Bonus, une fois par tour
@@ -239,15 +239,29 @@ export const BASIC_ACTION_FLAGS = Object.freeze({ dash: "dashed", disengage: "di
 export function basicAction(budget, kind) {
   const flag = BASIC_ACTION_FLAGS[kind];
   if ( !flag ) return budget;
+  const mark = b => (kind === "dash") ? addDash(b) : { ...b, [flag]: true };
   // §157 : l'action prise, l'action limitée de Hâte paie Foncer ou Se désengager.
-  if ( (budget.action < 1) && ((budget.limited ?? 0) >= 1) && LIMITED_ACTION_KINDS.includes(kind) ) return { ...budget, limited: 0, [flag]: true };
-  return { ...budget, action: Math.max(0, budget.action - 1), [flag]: true };
+  if ( (budget.action < 1) && ((budget.limited ?? 0) >= 1) && LIMITED_ACTION_KINDS.includes(kind) ) return mark({ ...budget, limited: 0 });
+  return mark({ ...budget, action: Math.max(0, budget.action - 1) });
+}
+
+/** §402 : combien de fois le tour a pris Foncer (un budget d'avant ce compte n'a que le drapeau `dashed`). */
+export function dashCount(budget) {
+  return (Number(budget?.dashes) > 0) ? Number(budget.dashes) : (budget?.dashed ? 1 : 0);
+}
+
+/**
+ * §402 : un Foncer de plus — chacun ajoute la Vitesse au déplacement du tour (PHB 2024 : « gagnez un déplacement supplémentaire
+ * égal à votre Vitesse » ; Repli expéditif en action Bonus puis Foncer avec l'action : trois fois la Vitesse).
+ */
+export function addDash(budget) {
+  return { ...budget, dashed: true, dashes: dashCount(budget) + 1 };
 }
 
 /** Foncer : une action contre un déplacement doublé. Sans action disponible, rien ne change. */
 export function dash(budget) {
   if ( budget.dashed || (budget.action < 1) ) return budget;
-  return { ...budget, action: budget.action - 1, dashed: true };
+  return addDash({ ...budget, action: budget.action - 1 });
 }
 
 /** Se désengager : une action, et le déplacement du tour ne provoque plus d'attaque d'opportunité. */
@@ -282,5 +296,5 @@ export function standUpCost({ speed, remaining, fixed=null }) {
 
 /** Déplacement autorisé ce tour, dans l'unité de la vitesse : doublé par Foncer, plus ce qu'un effet ouvre (Repli, §20). */
 export function movementAllowance(budget, speed) {
-  return speed * (budget.dashed ? 2 : 1) + (Number(budget.bonusMove) || 0);
+  return speed * (1 + dashCount(budget)) + (Number(budget.bonusMove) || 0);
 }

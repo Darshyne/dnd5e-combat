@@ -224,16 +224,20 @@ const NEAR_SPACE_MS = 30000;
  * case choisie `{ x, y }` (le token y est), ou null (il reste où il est).
  * @param {{token: string, distance: number, units: string, mustMove?: boolean, item?: string}} payload
  */
-export async function handleNearSpace({ token: uuid, distance, units, mustMove=false, item="" }) {
+export async function handleNearSpace({ token: uuid, distance, units, mustMove=false, item="", near=null }) {
   const doc = await fromUuid(uuid);
   const object = doc?.object;
   if ( !object ) return null;
-  const limit = lengthIn(distance, units, doc.parent.grid.units);
-  const label = `${Math.round(limit * 10) / 10} ${doc.parent.grid.units}`;
+  // §402 : `near` (uuids de tokens) — la case est à `distance` de l'une de ces créatures, pas de la position du token (Frappe du vent
+  // d'acier : « à 1,50 m de l'une des cibles ») ; le trajet n'est pas borné.
+  const anchors = (near ?? []).map(u => fromUuidSync(u, { strict: false })).filter(Boolean);
+  const reach = lengthIn(distance, units, doc.parent.grid.units);
+  const limit = anchors.length ? Infinity : reach;
+  const label = `${Math.round(reach * 10) / 10} ${doc.parent.grid.units}`;
   if ( !mustMove ) {
     const answer = await timedWait({
       window: { title: item || doc.name, icon: "fa-solid fa-person-rays" },
-      content: `<p>${foundry.utils.escapeHTML(loc("EspaceProche.Question", { name: doc.name, distance: label }))}</p>`,
+      content: `<p>${foundry.utils.escapeHTML(loc(anchors.length ? "EspaceProche.QuestionCibles" : "EspaceProche.Question", { name: doc.name, distance: label }))}</p>`,
       buttons: [{ action: "stay", label: loc("EspaceProche.Rester"), icon: "fa-solid fa-location-dot", default: true },
         { action: "move", label: loc("EspaceProche.Choisir", { distance: label }), icon: "fa-solid fa-arrows-to-dot" }]
     }, { fallback: "stay", awaiting: { actor: doc.actor, kind: "choice" } });
@@ -246,7 +250,7 @@ export async function handleNearSpace({ token: uuid, distance, units, mustMove=f
         object.control({ releaseOthers: true });
         let timer = null;
         const timeout = new Promise(resolve => { timer = setTimeout(() => { canvas.tokens._cancelMovementPlanning?.(); resolve(null); }, NEAR_SPACE_MS); });
-        const plan = await Promise.race([object.planMovement({ allowedActions: ["blink"], direct: true, maxDistance: limit, preventDrop: true }), timeout]);
+        const plan = await Promise.race([object.planMovement({ allowedActions: ["blink"], direct: true, ...(Number.isFinite(limit) ? { maxDistance: limit } : {}), preventDrop: true }), timeout]);
         clearTimeout(timer);
         const chosen = teleporting.chosen;
         teleporting.chosen = null;
@@ -256,6 +260,11 @@ export async function handleNearSpace({ token: uuid, distance, units, mustMove=f
         const travelled = distanceBetween(doc, doc, { posB: { x: to.x, y: to.y, elevation: to.elevation ?? doc._source.elevation } }).value;
         if ( travelled > limit + 1e-6 ) {
           ui.notifications.warn(loc("Teleport.TropLoin", { distance: Math.round(limit * 10) / 10, units: doc.parent.grid.units }));
+          continue;
+        }
+        const at = { x: to.x, y: to.y, elevation: to.elevation ?? doc._source.elevation ?? 0 };
+        if ( anchors.length && !anchors.some(a => distanceBetween(doc, a, { posA: at }).value <= reach + 1e-6) ) {
+          ui.notifications.warn(loc("EspaceProche.TropLoinCibles", { distance: label }));
           continue;
         }
         if ( onTeleport(null, [{ token: object, plan: { destination: to } }]) === false ) continue;

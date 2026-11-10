@@ -59,7 +59,7 @@ export function setTextExpiry(effect) {
  * Un effet déjà porté venant du même effet d'item est remplacé. MJ actif.
  * @returns {Promise<ActiveEffect|null>}
  */
-export async function placeItemEffect(item, effectId, actor, { scaling=0 }={}) {
+export async function placeItemEffect(item, effectId, actor, { scaling=0, dependentOn=null }={}) {
   const source = item?.effects?.get(effectId);
   if ( !source || !actor ) return null;
   const old = actor.effects.filter(e => (e._stats?.duplicateSource === source.uuid) || (e._stats?.compendiumSource === source.uuid)).map(e => e.id);
@@ -69,7 +69,8 @@ export async function placeItemEffect(item, effectId, actor, { scaling=0 }={}) {
     disabled: false,
     transfer: false,
     origin: item.uuid,
-    flags: { dnd5e: { scaling, spellLevel: (Number(item.system?.level) || 0) + scaling } },
+    // §402 : `dependentOn` — l'effet tombe avec la concentration du lanceur (dnd5e documents/mixins/dependent.mjs).
+    flags: { dnd5e: { scaling, spellLevel: (Number(item.system?.level) || 0) + scaling, ...(dependentOn ? { dependentOn } : {}) } },
     system: { origin: { item: item.uuid } },
     _stats: { [sourceKey]: source.uuid }
   }, { inplace: false });

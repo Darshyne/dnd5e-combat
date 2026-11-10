@@ -54,7 +54,8 @@ export const TRIGGERS = Object.freeze({
   "hellish-rebuke": [{ on: "isDamaged", if: { "target.seesSource": true }, do: [{ type: "use", target: "source" }] }],
 
   // Zones qui durent : « sauvegarde en entrant ou en finissant son tour dedans, une fois par tour »
-  "moonbeam": [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }],
+  // §402 : « une créature métamorphosée (Forme sauvage, Métamorphose) qui rate reprend sa forme véritable » (`revertForm`).
+  "moonbeam": [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }, { on: "failedSave", do: [{ type: "revertForm" }] }],
   "spirit-guardians": [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }],
   "cloud-of-daggers": [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }],
   // §75 : Cordon de flèches (version simple, demandée par l'utilisateur) — la sphère de 9 m que pose l'action du sort ; une créature qui y
@@ -300,7 +301,10 @@ export const TRIGGERS = Object.freeze({
   "ensnaring-strike": [{ on: "startOfTurn", via: "effect", fromEffect: "tFGMG3cjQTEeAhv2",
     do: [{ type: "damage", to: "bearer", activity: "ZWId9mbOE9zFnP6f" }] }],
   // Mauvais œil, « Endormi » (5btX5iwwleMMzkvj) : « se réveille s'il subit des dégâts ». (Paniqué, Nauséeux : au MJ.)
-  "eyebite": [{ on: "isDamaged", via: "effect", fromEffect: "5btX5iwwleMMzkvj", do: [{ type: "remove" }] }],
+  // §402 : Mauvais œil — « une créature qui réussit ne peut plus être ciblée par ce sort » : marquée pour la durée du sort (1 minute),
+  // et la marque l'écarte des lancements suivants (`targets.unaffectedIf`, content/spell-rules.mjs).
+  "eyebite": [{ on: "isDamaged", via: "effect", fromEffect: "5btX5iwwleMMzkvj", do: [{ type: "remove" }] },
+    { on: "savedSave", do: [{ type: "mark", mark: "eyebite-saved", label: "Marque.MauvaisOeil", seconds: 60 }] }],
   // §91 : Symbole — Sommeil : « reprend connaissance si elle subit des dégâts » ; Discorde : « ses jets d'attaque … avec le
   // Désavantage » (les tests : content/spell-rules.mjs, `effectChanges`).
   "symbol": [
@@ -365,7 +369,11 @@ export const TRIGGERS = Object.freeze({
     on: "preAttackRoll", via: "effect",
     if: { "target.hasEffect": "dispel-evil-and-good", "source.creatureType": ["celestial", "elemental", "fey", "fiend", "undead"] },
     do: [{ type: "disadvantage" }]
-  }],
+  },
+  // §402 : Renvoi (« Dismissal ») — une créature de ces types qui rate est renvoyée sur son plan d'origine (`banish` : retirée de la
+  // scène et du combat), au lieu de rester ciblable.
+  { on: "failedSave", if: { any: ["celestial", "elemental", "fey", "fiend", "undead"].map(t => ({ "target.creatureType": t })) },
+    do: [{ type: "banish" }] }],
   "protection-from-evil-and-good": [{
     on: "preAttackRoll", via: "effect",
     if: { "target.hasEffect": "protection-from-evil-and-good", "source.creatureType": ["aberration", "celestial", "elemental", "fey", "fiend", "undead"] },

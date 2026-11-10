@@ -10,7 +10,7 @@ import { combatantFor, distanceBetween, positionOf } from "../adapter/turn.mjs";
 import { pilotOf, summonerToken, groupTokens } from "../adapter/pilot.mjs";
 import { lengthIn } from "../adapter/units.mjs";
 import { continuedFlags, walkOptions } from "../adapter/movement.mjs";
-import { fearSources } from "../adapter/conditions.mjs";
+import { fearSources, leashesOf } from "../adapter/conditions.mjs";
 import { movesCloser } from "../core/conditions.mjs";
 import { opportunityThreats, resolveOpportunity, splitForReady } from "./reactions.mjs";
 import { scatterStop } from "./scatter.mjs";
@@ -47,6 +47,12 @@ export function onPreMoveToken(token, movement, operation) {
       ui.notifications.warn(loc("Ethere.MurDeForce", { name: token.name }));
       return false;
     }
+  }
+  // §402 : une laisse (Duel forcé) — pas de pas volontaire au-delà de sa distance du lanceur, MJ compris (c'est la créature qui est tenue).
+  const held = steps.length ? leashBroken(token, steps) : null;
+  if ( held ) {
+    ui.notifications.warn(loc("Deplacement.Laisse", { name: token.name, source: held.source.name, item: held.item.name }));
+    return false;
   }
   if ( !game.user.isGM && !playerMayMove(token, movement) ) return false;
   // §187 : chausse-trapes, billes — qui y entre s'arrête sur leur première case (le reste du trajet n'est pas joué).
@@ -100,6 +106,20 @@ function approachesFear(token, movement) {
   for ( const source of fearSources(token) ) {
     const start = distanceBetween(token, source).value;
     if ( movesCloser(start, steps.map(w => distanceBetween(token, source, { posA: positionOf(w) }).value)) ) return source;
+  }
+  return null;
+}
+
+/** §402 : la laisse que ce trajet dépasse (une case au-delà de la distance, plus loin qu'au départ), ou null. */
+function leashBroken(token, steps) {
+  for ( const leash of leashesOf(token) ) {
+    const limit = lengthIn(leash.distance, leash.units, token.parent.grid.units);
+    const start = distanceBetween(token, leash.source).value;
+    const far = steps.some(w => {
+      const d = distanceBetween(token, leash.source, { posA: positionOf(w) }).value;
+      return (d > limit + 1e-6) && (d > start + 1e-6);
+    });
+    if ( far ) return leash;
   }
   return null;
 }

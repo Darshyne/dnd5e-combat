@@ -5,6 +5,7 @@
  */
 
 import { deathWardOf } from "../adapter/ward.mjs";
+import { banishToken } from "./banish.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
@@ -286,6 +287,18 @@ export const COMMANDS = {
         else if ( step.type === "mark" ) {
           const uuid = await applyMarkToToken(carrier, entry.token, step, loc(step.label));
           if ( uuid ) { effects.push(uuid); log(`${step.name ?? "mark"}: ${target?.name} receives "${step.mark}"`); }
+        }
+        else if ( step.type === "revertForm" ) {
+          // §402 : « une créature métamorphosée qui rate la sauvegarde reprend sa forme véritable » (Rayon de lune) — la transformation
+          // de dnd5e (Forme sauvage, Métamorphose) défaite par son API.
+          if ( target?.actor?.isPolymorphed ) {
+            await target.actor.revertOriginalForm({ renderSheet: false });
+            log(`${step.name ?? "revert"}: ${target.name} reverts to its true form`);
+          }
+        }
+        else if ( step.type === "banish" ) {
+          // §402 : renvoyée sur son plan d'origine (Parole divine) — retirée de la scène et du combat (runtime/banish.mjs).
+          if ( target && await banishToken(target) ) log(`${step.name ?? "banish"}: ${target.name} sent back to its plane`);
         }
         else if ( step.type === "breakConcentration" ) {
           // §91 : « sa Concentration est rompue » (Tremblement de terre).

@@ -14,11 +14,12 @@
 import { MODULE_ID } from "../constants.mjs";
 import { allocateDarts } from "../core/action.mjs";
 import { projectilesOf, projectileCount, handleAllocationQuery, leapOf } from "../adapter/projectiles.mjs";
-import { distanceBetween } from "../adapter/turn.mjs";
+import { distanceBetween, speakerTokenOf } from "../adapter/turn.mjs";
 import { route } from "./router.mjs";
 import { log, loc, notice } from "./shared.mjs";
 import { lengthIn } from "../adapter/units.mjs";
 import { settledResolution } from "../adapter/messages.mjs";
+import { handleNearSpace } from "./teleport.mjs";
 
 const started = new Set();
 
@@ -124,6 +125,14 @@ async function chain(usage, resolution) {
     if ( !used?.message ) break;
     if ( projectilesOf(base.item)?.attack ) await base.rollAttack({}, { configure: false }, { data: { system: { origin: used.message.id } } });
     await settledResolution(used.message.id, { timeout: 30000, every: 300 });
+  }
+  // §402 : « vous pouvez ensuite vous téléporter… à 1,50 m de l'une des cibles » (Frappe du vent d'acier) — sur ce client, l'auteur.
+  const near = projectilesOf(base.item)?.teleportNear;
+  const caster = speakerTokenOf(usage) ?? usage.getAssociatedActor?.()?.getActiveTokens?.(false, true)?.[0]?.document ?? null;
+  const struck = [...new Set([resolution.targets?.[0]?.token, ...queue].filter(Boolean))];
+  if ( near && caster && struck.length ) {
+    await handleNearSpace({ token: caster.uuid, distance: near.distance, units: near.units, item: base.item.name, near: struck })
+      .catch(err => log(`${base.item.name}: no teleport after the attacks (${err.message})`));
   }
 }
 

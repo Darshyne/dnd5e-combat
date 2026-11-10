@@ -262,8 +262,25 @@ export function saveAdvantageAgainst(actor, activity) {
   const owned = (actor?.items ?? []).filter(item => !isSpellCast(item) && (!GEAR.has(item.type) || worn(item)));
   const borne = (actor?.effects ?? []).filter(e => !e.disabled && !e.isSuppressed).map(originItemOf)
     .filter(item => isSpellCast(item));
-  return [...owned, ...borne].some(item => (contentOf(item).entry?.saveAdvantage ?? [])
-    .some(s => posed.has(s) || ((s === "magic") && magical)));
+  if ( [...owned, ...borne].some(item => (contentOf(item).entry?.saveAdvantage ?? [])
+    .some(s => posed.has(s) || ((s === "magic") && magical))) ) return true;
+  // §402 : `saveAdvantageFrom: { types, statuses }` — contre ces états posés par une créature de ces types (Protection contre le mal et
+  // le bien : « une cible déjà Charmée ou Effrayée par l'une d'elles a l'Avantage à toute nouvelle sauvegarde contre cet effet »).
+  const type = creatureTypeOf(activity?.actor);
+  return !!type && borne.some(item => {
+    const rule = contentOf(item).entry?.saveAdvantageFrom;
+    return !!rule && rule.types.includes(type) && rule.statuses.some(s => posed.has(s));
+  });
+}
+
+/**
+ * §402 : Cercle de pouvoir — « si elle réussit une sauvegarde contre un sort ou un effet magique qui inflige la moitié des dégâts sur une
+ * réussite, elle n'en subit aucun » : un effet porté qui vient d'un sort dont le contenu déclare `magicEvasion`, contre une activité
+ * magique, quelle que soit la caractéristique (rendu « any », comme l'Esquive de monstre).
+ */
+export function magicEvasionAgainst(actor, activity) {
+  if ( !actor || !isMagical(activity) ) return false;
+  return (actor.effects ?? []).some(e => !e.disabled && !e.isSuppressed && (contentOf(originItemOf(e)).entry?.magicEvasion === true));
 }
 
 /**

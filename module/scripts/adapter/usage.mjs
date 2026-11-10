@@ -432,6 +432,13 @@ function readPlan(message) {
       // cibles sont ceux qu'elle recouvre, comme une zone de sauvegarde.
       return { ...common, targets, ...(!self && (rangeUnitsOf(activity) === "self") && activity.target?.template?.type ? { area: templated(activity, message) } : {}),
         plan: { effects: effectsOf(activity, () => "always") } };
+    case "check": {
+      // §402 : une activité de test que le contenu déclare porteuse d'effets (`checkPoses` : Dédale — la donnée en fait un test, le
+      // texte bannit d'office) pose ses effets sur la cible, sans test ; le test d'évasion reste celui de `actionEnds`.
+      if ( contentOf(activity.item).entry?.checkPoses !== true ) return null;
+      const effects = effectsOf(activity, () => "always");
+      return effects.length ? { ...common, targets, plan: { effects } } : null;
+    }
     default:
       return null;
   }

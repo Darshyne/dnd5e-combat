@@ -366,10 +366,15 @@ async function onPulseResolution(resolution) {
 /** L'objet tombé à 0 PV (`endsAtZero`, Main de Bigby : « si elle tombe à 0 point de vie, le sort prend fin »). MJ actif. */
 async function onUpdateActor(actor, changes) {
   if ( foundry.utils.getProperty(changes, "system.attributes.hp.value") === undefined ) return;
-  if ( (actor.system.attributes?.hp?.value ?? 1) > 0 ) return;
   const token = actor.token ?? actor.getActiveTokens?.(false, true)?.[0] ?? null;
+  // §402 : `vanishesWhenHurt` — elle disparaît dès qu'elle subit des dégâts (Monture fantôme : « si elle subit des dégâts, elle
+  // disparaît ») ; apparue à pleins PV, des PV sous le maximum disent qu'elle en a subi.
+  const hp = actor.system.attributes?.hp ?? {};
+  const summoned = token ? summonItemOf(token) : null;
+  if ( summoned && contentOf(summoned).entry?.summon?.vanishesWhenHurt && (Number(hp.value) < Number(hp.max)) ) return vanish(token);
+  if ( (hp.value ?? 1) > 0 ) return;
   // §259 : « elle disparaît lorsqu'elle tombe à 0 point de vie » — le token et son combattant partent, le sort continue.
-  const origin = token ? summonItemOf(token) : null;
+  const origin = summoned;
   if ( origin && contentOf(origin).entry?.summon?.vanishesAtZero ) return vanish(token);
   if ( !token?.getFlag(MODULE_ID, "endsAtZero") ) return;
   const effect = fromUuidSync(token.getFlag(MODULE_ID, "summonedBy") ?? "", { strict: false });

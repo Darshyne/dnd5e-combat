@@ -14,7 +14,7 @@ import { isAutoCritical, autoFailSave } from "../core/conditions.mjs";
 import { maximizeDice } from "../core/max-dice.mjs";
 import { unaffectedBy } from "../adapter/eligibility.mjs";
 import { restoreHp, rollDamageFor } from "../adapter/messages.mjs";
-import { removeEffects, TARGETS_QUERY, handleTargetsQuery, SAVE_QUERY, handleSaveQuery } from "../adapter/saves.mjs";
+import { removeEffects, TARGETS_QUERY, handleTargetsQuery, SAVE_QUERY, handleSaveQuery, magicEvasionAgainst } from "../adapter/saves.mjs";
 import { statusesOf, areAdjacent, evades, avoids, coverAgainst, isRangedAttack } from "../adapter/conditions.mjs";
 import { rangedAcBonus, wearsAdamantine } from "../adapter/defenses.mjs";
 import { currentAc } from "../adapter/reactions.mjs";
@@ -65,7 +65,8 @@ export function hpTierFor(item, actor, entry, plan=null, activity=null, saveFail
   if ( !tiers?.length || !actor ) return null;
   const hp = Number(actor.system?.attributes?.hp?.value ?? 0);
   const tier = tiers.find(t => !("atMost" in t) || (hp <= t.atMost));
-  if ( !tier ) return { hp, statuses: [], entry: { ...entry, multiplier: 0, effects: [], steps: [] } };
+  // §402 : hors des paliers, les étapes d'issue restent (Parole divine : un Fiélon à plus de 50 PV qui rate est quand même renvoyé).
+  if ( !tier ) return { hp, statuses: [], entry: { ...entry, multiplier: 0, effects: [], steps: entry.steps ?? [] } };
   // Un sort à sauvegarde (Parole divine) ne pose ses états que sur une sauvegarde ratée : la cible qui a réussi n'a reçu aucun effet.
   // K2 (§323) : une sauvegarde sans effet (Regard mortel) — l'échec se lit sur la résolution de la cible (`saveFailed`).
   const failed = !plan?.save || saveFailed || ((entry.effects ?? []).length > 0);
@@ -231,7 +232,7 @@ export async function enrich(targets, plan, originUuid, activityUuid=null, attac
       canReact: plan.attack ? await canReactToHit(target.token, { activity, source: origin?.actor ?? null }) : false,
       duplicates: plan.attack ? duplicatesAgainst(token?.actor, origin?.actor) : 0,
       // §20 : Esquive totale (Roublard, Moine, monstres) — jugée à l'application (core/action.mjs, `applicationPlan`).
-      evasion: !!plan.save && (evades(token?.actor) || (avoids(token?.actor) ? "any" : false)),
+      evasion: !!plan.save && (evades(token?.actor) || ((avoids(token?.actor) || magicEvasionAgainst(token?.actor, activity)) ? "any" : false)),
       sculpted: (sculpts > 0) && !!token && !!casterToken && (token.actor !== caster) && areAllies(token, casterToken)
         && (sculpts-- > 0),
       // O9a (§354) : « tout coup critique contre vous devient un coup normal » (armure en adamantium portée : propriété `ada` de dnd5e).
@@ -282,7 +283,25 @@ export async function openingFor(message, usage, extra={}) {
   if ( usage.plan.save && message.getFlag(MODULE_ID, "areaTick")?.noSave ) targets = targets.map(t => ({ ...t, autoFail: "noSave" }));
   if ( usage.plan.save ) {
     const activity = fromUuidSync(usage.activity, { strict: false });
-    targets = await askWilling(activity, targets, activity?.actor?.getActiveTokens?.(false, true)?.[0]?.document ?? null);
+    // §402 : le token qui parle d'abord — un PNJ non lié n'a pas de token « actif » par son acteur synthétique.
+    targets = await askWilling(activity, targets, fromUuidSync(speakerTokenUuid(message) ?? "", { strict: false })
+      ?? activity?.actor?.getActiveTokens?.(false, true)?.[0]?.document ?? null);
+    // §402 : `saveAutoSuccess` — `types` : ces types de créature réussissent d'office (Pétrification : Créatures artificielles) ;
+    // `fighting` : une créature que le lanceur combat aussi (en combat, ennemie : Discours captivant, Faux amis).
+    const rule = contentOf(activity?.item).entry?.saveAutoSuccess ?? null;
+    // Le token qui parle (un PNJ non lié n'a pas de token « actif » par son acteur synthétique).
+    const caster = rule?.fighting ? (fromUuidSync(speakerTokenUuid(message) ?? "", { strict: false })
+      ?? activity?.actor?.getActiveTokens?.(false, true)?.[0]?.document ?? null) : null;
+    // Un combat commencé (pas forcément celui qu'affiche ce client) où les deux se trouvent, ennemis l'un de l'autre.
+    const fighting = token => !!(caster && token && areEnemies(caster, token) && game.combats.some(c => c.started
+      && c.combatants.some(k => k.tokenId === token.id) && c.combatants.some(k => k.tokenId === caster.id)));
+    if ( rule ) targets = targets.map(t => {
+      if ( t.autoFail ) return t;
+      const token = fromUuidSync(t.token, { strict: false });
+      const type = (token?.actor ?? fromUuidSync(t.actor, { strict: false }))?.system?.details?.type?.value;
+      if ( rule.types?.includes(type) ) return { ...t, autoSucceed: `type:${type}` };
+      return fighting(token) ? { ...t, autoSucceed: "fighting" } : t;
+    });
   }
   return { id: foundry.utils.randomID(), ...data, choice, allocation, targets, ...extra };
 }

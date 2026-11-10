@@ -121,7 +121,7 @@ describe("contenu livré", () => {
 
   it("zones : Rayon de lune agit à l'entrée et en fin de tour ; la Sphère de feu n'est pas une zone (§16.15 : pulse)", () => {
     const on = id => all.filter(d => d.id === id).flatMap(d => d.on);
-    expect(on("moonbeam")).toEqual(["enter", "turnEnd"]);
+    expect(on("moonbeam")).toEqual(["enter", "turnEnd", "failedSave"]);   // §402 : la forme véritable reprise sur un échec
     expect(on("flaming-sphere")).toEqual([]);
   });
 });

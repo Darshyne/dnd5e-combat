@@ -37,7 +37,10 @@ const DANCE_IN_PLACE = Object.freeze(["walk", "fly", "swim", "climb", "burrow"].
 
 export const SPELL_RULES = Object.freeze({
   // §43.1 : Pétrification — l'effet d'une sauvegarde réussie (Vitesse 0) tombe au début du prochain tour du lanceur.
-  "flesh-to-stone": { effectEnds: { sFyjp6wt9bjyIl9W: "casterTurnStart" } },
+  // §402 : Discours captivant — « les créatures que vous ou vos compagnons combattez réussissent automatiquement ».
+  "enthrall": { saveAutoSuccess: { fighting: true } },
+  // §402 : « une Créature artificielle réussit automatiquement » (l’effet sur réussite, Incapable de se déplacer, reste posé).
+  "flesh-to-stone": { saveAutoSuccess: { types: ["construct"] }, effectEnds: { sFyjp6wt9bjyIl9W: "casterTurnStart" } },
   // §43.2 — une action met fin à l'effet.
   // Danse irrésistible d'Otto : « à chacun de ses tours, la cible peut prendre une action pour se ressaisir et réitérer la
   // sauvegarde » ; la danse d'une sauvegarde réussie cesse à la fin du prochain tour de la cible.
@@ -103,7 +106,7 @@ export const SPELL_RULES = Object.freeze({
   // §296 : « chaque créature de votre choix dans la sphère » — les alliés épargnés.
   "sleep": { actionEnds: { "04Wa4xUzjA31kPno": { by: "other", verb: "wake" } }, zoneAffects: "enemy" },
   "hypnotic-pattern": { actionEnds: { mjAs8ssQlgp0AQOp: { by: "other", verb: "wake" } } },
-  "eyebite": { actionEnds: { "5btX5iwwleMMzkvj": { by: "other", verb: "wake" } } },
+  "eyebite": { actionEnds: { "5btX5iwwleMMzkvj": { by: "other", verb: "wake" } }, targets: { unaffectedIf: { "target.hasMark": "eyebite-saved" } } },
   // §91 : Symbole, Discorde — « ses tests de caractéristique s'effectuent avec le Désavantage » (l'effet de la donnée est vide).
   "symbol": {
     actionEnds: { A1VA7t5gB7ODNsr6: { by: "other", verb: "wake" } },
@@ -271,7 +274,8 @@ export const SPELL_RULES = Object.freeze({
   "feign-death": { choice: { pool: { dnd5eactivity000: ["LEOWoE0nlVC8VRka"] } } },
   // Duel forcé : « Désavantage aux jets d'attaque contre toute créature autre que vous » — l'effet « Compelled » est vide. (La laisse
   // de 9 m et les fins du sort : au MJ.)
-  "compelled-duel": {
+  // §402 : « elle ne peut pas se déplacer volontairement dans un espace à plus de 9 m de vous » (`leash`, runtime/move-gate.mjs).
+  "compelled-duel": { leash: { distance: 30, units: "ft" },
     triggers: [{ on: "preAttackRoll", via: "effect",
       if: { "source.hasEffect": "compelled-duel", not: { "source.hasEffectFromTarget": "compelled-duel" } }, do: [{ type: "disadvantage" }] }]
   },
@@ -315,7 +319,8 @@ export const SPELL_RULES = Object.freeze({
   // de l'aura (content/auras.mjs).
   "aura-of-life": { triggers: [{ on: "startOfTurn", via: "effect", if: { "target.atZero": true }, do: [{ type: "damage", to: "bearer", formula: "1", damageType: "healing" }] }] },
   "aura-of-purity": { saveAdvantage: ["blinded", "charmed", "deafened", "frightened", "paralyzed", "poisoned", "stunned"] },
-  "circle-of-power": { saveAdvantage: ["magic"] },
+  // §402 : « … n'en subit aucun » sur une réussite contre la magie, à moitié des dégâts (`magicEvasion`, lu sur l'effet de l'aura).
+  "circle-of-power": { saveAdvantage: ["magic"], magicEvasion: true },
   // §160 (relevé des sorts, lot 4 : soins, états, seuils de PV). Guérison : « met fin à Aveuglé, Assourdi et Empoisonné » ; Guérison
   // de groupe : idem, sur chaque cible (la réserve de 700 PV à répartir : au MJ — chaque cible regagne jusqu'à 700) ; Mot de pouvoir
   // guérisseur : « Charmé, Effrayé, Paralysé, Empoisonné, Étourdi prennent fin » (se relever par sa Réaction : au joueur).
@@ -339,7 +344,9 @@ export const SPELL_RULES = Object.freeze({
   // Mot de pouvoir fortifiant : 120 PV temporaires répartis à parts égales entre les cibles (jusqu'à six).
   "power-word-fortify": { tempHpPool: 120 },
   // Résurrection, Résurrection suprême : « revient à la vie avec tous ses PV » (l'état Mort cesse : content/spells.mjs, `cures`).
-  "resurrection": { revivesFull: true },
+  // §402 : « le malus diminue de 1 à chaque Repos long » — les quatre effets de −1 de la donnée tombent un par un (jour 4 d'abord).
+  "raise-dead": { fadesOnLongRest: ["vyf4vVVoGkZPyAqa", "0EAyGy8YaKbvgvkm", "QUWVMgg2HidYsUxy", "etY0sDrXe6DcFEzc"] },
+  "resurrection": { revivesFull: true, fadesOnLongRest: ["xHPAupRPOI8N2VkA", "PO5KOrBEorm2xGGz", "NvAysJa5PCR83GRb", "yC37XvN0jzIDyHTr"] },
   "true-resurrection": { revivesFull: true },
   // Mot de pouvoir mortel : « 100 PV ou moins : elle meurt ; sinon, 12d12 dégâts psychiques ».
   "power-word-kill": { hpTiers: [{ atMost: 100, damage: false, statuses: ["dead"] }, {}] },
@@ -347,7 +354,9 @@ export const SPELL_RULES = Object.freeze({
   // « à la fin de chacun de ses tours, elle réitère un JS de Constitution » — la donnée n'a pas d'activité de sauvegarde : déclarée ici.
   // C12-j : Protection contre le mal et le bien — la copie de Heroes of the Borderlands donne à l'activité une portée « personnelle » pour un
   // sort de contact : la visée d'une autre créature, au contact.
-  "protection-from-evil-and-good": { ranges: { zFTMr0vFdY214UIY: { value: 5, units: "ft" } } },
+  // §402 : « … déjà Charmée ou Effrayée par une créature de ces types, elle a l'Avantage à toute nouvelle sauvegarde contre cet effet ».
+  "protection-from-evil-and-good": { ranges: { zFTMr0vFdY214UIY: { value: 5, units: "ft" } },
+    saveAdvantageFrom: { types: ["aberration", "celestial", "elemental", "fey", "fiend", "undead"], statuses: ["charmed", "frightened"] } },
   // C12-a : Force fantasmagorique — « la cible peut prendre l'action Étudier : un test d'Intelligence (Investigation) contre votre DD ; réussi,
   // le sort prend fin » (l'activité « Study », proposée à la cible).
   "phantasmal-force": { actionEnds: { QyPQcXhcl8sTDQ3d: { by: "bearer", roll: "check", spell: true } } },
@@ -368,9 +377,12 @@ export const SPELL_RULES = Object.freeze({
     triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "o7XJceFSBTiIIPFo", do: [{ type: "resave", ability: "con" }] }]
   },
   // Parole divine, sur une sauvegarde ratée : 20 PV ou moins, morte ; 30, Aveuglée, Assourdie, Étourdie ; 40, Aveuglée et Assourdie ;
-  // 50, Assourdie ; au-delà, rien. Deux effets de la donnée n'ont pas leurs états. (Durées propres à chaque palier, bannissement des
-  // Célestes, Élémentaires, Fées, Fiélons : au MJ.)
+  // 50, Assourdie ; au-delà, rien. Deux effets de la donnée n'ont pas leurs états. §402 : « quels que soient ses PV », un Céleste, un
+  // Élémentaire, une Fée ou un Fiélon qui rate est renvoyé sur son plan d'origine (`banish` : retiré de la scène et du combat ; son
+  // retour au bout de 24 heures : au MJ). Durées propres à chaque palier : au MJ.
   "divine-word": {
+    triggers: [{ on: "failedSave", if: { any: ["celestial", "elemental", "fey", "fiend"].map(t => ({ "target.creatureType": t })) },
+      do: [{ type: "banish" }] }],
     hpTiers: [{ atMost: 20, effects: [], statuses: ["dead"] }, { atMost: 30, effects: ["grWj3oo8iH8egvi1"] },
       { atMost: 40, effects: ["8O8KymREuOZFi45g"] }, { atMost: 50, effects: ["qZvAfjU2H6Fg6y6M"] }],
     effectStatuses: { "8O8KymREuOZFi45g": ["blinded", "deafened"], qZvAfjU2H6Fg6y6M: ["deafened"] }
@@ -487,7 +499,7 @@ export const SPELL_RULES = Object.freeze({
     cures: ["charmed", "frightened"], curesOn: "eBbyE0du7mEJWDbZ" },
   // §288 : Dédale — l'effet « Banished » (vide) transporte la cible (§265) ; « elle peut entreprendre l'action Étude pour tenter de
   // s'évader : test d'Intelligence (Investigation) DD 20 ; réussi, elle s'évade et le sort prend fin » — proposé au début de son tour.
-  "maze": { banishes: ["y7cYsJ0DCzXt4Tvy"], actionEnds: { y7cYsJ0DCzXt4Tvy: { by: "bearer", roll: "check", spell: true, turnStart: true } } },
+  "maze": { checkPoses: true, banishes: ["y7cYsJ0DCzXt4Tvy"], actionEnds: { y7cYsJ0DCzXt4Tvy: { by: "bearer", roll: "check", spell: true, turnStart: true } } },
   "antimagic-field": { globe: { radius: 10, units: "ft", maxLevel: 9, everywhere: true } },
   "antilife-shell": { barrier: { radius: 10, units: "ft", exceptTypes: ["construct", "undead"] } },
   "arcane-gate": { pointWall: false },

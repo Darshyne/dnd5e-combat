@@ -55,7 +55,7 @@ export async function takeBasicAction(actor, kind) {
   const combatant = combatantOf(actor);
   if ( !combatant ) return false;
   const before = readBudget(combatant);
-  if ( before[BASIC_ACTION_FLAGS[kind]] ) return false;
+  if ( (kind !== "dash") && before[BASIC_ACTION_FLAGS[kind]] ) return false;   // §402 : Foncer se reprend avec une autre action
   if ( checkUse(before, request("action"), { isOwnTurn: isOwnTurn(combatant) }).length ) return false;
   await writeBudget(combatant, basicAction(before, kind));
   if ( (kind === "disengage") && combatant.token ) windowDisengaged(combatant.token);

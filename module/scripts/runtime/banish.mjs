@@ -70,6 +70,19 @@ async function onDeleteEffect(effect) {
   }
 }
 
+/**
+ * §402 : un renvoi sans retour par le moteur (étape d'issue `banish` : Parole divine — « renvoyée sur son plan d'origine », 24 heures, hors
+ * de la partie) : le token et son combattant sont cachés comme un bannissement, sans effet qui le ramène ; le MJ le rend visible s'il revient.
+ */
+export async function banishToken(token) {
+  if ( !token || token.getFlag(MODULE_ID, FLAG) ) return false;
+  notice(token, { key: "Retour.Banni" }, "ended", { all: true, action: "spellEnds", outcome: "success" });
+  await token.update({ hidden: true, [`flags.${MODULE_ID}.${FLAG}`]: { wasHidden: token.hidden === true, permanent: true } });
+  await hideCombatant(token, true);
+  log(`${token.name}: sent back to its plane of origin`);
+  return true;
+}
+
 export function registerBanish() {
   route("createActiveEffect", effect => enqueue(`banish:${effect.parent?.uuid}`, () => onCreateEffect(effect)),
     { executor: true, label: "banishment: target not removed from the scene" });

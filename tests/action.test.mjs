@@ -646,3 +646,15 @@ describe("critique en dépassant la CA (§207)", () => {
     expect(resolution.targets[0]).toMatchObject({ hit: true, critical: false, reaction: "Bouclier" });
   });
 });
+
+describe("§402 : réussite d'office par type", () => {
+  it("une cible marquée autoSucceed est consignée réussie sans jet", async () => {
+    const { open, STEPS } = await import("../module/scripts/core/action.mjs");
+    const r = open({ id: "r", activity: "a", source: "s", origin: "m", plan: { save: { ability: "con", dc: 15 }, effects: [] },
+      targets: [{ token: "t1", actor: "a1", name: "Golem", autoSucceed: "type:construct" }, { token: "t2", actor: "a2", name: "Orc" }] });
+    const golem = r.resolution.targets.find(t => t.token === "t1");
+    expect(golem.save).toMatchObject({ success: true, auto: "type:construct" });
+    expect(r.resolution.targets.find(t => t.token === "t2").save).toBeNull();
+    expect(r.commands.find(c => c.type === "requestSaves")?.targets.map(t => t.token)).toEqual(["t2"]);
+  });
+});

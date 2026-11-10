@@ -162,6 +162,24 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       || !Array.isArray(w.statuses) || !w.statuses.length || !w.statuses.every(s => (typeof s === "string") && s)
       || Object.keys(w).some(k => !["types", "statuses"].includes(k)) ) errors.push(`${at}wardsConditions: { types: creature types, statuses: [ids] }`);
   }
+  if ( "saveAutoSuccess" in entry ) {
+    const a = entry.saveAutoSuccess;
+    const ok = isObject(a) && (("types" in a) || ("fighting" in a)) && Object.keys(a).every(k => ["types", "fighting"].includes(k))
+      && (!("types" in a) || (Array.isArray(a.types) && a.types.length && a.types.every(t => CREATURE_TYPES.includes(t))))
+      && (!("fighting" in a) || (a.fighting === true));
+    if ( !ok ) errors.push(`${at}saveAutoSuccess: { types?: [creature types], fighting?: true }`);
+  }
+  if ( ("leash" in entry) && !(isObject(entry.leash) && Number.isFinite(entry.leash.distance) && (entry.leash.distance > 0)
+    && (typeof entry.leash.units === "string") && (Object.keys(entry.leash).length === 2)) ) errors.push(`${at}leash: { distance, units }`);
+  if ( "saveAdvantageFrom" in entry ) {
+    const r = entry.saveAdvantageFrom;
+    const ok = isObject(r) && Array.isArray(r.types) && r.types.length && r.types.every(t => CREATURE_TYPES.includes(t))
+      && Array.isArray(r.statuses) && r.statuses.length && r.statuses.every(s => typeof s === "string") && (Object.keys(r).length === 2);
+    if ( !ok ) errors.push(`${at}saveAdvantageFrom: { types: [creature types], statuses: [conditions] }`);
+  }
+  if ( ("fadesOnLongRest" in entry) && (!Array.isArray(entry.fadesOnLongRest) || !entry.fadesOnLongRest.length || !entry.fadesOnLongRest.every(isId)) ) {
+    errors.push(`${at}fadesOnLongRest: list of effect ids (16 characters)`);
+  }
   if ( ("banishes" in entry) && (!Array.isArray(entry.banishes) || !entry.banishes.length || !entry.banishes.every(isId)) ) {
     errors.push(`${at}banishes: list of effect ids (16 characters)`);
   }
@@ -246,7 +264,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       && (!("activities" in k) || (Array.isArray(k.activities) && k.activities.length && k.activities.every(isId)));
     if ( !ok ) errors.push(`${at}killsAtZero: true or { types?, sizeAtMost?, activities? }`);
   }
-  for ( const key of ["singleAttack", "noAttacksOrSpells", "noSpells", "knownToOrigin", "upkeep", "keepsProne", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "avoidance", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails", "critMove", "combatInspiration", "quietPose", "zoneBound", "effectsFirst", "hitDefense", "enterOnPose", "summonEffectsOnCaster", "sniper"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
+  for ( const key of ["singleAttack", "noAttacksOrSpells", "noSpells", "knownToOrigin", "upkeep", "keepsProne", "wardsAtZero", "stableAtZero", "dispel", "zoneEffects", "advantageIfFighting", "regeneration", "fortitude", "drain", "swallow", "ignoresCloseCombat", "sharedHp", "forOneAttack", "evasion", "avoidance", "elusive", "holdsStill", "grantsAction", "studiedAttacks", "heroicWarrior", "greatWeaponFighting", "persistentRage", "reckless", "oneAttack", "martialArts", "supremeHealing", "discipleOfLife", "blessedHealer", "potentCantrip", "sculptSpells", "stabilizes", "kindles", "castTargets", "halfOnMiss", "seesInvisible", "scatter", "climbsCeilings", "climbsOnTurn", "slippery", "notOnSlippery", "encloses", "willingFails", "critMove", "combatInspiration", "quietPose", "zoneBound", "effectsFirst", "hitDefense", "enterOnPose", "summonEffectsOnCaster", "sniper", "checkPoses", "magicEvasion"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
   // §225, lot 4 : passer du plan matériel à l'Éthéré ou inversement (Saut éthéré) ; `others` : les cibles désignées suivent (Foulée éthérée).
   if ( ("etherealShift" in entry) && !((entry.etherealShift === true) || (isObject(entry.etherealShift)
     && Object.keys(entry.etherealShift).every(k => k === "others") && (entry.etherealShift.others === true))) ) {
@@ -606,7 +624,11 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     if ( !isObject(p) || (typeof p.count !== "string") || !p.count.trim() ) errors.push(`${at}projectiles.count: formula expected`);
     else {
       if ( typeof p.attack !== "boolean" ) errors.push(`${at}projectiles.attack: boolean`);
-      for ( const key of Object.keys(p) ) if ( !["count", "attack"].includes(key) ) errors.push(`${at}projectiles.${key}: unknown key`);
+      const near = p.teleportNear;
+      if ( ("teleportNear" in p) && !(isObject(near) && Number.isFinite(near.distance) && (near.distance > 0) && (typeof near.units === "string")) ) {
+        errors.push(`${at}projectiles.teleportNear: { distance, units }`);
+      }
+      for ( const key of Object.keys(p) ) if ( !["count", "attack", "teleportNear"].includes(key) ) errors.push(`${at}projectiles.${key}: unknown key`);
     }
   }
   if ( "bonusAttack" in entry ) {

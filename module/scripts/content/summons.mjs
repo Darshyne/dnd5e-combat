@@ -70,7 +70,10 @@ export const SUMMONS = Object.freeze({
   "primal-companion": { initiative: "after", replaces: true, vanishesWithCaster: true, commanded: { activity: "Jtr7GXnCHb85xHg8" } },
   "reanimated-companion": { initiative: "after", replaces: true, vanishesWithCaster: true },
   "spiritual-weapon": piloted(20, "use"),
-  "flaming-sphere": piloted(30, null, { summon: { pulse: { item: "flames", radius: 5, units: "ft" } } }),
+  // §402 : « si vous la faites rouler sur une créature, celle-ci fait la sauvegarde » — approchée comme la meute : la sphère qui arrive à
+  // 1,50 m d'une créature en la déplaçant (`moves`), en plus de la fin de tour (une fois par tour et par créature ; l'arrêt du
+  // déplacement au contact : non fait).
+  "flaming-sphere": piloted(30, null, { summon: { pulse: { item: "flames", radius: 5, units: "ft", on: ["turnEnd", "moves"] } } }),
   "bigbys-hand": hand,
   "arcane-hand": hand,
   "invoke-duplicity": {
@@ -105,6 +108,8 @@ export const SUMMONS = Object.freeze({
   "conjure-elemental": { initiative: "none", pulse: { item: ["air-element", "earth-element", "fire-element", "water-element"], radius: 5, units: "ft", on: ["enter", "turnStart"], affects: "enemy" } },
   "mordenkainens-sword": piloted(30, "use"),
   "conjure-fey": piloted(30, "use"),
+  // §402 : Monture fantôme — « si elle subit des dégâts, elle disparaît » (le sort continue, comme une invocation qui disparaît).
+  "phantom-steed": { initiative: "none", vanishesWhenHurt: true },
   "guardian-of-faith": { initiative: "none", vanishesAfterDamage: 60, pulse: { item: "guarded-area", radius: 10, units: "ft", on: ["enter", "turnStart"], affects: "enemy" } },
   "mordenkainens-faithful-hound": { initiative: "none", pulse: { item: "bite", radius: 5, units: "ft", on: ["casterTurnStart"], affects: "enemy" } },
   "arcane-eye": { initiative: "none", endsSpell: true, pilot: { cost: "bonus", distance: 30, units: "ft", occupies: false } },

@@ -279,13 +279,16 @@ export async function pulseAgainst(activity, source, token, moment="turnEnd") {
  * @param {TokenDocument} source    Le roublard.
  * @param {TokenDocument} token     La créature touchée.
  */
-export async function strikeAgainst(activity, source, token, { flavor="DND5ECOMBAT.Sournoise.Carte" }={}) {
+export async function strikeAgainst(activity, source, token, { flavor="DND5ECOMBAT.Sournoise.Carte", scaling=0, concentration=null }={}) {
   const card = await activity.item.system.getCardData({ activity });
   return ChatMessage.implementation.create({
     type: "usage",
     speaker: ChatMessage.implementation.getSpeaker({ token: source }),
     flavor: game.i18n.format(flavor, { strike: activity.name || activity.item.name, name: token.name }),
-    system: { ...card, targets: [describeTarget(token)] },
+    // §402 : le niveau de lancement (`system.scaling` du message d'utilisation) — dnd5e le reporte sur les effets posés depuis ce message
+    // (applications/components/effect-application.mjs:248), que les dégâts de début de tour relisent (Frappe piégeuse au niveau 2 : 2d6).
+    // `concentration` : l'id de l'effet de concentration du lanceur — dnd5e rattache à lui les effets posés depuis ce message.
+    system: { ...card, targets: [describeTarget(token)], ...(scaling ? { scaling } : {}), ...(concentration ? { concentration } : {}) },
     flags: { core: { canPopout: true }, [MODULE_ID]: { areaTick: { event: "cunningStrike", source: source.uuid, token: token.uuid } } }
   });
 }

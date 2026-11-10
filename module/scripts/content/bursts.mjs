@@ -73,8 +73,9 @@ export const PROJECTILES = Object.freeze({
   "magic-missile": { count: "2 + @item.level", attack: false },
   "scorching-ray": { count: "@item.level + 1", attack: true },
   "eldritch-blast": { count: "floor((@details.level + 1) / 6) + 1", attack: true },
-  // C12-j : Frappe du vent d'acier — « jusqu'à cinq créatures : un jet d'attaque de sort au corps à corps contre chacune ».
-  "steel-wind-strike": { count: "5", attack: true }
+  // C12-j : Frappe du vent d'acier — « jusqu'à cinq créatures : un jet d'attaque de sort au corps à corps contre chacune ». §402 :
+  // « vous pouvez ensuite vous téléporter dans un espace inoccupé que vous voyez, à 1,50 m de l'une des cibles » (`teleportNear`).
+  "steel-wind-strike": { count: "5", attack: true, teleportNear: { distance: 5, units: "ft" } }
 });
 
 /**

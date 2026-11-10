@@ -286,3 +286,74 @@ describe("circulation 7 — un item se reconnaît par identifierOf", () => {
     expect(stale).toEqual([]);
   });
 });
+
+/* -------------------------------------------- */
+/*  8. Les murs testés sur le niveau de la créature
+/* -------------------------------------------- */
+
+/**
+ * Sans `level`, un lancer de rayon du cœur (`polygonBackends.*.testCollision`) teste les murs du niveau **affiché** (V14,
+ * client/canvas/geometry/shapes/source-polygon.mjs:187 `cfg.level ??= canvas.level`) : l'abri, la ligne de vue, l'ouïe et l'A*
+ * d'une créature d'un autre étage seraient jugés sur le mauvais plan (SPEC §14.2, §41.3). Tout `testCollision` passe `level`.
+ */
+describe("circulation 8 — un lancer de rayon passe le niveau", () => {
+  it("tout testCollision passe `level` (dans ses arguments ou dans la configuration bâtie par sa fonction)", () => {
+    const bad = FILES.filter(f => !/testing/.test(f)).flatMap(file => callsIn(file, /testCollision/)
+      .filter(c => !/\blevel\b/.test(c.args) && !/\blevel\b/.test(c.fn.body.slice(0, c.fn.body.indexOf("testCollision"))))
+      .map(c => `${file}:${c.line} (${c.fn.name})`));
+    expect(bad).toEqual([]);
+  });
+});
+
+/* -------------------------------------------- */
+/*  9. Ami ou ennemi par les factions
+/* -------------------------------------------- */
+
+/**
+ * Depuis le §181, toute règle ami / ennemi passe par les factions (`areEnemies`, `areAllies`, `sideOf`, adapter/factions.mjs ;
+ * `hostileSides` / `alliedSides`, core/factions.mjs), qui retombent exactement sur les dispositions quand aucune relation n'est
+ * déclarée. Comparer `disposition` ailleurs ignorerait une faction déclarée (un PNJ neutre allié du groupe).
+ */
+const DISPOSITION_EXCEPTIONS = {
+  "core/area.mjs#pulseTargets": "teste seulement qu'un lanceur a une disposition ; le camp est jugé par `alliedSides`",
+  "adapter/help.mjs#helperAllied": "repli quand le token qui aide a disparu (plus de camp à lire)",
+  "adapter/summons.mjs#makeSummonHostile": "écriture : une invocation qui se retourne contre son lanceur",
+  "runtime/factions.mjs#syncDispositions": "écriture : le module des factions aligne les dispositions",
+  "runtime/factions.mjs#onPreCreateToken": "écriture : le module des factions aligne les dispositions",
+  "runtime/factions.mjs#onResolution": "écriture : rancune (une créature attaquée devient hostile)"
+};
+
+describe("circulation 9 — ami ou ennemi par les factions", () => {
+  it("aucune comparaison de disposition hors des fichiers de factions et des exceptions justifiées", () => {
+    const sites = [];
+    for ( const file of FILES.filter(f => !["adapter/factions.mjs", "core/factions.mjs"].includes(f) && !/testing/.test(f)) ) {
+      const text = code(file);
+      for ( const m of text.matchAll(/disposition\s*(?:===|!==|==)|(?:===|!==)\s*[\w.?]*disposition\b|TOKEN_DISPOSITIONS\.(?:HOSTILE|FRIENDLY|NEUTRAL)/g) ) {
+        sites.push({ file, line: lineAt(text, m.index), fn: enclosing(text, m.index).name, ok: false, what: m[0] });
+      }
+    }
+    const { bad, stale } = check(sites, DISPOSITION_EXCEPTIONS);
+    expect(bad).toEqual([]);
+    expect(stale).toEqual([]);
+  });
+});
+
+/* -------------------------------------------- */
+/*  10. Un token se déplace par token.move()
+/* -------------------------------------------- */
+
+/**
+ * V14 : un `update({ x, y, elevation })` de token court-circuite les points de passage et le budget de déplacement, et un changement
+ * d'élévation à travers un plancher est refusé sans erreur (foundry-core-notes/v14-migration.md). Le moteur déplace toujours par
+ * `token.move(…, { action })` (`displace`, `blink`, `climb`…).
+ */
+describe("circulation 10 — un token se déplace par move()", () => {
+  it("aucun update({ x | y | elevation }) dans adapter/ ni runtime/", () => {
+    const bad = [];
+    for ( const file of FILES.filter(f => /^(adapter|runtime)\//.test(f) && !/testing/.test(f)) ) {
+      const text = code(file);
+      for ( const m of text.matchAll(/\.update\(\s*\{\s*(?:x|y|elevation)\s*:/g) ) bad.push(`${file}:${lineAt(text, m.index)}`);
+    }
+    expect(bad).toEqual([]);
+  });
+});

@@ -18,8 +18,8 @@ export const FLIP_WALL_QUERY = `${MODULE_ID}.flipWallSide`;
 /** Le centre du lanceur qui a posé la région, ou null. */
 function casterCenter(region) {
   const token = fromUuidSync(region.getFlag("dnd5e", "origin") ?? "", { strict: false });
-  const object = token?.object;
-  return object ? object.center : null;
+  // §406 : la position validée (`_source`) — `object.center` suit l'animation (piège V14, adapter/turn.mjs `committedPosition`).
+  return token?.getCenterPoint ? token.getCenterPoint(token._source) : null;
 }
 
 /** À la pose : le côté brûlant (sauf s'il est déjà choisi, §171), et l'anneau fin à la place du disque. */

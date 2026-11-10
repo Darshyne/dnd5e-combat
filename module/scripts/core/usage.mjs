@@ -66,3 +66,19 @@ export function canCastHigher(slots, spellLevel) {
   return Object.entries(slots ?? {}).some(([key, slot]) => /^(spell\d+|pact)$/.test(key)
     && ((Number(slot?.value) || 0) > 0) && ((Number(slot?.level) || 0) > spellLevel));
 }
+
+/**
+ * §404 : l'activité au niveau auquel le sort a été lancé. dnd5e note la montée d'emplacement sur le message d'utilisation
+ * (`system.scaling`, documents/activity/mixin.mjs : `data.system.scaling`) et la rejoue avant chaque bouton de la carte en clonant
+ * l'item (`Activity#onChatAction` : `flags.dnd5e.scaling`), ou par `Item5e#scaledClone` (`ChatMessage5e#getAssociatedActivity({ scaled })`).
+ * Une activité relue par son uuid est celle de la fiche, au niveau de base : ses dés « Using a Higher-Level Spell Slot » manquent.
+ * Rend la copie mise à l'échelle (même id d'activité), ou l'activité telle quelle sans montée ou sans `scaledClone`.
+ * @param {object|null} activity  Une activité (`item.scaledClone(n).system.activities.get(id)`).
+ * @param {number|string|null} scaling  La montée d'emplacement (niveau de lancement − niveau du sort).
+ * @returns {object|null}
+ */
+export function atCastLevel(activity, scaling) {
+  const increase = Math.max(0, Math.trunc(Number(scaling) || 0));
+  if ( !activity || !increase || (typeof activity.item?.scaledClone !== "function") ) return activity;
+  return activity.item.scaledClone(increase)?.system?.activities?.get?.(activity.id) ?? activity;
+}

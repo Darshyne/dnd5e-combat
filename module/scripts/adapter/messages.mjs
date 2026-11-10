@@ -20,6 +20,7 @@ import { speakerTokenOf } from "./turn.mjs";
 import { chooseSmite } from "./smite.mjs";
 import { criticalChoice, drawCriticalTable } from "./criticals.mjs";
 import { current, STEPS } from "../core/action.mjs";
+import { atCastLevel } from "../core/usage.mjs";
 import { contentOf } from "./content.mjs";
 import { spellClassOf } from "./spell-class.mjs";
 import { weaponKind } from "./facts.mjs";
@@ -147,7 +148,11 @@ export async function rollDamageForAttack(attackMessage, { critical, variant=nul
   const used = await fromUuid(attackMessage.system.activity.uuid);
   // M5 (§18.8) : les dégâts de la variante choisie au plan (charge, En sang), sinon ceux de la variante « Attack with
   // Advantage » si le jet avait l'avantage (« plus 1d4 if the attack roll had Advantage »).
-  const activity = (variant ? await fromUuid(variant) : null) ?? damageVariant(used, attackMessage.rolls[0]) ?? used;
+  const origin = originOf(attackMessage);
+  // §404 : au niveau de lancement — l'activité relue par son uuid est celle de la fiche, au niveau de base ; la montée
+  // d'emplacement est sur le message d'utilisation (`system.scaling`), comme la lit le bouton « Dégâts » de dnd5e.
+  const activity = atCastLevel((variant ? await fromUuid(variant) : null) ?? damageVariant(used, attackMessage.rolls[0]) ?? used,
+    game.messages.get(origin ?? "")?.system?.scaling);
   if ( !activity?.rollDamage ) return null;
   const { ability, ammunitionItem: ammunition, mode: attackMode } = attackMessage.system;
   // Le verdict du moteur prime : un coup qui touche une cible paralysée à 5 ft est critique sans 20 naturel.
@@ -164,7 +169,6 @@ export async function rollDamageForAttack(attackMessage, { critical, variant=nul
       if ( choice === "table" ) await drawCriticalTable({ speaker: ChatMessage.implementation.getSpeaker({ actor: used.actor }) });
     }
   }
-  const origin = originOf(attackMessage);
   const damageType = await chosenDamageType(game.messages.get(origin ?? "") ?? attackMessage, activity);
   // §20 : Frappes rusées — choisies avant le jet, elles retirent des dés à l'Attaque sournoise (runtime/sneak.mjs). §223 : dans la même
   // fenêtre, l'Attaque sournoise elle-même (réglage « demander ») et les dégâts bonus au choix (Frappe effroyable, runtime/triggers.mjs).

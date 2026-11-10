@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickSpellSlot, misplacedSelfUses, canCastHigher, forcedSpellSlot } from "../module/scripts/core/usage.mjs";
+import { pickSpellSlot, misplacedSelfUses, canCastHigher, forcedSpellSlot, atCastLevel } from "../module/scripts/core/usage.mjs";
 
 describe("§68 : l'emplacement d'une utilisation sans fenêtre", () => {
   const slots = { spell1: { value: 0, level: 1 }, spell2: { value: 2, level: 2 }, spell3: { value: 1, level: 3 }, pact: { value: 1, level: 2 } };
@@ -47,5 +47,47 @@ describe("§384 : un sort plus haut que l'emplacement de pacte (issue #38, Créa
   it("rien pour un tour de magie ou sans emplacement proposé", () => {
     expect(forcedSpellSlot(warlock, "pact", 0)).toBeNull();
     expect(forcedSpellSlot(warlock, null, 6)).toBeNull();
+  });
+});
+
+describe("§404 : l'activité au niveau de lancement", () => {
+  // Un item factice : `scaledClone(n)` rend une copie dont l'activité porte la montée.
+  const itemOf = calls => {
+    const item = {
+      scaledClone: n => {
+        calls.push(n);
+        const clone = { flags: { scaling: n } };
+        clone.system = { activities: new Map([["atk", { id: "atk", item: clone, dice: 3 + n }]]) };
+        return clone;
+      }
+    };
+    return item;
+  };
+  it("une montée d'emplacement → la copie mise à l'échelle, même id", () => {
+    const calls = [];
+    const activity = { id: "atk", item: itemOf(calls), dice: 3 };
+    const scaled = atCastLevel(activity, 2);
+    expect(calls).toEqual([2]);
+    expect(scaled.id).toBe("atk");
+    expect(scaled.dice).toBe(5);
+  });
+  it("une montée lue sur un message (chaîne) est convertie", () => {
+    const calls = [];
+    expect(atCastLevel({ id: "atk", item: itemOf(calls), dice: 3 }, "1").dice).toBe(4);
+  });
+  it("sans montée, négative ou illisible : l'activité telle quelle, sans clone", () => {
+    const calls = [];
+    const activity = { id: "atk", item: itemOf(calls), dice: 3 };
+    for ( const s of [0, null, undefined, -1, "x"] ) expect(atCastLevel(activity, s)).toBe(activity);
+    expect(calls).toEqual([]);
+  });
+  it("sans `scaledClone` (activité d'un objet non item) ou sans activité : inchangé", () => {
+    const bare = { id: "atk", item: {} };
+    expect(atCastLevel(bare, 2)).toBe(bare);
+    expect(atCastLevel(null, 2)).toBeNull();
+  });
+  it("l'activité absente de la copie : l'activité d'origine", () => {
+    const activity = { id: "autre", item: itemOf([]) };
+    expect(atCastLevel(activity, 1)).toBe(activity);
   });
 });

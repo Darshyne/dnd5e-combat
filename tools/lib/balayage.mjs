@@ -9,7 +9,10 @@
  *     cibles de la résolution ;
  *  5. un sort de concentration laisse le Lanceur concentré ;
  *  6. un sort de niveau ≥ 1 dépense un emplacement de son niveau, un seul (`consume: true`) ;
- *  7. aucune erreur dans la console du MJ pendant l'utilisation.
+ *  7. aucune erreur dans la console du MJ pendant l'utilisation ;
+ *  8. (§406, option `upcast`, `MONTEE=2` du balayage des sorts) lancé `upcast` niveaux au-dessus du sien, un sort dont les données
+ *     ont des dés qui montent (`scaling` d'une part de dégâts ou du soin) lance le bon nombre de dés (le double accepté sur un
+ *     critique), et dépense l'emplacement de ce niveau. Seules ces activités sont jouées.
  * Hors du balayage : activités d'invocation, de métamorphose et de renvoi (`forward`), téléportations et murs posés point par point
  * (ils attendent un clic). Rapport : `prive/balayages/<kind>-<date>.json` et `.md` (noms et constats, aucun texte d'item).
  * Scénarios : `balayage-sorts`, `balayage-aptitudes` (ne se jouent que nommés).
@@ -23,6 +26,45 @@ const SKIPPED_TYPES = new Set(["summon", "transform", "forward"]);
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
+ * §406 : les dés qu'une activité doit lancer `increase` niveaux au-dessus de son sort, d'après ses données — même calcul que
+ * `DamageData#scaledFormula` de dnd5e 6.0.6 (dnd5e.mjs:19627) : mode « whole » (chaque niveau) ou « half » (un niveau sur deux),
+ * `scaling.number` dés de plus sur le premier dé, `scaling.formula` ajoutée autant de fois. Rend `[{ count, faces, part }]` pour les
+ * seules parts qui montent (vide : l'activité n'a pas de dés qui montent).
+ * @param {object} activity  Données d'activité (compendium) : `damage.parts` ou `healing`.
+ * @param {number} increase
+ */
+export function upcastDice(activity, increase) {
+  const parts = activity?.damage?.parts?.length ? activity.damage.parts : (activity?.healing ? [activity.healing] : []);
+  const out = [];
+  parts.forEach((part, i) => {
+    const sc = part?.scaling ?? {};
+    const steps = (sc.mode === "whole") ? increase : ((sc.mode === "half") ? Math.floor(increase / 2) : 0);
+    if ( !steps || !(Number(sc.number) > 0 || sc.formula) ) return;
+    const more = (Number(sc.number) || 0) * steps;
+    if ( more ) {
+      const custom = part.custom?.enabled ? /^(\d+)d(\d+)/.exec(String(part.custom.formula ?? "").trim()) : null;
+      if ( custom ) out.push({ count: Number(custom[1]) + more, faces: Number(custom[2]), part: i });
+      else if ( !part.custom?.enabled && part.number && part.denomination ) out.push({ count: part.number + more, faces: Number(part.denomination), part: i });
+    }
+    const extra = sc.formula ? /^(\d+)d(\d+)$/.exec(String(sc.formula).trim()) : null;
+    if ( extra ) out.push({ count: Number(extra[1]) * steps, faces: Number(extra[2]), part: i, formula: true });
+  });
+  return out;
+}
+
+/**
+ * §406 : les dés attendus (`upcastDice`) absents des formules lancées. Un dé attendu est trouvé quand une formule a un terme de même
+ * taille et de ce nombre, ou du double (critique). Rend les manques lisibles (« 5d8 attendu »), vide si tout y est.
+ * @param {{count: number, faces: number}[]} expected
+ * @param {string[]} formulas
+ */
+export function missingDice(expected, formulas) {
+  const terms = formulas.flatMap(f => [...String(f ?? "").matchAll(/(\d+)d(\d+)/g)].map(m => ({ count: Number(m[1]), faces: Number(m[2]) })));
+  return expected.filter(e => !terms.some(t => (t.faces === e.faces) && ((t.count === e.count) || (t.count === 2 * e.count))))
+    .map(e => `${e.count}d${e.faces} attendu`);
+}
+
+/**
  * @param {object} ctx  le contexte d'un scénario (tools/scenario.mjs)
  * @param {object} options
  * @param {string} options.kind        nom du rapport (« sorts », « aptitudes »)
@@ -34,8 +76,10 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
  * @param {string} [options.caster]    le token qui lance (« Lanceur » par défaut ; une copie de PJ pour l'audit d'une fiche)
  * @param {() => Promise<{itemId: string, data: object}[]>} [options.items]  les items PROPRES du lanceur, à la place des compendiums :
  *                                     rien n'est prêté ni retiré (audit d'une fiche, `audit-pj`)
+ * @param {number} [options.upcast]    §406 : lancer chaque sort ce nombre de niveaux au-dessus du sien, et ne jouer que les activités
+ *                                     dont les dés montent (invariant 8)
  */
-export async function sweep(ctx, { kind, packs = [], select, sortKey, lend = {}, consume, caster: casterName = "Lanceur", items }) {
+export async function sweep(ctx, { kind, packs = [], select, sortKey, lend = {}, consume, caster: casterName = "Lanceur", items, upcast = 0 }) {
   const names = Object.keys(ARENE_SORTS.tokens);
   const { tokens } = await ctx.scene();
   if ( !names.every(n => tokens.some(t => t.name === n)) ) { ctx.log("tokens de l'arène manquants : lancer tools/arene-sorts.mjs"); return; }
@@ -144,12 +188,19 @@ export async function sweep(ctx, { kind, packs = [], select, sortKey, lend = {},
       engine: Object.keys(CONTENT[ident] ?? {}).filter(k => k !== "source"), runs: [], notes: [] };
     report.push(row);
     if ( CONTENT[ident]?.teleport || CONTENT[ident]?.pointWall ) { row.notes.push(`non joué : ${CONTENT[ident]?.teleport ? "téléportation" : "mur point par point"} (attend un clic)`); continue; }
+    // §406 : en montée, seuls les sorts dont une activité a des dés qui montent, et qui existent à ce niveau.
+    const cast = isSpell ? (s.level ?? 0) + upcast : null;
+    if ( upcast && (!isSpell || !(s.level >= 1) || (cast > 9)
+      || !Object.values(s.activities ?? {}).some(a => upcastDice(a, upcast).length)) ) { report.pop(); continue; }
+    if ( upcast ) row.level = `${s.level} → ${cast}`;
     let itemId = own;
     if ( !own ) try { itemId = await ctx.ensureItem(caster, uuid, { system: lend }); }
     catch ( err ) { row.notes.push(`prêt impossible : ${err.message}`); continue; }
     for ( const activity of Object.values(s.activities ?? {}) ) {
       const label = `${activity.type}${activity.name ? ` « ${activity.name} »` : ""}`;
       if ( SKIPPED_TYPES.has(activity.type) ) { row.notes.push(`${label} : non joué`); continue; }
+      const expected = upcast ? upcastDice(activity, upcast) : [];
+      if ( upcast && !expected.length ) continue;
       // Une activité « rider » qu'un enchantement de l'item donne à sa cible (l'attaque de l'arme de pacte) : dnd5e la cache sur
       // l'item source (`isHidden`, `isRider`) et en refuse l'usage ; elle se joue sur l'arme enchantée.
       const rider = Object.values(s.activities ?? {}).some(a => (a.effects ?? []).some(e => (e.riders?.activity ?? []).includes(activity._id)));
@@ -173,7 +224,7 @@ export async function sweep(ctx, { kind, packs = [], select, sortKey, lend = {},
         let done = false;
         let ritualAsked = false;
         const using = ctx.use({ tokenId: caster.id, itemId, activityId: activity._id, targetTokenIds: plan.targets.map(x => x.id),
-          consume, ...(plan.area ? { area: plan.area } : {}) })
+          consume, ...(plan.area ? { area: plan.area } : {}), ...(upcast ? { usageConfig: { scaling: upcast, spell: { slot: `spell${cast}` } } } : {}) })
           .catch(err => ({ used: false, reason: err.message })).finally(() => { done = true; });
         for ( let after = 0; after < 4; ) {
           const r = await ctx.call("list-dialogs", { dialogsOnly: true, excludeIds: [...known], waitMs: 1500, details: true }).catch(() => null);
@@ -273,8 +324,18 @@ export async function sweep(ctx, { kind, packs = [], select, sortKey, lend = {},
           const slots1 = await slotsOf();
           const spent = Object.keys(SLOTS).map(k => [k, (slots0[k]?.value ?? 0) - (slots1[k]?.value ?? 0)]).filter(([, n]) => n);
           const consumes = activity.consumption?.spellSlot !== false;
-          if ( consumes && !((spent.length === 1) && (spent[0][0] === `spell${s.level}`) && (spent[0][1] === 1)) ) bad(`emplacement : ${spent.map(([k, n]) => `${k} −${n}`).join(", ") || "aucun dépensé"}`);
+          if ( consumes && !((spent.length === 1) && (spent[0][0] === `spell${upcast ? cast : s.level}`) && (spent[0][1] === 1)) ) bad(`emplacement : ${spent.map(([k, n]) => `${k} −${n}`).join(", ") || "aucun dépensé"}`);
           if ( !consumes && spent.length ) bad(`emplacement dépensé par une activité qui n'en prend pas (${spent.map(([k]) => k).join(", ")})`);
+        }
+
+        // 8. §406 : les dés du niveau de lancement, lus sur le jet de dégâts ou de soin de la résolution.
+        if ( upcast ) {
+          const id = r?.damageRoll?.messageId ?? null;
+          const m = id ? ((await ctx.call("list-chat-messages", { limit: 80 })).messages ?? []).find(x => x.id === id) : null;
+          const formulas = (m?.rolls ?? []).map(raw => ((typeof raw === "string") ? JSON.parse(raw) : raw)?.formula).filter(Boolean);
+          run.dice = formulas;
+          if ( !id ) run.skipped = `pas de jet de dégâts dans la résolution (${r?.step ?? "pas de résolution"}${r?.targets?.[0]?.hit === false ? ", raté" : ""})`;
+          else for ( const miss of missingDice(expected, formulas) ) bad(`niveau ${cast} : ${formulas.join(" + ") || "?"} — ${miss}`);
         }
 
         // 7. La console (les erreurs connues hors moteur sont filtrées par le lanceur, `ctx.clientErrors`).

@@ -75,7 +75,8 @@ export async function castingCheck(actor, ability, dc, { bonus=0 }={}) {
 export function spellZonesNear(caster, range, { except=null }={}) {
   const scene = caster?.parent;
   if ( !scene ) return [];
-  const from = caster.object?.center ?? caster.getCenterPoint?.(caster._source);
+  // §406 : la position validée — `object.center` suit l'animation (piège V14, adapter/turn.mjs `committedPosition`).
+  const from = caster.getCenterPoint(caster._source);
   const pxPerUnit = scene.grid.size / scene.grid.distance;
   const out = [];
   for ( const region of scene.regions ) {

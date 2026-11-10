@@ -222,7 +222,8 @@ async function dispelLights(region, center, radius, maxLevel) {
   const px = r => (r / scene.grid.distance) * scene.grid.size;
   const sources = [];
   for ( const token of scene.tokens ) {
-    const c = { x: token.x + ((token.width * scene.grid.sizeX) / 2), y: token.y + ((token.height * scene.grid.sizeY) / 2) };
+    // §406 : la position validée (`_source`), pas celle de l'animation (piège V14, adapter/turn.mjs `committedPosition`).
+    const c = { x: token._source.x + ((token._source.width * scene.grid.sizeX) / 2), y: token._source.y + ((token._source.height * scene.grid.sizeY) / 2) };
     const lit = px(Math.max(Number(token.light?.dim) || 0, Number(token.light?.bright) || 0));
     if ( !(lit > 0) ) continue;
     const summoned = summonItemOf(token);

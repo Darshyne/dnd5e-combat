@@ -102,3 +102,33 @@ describe("circulation 2 — jets rattachés à leur carte d'origine", () => {
     expect(stale, "exceptions qui ne servent plus : à retirer").toEqual([]);
   });
 });
+
+/* -------------------------------------------- */
+/*  3. La position validée d'un token, pas sa position animée
+/* -------------------------------------------- */
+
+/**
+ * Piège de Foundry V14 (vu le 2026-09-20, adapter/turn.mjs `committedPosition`) : `token.x` / `token.y` d'un TokenDocument et
+ * `token.object.center` suivent l'animation du déplacement ; lus juste après un `move`, ils donnent encore une case de départ (dans un
+ * onglet masqué, toujours). Toute mesure du moteur (adapter/, runtime/, core/) part de `token._source` : `committedPosition`,
+ * `getCenterPoint(token._source)`. L'interface (ui/) peut dessiner à la position animée. Le gardien lit les noms usuels d'un token
+ * (`token`, `tok`) et toute lecture par `.document` ou `.object` ; il a trouvé deux défauts à sa création (§406 : Ténèbres qui dissipent
+ * les lumières de sort, zones de sort proches d'un lanceur).
+ */
+const ANIMATED = /\b(?:token|tok)\??\.(?:x|y)\b|\.document\??\.(?:x|y)\b|\.object\??\.(?:x|y|center)\b|getCenterPoint\??\.?\(\s*\)/g;
+const ANIMATED_EXCEPTIONS = {};
+
+describe("circulation 3 — position validée (`_source`), pas animée", () => {
+  it("adapter/, runtime/, core/ ne lisent pas token.x, .document.x, .object.center ni getCenterPoint() sans `_source`", () => {
+    const sites = [];
+    for ( const file of FILES.filter(f => /^(adapter|runtime|core)\//.test(f) && !/testing/.test(f)) ) {
+      const text = code(file);
+      for ( const m of text.matchAll(ANIMATED) ) {
+        sites.push({ file, line: lineAt(text, m.index), fn: enclosing(text, m.index).name, ok: false, what: m[0] });
+      }
+    }
+    const { bad, stale } = check(sites, ANIMATED_EXCEPTIONS);
+    expect(bad).toEqual([]);
+    expect(stale).toEqual([]);
+  });
+});

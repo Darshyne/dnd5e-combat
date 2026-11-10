@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickSpellSlot, misplacedSelfUses, canCastHigher, forcedSpellSlot, atCastLevel, followUpScaling } from "../module/scripts/core/usage.mjs";
+import { pickSpellSlot, misplacedSelfUses, canCastHigher, forcedSpellSlot, atCastLevel, followUpScaling, castLevelUsage, spellCastLevel } from "../module/scripts/core/usage.mjs";
 
 describe("§68 : l'emplacement d'une utilisation sans fenêtre", () => {
   const slots = { spell1: { value: 0, level: 1 }, spell2: { value: 2, level: 2 }, spell3: { value: 1, level: 3 }, pact: { value: 1, level: 2 } };
@@ -108,5 +108,25 @@ describe("§405 : une activité d'un sort sans emplacement, au niveau de sa conc
   });
   it("`scaling: false` (dnd5e, mise à l'échelle interdite) n'empêche pas la reprise", () => {
     expect(followUpScaling({ spellLevel: 2, consumesSlot: false, scaling: false, concentrationScaling: 1 })).toEqual({ scaling: 1, slot: "spell3" });
+  });
+});
+
+describe("§406 : une activité rejouée par le moteur au niveau du lancement (castLevelUsage)", () => {
+  it("Boule de feu à retardement lancée au niveau 9 (sort de niveau 7, montée 2) : montée et emplacement de ce niveau", () => {
+    expect(castLevelUsage(7, 2)).toEqual({ scaling: 2, spell: { slot: "spell9" } });
+    expect(castLevelUsage("3", "1")).toEqual({ scaling: 1, spell: { slot: "spell4" } });
+  });
+  it("rien sans montée, ni pour un tour de magie", () => {
+    expect(castLevelUsage(7, 0)).toEqual({});
+    expect(castLevelUsage(7, undefined)).toEqual({});
+    expect(castLevelUsage(0, 2)).toEqual({});
+  });
+});
+
+describe("§406 : le niveau de lancement lu sur une copie mise à l'échelle (spellCastLevel)", () => {
+  it("niveau du sort + montée (`flags.dnd5e.scaling`) ; le niveau du sort seul sans montée", () => {
+    expect(spellCastLevel({ system: { level: 1 }, flags: { dnd5e: { scaling: 2 } } })).toBe(3);
+    expect(spellCastLevel({ system: { level: 3 }, flags: {} })).toBe(3);
+    expect(spellCastLevel(null)).toBe(0);
   });
 });

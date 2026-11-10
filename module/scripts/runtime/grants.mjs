@@ -46,7 +46,8 @@ async function onUsage(message) {
   if ( !rule || (rule.from !== activity.id) ) return;
   const caster = item.actor;
   const dc = Number(caster?.system?.attributes?.spell?.dc) || 10;
-  const scaling = Math.max(0, (Number(message.getFlag("dnd5e", "scaling")) || 0));
+  // §406 : la montée est sur le message d'utilisation (`system.scaling`), pas dans ses flags (que dnd5e 6 n'écrit plus).
+  const scaling = Math.max(0, (Number(message.system?.scaling) || 0));
   for ( const t of message.system?.targets ?? [] ) {
     const target = fromUuidSync(t.token ?? t.actor ?? "", { strict: false });
     const actor = target?.actor ?? target;

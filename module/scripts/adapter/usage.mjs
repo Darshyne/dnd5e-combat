@@ -314,8 +314,9 @@ function casterRules(activity, plan, message=null) {
   if ( plan.damage && (level === 0) && has("potentCantrip") ) out.potent = true;
   // §157 : l'item lui-même fait la moitié des dégâts sur un raté (Flèche acide de Melf) — même règle, pour lui seul.
   if ( plan.damage && plan.attack && (contentOf(item).entry?.halfOnMiss === true) ) out.potent = true;
-  // §296 : « 1 + le niveau du sort » — le niveau auquel il est lancé (dnd5e note la montée d'emplacement : `flags.dnd5e.scaling`).
-  if ( plan.save && (spellSchoolOf(item) === "evo") && has("sculptSpells") ) out.sculpt = 1 + level + (Number(message?.getFlag?.("dnd5e", "scaling")) || 0);
+  // §296 : « 1 + le niveau du sort » — le niveau auquel il est lancé (dnd5e note la montée sur le message : `system.scaling` ; §406 : pas
+  // dans ses flags, que dnd5e 6 n'écrit plus).
+  if ( plan.save && (spellSchoolOf(item) === "evo") && has("sculptSpells") ) out.sculpt = 1 + level + (Number(message?.system?.scaling) || 0);
   // §32 : Métamagie portée par la carte — Sort prévenant : autant d'alliés que le modificateur de Charisme (au moins un) réussissent
   // d'office, comme le Façonneur de sorts ; Sort intensifié : la première cible hostile a le Désavantage (adapter/saves.mjs).
   const meta = usageMetamagic(message);

@@ -77,6 +77,30 @@ describe("circulation 1 — les dés d'une activité au niveau de lancement (§4
   });
 });
 
+/**
+ * 1 bis (§406) : la même règle pour une activité que le moteur **réutilise** plus tard d'après un message d'utilisation (une zone qui
+ * tombe, une impulsion au tour du lanceur, un sort préparé) : `activity.use()` recalcule la montée d'après l'emplacement proposé, au
+ * niveau du sort (§405) — sans `scaling` ni emplacement dans la configuration, l'activité part au niveau de base. Trouvé à la création du
+ * gardien : l'explosion de la Boule de feu à retardement (`zoneEnd`, runtime/areas.mjs). Le gardien regarde les `.use(` des fonctions
+ * qui relisent un message d'utilisation ; la configuration passe `scaling`, un `slot` ou `castLevelUsage` (core/usage.mjs).
+ */
+const REUSE_EXCEPTIONS = {
+  "runtime/after-sneak.mjs#onResolution": "aptitude après une Attaque sournoise (`afterSneak`) : pas un sort, rien ne monte",
+  "runtime/correction.mjs#correctZone": "la configuration `usage` est bâtie plus haut avec l'emplacement du niveau choisi par le MJ (`slotKey`)"
+};
+
+describe("circulation 1 bis — une activité réutilisée d'après un message d'utilisation garde son niveau (§406)", () => {
+  it("tout .use( d'une fonction qui relit un message d'utilisation passe la montée, ou est une exception justifiée", () => {
+    const sites = FILES.filter(f => !/testing/.test(f)).flatMap(file => callsIn(file, /use/)
+      .filter(c => /game\.messages\.get\(|usageMessage|getAssociatedActivity\(|\.usage/.test(c.fn.body))
+      .map(c => ({ file, line: c.line, fn: c.fn.name, ok: /scaling|castLevelUsage\(|followUpScaling\(|slot/.test(c.args),
+        what: ".use( sans niveau de lancement" })));
+    const { bad, stale } = check(sites, REUSE_EXCEPTIONS);
+    expect(bad).toEqual([]);
+    expect(stale).toEqual([]);
+  });
+});
+
 /* -------------------------------------------- */
 /*  2. Un jet rattaché à sa carte d'origine
 /* -------------------------------------------- */
@@ -128,6 +152,136 @@ describe("circulation 3 — position validée (`_source`), pas animée", () => {
       }
     }
     const { bad, stale } = check(sites, ANIMATED_EXCEPTIONS);
+    expect(bad).toEqual([]);
+    expect(stale).toEqual([]);
+  });
+});
+
+/* -------------------------------------------- */
+/*  4. Des dégâts typés, pas un nombre nu
+/* -------------------------------------------- */
+
+/**
+ * `Actor5e#applyDamage(nombre)` met `options.ignore = true` : résistances, immunités et vulnérabilités sont sautées (dnd5e 6.0.6,
+ * dnd5e.mjs:43266-43269). Le moteur passe toujours une liste `[{ value, type, properties }]` — un littéral, ou une liste nommée
+ * `damages` / `applied` bâtie plus haut (adapter/messages.mjs `applyDamageToToken`). Un nombre nu n'est voulu que là où la règle
+ * l'exige, listé ci-dessous.
+ */
+const TYPED_DAMAGE_EXCEPTIONS = {
+  "runtime/engine-commands.mjs#COMMANDS": "« elle tombe à 0 PV » (Regard mortel, K2 §323) : des dégâts égaux à ses PV, sans type ni résistance",
+  "runtime/triggers.mjs#onDamaged": "Lien protecteur sans formule (§156) : le lanceur subit le même montant que le porteur, déjà après ses résistances, sans type"
+};
+
+describe("circulation 4 — applyDamage reçoit des dégâts typés", () => {
+  it("tout applyDamage du moteur passe une liste [{ value, type }], ou est une exception justifiée", () => {
+    const sites = FILES.filter(f => !/testing/.test(f)).flatMap(file => callsIn(file, /applyDamage/).map(c => {
+      const first = c.args.trim();
+      const ok = first.startsWith("[") || /^(damages|applied)\b/.test(first);
+      return { file, line: c.line, fn: c.fn.name, ok, what: `applyDamage(${first.replace(/\s+/g, " ").slice(0, 40)}…)` };
+    }));
+    const { bad, stale } = check(sites, TYPED_DAMAGE_EXCEPTIONS);
+    expect(bad).toEqual([]);
+    expect(stale).toEqual([]);
+  });
+});
+
+/* -------------------------------------------- */
+/*  5. Le niveau de lancement d'un message : `system.scaling`
+/* -------------------------------------------- */
+
+/**
+ * dnd5e 6 note la montée d'emplacement sur le message d'utilisation dans `system.scaling` (dnd5e.mjs:17956) ; `flags.dnd5e.scaling`
+ * n'existe que sur un item cloné (`scaledClone`) ou un effet (concentration, effet appliqué), et la migration le retire des messages
+ * (dnd5e.mjs:94993). Lu sur un message, il vaut toujours rien : trois défauts à la création du gardien (§406 — Globe d'invulnérabilité,
+ * Façonneur de sorts, copies données par un sort, tous au niveau de base). Le gardien refuse `getFlag("dnd5e", "scaling")` et
+ * `flags.dnd5e.scaling` lus sur un nom de message (`message`, `msg`, `m`, `usage`, `carrier`, `usageMessage`, `origin`…).
+ */
+const MESSAGE_SCALING_FLAG = /\b(?:message|msg|m|usage|usageMessage|carrier|origin|originMessage|card|attackMessage)\??\.(?:getFlag\??\.?\(\s*"dnd5e"\s*,\s*"scaling"|flags\??\.dnd5e\??\.scaling)/g;
+
+describe("circulation 5 — la montée d'un message se lit dans system.scaling", () => {
+  it("aucun message n'est lu par flags.dnd5e.scaling", () => {
+    const bad = [];
+    for ( const file of FILES ) {
+      const text = code(file);
+      for ( const m of text.matchAll(MESSAGE_SCALING_FLAG) ) bad.push(`${file}:${lineAt(text, m.index)} — ${m[0]}`);
+    }
+    expect(bad).toEqual([]);
+  });
+
+  /**
+   * Une carte d'utilisation fabriquée par le moteur (zone rejouée, sauvegarde répétée, impulsion, émanation, riposte, correction) porte
+   * la montée : elle recopie le `system` d'une vraie carte d'utilisation, ou passe `scaling` (`cardScaling`, adapter/areas.mjs).
+   * Sans elle, `getAssociatedActivity({ scaled: true })` rend l'activité au niveau de base (trouvé à la création : riposte par
+   * sauvegarde et les cinq fabriques `getCardData` d'adapter/areas.mjs).
+   */
+  it("toute carte `type: \"usage\"` créée par le moteur porte `scaling` ou recopie le `system` d'une carte d'utilisation", () => {
+    const bad = [];
+    for ( const file of FILES.filter(f => !/testing/.test(f)) ) {
+      const text = code(file);
+      for ( const m of text.matchAll(/type:\s*"usage"/g) ) {
+        const fn = enclosing(text, m.index);
+        if ( !/\bscaling\b|cardScaling\(|\.\.\.\s*\w*[Mm]essage\??\.system\b|\.\.\.\s*usage\??\.system\b/.test(fn.body) ) bad.push(`${file}:${lineAt(text, m.index)} (${fn.name})`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+});
+
+/* -------------------------------------------- */
+/*  6. La carte d'origine par son id : `_source.system.origin`
+/* -------------------------------------------- */
+
+/**
+ * `system.origin` d'un message de dnd5e est un `ForeignDocumentField` (dnd5e.mjs:86248) : lu sur le document, il rend le message
+ * d'origine lui-même (ou null), pas son id — `game.messages.get(message.system.origin)` ne trouve jamais rien. L'id se lit dans
+ * `_source.system.origin` (adapter/messages.mjs `originOf`) ; dans une configuration de message (`messageConfig.data.system.origin`), c'est
+ * bien un id. Défaut trouvé à la création (§406) : le niveau de lancement d'une attaque relu sur la carte d'attaque au lieu de la carte
+ * d'utilisation (runtime/engine-messages.mjs).
+ */
+describe("circulation 6 — l'id de la carte d'origine se lit dans _source", () => {
+  it("aucun game.messages.get(…system.origin) hors de `_source` ou d'une configuration `data.system.origin`", () => {
+    const bad = [];
+    for ( const file of FILES ) {
+      const text = code(file);
+      for ( const m of text.matchAll(/messages\.get\(([^)]*?)\bsystem\??\.origin\b/g) ) {
+        if ( /_source\??\.$|data\??\.$/.test(m[1]) ) continue;
+        bad.push(`${file}:${lineAt(text, m.index)} — ${m[0]}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+});
+
+/* -------------------------------------------- */
+/*  7. Un item reconnu par identifierOf, pas par son identifiant brut
+/* -------------------------------------------- */
+
+/**
+ * Un item créé sans identifiant (premium, ou dans un client en français) reçoit de dnd5e `formatIdentifier(nom)` — le nom **traduit**
+ * par Babele (dnd5e.mjs:35923-35926) : « pied-de-biche » au lieu de « crowbar ». Le moteur reconnaît un item par `identifierOf`
+ * (adapter/content.mjs : source, nom anglais gardé par Babele…) et lit son contenu par `contentOf`. Comparer `system.identifier` à une
+ * valeur n'est voulu que là où l'on lit des données brutes, listé ci-dessous. Défaut trouvé à la création (§406) : le Pied-de-biche
+ * (runtime/doors.mjs).
+ */
+const RAW_IDENTIFIER_EXCEPTIONS = {
+  "adapter/apply-effects.mjs#lostEffectOf": "index d'un compendium (données sources, identifiant anglais du module)",
+  "adapter/sneak.mjs#owns": "identifierOf d'abord ; l'identifiant brut en repli, pour un item que le moteur a lui-même créé",
+  "adapter/turn.mjs#costFor": "l'item d'action de base que le moteur crée lui-même, d'identifiant fixe (`dnd5e-combat-search`)",
+  "runtime/diagnostic/checks.mjs#officialFor": "diagnostic : compare les données brutes d'un monde à celles du compendium",
+  "runtime/diagnostic/checks.mjs#cleanActor": "diagnostic : nettoyage Midi d'une fiche, sur les identifiants bruts de ses items",
+  "runtime/diagnostic/checks.mjs#creatures": "diagnostic : répare justement l'identifiant brut"
+};
+
+describe("circulation 7 — un item se reconnaît par identifierOf", () => {
+  it("aucune comparaison de system.identifier hors des exceptions justifiées", () => {
+    const sites = [];
+    for ( const file of FILES.filter(f => /^(adapter|runtime|ui)\//.test(f) && !/testing/.test(f)) ) {
+      const text = code(file);
+      for ( const m of text.matchAll(/system\??\.identifier\s*(?:===|!==)|(?:===|!==)\s*[\w.?]*system\??\.identifier\b/g) ) {
+        sites.push({ file, line: lineAt(text, m.index), fn: enclosing(text, m.index).name, ok: false, what: m[0] });
+      }
+    }
+    const { bad, stale } = check(sites, RAW_IDENTIFIER_EXCEPTIONS);
     expect(bad).toEqual([]);
     expect(stale).toEqual([]);
   });

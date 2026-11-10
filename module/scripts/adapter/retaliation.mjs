@@ -18,7 +18,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { select, stepsOf } from "../core/triggers.mjs";
 import { declarationsOf, declarationsOfEffects, factsFor } from "./triggers.mjs";
 import { applyDamageToToken } from "./messages.mjs";
-import { describeTarget } from "./areas.mjs";
+import { describeTarget, cardScaling } from "./areas.mjs";
 
 /**
  * §86 : riposte par une sauvegarde (étape `save`, `to: "source"`) — l'attaquant fait la sauvegarde d'une activité de l'item
@@ -40,7 +40,9 @@ export async function saveRetaliation({ declaration, step }, { bearerToken, atta
     type: "usage",
     speaker: ChatMessage.implementation.getSpeaker({ actor: item.actor ?? undefined }),
     flavor: game.i18n.format("DND5ECOMBAT.RiposteSauvegarde", { item: declaration.name ?? item.name, attacker: attackerToken.name, bearer: bearerToken?.name ?? "" }),
-    system: { ...card, targets: [describeTarget(attackerToken)] },
+    // §406 : la montée de l'effet porté sur la carte (`system.scaling`) — la résolution relit l'activité par `getAssociatedActivity({ scaled:
+    // true })`, qui la prend là ; `getCardData` ne la donne pas.
+    system: { ...card, ...cardScaling(activity, effect), targets: [describeTarget(attackerToken)] },
     flags: { core: { canPopout: true }, [MODULE_ID]: { areaTick: { event: "retaliation", source: bearerToken?.uuid ?? null, token: attackerToken.uuid } } }
   });
 }

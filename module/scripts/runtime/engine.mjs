@@ -12,6 +12,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { current, undoPlan, wantsDamageRoll, isCriticalHit, pendingChoice, pendingAllocation, STEPS } from "../core/action.mjs";
 import { isAutoCritical, autoFailSave } from "../core/conditions.mjs";
 import { maximizeDice } from "../core/max-dice.mjs";
+import { spellCastLevel } from "../core/usage.mjs";
 import { unaffectedBy } from "../adapter/eligibility.mjs";
 import { restoreHp, rollDamageFor } from "../adapter/messages.mjs";
 import { removeEffects, TARGETS_QUERY, handleTargetsQuery, SAVE_QUERY, handleSaveQuery, magicEvasionAgainst } from "../adapter/saves.mjs";
@@ -77,11 +78,15 @@ export function hpTierFor(item, actor, entry, plan=null, activity=null, saveFail
   } };
 }
 
-/** §161 : le niveau auquel le sort du message est lancé — celui de l'item, plus la montée d'emplacement que dnd5e note (`scaling`). */
+/**
+ * §161 : le niveau auquel le sort du message est lancé — celui de l'item, plus la montée d'emplacement que dnd5e note sur le message
+ * d'utilisation (`system.scaling`, dnd5e.mjs:17956). §406 : elle était lue dans `flags.dnd5e.scaling` du message, que dnd5e 6 n'écrit
+ * plus (la migration la retire, dnd5e.mjs:94993) — toujours le niveau de base.
+ */
 export function castLevelOfMessage(message) {
   const item = message?.getAssociatedActivity?.()?.item ?? message?.getAssociatedItem?.() ?? null;
   if ( item?.type !== "spell" ) return null;
-  return Number(item.system?.level ?? 0) + (Number(message.getFlag?.("dnd5e", "scaling")) || 0);
+  return Number(item.system?.level ?? 0) + (Number(message.system?.scaling) || 0);
 }
 
 /** §164 : les couleurs d'Embruns prismatiques — 1 à 5, un type de dégâts ; 6, indigo ; 7, violet. */
@@ -156,7 +161,9 @@ function onPreRollHealing(config) {
  */
 export function slotHealBonus(healer, activity) {
   const item = activity?.item;
-  const level = Number(item?.system?.level) || 0;
+  // §406 : le niveau de l'emplacement — `system.level` reste celui du sort sur une copie mise à l'échelle (`scaledClone` n'écrit que
+  // `flags.dnd5e.scaling`, dnd5e.mjs:35309 ; `@item.level` l'ajoute, dnd5e.mjs:34568).
+  const level = spellCastLevel(item);
   if ( !healer || (item?.type !== "spell") || (level < 1) || !["spell", "pact", undefined, ""].includes(item.system.method) ) return null;
   const has = key => healer.items.some(i => contentOf(i).entry?.[key] === true);
   const bonus = { disciple: has("discipleOfLife") ? 2 + level : 0, healer: has("blessedHealer") ? 2 + level : 0 };

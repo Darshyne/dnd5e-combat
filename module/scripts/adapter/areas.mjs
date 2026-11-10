@@ -230,6 +230,18 @@ export async function pulseAll(usageMessage, tokens, sibling, region) {
 }
 
 /**
+ * §406 : la montée d'emplacement à écrire sur une carte d'utilisation fabriquée par le moteur (`getCardData` ne la donne pas) — celle de
+ * l'effet porté s'il y en a un (`flags.dnd5e.scaling`, posé par dnd5e depuis la carte d'origine), sinon celle de l'activité déjà mise à
+ * l'échelle (`item.scaledClone(n)`). La résolution relit l'activité par `getAssociatedActivity({ scaled: true })`, qui ne lit que
+ * `system.scaling` de la carte : sans elle, dés et effets repartent au niveau de base.
+ * @returns {{scaling?: number}}
+ */
+export function cardScaling(activity, effect=null) {
+  const n = Math.max(0, Math.trunc(Number(effect?.getFlag?.("dnd5e", "scaling") ?? activity?.item?.flags?.dnd5e?.scaling) || 0));
+  return n ? { scaling: n } : {};
+}
+
+/**
  * Sauvegarde répétée (SPEC §16, brique « resave ») : la créature qui porte un effet rejoue la
  * sauvegarde de l'activité qui l'a posé — un message d'utilisation neuf, même forme que celui du
  * système (`getCardData`, activity/mixin.mjs:769-778), cette seule cible, et le drapeau `resave` :
@@ -251,7 +263,7 @@ export async function resaveAgainst(effect, activity, token, moment, { onFail=nu
     type: "usage",
     speaker: ChatMessage.implementation.getSpeaker({ actor: caster }),
     flavor: game.i18n.format(`DND5ECOMBAT.Resave.${moment}`, { name: token.name, item: activity.item.name }) + counted,
-    system: { ...card, targets: [describeTarget(token)] },
+    system: { ...card, ...cardScaling(activity, effect), targets: [describeTarget(token)] },
     flags: {
       core: { canPopout: true },
       // §19.6 : `onFail` — des dégâts du porteur qui ne valent que si la sauvegarde est ratée (saignement d'Épine).
@@ -279,7 +291,7 @@ export async function pulseAgainst(activity, source, token, moment="turnEnd") {
     speaker: ChatMessage.implementation.getSpeaker({ token: source }),
     flavor: game.i18n.format({ enter: "DND5ECOMBAT.Pilote.PulseEnter", moves: "DND5ECOMBAT.Pilote.PulseMoves" }[moment] ?? "DND5ECOMBAT.Pilote.Pulse",
       { item: activity.item.name, name: token.name, source: source.name }),
-    system: { ...card, targets: [describeTarget(token)] },
+    system: { ...card, ...cardScaling(activity), targets: [describeTarget(token)] },
     flags: { core: { canPopout: true }, [MODULE_ID]: { areaTick: { event: "pulse", source: source.uuid, token: token.uuid } } }
   });
 }
@@ -301,7 +313,7 @@ export async function strikeAgainst(activity, source, token, { flavor="DND5ECOMB
     // §402 : le niveau de lancement (`system.scaling` du message d'utilisation) — dnd5e le reporte sur les effets posés depuis ce message
     // (applications/components/effect-application.mjs:248), que les dégâts de début de tour relisent (Frappe piégeuse au niveau 2 : 2d6).
     // `concentration` : l'id de l'effet de concentration du lanceur — dnd5e rattache à lui les effets posés depuis ce message.
-    system: { ...card, targets: [describeTarget(token)], ...(scaling ? { scaling } : {}), ...(concentration ? { concentration } : {}) },
+    system: { ...card, ...cardScaling(activity), targets: [describeTarget(token)], ...(scaling ? { scaling } : {}), ...(concentration ? { concentration } : {}) },
     flags: { core: { canPopout: true }, [MODULE_ID]: { areaTick: { event: "cunningStrike", source: source.uuid, token: token.uuid } } }
   });
 }
@@ -419,7 +431,7 @@ export async function emanationAgainst(activity, source, tokens, moment) {
     type: "usage",
     speaker: ChatMessage.implementation.getSpeaker({ token: source }),
     flavor: game.i18n.format(`DND5ECOMBAT.Emanation.${moment}`, { item: activity.item.name, source: source.name, name: tokens[0]?.name ?? "" }),
-    system: { ...card, targets: tokens.map(describeTarget) },
+    system: { ...card, ...cardScaling(activity), targets: tokens.map(describeTarget) },
     flags: { core: { canPopout: true }, [MODULE_ID]: { areaTick: {
       event: "emanation", moment, source: source.uuid, key: activity.item.system.identifier ?? activity.item.id, token: tokens[0]?.uuid ?? null
     } } }
@@ -442,7 +454,7 @@ export async function swallowAgainst(activity, source, tokens, moment, { event="
     type: "usage",
     speaker: ChatMessage.implementation.getSpeaker({ token: source }),
     flavor: game.i18n.format(flavor, { item: activity.item.name, source: source.name, names: tokens.map(t => t.name).join(", ") }),
-    system: { ...card, targets: tokens.map(describeTarget) },
+    system: { ...card, ...cardScaling(activity), targets: tokens.map(describeTarget) },
     flags: { core: { canPopout: true }, [MODULE_ID]: { areaTick: { event, moment, source: source.uuid, token: tokens[0]?.uuid ?? null } } }
   });
 }

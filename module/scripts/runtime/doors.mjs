@@ -15,6 +15,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { LOCK_FAILURE_MODES, judgeAttempt, alreadyTried, recordTry, lockChoices, stateAfter, triesKey, attemptReport } from "../core/locks.mjs";
 import { LOCK_TRIES_FLAG, lockOf, triesOf, keyItemFor, doorPoint } from "../adapter/locks.mjs";
+import { identifierOf } from "../adapter/content.mjs";
 import { payAction } from "./action-end.mjs";
 import { approachDoor } from "./actions.mjs";
 import { log, loc, notice, say, esc, viaActiveGM, rolledAndShown } from "./shared.mjs";
@@ -106,12 +107,13 @@ export function lockEntriesFor(token, wall) {
  */
 function hasThievesTools(actor) {
   return Array.from(actor?.items ?? []).some(i => (i.type === "tool")
-    && ((i.system?.type?.baseItem === "thief") || (i.system?.identifier === "thieves-tools")));
+    && ((i.system?.type?.baseItem === "thief") || (identifierOf(i).id === "thieves-tools")));
 }
 
 /** O9d (§357) : un Pied-de-biche porté donne l'Avantage aux tests de Force pour forcer (Manuel des joueurs 2024, Pied-de-biche). */
 function hasCrowbar(actor) {
-  return Array.from(actor?.items ?? []).some(i => i.system?.identifier === "crowbar");
+  // §406 : par `identifierOf` — un item créé en français sans identifiant reçoit de dnd5e celui de son nom traduit (« pied-de-biche »).
+  return Array.from(actor?.items ?? []).some(i => identifierOf(i).id === "crowbar");
 }
 
 /**

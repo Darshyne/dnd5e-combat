@@ -102,7 +102,8 @@ export async function onAttackMessage(message) {
   await waitForDice(message);
   const rolled = async plan => {
     const targets = await enrich(attack.targets, plan, speakerTokenUuid(message), attack.activity, message.rolls?.[0]?.options?.attackMode ?? message.system?.mode ?? null,
-      castLevelOfMessage(game.messages.get(message.system?.origin ?? "") ?? message));
+      // §406 : l'id de la carte d'origine (`_source`) — `system.origin` est un ForeignDocumentField, sa lecture rend le message lui-même.
+      castLevelOfMessage(game.messages.get(message._source?.system?.origin ?? "") ?? message));
     // Issue #32 : l'écart du succès à un prix pour ce jet (0 : éteint, ou pas un personnage joueur) — jugé par le cœur après les réactions.
     const attacker = (await fromUuid(speakerTokenUuid(message) ?? ""))?.actor ?? message.getAssociatedActor?.() ?? null;
     return { type: "attackRolled", roll: await inspiredAttack(message, attack.roll, targets), messageId: message.id, targets, critMargin: critMargin(),

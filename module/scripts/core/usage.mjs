@@ -99,3 +99,30 @@ export function followUpScaling({ spellLevel, consumesSlot, scaling, concentrati
   if ( (level <= 0) || consumesSlot || (Number(scaling) > 0) || (increase <= 0) ) return null;
   return { scaling: increase, slot: `spell${level + increase}` };
 }
+
+/**
+ * §406 : la configuration d'utilisation qui relance une activité d'un sort au niveau où il a été lancé, sans rien dépenser de plus —
+ * pour le moteur qui rejoue une activité plus tard (l'explosion d'une Boule de feu à retardement quand sa zone tombe, `zoneEnd` ; une
+ * impulsion `casterPulse` qui utilise une activité). dnd5e recalcule la montée d'après l'emplacement proposé (`_prepareUsageScaling`,
+ * §405) : il faut donner les deux. Rend `{}` pour un sort de niveau 0 ou sans montée.
+ * @param {number} spellLevel  Le niveau du sort (`item.system.level`).
+ * @param {number|string|null} scaling  La montée du message d'utilisation d'origine (`system.scaling`).
+ * @returns {{scaling?: number, spell?: {slot: string}}}
+ */
+export function castLevelUsage(spellLevel, scaling) {
+  const level = Math.trunc(Number(spellLevel) || 0);
+  const increase = Math.max(0, Math.trunc(Number(scaling) || 0));
+  if ( (level <= 0) || !increase ) return {};
+  return { scaling: increase, spell: { slot: `spell${level + increase}` } };
+}
+
+/**
+ * §406 : le niveau auquel un sort est lancé, lu sur l'item (une copie mise à l'échelle : `item.scaledClone(n)`,
+ * `getAssociatedActivity({ scaled: true })`) — `system.level` plus `flags.dnd5e.scaling`. `system.level` seul reste le niveau du sort
+ * (dnd5e.mjs:35309 ; `@item.level` des formules ajoute la montée, dnd5e.mjs:34568). 0 sans item.
+ * @param {object|null} item
+ * @returns {number}
+ */
+export function spellCastLevel(item) {
+  return (Number(item?.system?.level) || 0) + Math.max(0, Number(item?.flags?.dnd5e?.scaling) || 0);
+}

@@ -18,6 +18,7 @@ import { isObjectToken } from "../adapter/bodies.mjs";
 import { sideOf, areEnemies } from "../adapter/factions.mjs";
 import { zoneChoiceMode, askZoneChoice } from "../adapter/zone-choice.mjs";
 import { alliedSides } from "../core/factions.mjs";
+import { castLevelUsage } from "../core/usage.mjs";
 import { lengthIn } from "../adapter/units.mjs";
 import { burnTick } from "./flammable.mjs";
 import { samePlane } from "../adapter/plane.mjs";
@@ -123,7 +124,9 @@ function casterPulse(region, caster, at) {
     if ( !sibling ) { if ( !rule.away ) log(`${region.name}: caster's turn ${n}, nothing to replay`); return; }
     if ( entry.pay ) await payWithoutUse(sibling);
     if ( entry.use ) {
-      await sibling.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: false } }, { configure: false }, { create: false });
+      // §406 : au niveau du lancement (message d'utilisation de la zone), sans emplacement de plus.
+      await sibling.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: false }, consume: { spellSlot: false },
+        ...castLevelUsage(item.system.level, usageMessage.system?.scaling) }, { configure: false }, { create: false });
       log(`${region.name}: caster's turn ${n}, "${sibling.name}" used`);
       return;
     }
@@ -190,7 +193,10 @@ async function onZoneEnd(region) {
   const point = zoneCenter(region);
   if ( !activity || !caster?.parent || !point ) return;
   log(`${region.name}: the area ends, "${activity.name}"`);
-  const used = await activity.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: false }, consume: false }, { configure: false });
+  // §406 : au niveau du lancement — la concentration est tombée avec la zone, rien d'autre ne garde la montée (Boule de feu à
+  // retardement lancée au niveau 9 : 12d6 + 2d6, pas 12d6).
+  const used = await activity.use({ [MODULE_ID]: { confirmed: true }, create: { measuredTemplate: false }, consume: false,
+    ...castLevelUsage(item.system.level, usageMessage.system?.scaling) }, { configure: false });
   if ( !used ) return;
   await placeAreaAt(activity, caster, point);
 }

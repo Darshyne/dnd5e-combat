@@ -20,13 +20,13 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { pickSpellSlot, misplacedSelfUses, canCastHigher, forcedSpellSlot } from "../core/usage.mjs";
+import { pickSpellSlot, misplacedSelfUses, canCastHigher, forcedSpellSlot, followUpScaling } from "../core/usage.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { movableZoneOf } from "./zones.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 import { whileAwaiting } from "../adapter/awaiting.mjs";
-import { summonChoicesOf, applySummonCount, applyPreferredActors } from "../adapter/summons.mjs";
+import { summonChoicesOf, applySummonCount, applyPreferredActors, concentrationOn } from "../adapter/summons.mjs";
 
 export const AUTO_USAGE_SETTING = "autoUsage";
 
@@ -134,6 +134,16 @@ function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
   if ( (activity.type === "summon") && (count >= 1) && usageConfig.summons?.profile ) {
     activity = applySummonCount(activity, usageConfig.summons.profile, count);
     log(`${activity.item.name}: ${count} creature(s) summoned`);
+  }
+  // §405 : une activité d'un sort qui ne dépense pas d'emplacement (attaque de la Lame de feu, dégâts du Trait ensorcelé) se joue au
+  // niveau de lancement, que dnd5e a noté sur l'effet de concentration du sort.
+  const followUp = activity.isSpell ? followUpScaling({ spellLevel: activity.item.system.level,
+    consumesSlot: activity.consumption?.spellSlot !== false, scaling: usageConfig.scaling,
+    concentrationScaling: concentrationOn(activity.item)?.getFlag?.("dnd5e", "scaling") }) : null;
+  if ( followUp ) {
+    usageConfig.scaling = followUp.scaling;
+    usageConfig.spell = { ...(usageConfig.spell ?? {}), slot: followUp.slot };
+    log(`${activity.item.name}: played at its cast level (+${followUp.scaling}, from its concentration)`);
   }
   // §77 : relancée par le MJ sans charge — rien n'est consommé, pas de fenêtre.
   if ( usageConfig[MODULE_ID]?.forced ) {

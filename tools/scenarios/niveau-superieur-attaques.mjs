@@ -83,5 +83,35 @@ export default {
         if ( seen.miss ) ctx.expect(diceOk(seen.miss), `${identifier} niveau ${cast}, raté : ${seen.miss} (moitié de ${want})`);
       }
     }
+
+    // ---- §405 : une activité d'un sort qui ne dépense pas d'emplacement, au niveau de sa concentration ----
+    /** La montée notée sur un message d'utilisation (`system.scaling`), que `list-chat-messages` ne rend pas. */
+    const usageScaling = async id => (await ctx.call("run-script", { code: `return game.messages.get("${id}")?.system?.scaling ?? 0;` }))?.result;
+
+    // Lame de feu : « Evoke Blade » lancée au niveau 4 dépense l'emplacement et pose la concentration ; l'attaque suivante (sans
+    // emplacement) doit lancer 5d6 + mod (3d6 au niveau 2, +1d6 par niveau au-dessus).
+    if ( !only.length || only.includes("flame-blade") ) {
+      ctx.restore(async () => { await ctx.removeEffectsFrom(caster, "flame-blade"); });
+      await ctx.ensureItem(caster, PHB("phbsplFlameBlade"));
+      const evoked = await ctx.use({ tokenId: caster.id, identifier: "flame-blade", activityId: "OIU1htXAoSF0cU3U", consume: false,
+        usageConfig: { scaling: UP, spell: { slot: `spell${2 + UP}` } } });
+      await pause(1000);
+      const concentration = (await ctx.effects(caster)).find(e => (e.statuses ?? []).includes("concentrating"));
+      ctx.expect(Number(concentration?.flags?.dnd5e?.scaling) === UP,
+        `Lame de feu évoquée au niveau ${2 + UP} : concentration à +${concentration?.flags?.dnd5e?.scaling ?? "?"} (${evoked?.usageMessageId ? "carte" : "pas de carte"})`);
+      let hit = null;
+      for ( let n = 1; (n <= 20) && !hit; n++ ) {
+        await ctx.setHp(target, 999);
+        const used = await ctx.use({ tokenId: caster.id, identifier: "flame-blade", activityId: "dnd5eactivity000", consume: false, targetTokenIds: [target.id] });
+        const r = used?.usageMessageId ? await ctx.settle(used.usageMessageId, { timeoutMs: 60000 }).catch(() => null) : null;
+        if ( n === 1 ) ctx.expect(Number(await usageScaling(used?.usageMessageId)) === UP, `attaque de la Lame : carte à +${await usageScaling(used?.usageMessageId)}`);
+        if ( r?.targets?.[0]?.hit && r.damageRoll?.messageId ) hit = await formulaOf(r.damageRoll.messageId);
+      }
+      ctx.expect(!!hit, "Lame de feu : un coup au but en 20 essais");
+      if ( hit ) {
+        const m = /^(\d+)d6/.exec(hit);
+        ctx.expect(!!m && [3 + UP, 2 * (3 + UP)].includes(Number(m[1])), `Lame de feu niveau ${2 + UP}, touché : ${hit} (attendu ${3 + UP}d6 + mod)`);
+      }
+    }
   }
 };

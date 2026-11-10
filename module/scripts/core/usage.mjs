@@ -82,3 +82,20 @@ export function atCastLevel(activity, scaling) {
   if ( !activity || !increase || (typeof activity.item?.scaledClone !== "function") ) return activity;
   return activity.item.scaledClone(increase)?.system?.activities?.get?.(activity.id) ?? activity;
 }
+
+/**
+ * §405 : le niveau d'une activité d'un sort qui ne dépense pas d'emplacement — l'attaque de la Lame de feu (seule « Evoke Blade » en
+ * dépense un), les dégâts en action Bonus du Trait ensorcelé. dnd5e note le niveau de lancement sur l'effet de concentration
+ * (`beginConcentrating(activity, { "flags.dnd5e.scaling": … })`, documents/activity/mixin.mjs), mais une utilisation suivante le
+ * recalcule d'après l'emplacement proposé, celui du niveau du sort (`_prepareUsageConfig` puis `_prepareUsageScaling`) : la montée
+ * retombe à 0. Rend `{ scaling, slot }` à mettre dans la configuration d'utilisation, ou null (sort de niveau 0, activité qui dépense
+ * un emplacement, montée déjà fixée par l'appelant, pas de concentration montée).
+ * @param {{spellLevel: number, consumesSlot: boolean, scaling?: number|boolean, concentrationScaling?: number}} data
+ * @returns {{scaling: number, slot: string}|null}
+ */
+export function followUpScaling({ spellLevel, consumesSlot, scaling, concentrationScaling }) {
+  const level = Math.trunc(Number(spellLevel) || 0);
+  const increase = Math.trunc(Number(concentrationScaling) || 0);
+  if ( (level <= 0) || consumesSlot || (Number(scaling) > 0) || (increase <= 0) ) return null;
+  return { scaling: increase, slot: `spell${level + increase}` };
+}

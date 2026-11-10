@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickSpellSlot, misplacedSelfUses, canCastHigher, forcedSpellSlot, atCastLevel } from "../module/scripts/core/usage.mjs";
+import { pickSpellSlot, misplacedSelfUses, canCastHigher, forcedSpellSlot, atCastLevel, followUpScaling } from "../module/scripts/core/usage.mjs";
 
 describe("§68 : l'emplacement d'une utilisation sans fenêtre", () => {
   const slots = { spell1: { value: 0, level: 1 }, spell2: { value: 2, level: 2 }, spell3: { value: 1, level: 3 }, pact: { value: 1, level: 2 } };
@@ -89,5 +89,24 @@ describe("§404 : l'activité au niveau de lancement", () => {
   it("l'activité absente de la copie : l'activité d'origine", () => {
     const activity = { id: "autre", item: itemOf([]) };
     expect(atCastLevel(activity, 1)).toBe(activity);
+  });
+});
+
+describe("§405 : une activité d'un sort sans emplacement, au niveau de sa concentration", () => {
+  it("Lame de feu lancée au niveau 4 : l'attaque suivante à +2, emplacement de niveau 4 (rien n'est dépensé)", () => {
+    expect(followUpScaling({ spellLevel: 2, consumesSlot: false, scaling: 0, concentrationScaling: 2 })).toEqual({ scaling: 2, slot: "spell4" });
+  });
+  it("une montée lue sur un effet (chaîne) est convertie", () => {
+    expect(followUpScaling({ spellLevel: 1, consumesSlot: false, concentrationScaling: "1" })).toEqual({ scaling: 1, slot: "spell2" });
+  });
+  it("rien : activité qui dépense un emplacement, montée déjà fixée, concentration au niveau de base ou absente, tour de magie", () => {
+    expect(followUpScaling({ spellLevel: 2, consumesSlot: true, concentrationScaling: 2 })).toBeNull();
+    expect(followUpScaling({ spellLevel: 2, consumesSlot: false, scaling: 1, concentrationScaling: 2 })).toBeNull();
+    expect(followUpScaling({ spellLevel: 2, consumesSlot: false, concentrationScaling: 0 })).toBeNull();
+    expect(followUpScaling({ spellLevel: 2, consumesSlot: false })).toBeNull();
+    expect(followUpScaling({ spellLevel: 0, consumesSlot: false, concentrationScaling: 2 })).toBeNull();
+  });
+  it("`scaling: false` (dnd5e, mise à l'échelle interdite) n'empêche pas la reprise", () => {
+    expect(followUpScaling({ spellLevel: 2, consumesSlot: false, scaling: false, concentrationScaling: 1 })).toEqual({ scaling: 1, slot: "spell3" });
   });
 });

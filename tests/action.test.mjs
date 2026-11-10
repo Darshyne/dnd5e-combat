@@ -521,6 +521,39 @@ describe("choix d'effet (effets exclusifs, Maléfice)", () => {
     expect(types(commands)).toEqual(["askChoice"]);
   });
 
+  it("§401 : avec une sauvegarde, le choix par cible attend la dernière et ne nomme que les cibles qui ont raté", () => {
+    const failEffects = effects.map(e => ({ ...e, when: "fail" }));
+    const per = { effects: failEffects, save: { ability: "cha", dc: 13, onSave: "none" }, choice: { prompt: null, options, perTarget: true } };
+    const opened = open({ ...base, plan: per, targets: [T(1), T(2)] });
+    expect(types(opened.commands)).not.toContain("askChoice");   // pas en même temps que les fenêtres de sauvegarde
+    let step = advance(opened.resolution, { type: "saveRolled", actor: "A1", total: 5, messageId: "s1" });
+    expect(types(step.commands)).not.toContain("askChoice");
+    step = advance(step.resolution, { type: "saveRolled", actor: "A2", total: 20, messageId: "s2" });
+    expect(step.commands.find(c => c.type === "askChoice")?.perTarget).toEqual([{ token: "T1", name: "Cible 1" }]);
+    const done = advance(step.resolution, { type: "choiceMade", choices: { T1: "Dex" } });
+    const byToken = Object.fromEntries(done.commands.at(-1).entries.map(e => [e.token, e.effects.map(x => x.id)]));
+    expect(byToken).toEqual({ T1: ["Dex", "Aut"], T2: [] });
+  });
+
+  it("§401 : toutes les cibles réussissent — aucune question, rien n'est posé", () => {
+    const per = { effects: effects.map(e => ({ ...e, when: "fail" })), save: { ability: "cha", dc: 13, onSave: "none" }, choice: { prompt: null, options, perTarget: true } };
+    const opened = open({ ...base, plan: per, targets: [T(1)] });
+    const step = advance(opened.resolution, { type: "saveRolled", actor: "A1", total: 20, messageId: "s1" });
+    expect(types(step.commands)).toEqual(["apply"]);
+  });
+
+  it("§401 : un choix par cible — la question nomme chaque cible, chacune reçoit le sien", () => {
+    const per = { effects, choice: { prompt: null, options, perTarget: true } };
+    const opened = open({ ...base, plan: per, targets: [T(1), T(2)] });
+    expect(opened.commands).toEqual([{ type: "askChoice", prompt: null, options, perTarget: [{ token: "T1", name: "Cible 1" }, { token: "T2", name: "Cible 2" }] }]);
+    const { resolution, commands } = play(opened, { type: "choiceMade", choices: { T1: "Str", T2: "Cha" } });
+    expect(resolution.choice).toEqual({ T1: "Str", T2: "Str" });   // T2 : hors des options → la première
+    const byToken = Object.fromEntries(commands.at(-1).entries.map(e => [e.token, e.effects.map(x => x.id)]));
+    expect(byToken).toEqual({ T1: ["Str", "Aut"], T2: ["Str", "Aut"] });
+    const other = play(open({ ...base, plan: per, targets: [T(1), T(2)] }), { type: "choiceMade", choices: { T1: "Dex", T2: "Con" } });
+    expect(Object.fromEntries(other.commands.at(-1).entries.map(e => [e.token, e.effects[0].id]))).toEqual({ T1: "Dex", T2: "Con" });
+  });
+
   it("ignore un id hors des options, et une réponse qu'on n'attend pas", () => {
     const { resolution } = cast();
     expect(advance(resolution, { type: "choiceMade", id: "Cha" }).resolution).toBe(resolution);

@@ -146,7 +146,7 @@ export const TRIGGERS = Object.freeze({
   // repoussé de 1,50 m…
   "telekinetic": [{ on: "failedSave", do: [{ type: "move", mode: "push", distance: 5, units: "ft" }] }],
   // …Fouet d'épines (PHB, spells) : une cible de taille G au plus est tirée de 3 m au plus vers le lanceur.
-  "thorn-whip": [{ on: "hit", if: { "target.sizeAtMost": "lg" }, do: [{ type: "move", mode: "pull", distance: 10, units: "ft" }] }],
+  "thorn-whip": [{ on: "hit", if: { "target.sizeAtMost": "lg" }, do: [{ type: "move", mode: "pull", distance: 10, units: "ft", upTo: true }] }],
 
   // Sauvegarde répétée (SPEC §16) : « la cible réitère le JS à la fin de chacun de ses tours et met un terme
   // au sort sur elle-même en cas de réussite ». Portée par l'effet posé (Paralysé, Cécité, Surdité).

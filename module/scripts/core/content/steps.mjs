@@ -45,6 +45,8 @@ function validateStep(step, at, errors) {
     if ( !formula && !(Number.isFinite(step.distance) && (step.distance > 0)) ) errors.push(`${at}.distance: positive number or formula`);
     if ( (typeof step.units !== "string") || !step.units ) errors.push(`${at}.units: unit required`);
     if ( ("follow" in step) && (typeof step.follow !== "boolean") ) errors.push(`${at}.follow: boolean`);
+    // §401 : « jusqu'à » — l'auteur choisit la distance (Fouet épineux : « vous pouvez la tirer jusqu'à 3 m »).
+    if ( ("upTo" in step) && (step.upTo !== true) ) errors.push(`${at}.upTo: true or absent`);
   }
   if ( (step.type === "status") && ((typeof step.status !== "string") || !step.status) ) errors.push(`${at}.status: condition required`);
   // §345 : `save` — l'état seulement si la cible rate cette sauvegarde (Tueuse de géants : Force DD 15 ou À terre).

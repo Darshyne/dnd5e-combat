@@ -146,6 +146,8 @@ const withinMargin = (margin, failed) => !margin || ((failed !== null) && (faile
 export function applicationPlan(resolution) {
   const { plan } = resolution;
   const exclusive = new Set((plan.choice?.options ?? []).map(o => o.id));   // parmi eux, seul l'effet choisi passe
+  // §401 : un choix par cible (`perTarget`) — `resolution.choice` est alors { token: id }.
+  const chosenFor = token => ((resolution.choice && (typeof resolution.choice === "object")) ? resolution.choice[token] : resolution.choice);
   return affectedTargets(resolution).map(t => {
     const saved = t.save?.success === true;
     const failed = failMargin(t, plan);
@@ -170,7 +172,7 @@ export function applicationPlan(resolution) {
       ...(t.reduced ? { reduction: t.reduced } : {}),
       effects: spared ? [] : plan.effects
         .filter(e => passes(e.when, saved) && withinMargin(e.margin, failed))
-        .filter(e => !exclusive.has(e.id) || (e.id === resolution.choice))
+        .filter(e => !exclusive.has(e.id) || (e.id === chosenFor(t.token)))
         // Une condition sur la cible (M3 : porte de taille) voyage avec l'effet ; l'application la juge.
         .map(({ id, activity, if: condition }) => (condition ? { id, activity, if: condition } : { id, activity })),
       steps: spared ? [] : (plan.steps ?? []).filter(s => passes(s.when, saved) && withinMargin(s.margin, failed)).map(({ when, ...step }) => (("onSave" in step) ? { ...step, saved } : step))
@@ -380,11 +382,27 @@ function afterVerdict(resolution) {
     commands.push({ type: "askAllocation", count: next.plan.darts, targets: affectedTargets(next).map(({ token, name }) => ({ token, name })) });
   }
   // Effets exclusifs : la question est posée à l'auteur, l'état « en attente » est écrit avant (repris après un F5).
-  if ( pendingChoice(next) ) {
-    next = { ...next, pending: [...next.pending, { kind: "choice" }] };
-    commands.push({ type: "askChoice", prompt: next.plan.choice.prompt ?? null, options: next.plan.choice.options, ...(next.plan.choice.roll ? { roll: true } : {}) });
-  }
+  next = askChoiceWhenDue(next, commands);
   return settle(next, commands);
+}
+
+/**
+ * La question du choix d'effet, quand son heure est venue. §401 : un choix par cible (`perTarget`) attend la fin des sauvegardes — la
+ * question ne nomme que les cibles qui ont raté (celles qui réussissent ne reçoivent rien), et ne s'ouvre pas en même temps que les
+ * fenêtres de sauvegarde ; si aucune n'a raté, il n'y a rien à demander.
+ */
+function askChoiceWhenDue(next, commands) {
+  if ( !pendingChoice(next) || next.pending.some(p => p.kind === "choice") ) return next;
+  const choice = next.plan.choice;
+  if ( choice.perTarget ) {
+    if ( pendingSaves(next).length ) return next;
+    const failed = affectedTargets(next).filter(t => !next.plan.save || (t.save?.success !== true));
+    if ( !failed.length ) return { ...next, choice: {} };
+    commands.push({ type: "askChoice", prompt: choice.prompt ?? null, options: choice.options, perTarget: failed.map(({ token, name }) => ({ token, name })) });
+    return { ...next, pending: [...next.pending, { kind: "choice" }] };
+  }
+  commands.push({ type: "askChoice", prompt: choice.prompt ?? null, options: choice.options, ...(choice.roll ? { roll: true } : {}) });
+  return { ...next, pending: [...next.pending, { kind: "choice" }] };
 }
 
 /** L'auteur a réparti ses projectiles : la répartition est remise d'aplomb (somme exacte), puis portée par chaque cible. */
@@ -397,9 +415,16 @@ function allocated(resolution, { counts={} }) {
 }
 
 /** L'auteur a choisi l'effet : un id hors des options, ou une réponse qu'on n'attend pas, ne change rien. */
-function choiceMade(resolution, { id }) {
+function choiceMade(resolution, { id, choices=null }) {
   if ( !pendingChoice(resolution) ) return same(resolution);
-  if ( !resolution.plan.choice.options.some(o => o.id === id) ) return same(resolution);
+  const known = x => resolution.plan.choice.options.some(o => o.id === x);
+  // §401 : un choix par cible — une cible sans réponse reçoit la première option.
+  if ( resolution.plan.choice.perTarget && choices && (typeof choices === "object") ) {
+    const first = resolution.plan.choice.options[0]?.id ?? null;
+    const map = Object.fromEntries(affectedTargets(resolution).map(t => [t.token, known(choices[t.token]) ? choices[t.token] : first]));
+    return settle({ ...resolution, choice: map, pending: resolution.pending.filter(p => p.kind !== "choice") });
+  }
+  if ( !known(id) ) return same(resolution);
   return settle({ ...resolution, choice: id, pending: resolution.pending.filter(p => p.kind !== "choice") });
 }
 
@@ -423,7 +448,10 @@ function saveRolled(resolution, { actor, total, messageId, mode=null, resisted=f
   // Issue #32 : `atCost` — le succès à un prix accepté (`{ cost }`) change l'échec en réussite, le total restant celui du jet.
   const save = { total, success: resisted || !!atCost || (total >= resolution.plan.save.dc), messageId, ...(mode ? { mode } : {}), ...(resisted ? { resisted: true } : {}),
     ...(interposed ? { interposed: true } : {}), ...(atCost ? { atCost: { cost: atCost.cost ?? null } } : {}) };
-  return settle({ ...resolution, targets: resolution.targets.map(t => t === waiting ? { ...t, save } : t) });
+  const commands = [];
+  // §401 : la dernière sauvegarde arrivée, le choix par cible peut être demandé.
+  const next = askChoiceWhenDue({ ...resolution, targets: resolution.targets.map(t => t === waiting ? { ...t, save } : t) }, commands);
+  return settle(next, commands);
 }
 
 function damageRolled(resolution, { messageId, damages }) {

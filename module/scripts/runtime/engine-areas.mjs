@@ -4,7 +4,9 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { selectAreaTargets, openArea, turnKeyOf, actsOnPose } from "../core/area.mjs";
+import { selectAreaTargets, eligibleAreaTargets, zoneChoiceNeeded, openArea, turnKeyOf, actsOnPose } from "../core/area.mjs";
+import { isChoiceZone, zoneChoiceMode, askZoneChoice } from "../adapter/zone-choice.mjs";
+import { areEnemies } from "../adapter/factions.mjs";
 import { readActivityRegion, repairSaveAbility, showTargetsTo } from "../adapter/saves.mjs";
 import { readUsage } from "../adapter/usage.mjs";
 import { concentrationEffectOf, tieRegionToConcentration } from "../adapter/concentration.mjs";
@@ -77,7 +79,10 @@ export async function onRegionCreated(region) {
     // Une activité qui ne fait que POSER la zone (utilitaire sans effet) n'a rien à résoudre elle-même ;
     // si une sœur doit rejouer (Nuage nauséabond), la zone est quand même retenue comme zone qui dure.
     if ( !usage?.area && !rules?.activity && !rules?.casterPulse ) return null;
-    const targets = selectAreaTargets(area.candidates, area).map(({ token, actor, name }) => ({ token, actor, name }));
+    let targets = selectAreaTargets(area.candidates, area).map(({ token, actor, name }) => ({ token, actor, name }));
+    // §401 : « créatures de votre choix » — le lanceur choisit parmi ceux que la zone peut affecter (cochés d'avance : le choix d'office).
+    const picked = usage?.area ? await askAreaChoice(area, activity, targets) : null;
+    if ( picked ) targets = picked.targets;
     log(`area placed: ${area.candidates.length} token(s) covered, ${targets.length} affected`);
     if ( usage?.area ) showTargetsTo(message.author, targets.map(t => t.token));
 
@@ -107,6 +112,8 @@ export async function onRegionCreated(region) {
         source: area.origin ?? null,
         // §16.23 : les rejeux de la zone respectent qui elle affecte (Esprits gardiens épargnent les alliés).
         affects: area.affects ?? "", originDisposition: area.originDisposition ?? null, originSide: area.originSide ?? null,
+        // §401 : le choix du lanceur à la pose — ceux qu'il a retenus et ceux qu'il a épargnés ; les autres suivent la règle d'office.
+        ...(picked ? { picked: picked.targets.map(t => t.token), spared: picked.spared } : {}),
         ...(scatter ? { scatter: await scatterState(region, message, activity) } : {}),
         ...(ground ? await groundFlammableState(region, activity) : {})
       });
@@ -134,4 +141,29 @@ export async function onRegionCreated(region) {
     }
     return openingFor(message, { ...usage, targets });
   });
+}
+
+/**
+ * §401 : la question « créatures de votre choix » d'une zone posée, si le réglage la veut. Rend `{ targets, spared }`, ou null (pas de
+ * question : le choix d'office tient).
+ */
+async function askAreaChoice(area, activity, targets) {
+  if ( !isChoiceZone(activity) ) return null;
+  const eligible = eligibleAreaTargets(area.candidates, area);
+  if ( !zoneChoiceNeeded(zoneChoiceMode(), eligible, targets) ) return null;
+  const casterToken = area.origin ? fromUuidSync(area.origin, { strict: false }) : null;
+  const caster = casterToken?.actor ?? activity?.actor ?? null;
+  if ( !caster ) return null;
+  const chosen = new Set(targets.map(t => t.token));
+  const candidates = eligible.map(c => {
+    const token = fromUuidSync(c.token, { strict: false });
+    return { token: c.token, name: c.name, img: token?.texture?.src ?? "", checked: chosen.has(c.token),
+      enemy: !!(casterToken && token && areEnemies(casterToken, token)) };
+  });
+  const answer = await askZoneChoice(caster, { item: activity.item?.name ?? activity.name, max: area.max ?? null, candidates });
+  if ( !answer ) return null;
+  const keep = new Set(answer.tokens);
+  const out = eligible.filter(c => keep.has(c.token)).map(({ token, actor, name }) => ({ token, actor, name }));
+  log(`${activity.item?.name}: the caster chose ${out.length} of ${eligible.length} creature(s) in the area`);
+  return { targets: out, spared: eligible.filter(c => !keep.has(c.token)).map(c => c.token) };
 }

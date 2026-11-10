@@ -20,6 +20,7 @@ import { rangedAcBonus, wearsAdamantine } from "../adapter/defenses.mjs";
 import { currentAc } from "../adapter/reactions.mjs";
 import { CHOICE_QUERY, handleChoiceQuery, askChoice } from "../adapter/choices.mjs";
 import { ALLOCATION_QUERY, handleAllocationQuery } from "../adapter/projectiles.mjs";
+import { ZONE_CHOICE_QUERY, handleZoneChoiceQuery, registerZoneChoiceSetting } from "../adapter/zone-choice.mjs";
 import { canJudgeCover, isCoverAvailable } from "../adapter/cover.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { createDispatcher } from "./dispatcher.mjs";
@@ -393,6 +394,9 @@ export function registerEngine() {
   CONFIG.queries[SAVE_QUERY] = handleSaveQuery;
   CONFIG.queries[CHOICE_QUERY] = handleChoiceQuery;   // sur tous les clients : c'est l'auteur qui répond
   CONFIG.queries[ALLOCATION_QUERY] = handleAllocationQuery;
+  // §401 : « créatures de votre choix » dans une zone — c'est le lanceur qui répond.
+  registerZoneChoiceSetting();
+  CONFIG.queries[ZONE_CHOICE_QUERY] = handleZoneChoiceQuery;
   route("updateChatMessage", onResolutionFlag, { label: "chained damage roll" });
   route("dnd5e.preRollDamageV2", onPreRollHealing, { cancellable: true, label: "healing dice at their maximum" });
   // Une résolution qui échoue ne doit jamais bloquer le jeu : les boutons et plateaux du système restent utilisables.

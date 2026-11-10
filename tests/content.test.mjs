@@ -896,7 +896,7 @@ describe("§296 : repasse, lot C2 (« de votre choix », plafond, réserve)", as
     expect(CONTENT["sleep"].zoneAffects).toBe("enemy");
     expect(CONTENT["slow"]).toMatchObject({ zoneAffects: "enemy", zoneMax: 6 });
     expect(CONTENT["preserve-life"].pickTargets).toMatchObject({ self: true, check: "allies", filter: "bloodied", radius: 30 });
-    expect(CONTENT["preserve-life"].healPool).toEqual({ activities: ["dnd5eactivity000"], cap: "halfMax" });
+    expect(CONTENT["preserve-life"].healPool).toEqual({ activities: ["dnd5eactivity000"], cap: "halfMax", choose: true });
     expect(CONTENT["inspiring-smite"].healPool.temp).toBe(true);
     expect(CONTENT["twinned-spell"].metamagic).toEqual({ activity: "WsG9JmGU7gRGiTRq", kind: "twinned" });
     for ( const id of ["beacon-of-hope", "mass-heal", "preserve-life", "inspiring-smite", "clockwork-cavalcade", "twinned-spell", "slow"] ) {

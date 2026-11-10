@@ -16,6 +16,7 @@ import { creatureTypeOf, factsFor, originItemOf } from "../adapter/facts.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { removeTransientRegions } from "../adapter/areas.mjs";
 import { askChoice } from "../adapter/choices.mjs";
+import { lengthIn } from "../adapter/units.mjs";
 import { askAllocation } from "../adapter/projectiles.mjs";
 import { pushAway } from "../adapter/movement.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
@@ -416,6 +417,17 @@ export const COMMANDS = {
       log(`${item}: d${command.options.length} = ${roll.total} → ${picked?.label ?? "?"}`);
       return picked ? [{ type: "choiceMade", id: picked.id }] : [];
     }
+    // §401 : un choix par cible — une question par créature, nommée.
+    if ( command.perTarget?.length ) {
+      const choices = {};
+      for ( const t of command.perTarget ) {
+        const prompt = loc("ChoixParCible", { name: t.name });
+        const answer = await askChoice(actor, { actor: actor.uuid, item, prompt, options: command.options });
+        if ( answer ) choices[t.token] = answer.id;
+        log(`${item}: ${actor.name} chooses ${command.options.find(o => o.id === answer?.id)?.label ?? "(first option)"} for ${t.name}`);
+      }
+      return [{ type: "choiceMade", choices }];
+    }
     log(`${item}: ${actor.name} must choose an effect (${command.options.map(o => o.label).join(", ")})`);
     const answer = await askChoice(actor, { actor: actor.uuid, item, prompt: command.prompt, options: command.options });
     if ( !answer ) { log(`${item}: no effect chosen, waiting`); return []; }
@@ -470,8 +482,15 @@ export const COMMANDS = {
 };
 
 /** Déplacement forcé d'une cible par rapport à l'auteur (étape `move`, et « repoussé » de la Bousculade). */
-async function forcedMove(source, target, { mode, distance, units, follow=false }) {
+async function forcedMove(source, target, { mode, distance, units, follow=false, upTo=false }) {
   if ( !source || !target ) return;
+  // §401 : « jusqu'à » — l'auteur choisit, par cases, de 0 à la distance permise.
+  if ( upTo && Number.isFinite(distance) ) {
+    const chosen = await askDistance(source, target, { mode, distance, units });
+    if ( chosen === null ) return;
+    distance = chosen;
+    if ( !(distance > 0) ) return log(`${mode}: ${target.name} not moved (the author's choice)`);
+  }
   const towards = mode === "pull";
   // Une distance en formule se lit sur la source (Main puissante : « 5 + 5 * @flags.dnd5e.summon.mod », §16.15).
   let value = distance;
@@ -482,6 +501,29 @@ async function forcedMove(source, target, { mode, distance, units, follow=false 
   }
   const { cells, wanted } = await pushAway(source, target, { distance: value, units }, readUnitFactors(), { towards, follow });
   log(`${towards ? "pull" : "push"}: ${target.name} ${towards ? "pulled" : "pushed"} ${cells} square(s) out of ${wanted}${cells < wanted ? " (stopped)" : ""}`);
+}
+
+/**
+ * §401 : la distance d'un déplacement forcé « jusqu'à » — demandée à l'auteur (son joueur, sinon le MJ), par cases de la scène. Rend la
+ * distance en `units`, ou null si l'auteur n'a pas d'acteur.
+ */
+async function askDistance(source, target, { mode, distance, units }) {
+  const actor = source.actor;
+  if ( !actor ) return null;
+  const scene = source.parent;
+  const sceneUnits = scene?.grid?.units || units;
+  const step = Number(scene?.grid?.distance) || 5;
+  const max = lengthIn(distance, units, sceneUnits);
+  const options = [];
+  for ( let n = 0; (n * step) <= max + 1e-6; n++ ) {
+    const value = Math.round(n * step * 100) / 100;
+    options.push({ id: String(n), label: n ? `${value} ${sceneUnits}` : loc("DistanceAucune"), value: n ? lengthIn(value, sceneUnits, units) : 0 });
+  }
+  options.reverse();   // le plus loin d'abord : la règle par défaut
+  const answer = await askChoice(actor, { actor: actor.uuid, item: loc(mode === "pull" ? "Tirer" : "Repousser"),
+    prompt: loc("DistanceQuestion", { name: target.name }), options: options.map(({ id, label }) => ({ id, label })) });
+  const picked = options.find(o => o.id === answer?.id) ?? options[0];
+  return picked.value;
 }
 
 /**

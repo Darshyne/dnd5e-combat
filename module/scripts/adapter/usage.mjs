@@ -272,7 +272,7 @@ function withChoice(activity, plan) {
   const order = choice.order ?? [];
   const rank = o => { const i = order.indexOf(o.id.split(".").pop()); return (i < 0) ? order.length : i; };
   const options = choice.roll ? [...own].sort((a, b) => rank(a) - rank(b)) : own;
-  return { ...plan, choice: { prompt: choice.prompt ?? null, options, ...(choice.roll ? { roll: true } : {}) } };
+  return { ...plan, choice: { prompt: choice.prompt ?? null, options, ...(choice.roll ? { roll: true } : {}), ...(choice.perTarget ? { perTarget: true } : {}) } };
 }
 
 /**

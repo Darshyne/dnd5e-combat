@@ -1,4 +1,4 @@
-import { turnKeyOf, shouldTrigger, markHit, entersArea, stepsInside, siblingFor, hitKey, pulseFor, pulseTargets } from "../core/area.mjs";
+import { turnKeyOf, shouldTrigger, markHit, entersArea, stepsInside, siblingFor, hitKey, pulseFor, pulseTargets, pickedAtPose } from "../core/area.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { spellRetypes } from "../adapter/messages.mjs";
 import { contentOf } from "../adapter/content.mjs";
@@ -31,6 +31,9 @@ function isAffectable(token, state) {
   // §225 : une zone n'agit que sur son plan, celui de son lanceur.
   const caster = state.source ? fromUuidSync(state.source, { strict: false }) : null;
   if ( caster && !samePlane(caster, token) ) return false;
+  // §401 : le choix du lanceur à la pose (« créatures de votre choix ») pour ceux qui étaient dedans.
+  const picked = pickedAtPose(state, token.uuid);
+  if ( picked !== null ) return picked;
   // §16.23 : même règle qu'à la pose (core/area.mjs, selectAreaTargets) — alliés ou ennemis du lanceur seulement.
   if ( !["ally", "enemy"].includes(state.affects) || (state.originDisposition === null) || (state.originDisposition === undefined) ) return true;
   const sameSide = alliedSides(sideOf(token), state.originSide ?? { disposition: state.originDisposition });   // §181

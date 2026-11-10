@@ -94,7 +94,7 @@ describe("gabarit fourni par le contenu : Yolande, êtres sylvestres (§86)", ()
       expect(Object.values(CONTENT[id].selfZone)[0]).toEqual({ type: "radius", size: 10, units: "ft" });
       expect(validateEntry(CONTENT[id], { facts })).toEqual([]);
     }
-    expect(CONTENT["yolandes-regal-presence"].triggers[1]).toEqual({ on: "failedSave", do: [{ type: "status", status: "prone" }, { type: "move", mode: "push", distance: 10, units: "ft" }] });
+    expect(CONTENT["yolandes-regal-presence"].triggers[1]).toEqual({ on: "failedSave", do: [{ type: "status", status: "prone" }, { type: "move", mode: "push", distance: 10, units: "ft", upTo: true }] });
   });
   it("refus", () => {
     expect(validateEntry({ selfZone: { court: { type: "radius", size: 10, units: "ft" } } }).length).toBeGreaterThan(0);

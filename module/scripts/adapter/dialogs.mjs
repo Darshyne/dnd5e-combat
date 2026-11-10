@@ -15,6 +15,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { markAwaiting } from "./awaiting.mjs";
+import { createWindowLine } from "../core/window-line.mjs";
 
 /** Délai des fenêtres du combat, en secondes. */
 export function combatWindowSeconds() {
@@ -73,10 +74,20 @@ const countdownText = n => game.i18n.format("DND5ECOMBAT.Delai.Auto", { n });
 export function timedWait(config, { fallback=null, seconds=null, front=false, awaiting=null }={}) {
   const unlimited = (seconds === null) && windowsUnlimited();
   const shown = unlimited ? null : (seconds ?? combatWindowSeconds());
-  const release = awaiting ? markAwaiting(awaiting.actor ?? null, awaiting.kind, { seconds: shown, token: awaiting.token ?? null }) : null;
-  const waiting = unlimited ? waitForForce(config, { fallback, front }) : countdownWait(config, { fallback, seconds: shown, front });
-  return release ? waiting.finally(release) : waiting;
+  // §401 : à son tour — la fenêtre s'ouvre quand la précédente de ce poste est fermée ; son compte à rebours part à l'ouverture.
+  return inLine(() => {
+    const release = awaiting ? markAwaiting(awaiting.actor ?? null, awaiting.kind, { seconds: shown, token: awaiting.token ?? null }) : null;
+    const waiting = unlimited ? waitForForce(config, { fallback, front }) : countdownWait(config, { fallback, seconds: shown, front });
+    return release ? waiting.finally(release) : waiting;
+  }, `timedWait: ${config?.window?.title ?? ""}`);
 }
+
+/**
+ * §401 : la file des fenêtres de ce poste (core/window-line.mjs) — les questions du moteur s'enchaînent au lieu de s'empiler. Une fenêtre
+ * n'attend la précédente qu'un temps borné (le délai des fenêtres et 3 s ; 30 s quand elles sont sans délai) : au-delà, elle s'ouvre quand
+ * même, pour qu'une question qui dépendrait d'une autre restée ouverte ne bloque jamais la partie.
+ */
+export const inLine = createWindowLine({ capMs: () => (windowsUnlimited() ? 30000 : (combatWindowSeconds() + 3) * 1000) });
 
 /** Une fenêtre à compte à rebours : `fallback` au bout de `seconds`. */
 function countdownWait(config, { fallback, seconds, front }) {

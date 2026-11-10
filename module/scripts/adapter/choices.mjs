@@ -6,7 +6,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { timedWait } from "./dialogs.mjs";
+import { timedWait, inLine } from "./dialogs.mjs";
 import { whileAwaiting } from "./awaiting.mjs";
 import { queryPlayer, waitLabel } from "./player-wait.mjs";
 import { rollerFor } from "./concentration.mjs";
@@ -56,7 +56,7 @@ export async function handleChoiceQuery({ actor: actorUuid, item, prompt, option
   };
   // Sans réponse dans le délai : la première option. §137 : sans délai, la fenêtre attend.
   // §381 : la table voit qu'on attend ce choix (sablier au-dessus du token), jamais ce qu'il est.
-  const picked = untimed ? await whileAwaiting(actor, "choice", () => foundry.applications.api.DialogV2.wait({ ...config, rejectClose: false }))
+  const picked = untimed ? await inLine(() => whileAwaiting(actor, "choice", () => foundry.applications.api.DialogV2.wait({ ...config, rejectClose: false })))
     : await timedWait(config, { fallback: "pick0", front, awaiting: { actor, kind: "choice" }, ...(Number(seconds) > 0 ? { seconds: Number(seconds) } : {}) });
   const option = options[Number(String(picked ?? "").replace("pick", ""))];
   return picked?.startsWith?.("pick") && option ? { id: option.id } : null;

@@ -43,6 +43,47 @@ export function selectAreaTargets(candidates, { origin, originDisposition, origi
   return [...chosen].sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity)).slice(0, max);
 }
 
+/**
+ * §401 : ceux que la zone PEUT affecter, quel que soit le camp (ligne d'effet, volume, plan, vivants ; le lanceur selon la portée) —
+ * la liste que la question « créatures de votre choix » propose.
+ * @param {AreaCandidate[]} candidates
+ * @param {object} options  Comme `selectAreaTargets`.
+ */
+export function eligibleAreaTargets(candidates, options) {
+  return selectAreaTargets(candidates, { ...options, affects: "", max: null })
+    .filter(c => (c.token !== options.origin) || (options.affects !== "enemy"));
+}
+
+/** §401 : les réglages de la question « créatures de votre choix » dans une zone. */
+export const ZONE_CHOICE_MODES = Object.freeze(["mixed", "always", "never"]);
+
+/**
+ * §401 : faut-il demander au lanceur quelles créatures la zone affecte ? `mixed` (défaut) : seulement si le choix d'office (alliés
+ * épargnés, plafond `max`) laisse quelqu'un de côté ; `always` : dès qu'il y a quelqu'un ; `never` : jamais.
+ * @param {string} mode
+ * @param {Array<{token: string}>} eligible  `eligibleAreaTargets`.
+ * @param {Array<{token: string}>} chosen    `selectAreaTargets` (le choix d'office).
+ */
+export function zoneChoiceNeeded(mode, eligible, chosen) {
+  if ( (mode === "never") || !eligible.length ) return false;
+  if ( mode === "always" ) return true;
+  const picked = new Set(chosen.map(c => c.token));
+  return eligible.some(c => !picked.has(c.token));
+}
+
+/**
+ * §401 : qui une zone qui dure affecte, d'après le choix fait à sa pose (`picked` / `spared`) ; null si la créature n'était pas là
+ * (la règle d'office décide alors).
+ * @param {{picked?: string[], spared?: string[]}} state
+ * @param {string} token  UUID.
+ * @returns {boolean|null}
+ */
+export function pickedAtPose(state, token) {
+  if ( state?.spared?.includes(token) ) return false;
+  if ( state?.picked?.includes(token) ) return true;
+  return null;
+}
+
 /* -------------------------------------------- */
 /*  Zones qui durent                            */
 /* -------------------------------------------- */

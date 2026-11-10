@@ -18,7 +18,7 @@ import { rollerFor } from "./concentration.mjs";
 import { committedPosition, usageTokenOf, tokenCenter } from "./turn.mjs";
 import { areaOriginOf, reachesFromPoint, sphereOf, insideSphere, shapesReach } from "./space.mjs";
 import { effectOfProfile } from "./usage.mjs";
-import { timedWait, closeRollDialogAfter } from "./dialogs.mjs";
+import { timedWait, closeRollDialogAfter, inLine } from "./dialogs.mjs";
 import { queryPlayer, waitLabel } from "./player-wait.mjs";
 import { originItemOf, creatureTypeOf } from "./facts.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
@@ -315,10 +315,13 @@ export async function handleSaveQuery({ usage, token: tokenUuid, ability, abilit
   if ( ask && (abilities?.length > 1) ) ability = await chooseSaveAbility(actor, abilities, { dc, item });
   // La fenêtre du jet se ferme au bout du délai ; le jet part alors seul (ses dés, sans dialogue).
   let timedOut = false;
-  const cancel = closeRollDialogAfter(actor, () => { timedOut = true; }, null, { awaiting: "roll" });
-  const [rollConfig, messageConfig] = saveRollArguments(activity, actor, token, usageMessage, { ability, dc, advantage, disadvantage, foretold });
-  let rolls = await actor.rollSavingThrow(rollConfig, { configure: true }, messageConfig);
-  cancel();
+  // §401 : la fenêtre du jet passe à son tour dans la file des fenêtres de ce poste ; son délai part à l'ouverture.
+  let rolls = await inLine(async () => {
+    const cancel = closeRollDialogAfter(actor, () => { timedOut = true; }, null, { awaiting: "roll" });
+    const [rollConfig, messageConfig] = saveRollArguments(activity, actor, token, usageMessage, { ability, dc, advantage, disadvantage, foretold });
+    try { return await actor.rollSavingThrow(rollConfig, { configure: true }, messageConfig); }
+    finally { cancel(); }
+  });
   if ( !rolls?.length && timedOut ) {
     const [again, againMessage] = saveRollArguments(activity, actor, token, usageMessage, { ability, dc, advantage, disadvantage, foretold });
     rolls = await actor.rollSavingThrow(again, { configure: false }, againMessage);

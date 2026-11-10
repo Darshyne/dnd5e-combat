@@ -208,7 +208,10 @@ export async function sweep(ctx, { kind, packs = [], select, sortKey, lend = {},
             catch ( err ) { bad(`résolution bloquée : ${err.message.replace(/^résolution \S+ /, "")}`); }
           }
         }
-        if ( ["attack", "save"].includes(activity.type) && !r ) bad("aucune résolution du moteur");
+        // §401 : une zone qui n'agit pas à sa pose (`quietPose` : Tempête de neige, Nuage nauséabond) n'ouvre pas de résolution — ceux
+        // qui sont dedans sauvegardent au début de leur tour.
+        const quiet = CONTENT[ident]?.quietPose === true;
+        if ( ["attack", "save"].includes(activity.type) && !r && !quiet ) bad("aucune résolution du moteur");
         await pause(1500);
         // Un sort à projectiles (Décharge occulte à 2 rayons, Rayon ardent) enchaîne ses projectiles après la première résolution : on
         // attend que les PV de la Cible ne bougent plus, sinon un rayon tardif tombait dans l'item suivant (audit de Kaalisti, 2026-10-29).
@@ -235,7 +238,7 @@ export async function sweep(ctx, { kind, packs = [], select, sortKey, lend = {},
         // 4. Les effets.
         const declared = (activity.effects ?? []).map(e => e._id);
         // Un enchantement se pose sur un item (l'arme), pas sur une créature : le Lanceur n'en porte pas.
-        if ( declared.length && !CONTENT[ident]?.zoneEffects && (activity.type !== "enchant") ) {
+        if ( declared.length && !CONTENT[ident]?.zoneEffects && (activity.type !== "enchant") && !quiet ) {
           const affected = r?.targets?.length
             ? r.targets.filter(tr => (tr.hit !== false) && (tr.save?.success !== true) && !tr.unaffected).map(tokenOf).filter(Boolean)
             : plan.targets;
@@ -249,7 +252,8 @@ export async function sweep(ctx, { kind, packs = [], select, sortKey, lend = {},
             bad(`${tok.name} : aucun effet de l'item (${declared.length} déclaré(s) ; sauvegarde ${tr?.save?.total ?? "?"}${tr?.save ? (tr.save.success ? " réussie" : " ratée") : ""} ; porte : ${worn.join(", ") || "rien"})`);
           }
           const touched = new Set((r?.targets ?? []).map(tr => tr.name).concat(plan.targets.map(x => x.name), [caster.name]));
-          for ( const tok of Object.values(t) ) {
+          // §401 : une aura (Aura de vie, Aura sacrée, Passage sans trace) pose son effet sur les alliés dans son rayon : pas un défaut.
+          if ( !CONTENT[ident]?.aura ) for ( const tok of Object.values(t) ) {
             if ( !touched.has(tok.name) && (await ctx.effectsFrom(tok, ident)).length ) bad(`${tok.name} : effet de l'item posé hors des cibles`);
           }
         }
@@ -258,7 +262,10 @@ export async function sweep(ctx, { kind, packs = [], select, sortKey, lend = {},
         // Seule l'activité qui lance le sort (elle prend l'emplacement) commence la concentration : pas « Déplacer les lumières ».
         if ( isSpell && (s.properties ?? []).includes("concentration") && (activity.consumption?.spellSlot !== false) ) {
           const on = await ctx.effectsFrom(caster, ident);
-          if ( !on.some(e => (e.statuses ?? []).includes("concentrating")) ) bad("Lanceur non concentré");
+          // §401 : toutes les cibles ont réussi leur sauvegarde ou ne pouvaient pas être affectées — la concentration tombe d'elle-même
+          // (réglage `endUnaffected`) : pas un défaut.
+          const nobody = !!r?.targets?.length && r.targets.every(tr => tr.unaffected || (tr.save?.success === true) || (tr.hit === false));
+          if ( !on.some(e => (e.statuses ?? []).includes("concentrating")) && !nobody ) bad("Lanceur non concentré");
         }
 
         // 6. L'emplacement.

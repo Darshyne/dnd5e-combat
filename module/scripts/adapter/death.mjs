@@ -19,7 +19,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
 import { makesDeathSaves, damageAtZero, needsDeathSave, statusAfterDeathSave, downedStatus, isDead, canStabilize } from "../core/death.mjs";
 import { rollerFor } from "./concentration.mjs";
-import { closeRollDialogAfter } from "./dialogs.mjs";
+import { closeRollDialogAfter, inLine } from "./dialogs.mjs";
 import { queryPlayer, waitLabel } from "./player-wait.mjs";
 import { transformsAtZero, standsAtZero } from "./coven.mjs";
 import { regenerationOf } from "./regeneration.mjs";
@@ -313,9 +313,12 @@ export async function handleDeathSaveQuery({ actor: actorUuid }) {
   const actor = await fromUuid(actorUuid);
   if ( !actor?.isOwner || !deathSaveDue(actor) ) return false;
   ui.notifications.info(t("DemandeJoueur", { name: actor.name }));
-  const cancel = closeRollDialogAfter(actor, () => {}, null, { awaiting: "roll" });
-  let rolls = await actor.rollDeathSave({}, { configure: true });
-  cancel();
+  // §401 : à son tour dans la file des fenêtres de ce poste.
+  let rolls = await inLine(async () => {
+    const cancel = closeRollDialogAfter(actor, () => {}, null, { awaiting: "roll" });
+    try { return await actor.rollDeathSave({}, { configure: true }); }
+    finally { cancel(); }
+  });
   if ( !rolls?.length && deathSaveDue(actor) ) rolls = await actor.rollDeathSave({}, { configure: false });
   return !!rolls?.length;
 }

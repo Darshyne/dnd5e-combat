@@ -31,7 +31,7 @@ export const SORCERER = Object.freeze({
   // §296 : Cavalcade mécanique (Sorcellerie mécanique 18) — « 100 PV répartis entre des créatures de votre choix dans le cube » (cube de
   // 9 m depuis vous : la liste à 9 m) ; la réserve partagée.
   "clockwork-cavalcade": { pickTargets: { activities: ["hcsPW0N4FkiDoaIy", "gVIgwimuEujzofWA"], radius: 30, units: "ft", self: true, check: "allies" },
-    healPool: { activities: ["hcsPW0N4FkiDoaIy", "gVIgwimuEujzofWA"] } },
+    healPool: { activities: ["hcsPW0N4FkiDoaIy", "gVIgwimuEujzofWA"], choose: true } },
   // §296 : Sort jumeau — « le niveau effectif du sort augmente de 1 » : une cible de plus à la visée de groupe (ui/pointer.mjs).
   "twinned-spell": meta("WsG9JmGU7gRGiTRq", "twinned"),
   // Affinité élémentaire (Draconique 6) : « + votre modificateur de Charisme à un jet de dégâts » d'un sort du type choisi.

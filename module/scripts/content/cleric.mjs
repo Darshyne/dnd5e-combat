@@ -47,7 +47,7 @@ export const CLERIC = Object.freeze({
   // §296 : Survivance — « 5 × niveau de Clerc PV répartis entre des créatures En sang à 9 m (vous compris), pas au-delà de la moitié de
   // leurs PV maximum » : la liste des créatures En sang, puis la réserve partagée.
   "preserve-life": { pickTargets: { activities: ["dnd5eactivity000"], radius: 30, units: "ft", self: true, check: "allies", filter: "bloodied" },
-    healPool: { activities: ["dnd5eactivity000"], cap: "halfMax" } },
+    healPool: { activities: ["dnd5eactivity000"], cap: "halfMax", choose: true } },
   "blessing-of-the-trickster": { effectDurations: { "1PrZ25K0vYo5oLtP": { seconds: 86400 } }, effectsExpire: "longRest" },
   // §236 : Avatar de la bataille (Guerre 17) — « Résistance aux dégâts contondants, perforants et tranchants » : aucun effet dans les
   // données, l'effet est tenu sur l'acteur (runtime/speed-grants.mjs).

@@ -29,10 +29,10 @@ export const SETTINGS_TABS = Object.freeze([
     tools: [{ id: "welcome", icon: "fa-solid fa-dragon" }, { id: "diagnostic", icon: "fa-solid fa-stethoscope" },
       { id: "reports", icon: "fa-solid fa-flag" }, { id: "debugReport", icon: "fa-solid fa-bug", everyone: true }] },
   { id: "combat", icon: "fa-solid fa-shield-halved",
-    keys: ["heroicInspiration", "cover", "flanking", "flankingSide", "flankingConga", "aurasOnlyInCombat", "npcSaveChoice", "legendaryResistance", "portent", "combatWindowUnlimited", "combatWindowSeconds",
+    keys: ["heroicInspiration", "cover", "flanking", "flankingSide", "flankingConga", "aurasOnlyInCombat", "zoneChoice", "npcSaveChoice", "legendaryResistance", "portent", "combatWindowUnlimited", "combatWindowSeconds",
       "critMargin", "criticalMode", "criticalTable", "criticalNpc", "successAtCost", "successAtCostHold", "masteryRules", "sneakAttackMode", "nonLethalMenu", "endUnaffected"],
     groups: [
-      g("combatGeneral", "fa-solid fa-shield-halved", ["aurasOnlyInCombat", "endUnaffected", "combatWindowUnlimited", "combatWindowSeconds"],
+      g("combatGeneral", "fa-solid fa-shield-halved", ["aurasOnlyInCombat", "zoneChoice", "endUnaffected", "combatWindowUnlimited", "combatWindowSeconds"],
         { sub: { combatWindowSeconds: offIf("combatWindowUnlimited", true) } }),
       g("cover", "fa-solid fa-block-brick", ["cover"]),
       g("flanking", "fa-solid fa-people-arrows", ["flanking", "flankingSide", "flankingConga"],

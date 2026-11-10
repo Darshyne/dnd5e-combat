@@ -22,7 +22,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { chooseRoller } from "../core/roller.mjs";
-import { closeRollDialogAfter } from "./dialogs.mjs";
+import { closeRollDialogAfter, inLine } from "./dialogs.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
 import { originItemOf } from "./facts.mjs";
 
@@ -86,15 +86,18 @@ export async function handleConcentrationQuery({ actor: actorUuid, dc, ability=n
   if ( !actor ) return false;
   ui.notifications.info(game.i18n.format("DND5ECOMBAT.DemandeConcentrationJoueur", { name: actor.name, dc }));
   let timedOut = false;
-  const cancel = closeRollDialogAfter(actor, () => { timedOut = true; }, null, { awaiting: "roll" });
   const args = () => {
     const config = { target: dc };
     if ( ability ) config.ability = ability;
     return [config, { data: { flags: { [MODULE_ID]: { concentrationPrompt: prompt } } } }];
   };
-  const [config, message] = args();
-  let rolls = await actor.rollConcentration(config, { configure: true }, message);
-  cancel();
+  // §401 : à son tour dans la file des fenêtres de ce poste.
+  let rolls = await inLine(async () => {
+    const cancel = closeRollDialogAfter(actor, () => { timedOut = true; }, null, { awaiting: "roll" });
+    const [config, message] = args();
+    try { return await actor.rollConcentration(config, { configure: true }, message); }
+    finally { cancel(); }
+  });
   if ( !rolls?.length && timedOut ) {
     const [again, againMessage] = args();
     rolls = await actor.rollConcentration(again, { configure: false }, againMessage);

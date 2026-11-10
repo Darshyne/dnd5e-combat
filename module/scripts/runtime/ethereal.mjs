@@ -18,6 +18,9 @@ import { enqueue } from "./queue.mjs";
 import { contentOf } from "../adapter/content.mjs";
 import { route } from "./router.mjs";
 import { isExecutor, loc, log } from "./shared.mjs";
+import { NEAR_SPACE_QUERY, handleNearSpace } from "./teleport.mjs";
+import { rollerFor } from "../adapter/concentration.mjs";
+import { queryPlayer, waitLabel } from "../adapter/player-wait.mjs";
 
 const docOf = t => t?.document ?? t;
 
@@ -139,6 +142,7 @@ async function applied(value) {
 }
 
 export function registerEtherealMovement() {
+  CONFIG.queries[NEAR_SPACE_QUERY] = handleNearSpace;   // §401 : sur tous les clients — c'est le joueur du token qui choisit
   game.settings.register(MODULE_ID, SETTING, {
     name: `DND5ECOMBAT.Reglage.${SETTING}.Nom`, hint: `DND5ECOMBAT.Reglage.${SETTING}.Aide`,
     scope: "world", config: true, type: Boolean, default: true,
@@ -167,6 +171,9 @@ const SHUNT_RINGS = 12;
  */
 async function returnToken(token, { blink }) {
   const grid = token.parent.grid;
+  // §401 : Clignotement — « un espace inoccupé de votre choix à 3 m ou moins de l'espace quitté » : demandé au joueur du token (sinon au
+  // MJ) ; sans réponse, l'espace quitté s'il est libre, sinon le plus proche (plus bas).
+  if ( blink && await chooseBlinkSpace(token) ) return;
   if ( occupiedAt(token, token._source) ) {
     const start = cellOf(token);
     const cell = nearestFreeCell(start, c => !occupiedAt(token, grid.getTopLeftPoint(c)), SHUNT_RINGS);
@@ -192,6 +199,21 @@ async function returnToken(token, { blink }) {
   // Sans gravité dans l'Éthéré, la créature a pu y monter : revenue en l'air, à pied, elle tombe (règle du moteur, système allumé).
   const ground = boundsUnder(token, token._source).ground;
   if ( ((token._source.elevation ?? 0) > ground + 1e-6) && (placementOf(token._source.movementAction) === "ground") ) await fallNow(token);
+}
+
+/** §401 : la question du retour de Clignotement, chez celui qui choisit. Rend vrai si le token a été posé sur la case choisie. */
+async function chooseBlinkSpace(token) {
+  const payload = { token: token.uuid, distance: 10, units: "ft", mustMove: occupiedAt(token, token._source), item: loc("EspaceProche.Titre") };
+  const userId = token.actor ? rollerFor(token.actor) : null;
+  try {
+    const answer = (userId && (userId !== game.user.id))
+      ? await queryPlayer(game.users.get(userId), NEAR_SPACE_QUERY, payload, { timeout: 60000, actor: token.actor, label: waitLabel("Choix", { item: payload.item }) })
+      : await handleNearSpace(payload);
+    return !!answer;
+  } catch(err) {
+    log(`${token.name}: Blink, no space chosen (${err.message})`);
+    return false;
+  }
 }
 
 /**

@@ -35,13 +35,15 @@ export const CHOICES = Object.freeze({
   "eyebite": { effects: "one" },
   // Audit du compendium des sorts du PHB (le 2026-09-27) : activités à plusieurs effets dont la règle n'en donne qu'un.
   // Amélioration de caractéristique — « choisissez une caractéristique » (cinq effets, un par caractéristique hors Con).
-  "enhance-ability": { effects: "one" },
+  // §401 : « vous pouvez choisir une caractéristique différente pour chaque cible ».
+  "enhance-ability": { effects: "one", perTarget: true },
   // Agrandissement/rapetissement — « la cible est agrandie ou rapetissée, au choix ».
   "enlarge-reduce": { effects: "one" },
   // Protection contre l'énergie — « résistance à un type de dégâts de votre choix » (acide, froid, feu, foudre, tonnerre).
   "protection-from-energy": { effects: "one" },
   // Apaisement des émotions — « choisissez l'un des deux effets » (Apaisé, Indifférence).
-  "calm-emotions": { effects: "one" },
+  // §401 : « choisissez l'un des effets suivants » pour chaque créature qui rate.
+  "calm-emotions": { effects: "one", perTarget: true },
   // Contagion — « choisissez une caractéristique » (six effets Infecté).
   "contagion": { effects: "one" },
   // §295 : Magie envoûtante (Collège du savoir) — « Charmé ou Effrayé (au choix) » ; Emprisonnement — « l'un des effets suivants ».

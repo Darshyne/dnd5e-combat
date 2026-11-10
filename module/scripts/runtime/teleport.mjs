@@ -15,6 +15,8 @@ import { afterTeleportOptions } from "./teleport-options.mjs";
 import { carryPassengers, choosePassengers } from "./passengers.mjs";
 import { loc, notice, log } from "./shared.mjs";
 import { occupiedAt } from "./actions.mjs";
+import { timedWait } from "../adapter/dialogs.mjs";
+import { whileAwaiting } from "../adapter/awaiting.mjs";
 
 /* -------------------------------------------- */
 /*  Téléportation (§16.10)                      */
@@ -204,4 +206,64 @@ export async function teleportSelf(activity) {
     }
     return false;
   } finally { teleporting = null; }
+}
+
+/* -------------------------------------------- */
+/*  §401 : un espace de votre choix, tout près   */
+/* -------------------------------------------- */
+
+export const NEAR_SPACE_QUERY = `${MODULE_ID}.nearSpace`;
+
+/** Au-delà, la planification se ferme d'elle-même (le token reste où il est, ou le MJ actif le décale). */
+const NEAR_SPACE_MS = 30000;
+
+/**
+ * §401 : Clignotement — « vous revenez dans un espace inoccupé de votre choix, que vous voyez, à 3 m ou moins de l'espace quitté ». Sur le
+ * client de celui qui choisit (le joueur du token, sinon le MJ) : rester là (si l'espace est libre) ou choisir la case, par la
+ * planification du cœur ou un clic (comme la Foulée brumeuse), validée comme une téléportation (case libre, en vue, à portée). Rend la
+ * case choisie `{ x, y }` (le token y est), ou null (il reste où il est).
+ * @param {{token: string, distance: number, units: string, mustMove?: boolean, item?: string}} payload
+ */
+export async function handleNearSpace({ token: uuid, distance, units, mustMove=false, item="" }) {
+  const doc = await fromUuid(uuid);
+  const object = doc?.object;
+  if ( !object ) return null;
+  const limit = lengthIn(distance, units, doc.parent.grid.units);
+  const label = `${Math.round(limit * 10) / 10} ${doc.parent.grid.units}`;
+  if ( !mustMove ) {
+    const answer = await timedWait({
+      window: { title: item || doc.name, icon: "fa-solid fa-person-rays" },
+      content: `<p>${foundry.utils.escapeHTML(loc("EspaceProche.Question", { name: doc.name, distance: label }))}</p>`,
+      buttons: [{ action: "stay", label: loc("EspaceProche.Rester"), icon: "fa-solid fa-location-dot", default: true },
+        { action: "move", label: loc("EspaceProche.Choisir", { distance: label }), icon: "fa-solid fa-arrows-to-dot" }]
+    }, { fallback: "stay", awaiting: { actor: doc.actor, kind: "choice" } });
+    if ( answer !== "move" ) return null;
+  } else ui.notifications.info(loc("EspaceProche.Occupe", { name: doc.name, distance: label }));
+  return whileAwaiting(doc.actor, "choice", async () => {
+    teleporting = { token: doc, limit };
+    try {
+      for ( let attempt = 0; attempt < 5; attempt++ ) {
+        object.control({ releaseOthers: true });
+        let timer = null;
+        const timeout = new Promise(resolve => { timer = setTimeout(() => { canvas.tokens._cancelMovementPlanning?.(); resolve(null); }, NEAR_SPACE_MS); });
+        const plan = await Promise.race([object.planMovement({ allowedActions: ["blink"], direct: true, maxDistance: limit, preventDrop: true }), timeout]);
+        clearTimeout(timer);
+        const chosen = teleporting.chosen;
+        teleporting.chosen = null;
+        const to = plan?.destination ?? (chosen ? { ...chosen, elevation: doc._source.elevation ?? 0 } : null);
+        if ( !to ) return null;
+        // Un clic n'est pas borné par la planification du cœur : la portée se relit ici.
+        const travelled = distanceBetween(doc, doc, { posB: { x: to.x, y: to.y, elevation: to.elevation ?? doc._source.elevation } }).value;
+        if ( travelled > limit + 1e-6 ) {
+          ui.notifications.warn(loc("Teleport.TropLoin", { distance: Math.round(limit * 10) / 10, units: doc.parent.grid.units }));
+          continue;
+        }
+        if ( onTeleport(null, [{ token: object, plan: { destination: to } }]) === false ) continue;
+        await doc.move([{ x: to.x, y: to.y, elevation: doc._source.elevation ?? 0, action: "blink", snapped: true }], { [MODULE_ID]: { cleared: true } });
+        log(`${doc.name}: comes back in the chosen space (${Math.round(travelled * 10) / 10} ${doc.parent.grid.units})`);
+        return { x: to.x, y: to.y };
+      }
+      return null;
+    } finally { teleporting = null; }
+  });
 }

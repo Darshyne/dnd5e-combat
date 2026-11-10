@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  selectAreaTargets, turnKeyOf, openArea, shouldTrigger, markHit, entersArea, firstEntry, burnedOut
+  selectAreaTargets, turnKeyOf, openArea, shouldTrigger, markHit, entersArea, firstEntry, burnedOut, eligibleAreaTargets, zoneChoiceNeeded, pickedAtPose
 } from "../module/scripts/core/area.mjs";
 
 const c = (name, disposition, extra = {}) => ({ token: `T.${name}`, actor: `A.${name}`, name, disposition, ...extra });
@@ -124,5 +124,40 @@ describe("zones inflammables (§188) : la fin du feu", () => {
   it("sans terme (hors combat) ou sans tour fini : rien", () => {
     expect(burnedOut(null, { round: 9, turn: 0 })).toBe(false);
     expect(burnedOut(until, null)).toBe(false);
+  });
+});
+
+describe("§401 : zones « créatures de votre choix »", () => {
+  const c = (token, disposition, extra={}) => ({ token, actor: `A.${token}`, name: token, disposition, ...extra });
+  const opts = { origin: "me", originDisposition: 1, excludeOrigin: false, affects: "enemy", max: null };
+  const candidates = [c("me", 1), c("ami", 1), c("orc", -1), c("mort", -1, { defeated: true }), c("neutre", 0)];
+
+  it("propose tous ceux que la zone peut affecter, sans le lanceur ni les morts", () => {
+    expect(eligibleAreaTargets(candidates, opts).map(x => x.token)).toEqual(["ami", "orc", "neutre"]);
+  });
+
+  it("« mixed » : demande seulement si le choix d'office laisse quelqu'un de côté", () => {
+    const eligible = eligibleAreaTargets(candidates, opts);
+    const chosen = selectAreaTargets(candidates, opts);
+    expect(zoneChoiceNeeded("mixed", eligible, chosen)).toBe(true);
+    const enemies = [c("orc", -1), c("gob", -1)];
+    expect(zoneChoiceNeeded("mixed", eligibleAreaTargets(enemies, opts), selectAreaTargets(enemies, opts))).toBe(false);
+    expect(zoneChoiceNeeded("always", eligibleAreaTargets(enemies, opts), selectAreaTargets(enemies, opts))).toBe(true);
+    expect(zoneChoiceNeeded("never", eligible, chosen)).toBe(false);
+    expect(zoneChoiceNeeded("always", [], [])).toBe(false);
+  });
+
+  it("« mixed » : demande aussi quand le plafond (`zoneMax`) écarte des ennemis", () => {
+    const three = [c("a", -1, { distance: 1 }), c("b", -1, { distance: 2 }), c("d", -1, { distance: 3 })];
+    const capped = { ...opts, max: 2 };
+    expect(zoneChoiceNeeded("mixed", eligibleAreaTargets(three, capped), selectAreaTargets(three, capped))).toBe(true);
+  });
+
+  it("une zone qui dure suit le choix de la pose, puis la règle d'office pour les nouveaux venus", () => {
+    const state = { picked: ["orc"], spared: ["ami"] };
+    expect(pickedAtPose(state, "orc")).toBe(true);
+    expect(pickedAtPose(state, "ami")).toBe(false);
+    expect(pickedAtPose(state, "nouveau")).toBe(null);
+    expect(pickedAtPose({}, "orc")).toBe(null);
   });
 });

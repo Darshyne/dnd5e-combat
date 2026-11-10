@@ -252,8 +252,8 @@ export const SPELL_RULES = Object.freeze({
     zoneAffects: "enemy",
     triggers: [
       { on: ["enter", "turnEnd"], do: [{ type: "replay", activity: "dzeoGwKOPG7PHbyE" }] },
-      // §366 : « et vous pouvez la pousser jusqu'à 3 m » — poussée d'office.
-      { on: "failedSave", do: [{ type: "status", status: "prone" }, { type: "move", mode: "push", distance: 10, units: "ft" }] }
+      // §366 : « et vous pouvez la pousser jusqu'à 3 m » ; §401 : la distance demandée au lanceur.
+      { on: "failedSave", do: [{ type: "status", status: "prone" }, { type: "move", mode: "push", distance: 10, units: "ft", upTo: true }] }
     ]
   },
   // §86 : Invocation d'êtres sylvestres — « Cast » (dnd5eactivity000, la sauvegarde de la pose) sans émanation dans la donnée :
@@ -321,9 +321,9 @@ export const SPELL_RULES = Object.freeze({
   // guérisseur : « Charmé, Effrayé, Paralysé, Empoisonné, Étourdi prennent fin » (se relever par sa Réaction : au joueur).
   "heal": { curesAll: ["blinded", "deafened", "poisoned"] },
   // §296 : « jusqu'à 700 PV répartis entre autant de créatures que vous voulez à portée (18 m) » — la liste, puis la réserve partagée.
-  "mass-heal": { curesAll: ["blinded", "deafened", "poisoned"], healPool: { activities: ["eCa5jzMXR0Pgp3ZV"] },
+  "mass-heal": { curesAll: ["blinded", "deafened", "poisoned"], healPool: { activities: ["eCa5jzMXR0Pgp3ZV"], choose: true },
     pickTargets: { activities: ["eCa5jzMXR0Pgp3ZV"], radius: 60, units: "ft", self: true, check: "allies" } },
-  "power-word-heal": { curesAll: ["charmed", "frightened", "paralyzed", "poisoned", "stunned"] },
+  "power-word-heal": { standsWithReaction: true, curesAll: ["charmed", "frightened", "paralyzed", "poisoned", "stunned"] },
   // Délivrance des malédictions : « toutes les malédictions qui affectent une créature prennent fin » — celles des sorts.
   // C12-e : Maléfice occulte (Occultiste du Grand Ancien 10) — « la cible a aussi le Désavantage aux jets de sauvegarde de la
   // caractéristique choisie », sur l'effet de Maléfice choisi quand le lanceur porte l'aptitude.

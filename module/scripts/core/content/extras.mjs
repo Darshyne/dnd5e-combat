@@ -53,8 +53,9 @@ export function validateExtras(entry, at, errors) {
     const h = entry.healPool;
     if ( !isObject(h) || !Array.isArray(h.activities) || !h.activities.length || !h.activities.every(isId)
       || (("cap" in h) && (h.cap !== "halfMax")) || (("temp" in h) && (h.temp !== true)) || (("formula" in h) && (typeof h.formula !== "string"))
-      || !Object.keys(h).every(k => ["activities", "cap", "temp", "formula"].includes(k)) ) {
-      errors.push(`${at}healPool: { activities, cap?: "halfMax", temp?: true, formula? }`);
+      || (("choose" in h) && (h.choose !== true))
+      || !Object.keys(h).every(k => ["activities", "cap", "temp", "formula", "choose"].includes(k)) ) {
+      errors.push(`${at}healPool: { activities, cap?: "halfMax", temp?: true, formula?, choose?: true }`);
     }
   }
   if ( "pickTargets" in entry ) {
@@ -151,6 +152,7 @@ export function validateExtras(entry, at, errors) {
   if ( ("endsCurses" in entry) && !(Array.isArray(entry.endsCurses) && entry.endsCurses.length && entry.endsCurses.every(s => typeof s === "string" && s)) ) errors.push(`${at}endsCurses: item identifiers`);
   if ( ("tempHpPool" in entry) && !(Number.isFinite(entry.tempHpPool) && (entry.tempHpPool > 0)) ) errors.push(`${at}tempHpPool: positive number`);
   if ( ("revivesFull" in entry) && (entry.revivesFull !== true) ) errors.push(`${at}revivesFull: true or absent`);
+  if ( ("standsWithReaction" in entry) && (entry.standsWithReaction !== true) ) errors.push(`${at}standsWithReaction: true or absent`);
   if ( ("pointWall" in entry) && (entry.pointWall !== false) ) errors.push(`${at}pointWall: false or absent`);
   if ( ("cellWall" in entry) && (entry.cellWall !== true) ) errors.push(`${at}cellWall: true or absent`);
   if ( "coverThrough" in entry ) {

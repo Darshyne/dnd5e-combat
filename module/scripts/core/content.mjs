@@ -821,6 +821,8 @@
  *                                               identifiants (Délivrance des malédictions : Malédiction, Maléfice)
  *     tempHpPool?: number                       §160 : autant de PV temporaires partagés à parts égales entre les cibles (Mot de pouvoir
  *                                               fortifiant : 120)
+ *     standsWithReaction?: true                 §401 : une cible À terre peut se relever par sa Réaction (Mot de pouvoir guérisseur) ; la
+ *                                               question va à son joueur, sinon au MJ
  *     revivesFull?: true                        §160 : la cible revient à son maximum de PV (Résurrection, Résurrection suprême)
  *     noActions?: <id d'effet>                    §158 : le porteur de cet effet de l'item n'a ni action ni action Bonus (Nuage nauséabond)
  *     limitedAction?: <id d'effet>                §157 : le porteur de cet effet de l'item a, à chacun de ses tours, une action limitée (Hâte :

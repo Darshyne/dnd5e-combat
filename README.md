@@ -141,7 +141,8 @@ Status: under active development, used at the author's table.
 
 The module ships English, French and Brazilian Portuguese (pt-BR translation by Henrique, [@henriquebot](https://github.com/henriquebot)). To add a language, copy `module/lang/en.json` to `module/lang/<code>.json`,
 translate the values (keep the `{placeholders}`), and add an entry to `languages` in `module/module.json`; missing keys
-fall back to English. `tests/i18n.test.mjs` checks that every key used in the code exists.
+fall back to English. `tests/das-i18n.test.mjs` checks that every key used in the code exists, and that a translation has no
+extra key, empty value or different `{placeholder}`.
 
 A few automations read the rules text of items (durations such as "until the end of its next turn", ability drains,
 swallowing): they understand English and French descriptions. In a world whose item descriptions are in another language,

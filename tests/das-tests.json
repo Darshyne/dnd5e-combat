@@ -1,0 +1,28 @@
+{
+  "i18n": {
+    "namespaces": ["DND5ECOMBAT"],
+    "calls": [{ "fn": "loc", "prefix": "DND5ECOMBAT." }],
+    "fileHelpers": [{ "define": "const t = \\(key, data\\) => game\\.i18n\\.format\\(`DND5ECOMBAT\\.([A-Za-z0-9_.]+)\\.\\$\\{key\\}`", "call": "t", "prefix": "DND5ECOMBAT." }],
+    "minKeys": 1000
+  },
+  "manifest": {
+    "packSources": { "outils": "tools/macros" }
+  },
+  "layers": {
+    "imports": {
+      "core": [".", "content", "adapter", "runtime", "ui"],
+      "content": [".", "adapter", "runtime", "ui"],
+      "adapter": ["runtime", "ui"],
+      "runtime": ["ui"]
+    },
+    "pure": { "folders": ["core"] },
+    "router": "runtime/router.mjs",
+    "forbid": [{ "name": "un-seul-chemin", "pattern": "\\.(?:use|rollAttack|rollDamage|consume)\\(", "in": ["ui/"], "why": "l'interface ne lance jamais une activité elle-même : elle passe par runtime/, qui finit dans activity.use() (SPEC §15.1)" }],
+    "except": {
+      "router:runtime/testing.mjs": "sonde temporaire d'une fonction de test api.mcp (menu de porte ou de sol), retirée à la fin de l'appel ; pas un écouteur du jeu",
+      "router:runtime/testing-areas.mjs": "sonde temporaire d'une fonction de test api.mcp (invocation observée), retirée à la fin de l'appel ; pas un écouteur du jeu",
+      "router:runtime/testing-moves.mjs": "sondes temporaires d'une fonction de test api.mcp (serrure, bruit), retirées à la fin de l'appel ; pas des écouteurs du jeu",
+      "router:runtime/testing-rules.mjs": "sonde temporaire d'une fonction de test api.mcp (fenêtre d'utilisation de dnd5e validée), retirée à la fin de l'appel"
+    }
+  }
+}

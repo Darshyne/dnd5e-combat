@@ -36,8 +36,9 @@ for ( const pack of Object.keys(PACKS) ) {
   await db.close();
 }
 
-/* ---- le SPEC en sections ---- */
-const spec = readFileSync("prive/SPEC.md", "utf8").split("\n");
+/* ---- le journal (l'ancien SPEC.md, découpé en tranches dans prive/journal/) en sections ---- */
+const tranches = readdirSync("prive/journal").filter(name => /^\d{3}-\d{3}\.md$/.test(name)).sort();
+const spec = tranches.map(name => readFileSync(join("prive/journal", name), "utf8")).join("").split("\n");
 const sections = [];
 let current = null;
 for ( const line of spec ) {

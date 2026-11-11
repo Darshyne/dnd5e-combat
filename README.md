@@ -38,6 +38,11 @@ target (`api.approach`), stopping this client's walks (`api.stopWalks`), the tur
 `dnd5e-combat.lockAttempt` — every judged lock attempt on a door —…). It does not know any of its
 neighbours by name.
 
+The complete list — every API function with its arguments, every hook emitted and listened to, every setting, the
+content keys in use and the in-game scenarios — is in [`docs/reference/`](docs/reference/README.md). Those pages are
+generated from the code (`npm run reference`) and checked by the test suite; descriptions are the code's own comments,
+in French. `docs/reference/surface.json` is the bare contract a neighbouring module can check in its own tests.
+
 A creature module can declare the rules for its own abilities, by dnd5e identifier, without touching the
 engine:
 

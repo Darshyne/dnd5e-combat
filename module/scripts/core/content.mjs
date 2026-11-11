@@ -142,6 +142,8 @@
  *                                               (Maître d'armes lourdes, « Taille », §16.26)
  *     reactiveSpell?: true                      le porteur peut répondre à une attaque d'opportunité par un sort d'une action
  *                                               qui ne vise que la créature qui s'en va (Mage de guerre, §16.26)
+ *     freeSomatic?: true                        le porteur fait les composantes somatiques avec armes ou bouclier en main (Mage de
+ *                                               guerre, §409 : le contrôle de main libre ne le refuse pas)
  *     projectiles?: { count, attack }           plusieurs projectiles par lancement (§16.27) — `count` : formule (données de
  *                                               l'activité mise à l'échelle : `@item.level`, `@details.level`) ; `attack` :
  *                                               false = ils touchent d'office, répartis entre les cibles (Projectile

@@ -29,6 +29,7 @@ import { route } from "./router.mjs";
 import { log, loc, sleep, viaActiveGM } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { forcedReasons } from "../core/forced.mjs";
+import { somaticBlockOf, registerSomaticHandsSetting } from "../adapter/hands.mjs";
 import { reportForced, overriddenFlag } from "./forced.mjs";
 import { antimagicAround, barrierBetween } from "../adapter/barriers.mjs";
 import { rangedBanAround, formLockAround } from "../adapter/areas.mjs";
@@ -167,8 +168,14 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
   const limits = usageLimitProblems(activity, { inCombat: !!combatant, ownTurn: own });
   // §17.3 : Neutralisé (ni action, ni action Bonus, ni Réaction).
   const cost = (request.cost === "free") ? null : (budget ? effectiveCost(budget, request) : request.cost);
+  // §409 : un sort lancé (pas une zone déplacée, ni la commande d'un sort déjà lancé) ou une activité longue — même sans coût d'action.
+  const casting = !recast && !ordered && isSpellCast(activity.item);
+  const longActivation = ["minute", "hour", "day"].includes(activity.activation?.type);
   const incapacitated = pilot ? [] : conditionUseIssues({ statuses: Array.from(activity.actor?.statuses ?? []), cost,
-    noReactions: reactionsBlocked(activity.actor), actionOrBonus: !!budget && actionOrBonusOnly(activity.actor), budget });
+    noReactions: reactionsBlocked(activity.actor), actionOrBonus: !!budget && actionOrBonusOnly(activity.actor), budget,
+    castsSpell: casting, longActivation });
+  // §409 (issue #44) : composante somatique sans main libre.
+  const handsFull = (casting && !pilot) ? somaticBlockOf(activity) : null;
   // §22 : « en Rage, vous ne pouvez pas lancer de sorts ».
   const raging = isSpellCast(activity.item) && isRaging(activity.actor);   // §48 : lire un parchemin aussi
   // §163 : Champ antimagie — on n'y lance aucun sort.
@@ -208,6 +215,7 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
     ...(bright ? [loc("Souci.tooBright", { item: activity.item.name })] : []),
     ...(outOfAmmunition(activity, attackMode) ? [loc("Souci.noAmmunition", { item: activity.item.name })] : []),
     ...(silenced ? [loc("Souci.silenced")] : []),
+    ...(handsFull ? [loc("Souci.noFreeHand", { items: handsFull.items.join(", ") })] : []),
     ...(raging ? [loc("Souci.rage")] : []),
     ...(heavyRage ? [loc("Souci.rageHeavyArmor")] : []),
     ...(familiarAttack ? [loc("Souci.familiarAttack")] : []),
@@ -740,6 +748,7 @@ async function markCommanded(activity) {
 }
 
 export function registerTurn() {
+  registerSomaticHandsSetting();   // §409 : le contrôle de main libre (composante somatique)
   route("dnd5e.postUseActivity", activity => markCommanded(activity), { label: "summon command not recorded" });
   CONFIG.queries[WASTE_QUERY] = handleWasteUse;
   route("dnd5e.preUseActivity", onPreUseActivity, { cancellable: true, label: "use legality" });

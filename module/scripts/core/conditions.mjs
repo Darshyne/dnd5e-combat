@@ -186,12 +186,18 @@ export function grappleHolds({ grapplerStatuses, withinReach }) {
 /**
  * Neutralisé (2024) : « vous ne pouvez effectuer aucune action, action Bonus ni Réaction ». Aussi pour les états qui
  * l'entraînent (Étourdi, Paralysé, Pétrifié, Inconscient) et Mort.
- * @param {{statuses: string[], cost: string|null}} use  États de l'utilisateur, coût de l'utilisation.
- * @returns {string[]}  ["incapacitated"] ou [].
+ * §409 : aussi pour tout sort lancé (`castsSpell` : rituel, sort d'une minute ou plus) et toute activité longue (`longActivation` :
+ * minute, heure, jour).
+ * @param {{statuses: string[], cost: string|null, castsSpell?: boolean, longActivation?: boolean}} use  États de l'utilisateur, coût.
+ * @returns {string[]}  ["incapacitated"], ["incapacitatedCasting"] (sort ou activité longue sans coût d'action), ou [].
  */
-export function conditionUseIssues({ statuses, cost, noReactions=false, actionOrBonus=false, budget=null }) {
-  if ( !["action", "bonus", "reaction"].includes(cost) ) return [];
-  if ( INCAPACITATING.some(s => statuses.includes(s)) ) return ["incapacitated"];
+export function conditionUseIssues({ statuses, cost, noReactions=false, actionOrBonus=false, budget=null, castsSpell=false, longActivation=false }) {
+  // §409 (issue #44) : lancer un sort (rituel ou temps d'incantation d'une minute ou plus compris) ou une activité longue demande d'agir,
+  // tour après tour — un Neutralisé ne le peut pas, quel que soit le coût lu.
+  const acting = ["action", "bonus", "reaction"].includes(cost);
+  if ( !acting && !castsSpell && !longActivation ) return [];
+  if ( INCAPACITATING.some(s => statuses.includes(s)) ) return [acting ? "incapacitated" : "incapacitatedCasting"];
+  if ( !acting ) return [];
   // §16.47 : « ne peut pas prendre de Réaction » (Tentacules de Hadar).
   if ( (cost === "reaction") && noReactions ) return ["noReactions"];
   // §77 : « une action ou une action Bonus lors de son tour, pas les deux » (Nuage fétide du Dretch, Lenteur) — l'autre déjà dépensée.

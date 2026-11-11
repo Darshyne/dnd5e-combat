@@ -25,6 +25,7 @@ import { isDeadActor } from "./death.mjs";
 import { contentOf } from "./content.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { isSpellCast } from "./scrolls.mjs";
+import { pendingMetamagic } from "./metamagic.mjs";
 import { rangedFeatsFor, coverLeft, CROSSBOWS } from "../core/feats.mjs";
 import { coverFor } from "./cover.mjs";
 import { areEnemies } from "./factions.mjs";
@@ -305,7 +306,8 @@ export function verbalBlockOf(activity) {
   if ( spellCommandOf(activity) ) return null;   // commander les lumières d'un sort déjà lancé n'est pas lancer un sort (§16.17)
   return verbalSpellBlocked(Array.from(activity?.actor?.statuses ?? []), {
     spell: isSpellCast(item),   // §48 : lire un parchemin, c'est lancer le sort
-    verbal: !!item?.system?.properties?.has?.("vocal")
+    // §409 : Sort subtil — « sans composante verbale, somatique ni matérielle » (Métamagie retenue jusqu'au sort suivant).
+    verbal: !!item?.system?.properties?.has?.("vocal") && !((item?.type === "spell") && pendingMetamagic(activity.actor).includes("subtle"))
   });
 }
 

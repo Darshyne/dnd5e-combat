@@ -66,6 +66,12 @@ export const BONUS_ATTACKS = Object.freeze({ "great-weapon-master": { after: ["c
 export const REACTIVE_SPELLS = Object.freeze(["war-caster"]);
 
 /**
+ * Composante somatique sans main libre (§409, issue #44, `freeSomatic`) : Mage de guerre — les composantes somatiques se font même
+ * avec des armes ou un bouclier dans une main ou les deux (PHB 2024).
+ */
+export const FREE_SOMATIC = Object.freeze(["war-caster"]);
+
+/**
  * Plusieurs projectiles par lancement (§16.27, `projectiles`) ; dnd5e 6 n'en fait qu'un, le nombre n'est que dans la
  * description (spells24 : « [[2 + @item.level]] », « [[@item.level + 1]]{Total Rays} », « [[(floor((@details.level+1)/6)+1)]] »).
  */

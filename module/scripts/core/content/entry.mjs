@@ -570,7 +570,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     }
   }
   if ( ("recast" in entry) && (entry.recast !== true) ) errors.push(`${at}recast: true or absent`);
-  for ( const flag of ["obscures", "silences", "healMax", "duplicates", "reactiveSpell", "revealsInvisible"] ) if ( (flag in entry) && (entry[flag] !== true) ) errors.push(`${at}${flag}: true or absent`);
+  for ( const flag of ["obscures", "silences", "healMax", "duplicates", "reactiveSpell", "revealsInvisible", "freeSomatic"] ) if ( (flag in entry) && (entry[flag] !== true) ) errors.push(`${at}${flag}: true or absent`);
   if ( "light" in entry ) validateLight(entry.light, `${at}light`, errors);
   if ( "carriedLight" in entry ) validateCarriedLight(entry.carriedLight, `${at}carriedLight`, errors);
   if ( "usageLimits" in entry ) {

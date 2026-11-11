@@ -47,7 +47,7 @@ import { ITEM_FIXES } from "./item-fixes.mjs";
 import { GM_ALERTS } from "./gm-alerts.mjs";
 import { mergeEntries } from "../core/content.mjs";
 import { SOURCE_IDENTIFIERS } from "./sources.mjs";
-import { BURSTS, RECASTS, TURN_STARTS, BOLTS, OBSCURES, HEAL_MAX, DUPLICATES, SAVE_ADVANTAGES, ON_FELL, BONUS_ATTACKS, REACTIVE_SPELLS, PROJECTILES, LEAPS } from "./bursts.mjs";
+import { BURSTS, RECASTS, TURN_STARTS, BOLTS, OBSCURES, HEAL_MAX, DUPLICATES, SAVE_ADVANTAGES, ON_FELL, BONUS_ATTACKS, REACTIVE_SPELLS, FREE_SOMATIC, PROJECTILES, LEAPS } from "./bursts.mjs";
 
 /**
  * Les tables « par brique » : une table (`identifiant → valeur`, ou une liste d'identifiants : la valeur `true`) et la clé d'entrée
@@ -61,7 +61,7 @@ export const BRICKS = Object.freeze([
   [ENCHANT_TARGETS, "enchantTarget"], [PACTS, "pact"], [TRACES, "trace"], [TRACE_RULES, "trace"], [TELEPORTS, "teleport"],
   [ABSORBS, "absorb"], [SUMMONS, "summon"], [MOVABLES, "movable"], [BURSTS, "burst"], [RECASTS, "recast"], [BOLTS, "bolt"],
   [OBSCURES, "obscures"], [LIGHTS, "light"], [REVEALS_INVISIBLE, "revealsInvisible"], [HEAL_MAX, "healMax"],
-  [DUPLICATES, "duplicates"], [SAVE_ADVANTAGES, "saveAdvantage"], [ON_FELL, "onFell"], [REACTIVE_SPELLS, "reactiveSpell"],
+  [DUPLICATES, "duplicates"], [SAVE_ADVANTAGES, "saveAdvantage"], [ON_FELL, "onFell"], [REACTIVE_SPELLS, "reactiveSpell"], [FREE_SOMATIC, "freeSomatic"],
   [PROJECTILES, "projectiles"], [LEAPS, "leap"], [BONUS_ATTACKS, "bonusAttack"], [TURN_STARTS, "atTurnStart"],
   [TETHERS, null], [DAMAGE_SHIELDS, "damageShield"], [HIT_DICE_HEALS, "hitDiceHeal"], [BREAKS_ON, "breaksOn"],
   [NO_REACTIONS, "noReactions"], [ACTION_OR_BONUS, "actionOrBonus"], [SINGLE_ATTACK, "singleAttack"], [SPELL_FAILURES, "spellFailure"], [NO_ATTACKS_OR_SPELLS, "noAttacksOrSpells"], [NO_SPELLS, "noSpells"], [KNOWN_TO_ORIGIN, "knownToOrigin"], [CURES, "cures"],

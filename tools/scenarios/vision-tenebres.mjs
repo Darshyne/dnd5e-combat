@@ -11,7 +11,8 @@
  * s'entend (contour de l'ouïe) ; l'Assourdi n'entend plus rien.
  * Puis Lumière du jour à côté : les Ténèbres sont dissipées, l'Humain voit de nouveau.
  * Écran : ce que les règles voient s'affiche net (« seen ») ou par le contour de son sens (« outline » : vision aveugle, vision
- * véritable, filtres de dnd5e) ; ce qu'elles ne voient pas n'est jamais net (caché, ou contour de l'ouïe, « heard », §62). Puis le même relevé réglage « Vision simulée » coupé, pour comparer avec le rendu du cœur seul (journal, sans attente).
+ * véritable, filtres de dnd5e ; la Vision du diable, nette avec son liseré rouge sombre) — jamais « veiled » (jugée visible mais dessinée
+ * sous le voile de vision : silhouette noire chez le joueur, issue #42 suite) ; ce qu'elles ne voient pas n'est jamais net (caché, ou contour de l'ouïe, « heard », §62). Puis le même relevé réglage « Vision simulée » coupé, pour comparer avec le rendu du cœur seul (journal, sans attente).
  *
  * Sans l'Arène de la vision (autre monde), non applicable : le lanceur saute un scénario dont la scène manque.
  */
@@ -153,6 +154,52 @@ export default {
     ctx.expect(Object.values(metricAfter.after).every(v => v === "seen"), "en mètres : après une mise à jour de l'acteur, les cibles restent nettes");
     await ctx.call("update-scene", { sceneId, sceneData: { "grid.units": grid0.units, "grid.distance": grid0.distance } });
     await pause(2500);
+
+    // 2 sexies. Issue #42, suite (0.281.1) : le RENDU. Visée acceptée, mais le token dans les Ténèbres restait une silhouette noire chez le
+    // joueur : le mode, sans filtre, n'était dessiné que sous le voile de vision (« veiled »). Il porte maintenant le liseré rouge sombre
+    // de la Vision du diable, token entier, au-dessus du voile.
+    const drawn = (await ctx.engine("visionMatrix", { observerIds: [warlock.id], targetIds: aimed })).rows;
+    for ( const r of drawn ) {
+      ctx.log(`  rendu : ${r.target} écran ${r.screen}, filtre ${JSON.stringify(r.filter)}`);
+      ctx.expect(r.screen === "seen" && r.filter === "devilsSight", `de l'extérieur, ${r.target} s'affiche avec le liseré de la Vision du diable, au-dessus du voile (écran : ${r.screen}, filtre : ${JSON.stringify(r.filter)})`);
+    }
+    // Le témoin en pleine lumière : vu par la vue de base, sans liseré.
+    const lit = (await ctx.engine("visionMatrix", { observerIds: [warlock.id], targetIds: [tokens["Cible au loin"].id] })).rows[0];
+    ctx.expect(lit.screen === "seen" && lit.filter === null, `en pleine lumière, aucun liseré (écran : ${lit.screen}, filtre : ${JSON.stringify(lit.filter)})`);
+    // Aveuglé : la Vision du diable est une vue — plus de liseré, le contour de l'ouïe seul.
+    ctx.restore(() => ctx.call("set-status", { tokenId: warlock.id, statusId: "blinded", active: false }).catch(() => {}));
+    await ctx.call("set-status", { tokenId: warlock.id, statusId: "blinded", active: true });
+    await pause(1500);
+    const blindDrawn = (await ctx.engine("visionMatrix", { observerIds: [warlock.id], targetIds: aimed })).rows;
+    for ( const r of blindDrawn ) ctx.expect(r.screen === "heard" && r.filter === "hearing", `Aveuglé, l'Occultiste n'a plus que l'ouïe pour ${r.target} (écran : ${r.screen}, filtre : ${JSON.stringify(r.filter)})`);
+    await ctx.call("set-status", { tokenId: warlock.id, statusId: "blinded", active: false });
+    await pause(1000);
+
+    // 2 septies. Le plan Éthéré (§225 ; sauté si le réglage « Plan éthéré automatisé » est coupé). Occultiste éthéré : il voit le plan
+    // matériel jusqu'à 60 ft — la cible dans les Ténèbres (55 ft) avec la teinte de la Vision du diable, pas celle derrière (85 ft).
+    // Puis cible éthérée et occultiste matériel : la Vision du diable ne voit pas dans l'Éthéré.
+    const ethereal = await ctx.call("get-setting", { namespace: "dnd5e-combat", key: "etherealPlane" }).then(r => r?.value ?? r).catch(() => null);
+    if ( ethereal === false ) ctx.log("  plan Éthéré automatisé coupé : phase sautée");
+    else {
+      const inside = tokens["Cible dans les ténèbres"];
+      const shown = async () => Object.fromEntries((await ctx.engine("visionMatrix", { observerIds: [warlock.id], targetIds: aimed })).rows
+        .map(r => [r.target, r]));
+      ctx.restore(() => ctx.call("set-status", { tokenId: warlock.id, statusId: "ethereal", active: false }).catch(() => {}));
+      ctx.restore(() => ctx.call("set-status", { tokenId: inside.id, statusId: "ethereal", active: false }).catch(() => {}));
+      await ctx.call("set-status", { tokenId: warlock.id, statusId: "ethereal", active: true });
+      await pause(1500);
+      const fromEthereal = await shown();
+      const near = fromEthereal["Cible dans les ténèbres"], beyond = fromEthereal["Cible derrière les ténèbres"];
+      ctx.expect(near?.screen === "seen" && near.filter === "devilsSight", `Éthéré : la cible dans les Ténèbres (55 ft) s'affiche teintée par la Vision du diable (écran : ${near?.screen}, filtre : ${JSON.stringify(near?.filter)})`);
+      ctx.expect(beyond?.screen === "hidden", `Éthéré : la cible derrière les Ténèbres (85 ft, au-delà de 60 ft) n'est pas vue (écran : ${beyond?.screen})`);
+      await ctx.call("set-status", { tokenId: warlock.id, statusId: "ethereal", active: false });
+      await ctx.call("set-status", { tokenId: inside.id, statusId: "ethereal", active: true });
+      await pause(1500);
+      const intoEthereal = (await shown())["Cible dans les ténèbres"];
+      ctx.expect(intoEthereal?.screen === "hidden", `cible éthérée : la Vision du diable ne voit pas dans l'Éthéré (écran : ${intoEthereal?.screen})`);
+      await ctx.call("set-status", { tokenId: inside.id, statusId: "ethereal", active: false });
+      await pause(1000);
+    }
 
     // 3. Portée de la Vision du diable : l'Occultiste à 125 ft de la cible dans les ténèbres (colonne 42).
     const [, row] = ARENE_VISION.tokens["Occultiste du diable"];

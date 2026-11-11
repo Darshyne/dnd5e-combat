@@ -90,6 +90,48 @@ export const CORE_JUDGED = Object.freeze(["feelTremor", "senseAll", "senseInvisi
 export const DEVILS_SIGHT_MODE = "devilsSight";
 export const DEVILS_SIGHT = Object.freeze({ identifier: "devils-sight", range: 120, units: "ft", mode: DEVILS_SIGHT_MODE });
 
+/**
+ * Issue #42, suite (0.281.1) : le filtre d'une créature vue par la Vision du diable (ui/perception.mjs) : token teinté de rouge, liseré rouge
+ * sombre. Un mode spécial SANS filtre n'est dessiné que sous le voile de vision du cœur : dans des Ténèbres vues de l'extérieur,
+ * le token « visible » restait une silhouette noire. Avec un filtre, le cœur le redessine au-dessus du voile (placeables/token.mjs,
+ * `detectionFilterMesh`).
+ */
+export const DEVILS_SIGHT_OUTLINE = Object.freeze({ outlineColor: Object.freeze([0.6, 0.08, 0.08, 1]), thickness: 2, knockout: false, wave: false,
+  // Choix de l'utilisateur (2026-11-11) : un token net doit vouloir dire « vue normale » — la Vision du diable teinte aussi le token en rouge.
+  tintColor: Object.freeze([1, 0.22, 0.18]), tintStrength: 0.65 });
+
+/** La ligne du shader de contour du cœur (rendering/filters/outline-overlay.mjs) où la couleur du token est composée. */
+const OUTLINE_TEXCOLOR = "vec4 texColor = mix(baseColor, wColor, k) * texAlpha;";
+
+/**
+ * Issue #42, suite : le shader de contour du cœur, avec la teinte rouge de la Vision du diable sur le token (luminance × teinte, mêlée à la
+ * couleur d'origine selon `tintStrength` ; couleurs prémultipliées, l'alpha n'est pas touché). Null si la ligne attendue n'y est plus
+ * (cœur changé) : l'appelant garde alors le contour seul.
+ * @param {string} source  Le fragment shader de `OutlineOverlayFilter`.
+ * @returns {string|null}
+ */
+export function tintOutlineShader(source) {
+  if ( (typeof source !== "string") || !source.includes(OUTLINE_TEXCOLOR) || !source.includes("void main(void)") ) return null;
+  return source
+    .replace("void main(void)", `uniform vec3 tintColor;
+    uniform float tintStrength;
+
+    void main(void)`)
+    .replace(OUTLINE_TEXCOLOR, `${OUTLINE_TEXCOLOR}
+      float tintLum = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
+      texColor.rgb = mix(texColor.rgb, tintLum * tintColor, tintStrength);`);
+}
+
+/**
+ * Issue #42, suite : un token jugé visible par ce client, mais dessiné SOUS le voile de vision — affiché sans filtre de détection, hors de
+ * sa propre vue, et hors de la zone que voit chaque source active (le polygone de vue). Ce que le joueur voit alors : rien, ou une
+ * silhouette noire. Un défaut d'affichage (runtime/testing-vision.mjs, état « veiled »).
+ * @param {{visible: boolean, filtered: boolean, ownVision?: boolean, inSight: boolean}} state
+ */
+export function drawnUnderVeil({ visible, filtered, ownVision=false, inSight }) {
+  return !!visible && !filtered && !ownVision && !inSight;
+}
+
 /** Issue #42 : le mode spécial de l'ouïe d'un observateur Aveuglé (ui/perception.mjs), donné en mémoire comme la Vision du diable. */
 export const HEARING_MODE = "dasHearing";
 

@@ -19,24 +19,44 @@ import { committedPosition, distanceBetween, tokenCenter } from "../adapter/turn
 import { sleep } from "./shared.mjs";
 import { rangeStatus } from "./actions.mjs";
 import { gmOnly, viewedToken } from "./testing-shared.mjs";
+import { DEVILS_SIGHT_OUTLINE, drawnUnderVeil } from "../core/light.mjs";
 
 const HEARING = [0.55, 0.8, 1, 1];   // ui/perception.mjs, contour de l'ouïe
 
-/** Le filtre de détection d'un token affiché : null, « ouïe » (contour du moteur), ou les couleurs d'un autre contour. */
+/**
+ * Le filtre de détection d'un token affiché : null, « ouïe » (contour du moteur), « Vision du diable » (son liseré, token entier), ou les
+ * couleurs d'un autre contour.
+ */
 function filterOf(token) {
   const filter = token.detectionFilter;
   if ( !filter ) return null;
   const color = filter.uniforms?.outlineColor;
   if ( !color ) return "other";
   const rounded = Array.from(color).map(c => Math.round(c * 100) / 100);
-  return rounded.every((c, i) => c === HEARING[i]) ? "hearing" : rounded;
+  const same = ref => rounded.every((c, i) => c === ref[i]);
+  if ( same(HEARING) ) return "hearing";
+  return same(DEVILS_SIGHT_OUTLINE.outlineColor) ? "devilsSight" : rounded;
 }
 
-/** Ce que ce client montre d'une cible : non affichée, affichée nette, ou affichée par un contour. */
+/**
+ * Issue #42, suite (0.281.1) : le centre du token est-il dans la zone que voit une source de vision active de ce client (son polygone de
+ * vue) ? Hors de toutes, un token affiché sans filtre est dessiné sous le voile de vision du cœur : invisible pour le joueur.
+ */
+function inSightOfClient(token) {
+  const { x, y } = token.center;
+  return canvas.effects.visionSources.some(s => s.active && s.los?.contains?.(x, y));
+}
+
+/**
+ * Ce que ce client montre d'une cible : non affichée, affichée nette (la Vision du diable comprise : token entier, liseré rouge sombre),
+ * affichée par un contour — ou « veiled » : jugée visible mais dessinée sous le voile (défaut d'affichage, issue #42 suite).
+ */
 function shownAs(token) {
   if ( !token?.isVisible ) return "hidden";
   const filter = filterOf(token);
-  return filter ? ((filter === "hearing") ? "heard" : "outline") : "seen";
+  if ( drawnUnderVeil({ visible: true, filtered: !!filter, ownVision: !!token.vision?.active, inSight: inSightOfClient(token) }) ) return "veiled";
+  if ( !filter || (filter === "devilsSight") ) return "seen";
+  return (filter === "hearing") ? "heard" : "outline";
 }
 
 /**
@@ -91,15 +111,17 @@ export async function visionMatrix({ observerIds=[], targetIds=[], screen=true }
   try {
     for ( const observer of observers ) {
       let shown = null;
+      let filters = null;
       if ( screen ) {
         observer.object.control({ releaseOthers: true });
         await settleVision(observer.object);
         shown = Object.fromEntries(targets.map(t => [t.id, shownAs(t.object)]));
+        filters = Object.fromEntries(targets.map(t => [t.id, t.object?.isVisible ? filterOf(t.object) : null]));
       }
       for ( const target of targets ) {
         if ( target === observer ) continue;
         rows.push({ observer: observer.name, observerId: observer.id, target: target.name, targetId: target.id,
-          rules: rulesFor(observer, target), screen: shown?.[target.id] ?? null });
+          rules: rulesFor(observer, target), screen: shown?.[target.id] ?? null, filter: filters?.[target.id] ?? null });
       }
     }
   }
@@ -123,7 +145,7 @@ export function screenHere({ targetIds=[] }={}) {
   return {
     user: game.user.name, isGM: game.user.isGM, vision: isVisionAvailable(), scene: canvas.scene.name,
     controlled: canvas.tokens.controlled.map(t => t.name),
-    tokens: tokens.map(t => ({ name: t.name, id: t.id, shown: shownAs(t) }))
+    tokens: tokens.map(t => ({ name: t.name, id: t.id, shown: shownAs(t), filter: t.isVisible ? filterOf(t) : null }))
   };
 }
 

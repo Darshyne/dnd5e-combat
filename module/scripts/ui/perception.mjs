@@ -27,7 +27,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { blockedBetween, isVisionAvailable, devilsSightRange, devilsSightSeesToken, senseReachesToken, asSeenBy, isSenseless } from "../adapter/vision.mjs";
 import { canHear } from "../adapter/hearing.mjs";
-import { sensesThrough, CORE_JUDGED, DEVILS_SIGHT, HEARING_MODE, grantInMemoryModes } from "../core/light.mjs";
+import { sensesThrough, CORE_JUDGED, DEVILS_SIGHT, DEVILS_SIGHT_OUTLINE, HEARING_MODE, grantInMemoryModes, tintOutlineShader } from "../core/light.mjs";
 import { route } from "../runtime/router.mjs";
 import { theaterActive } from "../runtime/theater-state.mjs";
 import { perceivesPlane } from "../adapter/plane.mjs";
@@ -156,11 +156,42 @@ function extend(id, mode) {
 /**
  * Issue #42 : le mode de détection « Vision du diable ». Une vue (`SIGHT`) bornée par les murs, qui ne s'arrête pas aux ténèbres : son test
  * est celui des règles (`devilsSightSeesToken` : 120 ft, ligne de vue sans les bords des ténèbres, ni Invisible, ni Aveuglé, ni brume).
- * Sans filtre : la cible s'affiche nette, « vue normalement ». Pas proposé dans la configuration du token (donné par l'invocation).
+ * Pas proposé dans la configuration du token (donné par l'invocation).
+ *
+ * Issue #42, suite (0.281.1) : un filtre — le token teinté de rouge, avec un liseré rouge sombre (`DEVILS_SIGHT_OUTLINE`, `devilsSightFilter`) :
+ * un token net veut dire « vue normale » (choix de l'utilisateur). Sans filtre, le cœur ne le
+ * dessinait que sous le voile de vision : la zone vue par l'observateur s'arrête au bord des Ténèbres (leurs bords sont des murs de vue),
+ * et la cible restait une silhouette noire, quoique « visible » et ciblable. Le cœur ne consulte ce mode que si la vue de base et la
+ * perception de la lumière ont échoué : en pleine vue, aucun liseré.
  */
+/**
+ * Le filtre de la Vision du diable : le contour du cœur (`OutlineOverlayFilter`, sans knockout ni ondulation, épaisseur fixe) dont le shader
+ * teinte aussi le token en rouge (`tintOutlineShader`). Si le shader du cœur a changé, le contour seul (et un avertissement, une fois).
+ */
+function devilsSightFilter() {
+  const Outline = foundry.canvas.rendering.filters.OutlineOverlayFilter;
+  const tinted = tintOutlineShader(Outline._createFragmentShader());
+  if ( !tinted ) reportOnce(new Error("Devil's Sight: core outline shader changed, red tint not applied"));
+  const Filter = !tinted ? Outline : class DevilsSightFilter extends Outline {
+    static get defaultUniforms() {
+      return { ...super.defaultUniforms, tintColor: [...DEVILS_SIGHT_OUTLINE.tintColor], tintStrength: DEVILS_SIGHT_OUTLINE.tintStrength };
+    }
+    static _createFragmentShader() { return tinted; }
+  };
+  const filter = Filter.create({
+    outlineColor: [...DEVILS_SIGHT_OUTLINE.outlineColor], knockout: DEVILS_SIGHT_OUTLINE.knockout, wave: DEVILS_SIGHT_OUTLINE.wave
+  });
+  filter.thickness = DEVILS_SIGHT_OUTLINE.thickness;   // un accesseur du filtre, pas un uniform (rendering/filters/outline-overlay.mjs:156)
+  filter.animated = false;                              // épaisseur fixe : le contour du cœur « respire » sinon (outline-overlay.mjs:170)
+  return filter;
+}
+
 function devilsSightMode() {
   const DetectionMode = foundry.canvas.perception.DetectionMode;
   class DetectionModeDevilsSight extends DetectionMode {
+    static getDetectionFilter() {
+      return this._detectionFilter ??= devilsSightFilter();
+    }
     testVisibility(visionSource, mode, config) {
       if ( !mode?.enabled ) return false;
       const p = pair(visionSource, config.object);

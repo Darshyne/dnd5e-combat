@@ -75,7 +75,7 @@ function textOf(f) {
     case "saveFail": return f.text ?? loc(f.auto ? "Retour.SauvegardeRateeOffice" : "Retour.SauvegardeRatee");
     case "duplicate": return loc("Retour.Replique");
     case "unaffected": return loc("Retour.NonAffecte");
-    case "prompt": case "refused": case "ended": case "gain": case "spend": case "strike": case "heroic": case "atCost":
+    case "prompt": case "refused": case "forced": case "ended": case "gain": case "spend": case "strike": case "heroic": case "atCost":
     case "check": case "checkSuccess": case "checkFail": case "save": case "initiative":
     case "damage": case "healing": case "temp": case "effectOn": case "effectOff": return f.text;
   }
@@ -803,6 +803,7 @@ export function registerFeedback() {
     if ( n.kind === "heroic" ) heroicBurst(n.token).catch(() => {});
     // Issue #32 : le succès à un prix accepté — le même éclat, ambré, avec la balance.
     if ( n.kind === "atCost" ) heroicBurst(n.token, { color: 0xe0a050, icon: "icons/svg/aura.svg" }).catch(() => {});
+    if ( n.kind === "forced" ) heroicBurst(n.token, { color: 0xff9a3c, icon: "icons/svg/cancel.svg" }).catch(() => {});   // §408
   }, { label: "visual feedback: engine notice" });
   // §252 : l'avis d'une action d'un autre client (runtime/shared.mjs, `notice(…, { all: true })`), dessiné ici.
   CONFIG.queries[NOTICE_QUERY] = receiveNotice;

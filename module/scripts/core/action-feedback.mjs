@@ -46,6 +46,8 @@ const DEFAULTS = Object.freeze({
   upkeep: { success: CORE_SOUNDS.chime, failure: CORE_SOUNDS.fade },
   // §290 : la réponse d'un joueur forcée par le MJ (fenêtres du combat sans délai).
   forced: { success: CORE_SOUNDS.nextHorn, failure: null },
+  // §408 : une règle passée outre par un joueur (la table l'entend).
+  overridden: { success: CORE_SOUNDS.nextHorn, failure: null },
   // Issue #32 : le succès à un prix accepté (refusé : rien).
   atCost: { success: CORE_SOUNDS.atCost, failure: null }
 });

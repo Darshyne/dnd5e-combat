@@ -59,7 +59,7 @@ export function recallRefusal(masterToken, point) {
 async function legalForMaster(master, title) {
   const issues = budgetIssues(master, POCKET_COST);
   if ( !issues.length ) return true;
-  return askAnyway(`${title} — ${master.name}`, issues.map(issue => loc(`Souci.${issue}`)));
+  return askAnyway(`${title} — ${master.name}`, issues.map(issue => loc(`Souci.${issue}`)), { actor: master, item: title });
 }
 
 function askGM(query, payload, here) {

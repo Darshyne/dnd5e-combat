@@ -152,6 +152,7 @@ import { ammoState, setAmmo } from "./adapter/ammo.mjs";
 import { registerRecast } from "./runtime/recast.mjs";
 import { registerChat } from "./ui/chat.mjs";
 import { registerGmAlert, alertGM } from "./runtime/gm-alert.mjs";
+import { registerForced, reportForced } from "./runtime/forced.mjs";
 import { registerGmAlertUi } from "./ui/gm-alert.mjs";
 import { registerCompact } from "./ui/compact.mjs";
 import { registerPurge } from "./runtime/purge.mjs";
@@ -254,7 +255,8 @@ const state = {
   combatLaunch: { ...launchApi, open: openCombatLaunch },   // §397 : `open()`, `candidates()`, `launch({ participants, npcAuto, grouped, playlist })`, `pending()`
   vanilla: vanillaApi,   // §395 : `use(itemOrActivity, { event })` — lancer par dnd5e seul ; `is(docOrConfig)` — vient-il d'un tel lancement ?
   theater: theaterApi,   // §220 : Théâtre de l'esprit — `active()`, `set(on)` ; hook `dnd5e-combat.theater`
-  gm: { alert: alertGM },   // §364 : alerte MJ (`api.gm.alert({ text, item, actor })`) ; hook `dnd5e-combat.gmAlert`
+  gm: { alert: alertGM, forced: reportForced },   // §408 : `api.gm.forced({ actor, item, reasons, targets, token })` ; hook `dnd5e-combat.forced`
+    // §364 : alerte MJ (`api.gm.alert({ text, item, actor })`) ; hook `dnd5e-combat.gmAlert`
   rolls: { ...rollsApi, open: openGroupRoll, tracker: openTracker },   // §242 : jets demandés par le MJ — hooks `groupRoll`, `groupRollPrompt`
   combat: combatApi,   // §250 : évènements dans l'initiative — `addEvent`, `removeEvent`, `events`, `isEvent` ; hook `dnd5e-combat.eventTurn`
   gap: publicGap,
@@ -459,6 +461,7 @@ Hooks.once("init", () => {
   gated(registerCompact);   // §58 : avant registerChat — le résumé des dés précède le verdict
   gated(registerChat);
   gated(registerGmAlert);   // §364 : alerte MJ — la carte chuchotée
+  gated(registerForced);   // §408 : une règle passée outre — le MJ et la table prévenus
   gated(registerGmAlertUi);   // §364 : son bandeau chez le MJ
   gated(registerPurge);
   gated(registerFeedback);

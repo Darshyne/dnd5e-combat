@@ -62,7 +62,8 @@ export async function moveZone(activity, point) {
       lines.push(loc(`Souci.${issue}`));
     }
   }
-  if ( lines.length && !(await askAnyway(`${activity.item.name} — ${activity.actor?.name ?? ""}`, lines)) ) return true;
+  if ( lines.length && !(await askAnyway(`${activity.item.name} — ${activity.actor?.name ?? ""}`, lines,
+    { actor: activity.actor, item: activity.item })) ) return true;
   const payload = { region: region.uuid, point: { x: point.x, y: point.y }, actor: activity.actor?.uuid ?? null, cost };
   await viaActiveGM(MOVE_ZONE_QUERY, handleMoveZone, payload, { noGm: "Zone.SansMJ", label: "area move" });
   return true;

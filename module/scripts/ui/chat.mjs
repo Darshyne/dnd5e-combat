@@ -63,6 +63,29 @@ export function bonusLines(bonuses) {
   return bonuses.map(b => ({ css: "note", text: loc("DegatsBonus", { name: b.name, formula: b.formula, type: [b.damageType].flat().map(typeName).join(" / ") }) }));
 }
 
+/**
+ * §408 : la carte d'une action dont une règle a été passée outre — un bandeau « Règle passée outre » en tête, les raisons en infobulle et
+ * en dessous, visible de toute la table (règle de l'utilisateur : le joueur décide, la table est prévenue).
+ */
+function renderOverridden(html, reasons) {
+  const content = html.querySelector(".message-content");
+  if ( !content || content.querySelector(".das-overridden") ) return;
+  const div = document.createElement("div");
+  div.className = "das-overridden";
+  div.dataset.tooltip = reasons.join("<br>");
+  const title = document.createElement("strong");
+  title.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ';
+  title.append(loc("Force.Carte"));
+  const list = document.createElement("ul");
+  for ( const reason of reasons ) {
+    const li = document.createElement("li");
+    li.textContent = reason;
+    list.append(li);
+  }
+  div.append(title, list);
+  content.prepend(div);
+}
+
 function renderBonuses(html, bonuses) {
   html.querySelector(".message-content")?.append(block(bonusLines(bonuses)));
 }
@@ -181,6 +204,8 @@ export function registerChat() {
   // `.message-content` par sa propre carte (chat-message-data-model.mjs:80-82), ce qui effaçait
   // notre bloc. `dnd5e.renderChatMessage` est émis après (documents/chat-message.mjs:168).
   route("dnd5e.renderChatMessage", (message, html) => {
+    const overridden = message.getFlag(MODULE_ID, "overridden");
+    if ( overridden?.length ) renderOverridden(html, overridden);
     const modifiers = message.getFlag(MODULE_ID, "modifiers");
     if ( modifiers ) renderModifiers(html, modifiers);
     const bonuses = message.getFlag(MODULE_ID, "bonuses");

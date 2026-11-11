@@ -23,7 +23,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { connect } from "./lib/connector.mjs";
-import { ARENA, ARENE_INVOCATIONS, ARENE_PRIX, ARENE_SORTS, ARENE_VISION, RESTORED_KEEP } from "./lib/stages.mjs";
+import { ARENA, ARENE_INVOCATIONS, ARENE_PRIX, ARENE_REFUS, ARENE_SORTS, ARENE_VISION, RESTORED_KEEP } from "./lib/stages.mjs";
 
 const MODULE_ID = "dnd5e-combat";
 const TERMINAL = new Set(["done", "missed", "undone"]);
@@ -799,7 +799,7 @@ for ( const file of files ) {
     if ( own.id !== activeNow ) previous = null;
     await useScene(own.id);
     // Les arènes dont les positions sont en cases : chaque token remis à sa place avant le scénario.
-    const layout = [ARENE_SORTS, ARENE_PRIX, ARENE_INVOCATIONS, ARENE_VISION].find(l => l.name === own.name);
+    const layout = [ARENE_SORTS, ARENE_PRIX, ARENE_INVOCATIONS, ARENE_VISION, ARENE_REFUS].find(l => l.name === own.name);
     if ( layout ) await arrangeArena(layout);
   }
   else if ( arenaScene ) {

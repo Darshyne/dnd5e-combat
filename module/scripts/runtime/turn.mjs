@@ -28,6 +28,8 @@ import { pilotUsage, refundCommand, spellCommandUsage } from "./pilot.mjs";
 import { route } from "./router.mjs";
 import { log, loc, sleep, viaActiveGM } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
+import { forcedReasons } from "../core/forced.mjs";
+import { reportForced, overriddenFlag } from "./forced.mjs";
 import { antimagicAround, barrierBetween } from "../adapter/barriers.mjs";
 import { rangedBanAround, formLockAround } from "../adapter/areas.mjs";
 import { isRangedWeaponAttack } from "../adapter/cover.mjs";
@@ -107,13 +109,18 @@ function confirmDialog(title, lines, buttons, actor=null) {
   }).finally(release);
 }
 
-/** Mode souple (§6) pour un geste qui n'est pas une utilisation (déplacer une zone, §16.14) : « faire quand même » ? */
-export async function askAnyway(title, lines) {
+/**
+ * Mode souple (§6) pour un geste qui n'est pas une utilisation (déplacer une zone, §16.14) : « faire quand même » ? §408 : forcé, le MJ et
+ * la table sont prévenus (`forced` : `{ actor, item, token }` de qui agit).
+ */
+export async function askAnyway(title, lines, forced={}) {
   const choice = await confirmDialog(title, lines, [
     { action: "go", label: loc("UtiliserQuandMeme"), default: true },
     { action: "cancel", label: loc("Renoncer") }
-  ]);
-  return choice === "go";
+  ], forced.actor ?? null);
+  if ( choice !== "go" ) return false;
+  reportForced({ ...forced, reasons: forcedReasons({ lines, action: choice }) }).catch(err => console.error(`${MODULE_ID} | forced: alert`, err));
+  return true;
 }
 
 /**
@@ -193,8 +200,9 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
   // §403 : Rayon de lune — pas d'autre forme dans la lumière (une activité « transform » de dnd5e : Forme sauvage, Métamorphose sur soi).
   const formLocked = ((activity.type === "transform") && usageToken(activity)) ? formLockAround(usageToken(activity)) : null;
   const bright = (!pilot && usageToken(activity) && selfTeleportOf(activity)) ? (tooBrightFor(activity, usageToken(activity)) === "from") : false;
+  const budgetLines = issues.map(i => loc(`Souci.${i}`));
   const lines = [
-    ...issues.map(i => loc(`Souci.${i}`)),
+    ...budgetLines,
     ...(storm ? [loc("Souci.noRangedWeapons", { item: storm.name })] : []),
     ...(formLocked ? [loc("Souci.formLocked", { item: formLocked.name })] : []),
     ...(bright ? [loc("Souci.tooBright", { item: activity.item.name })] : []),
@@ -211,7 +219,7 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
     ...limits.issues.map(i => loc(`Souci.${i}`, { item: limits.item ?? "" })),
     ...incapacitated.map(i => loc(`Souci.${i}`))
   ];
-  return { combatant, budget, own, request, cost, lines };
+  return { combatant, budget, own, request, cost, lines, budgetLines };
 }
 
 /**
@@ -338,7 +346,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     });
     return false;
   }
-  for ( const key of ["choice", "attackMode", "saveChoice", "legendary", "autoReact", "recast", "cost", "damageType", "order", "cleave", "metamagic", "basicChoice", "ammunition"] ) {
+  for ( const key of ["choice", "attackMode", "saveChoice", "legendary", "autoReact", "recast", "cost", "damageType", "order", "cleave", "metamagic", "basicChoice", "ammunition", "overridden"] ) {
     const value = usageConfig[MODULE_ID]?.[key];
     if ( value && messageConfig ) foundry.utils.setProperty(messageConfig, `data.flags.${MODULE_ID}.${key}`, value);
   }
@@ -407,8 +415,13 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   confirmDialog(`${activity.item.name} — ${combatant?.name ?? activity.actor?.name ?? ""}`, lines, buttons, activity.actor ?? null).then(choice => {
     if ( (choice !== "go") && (choice !== "reaction") ) return;
     acknowledge(range.key);
+    // §408 : ce qui est passé outre — le MJ et la table prévenus, la carte marquée (« Utiliser ma Réaction » règle le budget).
+    const reasons = forcedReasons({ lines, budgetLines: use.budgetLines, action: choice });
+    if ( reasons.length ) reportForced({ actor: activity.actor, item: activity.item, reasons, targets: aimed.map(t => t.name), token: origin })
+      .catch(err => console.error(`${MODULE_ID} | forced: alert`, err));
     // Les options du moteur déjà posées (choix de la lumière, cibles désignées…) repartent avec la confirmation.
-    const config = { ...usageConfig, [MODULE_ID]: { ...(usageConfig?.[MODULE_ID] ?? {}), confirmed: true } };
+    const config = { ...usageConfig, [MODULE_ID]: { ...(usageConfig?.[MODULE_ID] ?? {}), confirmed: true,
+      ...(reasons.length ? { overridden: overriddenFlag(reasons) } : {}) } };
     const message = foundry.utils.mergeObject(messageConfig ?? {}, choice === "reaction"
       ? { data: { flags: { [MODULE_ID]: { cost: "reaction" } } } } : {}, { inplace: false });
     activity.use(config, dialogConfig, message);
@@ -519,6 +532,10 @@ function onPostAttackRollConfiguration(rolls, config, dialogConfig, messageConfi
   confirmDialog(`${activity.item.name} — ${activity.actor?.name ?? ""}`, lines, buttons, activity.actor ?? null).then(choice => {
     if ( choice !== "go" ) return;
     acknowledge(range.key);
+    // §408 : la portée passée outre au jet — le MJ et la table prévenus, la carte d'attaque marquée.
+    const reasons = forcedReasons({ lines, action: choice });
+    reportForced({ actor: activity.actor, item: activity.item, reasons, targets: range.blocking.map(r => r.name), token: usageToken(activity) })
+      .catch(err => console.error(`${MODULE_ID} | forced: alert`, err));
     // On repart d'une configuration neuve, avec les choix déjà faits dans le dialogue.
     const { ability, ammunition, attackMode, mastery, advantageMode } = options;
     activity.rollAttack({
@@ -526,7 +543,8 @@ function onPostAttackRollConfiguration(rolls, config, dialogConfig, messageConfi
       advantage: advantageMode === 1, disadvantage: advantageMode === -1,
       [MODULE_ID]: { confirmed: true, modeChosen: true, ammoChosen: true }
     }, { configure: false },
-    { data: { system: { origin: foundry.utils.getProperty(messageConfig ?? {}, "data.system.origin") } } });
+    { data: { system: { origin: foundry.utils.getProperty(messageConfig ?? {}, "data.system.origin") },
+      flags: { [MODULE_ID]: { overridden: overriddenFlag(reasons) } } } });
   });
   return false;
 }

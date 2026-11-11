@@ -12,7 +12,7 @@ export const FLOAT_CATEGORIES = Object.freeze({
   cover: "floatCover",
   saveSuccess: "floatSaves", saveFail: "floatSaves",
   reaction: "floatReactions",
-  prompt: "floatPrompts", refused: "floatPrompts",
+  prompt: "floatPrompts", refused: "floatPrompts", forced: "floatPrompts",   // §408 : une règle passée outre
   ended: "floatEffects", unaffected: "floatEffects", duplicate: "floatEffects",
   gain: "floatResources", spend: "floatResources",
   strike: "floatStrikes",
@@ -152,7 +152,7 @@ export const FLOAT_ICONS = Object.freeze({
 const BASE = {
   critical: ["#ffd24a", 30, "explosion"], miss: ["#d0d0d0", 24, "none"], hit: ["#ffffff", 22, "none"], cover: ["#9ecbff", 20, "shield"],
   reaction: ["#c49bff", 22, "lightning"], saveSuccess: ["#8fd18f", 22, "none"], saveFail: ["#e07a6a", 22, "skull"],
-  duplicate: ["#c49bff", 22, "none"], unaffected: ["#d0d0d0", 20, "none"], prompt: ["#ffb347", 24, "none"], refused: ["#ff7070", 22, "none"],
+  duplicate: ["#c49bff", 22, "none"], unaffected: ["#d0d0d0", 20, "none"], prompt: ["#ffb347", 24, "none"], refused: ["#ff7070", 22, "none"], forced: ["#ff9a3c", 24, "ban"],
   ended: ["#9ecbff", 20, "none"], gain: ["#8fd18f", 22, "none"], spend: ["#ffb347", 20, "none"], strike: ["#e0453a", 26, "none"],
   heroic: ["#ffd24a", 28, "none"], atCost: ["#e0a050", 26, "none"], check: ["#f0e6c8", 22, "none"], checkSuccess: ["#8fd18f", 22, "none"],
   checkFail: ["#e07a6a", 22, "none"], initiative: ["#f0e6c8", 22, "none"], save: ["#f0e6c8", 22, "none"],

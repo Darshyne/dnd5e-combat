@@ -103,3 +103,17 @@ export const ARENE_VISION = Object.freeze({
   // [x, y, largeur, hauteur], loin des observateurs et des Ténèbres.
   dark: Object.freeze([13, 2, 4, 3])
 });
+
+/**
+ * Issue #44 (§408) : l'« Arène des refus » (`tools/arene-refus.mjs`) — scène plate de 36 × 10 cases de 140 px (5 ft), pour les refus du
+ * contrôle de légalité et leur passage outre. Les pré-tirés niveau 1 du Manuel, personnages joueurs (`claude player` en est
+ * propriétaire) : le Mage (bâton équipé, Rayon de givre 60 ft, Détection de la magie en rituel), le Clerc (masse et bouclier équipés,
+ * amulette sacrée : les deux mains prises), le Guerrier (épée à deux mains). Le Mannequin (999 PV) au contact du Mage ; la Cible lointaine
+ * à 31 cases (155 ft), hors de toute portée de sort mineur. Positions en cases du canevas, marge comprise (4 cases à gauche, 1 en haut).
+ */
+export const ARENE_REFUS = Object.freeze({
+  name: "Arène des refus",
+  cols: 36, rows: 10, grid: 140,
+  tokens: Object.freeze({ "Mage des refus": [6, 5], "Clerc des refus": [6, 7], "Guerrier des refus": [6, 3], "Mannequin des refus": [7, 5],
+    "Cible lointaine des refus": [37, 5] })
+});

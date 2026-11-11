@@ -47,12 +47,22 @@ function observeLongTasks() {
 }
 
 export const perfApi = Object.freeze({
+  /**
+   * Le temps passé par chaque inscrit du routeur sur ce client, le plus coûteux d'abord : `[{ hook, label, calls, totalMs, avgMs, maxMs,
+   * slow, asyncMaxMs }]`.
+   */
   report: () => perf.report(),
+  /**
+   * Les « tâches longues » du navigateur depuis le chargement ou `reset()` : `{ count, totalMs, maxMs, sinceMinutes }` (Chromium
+   * seulement).
+   */
   longTasks: () => ({ count: long.count, totalMs: Math.round(long.totalMs), maxMs: Math.round(long.maxMs), sinceMinutes: Math.round((Date.now() - long.since) / 60000) }),
+  /** Affiche en console les `limit` lignes les plus coûteuses de `report()`, puis les tâches longues ; ne rend rien. */
   table(limit=25) {
     console.table(perf.report().slice(0, limit));
     console.log(`${MODULE_ID} | browser long tasks:`, perfApi.longTasks());
   },
+  /** Remet à zéro le relevé de ce client (temps des inscrits, avertissements, tâches longues). */
   reset() {
     perf.reset();
     warned.clear();

@@ -40,6 +40,8 @@ function onPreUse(activity) {
   const targets = Array.from(game.user.targets).map(t => t.document).filter(t => t && (t !== caster));
   if ( !targets.length ) return;
   const takers = [];
+  // §118 : sur le client qui lance une invocation avec des cibles désignées : `(takers, { activity, caster, targets })`. Un module qui
+  // transforme les cibles pousse dans `takers` une `async ({ profile }) => boolean` ; la pose de dnd5e est alors sautée (voir l'en-tête).
   Hooks.callAll(`${MODULE_ID}.summonOnTargets`, takers, { activity, caster, targets });
   const kept = takers.filter(t => typeof t === "function");
   if ( kept.length ) claimed.set(activity.uuid, { takers: kept, at: Date.now() });

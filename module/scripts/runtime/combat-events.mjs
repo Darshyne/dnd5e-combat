@@ -13,6 +13,10 @@ import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 import { eventRounds, eventEnded } from "../core/combat-events.mjs";
 
+/**
+ * §250 : chez le MJ actif, quand vient le tour d'un évènement de l'initiative (`api.combat.addEvent`) : `({ combat, combatant, key, data
+ * })` — au module qui l'a posé d'agir, puis de passer le tour. Une fois par tour.
+ */
 export const EVENT_TURN_HOOK = `${MODULE_ID}.eventTurn`;
 
 /** Un évènement du combat (pas une créature) ? */

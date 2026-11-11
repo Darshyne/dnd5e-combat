@@ -22,8 +22,20 @@ import { log, loc, notice, say, esc, viaActiveGM, rolledAndShown } from "./share
 
 export const LOCK_QUERY = `${MODULE_ID}.doorLock`;
 export const LOCK_FAILURE_SETTING = "lockFailure";
+/**
+ * §244 : chez le MJ actif, quand une porte verrouillée vient d'être ouverte par un essai réussi : `({ door, token, method })` — `door` le
+ * WallDocument, `token` le TokenDocument, `method` « pick », « force » ou « key ». Lecture seule.
+ */
 export const DOOR_UNLOCKED_HOOK = `${MODULE_ID}.doorUnlocked`;
+/**
+ * §244 : chez le MJ actif, un bruit à signaler aux modules qui font entendre les créatures : `({ token, point, scene, cause, wall })` —
+ * aujourd'hui seulement `cause: "forceDoor"`, émis à chaque essai pour forcer une porte, avant de le juger. Lecture seule.
+ */
 export const NOISE_HOOK = `${MODULE_ID}.noise`;
+/**
+ * §247 : chez le MJ actif, après chaque essai jugé sur une serrure (crocheter, forcer, clé) : `({ door, token, method, outcome, total })`,
+ * `outcome` « success », « failure » ou « gm » (pas de DD : le MJ tranche). Lecture seule.
+ */
 export const LOCK_ATTEMPT_HOOK = `${MODULE_ID}.lockAttempt`;
 
 /**

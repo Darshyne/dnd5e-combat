@@ -137,10 +137,12 @@ export async function follow({ followerId, leaderId }) {
   return { following: await followIntent(viewedToken({ tokenId: followerId }), viewedToken({ tokenId: leaderId })) };
 }
 
+/** Le token `tokenId` (scène affichée) cesse de suivre son meneur (§41.3) → `{ stopped }`. */
 export async function unfollow({ tokenId }) {
   return { stopped: await unfollowIntent(viewedToken({ tokenId })) };
 }
 
+/** Qui le token `tokenId` suit, qui le suit, et sa position : `{ leader, followers, position }` (§41.3). Lecture seule. */
 export function followState({ tokenId }) {
   const token = viewedToken({ tokenId });
   return { leader: leaderOf(token)?.id ?? null, followers: followersOf(token).map(t => t.id), position: positionJson(token) };
@@ -161,10 +163,12 @@ export async function familiar({ tokenId, clear=false }) {
       items: (pocket.token.delta?.items ?? []).map(i => i.name) } : null };
 }
 
+/** §107 : le familier `tokenId` part dans sa poche dimensionnelle (comme l'entrée de menu) → `{ done }`. */
 export async function familiarPocket({ tokenId }) {
   return { done: await dismissFamiliar(viewedToken({ tokenId })) };
 }
 
+/** §107 : le maître `tokenId` rappelle son familier à `point` → `{ done, refusal, tokens }` (les familiers de la scène, avec leurs PV). */
 export async function familiarRecall({ tokenId, point }) {
   const token = viewedToken({ tokenId });
   const refusal = recallRefusal(token, point);

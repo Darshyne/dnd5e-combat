@@ -240,14 +240,18 @@ import { registerConnectionTest, openConnectionTest } from "./ui/connection-test
 const state = {
   active: false, reason: null, unitFactors: null, routes: describeRoutes, content: contentApi, reports: reportsApi, mastery: masteryApi,
   // §272 : la minuterie se lance aussi par le connecteur (`timer` : token de la scène affichée, secondes, libellé) — elle vit dans ui/.
-  mcp: Object.freeze({ ...testApi, timer: ({ tokenId, seconds=5, label="" }={}) => ({ id: startTimer({ token: canvas.tokens.get(tokenId)?.document, seconds, label }).id }) }), perf: perfApi,
+  mcp: Object.freeze({ ...testApi,
+    /** Lance chez tous les clients une minuterie de `seconds` s au-dessus du token `tokenId` de la scène affichée → `{ id }`. */
+    timer: ({ tokenId, seconds=5, label="" }={}) => ({ id: startTimer({ token: canvas.tokens.get(tokenId)?.document, seconds, label }).id }) }), perf: perfApi,
   ui: uiApi, light: lightState, approach, nonLethal: { get: isNonLethal, set: setNonLethal, knockedOut: isKnockedOut }, scrolls: { spellOf: scrollSpellOf }, basics: { data: basicActionData, take: takeBasicAction }, path: pathTo,
   flee: fleeFrom, save: requestSave, drop: dropHeldBy,
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
   level: automationLevel, levelAtLeast, skippedRoutes,
   welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic }, debug: Object.freeze({ ...debugApi, open: openDebugReport, testConnection, openConnectionTest }), settings: { open: openSettings, registerWindow },
   vision: { canSee: publicCanSee, cone: publicCone, canHear: publicCanHear },
-  factions: { ...factionsApi, open: () => openFactions() },
+  factions: { ...factionsApi,
+    /** Ouvre (ou ramène devant) la fenêtre des factions sur ce client. */
+    open: () => openFactions() },
   sneak: stealthApi,
   climb: climbApi,
   ethereal: etherealApi,   // §225 : `is(token)`, `perceives(observer, target)`, `toggle(tokens?, active?)`
@@ -264,11 +268,26 @@ const state = {
   floats: { play: playFloat, open: openFloatTheme, import: importTheme, export: exportTheme, reset: resetTheme, try: tryKind, fonts: floatFonts },
   // §274 : munitions d'une arme — `options(item)` : `{ options: [{ id, name, img, quantity }], current, ask }` (null si l'arme n'en tire
   // pas) ; `set(item, ammoId)` : la munition retenue pour ses prochaines attaques. Hook `dnd5e-combat.ammunition` `(item, ammoId)`.
-  ammo: { options: (item, activity=null) => ammoState(item, activity), set: setAmmo },
+  ammo: {
+    /**
+     * Les munitions que l'arme peut tirer et celle que son prochain jet tirerait : `{ options, current, ask }`, ou null si elle n'en tire
+     * pas.
+     */
+    options: (item, activity=null) => ammoState(item, activity),
+    set: setAmmo },
+  waits: { list: playerWaits,   // §290 : fenêtres sans délai, attentes du MJ
+    /**
+     * MJ : force l'attente `id` (le client du joueur résout ses fenêtres comme au bout du délai) → vrai si l'attente existait ; faux pour
+     * un joueur.
+     */
+    force: id => forceWait(id),
+    open: openPlayerWaits },
   // §282 : Inspiration héroïque — `has(actor)`, `set(actor, on)` (MJ : la donne ou la retire, carte et retour à la table), `mode()` : le
   // réglage de ce client (« on », « failure », « off »).
-  waits: { list: playerWaits, force: id => forceWait(id), open: openPlayerWaits },   // §290 : fenêtres sans délai, attentes du MJ
-  heroic: { has: hasHeroic, set: (actor, on) => (game.user.isGM ? setHeroic(actor, on) : false), mode: heroicMode },
+  heroic: { has: hasHeroic,
+    /** MJ : donne (`on` vrai) ou retire l'Inspiration héroïque d'un personnage joueur, avec une carte de chat → vrai si elle a changé. */
+    set: (actor, on) => (game.user.isGM ? setHeroic(actor, on) : false),
+    mode: heroicMode },
   // Issue #32 : succès à un prix — `enabled()`, `candidates()` (les pauses ouvertes chez le MJ actif), `offer(id, { cost? })`,
   // `dismiss(id)`, `offerOnMessage(messageId, { what, cost? })`. Hook `dnd5e-combat.successAtCost` après chaque réponse.
   atCost: atCostApi

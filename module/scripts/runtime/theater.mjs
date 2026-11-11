@@ -15,6 +15,10 @@ import { theaterActive, setTheaterState } from "./theater-state.mjs";
 import { log, loc } from "./shared.mjs";
 
 export const THEATER_SETTING = "theaterOfMind";
+/**
+ * §220 : sur chaque client, quand le MJ allume ou éteint le Théâtre de l'esprit (réglage de monde `theaterOfMind`) : `(active)`, booléen —
+ * allumé, le moteur n'automatise plus rien. Lecture seule.
+ */
 export const THEATER_HOOK = `${MODULE_ID}.theater`;
 
 function applied(on, { announce=true }={}) {

@@ -28,7 +28,8 @@ export function registerVision() {
   });
   world(VISION_SETTING);
   world(COVER_SETTING);
-  // §182 : cônes de vision hors combat (créatures du MJ), et leurs angles par type de créature.
+  // §182 : sur chaque client, quand le réglage des cônes de vision hors combat (créatures du MJ) ou celui de leurs angles par type de
+  // créature change : `dnd5e-combat.conesChanged`, sans argument — les cônes affichés se redessinent.
   world(CONES_SETTING, { onChange: () => Hooks.callAll(`${MODULE_ID}.conesChanged`) });
   world(ANGLES_SETTING, { type: String, default: DEFAULT_ANGLES_TEXT, onChange: () => Hooks.callAll(`${MODULE_ID}.conesChanged`) });
 

@@ -77,6 +77,11 @@ export function owners({ tokenId }) {
   return { disposition: token.disposition, players, gmOwned: Object.entries(actor?.ownership ?? {}).some(([id, level]) => (level >= 3) && game.users.get(id)?.isGM) };
 }
 
+/**
+ * MJ : utilise l'activité d'invocation de l'item (`activityId`, sinon la première) sans rien consommer, puis pose les créatures du
+ * profil (`profile`, sinon le premier) à la case `x`, `y` → `{ messageId, tokens: [{ id, name, actorId }] }`. `actorUuid` : la créature
+ * d'une invocation « par FP » (§107).
+ */
 export async function summonAt({ tokenId, itemId, activityId=null, profile=null, actorUuid=null, x, y }) {
   gmOnly();
   const token = canvas.scene?.tokens.get(tokenId);
@@ -218,6 +223,10 @@ export function damageTypes({ tokenId, itemId }) {
  * `sheet: true` : comme depuis la fiche (voir plus bas).
  */
 let summonWatch = null;
+/**
+ * MJ : lance l'activité `type` (invocation par défaut) comme la barre de DAS · Combat UI, sans attendre la fenêtre ni consommer (sauf
+ * `sheet: true`) → `{ started, profiles }` ; ce qui est posé se lit par `summonCaptured`.
+ */
 export function castFromBar({ tokenId, itemId, slot=null, x, y, sheet=false, type="summon", targetIds=null }) {
   gmOnly();
   const token = canvas.scene?.tokens.get(tokenId);

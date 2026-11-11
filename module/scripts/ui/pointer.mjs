@@ -206,6 +206,7 @@ function announceTargeting() {
     const key = state ? `${state.token}|${state.activity}|${state.kind}|${state.picked}|${state.prompt}` : null;
     if ( key === announcedTargeting ) return;
     announcedTargeting = key;
+    // §118 : sur ce client seulement, à chaque changement de la visée qu'il attend : `(state)`, celui de `api.ui.targeting()`, null à la fermeture.
     Hooks.callAll(`${MODULE_ID}.targeting`, state);
   });
 }

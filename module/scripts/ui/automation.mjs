@@ -173,9 +173,13 @@ function refresh() {
 
 /** Exposé sur `api.reports` : le bilan, pour une macro ou pour Claude par le connecteur. */
 export const reportsApi = Object.freeze({
+  /** Les items signalés par le MJ (réglage de monde) : `{ uuid de l'item: { actor, actorUuid, item, identifier, note, at } }`. */
   list: () => reports(),
+  /** Le bilan des signalements en texte brut, par acteur, à coller dans une conversation. */
   text: () => reportsText(reports()),
+  /** Ouvre le panneau du bilan sur ce client. */
   open: () => new (Panel())().render(true),
+  /** Retire le signalement d'un item (par uuid), ou tous sans argument ; écrit un réglage de monde (MJ). */
   clear: uuid => clearReport(uuid ?? null)
 });
 

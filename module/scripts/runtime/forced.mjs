@@ -15,6 +15,10 @@ import { MODULE_ID } from "../constants.mjs";
 import { alertGM, gmAlertsOn } from "./gm-alert.mjs";
 import { log, loc, notice } from "./shared.mjs";
 
+/**
+ * §408 : sur le client de celui qui passe outre un refus du moteur, avant tout avertissement : `({ actor, item, reasons, targets, user })`.
+ * Annulable : `false` et le moteur ne prévient personne (ni texte flottant, ni alerte au MJ).
+ */
 export const FORCED_HOOK = `${MODULE_ID}.forced`;
 /** Réglage de monde : prévenir le MJ quand un joueur passe outre (la table voit toujours le texte flottant). */
 export const FORCED_ALERTS_SETTING = "forcedAlerts";

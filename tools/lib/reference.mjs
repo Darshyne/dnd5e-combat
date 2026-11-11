@@ -36,7 +36,8 @@ function commentBefore(text, index) {
   const block = before.match(/\/\*\*?((?:(?!\*\/)[\s\S])*)\*\/\s*$/);
   if ( block ) return block[1].split("\n").map(line => line.replace(/^\s*\*?\s?/, "")).join(" ").replace(/\s+/g, " ").trim();
   const lines = [];
-  for ( const line of before.split("\n").reverse() ) {
+  // `index` est souvent un début de ligne : le saut de ligne qui le précède ne compte pas comme une ligne vide.
+  for ( const line of before.replace(/\r?\n$/, "").split("\n").reverse() ) {
     const found = line.match(/^\s*\/\/\s?(.*)$/);
     if ( !found ) break;
     lines.unshift(found[1]);
@@ -125,6 +126,48 @@ const signature = fn => {
   return "(…)";
 };
 
+/**
+ * Où une fonction de l'API est écrite : on cherche son texte exact (`Function#toString`) dans les sources. C'est ce qui retrouve une
+ * fonction fléchée ou une méthode écrite en ligne dans un objet (`clear() { … }`, `options: item => …`), dont le nom n'est que la
+ * clé et que la recherche par nom confondait avec une homonyme d'un autre fichier. Plusieurs endroits au même texte : celui qui est
+ * écrit sous la même clé. La description est le commentaire qui précède la ligne, seulement si la fonction est la première chose de
+ * cette ligne (sinon le commentaire parlerait d'une autre propriété) : une fonction écrite en ligne prend une ligne à elle.
+ * @returns {{file: string, doc: string}|null}  null : texte introuvable (fonction liée ou fabriquée) — on se rabat sur le nom.
+ */
+function locate(fn, key, sources) {
+  const raw = Function.prototype.toString.call(fn);
+  if ( (raw.length < 8) || raw.includes("[native code]") ) return null;
+  // Sous vitest, un import devient `__vite_ssr_import_N__.NOM` (`(0, __vite_ssr_import_N__.NOM)` dans un appel), où NOM est le nom
+  // exporté et non l'alias du fichier (`reports as itemReports`) : ces morceaux valent « un nom quelconque » dans la recherche, pour que
+  // `npm run reference` (node) et `npm test` (vitest) retrouvent le même endroit.
+  const parts = raw.split(/\(0\s*,\s*__vite_ssr_import_\d+__\.[A-Za-z0-9_$]+\)|__vite_ssr_import_\d+__\.[A-Za-z0-9_$]+|__vite_ssr_import_meta__|__vite_ssr_dynamic_import__/);
+  const longest = parts.reduce((a, b) => (b.length > a.length ? b : a), "");
+  const pattern = (parts.length > 1)
+    // Le texte trouvé doit finir là où finit la fonction : `() => x()` ne doit pas tomber dans `() => y().z`.
+    ? new RegExp(`${parts.map(p => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("[A-Za-z0-9_$.]+")}(?![A-Za-z0-9_$.(\\[])`, "g") : null;
+  const text = parts.length > 1 ? null : raw;
+  const hits = [];
+  for ( const [file, source] of Object.entries(sources.files) ) {
+    if ( text ) {
+      for ( let at = source.indexOf(text); at >= 0; at = source.indexOf(text, at + 1) ) hits.push({ file, source, at });
+    }
+    else if ( source.includes(longest) ) for ( const found of source.matchAll(pattern) ) hits.push({ file, source, at: found.index });
+  }
+  if ( !hits.length ) return null;
+  // Sous la même clé (ou le même nom) : `clé: …`, `const clé = …`, `clé(…) {`, `function clé(`.
+  const names = [...new Set([key, fn.name].filter(Boolean))].map(n => n.replace(/\$/g, "\\$")).join("|");
+  const keyed = new RegExp(`(?:^|[^A-Za-z0-9_$.])(?:(?:const|let|var)\\s+)?(?:${names})\\s*[:=]\\s*$`);
+  const own = new RegExp(`^(?:async\\s+)?(?:function\\s*\\*?\\s*)?(?:${names})\\s*\\(`);
+  const underKey = hit => own.test(raw) || keyed.test(hit.source.slice(Math.max(0, hit.at - 80), hit.at));
+  // Un motif à noms réécrits (vitest) peut tomber sur un autre texte de même forme : sans la clé, il faut qu'il soit seul.
+  const hit = hits.find(underKey) ?? ((text || (hits.length === 1)) ? hits[0] : null);
+  if ( !hit ) return null;
+  const lineStart = hit.source.lastIndexOf("\n", hit.at) + 1;
+  const prefix = hit.source.slice(lineStart, hit.at);
+  const first = /^\s*(?:export\s+)?(?:(?:const|let|var)\s+[A-Za-z0-9_$]+\s*=\s*|[A-Za-z0-9_$]+\s*:\s*|static\s+)?$/.test(prefix);
+  return { file: hit.file, doc: first ? commentBefore(hit.source, lineStart) : "" };
+}
+
 function apiRows(api, sources) {
   const rows = [];
   const walk = (value, path, depth) => {
@@ -134,7 +177,8 @@ function apiRows(api, sources) {
       if ( typeof item === "function" ) {
         const candidates = sources.definitions[item.name] ?? [];
         const sign = signature(item);
-        const definition = candidates.find(c => c.signature === sign) ?? ((candidates.length === 1) ? candidates[0] : null);
+        const definition = locate(item, key, sources)
+          ?? candidates.find(c => c.signature === sign) ?? ((candidates.length === 1) ? candidates[0] : null);
         rows.push({ path: here.join("."), kind: "fonction", signature: sign, internal: item.name,
           file: definition?.file ?? (candidates.length ? "" : "dnd5e-combat.mjs"), doc: definition?.doc ?? "" });
       }
@@ -199,7 +243,7 @@ function emittedHooks(sources) {
       else if ( call[5] ) note(call[5], entry);
       else if ( call[6] ) {
         const constant = (sources.constants[call[6]] ?? []).find(c => c.file === file) ?? sources.constants[call[6]]?.[0];
-        if ( constant ) note(`${MODULE_ID}.${constant.name}`, { ...entry, doc: constant.doc || doc });
+        if ( constant ) note(`${MODULE_ID}.${constant.name}`, { ...entry, constantDoc: constant.doc });
         else {
           // Un nom de hook tenu dans une variable locale : les noms `${MODULE_ID}.x` écrits dans les lignes qui précèdent.
           const above = text.slice(0, call.index).split("\n").slice(-12).join("\n");
@@ -212,14 +256,23 @@ function emittedHooks(sources) {
         // Un nom composé (`${MODULE_ID}.${name}`) dans une fonction d'aide : les noms que le fichier lui passe en clair.
         const helpers = [...text.slice(0, call.index).matchAll(/function\s+([A-Za-z0-9_$]+)\s*\(/g)];
         const helper = helpers.length ? helpers[helpers.length - 1][1] : null;
-        const names = helper ? [...text.matchAll(new RegExp(`\\b${helper.replace(/\$/g, "\\$")}\\(\\s*"([A-Za-z0-9]+)"`, "g"))].map(found => found[1]) : [];
-        if ( names.length ) for ( const name of new Set(names) ) note(`${MODULE_ID}.${name}`, { ...entry, doc: "" });
+        // La description d'un tel nom : le commentaire qui précède la ligne où le fichier le passe à la fonction d'aide.
+        const uses = helper ? [...text.matchAll(new RegExp(`\\b${helper.replace(/\$/g, "\\$")}\\(\\s*"([A-Za-z0-9]+)"`, "g"))] : [];
+        const names = uses.map(found => found[1]);
+        const docOf = name => uses.filter(u => u[1] === name).map(u => commentBefore(text, text.lastIndexOf("\n", u.index) + 1)).find(Boolean) ?? "";
+        if ( names.length ) for ( const name of new Set(names) ) note(`${MODULE_ID}.${name}`, { ...entry, doc: docOf(name) });
         else note(`${MODULE_ID}.<moment>`, entry);
       }
     }
   }
   return found;
 }
+
+/**
+ * La description d'un hook émis. Une seule fait foi : celle de la constante qui nomme le hook, sinon celle du premier point
+ * d'émission (fichiers dans l'ordre alphabétique, puis l'ordre du texte) qui en a une.
+ */
+const hookDoc = entries => entries.map(e => e.constantDoc).find(Boolean) ?? entries.map(e => e.doc).find(Boolean) ?? "";
 
 async function hooksPage(routes, sources) {
   const { MOMENTS } = await import(pathToFileURL(join(SCRIPTS, "core/triggers.mjs")).href);
@@ -234,8 +287,8 @@ async function hooksPage(routes, sources) {
     "## Hooks émis par le moteur",
     "",
     `${own.length} hooks \`dnd5e-combat.*\`, relevés sur chaque \`Hooks.call\` / \`Hooks.callAll\` du code. **Annulable** : émis par`,
-    "`Hooks.call` — un écouteur qui rend `false` arrête la suite. La description est le commentaire du code à l'endroit de",
-    "l'émission (ou de la constante qui nomme le hook) ; les § renvoient au journal.",
+    "`Hooks.call` — un écouteur qui rend `false` arrête la suite. La description est le commentaire placé juste avant la constante",
+    "qui nomme le hook, sinon juste avant la ligne d'émission (la première qui en a un) ; les § renvoient au journal.",
     "",
     "| Hook | Annulable | Arguments | Émis dans | § | Description |",
     "|---|---|---|---|---|---|"
@@ -243,8 +296,8 @@ async function hooksPage(routes, sources) {
   for ( const name of own ) {
     const entries = emitted.get(name);
     const files = [...new Set(entries.map(e => e.file))].sort();
-    const doc = entries.map(e => e.doc).find(Boolean) ?? "";
-    const refs = [...new Set(entries.flatMap(e => sections(`${e.doc} ${e.line}`)))];
+    const doc = hookDoc(entries);
+    const refs = [...new Set(entries.flatMap(e => sections(`${e.constantDoc ?? ""} ${e.doc} ${e.line}`)))];
     const args = [...new Set(entries.map(e => e.args).filter(Boolean))].map(a => `\`${cell(clip(a, 90))}\``).join("<br>");
     out.push(`| \`${name}\` | ${entries.some(e => e.cancellable) ? "oui" : ""} | ${args} | ${files.map(f => `\`${f}\``).join(", ")} | ${refs.join(" ")} | ${cell(clip(doc))} |`);
   }
@@ -423,6 +476,20 @@ export async function build() {
   const surface = `${JSON.stringify({ api: apiDoc.paths, hooks: hooks.own, moments: hooks.moments, settings: settingsDoc.keys }, null, 2)}\n`;
   return { "README.md": readme, "API.md": apiDoc.text, "HOOKS.md": hooks.text, "SETTINGS.md": settingsDoc.text, "CONTENT.md": content.text,
     "SCENARIOS.md": scenarios.text, "surface.json": surface };
+}
+
+/**
+ * Ce qui n'a pas de description dans la référence : `{ api: [{ path, file }], hooks: [{ name, files }] }`. Toute l'API publique est
+ * comptée, `api.mcp` compris (voir `tests/reference.test.mjs`) ; les hooks sont les `dnd5e-combat.*` émis, hors moments.
+ */
+export async function undocumented() {
+  const { api } = await load();
+  const sources = scanSources();
+  const apiGaps = apiRows(api, sources).filter(r => (r.kind === "fonction") && !r.doc).map(r => ({ path: `api.${r.path}`, file: r.file }));
+  const hookGaps = [...emittedHooks(sources).entries()]
+    .filter(([name, entries]) => name.startsWith(`${MODULE_ID}.`) && !name.includes("<") && !hookDoc(entries))
+    .map(([name, entries]) => ({ name, files: [...new Set(entries.map(e => e.file))].sort() }));
+  return { api: apiGaps, hooks: hookGaps };
 }
 
 export const REFERENCE_DIR = join(ROOT, "docs/reference");

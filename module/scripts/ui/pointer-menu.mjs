@@ -162,6 +162,10 @@ export function doorMenuFor(wall) {
   if ( !me || !placeable?.isDoor || (placeable.document.parent !== me.parent) ) return [];
   return doorEntries(me, placeable).map(e => ({ icon: e.icon, label: e.label, run: event => exclusive(() => e.run(event)) }));
 }
+/**
+ * Le menu d'une case (`point` : `{ x, y }` de la scène) pour le token en main : `[{ icon, label, run }]`, voisins compris ; vide sans token
+ * en main.
+ */
 export function groundMenuFor(point) {
   const me = actingToken();
   if ( !me || (me.parent !== canvas.scene) || !Number.isFinite(point?.x) || !Number.isFinite(point?.y) ) return [];
@@ -176,6 +180,9 @@ export function groundMenuFor(point) {
  * qu'ajouter des entrées, sans autre effet — l'action va dans `run`.
  */
 function withNeighbourEntries(entries, token, target, aggressive) {
+  // §39.4 : sur le client qui construit le menu d'un autre token (clic droit, `api.ui.tokenMenu`) :
+  // `(entries, { token, target, aggressive })` — pousser `{ icon, label, run(event) }` dans `entries` ; rien d'autre (le hook part
+  // plusieurs fois par clic droit).
   Hooks.callAll(`${MODULE_ID}.tokenMenu`, entries, { token, target, aggressive });
   return entries.filter(e => e && (typeof e.run === "function") && e.label);
 }
@@ -223,7 +230,9 @@ export function doorEntries(token, wall) {
     const label = loc(entry.label) + (spent ? ` — ${loc("Serrure.Essaye")}` : "");
     entries.push({ icon: entry.icon, label, run: event => entry.run(token, wall, { event }) });
   }
-  // §247 : les entrées des modules voisins (une porte piégée : « Désamorcer le piège »), après celles du moteur pour le joueur.
+  // §247 : sur le client qui construit le menu d'une porte (clic droit, `api.ui.doorMenu`), hook `dnd5e-combat.doorMenu` :
+  // `(entries, { token, wall })` — `wall` le WallDocument ; pousser `{ icon, label, run(event) }` (une porte piégée : « Désamorcer le
+  // piège »), placées après celles du moteur pour le joueur ; rien d'autre (le hook peut partir plusieurs fois).
   entries.push(...neighbourEntries("doorMenu", { token, wall: wall.document }));
   if ( game.user.isGM && (state !== "open") ) {
     const locked = state === "locked";
@@ -265,6 +274,9 @@ const nonLethalOffered = () => { try { return game.settings.get(MODULE_ID, NONLE
  * Comme `tokenMenu`, le hook peut partir plusieurs fois pour un même clic droit : un écouteur ne fait qu'ajouter des entrées.
  */
 function neighbourGroundEntries(token, point) {
+  // §243 : sur le client qui construit le menu d'une case (clic droit, `api.ui.groundMenu`) :
+  // `(entries, { token, point })` — pousser `{ icon, label, run(event) }`, placées avant celles du moteur ; rien d'autre (le hook part
+  // plusieurs fois par clic droit).
   return neighbourEntries("groundMenu", { token, point });
 }
 

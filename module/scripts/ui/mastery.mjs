@@ -252,8 +252,14 @@ function refresh(actor, changes) {
 }
 
 export const masteryApi = Object.freeze({
+  /** §222 : ouvre, sur ce client, la fenêtre des bottes d'arme de l'acteur (déjà ouverte : elle passe devant). */
   open: actor => openMasteries(actor),
+  /**
+   * Les sources de bottes d'arme de l'acteur (avancements « Trait » en mode « mastery » de ses classes, sous-classes et dons), lues dans
+   * ses items.
+   */
   sources: actor => masterySourcesOf(actor),
+  /** Juge un choix de bottes (`keys` : identifiants d'arme) pour l'acteur, sans rien écrire → `{ ok, reason, slots, removed }`. */
   judge: (actor, keys) => judgeMasteries(actor, keys)
 });
 

@@ -74,6 +74,7 @@ async function onRestCompleted(actor, result, config) {
   const allowance = restChanges(sources);
   await actor.setFlag(MODULE_ID, MASTERY_REST_FLAG, { allowance });
   log(`${actor.name}: Long Rest, ${allowance} weapon mastery choice(s) may change`);
+  // §222 : sur chaque client propriétaire de l'acteur, après un Repos long qui lui laisse changer des bottes d'arme : `(actor)`. Lecture seule.
   Hooks.callAll(`${MODULE_ID}.masteryRest`, actor);
 }
 

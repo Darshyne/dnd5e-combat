@@ -71,6 +71,10 @@ export function grappleState({ tokenId }) {
   });
 }
 
+/**
+ * §43.2 : sans `targetId`, le token `tokenId` s'échappe de son agrippement ; avec, il met fin au premier effet de la cible que son action
+ * termine → `{ done }`.
+ */
 export async function actionEnd({ tokenId, targetId=null }) {
   const token = viewedToken({ tokenId });
   if ( !targetId ) { await escapeGrapple(token); return { done: true }; }
@@ -563,6 +567,7 @@ export async function groupRoll({ tokenIds=[], wait=true, ...request }) {
 export function groupRollState({ id }) {
   return plainRoll(groupRollView(id));
 }
+/** §242 : les tuiles du bonus de l'acteur du token `tokenId` pour la demande donnée (comme `api.rolls.breakdown`). */
 export function groupRollBreakdown({ tokenId, ...request }) {
   return rollsApi.breakdown(viewedToken({ tokenId }).actor, request);
 }
@@ -570,6 +575,7 @@ export function groupRollBreakdown({ tokenId, ...request }) {
 export async function groupRollForce({ id, tokenId }) {
   return rollsApi.force(id, viewedToken({ tokenId }).actor.uuid);
 }
+/** §242 : l'Avantage / le Désavantage que dnd5e donnera à l'acteur du token `tokenId` pour la demande (comme `api.rolls.mode`). */
 export function groupRollMode({ tokenId, ...request }) {
   return rollsApi.mode(viewedToken({ tokenId }).actor, request);
 }

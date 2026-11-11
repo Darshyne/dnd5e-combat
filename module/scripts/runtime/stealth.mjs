@@ -100,6 +100,8 @@ async function entered(obs, target, state) {
   state.fails += 1;
   if ( state.fails >= 2 ) return spot(obs, target, point, "failed");
   log(`stealth: ${target.name} ${stealth.total} vs ${obs.name} ${dc} — ${obs.name} suspects something`);
+  // §184 : chez le MJ actif, règles `bg3`, quand un ennemi remarque un token caché : `(observer, target, { level, point, reason })` —
+  // TokenDocuments ; `level` « suspicious » (un doute) ou « spotted » (repéré) ; `reason` « failed », « bright »… Lecture seule.
   Hooks.callAll(`${MODULE_ID}.stealthNoticed`, obs, target, { level: "suspicious", point, reason: "failed" });
   await whisper(loc("Furtif.Doute", { observer: obs.name, target: target.name }), false, target);
 }
@@ -133,7 +135,16 @@ export function stealthViews(id) {
 
 /** `api.sneak` : `is`, `set`, `toggle` (l'action Furtivité hors combat), `spottedBy`, `rules`, `check`. */
 export const stealthApi = Object.freeze({
-  is: isHidden, set: setHidden, toggle: token => setHidden(token), spottedBy, rules: () => stealthRules(),
+  is: isHidden, set: setHidden,
+  /** Bascule l'action Furtivité du token (caché ↔ visible), comme le raccourci Alt+C → `{ hidden, … }` (le résultat de `set`). */
+  toggle: token => setHidden(token),
+  spottedBy,
+  /** Les règles de furtivité du monde (réglage `stealthRules`) : `"2024"` ou `"bg3"`. */
+  rules: () => stealthRules(),
+  /**
+   * Règles `bg3` : juge tout de suite la scène affichée (qui entre dans la vue de qui, tests de Discrétion, repérages). À lancer chez le MJ
+   * actif.
+   */
   check: () => check(canvas?.scene)
 });
 

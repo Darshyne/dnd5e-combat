@@ -111,6 +111,7 @@ export const contentApi = Object.freeze({
   of: contentOf,
   identifierOf,
   inspect,
+  /** Les erreurs d'une entrée de contenu (`string[]`, vide = valide), contre le schéma `core/content/entry.mjs`. Ne change rien. */
   validate: entry => validateEntry(entry, { facts: KNOWN_FACTS }),
   /** §277 : les erreurs d'une table de sources `{ id de document: identifiant }` (vide = valide). */
   validateSources,

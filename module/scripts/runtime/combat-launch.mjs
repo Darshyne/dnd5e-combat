@@ -266,4 +266,5 @@ export function registerCombatLaunch() {
 }
 
 export const launchApi = Object.freeze({ candidates: launchCandidates, begin: beginLaunch, cancel: cancelLaunch, launch: launchCombat,
+  /** Un lancement de combat est-il en cours (pause posée par `begin`, participants pas encore choisis) ? Réglage de monde, tout client. */
   pending: () => !!state().pending });

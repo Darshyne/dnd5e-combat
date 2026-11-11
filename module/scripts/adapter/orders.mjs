@@ -48,6 +48,8 @@ export function heldItemsOf(actor) {
  */
 export async function droppedByNeighbour(token, items) {
   const takers = [];
+  // §40.3 : chez le MJ actif, quand une créature lâche ce qu'elle tient (ordre « Lâche », familier qui part dans sa poche) : `(takers,
+  // { token, items })`. Un module qui pose les objets au sol pousse dans `takers` une `async () => boolean` (vrai : c'est fait) ; sinon, simple déséquipement.
   Hooks.callAll(`${MODULE_ID}.dropItems`, takers, { token, items });
   for ( const take of takers ) {
     if ( typeof take !== "function" ) continue;

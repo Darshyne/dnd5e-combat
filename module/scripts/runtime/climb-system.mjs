@@ -22,6 +22,10 @@ import { log, loc } from "./shared.mjs";
 
 export const CLIMB_SYSTEM_SETTING = "climbSystem";
 export const CLIMB_BUTTON_SETTING = "climbSystemButton";
+/**
+ * §224 : sur chaque client, quand le MJ bascule l'interrupteur de l'escalade et des chutes (réglage de monde `climbSystem`) : `(enabled)`,
+ * booléen. Lecture seule.
+ */
 export const CLIMB_SYSTEM_HOOK = `${MODULE_ID}.climbSystem`;
 
 function applied(on, { announce=true }={}) {

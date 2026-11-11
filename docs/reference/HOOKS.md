@@ -5,49 +5,49 @@
 ## Hooks émis par le moteur
 
 38 hooks `dnd5e-combat.*`, relevés sur chaque `Hooks.call` / `Hooks.callAll` du code. **Annulable** : émis par
-`Hooks.call` — un écouteur qui rend `false` arrête la suite. La description est le commentaire du code à l'endroit de
-l'émission (ou de la constante qui nomme le hook) ; les § renvoient au journal.
+`Hooks.call` — un écouteur qui rend `false` arrête la suite. La description est le commentaire placé juste avant la constante
+qui nomme le hook, sinon juste avant la ligne d'émission (la première qui en a un) ; les § renvoient au journal.
 
 | Hook | Annulable | Arguments | Émis dans | § | Description |
 |---|---|---|---|---|---|
-| `dnd5e-combat.ammunition` |  | `item, ammoState(item)?.current ?? null` | `adapter/ammo.mjs` |  |  |
-| `dnd5e-combat.awaiting` |  | `awaitingList()` | `adapter/awaiting.mjs` |  |  |
+| `dnd5e-combat.ammunition` |  | `item, ammoState(item)?.current ?? null` | `adapter/ammo.mjs` | §274 | §274 : sur chaque client, quand la munition retenue d'une arme change (DAS, ou la fenêtre de dnd5e après le jet) : `(item, ammoId)`, l'id de la munition que tirera le prochain jet, ou null. Lecture seule. |
+| `dnd5e-combat.awaiting` |  | `awaitingList()` | `adapter/awaiting.mjs` | §381 | §381 : sur chaque client, à chaque changement du tableau des attentes qu'il connaît (une fenêtre de réaction, de choix ou de jet ouverte ou fermée quelque part, une attente oubliée) : `(entries)`, les attentes en cours,… |
 | `dnd5e-combat.awaitingSettings` |  |  | `runtime/awaiting.mjs` |  | Un réglage d'affichage a changé, sur ce client (le dessin se refait). |
-| `dnd5e-combat.claimClick` | oui | `event` | `ui/pointer-mouse.mjs` |  |  |
-| `dnd5e-combat.climbSystem` |  | `!!on` | `runtime/climb-system.mjs` |  |  |
-| `dnd5e-combat.conesChanged` |  |  | `runtime/vision.mjs` |  |  |
-| `dnd5e-combat.criticalHit` |  | `decision` | `adapter/criticals.mjs` |  |  |
-| `dnd5e-combat.debug` |  | `debugApi` | `runtime/debug.mjs` |  |  |
+| `dnd5e-combat.claimClick` | oui | `event` | `ui/pointer-mouse.mjs` | §39.3 | §39.3 : sur ce client, à l'appui d'un clic gauche sur le plateau, avant que le moteur ne le traite : `(event)`. Annulable : un module voisin qui réclame le clic (fouiller un coffre, un cadavre, un tas au sol — Darsh Loo… |
+| `dnd5e-combat.climbSystem` |  | `!!on` | `runtime/climb-system.mjs` | §224 | §224 : sur chaque client, quand le MJ bascule l'interrupteur de l'escalade et des chutes (réglage de monde `climbSystem`) : `(enabled)`, booléen. Lecture seule. |
+| `dnd5e-combat.conesChanged` |  |  | `runtime/vision.mjs` | §182 | §182 : sur chaque client, quand le réglage des cônes de vision hors combat (créatures du MJ) ou celui de leurs angles par type de créature change : `dnd5e-combat.conesChanged`, sans argument — les cônes affichés se rede… |
+| `dnd5e-combat.criticalHit` |  | `decision` | `adapter/criticals.mjs` | §207 | §207 : sur le client de l'attaquant, sur un coup critique, avant les dégâts : `(decision)`, `{ actor, activity, target, mode }`. Un écouteur peut changer `decision.mode` : « standard » (dés doublés), « choice », « table… |
+| `dnd5e-combat.debug` |  | `debugApi` | `runtime/debug.mjs` | §380 | §380 : sur chaque client, au `setup` de Foundry (même moteur en veille) : `(debugApi)`, le débogueur — un voisin s'y déclare (`register`) et ajoute ses gestes à la piste (`trail`). |
 | `dnd5e-combat.debugProbe` |  | `{ message }` | `runtime/testing-debug.mjs` |  | Une sonde pour les scénarios : un inscrit du routeur qui échoue exprès (message « DAS debug probe … »). |
-| `dnd5e-combat.doorMenu` |  | `entries, context` | `ui/pointer-menu.mjs` |  |  |
-| `dnd5e-combat.doorUnlocked` |  | `{ door: wall, token, method }` | `runtime/doors.mjs` |  |  |
-| `dnd5e-combat.dropItems` |  | `takers, { token, items }` | `adapter/orders.mjs` |  |  |
-| `dnd5e-combat.etherealPlane` |  | `{ enabled: etherealPlaneOn() }` | `runtime/ethereal.mjs` |  |  |
-| `dnd5e-combat.etherealView` | oui | `{ active: on }` | `ui/ethereal.mjs` |  |  |
-| `dnd5e-combat.eventTurn` |  | `{ combat, combatant, key: event?.key ?? null, data: event?.data ?? {} }` | `runtime/combat-events.mjs` |  |  |
-| `dnd5e-combat.factionsChanged` |  | `{ scene }` | `runtime/factions.mjs` |  |  |
-| `dnd5e-combat.feedback` | oui | `{ token: uuid, action, outcome, kind, text: noticeText(text, loc), sound: src }` | `runtime/shared.mjs` |  |  |
-| `dnd5e-combat.forced` | oui | `{ actor, item, reasons, targets, user: game.user }` | `runtime/forced.mjs` |  |  |
-| `dnd5e-combat.gmAlert` | oui | `{ text, item: itemName, actor: actorDoc }` | `runtime/gm-alert.mjs` |  |  |
-| `dnd5e-combat.groundMenu` |  | `entries, context` | `ui/pointer-menu.mjs` |  |  |
-| `dnd5e-combat.groupRoll` |  | `{ ...shown, final, cancelled }` | `runtime/group-roll.mjs` |  |  |
-| `dnd5e-combat.groupRollPrompt` |  | `prompt` | `runtime/group-roll.mjs` |  |  |
-| `dnd5e-combat.lockAttempt` |  | `{ door: wall, token, ...attemptReport(method, outcome, total) }` | `runtime/doors.mjs` |  |  |
-| `dnd5e-combat.masteryRest` |  | `actor` | `runtime/mastery-choices.mjs` |  |  |
-| `dnd5e-combat.noise` |  | `{ token, point: doorPoint(wall), scene: wall.parent, cause: "forceDoor", wall }` | `runtime/doors.mjs` |  |  |
-| `dnd5e-combat.notice` |  | `{ token: uuid, text: noticeText(text, loc), kind }`<br>`{ token, text: noticeText(text, loc), kind }` | `runtime/shared.mjs` |  |  |
-| `dnd5e-combat.playerWaits` |  | `playerWaits()` | `adapter/player-wait.mjs` |  |  |
-| `dnd5e-combat.refreshAuras` |  |  | `runtime/auras.mjs` |  |  |
+| `dnd5e-combat.doorMenu` |  | `entries, context` | `ui/pointer-menu.mjs` | §247 | §247 : sur le client qui construit le menu d'une porte (clic droit, `api.ui.doorMenu`), hook `dnd5e-combat.doorMenu` : `(entries, { token, wall })` — `wall` le WallDocument ; pousser `{ icon, label, run(event) }` (une p… |
+| `dnd5e-combat.doorUnlocked` |  | `{ door: wall, token, method }` | `runtime/doors.mjs` | §244 | §244 : chez le MJ actif, quand une porte verrouillée vient d'être ouverte par un essai réussi : `({ door, token, method })` — `door` le WallDocument, `token` le TokenDocument, `method` « pick », « force » ou « key ». Le… |
+| `dnd5e-combat.dropItems` |  | `takers, { token, items }` | `adapter/orders.mjs` | §40.3 | §40.3 : chez le MJ actif, quand une créature lâche ce qu'elle tient (ordre « Lâche », familier qui part dans sa poche) : `(takers, { token, items })`. Un module qui pose les objets au sol pousse dans `takers` une `async… |
+| `dnd5e-combat.etherealPlane` |  | `{ enabled: etherealPlaneOn() }` | `runtime/ethereal.mjs` | §225 | §225 : sur chaque client, quand le MJ allume ou coupe l'automatisation du plan Éthéré (réglage de monde) : `({ enabled })`. Lecture seule. |
+| `dnd5e-combat.etherealView` | oui | `{ active: on }` | `ui/ethereal.mjs` | §225 | §225 : sur ce client, à chaque recalcul de sa vue (contrôle d'un token, état Éthéré posé ou retiré) : `({ active })` — son point de vue est-il dans l'Éthéré ? Annulable : `false` et le moteur ne grise pas la scène (le v… |
+| `dnd5e-combat.eventTurn` |  | `{ combat, combatant, key: event?.key ?? null, data: event?.data ?? {} }` | `runtime/combat-events.mjs` | §250 | §250 : chez le MJ actif, quand vient le tour d'un évènement de l'initiative (`api.combat.addEvent`) : `({ combat, combatant, key, data })` — au module qui l'a posé d'agir, puis de passer le tour. Une fois par tour. |
+| `dnd5e-combat.factionsChanged` |  | `{ scene }` | `runtime/factions.mjs` | §181 | §181 : sur ce client, après chaque rechargement de la table des factions (chargement, scène affichée, réglages, rancunes de la scène affichée ; et chez l'appelant de `assign` / `stance`) : `({ scene })`. Les auras se re… |
+| `dnd5e-combat.feedback` | oui | `{ token: uuid, action, outcome, kind, text: noticeText(text, loc), sound: src }` | `runtime/shared.mjs` | §252 | §252 : sur le client qui agit, pour une action vue de toute la table, juste avant de jouer son son : `({ token, action, outcome, kind, text, sound })`. Annulable : `false` empêche le son seulement (le texte flottant est… |
+| `dnd5e-combat.forced` | oui | `{ actor, item, reasons, targets, user: game.user }` | `runtime/forced.mjs` | §408 | §408 : sur le client de celui qui passe outre un refus du moteur, avant tout avertissement : `({ actor, item, reasons, targets, user })`. Annulable : `false` et le moteur ne prévient personne (ni texte flottant, ni aler… |
+| `dnd5e-combat.gmAlert` | oui | `{ text, item: itemName, actor: actorDoc }` | `runtime/gm-alert.mjs` | §364 | §364 : chez le MJ actif, avant de poster une alerte MJ (et seulement si le réglage `gmAlerts` est allumé) : `({ text, item, actor })` — `item` le nom de l'item, `actor` l'acteur ou null. Annulable : `false` et ni carte,… |
+| `dnd5e-combat.groundMenu` |  | `entries, context` | `ui/pointer-menu.mjs` | §243 | §243 : sur le client qui construit le menu d'une case (clic droit, `api.ui.groundMenu`) : `(entries, { token, point })` — pousser `{ icon, label, run(event) }`, placées avant celles du moteur ; rien d'autre (le hook par… |
+| `dnd5e-combat.groupRoll` |  | `{ ...shown, final, cancelled }` | `runtime/group-roll.mjs` | §242 | §242 : sur chaque client, à chaque changement d'une carte de jets demandés : le point de la carte (DD retiré pour un joueur quand il est caché), avec `final` (vrai une fois, quand tous ont lancé ou que c'est annulé) et… |
+| `dnd5e-combat.groupRollPrompt` |  | `prompt` | `runtime/group-roll.mjs` | §242 | §242 : chez le joueur qui doit lancer, avant d'ouvrir la fenêtre de jet : `(prompt)` (champs décrits plus haut). Une interface qui prend la demande met dans `prompt.result` la promesse de son issue ; sans preneur, la fe… |
+| `dnd5e-combat.lockAttempt` |  | `{ door: wall, token, ...attemptReport(method, outcome, total) }` | `runtime/doors.mjs` | §247 | §247 : chez le MJ actif, après chaque essai jugé sur une serrure (crocheter, forcer, clé) : `({ door, token, method, outcome, total })`, `outcome` « success », « failure » ou « gm » (pas de DD : le MJ tranche). Lecture… |
+| `dnd5e-combat.masteryRest` |  | `actor` | `runtime/mastery-choices.mjs` | §222 | §222 : sur chaque client propriétaire de l'acteur, après un Repos long qui lui laisse changer des bottes d'arme : `(actor)`. Lecture seule. |
+| `dnd5e-combat.noise` |  | `{ token, point: doorPoint(wall), scene: wall.parent, cause: "forceDoor", wall }` | `runtime/doors.mjs` | §244 | §244 : chez le MJ actif, un bruit à signaler aux modules qui font entendre les créatures : `({ token, point, scene, cause, wall })` — aujourd'hui seulement `cause: "forceDoor"`, émis à chaque essai pour forcer une porte… |
+| `dnd5e-combat.notice` |  | `{ token: uuid, text: noticeText(text, loc), kind }`<br>`{ token, text: noticeText(text, loc), kind }` | `runtime/shared.mjs` | §252 | §252 : sur chaque client qui doit montrer un avis du moteur au-dessus d'un token (refus, invite, retour d'une action) : `({ token, text, kind })` — `token` un uuid, `text` déjà traduit. L'interface du moteur l'écrit en… |
+| `dnd5e-combat.playerWaits` |  | `playerWaits()` | `adapter/player-wait.mjs` | §290 | §290 : sur le client qui pose une question à un joueur (en général le MJ actif), quand une attente commence ou finit : `(waits)`, `[{ id, userId, userName, actor, actorName, img, label, since }]`. Lecture seule ; la mêm… |
+| `dnd5e-combat.refreshAuras` |  |  | `runtime/auras.mjs` |  | Sur chaque client, quand le réglage `aurasOnlyInCombat` change (sans argument) : les auras se recalculent. Un voisin peut l'émettre pour le même effet. |
 | `dnd5e-combat.registerContent` |  | `(source, table, options) => registerExternal(source, table, options)` | `runtime/content.mjs` |  | Le hook par lequel le moteur demande leur contenu aux autres modules (à `setup`). |
-| `dnd5e-combat.resolution` |  | `resolution, event` | `runtime/engine.mjs` |  |  |
-| `dnd5e-combat.sneak` |  | `tokensOf(actor)[0] ?? null, false`<br>`tokensOf(actor)[0] ?? null, true`<br>`t, true` | `runtime/hide.mjs` |  |  |
-| `dnd5e-combat.stealthNoticed` |  | `obs, target, { level: "suspicious", point, reason: "failed" }`<br>`obs, target, { level: "spotted", point, reason }` | `runtime/stealth.mjs` |  |  |
-| `dnd5e-combat.successAtCost` |  | `{ actor, kind, accepted, cost: price, by: decidedBy }` | `runtime/success-at-cost.mjs` |  | Public : après chaque réponse. |
-| `dnd5e-combat.successAtCostCandidate` |  | `{ ...publicOf(c), closed: true }`<br>`publicOf(c)` | `runtime/success-at-cost.mjs` |  | Pour l'interface du MJ : une occasion ouverte, prise, ou close (`closed`). |
-| `dnd5e-combat.summonOnTargets` |  | `takers, { activity, caster, targets }` | `runtime/summon-handover.mjs` |  |  |
-| `dnd5e-combat.targeting` |  | `state` | `ui/pointer.mjs` |  |  |
-| `dnd5e-combat.theater` |  | `!!on` | `runtime/theater.mjs` |  |  |
-| `dnd5e-combat.tokenMenu` |  | `entries, { token, target, aggressive }` | `ui/pointer-menu.mjs` |  |  |
+| `dnd5e-combat.resolution` |  | `resolution, event` | `runtime/engine.mjs` | §5.6 | SPEC §5.6 : à chaque étape d'une résolution (verdict, sauvegardes, dégâts, effets…), sur le client qui l'exécute (le MJ actif) : `(resolution, event)` — l'état de la résolution et ce qui l'a fait avancer. Sortie en lect… |
+| `dnd5e-combat.sneak` |  | `tokensOf(actor)[0] ?? null, false`<br>`tokensOf(actor)[0] ?? null, true`<br>`t, true` | `runtime/hide.mjs` | §183 | §183 : sur le client qui change l'état caché d'une créature : `(token, hidden)` — son premier token (TokenDocument, ou null) et le nouvel état. Lecture seule. |
+| `dnd5e-combat.stealthNoticed` |  | `obs, target, { level: "suspicious", point, reason: "failed" }`<br>`obs, target, { level: "spotted", point, reason }` | `runtime/stealth.mjs` | §184 | §184 : chez le MJ actif, règles `bg3`, quand un ennemi remarque un token caché : `(observer, target, { level, point, reason })` — TokenDocuments ; `level` « suspicious » (un doute) ou « spotted » (repéré) ; `reason` « f… |
+| `dnd5e-combat.successAtCost` |  | `{ actor, kind, accepted, cost: price, by: decidedBy }` | `runtime/success-at-cost.mjs` |  | Issue #32 : chez le MJ actif, après chaque réponse à une réussite offerte : `({ actor, kind, accepted, cost, by })` — `kind` « attack », « save » ou « check », `cost` le prix décrit, `by` « player » (le joueur a répondu… |
+| `dnd5e-combat.successAtCostCandidate` |  | `{ ...publicOf(c), closed: true }`<br>`publicOf(c)` | `runtime/success-at-cost.mjs` |  | Issue #32 : chez le MJ actif, pour son interface, quand une occasion (un jet raté de peu, pendant la pause) s'ouvre, est prise par le MJ (`claimed`) ou se ferme (`closed: true`) : `({ id, token, actor, name, what, total… |
+| `dnd5e-combat.summonOnTargets` |  | `takers, { activity, caster, targets }` | `runtime/summon-handover.mjs` | §118 | §118 : sur le client qui lance une invocation avec des cibles désignées : `(takers, { activity, caster, targets })`. Un module qui transforme les cibles pousse dans `takers` une `async ({ profile }) => boolean` ; la pos… |
+| `dnd5e-combat.targeting` |  | `state` | `ui/pointer.mjs` | §118 | §118 : sur ce client seulement, à chaque changement de la visée qu'il attend : `(state)`, celui de `api.ui.targeting()`, null à la fermeture. |
+| `dnd5e-combat.theater` |  | `!!on` | `runtime/theater.mjs` | §220 | §220 : sur chaque client, quand le MJ allume ou éteint le Théâtre de l'esprit (réglage de monde `theaterOfMind`) : `(active)`, booléen — allumé, le moteur n'automatise plus rien. Lecture seule. |
+| `dnd5e-combat.tokenMenu` |  | `entries, { token, target, aggressive }` | `ui/pointer-menu.mjs` | §39.4 | §39.4 : sur le client qui construit le menu d'un autre token (clic droit, `api.ui.tokenMenu`) : `(entries, { token, target, aggressive })` — pousser `{ icon, label, run(event) }` dans `entries` ; rien d'autre (le hook p… |
 
 ## Moments
 

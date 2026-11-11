@@ -137,6 +137,7 @@ async function shortRest({ tokenId }) {
   return { done: !!result };
 }
 
+/** MJ : avance le temps du monde de `seconds` secondes (`game.time.advance`) → `{ worldTime }`. */
 async function advanceTime({ seconds }) {
   gmOnly();
   await game.time.advance(Number(seconds) || 0);
@@ -218,10 +219,12 @@ function gmAlerts() {
   return Array.from(document.querySelectorAll(".das-gm-alerts__line:not(.closing) .das-gm-alerts__text")).map(e => e.textContent);
 }
 
+/** §134 : Rapide — le nom de l'item qui donne le Désavantage aux attaques d'opportunité contre l'acteur du token `tokenId`, ou null. */
 function hampered({ tokenId }) {
   return hamperedBy(canvas.scene?.tokens.get(tokenId)?.actor ?? null);
 }
 
+/** MJ : exécute la macro `uuid` sans l'attendre (une erreur part en console) → `{ started }` (son nom). */
 async function runMacro({ uuid }={}) {
   gmOnly();
   const macro = await fromUuid(uuid);
@@ -385,6 +388,10 @@ async function viewScene({ sceneId }) {
 /** §251 : l'état de l'horloge en temps réel du moteur (null : elle tourne) et le temps du monde. */
 const clock = () => ({ halt: clockState(), worldTime: game.time.worldTime });
 
+/**
+ * MJ : lit un réglage de monde d'un autre espace (`namespace.key`) et, avec `value`, l'écrit → `{ key, before, now }`, ou `{ absent: true
+ * }`.
+ */
 async function foreignSetting({ namespace, key, value }) {
   gmOnly();
   const config = game.settings.settings.get(`${namespace}.${key}`);
@@ -451,6 +458,7 @@ async function diagnosticRepair({ checks=null, roots=null, options={} }={}) {
   return { backup, results: results.map(r => ({ ...plainTask(r.task), ok: r.ok, line: String(r.line).replace(/<[^>]+>/g, "") })) };
 }
 
+/** Les sauvegardes du diagnostic du monde, la plus récente d'abord : `[{ id, uuid, name, date, roots, checks }]`. */
 const diagnosticBackups = () => diagBackups();
 
 /** Après un scénario : retire ces entrées de sauvegarde, et le compendium s'il est vide et que le scénario l'a créé (`dropPack`). */
@@ -463,6 +471,7 @@ async function diagnosticForget({ uuids=[], dropPack=false, actors=[] }={}) {
   if ( pack && dropPack && !left ) await pack.deleteCompendium();
   return { left, dropped: !!(pack && dropPack && !left) };
 }
+/** MJ : restaure la sauvegarde `uuid` du diagnostic, après avoir sauvegardé l'état actuel des mêmes documents → `{ lines, before }`. */
 const diagnosticRestore = ({ uuid }) => diagRestore(uuid);
 
 
@@ -502,6 +511,10 @@ function waits() {
  * ouverte jusqu'à `answer-dialog` ou au délai), `result` (ce qu'a rendu la dernière fenêtre ouverte, `undefined` tant qu'elle est ouverte).
  */
 let awaitingProbe = { done: true, value: undefined };
+/**
+ * §381 : `action` « list » (les attentes connues de ce client), « open » (une fenêtre sonde marquée pour `tokenId`) ou « result » (sa
+ * réponse).
+ */
 function awaiting({ action="list", tokenId=null, kind="reaction", seconds=null }={}) {
   if ( action === "list" ) return awaitingList();
   if ( action === "result" ) return { done: awaitingProbe.done, value: awaitingProbe.value ?? null };

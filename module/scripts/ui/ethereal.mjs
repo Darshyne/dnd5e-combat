@@ -49,6 +49,8 @@ const viewpointEthereal = () => viewpoint().some(t => isEthereal(t.document));
 function updateView() {
   if ( !canvas?.ready || !canvas.stage ) return;
   const on = !theaterActive() && viewpointEthereal();
+  // §225 : sur ce client, à chaque recalcul de sa vue (contrôle d'un token, état Éthéré posé ou retiré) : `({ active })` — son point de vue
+  // est-il dans l'Éthéré ? Annulable : `false` et le moteur ne grise pas la scène (le voisin dessine sa propre vue).
   const claimed = Hooks.call(`${MODULE_ID}.etherealView`, { active: on }) === false;
   const filters = (canvas.stage.filters ?? []).filter(f => f !== gray);
   if ( on && !claimed ) {

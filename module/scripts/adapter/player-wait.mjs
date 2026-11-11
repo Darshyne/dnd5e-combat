@@ -13,6 +13,10 @@ import { MODULE_ID } from "../constants.mjs";
 import { forceOpenWindows, windowsUnlimited } from "./dialogs.mjs";
 
 export const FORCE_WINDOWS_QUERY = `${MODULE_ID}.forceWindows`;
+/**
+ * §290 : sur le client qui pose une question à un joueur (en général le MJ actif), quand une attente commence ou finit : `(waits)`, `[{ id,
+ * userId, userName, actor, actorName, img, label, since }]`. Lecture seule ; la même liste : `api.waits.list()`.
+ */
 export const PLAYER_WAITS_HOOK = `${MODULE_ID}.playerWaits`;
 
 /** Sans délai, une question attend au plus ça (la partie a été quittée entre-temps, pas un joueur qui réfléchit). */

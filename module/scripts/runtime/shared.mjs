@@ -5,7 +5,15 @@ import { actionSound, noticeText } from "../core/action-feedback.mjs";
 
 export const log = (...args) => console.log(`${MODULE_ID} |`, ...args);
 
+/**
+ * §252 : sur chaque client qui doit montrer un avis du moteur au-dessus d'un token (refus, invite, retour d'une action) : `({ token, text,
+ * kind })` — `token` un uuid, `text` déjà traduit. L'interface du moteur l'écrit en texte flottant.
+ */
 export const NOTICE_HOOK = `${MODULE_ID}.notice`;
+/**
+ * §252 : sur le client qui agit, pour une action vue de toute la table, juste avant de jouer son son : `({ token, action, outcome, kind,
+ * text, sound })`. Annulable : `false` empêche le son seulement (le texte flottant est déjà parti chez tous).
+ */
 export const FEEDBACK_HOOK = `${MODULE_ID}.feedback`;
 /** §252 : la requête qui fait dessiner un avis chez un autre client (ui/feedback.mjs l'enregistre). */
 export const NOTICE_QUERY = `${MODULE_ID}.notice`;

@@ -14,6 +14,12 @@ import { MODULE_ID } from "../constants.mjs";
 import { applyAwaiting, awaitingEntry, pruneAwaiting } from "../core/awaiting.mjs";
 
 export const AWAITING_QUERY = `${MODULE_ID}.awaiting`;
+/**
+ * §381 : sur chaque client, à chaque changement du tableau des attentes qu'il connaît (une fenêtre de réaction, de choix ou de jet
+ * ouverte ou fermée quelque part, une attente oubliée) : `(entries)`, les attentes en cours, les plus anciennes d'abord —
+ * `{ id, userId, userName, token, actor, kind, gm, player, since, seconds, refreshed }`, jamais ce que la fenêtre demande. Lecture seule ;
+ * le même tableau : `api.ui.awaiting()`.
+ */
 export const AWAITING_HOOK = `${MODULE_ID}.awaiting`;
 
 /** Les attentes ouvertes sur CE client (celles qu'il diffuse) : id → entrée. */

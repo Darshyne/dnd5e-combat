@@ -211,5 +211,13 @@ export const uiApi = {
    * (item ou uuid ; `on` absent : l'inverse), sur le client du porteur ; rend `{ changed, lit?, left?, refilled?, reason? }`.
    */
   carriedLights: actor => carriedLightsOf(actor).map(carriedLightState),
+  /**
+   * L'état d'une source de lumière portée (item ou uuid) : `{ uuid, name, img, lit, left, full, fuel }`, ou null si l'item n'en est pas
+   * une.
+   */
   carriedLight: item => carriedLightState(typeof item === "string" ? fromUuidSync(item, { strict: false }) : item),
+  /**
+   * §121 : allume ou éteint une source portée (item ou uuid ; `on` absent : l'inverse), sur le client du porteur → `{ changed, lit?, left?,
+   * refilled?, reason? }`.
+   */
   toggleLight: (item, on=null) => toggleCarriedLight(typeof item === "string" ? fromUuidSync(item, { strict: false }) : item, on) };

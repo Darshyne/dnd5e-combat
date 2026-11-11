@@ -52,6 +52,8 @@ export async function criticalChoice(activity, target) {
   if ( !CRITICAL_MODES.includes(mode) ) mode = "standard";
   if ( (actor?.type !== "character") && !read(CRITICAL_NPC_SETTING, false) ) mode = "standard";
   const decision = { actor, activity, target, mode };
+  // §207 : sur le client de l'attaquant, sur un coup critique, avant les dégâts : `(decision)`, `{ actor, activity, target, mode }`. Un
+  // écouteur peut changer `decision.mode` : « standard » (dés doublés), « choice », « table » ou « plain » (dégâts normaux, l'effet à sa charge).
   Hooks.callAll(`${MODULE_ID}.criticalHit`, decision);
   mode = decision.mode;
   if ( mode === "plain" ) return "plain";

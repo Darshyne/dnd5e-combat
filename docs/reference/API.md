@@ -20,17 +20,17 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.light` | `(token)` | `ui/illumination.mjs` | La lumière où se tient un token, pour une interface (`api.light`, demandée par Darsh UI DnD5 le 2026-09-27). @param {Token\|TokenDocument} token @returns {{key: "bright"\|"dim"\|"dark"\|"magical", icon: string, name: string… |
 | `api.path` | `(token, { cells=null, level=null, target=null, reachCells=1, seeing=false }={}, { maxCost=null, extra=0 }={})` | `runtime/actions.mjs` | §179 : un chemin sans le parcourir — vers des cases (`cells`, `level`) ou une cible (`target`, `reachCells`, `seeing`). `maxCost` : le plafond de coût à tester (défaut : ce qui reste au token ce tour, Infinity hors comb… |
 | `api.reason` | _valeur_ |  |  |
-| `api.routes` | `()` | `dnd5e-combat.mjs` |  |
+| `api.routes` | `()` | `runtime/router.mjs` | Qui écoute quoi, dans quel ordre : pour l'inspection (`api.routes()`). |
 | `api.save` | `(actor, { ability, dc, advantage=false, disadvantage=false, flavor=null }={})` | `runtime/neighbours.mjs` | §180 : une sauvegarde demandée à une créature hors d'une résolution (un voisin : le test de moral d'un PNJ), lancée sans fenêtre, visible dans le chat comme les sauvegardes des PNJ que le moteur lance. Rend `{ total, d2… |
-| `api.skippedRoutes` | `()` | `dnd5e-combat.mjs` |  |
-| `api.stopWalks` | `()` | `adapter/movement.mjs` |  |
+| `api.skippedRoutes` | `()` | `runtime/router.mjs` | Les inscriptions écartées par `withoutRoutes` : `[{ hook, label, feature }]`. |
+| `api.stopWalks` | `()` | `adapter/movement.mjs` | §102 : arrête toutes les marches du moteur lancées par ce client (chaque token, au prochain point de contrôle) ; ne rend rien. |
 | `api.unitFactors` | _valeur_ |  |  |
 
 ## `api.ammo`
 
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
-| `api.ammo.options` | `(item, activity=null)` | `dnd5e-combat.mjs` |  |
+| `api.ammo.options` | `(item, activity=null)` | `dnd5e-combat.mjs` | Les munitions que l'arme peut tirer et celle que son prochain jet tirerait : `{ options, current, ask }`, ou null si elle n'en tire pas. |
 | `api.ammo.set` | `(item, ammoId)` | `adapter/ammo.mjs` | Retient une munition pour les prochaines attaques de l'arme (toutes ses activités d'attaque), et l'annonce (hook `dnd5e-combat.ammunition`, `(item, ammoId)`, sur chaque client par la mise à jour de l'item). @param {Item… |
 
 ## `api.atCost`
@@ -39,7 +39,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 |---|---|---|---|
 | `api.atCost.candidates` | `()` | `runtime/success-at-cost.mjs` | Les occasions ouvertes (interface, menu, scénarios). |
 | `api.atCost.dismiss` | `(id)` | `runtime/success-at-cost.mjs` | Le MJ laisse passer l'occasion (pastille fermée) : l'échec reste, tout de suite. |
-| `api.atCost.enabled` | `()` | `runtime/success-at-cost.mjs` |  |
+| `api.atCost.enabled` | `()` | `runtime/success-at-cost.mjs` | Issue #32 : la règle « succès à un prix » est-elle allumée (réglage de monde, coupé par défaut) ? |
 | `api.atCost.margin` | _number_ |  |  |
 | `api.atCost.offer` | `(id, { cost }={})` | `runtime/success-at-cost.mjs` | Le MJ prend l'occasion : la pause s'arrête, sa fenêtre décrit le prix (sauf `cost` donné : macro, scénario), puis la question au joueur. Rend true si le joueur a accepté. @param {string} id @param {{cost?: string}} [opt… |
 | `api.atCost.offerOnMessage` | `(messageId, { what, cost }={})` | `runtime/success-at-cost.mjs` | Le MJ offre le succès à un prix sur un jet déjà posé (bouton de la carte). Accepté : le jet est marqué par le MJ actif. @param {string} messageId Le message du jet. @param {{what: string, cost?: string}} options |
@@ -63,19 +63,19 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
-| `api.climb.ceiling` | `(token)` | `dnd5e-combat.mjs` |  |
-| `api.climb.down` | `(token, { cells=null }={})` | `dnd5e-combat.mjs` |  |
-| `api.climb.drop` | `(token)` | `ui/awaiting.mjs` |  |
-| `api.climb.edges` | `(token)` | `dnd5e-combat.mjs` |  |
+| `api.climb.ceiling` | `(token)` | `runtime/climb.mjs` | Grimper jusqu'au plafond (test des règles « maison » s'il est dû) ; client qui possède le token → booléen. |
+| `api.climb.down` | `(token, { cells=null }={})` | `runtime/climb.mjs` | Descendre le long du mur (ou du plafond) de `cells` cases (sans `cells` : la fenêtre) ; client qui possède le token → booléen. |
+| `api.climb.drop` | `(token)` | `runtime/climb.mjs` | Lâcher le mur ou le plafond (chute volontaire) ; faux si le token ne grimpe pas ou n'est pas à ce client. |
+| `api.climb.edges` | `(token)` | `runtime/climb.mjs` | §216 : les bords d'où le token peut se laisser pendre pour descendre le long du mur : `[{ dir, x, y, elevation, level, drop }]`. |
 | `api.climb.enabled` | `()` | `core/climb-system.mjs` | Le système d'escalade et de chute est-il allumé ? |
-| `api.climb.entries` | `(token)` | `runtime/purge.mjs` | Les messages du plus ancien au plus récent, sous la forme que lit core/purge.mjs. |
-| `api.climb.grab` | `(token, edge)` | `runtime/testing-moves.mjs` | §216 : « S'agripper au bord » vers `dir` (ou le premier bord), comme l'entrée de menu ; rend les bords proposés et la position. |
+| `api.climb.entries` | `(token)` | `runtime/climb.mjs` | Les entrées d'escalade du menu du token (`{ icon, label, run }` : Grimper au mur, au plafond, Descendre, Se laisser tomber…). |
+| `api.climb.grab` | `(token, edge)` | `runtime/climb.mjs` | §216 : « S'agripper au bord » `edge` (un élément de `edges`) ; client qui possède le token → booléen. |
 | `api.climb.holds` | `(token, cell)` | `runtime/climb.mjs` | §196 : ce grimpeur tiendrait-il sur cette case (coin haut-gauche, à sa hauteur) — au mur, un mur à grimper la touche ; au plafond, le plafond y est à sa hauteur (et ne glisse pas sous des Pantoufles) ? Toujours vrai pou… |
-| `api.climb.run` | `(token, { cells=null }={})` | `runtime/passive.mjs` |  |
+| `api.climb.run` | `(token, { cells=null }={})` | `runtime/climb.mjs` | §195 : « Courir sur le mur » (Mouvement acrobatique du moine), sans test ; comme `up` → booléen. |
 | `api.climb.setEnabled` | `(on)` | `runtime/climb-system.mjs` | Allume ou coupe le système d'escalade et de chute (MJ). |
 | `api.climb.state` | `(token)` | `runtime/climb.mjs` | §196 : l'état d'escalade d'un token, pour une interface ou une IA — ce que le moteur tient (mode, drapeau, statut) et ce que son menu proposerait maintenant. null sans token ni acteur. @param {Token\|TokenDocument} token… |
 | `api.climb.toward` | `(token, target, { reachCells=1 }={})` | `runtime/climb.mjs` | §196 : rejoindre une cible hors d'allonge par le vide vertical (au mur, au plafond près d'un mur) en grimpant — le cas simple : aller au pied du mur à côté d'elle (`api.approach`, dans le budget du tour), puis monter le… |
-| `api.climb.up` | `(token, { cells=null }={})` | `dnd5e-combat.mjs` |  |
+| `api.climb.up` | `(token, { cells=null }={})` | `runtime/climb.mjs` | Grimper au mur de `cells` cases (sans `cells` : la fenêtre « combien de cases ») ; client qui possède le token → booléen. |
 
 ## `api.combat`
 
@@ -95,7 +95,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.combatLaunch.candidates` | `(scene=canvas.scene)` | `runtime/combat-launch.mjs` | Les tokens de la scène, rangés pour la fenêtre (core/combat-launch.mjs `classify`). |
 | `api.combatLaunch.launch` | `({ participants=[], npcAuto=true, grouped=false, playlist=null }={})` | `runtime/combat-launch.mjs` | MJ : lance le combat. @param {object} input @param {Array<{uuid: string, surprised?: boolean}>} input.participants @param {boolean} [input.npcAuto=true] Les PNJ lancent leur initiative tout seuls. @param {boolean} [inpu… |
 | `api.combatLaunch.open` | `()` | `ui/combat-launch.mjs` | Ouvre la fenêtre (MJ) : la pause d'abord. |
-| `api.combatLaunch.pending` | `()` | `dnd5e-combat.mjs` |  |
+| `api.combatLaunch.pending` | `()` | `runtime/combat-launch.mjs` | Un lancement de combat est-il en cours (pause posée par `begin`, participants pas encore choisis) ? Réglage de monde, tout client. |
 
 ## `api.content`
 
@@ -120,7 +120,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.content.shipped` | _données (849 clés)_ |  |  |
 | `api.content.sources` | `()` | `content/index.mjs` | Les sources enregistrées : `{ source: { id de document: identifiant } }`. |
 | `api.content.unregister` | `(source)` | `content/index.mjs` | Retire la table d'un module (et ses sources, §277). @returns {boolean} Si elle était enregistrée. |
-| `api.content.validate` | `(entry)` | `dnd5e-combat.mjs` |  |
+| `api.content.validate` | `(entry)` | `runtime/content.mjs` | Les erreurs d'une entrée de contenu (`string[]`, vide = valide), contre le schéma `core/content/entry.mjs`. Ne change rien. |
 | `api.content.validateSources` | `(sources)` | `core/content/entry.mjs` | §277 : les erreurs d'une table de sources `{ id de document: identifiant }` — les correspondances qu'un module enregistre avec sa table (`api.content.register(source, table, { sources })`) pour des items qui n'ont pas d… |
 | `api.content.version` | _number_ |  |  |
 | `api.content.world` | `()` | `adapter/content.mjs` | La surcouche du monde : `{ identifiant: entrée }`, tenue par le MJ. |
@@ -138,20 +138,20 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
-| `api.debug.clear` | `()` | `ui/awaiting.mjs` |  |
-| `api.debug.enabled` | `()` | `adapter/cone.mjs` |  |
-| `api.debug.errors` | `()` | `dnd5e-combat.mjs` |  |
-| `api.debug.logs` | `()` | `dnd5e-combat.mjs` |  |
-| `api.debug.onError` | `(fn)` | `ui/debug-report.mjs` |  |
+| `api.debug.clear` | `()` | `runtime/debug.mjs` | Vide, sur ce client, les erreurs relevées, la piste, les lignes gardées et ce qui attendait d'être envoyé au MJ actif. |
+| `api.debug.enabled` | `()` | `runtime/debug.mjs` | La capture tourne-t-elle sur ce client (réglage client `debugCapture`) ? |
+| `api.debug.errors` | `()` | `runtime/debug.mjs` | Les erreurs relevées, groupées par signature, la plus récente d'abord — chez le MJ actif, celles que les joueurs lui envoient comprises. |
+| `api.debug.logs` | `()` | `runtime/debug.mjs` | Les lignes de console des modules de la suite gardées en mode détaillé (300 au plus) sur ce client. |
+| `api.debug.onError` | `(fn)` | `runtime/debug.mjs` | Écouter les nouvelles erreurs (la pastille de l'interface) ; rend une fonction pour arrêter. |
 | `api.debug.open` | `({ token=null }={})` | `ui/debug-report.mjs` | Ouvre la fenêtre (ou la ramène devant). `token` : le contexte joint, depuis le menu contextuel. |
 | `api.debug.openConnectionTest` | `(userId)` | `ui/connection-test.mjs` | Ouvre la fenêtre du test pour un joueur et le lance (ou ramène devant celle déjà ouverte). |
-| `api.debug.register` | `({ module, repo=null, collect=null }={})` | `dnd5e-combat.mjs` |  |
-| `api.debug.registered` | `()` | `dnd5e-combat.mjs` |  |
+| `api.debug.register` | `({ module, repo=null, collect=null }={})` | `runtime/debug.mjs` | Un voisin se déclare : `{ module, repo?, collect? }` — `collect()` rend une section d'environnement (valeurs simples). |
+| `api.debug.registered` | `()` | `runtime/debug.mjs` | Les voisins déclarés par `register` : `[{ module, repo, collect }]`. |
 | `api.debug.testConnection` | `(target, { count=PING_COUNT, progress=() => {} }={})` | `runtime/connection.mjs` | Le test, chez le MJ : allers-retours puis sonde, comparés à son propre client. @param {User\|string} target @param {object} [options] @param {number} [options.count] Nombre d'allers-retours. @param {(step: string) => voi… |
-| `api.debug.total` | `(which)` | `dnd5e-combat.mjs` |  |
-| `api.debug.trail` | `(module, kind, text)` | `runtime/debug.mjs` | Un geste de la piste. `text` : des identifiants, jamais un nom. |
-| `api.debug.trailList` | `()` | `dnd5e-combat.mjs` |  |
-| `api.debug.verbose` | `(on)` | `dnd5e-combat.mjs` |  |
+| `api.debug.total` | `(which)` | `runtime/debug.mjs` | Le nombre d'erreurs relevées : `total()` toutes ; `total("suite")` les erreurs DAS ; `total("others")` hors DAS. |
+| `api.debug.trail` | `(module, kind, text)` | `runtime/debug.mjs` | Un geste d'un voisin dans la piste : `trail(module, kind, text)`. |
+| `api.debug.trailList` | `()` | `runtime/debug.mjs` | La piste de ce client : ses 50 derniers gestes DAS (et ceux des voisins), du plus ancien au plus récent. |
+| `api.debug.verbose` | `(on)` | `runtime/debug.mjs` | Sans argument : le mode détaillé de ce client est-il allumé ? Avec `on` : l'allume ou l'éteint sur ce client, et rend le nouvel état. |
 | `api.debug.verboseEverywhere` | `(on)` | `runtime/debug.mjs` | Le MJ : le mode détaillé chez tous les clients connectés (les autres à la réception de la requête). |
 
 ## `api.diagnostic`
@@ -164,10 +164,10 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
-| `api.ethereal.enabled` | `()` | `adapter/cone.mjs` |  |
-| `api.ethereal.is` | `(t)` | `dnd5e-combat.mjs` |  |
-| `api.ethereal.perceives` | `(observer, target)` | `dnd5e-combat.mjs` |  |
-| `api.ethereal.setEnabled` | `(on)` | `dnd5e-combat.mjs` |  |
+| `api.ethereal.enabled` | `()` | `runtime/ethereal.mjs` | L'automatisation du plan Éthéré est-elle allumée (réglage de monde `etherealPlane`) ? Hook `dnd5e-combat.etherealPlane`. |
+| `api.ethereal.is` | `(t)` | `runtime/ethereal.mjs` | La créature (token, document ou acteur) est-elle dans le plan Éthéré (état `ethereal` de dnd5e) ? |
+| `api.ethereal.perceives` | `(observer, target)` | `runtime/ethereal.mjs` | L'observateur peut-il percevoir la cible quant au plan (même plan : oui ; sinon la règle du cœur) ? Le reste de la vue n'est pas jugé. |
+| `api.ethereal.setEnabled` | `(on)` | `runtime/ethereal.mjs` | MJ : allume (`on` absent ou vrai) ou coupe l'automatisation du plan Éthéré → la promesse du réglage écrit ; null pour un joueur. |
 | `api.ethereal.toggle` | `(tokens=null, active=null)` | `runtime/ethereal.mjs` | Bascule l'état Éthéré des tokens donnés (par défaut les tokens contrôlés). `active` : true / false force le sens ; sans lui, chaque token passe de l'un à l'autre — sauf un groupe mixte, qui passe tout entier dans l'Éthé… |
 
 ## `api.factions`
@@ -175,22 +175,22 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
 | `api.factions.add` | `({ name, color }={})` | `runtime/factions.mjs` | Ajouter une faction (id tiré du nom). Rend son id. |
-| `api.factions.assign` | `(documents, id)` | `dnd5e-combat.mjs` |  |
-| `api.factions.explicit` | `(token)` | `dnd5e-combat.mjs` |  |
-| `api.factions.grudge` | `(a, b, { clear=false, scene=canvas?.scene }={})` | `runtime/factions.mjs` | Rendre deux camps hostiles sur une scène (ids de faction ou uuid de token) ; `clear` : lever cette rancune (ou toutes). |
-| `api.factions.grudges` | `(scene=canvas?.scene)` | `dnd5e-combat.mjs` |  |
-| `api.factions.list` | `()` | `dnd5e-combat.mjs` |  |
-| `api.factions.name` | `(id)` | `dnd5e-combat.mjs` |  |
+| `api.factions.assign` | `(documents, id)` | `runtime/factions.mjs` | Pose la faction `id` (null : la retire) sur des tokens ou des acteurs — droit d'écrire ces documents requis (le MJ) ; rend leur nombre. |
+| `api.factions.explicit` | `(token)` | `runtime/factions.mjs` | La faction posée à la main (token, sinon acteur), sans les règles ni `party` ; null si aucune. |
+| `api.factions.grudge` | `(a, b, { clear=false, scene=canvas?.scene }={})` | `runtime/factions.mjs` | Rend deux camps (ids de faction ou uuid de token) hostiles sur une scène (la scène affichée par défaut), ou lève cette rancune (`clear`) ; écrit la scène (MJ) et rend la liste des rancunes. |
+| `api.factions.grudges` | `(scene=canvas?.scene)` | `runtime/factions.mjs` | Les rancunes d'une scène (la scène affichée par défaut) : `[[a, b], …]`. |
+| `api.factions.list` | `()` | `runtime/factions.mjs` | Les factions du réglage, chacune avec son nom affiché (`label`). |
+| `api.factions.name` | `(id)` | `runtime/factions.mjs` | Le nom affiché de la faction `id` (traduit, sauf si le MJ l'a renommée). |
 | `api.factions.NONE` | _string_ |  |  |
-| `api.factions.of` | `(token)` | `dnd5e-combat.mjs` |  |
-| `api.factions.open` | `()` | `core/action.mjs` | Ouvre la résolution d'une action. @param {object} data @param {string} data.id @param {string} data.carrier Id du message qui porte la résolution. @param {string\|null} data.origin Id du message d'utilisation, s'il exist… |
+| `api.factions.of` | `(token)` | `runtime/factions.mjs` | L'id de faction d'un token (posée sur le token, sinon sur l'acteur, sinon `party` pour un PJ, sinon les règles du réglage), ou null. |
+| `api.factions.open` | `()` | `dnd5e-combat.mjs` | Ouvre (ou ramène devant) la fenêtre des factions sur ce client. |
 | `api.factions.PARTY` | _string_ |  |  |
-| `api.factions.relation` | `(a, b)` | `dnd5e-combat.mjs` |  |
-| `api.factions.relations` | `()` | `dnd5e-combat.mjs` |  |
+| `api.factions.relation` | `(a, b)` | `runtime/factions.mjs` | La relation de deux tokens : `"hostile"`, `"neutral"` ou `"allied"` (matrice des factions, sinon déduite des dispositions). |
+| `api.factions.relations` | `()` | `runtime/factions.mjs` | Une copie de la matrice des relations : `{ "<id>\|<id>": relation }` (une paire absente suit la disposition). |
 | `api.factions.remove` | `(id)` | `runtime/factions.mjs` | Retirer une faction : ses relations partent avec elle ; les flags qui la nomment sont ignorés (faction inconnue). |
 | `api.factions.setRelation` | `(a, b, relation)` | `runtime/factions.mjs` | Poser une relation (`null` : suivre la disposition). |
-| `api.factions.side` | `(token)` | `dnd5e-combat.mjs` |  |
-| `api.factions.stance` | `(token, stance=null)` | `dnd5e-combat.mjs` |  |
+| `api.factions.side` | `(token)` | `runtime/factions.mjs` | Le camp d'un token tel que le moteur le compare : `{ disposition, faction, uuid, stance }`. |
+| `api.factions.stance` | `(token, stance=null)` | `runtime/factions.mjs` | Poser ou lever l'attitude d'un token (`"neutral"` : rendu, l'ennemi de personne hors de sa faction). |
 | `api.factions.suggest` | `()` | `runtime/factions.mjs` | Les relations suggérées, sous celles déjà posées. |
 
 ## `api.floats`
@@ -218,30 +218,30 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 |---|---|---|---|
 | `api.heroic.has` | `(actor)` | `adapter/heroic.mjs` | Le personnage joueur a-t-il l'Inspiration héroïque ? |
 | `api.heroic.mode` | `()` | `adapter/heroic.mjs` | Le réglage de ce client : « on », « failure » ou « off » (« on » s'il n'est pas lisible). |
-| `api.heroic.set` | `(actor, on)` | `dnd5e-combat.mjs` |  |
+| `api.heroic.set` | `(actor, on)` | `dnd5e-combat.mjs` | MJ : donne (`on` vrai) ou retire l'Inspiration héroïque d'un personnage joueur, avec une carte de chat → vrai si elle a changé. |
 
 ## `api.mastery`
 
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
-| `api.mastery.judge` | `(actor, keys)` |  |  |
-| `api.mastery.open` | `(actor)` | `core/action.mjs` | Ouvre la résolution d'une action. @param {object} data @param {string} data.id @param {string} data.carrier Id du message qui porte la résolution. @param {string\|null} data.origin Id du message d'utilisation, s'il exist… |
-| `api.mastery.sources` | `(actor)` | `dnd5e-combat.mjs` |  |
+| `api.mastery.judge` | `(actor, keys)` | `ui/mastery.mjs` | Juge un choix de bottes (`keys` : identifiants d'arme) pour l'acteur, sans rien écrire → `{ ok, reason, slots, removed }`. |
+| `api.mastery.open` | `(actor)` | `ui/mastery.mjs` | §222 : ouvre, sur ce client, la fenêtre des bottes d'arme de l'acteur (déjà ouverte : elle passe devant). |
+| `api.mastery.sources` | `(actor)` | `ui/mastery.mjs` | Les sources de bottes d'arme de l'acteur (avancements « Trait » en mode « mastery » de ses classes, sous-classes et dons), lues dans ses items. |
 
 ## `api.mcp`
 
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
-| `api.mcp.actionEnd` | `({ tokenId, targetId=null })` | `runtime/testing-rules.mjs` |  |
-| `api.mcp.advanceTime` | `({ seconds })` | `runtime/testing.mjs` |  |
+| `api.mcp.actionEnd` | `({ tokenId, targetId=null })` | `runtime/testing-rules.mjs` | §43.2 : sans `targetId`, le token `tokenId` s'échappe de son agrippement ; avec, il met fin au premier effet de la cible que son action termine → `{ done }`. |
+| `api.mcp.advanceTime` | `({ seconds })` | `runtime/testing.mjs` | MJ : avance le temps du monde de `seconds` secondes (`game.time.advance`) → `{ worldTime }`. |
 | `api.mcp.animations` | `()` | `runtime/animations.mjs` | Les animations suivies et le relevé récent (test). |
 | `api.mcp.atCost` | `({ action="list", id=null, cost, card=null, tokenId=null, message=null }={})` | `runtime/testing.mjs` | Issue #32 : succès à un prix, pour les scénarios — `list` (les pauses ouvertes chez le MJ actif), `offer` (une pause prise ; `cost` donné : sans la fenêtre du MJ), `dismiss`, `row` (une ligne d'un jet demandé, `card` +… |
 | `api.mcp.attackReasons` | `({ attackerId, targetId, itemId, attackMode=null })` | `runtime/testing-rules.mjs` | Les raisons d'Avantage et de Désavantage que le moteur donnerait à cette attaque (core/conditions.mjs), et les créatures hostiles au contact de l'attaquant — pour comprendre un jet « normal » inattendu. |
-| `api.mcp.awaiting` | `({ action="list", tokenId=null, kind="reaction", seconds=null }={})` | `runtime/testing.mjs` |  |
+| `api.mcp.awaiting` | `({ action="list", tokenId=null, kind="reaction", seconds=null }={})` | `runtime/testing.mjs` | §381 : `action` « list » (les attentes connues de ce client), « open » (une fenêtre sonde marquée pour `tokenId`) ou « result » (sa réponse). |
 | `api.mcp.barrier` | `({ attackerId, targetId, itemId, activityType=null })` | `runtime/testing.mjs` | O9h (§363) : la barrière qui empêche cette action d'atteindre sa cible (Coquille antivie, Parchemin de protection), ou null. |
 | `api.mcp.budget` | `({ tokenId })` | `runtime/testing-rules.mjs` | §20 : le budget du tour d'un combattant (action, action Bonus, Foncer, Se désengager, Vitesse à 0, déplacement en plus). |
 | `api.mcp.burning` | `({ tokenId, extinguish: put=false }={})` | `runtime/testing-rules.mjs` | §212 : En feu, pour un scénario — l'état, et `extinguish` : éteindre ses flammes comme l'entrée du menu. |
-| `api.mcp.castFromBar` | `({ tokenId, itemId, slot=null, x, y, sheet=false, type="summon", targetIds=null })` | `runtime/testing-areas.mjs` |  |
+| `api.mcp.castFromBar` | `({ tokenId, itemId, slot=null, x, y, sheet=false, type="summon", targetIds=null })` | `runtime/testing-areas.mjs` | MJ : lance l'activité `type` (invocation par défaut) comme la barre de DAS · Combat UI, sans attendre la fenêtre ni consommer (sauf `sheet: true`) → `{ started, profiles }` ; ce qui est posé se lit par `summonCaptured`. |
 | `api.mcp.castPicked` | `({ targetIds=[], upgrade=false, ...args })` | `runtime/testing.mjs` | §293 : ce que fait « Utiliser » de la fenêtre — `targetIds` cochés, `upgrade` : la case de l'activité qui remplace. |
 | `api.mcp.catalyst` | `({ tokenId })` | `runtime/testing-rules.mjs` | §289 : Seconde peau — le MJ déclare le catalyseur vécu (menu du token). |
 | `api.mcp.chainCheck` | `({ tokenId, itemId, targetIds })` | `runtime/testing-areas.mjs` | §286 : Chaîne d'éclairs — les cibles (après la première) trop loin de la première, par nom. |
@@ -267,10 +267,10 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.mcp.debugReport` | `({ description="", includeNames=false, token=null, all=false }={})` | `runtime/testing-debug.mjs` | Le rapport de ce client (MJ) : groupes relevés, Markdown, longueur du JSON et de l'adresse GitHub, dépôts proposés. Par défaut, comme la fenêtre, sans les entrées hors de la suite ; `all` les retient toutes. |
 | `api.mcp.debugThrow` | `({ message="test", via="route" }={})` | `runtime/testing-debug.mjs` | Fait échouer la sonde du routeur (`via: "route"`) ou rejette une promesse non attrapée (`via: "rejection"`). |
 | `api.mcp.debugVerbose` | `({ on }={})` | `runtime/testing-debug.mjs` | Le mode détaillé de ce client, et un envoi immédiat vers le MJ actif (sans effet chez lui). |
-| `api.mcp.diagnosticBackups` | `()` | `runtime/testing.mjs` |  |
+| `api.mcp.diagnosticBackups` | `()` | `runtime/testing.mjs` | Les sauvegardes du diagnostic du monde, la plus récente d'abord : `[{ id, uuid, name, date, roots, checks }]`. |
 | `api.mcp.diagnosticForget` | `({ uuids=[], dropPack=false, actors=[] }={})` | `runtime/testing.mjs` | Après un scénario : retire ces entrées de sauvegarde, et le compendium s'il est vide et que le scénario l'a créé (`dropPack`). |
 | `api.mcp.diagnosticRepair` | `({ checks=null, roots=null, options={} }={})` | `runtime/testing.mjs` | Répare les tâches réparables de ces vérifications dont la racine est l'un de ces uuid (toutes si `roots` est absent), avec ces options de vérification (`{ [checkId]: { [optionId]: valeur } }`). |
-| `api.mcp.diagnosticRestore` | `({ uuid })` | `runtime/testing.mjs` |  |
+| `api.mcp.diagnosticRestore` | `({ uuid })` | `runtime/testing.mjs` | MJ : restaure la sauvegarde `uuid` du diagnostic, après avoir sauvegardé l'état actuel des mêmes documents → `{ lines, before }`. |
 | `api.mcp.diagnosticScan` | `({ checks=null }={})` | `runtime/testing.mjs` | Analyse (rien n'est écrit) : les tâches, sans leurs fonctions. |
 | `api.mcp.door` | `({ tokenId, wallId, open=true })` | `runtime/testing-moves.mjs` | §152 : ouvrir ou fermer une porte comme l'entrée « Ouvrir / Fermer » du menu (`setDoorOpen` : s'avancer au contact par `approachDoor`, puis agir). Rend l'état de la porte et la position du token après coup. |
 | `api.mcp.dropDown` | `({ tokenId })` | `runtime/testing-moves.mjs` | « Se laisser tomber » : chute volontaire, comme l'entrée de menu. |
@@ -280,24 +280,24 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.mcp.etherealWalls` | `({ tokenId, point })` | `runtime/testing-rules.mjs` | §225, lot 3 : les murs qui arrêtent le voyage éthéré, vus du token, et si un pas de son centre à `point` en franchit un. |
 | `api.mcp.factions` | `({ op="state", tokenIds=[], faction=null, actor=false, a, b, relation=null, aId, bId, name, value, clear=false, stance=null }={})` | `runtime/testing-rules.mjs` | §181 : les factions, pour un scénario. `op` : `state` (réglage, rancunes, factions des tokens donnés), `snapshot` / `restore` (le réglage entier, `value`), `add` ({ name } → id), `relation` ({ a, b } faction ids, `relat… |
 | `api.mcp.familiar` | `({ tokenId, clear=false })` | `runtime/testing-moves.mjs` | §107 : l'état d'un familier ou d'un maître — familier reconnu, vision, actions de base, poche dimensionnelle (le familier gardé et ses PV ; `clear` la vide) ; et les gestes : congé (`tokenId` du familier), rappel (`toke… |
-| `api.mcp.familiarPocket` | `({ tokenId })` | `runtime/testing-moves.mjs` |  |
-| `api.mcp.familiarRecall` | `({ tokenId, point })` | `runtime/testing-moves.mjs` |  |
+| `api.mcp.familiarPocket` | `({ tokenId })` | `runtime/testing-moves.mjs` | §107 : le familier `tokenId` part dans sa poche dimensionnelle (comme l'entrée de menu) → `{ done }`. |
+| `api.mcp.familiarRecall` | `({ tokenId, point })` | `runtime/testing-moves.mjs` | §107 : le maître `tokenId` rappelle son familier à `point` → `{ done, refusal, tokens }` (les familiers de la scène, avec leurs PV). |
 | `api.mcp.flammable` | `({ tokenId, ignite: light=false, regionId=null, fireAt=null })` | `runtime/testing-rules.mjs` | §188 : les zones inflammables de la scène (en feu ou non) et celles que ce token peut allumer ; `ignite` : embrase la première qu'il peut allumer (ou `regionId`), comme l'entrée « Allumer » du menu. |
 | `api.mcp.flight` | `({ tokenId, run=false })` | `runtime/testing-moves.mjs` | §238 : ce que le menu propose pour le vol à un token (choix, libellés) ; `run` : le jouer, comme un clic sur l'entrée. |
 | `api.mcp.follow` | `({ followerId, leaderId })` | `runtime/testing-moves.mjs` | §41.3 : l'ordre de suivre, de ne plus suivre, et qui suit qui. |
-| `api.mcp.followState` | `({ tokenId })` | `runtime/testing-moves.mjs` |  |
+| `api.mcp.followState` | `({ tokenId })` | `runtime/testing-moves.mjs` | Qui le token `tokenId` suit, qui le suit, et sa position : `{ leader, followers, position }` (§41.3). Lecture seule. |
 | `api.mcp.forcePlayerWait` | `({ id=null }={})` | `runtime/testing.mjs` | §290 : forcer une attente (`{ id }`, ou la plus ancienne). |
-| `api.mcp.foreignSetting` | `({ namespace, key, value })` | `runtime/testing.mjs` |  |
+| `api.mcp.foreignSetting` | `({ namespace, key, value })` | `runtime/testing.mjs` | MJ : lit un réglage de monde d'un autre espace (`namespace.key`) et, avec `value`, l'écrit → `{ key, before, now }`, ou `{ absent: true }`. |
 | `api.mcp.fortified` | `({ tokenId })` | `runtime/testing-rules.mjs` | §289 : Faveur de vigueur — le bonus de Constitution accordé maintenant à un soin (0 s'il est déjà pris depuis le début de son tour). |
 | `api.mcp.gmAlerts` | `()` | `runtime/testing.mjs` | §364 : les alertes MJ affichées dans le bandeau de ce client (textes). |
 | `api.mcp.grab` | `({ tokenId, dir=null })` | `runtime/testing-moves.mjs` | §216 : « S'agripper au bord » vers `dir` (ou le premier bord), comme l'entrée de menu ; rend les bords proposés et la position. |
 | `api.mcp.grappleState` | `({ tokenId })` | `runtime/testing-rules.mjs` | K4 (§325) : les empoignades que subit un token — DD d'évasion, allonge de la prise, prise tenue. |
 | `api.mcp.groupRoll` | `({ tokenIds=[], wait=true, ...request })` | `runtime/testing-rules.mjs` | §242 : une demande de jets aux tokens donnés, comme le bouton « Demander » ; `wait: false` rend la carte tout de suite (les joueurs peuvent prendre leur temps), sinon le point final. |
-| `api.mcp.groupRollBreakdown` | `({ tokenId, ...request })` | `runtime/testing-rules.mjs` |  |
+| `api.mcp.groupRollBreakdown` | `({ tokenId, ...request })` | `runtime/testing-rules.mjs` | §242 : les tuiles du bonus de l'acteur du token `tokenId` pour la demande donnée (comme `api.rolls.breakdown`). |
 | `api.mcp.groupRollForce` | `({ id, tokenId })` | `runtime/testing-rules.mjs` | §242 : « Lancer pour lui » sur une ligne de la carte (refusé si elle a déjà un jet), et le mode du système pour une demande. |
-| `api.mcp.groupRollMode` | `({ tokenId, ...request })` | `runtime/testing-rules.mjs` |  |
+| `api.mcp.groupRollMode` | `({ tokenId, ...request })` | `runtime/testing-rules.mjs` | §242 : l'Avantage / le Désavantage que dnd5e donnera à l'acteur du token `tokenId` pour la demande (comme `api.rolls.mode`). |
 | `api.mcp.groupRollState` | `({ id })` | `runtime/testing-rules.mjs` | §242 : le point d'une carte de demande, et les tuiles de bonus d'un token pour une demande. |
-| `api.mcp.hampered` | `({ tokenId })` | `runtime/testing.mjs` |  |
+| `api.mcp.hampered` | `({ tokenId })` | `runtime/testing.mjs` | §134 : Rapide — le nom de l'item qui donne le Désavantage aux attaques d'opportunité contre l'acteur du token `tokenId`, ou null. |
 | `api.mcp.heal` | `({ tokenId, amount })` | `runtime/testing-rules.mjs` | §23 : soigne un token comme le ferait un sort (`applyDamage` de type « healing ») ; rend ses PV avant et après. |
 | `api.mcp.hoist` | `({ tokenId, dir=null })` | `runtime/testing-moves.mjs` | §209 : se hisser sur le rebord `dir` (« n », « s », « e », « w » ; le premier sinon), comme l'entrée de menu. |
 | `api.mcp.hood` | `({ actorId, itemId, down=null })` | `runtime/testing.mjs` | §346 : baisse (`down: true`) ou lève le capuchon d'une source allumée. |
@@ -335,12 +335,12 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.mcp.ready` | `({ tokenId, name=null, trigger="enters", targetId=null }={})` | `runtime/testing-rules.mjs` | §211 : Se tenir prêt, pour un scénario — sans `name`, ce que le token peut préparer et son plan ; avec, le plan rangé (l'option dont le nom contient `name`, le déclencheur, la créature `targetId`, l'emplacement le plus… |
 | `api.mcp.reload` | `()` | `runtime/testing.mjs` | Le F5 du client du MJ, pour qu'il relise le code du moteur après un changement : la réponse part avant le rechargement. Réservé au MJ ; `call-module-api` n'existe que dans un monde où le réglage « Outils de test » du co… |
 | `api.mcp.removeItemEffect` | `({ actorId, itemId, effectId })` | `runtime/testing.mjs` | §346 : retire un effet d'un item de l'acteur (un enchantement appliqué). |
-| `api.mcp.reports` | `()` | `adapter/automation.mjs` | Les signalements du monde : `{ uuid de l'item: { actor, actorUuid, item, identifier, note, at } }`. |
+| `api.mcp.reports` | `()` | `runtime/testing.mjs` | Les items signalés en partie par le MJ (SPEC §9.2), pour le bilan relu par Claude. |
 | `api.mcp.restoreItem` | `({ actorId, itemData })` | `runtime/testing.mjs` | Rend un item à un acteur sous son identifiant d'origine (`keepId`), pour un scénario qui le lui a fait perdre (Lâche d'Injonction posée en tas par un module voisin) : le connecteur crée toujours un nouvel identifiant, e… |
 | `api.mcp.rollCard` | `({ messageId })` | `runtime/testing.mjs` | Le clic sur « Dégâts » ou « Soins » d'une carte d'utilisation dont le moteur attend le jet de l'auteur (soins, dégâts laissés au système) : ce que le connecteur ne fait pas seul (il ne lance que les attaques). Même chem… |
 | `api.mcp.rollCheck` | `({ tokenId, skill=null, ability=null })` | `runtime/testing-rules.mjs` | §90 : un test de compétence (`skill`) ou de caractéristique (`ability`), sans fenêtre ; ce qui suit le jet (dé ajouté) n'est pas attendu. |
 | `api.mcp.rollSave` | `({ tokenId, ability })` | `runtime/testing-rules.mjs` | §23 : un jet de sauvegarde du token, sans fenêtre ; rend sa formule et son total. |
-| `api.mcp.runMacro` | `({ uuid }={})` | `runtime/testing.mjs` |  |
+| `api.mcp.runMacro` | `({ uuid }={})` | `runtime/testing.mjs` | MJ : exécute la macro `uuid` sans l'attendre (une erreur part en console) → `{ started }` (son nom). |
 | `api.mcp.saveChance` | `({ casterId, targetId, itemId, activityId=null })` | `runtime/testing-rules.mjs` | La chance d'échec de la sauvegarde que la pastille afficherait (§15.3), pour la comparer au vrai jet. |
 | `api.mcp.scatter` | `({ tokenId, pickUp: take=false })` | `runtime/testing-rules.mjs` | §187 : les objets répandus de la scène (chausse-trapes, billes) et ceux que ce token peut ramasser ; `pickUp` : ramasse le premier, comme l'entrée « Ramasser » du menu. |
 | `api.mcp.screenAfterUpdate` | `({ observerId, targetIds=[] })` | `runtime/testing-vision.mjs` | Issue #42, suite (Archibald) : l'écran de l'observateur APRÈS une mise à jour de son acteur, sans remise en place de toutes les sources — la préparation des données du token effaçait les modes en mémoire (Vision du diab… |
@@ -363,17 +363,17 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.mcp.stealth` | `({ op="state", tokenId, on=true }={})` | `runtime/testing-rules.mjs` | §184 : la Furtivité BG3, pour un scénario. `op` : `state` \| `set` ({ on }) \| `check` \| `forget`. |
 | `api.mcp.storm` | `({ tokenId, itemId })` | `runtime/testing-areas.mjs` | §70 : l'orage d'un item sur la scène (nuage, « déjà là », visée en cours). |
 | `api.mcp.stormStrike` | `({ x, y })` | `runtime/testing-areas.mjs` | §70 : le clic de la visée de l'éclair (un point de la scène) : la pose du cœur est fermée, l'éclair posé au point. |
-| `api.mcp.summonAt` | `({ tokenId, itemId, activityId=null, profile=null, actorUuid=null, x, y })` | `runtime/testing-areas.mjs` |  |
+| `api.mcp.summonAt` | `({ tokenId, itemId, activityId=null, profile=null, actorUuid=null, x, y })` | `runtime/testing-areas.mjs` | MJ : utilise l'activité d'invocation de l'item (`activityId`, sinon la première) sans rien consommer, puis pose les créatures du profil (`profile`, sinon le premier) à la case `x`, `y` → `{ messageId, tokens: [{ id, nam… |
 | `api.mcp.summonCaptured` | `()` | `runtime/testing-areas.mjs` | §383 : ce que la dernière `castFromBar` a invoqué (profil reçu par dnd5e, tokens posés), ou null tant que rien n'est parti. |
 | `api.mcp.takeStairs` | `({ tokenId, point, levelId })` | `runtime/testing-moves.mjs` | §41.2 : prendre l'escalier sous ce point jusqu'à `levelId`, comme un clic dessus (sans le dialogue du cœur). |
 | `api.mcp.teleport` | `({ tokenId, itemId, x, y, passengers=[] })` | `runtime/testing-moves.mjs` | Une destination de téléportation de soi (Foulée brumeuse), comme la rendrait le clic de la planification du cœur : le plan passe par le même point de contrôle (`dnd5e.teleport`, que le moteur tient : portée, case occupé… |
 | `api.mcp.teleportPick` | `({ x, y })` | `runtime/testing-moves.mjs` | §67 ter : le clic du moteur pendant la visée d'une téléportation (un point de la scène), sans la souris. |
 | `api.mcp.threats` | `({ tokenId, point })` | `runtime/testing-moves.mjs` | §23 : qui menacerait d'une attaque d'opportunité un déplacement en ligne droite jusqu'à ce point (noms). |
-| `api.mcp.timer` | `({ tokenId, seconds=5, label="" }={})` | `dnd5e-combat.mjs` |  |
+| `api.mcp.timer` | `({ tokenId, seconds=5, label="" }={})` | `dnd5e-combat.mjs` | Lance chez tous les clients une minuterie de `seconds` s au-dessus du token `tokenId` de la scène affichée → `{ id }`. |
 | `api.mcp.toggleLight` | `({ actorId, itemId, on=null })` | `runtime/testing.mjs` | §121 : allumer ou éteindre une source portée sans passer par son activité (la Torche n'en a pas), comme le menu de l'inventaire ; rend le résultat et l'état de la source. `on` absent : l'inverse. |
 | `api.mcp.tokenLight` | `({ tokenId })` | `runtime/testing-areas.mjs` | §287 : la lumière du token telle que la rendent ses effets (`token.light.*` appliqués par le cœur), pas celle de sa source. |
 | `api.mcp.transpose` | `({ tokenId })` | `runtime/testing-moves.mjs` | §38.2 : l'échange de place du Troc du filou, comme l'entrée du menu (depuis l'illusion ou son lanceur) ; positions avant / après. |
-| `api.mcp.unfollow` | `({ tokenId })` | `runtime/testing-moves.mjs` |  |
+| `api.mcp.unfollow` | `({ tokenId })` | `runtime/testing-moves.mjs` | Le token `tokenId` (scène affichée) cesse de suivre son meneur (§41.3) → `{ stopped }`. |
 | `api.mcp.upkeep` | `({ tokenId, maintain=false })` | `runtime/testing-rules.mjs` | §285 : l'entretien d'un sort (Couronne du dément) — l'état, l'entrée du menu offerte, et `maintain` : l'action Magie prise. |
 | `api.mcp.use` | `({ tokenId, itemId, activityType=null, extra=null, consume=false })` | `runtime/testing-rules.mjs` | Une activité utilisée comme au clic (§47) : pose de zone de dnd5e comprise — à la différence de `use-activity` du connecteur, qui la coupe (`create.measuredTemplate: false`). Sans emplacement ; la fenêtre de dnd5e, si e… |
 | `api.mcp.view` | `({ levelId })` | `runtime/testing-moves.mjs` | Affiche un niveau de la scène chez le MJ (un déplacement du moteur fait suivre la vue : le scénario la rend). |
@@ -396,30 +396,30 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
-| `api.perf.longTasks` | `()` | `dnd5e-combat.mjs` |  |
-| `api.perf.report` | `()` | `dnd5e-combat.mjs` |  |
-| `api.perf.reset` | `()` | `dnd5e-combat.mjs` |  |
-| `api.perf.table` | `(limit=25)` | `dnd5e-combat.mjs` |  |
+| `api.perf.longTasks` | `()` | `runtime/perf.mjs` | Les « tâches longues » du navigateur depuis le chargement ou `reset()` : `{ count, totalMs, maxMs, sinceMinutes }` (Chromium seulement). |
+| `api.perf.report` | `()` | `runtime/perf.mjs` | Le temps passé par chaque inscrit du routeur sur ce client, le plus coûteux d'abord : `[{ hook, label, calls, totalMs, avgMs, maxMs, slow, asyncMaxMs }]`. |
+| `api.perf.reset` | `()` | `runtime/perf.mjs` | Remet à zéro le relevé de ce client (temps des inscrits, avertissements, tâches longues). |
+| `api.perf.table` | `(limit=25)` | `runtime/perf.mjs` | Affiche en console les `limit` lignes les plus coûteuses de `report()`, puis les tâches longues ; ne rend rien. |
 
 ## `api.reports`
 
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
-| `api.reports.clear` | `(uuid)` | `ui/awaiting.mjs` |  |
-| `api.reports.list` | `()` | `dnd5e-combat.mjs` |  |
-| `api.reports.open` | `()` | `core/action.mjs` | Ouvre la résolution d'une action. @param {object} data @param {string} data.id @param {string} data.carrier Id du message qui porte la résolution. @param {string\|null} data.origin Id du message d'utilisation, s'il exist… |
-| `api.reports.text` | `()` | `dnd5e-combat.mjs` |  |
+| `api.reports.clear` | `(uuid)` | `ui/automation.mjs` | Retire le signalement d'un item (par uuid), ou tous sans argument ; écrit un réglage de monde (MJ). |
+| `api.reports.list` | `()` | `ui/automation.mjs` | Les items signalés par le MJ (réglage de monde) : `{ uuid de l'item: { actor, actorUuid, item, identifier, note, at } }`. |
+| `api.reports.open` | `()` | `ui/automation.mjs` | Ouvre le panneau du bilan sur ce client. |
+| `api.reports.text` | `()` | `ui/automation.mjs` | Le bilan des signalements en texte brut, par acteur, à coller dans une conversation. |
 
 ## `api.rolls`
 
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
-| `api.rolls.breakdown` | `(actor, input)` | `dnd5e-combat.mjs` |  |
+| `api.rolls.breakdown` | `(actor, input)` | `runtime/group-roll.mjs` | Les tuiles du bonus d'un acteur pour une demande (`{ type, key, … }` comme `request`) : `[{ kind, label, value, … }]`, indicatives ; [] si la demande est invalide. |
 | `api.rolls.force` | `(messageId, actorUuid)` | `runtime/group-roll.mjs` | MJ : lance pour un personnage qui tarde (fenêtre de suivi). Sa fenêtre se ferme chez son joueur (le jet arrive d'ailleurs). @returns {Promise<boolean>} true si un jet a été fait. |
-| `api.rolls.mode` | `(actor, input)` | `runtime/falls.mjs` |  |
+| `api.rolls.mode` | `(actor, input)` | `runtime/group-roll.mjs` | L'Avantage / le Désavantage que dnd5e donnera de lui-même à cet acteur pour la demande (fiche, effets, états) : `{ advantage, disadvantage }`. |
 | `api.rolls.open` | `({ actors=[], values={} }={})` | `ui/group-roll.mjs` | Ouvre la fenêtre de demande (MJ). `actors` : acteurs, tokens ou uuid cochés d'office ; `values` : les champs pré-remplis (`type`, `key`, `dc`, `hideDc`, `mode`, `bonus`, `label`, `group`). |
 | `api.rolls.request` | `({ actors, ...input }={})` | `runtime/group-roll.mjs` | Pose la demande et fait lancer chacun. MJ seulement. @param {object} options La demande (core/group-roll.mjs `normalizeRequest`) et : @param {Array<Actor\|Token\|TokenDocument\|string>} options.actors @returns {Promise<obj… |
-| `api.rolls.title` | `(input)` | `dnd5e-combat.mjs` |  |
+| `api.rolls.title` | `(input)` | `runtime/group-roll.mjs` | Le titre du test demandé, dans les mots de dnd5e (« Test de Sagesse (Perspicacité) ») ; "" si la demande est invalide. |
 | `api.rolls.tracker` | `()` | `ui/group-roll-tracker.mjs` | Ouvre (ou ramène devant) la fenêtre de suivi, MJ seulement. |
 | `api.rolls.view` | `(messageId)` | `runtime/group-roll.mjs` | Le point d'une carte, pour un voisin (filtré pour un joueur quand le DD est caché). |
 
@@ -440,12 +440,12 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
-| `api.sneak.check` | `()` | `runtime/stealth.mjs` | Pour chaque token caché de la scène et chaque ennemi en état : entré dans sa vue ? |
+| `api.sneak.check` | `()` | `runtime/stealth.mjs` | Règles `bg3` : juge tout de suite la scène affichée (qui entre dans la vue de qui, tests de Discrétion, repérages). À lancer chez le MJ actif. |
 | `api.sneak.is` | `(token)` | `adapter/stealth.mjs` | Le token (ou l'acteur) est-il caché ? |
-| `api.sneak.rules` | `()` | `dnd5e-combat.mjs` |  |
+| `api.sneak.rules` | `()` | `runtime/stealth.mjs` | Les règles de furtivité du monde (réglage `stealthRules`) : `"2024"` ou `"bg3"`. |
 | `api.sneak.set` | `(token, on=undefined)` | `runtime/stealth.mjs` | Se cacher ou ne plus l'être (`on` absent : basculer). |
 | `api.sneak.spottedBy` | `(token)` | `adapter/stealth.mjs` | Les tokens qui ont repéré ce token caché (ids, règles BG3). |
-| `api.sneak.toggle` | `(token)` | `dnd5e-combat.mjs` |  |
+| `api.sneak.toggle` | `(token)` | `runtime/stealth.mjs` | Bascule l'action Furtivité du token (caché ↔ visible), comme le raccourci Alt+C → `{ hidden, … }` (le résultat de `set`). |
 
 ## `api.theater`
 
@@ -460,14 +460,14 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 |---|---|---|---|
 | `api.ui.awaiting` | `()` | `ui/awaiting.mjs` | `api.ui.awaiting()` : les attentes en cours connues de ce client (forme publique), et ce que ce client en montre. |
 | `api.ui.budget` | `(combatant)` | `ui/api.mjs` | Le budget du tour d'un combattant, tel que le moteur le juge : une action reste disponible tant que l'action Attaquer a des attaques à donner ; la réaction suit « pas deux dans le même tour » (§19.6). null hors d'un com… |
-| `api.ui.carriedLight` | `(item)` | `dnd5e-combat.mjs` |  |
-| `api.ui.carriedLights` | `(actor)` | `dnd5e-combat.mjs` |  |
+| `api.ui.carriedLight` | `(item)` | `ui/api.mjs` | L'état d'une source de lumière portée (item ou uuid) : `{ uuid, name, img, lit, left, full, fuel }`, ou null si l'item n'en est pas une. |
+| `api.ui.carriedLights` | `(actor)` | `ui/api.mjs` | §121 : `carriedLights(actor)` — les sources de lumière portées de l'acteur : `{ uuid, name, img, lit, left, full, fuel }` (`left`, `full` en secondes ou null ; `fuel` : `{ identifier, name, quantity }` ou null). `toggle… |
 | `api.ui.cell` | `(activity)` | `ui/api.mjs` | §205 : les raisons (`issues`) et le coût (`cost`) d'une case d'interface en un seul calcul. Les deux passent par `useIssues` : une barre qui les demandait séparément le faisait deux fois par case (28 cases : ~14 ms chac… |
 | `api.ui.cost` | `(activity)` | `ui/api.mjs` | §137 : ce que coûterait cette activité au budget du tour, tel que le moteur le jugera — « action », « bonus », « reaction », autre chose ou null. Diffère de l'activation de la donnée quand une règle la change (Observate… |
 | `api.ui.cover` | `(attacker, target, activity, options={})` | `ui/api.mjs` | #33 : l'abri qu'aurait `target` contre une attaque de `attacker` avec `activity`, tel que CE client peut le montrer — le calcul du verdict, mais un joueur ne compte que les créatures qu'il voit (l'invisible ne se trahit… |
 | `api.ui.doorMenu` | `(wall)` | `ui/pointer-menu.mjs` | Le menu d'une porte (`wall` : Wall, WallDocument ou id) et celui d'une case (`point` : `{ x, y }` de la scène) pour le token en main, comme `menuEntriesFor` : les mêmes entrées que le clic droit, celles des voisins comp… |
 | `api.ui.globalLight` | `()` | `ui/illumination.mjs` | Ce que donne la lumière globale de la scène affichée, selon les règles du moteur (§16.52 : plage d'obscurité, « vive », crépuscule) — pour un module d'affichage qui veut le même « plein jour » que les règles (`api.ui.gl… |
-| `api.ui.groundMenu` | `(point)` | `ui/pointer-menu.mjs` |  |
+| `api.ui.groundMenu` | `(point)` | `ui/pointer-menu.mjs` | Le menu d'une case (`point` : `{ x, y }` de la scène) pour le token en main : `[{ icon, label, run }]`, voisins compris ; vide sans token en main. |
 | `api.ui.issues` | `(activity, options={})` | `ui/api.mjs` | Ce qui cloche si cette activité était utilisée maintenant, avant de savoir qui elle vise (budget et tour, emplacement déjà lancé ce tour, Silence, limites d'usage, états qui empêchent d'agir, Rage) : les raisons, tradui… |
 | `api.ui.light` | `(token)` | `ui/illumination.mjs` | La lumière où se tient un token, pour une interface (`api.light`, demandée par Darsh UI DnD5 le 2026-09-27). @param {Token\|TokenDocument} token @returns {{key: "bright"\|"dim"\|"dark"\|"magical", icon: string, name: string… |
 | `api.ui.movableZone` | `(activity)` | `ui/api.mjs` | §111 : l'activité a-t-elle une zone déplaçable déjà posée (Rayon de lune) ? L'utiliser la déplace alors (ui/pointer.mjs, §16.14) : rien n'est lancé, aucun emplacement n'est dépensé — une interface ne doit ni la griser f… |
@@ -476,7 +476,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.ui.ritual` | `(activity)` | `ui/api.mjs` | §139 : comment ce sort se lancerait maintenant — « ritual » : en rituel d'office (sans emplacement, même non préparé avec Savoir rituel) ; « ask » : le joueur choisira rituel ou emplacement ; « none » : comme d'habitude… |
 | `api.ui.targeting` | `()` | `ui/pointer.mjs` | §118 : la visée que ce client attend, pour les modules voisins (`api.ui.targeting()`) — tant qu'elle est ouverte, le clic gauche est au moteur, quel que soit ce qu'il y a sous la souris (cadavre, coffre, marchand). `{ t… |
 | `api.ui.timer` | `({ token, seconds, label="", icon="gear", id=null }={})` | `ui/timers.mjs` | Lance une minuterie au-dessus d'un token, chez tous les clients connectés. @param {{token: TokenDocument\|Token\|string, seconds: number, label?: string, icon?: string, id?: string}} options @returns {{id: string, done: P… |
-| `api.ui.toggleLight` | `(item, on=null)` | `runtime/testing.mjs` | §121 : allumer ou éteindre une source portée sans passer par son activité (la Torche n'en a pas), comme le menu de l'inventaire ; rend le résultat et l'état de la source. `on` absent : l'inverse. |
+| `api.ui.toggleLight` | `(item, on=null)` | `ui/api.mjs` | §121 : allume ou éteint une source portée (item ou uuid ; `on` absent : l'inverse), sur le client du porteur → `{ changed, lit?, left?, refilled?, reason? }`. |
 | `api.ui.tokenMenu` | `(target)` | `ui/pointer-menu.mjs` | §41.4 : les entrées du menu contextuel d'un token, pour une interface qui veut les offrir ailleurs que sur le canevas (le portrait du Groupe de Darsh UI DnD5) : ce que le token en main (le seul contrôlé, à soi) peut fai… |
 | `api.ui.wards` | `(actor)` | `ui/api.mjs` | §108 : les réserves qui absorbent les dégâts de cet acteur, actives (Égide arcanique créée depuis le dernier repos long) : points restants et maximum (les utilisations de l'item, adapter/absorb.mjs). Vide sans réserve a… |
 
@@ -499,7 +499,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
-| `api.waits.force` | `(id)` | `dnd5e-combat.mjs` |  |
+| `api.waits.force` | `(id)` | `dnd5e-combat.mjs` | MJ : force l'attente `id` (le client du joueur résout ses fenêtres comme au bout du délai) → vrai si l'attente existait ; faux pour un joueur. |
 | `api.waits.list` | `()` | `adapter/player-wait.mjs` | Les attentes en cours, la plus ancienne d'abord. |
 | `api.waits.open` | `()` | `ui/player-waits.mjs` | Ouvre (ou ramène devant) la fenêtre de suivi, MJ seulement. |
 

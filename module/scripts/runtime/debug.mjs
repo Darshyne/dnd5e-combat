@@ -24,6 +24,10 @@ export const DEBUG_CAPTURE_SETTING = "debugCapture";
 export const DEBUG_ALL_SETTING = "debugAllModules";
 export const DEBUG_QUERY = `${MODULE_ID}.debug`;
 export const DEBUG_VERBOSE_QUERY = `${MODULE_ID}.debugVerbose`;
+/**
+ * §380 : sur chaque client, au `setup` de Foundry (même moteur en veille) : `(debugApi)`, le débogueur — un voisin s'y déclare (`register`)
+ * et ajoute ses gestes à la piste (`trail`).
+ */
 export const DEBUG_HOOK = `${MODULE_ID}.debug`;
 /** Une sonde pour les scénarios : un inscrit du routeur qui échoue exprès (message « DAS debug probe … »). */
 export const DEBUG_PROBE_HOOK = `${MODULE_ID}.debugProbe`;
@@ -313,17 +317,29 @@ export const debugApi = Object.freeze({
   },
   /** Un geste d'un voisin dans la piste : `trail(module, kind, text)`. */
   trail: (module, kind, text) => trail(kind, text, { module }),
+  /**
+   * Les erreurs relevées, groupées par signature, la plus récente d'abord — chez le MJ actif, celles que les joueurs lui envoient
+   * comprises.
+   */
   errors: () => errors.list(),
-  /** `total()` : toutes ; `total("suite")` : les erreurs DAS ; `total("others")` : hors DAS. */
+  /** Le nombre d'erreurs relevées : `total()` toutes ; `total("suite")` les erreurs DAS ; `total("others")` hors DAS. */
   total: which => errors.total(which),
+  /** La piste de ce client : ses 50 derniers gestes DAS (et ceux des voisins), du plus ancien au plus récent. */
   trailList: () => trailRing.list(),
+  /** Les lignes de console des modules de la suite gardées en mode détaillé (300 au plus) sur ce client. */
   logs: () => logRing.list(),
+  /** Les voisins déclarés par `register` : `[{ module, repo, collect }]`. */
   registered: () => Array.from(registered.values()),
+  /**
+   * Sans argument : le mode détaillé de ce client est-il allumé ? Avec `on` : l'allume ou l'éteint sur ce client, et rend le nouvel état.
+   */
   verbose: on => (on === undefined ? state.verbose : setVerbose(on)),
   verboseEverywhere: setVerboseEverywhere,
   /** Écouter les nouvelles erreurs (la pastille de l'interface) ; rend une fonction pour arrêter. */
   onError(fn) { listeners.add(fn); return () => listeners.delete(fn); },
+  /** Vide, sur ce client, les erreurs relevées, la piste, les lignes gardées et ce qui attendait d'être envoyé au MJ actif. */
   clear() { errors.clear(); trailRing.clear(); logRing.clear(); state.pending = []; },
+  /** La capture tourne-t-elle sur ce client (réglage client `debugCapture`) ? */
   enabled: () => state.enabled
 });
 

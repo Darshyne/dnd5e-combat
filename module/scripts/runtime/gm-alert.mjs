@@ -13,6 +13,10 @@ import { contentOf } from "../adapter/content.mjs";
 import { route } from "./router.mjs";
 import { esc, log, loc, viaActiveGM } from "./shared.mjs";
 
+/**
+ * §364 : chez le MJ actif, avant de poster une alerte MJ (et seulement si le réglage `gmAlerts` est allumé) : `({ text, item, actor })` —
+ * `item` le nom de l'item, `actor` l'acteur ou null. Annulable : `false` et ni carte, ni bandeau.
+ */
 export const GM_ALERT_HOOK = `${MODULE_ID}.gmAlert`;
 /** §365 : réglage de monde — sans lui, aucune alerte (ni carte, ni bandeau). */
 export const GM_ALERTS_SETTING = "gmAlerts";

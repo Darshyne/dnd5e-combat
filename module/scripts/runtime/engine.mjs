@@ -185,7 +185,9 @@ export const dispatcher = createDispatcher({
     if ( resolution.step === STEPS.DONE ) log("action resolved →", resolution.targets.map(t =>
       `${t.name}:${t.save ? ` save ${t.save.success ? "succeeded" : "failed"}${t.save.total === null ? " automatically" : ` (${t.save.total})`}` : ""}`
       + `${t.damage ? ` ${t.damage.applied} HP` : ""}${t.effects.length ? ` ${t.effects.length} effect(s)` : ""}`).join(" ; "));
-    // SPEC §5.6 : sortie en lecture seule pour les animations, un journal de combat, le connecteur MCP.
+    // SPEC §5.6 : à chaque étape d'une résolution (verdict, sauvegardes, dégâts, effets…), sur le client qui l'exécute (le MJ actif) :
+    // `(resolution, event)` — l'état de la résolution et ce qui l'a fait avancer. Sortie en lecture seule pour les animations, un journal de
+    // combat, le connecteur MCP.
     Hooks.callAll(`${MODULE_ID}.resolution`, resolution, event);
   }
 });

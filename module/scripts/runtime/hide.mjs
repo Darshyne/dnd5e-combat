@@ -47,6 +47,8 @@ export async function endHiding(actor, why) {
   await forgetSpotters(actor);
   log(`hide: ${actor.name} is no longer hidden (${why})`);
   ui.notifications.info(loc("Furtivite.Fin", { name: actor.name }));
+  // §183 : sur le client qui change l'état caché d'une créature : `(token, hidden)` — son premier token (TokenDocument, ou null) et
+  // le nouvel état. Lecture seule.
   Hooks.callAll(`${MODULE_ID}.sneak`, tokensOf(actor)[0] ?? null, false);
 }
 

@@ -1030,13 +1030,21 @@ export async function climbToward(token, target, { reachCells=1 }={}) {
 export const climbApi = Object.freeze({
   state: climbStateOf,
   holds: climbHoldsAt,
+  /** Les entrées d'escalade du menu du token (`{ icon, label, run }` : Grimper au mur, au plafond, Descendre, Se laisser tomber…). */
   entries: token => climbEntries(docOf(token)).map(({ icon, label, run }) => ({ icon, label, run })),
+  /** Grimper au mur de `cells` cases (sans `cells` : la fenêtre « combien de cases ») ; client qui possède le token → booléen. */
   up: (token, { cells=null }={}) => startClimb(docOf(token), { cells }),
+  /** §195 : « Courir sur le mur » (Mouvement acrobatique du moine), sans test ; comme `up` → booléen. */
   run: (token, { cells=null }={}) => startClimb(docOf(token), { cells, acrobatic: true }),
+  /** Grimper jusqu'au plafond (test des règles « maison » s'il est dû) ; client qui possède le token → booléen. */
   ceiling: token => climbToCeiling(docOf(token)),
+  /** Descendre le long du mur (ou du plafond) de `cells` cases (sans `cells` : la fenêtre) ; client qui possède le token → booléen. */
   down: (token, { cells=null }={}) => climbDown(docOf(token), { cells }),
+  /** Lâcher le mur ou le plafond (chute volontaire) ; faux si le token ne grimpe pas ou n'est pas à ce client. */
   drop: token => dropDown(docOf(token)),
+  /** §216 : les bords d'où le token peut se laisser pendre pour descendre le long du mur : `[{ dir, x, y, elevation, level, drop }]`. */
   edges: token => edgesBelowOf(docOf(token)),
+  /** §216 : « S'agripper au bord » `edge` (un élément de `edges`) ; client qui possède le token → booléen. */
   grab: (token, edge) => grabEdge(docOf(token), edge),
   toward: climbToward,
   enabled: climbSystemOn,   // §224 : le système d'escalade et de chute est-il allumé ? Hook `dnd5e-combat.climbSystem` (`enabled`)

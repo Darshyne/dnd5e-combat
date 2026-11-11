@@ -338,6 +338,7 @@ export function stopWalking(token) {
   return true;
 }
 
+/** §102 : arrête toutes les marches du moteur lancées par ce client (chaque token, au prochain point de contrôle) ; ne rend rien. */
 export function stopAllWalks() {
   for ( const token of Array.from(walks.keys()) ) stopWalking(token);
 }

@@ -44,9 +44,15 @@ export async function toggleEthereal(tokens=null, active=null) {
 export const SETTING = "etherealPlane";
 
 export const etherealApi = Object.freeze({
+  /** L'automatisation du plan Éthéré est-elle allumée (réglage de monde `etherealPlane`) ? Hook `dnd5e-combat.etherealPlane`. */
   enabled: () => etherealPlaneOn(),
+  /** MJ : allume (`on` absent ou vrai) ou coupe l'automatisation du plan Éthéré → la promesse du réglage écrit ; null pour un joueur. */
   setEnabled: on => (game.user.isGM ? game.settings.set(MODULE_ID, SETTING, on !== false) : null),
+  /** La créature (token, document ou acteur) est-elle dans le plan Éthéré (état `ethereal` de dnd5e) ? */
   is: t => isEthereal(docOf(t)),
+  /**
+   * L'observateur peut-il percevoir la cible quant au plan (même plan : oui ; sinon la règle du cœur) ? Le reste de la vue n'est pas jugé.
+   */
   perceives: (observer, target) => perceivesPlane(docOf(observer), docOf(target)),
   toggle: toggleEthereal
 });
@@ -123,6 +129,7 @@ async function syncAction(effect) {
 async function applied(value) {
   setEtherealPlaneState(value);
   log(`Ethereal Plane automation ${value ? "on" : "off"}`);
+  // §225 : sur chaque client, quand le MJ allume ou coupe l'automatisation du plan Éthéré (réglage de monde) : `({ enabled })`. Lecture seule.
   Hooks.callAll(`${MODULE_ID}.etherealPlane`, { enabled: etherealPlaneOn() });
   if ( canvas?.ready ) {
     canvas.perception.update({ refreshVision: true });

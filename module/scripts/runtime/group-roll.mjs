@@ -302,6 +302,8 @@ async function promptGroupRollNow(message, actor) {
       },
       roll, afterRoll, deadline: seconds ? Date.now() + (seconds * 1000) : null, signal: controller.signal, result: null
     };
+    // §242 : chez le joueur qui doit lancer, avant d'ouvrir la fenêtre de jet : `(prompt)` (champs décrits plus haut). Une interface qui
+    // prend la demande met dans `prompt.result` la promesse de son issue ; sans preneur, la fenêtre de dnd5e s'ouvre.
     Hooks.callAll(`${MODULE_ID}.groupRollPrompt`, prompt);
     const claimed = typeof prompt.result?.then === "function";
     if ( claimed ) {
@@ -411,6 +413,8 @@ function announce(message, { cancelled=false }={}) {
   const final = cancelled || (view.done && !announced.has(message.id));
   if ( final ) announced.add(message.id);
   const shown = visibleTo(view, { gm: game.user.isGM });
+  // §242 : sur chaque client, à chaque changement d'une carte de jets demandés : le point de la carte (DD retiré pour un joueur quand il
+  // est caché), avec `final` (vrai une fois, quand tous ont lancé ou que c'est annulé) et `cancelled`. Lecture seule.
   Hooks.callAll(`${MODULE_ID}.groupRoll`, { ...shown, final, cancelled });
   if ( final && pending.has(message.id) ) {
     pending.get(message.id)({ ...view, cancelled });
@@ -444,14 +448,23 @@ export const rollsApi = Object.freeze({
   request: requestGroupRoll,
   view: groupRollView,
   force: forceGroupRoll,
+  /**
+   * Les tuiles du bonus d'un acteur pour une demande (`{ type, key, … }` comme `request`) : `[{ kind, label, value, … }]`, indicatives ; []
+   * si la demande est invalide.
+   */
   breakdown: (actor, input) => {
     const { request } = normalizeRequest(input);
     return request ? breakdownOf(actor, request) : [];
   },
+  /**
+   * L'Avantage / le Désavantage que dnd5e donnera de lui-même à cet acteur pour la demande (fiche, effets, états) : `{ advantage,
+   * disadvantage }`.
+   */
   mode: (actor, input) => {
     const { request } = normalizeRequest(input);
     return request ? systemModeOf(actor, request) : { advantage: false, disadvantage: false };
   },
+  /** Le titre du test demandé, dans les mots de dnd5e (« Test de Sagesse (Perspicacité) ») ; "" si la demande est invalide. */
   title: input => {
     const { request } = normalizeRequest(input);
     return request ? testTitle(request) : "";

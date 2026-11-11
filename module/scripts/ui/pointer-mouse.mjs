@@ -130,9 +130,9 @@ export function onPointerDown(event) {
   // HUD) ; au relâchement, ce token est en main, mais le moteur n'ouvre pas son menu par-dessus (retour du 2026-10-18).
   down = { x: event.clientX, y: event.clientY, button: event.button, at: Date.now(), me: actingToken()?.id ?? null };
   if ( aimingByClick() || ((event.button === 2) && cancellable()) ) return swallow(event);
-  // §39.3 : un module voisin peut réclamer un clic gauche (fouiller un coffre, un cadavre, un tas au sol — Darsh Loot) en
-  // répondant `false` au hook `dnd5e-combat.claimClick` (appelé par Hooks.call) : le moteur l'ignore alors entièrement (ni
-  // déplacement, ni attaque). Le moteur ne connaît aucun de ces modules ; sans eux, rien ne change.
+  // §39.3 : sur ce client, à l'appui d'un clic gauche sur le plateau, avant que le moteur ne le traite : `(event)`. Annulable : un module
+  // voisin qui réclame le clic (fouiller un coffre, un cadavre, un tas au sol — Darsh Loot) rend `false`, et le moteur l'ignore
+  // entièrement (ni déplacement, ni attaque). Le moteur ne connaît aucun de ces modules ; sans eux, rien ne change.
   if ( (event.button === 0) && (Hooks.call(`${MODULE_ID}.claimClick`, event) === false) ) { down = null; return; }
   const me = actingToken();
   const hover = hoveredToken();

@@ -99,6 +99,8 @@ export function registerAuras() {
     name: "DND5ECOMBAT.Reglage.aurasOnlyInCombat.nom",
     hint: "DND5ECOMBAT.Reglage.aurasOnlyInCombat.aide",
     scope: "world", config: true, type: Boolean, default: false,
+    // Sur chaque client, quand le réglage `aurasOnlyInCombat` change (sans argument) : les auras se recalculent. Un voisin peut l'émettre
+    // pour le même effet.
     onChange: () => Hooks.callAll(`${MODULE_ID}.refreshAuras`)
   });
 

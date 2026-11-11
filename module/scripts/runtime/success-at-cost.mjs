@@ -25,14 +25,21 @@ import { esc, isExecutor, loc, locEsc, log, notice, say, tokenOfActor, viaActive
 
 export const AT_COST_SETTING = "successAtCost";
 export const AT_COST_HOLD_SETTING = "successAtCostHold";
-/** Public : après chaque réponse. */
+/**
+ * Issue #32 : chez le MJ actif, après chaque réponse à une réussite offerte : `({ actor, kind, accepted, cost, by })` — `kind` « attack »,
+ * « save » ou « check », `cost` le prix décrit, `by` « player » (le joueur a répondu) ou « gm » (pas de joueur connecté). Lecture seule.
+ */
 export const AT_COST_HOOK = `${MODULE_ID}.successAtCost`;
-/** Pour l'interface du MJ : une occasion ouverte, prise, ou close (`closed`). */
+/**
+ * Issue #32 : chez le MJ actif, pour son interface, quand une occasion (un jet raté de peu, pendant la pause) s'ouvre, est prise par le
+ * MJ (`claimed`) ou se ferme (`closed: true`) : `({ id, token, actor, name, what, total, needed, by, kind, deadline, seconds, claimed })`.
+ */
 export const AT_COST_CANDIDATE_HOOK = `${MODULE_ID}.successAtCostCandidate`;
 const AT_COST_MARK_QUERY = `${MODULE_ID}.successAtCostMark`;
 
 const read = (key, fallback) => { try { return game.settings.get(MODULE_ID, key) ?? fallback; } catch { return fallback; } };
 
+/** Issue #32 : la règle « succès à un prix » est-elle allumée (réglage de monde, coupé par défaut) ? */
 export const atCostEnabled = () => read(AT_COST_SETTING, false) === true;
 
 /** L'écart de l'aide pour un jet de cette créature (0 : rien à proposer). */

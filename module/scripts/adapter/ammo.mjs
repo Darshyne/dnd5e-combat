@@ -59,5 +59,7 @@ export function announceAmmoChange(item, changes) {
   if ( !last || !usesAmmo(item) ) return;
   const changed = Object.values(last).some(v => v && (typeof v === "object") && ("ammunition" in v));
   if ( !changed ) return;
+  // §274 : sur chaque client, quand la munition retenue d'une arme change (DAS, ou la fenêtre de dnd5e après le jet) : `(item, ammoId)`,
+  // l'id de la munition que tirera le prochain jet, ou null. Lecture seule.
   Hooks.callAll(`${MODULE_ID}.ammunition`, item, ammoState(item)?.current ?? null);
 }

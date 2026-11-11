@@ -8,6 +8,12 @@
  *   node tools/scenario.mjs                 tous les scénarios de tools/scenarios/
  *   node tools/scenario.mjs attaque zone    ceux-là seulement (nom de fichier sans extension)
  *   node tools/scenario.mjs <dossier|fichier.mjs>   des scénarios gardés ailleurs (le dépôt d'un autre module), mêlables aux noms
+ *   node tools/scenario.mjs --grep zone      ceux dont le nom, le titre ou l'en-tête contient ce mot (sans accents ; répétable : l'un OU l'autre)
+ *   node tools/scenario.mjs --section 239    ceux qui citent ce § du journal (§239 et §239.x ; répétable)
+ *   node tools/scenario.mjs --scene escalade ceux de cette scène (« arene » : l'Arène de test, aucune scène déclarée)
+ *   node tools/scenario.mjs --list [filtres] la sélection, sans rien jouer ni toucher au connecteur
+ * Les filtres se combinent (mot ET § ET scène) et choisissent dans la passe complète : un scénario interactif ou de diagnostic
+ * reste sauté, comme sans filtre. Liste complète : docs/reference/SCENARIOS.md.
  *
  * Un scénario marqué `interactive: true` (il attend un clic du MJ) ou `audit: true` (un diagnostic qui relève, sans vérifier) ne se
  * joue que nommé. `scene` : "keep" (Restored Keep), un nom de scène (« metres », « Redbrand Hideout [30x20] » : la scène de ce
@@ -19,10 +25,11 @@
  * a touché (PV, zones, combat), même s'il échoue. Code de sortie 1 si une vérification manque.
  */
 
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { connect } from "./lib/connector.mjs";
+import { matches, scenarioMeta } from "./lib/scenario-meta.mjs";
 import { ARENA, ARENE_INVOCATIONS, ARENE_PRIX, ARENE_REFUS, ARENE_SORTS, ARENE_VISION, RESTORED_KEEP } from "./lib/stages.mjs";
 
 const MODULE_ID = "dnd5e-combat";
@@ -501,7 +508,22 @@ function makeContext(mcp) {
 const dir = join(import.meta.dirname, "scenarios");
 // Un argument qui est un chemin (fichier .mjs ou dossier) désigne des scénarios d'ailleurs — ceux qu'un autre module garde dans son
 // propre dépôt (`node tools/scenario.mjs ../autre-module/tools/scenarios`, ou un fichier). Les autres sont des noms de tools/scenarios/.
-const args = process.argv.slice(2);
+const argv = process.argv.slice(2);
+// Options : `--list`, et les filtres `--grep <mot>`, `--section <§>`, `--scene <nom>` (répétables) ; le reste, des noms ou des chemins.
+const filters = { words: [], sections: [], scenes: [] };
+const OPTIONS = { "--grep": "words", "-g": "words", "--section": "sections", "--scene": "scenes" };
+const listOnly = argv.includes("--list");
+const args = [];
+for ( let i = 0; i < argv.length; i++ ) {
+  if ( argv[i] === "--list" ) continue;
+  if ( OPTIONS[argv[i]] ) {
+    if ( argv[i + 1] === undefined ) { console.error(`${argv[i]} attend une valeur`); process.exit(2); }
+    filters[OPTIONS[argv[i]]].push(argv[++i].replace(/^§/, ""));
+  }
+  else if ( argv[i].startsWith("--") ) { console.error(`option inconnue : ${argv[i]} (--list, --grep, --section, --scene)`); process.exit(2); }
+  else args.push(argv[i]);
+}
+const filtered = filters.words.length || filters.sections.length || filters.scenes.length;
 const external = args.filter(a => existsSync(a) && (statSync(a).isDirectory() || a.endsWith(".mjs"))).map(a => resolve(a));
 const wanted = args.filter(a => !external.includes(resolve(a)));
 const listed = d => readdirSync(d).filter(f => f.endsWith(".mjs")).sort().map(f => join(d, f));
@@ -509,8 +531,21 @@ const files = [
   ...(external.length && !wanted.length ? [] : listed(dir).filter(f => !wanted.length || wanted.includes(basename(f, ".mjs")))),
   ...external.flatMap(p => statSync(p).isDirectory() ? listed(p) : [p])
 ];
+if ( filtered || listOnly ) {
+  const kept = files.map(file => ({ file, id: basename(file, ".mjs"), meta: scenarioMeta(readFileSync(file, "utf8")) }))
+    .filter(entry => !filtered || matches(entry.id, entry.meta, filters));
+  files.length = 0;
+  files.push(...kept.map(entry => entry.file));
+  if ( listOnly ) {
+    for ( const { id, meta } of kept ) console.log(`${id.padEnd(34)} ${(meta.scene || "·").padEnd(24)} ${meta.refs.slice(0, 3).join(" ").padEnd(14)} ${meta.summary.slice(0, 110)}`);
+    console.log(`
+${kept.length} scénario(s)${filtered ? " retenu(s) par les filtres" : ""}`);
+    process.exit(0);
+  }
+  if ( filtered ) console.log(`Filtres : ${kept.length} scénario(s) — ${kept.map(entry => entry.id).join(", ")}`);
+}
 if ( !files.length ) {
-  console.error(`aucun scénario ${args.join(", ")} dans ${dir}`);
+  console.error(`aucun scénario ${argv.join(" ")} dans ${dir}`);
   process.exit(2);
 }
 

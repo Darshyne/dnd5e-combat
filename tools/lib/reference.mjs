@@ -10,6 +10,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { scenarioMeta } from "./scenario-meta.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const SCRIPTS = join(ROOT, "module/scripts");
@@ -360,14 +361,9 @@ async function contentPage() {
 function scenariosPage() {
   const dir = join(ROOT, "tools/scenarios");
   const rows = filesUnder(dir).map(file => {
-    const text = readFileSync(join(dir, file), "utf8");
-    const header = text.match(/^\s*\/\*\*?([\s\S]*?)\*\//);
-    const doc = header ? header[1].split("\n").map(line => line.replace(/^\s*\*?\s?/, "")).join(" ").replace(/\s+/g, " ").trim() : "";
-    const named = text.match(/\bname:\s*(?:"((?:[^"\\]|\\.)*)"|`([^`]*)`)/);
-    const title = (named?.[1] ?? named?.[2] ?? "").replace(/\\"/g, "\"");
-    const scene = text.match(/\bscene:\s*"([^"]+)"/)?.[1] ?? "";
+    const meta = scenarioMeta(readFileSync(join(dir, file), "utf8"));
     const folder = file.includes("/") ? file.slice(0, file.lastIndexOf("/")) : "";
-    return { id: file.replace(/\.mjs$/, ""), folder, scene, refs: sections(`${doc} ${title}`).slice(0, 4), text: title.includes("—") ? title.slice(title.indexOf("—") + 1).trim() : (title || doc) };
+    return { id: file.replace(/\.mjs$/, ""), folder, scene: meta.scene, refs: meta.refs.slice(0, 4), text: meta.summary };
   });
   const folders = [...new Set(rows.map(r => r.folder))].sort();
   const out = [
@@ -378,7 +374,8 @@ function scenariosPage() {
     `${rows.length} scénarios (\`tools/scenarios/\`), joués dans le client du MJ par le connecteur : \`node tools/reload.mjs && node`,
     "tools/scenario.mjs <noms>`. **Scène** : vide = l'« Arène de test » ; sinon la scène que le scénario demande (sauté si elle manque).",
     "Les scénarios d'un sous-dossier ne font pas partie de la passe complète : `node tools/scenario.mjs tools/scenarios/<dossier>`. Les",
-    "`balayage-*` ne se jouent que nommés.",
+    "`balayage-*` ne se jouent que nommés. Choisir sans connaître les noms : `--grep <mot>`, `--section <§>`, `--scene <nom>` ; `--list` montre",
+    "la sélection sans rien jouer.",
     ""
   ];
   for ( const folder of folders ) {

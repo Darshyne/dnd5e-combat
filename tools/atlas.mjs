@@ -14,7 +14,7 @@
  *   node tools/atlas.mjs <dossier de sortie> [dossier Data de Foundry]
  * Sortie : `atlas-<onglet>.json` (sorts, dons, aptitudes, objets, creatures), `atlas-briques.json` (§367), `atlas-resume.json`, et `prive/ATLAS.md` (comptes, sans texte).
  */
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
@@ -46,7 +46,8 @@ async function read(dir, fn) {
   if ( !existsSync(dir) ) return;
   const copy = join(tmp, String(Math.random()).slice(2));
   mkdirSync(copy, { recursive: true });
-  for ( const f of readdirSync(dir) ) if ( f !== "LOCK" ) cpSync(join(dir, f), join(copy, f));
+  // Les fichiers de la base seulement : LevelDB laisse parfois un dossier `lost/` (réparation), que la copie refusait (ERR_FS_EISDIR).
+  for ( const f of readdirSync(dir) ) if ( (f !== "LOCK") && statSync(join(dir, f)).isFile() ) cpSync(join(dir, f), join(copy, f));
   const db = new ClassicLevel(copy, { valueEncoding: "json" });
   for await ( const [key, value] of db.iterator() ) fn(key, value);
   await db.close();

@@ -13,5 +13,5 @@ fonction d'API, un hook, un réglage, une entrée de contenu ou un scénario : `
 | [CONTENT.md](CONTENT.md) | quels items utilisent telle clé du contenu, tel moment, telle action ? |
 | [SCENARIOS.md](SCENARIOS.md) | quel scénario vérifie quoi, sur quelle scène ? |
 
-`surface.json` : la liste nue des chemins d'API, des hooks émis et des clés de réglage — le contrat que les modules voisins
-peuvent vérifier dans leurs propres tests.
+`surface.json` : la liste nue des chemins d'API, des hooks émis, des moments (publiés en `dnd5e-combat.<moment>`) et des clés de
+réglage — le contrat que les modules voisins vérifient dans leurs propres tests (`tools/contract/`).

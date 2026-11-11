@@ -271,7 +271,7 @@ async function hooksPage(routes, sources) {
     });
     out.push("");
   }
-  return { text: out.join("\n"), own };
+  return { text: out.join("\n"), own, moments: Object.keys(MOMENTS).sort() };
 }
 
 /* ------------------------------------------------------------------ réglages ---- */
@@ -419,11 +419,11 @@ export async function build() {
     "| [CONTENT.md](CONTENT.md) | quels items utilisent telle clé du contenu, tel moment, telle action ? |",
     "| [SCENARIOS.md](SCENARIOS.md) | quel scénario vérifie quoi, sur quelle scène ? |",
     "",
-    "`surface.json` : la liste nue des chemins d'API, des hooks émis et des clés de réglage — le contrat que les modules voisins",
-    "peuvent vérifier dans leurs propres tests.",
+    "`surface.json` : la liste nue des chemins d'API, des hooks émis, des moments (publiés en `dnd5e-combat.<moment>`) et des clés de",
+    "réglage — le contrat que les modules voisins vérifient dans leurs propres tests (`tools/contract/`).",
     ""
   ].join("\n");
-  const surface = `${JSON.stringify({ api: apiDoc.paths, hooks: hooks.own, moments: "dnd5e-combat.<moment> (core/triggers.mjs MOMENTS)", settings: settingsDoc.keys }, null, 2)}\n`;
+  const surface = `${JSON.stringify({ api: apiDoc.paths, hooks: hooks.own, moments: hooks.moments, settings: settingsDoc.keys }, null, 2)}\n`;
   return { "README.md": readme, "API.md": apiDoc.text, "HOOKS.md": hooks.text, "SETTINGS.md": settingsDoc.text, "CONTENT.md": content.text,
     "SCENARIOS.md": scenarios.text, "surface.json": surface };
 }

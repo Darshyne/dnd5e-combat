@@ -13,6 +13,7 @@
  * lorsque le moteur le prend à son compte.
  */
 
+import { mergeIssues } from "../core/forced.mjs";
 import { theaterActive } from "../runtime/theater-state.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { stopWalking, forgetAllWalks, stopDeadMovements } from "../adapter/movement.mjs";
@@ -25,6 +26,7 @@ import { projectilesOf, projectileCount, targetCount } from "../adapter/projecti
 import { concentrationOn, summonChoicesOf } from "../adapter/summons.mjs";
 import { engage, castOnTargets, lineDashOf } from "../runtime/actions.mjs";
 import { movableZoneOf, moveZone, tooFarForZone } from "../runtime/zones.mjs";
+import { askAnyway } from "../runtime/turn.mjs";
 import { castWithPicks } from "../runtime/projectiles.mjs";
 import { pendingMetamagic } from "../adapter/metamagic.mjs";
 import { castLight, putOutLight } from "../runtime/lights.mjs";
@@ -60,7 +62,7 @@ import { aimedAreaOf, aimedShapeData, aimedRegionData, wallAreaOf, rangedAreaOf,
 import { castAimed, placeAimed, placeWall } from "../runtime/self-area.mjs";
 import { clampPolyline, polylineLength, orthogonalize } from "../core/wall.mjs";
 import { closeMenu, onMenuShift, HIGH_JUMP_MENU_SETTING, NONLETHAL_MENU_SETTING } from "./pointer-menu.mjs";
-import { cancellable, clearPreview, forgetHover, lastPointer, onKeyDown, onModifierKey, onPointerDown, onPointerMove, onPointerUp, refusalFor, replayHover, setCursor, trackPointer } from "./pointer-mouse.mjs";
+import { cancellable, clearPreview, forgetHover, lastPointer, onKeyDown, onModifierKey, onPointerDown, onPointerMove, onPointerUp, refusalFor, refusalIssues, replayHover, setCursor, trackPointer } from "./pointer-mouse.mjs";
 import { clearTargets, leftoverTargets, noteInFlight, offerEnchantedAttack, onFlurryUsed, onPostUseActivity, onPreRollDamage, onResolutionSettled, onTurnChange } from "./pointer-offers.mjs";
 export { menuEntriesFor, doorMenuFor, groundMenuFor } from "./pointer-menu.mjs";
 
@@ -537,15 +539,14 @@ async function placeZone(activity, zone) {
         doc.updateSource({ color: far(s) ? TOO_FAR_COLOR : source.color });
         preview.renderFlags.set({ refreshState: true });
       },
-      preConfirm: ({ shape: s }) => {
-        if ( !far(s) ) return true;
-        ui.notifications.warn(loc("Zone.TropLoin", { item: activity.item.name, max: zone.rule.distance, units: zone.rule.units }));
-        return false;
-      }
+      // §411 : trop loin, la pose n'est plus refusée — `moveZone` le dit dans sa fenêtre, et l'on peut forcer.
     });
     const point = placed?.shapes?.length ? shapeCenter(placed.shapes[0].toObject()) : null;
     if ( !point ) return ui.notifications.info(loc("Visee.Annulee"));
-    await exclusive(() => moveZone(activity, point));
+    let settled = true;
+    await exclusive(async () => { settled = await moveZone(activity, point); });
+    // Renoncé devant la fenêtre : la pose se rouvre, comme l'ancien refus.
+    if ( settled === false ) { endPlacing(mine); return placeZone(activity, movableZoneOf(activity) ?? zone); }
   } catch(err) { console.error(`${MODULE_ID} | area move`, err); }
   finally { endPlacing(mine); announceTargeting(); }
 }
@@ -746,7 +747,7 @@ function onPreTemplate(activity) {
  */
 function onCreateTemplate(activity, regionData) {
   if ( stormOf(activity?.item) ) return;
-  if ( (regionData ?? []).some(d => d?.flags?.[MODULE_ID]?.enginePlaced) ) return;
+  if ( (regionData ?? []).some(d => d?.flags?.[MODULE_ID]?.enginePlaced || d?.flags?.[MODULE_ID]?.forcedPlacement) ) return;
   const area = rangedAreaOf(activity);
   if ( !area ) return;
   const shapes = (regionData ?? []).flatMap(d => d.shapes ?? []);
@@ -755,8 +756,16 @@ function onCreateTemplate(activity, regionData) {
   const problem = rangedPlacementProblem(area, shapes);
   if ( !problem ) return;
   const key = { far: "Zone.HorsPortee", hidden: "Zone.SansChemin", apart: "Zone.NonContigue" }[problem];
-  ui.notifications.warn(loc(key, { item: activity.item.name, max: area.max, units: area.units }));
-  dnd5e.canvas.TemplatePlacement.fromActivity(activity).catch(err => console.error(`${MODULE_ID} | ranged area placement`, err));
+  // §411 (issue #44, lot 4) : plus de refus sec — la fenêtre le dit ; forcé, la zone est créée là où elle a été posée (comme dnd5e l'aurait
+  // fait, canvas/template-placement.mjs:175-187), le MJ prévenu ; renoncé, la pose se rouvre comme avant. Le hook est synchrone : on annule,
+  // on demande, puis on crée.
+  const data = foundry.utils.deepClone(regionData).map(d => foundry.utils.mergeObject(d, { [`flags.${MODULE_ID}.forcedPlacement`]: true }, { inplace: false }));
+  askAnyway(`${activity.item.name} — ${activity.actor?.name ?? ""}`, [loc(key, { item: activity.item.name, max: area.max, units: area.units })],
+    { actor: activity.actor, item: activity.item, token: activity.getUsageToken?.() ?? null }).then(async go => {
+    if ( !go ) return dnd5e.canvas.TemplatePlacement.fromActivity(activity);
+    const created = await canvas.scene.createEmbeddedDocuments("Region", data);
+    Hooks.callAll("dnd5e.postCreateMeasuredTemplate", activity, created);
+  }).catch(err => console.error(`${MODULE_ID} | ranged area placement`, err));
   return false;
 }
 
@@ -899,12 +908,21 @@ export function pickTarget(hover) {
   }
   // §286 : Chaîne d'éclairs — après la première, chaque cible à 9 m d'elle.
   const chained = (picking.group && picking.picks.length && chainOf(picking.activity.item)) ? { [MODULE_ID]: { chainFrom: picking.picks[0] } } : null;
+  // §411 (issue #44, lot 4) : une créature refusée (hors de portée, mauvais type…) compte quand même — son refus est dit au départ, dans la
+  // fenêtre de légalité (Renoncer, ou faire quand même : le MJ prévenu). Ce que la légalité ne relève pas part avec l'utilisation (`issues`).
   const refusal = refusalFor(picking.token, hover, picking.activity, chained);
-  if ( refusal ) return floatNotice(hover, refusal, "refused");
+  if ( refusal ) {
+    const issues = refusalIssues(picking.token, hover, picking.activity, chained, { blind: true });
+    if ( issues.length ) {
+      const [config, ...rest] = picking.usage;
+      const own = config?.[MODULE_ID] ?? {};
+      picking.usage = [{ ...config, [MODULE_ID]: { ...own, issues: mergeIssues(own.issues ?? [], issues) } }, ...rest];
+    }
+  }
   picking.picks.push(hover.uuid);
   hover.object.setTarget(true, { releaseOthers: false, groupSelection: true });
   setReticleLabel(counterText());
-  floatNotice(hover, `${picking.picks.length}/${picking.count}`);
+  floatNotice(hover, refusal ? `${picking.picks.length}/${picking.count} — ${refusal}` : `${picking.picks.length}/${picking.count}`, refusal ? "refused" : undefined);
   announceTargeting();
   if ( picking.picks.length < picking.count ) return;
   if ( picking.group ) return finishGroup();

@@ -2450,5 +2450,7 @@
   "DND5ECOMBAT.Dissipation.Zone": "Dispel Magic: which magical effect do you dispel?",
   "DND5ECOMBAT.Dissipation.AucuneZone": "None",
   "DND5ECOMBAT.Dissipation.ZoneNom": "{spell} (level {level}) — {caster}",
-  "DND5ECOMBAT.Dissipation.TitreZone": "{item}: {spell}"
+  "DND5ECOMBAT.Dissipation.TitreZone": "{item}: {spell}",
+  "DND5ECOMBAT.Souci.noLineOfSight": "{name}: no line of sight from here.",
+  "DND5ECOMBAT.Teleport.Titre": "Teleportation"
 }

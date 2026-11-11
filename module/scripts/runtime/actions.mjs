@@ -8,6 +8,7 @@
  * Rien n'est patché : `preMoveToken` est un hook public du cœur.
  */
 
+import { mergeIssues } from "../core/forced.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { movementAllowance } from "../core/turn.mjs";
 import { footprintGap, chooseBasicAttack, dragMultiplier, dragMultiplierWith, dragAllowance } from "../core/movement.mjs";
@@ -713,41 +714,33 @@ export async function reactionApproach(actor, target, activity) {
   return !!plan.arrives;
 }
 
-export async function engage(token, target, activity, { mode=null, fast=false, usage=null, event=null, choice=null }={}) {
+export async function engage(token, target, activity, { mode=null, fast=false, usage=null, event=null, choice=null, issues=[] }={}) {
   // §150 : le mode qu'un voisin a mis dans la configuration d'utilisation (`{ "dnd5e-combat": { attackMode } }` : la main secondaire de la
   // Barre) — sans lui, il se perdait entre la visée et le jet.
   mode ??= usage?.[0]?.[MODULE_ID]?.attackMode ?? null;
-  // §18.22 : un geste de contact sur une cible qui ne s'y prête pas est refusé avant tout déplacement ; §225 : de même d'un plan à l'autre.
-  const refusal = planeRefusal(token, target) ?? contactRefusal(token, target, activity);
-  if ( refusal ) {
-    ui.notifications.warn(loc("LabelValue", { label: target.name, value: refusal }));
-    notice(target, refusal);
-    return;
-  }
-  // Hors du corps à corps, on ne bouge pas : hors de portée ou hors de vue, le geste est refusé.
+  // §411 (issue #44, lot 4) : un refus n'est plus sec. Ce qui cloche est dit dans la fenêtre de légalité (runtime/turn.mjs, `issues`), comme
+  // pour la même attaque lancée depuis la fiche ; forcé, on attaque d'où l'on est, sans s'approcher. `coverRange` : la raison dit déjà la
+  // portée (la légalité ne la redit pas).
+  const lines = [...issues];
+  let coverRange = false;
+  const refuse = (line, { range=true }={}) => { lines.push(line); if ( range ) coverRange = true; };
+  // §18.22 : un geste de contact sur une cible qui ne s'y prête pas ; §225 : d'un plan à l'autre (la légalité le dit : `otherPlane`).
+  const contact = contactRefusal(token, target, activity);
+  if ( contact ) refuse(loc("LabelValue", { label: target.name, value: contact }), { range: false });
+  const otherPlane = !!planeRefusal(token, target);
+  // Hors du corps à corps, on ne bouge pas : hors de portée (la légalité le dit), ou hors de vue.
   if ( !approaches(activity, mode) ) {
     const status = rangeStatus(token, target, activity, mode);
-    if ( status?.out ) {
-      ui.notifications.warn(loc("Deplacement.HorsDePortee", { name: target.name }));
-      notice(target, loc("Retour.HorsDePortee"));
-      return;
-    }
-    if ( status?.blind ) {
-      ui.notifications.warn(loc("Deplacement.CibleHorsDeVue", { name: target.name }));
-      notice(target, loc("Retour.NonVue"));
-      return;
-    }
+    if ( status?.blind ) refuse(loc("Souci.noLineOfSight", { name: target.name }), { range: false });
   }
   // §16.15 : un objet piloté agit au contact — la portée de « Roll » (9 m) est celle de son déplacement, pas de son effet.
   const reach = pilotOfActor(activity.actor) ? { normal: 1, long: 1 } : reachCells(activity, mode);
-  // §192 : une cible que le vide vertical seul met hors d'allonge (au plafond, en vol) — l'approche au sol n'y mène pas : refusé net.
-  if ( reach && approaches(activity, mode) && tooHighFor(token, target, reach) ) {
-    ui.notifications.warn(loc("Escalade.HorsDallonge", { name: target.name }));
-    notice(target, loc("Retour.HorsDePortee"));
-    return;
-  }
+  // §192 : une cible que le vide vertical seul met hors d'allonge (au plafond, en vol) — l'approche au sol n'y mène pas.
+  const tooHigh = !!reach && approaches(activity, mode) && tooHighFor(token, target, reach);
+  if ( tooHigh ) refuse(loc("Escalade.HorsDallonge", { name: target.name }));
   target.object?.setTarget(true, { releaseOthers: true });
-  if ( reach && approaches(activity, mode) ) {
+  // Une cible refusée d'emblée (contact, autre plan, trop haut) : pas d'approche pour rien.
+  if ( reach && approaches(activity, mode) && !tooHigh && !contact && !otherPlane ) {
     const gap = gapCells(token, target);
     // P1 : à distance, on ne s'approche que jusqu'à une case d'où l'on VOIT la cible — et si l'on est
     // déjà à portée sans la voir, on cherche une telle case.
@@ -757,16 +750,13 @@ export async function engage(token, target, activity, { mode=null, fast=false, u
     if ( (gap > reach.normal) || blind ) {
       const plan = planPath(token, { target, reachCells: reach.normal, seeing }, { maxCost: movementCap(token) });
       const withinLong = !blind && (gap <= reach.long);
-      if ( !plan && blind ) return ui.notifications.warn(loc("Deplacement.CibleHorsDeVue", { name: target.name }));
-      if ( !plan && !withinLong ) return ui.notifications.warn(loc("Deplacement.AucunChemin"));
+      if ( !plan && blind ) refuse(loc("Deplacement.CibleHorsDeVue", { name: target.name }));
+      else if ( !plan && !withinLong ) refuse(loc("Deplacement.AucunChemin"));
       // §18.22 : un geste de contact ne s'avance pas pour rien — hors d'atteinte ce tour-ci, on reste sur place.
-      if ( contactAction(activity) && !plan?.arrives && !withinLong ) {
-        notice(target, loc("Retour.HorsDePortee"));
-        return ui.notifications.warn(loc("Deplacement.CibleHorsDatteinte", { name: target.name }));
-      }
-      if ( plan?.arrives || !withinLong ) {
+      else if ( contactAction(activity) && !plan?.arrives && !withinLong ) refuse(loc("Deplacement.CibleHorsDatteinte", { name: target.name }));
+      else if ( plan?.arrives || !withinLong ) {
         if ( plan && !(await walkSafely(token, plan)) ) return;
-        if ( !plan?.arrives ) return ui.notifications.warn(loc("Deplacement.CibleHorsDatteinte", { name: target.name }));
+        if ( !plan?.arrives ) refuse(loc("Deplacement.CibleHorsDatteinte", { name: target.name }));
       }
     }
   }
@@ -780,7 +770,8 @@ export async function engage(token, target, activity, { mode=null, fast=false, u
   // budget sur la carte (runtime/turn.mjs) — la main secondaire coûte l'action Bonus, pas l'action.
   if ( mode ) foundry.utils.setProperty(messageConfig, `data.flags.${MODULE_ID}.attackMode`, mode);
   if ( choice ) foundry.utils.setProperty(messageConfig, `data.flags.${MODULE_ID}.choice`, choice);
-  const config = { ...usageConfig, [MODULE_ID]: { ...usageConfig?.[MODULE_ID], engaged: true, ...(mode ? { attackMode: mode } : {}), ...(choice ? { choice } : {}) } };
+  const config = { ...usageConfig, [MODULE_ID]: { ...usageConfig?.[MODULE_ID], engaged: true, ...(mode ? { attackMode: mode } : {}), ...(choice ? { choice } : {}),
+    ...(lines.length ? { issues: mergeIssues(usageConfig?.[MODULE_ID]?.issues ?? [], lines), issuesCoverRange: coverRange || !!usageConfig?.[MODULE_ID]?.issuesCoverRange } : {}) } };
   if ( event && !config.event ) config.event = event;
   await activity.use(config, dialogConfig, messageConfig);
 }

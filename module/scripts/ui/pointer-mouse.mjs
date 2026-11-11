@@ -3,6 +3,7 @@
  * téléportation, touches. Extrait d'ui/pointer.mjs.
  */
 
+import { forwardsIssue } from "../core/forced.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { footprintGap } from "../core/movement.mjs";
 import { positionOf, distanceBetween } from "../adapter/turn.mjs";
@@ -76,7 +77,8 @@ function clickAttackAllowed() {
 function clickAttackApplies(me, other) {
   // §110 : chez le MJ, le clic gauche sur un token reste celui du cœur (sélection) ; ses actions passent par le clic droit.
   if ( game.user.isGM ) return false;
-  return clickAttackAllowed() && hostileTo(me, other) && !planeRefusal(me, other) && !!basicAttack(me.actor);
+  // §411 : un ennemi d'un autre plan reçoit aussi le clic d'attaque — la fenêtre de légalité dit pourquoi (`otherPlane`), on peut forcer.
+  return clickAttackAllowed() && hostileTo(me, other) && !!basicAttack(me.actor);
 }
 
 export let down = null;
@@ -177,12 +179,12 @@ export function onPointerUp(event) {
       stopTargeting();
       return exclusive(() => igniteWithActivity(token, activity, usage, aim.zone));
     }
-    // §16.29 : un refus (hors de portée, rebond impossible) laisse la visée ouverte.
-    const refusal = refusalFor(targeting.token, hover, targeting.activity, targeting.usage?.[0]);
-    if ( refusal ) return floatNotice(hover, refusal, "refused");
+    // §411 (issue #44, lot 4) : une cible refusée (hors de portée, mauvais type, rebond impossible) n'est plus un clic perdu — le geste part,
+    // et la fenêtre de légalité dit ce qui cloche (Renoncer, ou faire quand même : le MJ prévenu). Le réticule rouge reste l'aperçu.
+    const issues = refusalIssues(targeting.token, hover, targeting.activity, targeting.usage?.[0]);
     const { token, activity, usage } = targeting;
     stopTargeting();
-    return exclusive(() => engageWith(token, hover, activity, { usage, event }));
+    return exclusive(() => engageWith(token, hover, activity, { usage, event, issues }));
   }
 
   const me = actingToken();
@@ -284,8 +286,8 @@ function hoveredToken() {
  * §16.29 : ce qu'un clic sur cette créature donnerait, hors du corps à corps (qui s'approche) — null si rien ne s'y oppose,
  * sinon le texte du refus (« Hors de portée », « Hors de vue », ou celui du rebond : « Déjà visé… », « … à plus de 30 ft »).
  */
-export function refusalFor(me, hover, activity, usageConfig=null) {
-  return refusalOf(me, hover, activity, usageConfig)?.text ?? null;
+export function refusalFor(me, hover, activity, usageConfig=null, mode=null) {
+  return refusalOf(me, hover, activity, usageConfig, mode)?.text ?? null;
 }
 
 /**
@@ -331,38 +333,54 @@ export function previewMenuAttack(rect, me, target, activity, mode=null) {
   showAttackLine(me, target, activity, { posA, unreachable: outOfReach, attackMode: mode });
 }
 
-/** Le refus et son genre : `outOfRange` (le curseur « hors de portée ») ou `other` — sans comparer un texte traduit. */
+/**
+ * Le refus et son genre, sans comparer un texte traduit : `outOfRange` (le curseur « hors de portée »), `blind`, `plane`, `chain`, `contact`,
+ * ou `other` (type de cible, lien, Enchaînement, rebond).
+ */
 function refusalOf(me, hover, activity, usageConfig=null, mode=null) {
   const status = refusalBeforeRange(me, hover, activity, usageConfig);
-  if ( status ) return { text: status, kind: "other" };
+  if ( status ) return status;
   if ( approaches(activity, mode) ) return null;
   const range = rangeStatus(me, hover, activity, mode);
   if ( range?.out ) return { text: loc("Retour.HorsDePortee"), kind: "outOfRange" };
-  if ( range?.blind ) return { text: loc("Retour.NonVue"), kind: "other" };
+  if ( range?.blind ) return { text: loc("Retour.NonVue"), kind: "blind" };
   return null;
 }
 
-/** Les refus qui ne tiennent pas à la portée : type de cible, lien, Enchaînement, rebond, contact. */
+/**
+ * §411 : les raisons d'un clic de visée refusé que la fenêtre de légalité ne relève pas elle-même — elle voit la portée, le plan, la Chaîne
+ * d'éclairs (cibles désignées) ; `engage` voit le contact et la ligne de vue. Le reste (type de cible, lien, Enchaînement, rebond) part
+ * avec l'utilisation (`issues`), en phrases : « Gobelin : pas la créature liée ».
+ */
+export function refusalIssues(me, hover, activity, usageConfig=null, { mode=null, blind=false }={}) {
+  const refusal = refusalOf(me, hover, activity, usageConfig, mode);
+  if ( !refusal || !forwardsIssue(refusal.kind, { blind }) ) return [];
+  // La visée multiple ne passe pas toujours par `engage` (sorts à cibles) : la ligne de vue y part avec l'utilisation.
+  if ( refusal.kind === "blind" ) return [loc("Souci.noLineOfSight", { name: hover.name })];
+  return [loc("LabelValue", { label: hover.name, value: refusal.text })];
+}
+
+/** Les refus qui ne tiennent pas à la portée : plan, type de cible, lien, Enchaînement, rebond, Chaîne d'éclairs, contact. */
 function refusalBeforeRange(me, hover, activity, usageConfig) {
   const otherPlane = planeRefusal(me, hover);   // §225
-  if ( otherPlane ) return otherPlane;
+  if ( otherPlane ) return { text: otherPlane, kind: "plane" };
   const wrongTarget = targetTypeRefusal(me, hover, activity);
-  if ( wrongTarget ) return wrongTarget;
+  if ( wrongTarget ) return { text: wrongTarget, kind: "other" };
   // §16.43 : l'action suivante d'un lien (Trait ensorcelé) ne vise que la créature liée.
   if ( tetherOfActivity(activity)?.role === "follow" ) {
     const bound = tetheredToken(activity.item);
-    if ( !bound || (bound !== hover) ) return loc("Retour.PasLiee");
+    if ( !bound || (bound !== hover) ) return { text: loc("Retour.PasLiee"), kind: "other" };
   }
   // §21 : Enchaînement — seulement une créature à 1,50 m de la première et à l'allonge (adapter/mastery.mjs).
   const cleave = usageConfig?.[MODULE_ID]?.cleave;
   if ( cleave ) {
     const first = fromUuidSync(cleave, { strict: false });
-    if ( !first || !cleaveCandidates(me, first, activity).includes(hover) ) return loc("Botte.Enchainement.Refus");
+    if ( !first || !cleaveCandidates(me, first, activity).includes(hover) ) return { text: loc("Botte.Enchainement.Refus"), kind: "other" };
   }
   const leap = usageConfig?.[MODULE_ID]?.leap;
   if ( leap ) {
     const problem = leapProblem(activity, leap, hover);
-    if ( problem ) return problem.replace(/^[^:]*:\s*/, "");
+    if ( problem ) return { text: problem.replace(/^[^:]*:\s*/, ""), kind: "other" };
   }
   // §286 : Chaîne d'éclairs — une cible secondaire à 9 m de la première.
   const chainFrom = usageConfig?.[MODULE_ID]?.chainFrom;
@@ -370,10 +388,11 @@ function refusalBeforeRange(me, hover, activity, usageConfig) {
     const first = fromUuidSync(chainFrom, { strict: false });
     const rule = chainOf(activity?.item);
     if ( first && rule && chainOutliers(activity, [first, hover]).length ) {
-      return loc("Retour.ChaineTropLoin", { name: first.name, distance: chainLimit(rule, first), units: first.parent.grid.units });
+      return { text: loc("Retour.ChaineTropLoin", { name: first.name, distance: chainLimit(rule, first), units: first.parent.grid.units }), kind: "chain" };
     }
   }
-  return contactRefusal(me, hover, activity) ?? null;
+  const contact = contactRefusal(me, hover, activity);
+  return contact ? { text: contact, kind: "contact" } : null;
 }
 
 /** La case d'arrivée d'une ruée sous ce point : le coin haut-gauche d'un token de sa taille, centré sur le point. */

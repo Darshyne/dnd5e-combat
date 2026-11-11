@@ -16,3 +16,20 @@ export function forcedReasons({ lines, budgetLines=[], action }) {
   const skip = (action === "reaction") ? new Set(budgetLines) : new Set();
   return [...new Set((lines ?? []).filter(l => l && !skip.has(l)))];
 }
+
+/**
+ * §411 : une raison de refus relevée au clic (visée, menu) part-elle avec l'utilisation (`issues`) ? Non quand la fenêtre de légalité ou
+ * `engage` la relèvent elles-mêmes : portée, autre plan, Chaîne d'éclairs (cibles désignées), contact (`engage`). La ligne de vue part
+ * seulement quand le geste ne passe pas par `engage` (`blind` : visée multiple d'un sort à cibles).
+ * @param {string} kind  `outOfRange`, `blind`, `plane`, `chain`, `contact` ou `other`.
+ * @param {{blind?: boolean}} [options]
+ */
+export function forwardsIssue(kind, { blind=false }={}) {
+  if ( kind === "blind" ) return blind;
+  return !["outOfRange", "plane", "chain", "contact"].includes(kind);
+}
+
+/** §411 : les raisons d'une utilisation, réunies sans doublon (ordre gardé, vides retirés). */
+export function mergeIssues(...lists) {
+  return [...new Set(lists.flat().filter(l => (typeof l === "string") && l))];
+}

@@ -39,7 +39,7 @@ import { burningEntries } from "../runtime/burning.mjs";
 import { climbEntries } from "../runtime/climb.mjs";
 import { flightEntries } from "../runtime/altitude.mjs";
 import { actingToken, engageWith, exclusive, inCombat, observe } from "./pointer.mjs";
-import { down, startRecall, clearPreview, previewMenuAttack } from "./pointer-mouse.mjs";
+import { down, startRecall, clearPreview, previewMenuAttack, refusalFor } from "./pointer-mouse.mjs";
 import { hideHitChance } from "./hitchance.mjs";
 import { groupRollEntry } from "./group-roll.mjs";
 import { debugMenuEntry } from "./debug-report.mjs";
@@ -84,6 +84,14 @@ export function openMenu(event, entries, source=null) {
   menuSource = source;
 }
 
+/** §411 : la raison pour laquelle une entrée d'attaque serait refusée (sans chercher de chemin : le survol le montre), ou null. */
+function entryRefusal(entry) {
+  if ( !entry.preview ) return null;
+  const { token, target, activity, mode } = entry.preview;
+  try { return refusalFor(token, target, activity, null, mode ?? null); }
+  catch(err) { console.warn(`${MODULE_ID} | menu refusal`, err); return null; }
+}
+
 function renderMenu(point, entries) {
   menu = document.createElement("nav");
   menu.classList.add("dnd5e-combat-menu");
@@ -100,6 +108,10 @@ function renderMenu(point, entries) {
     button.type = "button";
     button.innerHTML = `<i class="${entry.icon}"></i> <span></span>`;
     button.querySelector("span").textContent = entry.label;
+    // §411 (issue #44, lot 4) : une attaque refusée (hors de portée, autre plan, pas un ennemi…) reste au menu, grisée, sa raison en
+    // infobulle — le clic ouvre la fenêtre de légalité, d'où l'on peut forcer.
+    const refused = entryRefusal(entry);
+    if ( refused ) { button.classList.add("refused"); button.title = refused; }
     button.addEventListener("click", event => { closeMenu(); exclusive(() => entry.run(event)); });
     // #33 : survoler une attaque montre, sous le menu, la même pastille que le survol de la cible (et la ligne de visée).
     if ( entry.preview ) {
@@ -138,9 +150,10 @@ export function openTokenMenu(event, me, target) {
  * §41.4 : les entrées du menu contextuel d'un token, pour une interface qui veut les offrir ailleurs que sur le canevas
  * (le portrait du Groupe de Darsh UI DnD5) : ce que le token en main (le seul contrôlé, à soi) peut faire de celui-là —
  * les mêmes que le clic droit, entrées des modules voisins comprises, sans les actions offensives sur une créature qui
- * n'est pas hostile. Vide sans token en main, ou sur une autre scène. `run(event)` joue l'entrée (une à la fois).
+ * n'est pas hostile. Vide sans token en main, ou sur une autre scène. `run(event)` joue l'entrée (une à la fois). §411 : `refused`, la
+ * raison d'une attaque refusée (à griser ; le clic ouvre la fenêtre de légalité, d'où l'on peut forcer).
  * @param {Token|TokenDocument} target
- * @returns {{icon: string, label: string, run: (event?: Event) => void}[]}
+ * @returns {{icon: string, label: string, refused?: string, run: (event?: Event) => void}[]}
  */
 export function menuEntriesFor(target) {
   const me = actingToken();
@@ -148,7 +161,11 @@ export function menuEntriesFor(target) {
   if ( !me || !doc?.parent || (doc.parent !== me.parent) ) return [];
   const hostile = (doc !== me) && hostileTo(me, doc);
   const raw = (doc === me) ? selfEntries(me) : withNeighbourEntries(tokenEntries(me, doc, { aggressive: hostile }), me, doc, hostile);
-  return raw.filter(e => !e.hint).map(e => ({ icon: e.icon, label: e.label, run: event => exclusive(() => e.run(event)) }));
+  // §411 : `refused` — la raison d'une attaque que la fenêtre de légalité dira (l'entrée reste cliquable : on peut forcer).
+  return raw.filter(e => !e.hint).map(e => {
+    const refused = entryRefusal(e);
+    return { icon: e.icon, label: e.label, ...(refused ? { refused } : {}), run: event => exclusive(() => e.run(event)) };
+  });
 }
 
 /**
@@ -508,8 +525,10 @@ function tokenEntries(token, target, { aggressive=true }={}) {
   else if ( bare.length ) entries.push({ icon: "fa-solid fa-hand-fist", label: loc("Menu.MainsNuesChoix"), run: event => openMenu(event, bare) });
   // §18.22 : Soutien (partie attaque), en combat, sur un ennemi — s'avancer jusqu'à lui s'il est atteignable ce tour-ci.
   const help = helpActivityOf(token.actor);
-  if ( help && inCombat() && hostileTo(token, target) ) {
-    entries.push({ icon: "fa-solid fa-handshake-angle", label: loc("Menu.Soutien"), run: event => engageWith(token, target, help, { event }) });
+  // §411 : sur une créature qui n'est pas un ennemi (Maj), Soutien reste offert, grisé — le clic dit pourquoi et peut forcer.
+  if ( help && inCombat() ) {
+    entries.push({ icon: "fa-solid fa-handshake-angle", label: loc("Menu.Soutien"), run: event => engageWith(token, target, help, { event }),
+      preview: { token, target, activity: help } });
   }
   entries.push(...endingEntries(token, target));
   entries.push(...followEntries(token, target));

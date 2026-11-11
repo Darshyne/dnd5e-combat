@@ -2450,5 +2450,7 @@
   "DND5ECOMBAT.Dissipation.Zone": "Dissipation de la magie : quel effet magique dissiper ?",
   "DND5ECOMBAT.Dissipation.AucuneZone": "Aucun",
   "DND5ECOMBAT.Dissipation.ZoneNom": "{spell} (niveau {level}) — {caster}",
-  "DND5ECOMBAT.Dissipation.TitreZone": "{item} : {spell}"
+  "DND5ECOMBAT.Dissipation.TitreZone": "{item} : {spell}",
+  "DND5ECOMBAT.Souci.noLineOfSight": "{name} : aucune ligne de vue d'ici.",
+  "DND5ECOMBAT.Teleport.Titre": "Téléportation"
 }

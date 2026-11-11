@@ -85,6 +85,8 @@ body.dnd5e-combat-prompt #board { cursor: none !important; }
 }
 .dnd5e-combat-menu button:hover { background: rgba(200, 160, 80, 0.25); }
 .dnd5e-combat-menu button i { width: 16px; text-align: center; color: #c8a050; }
+.dnd5e-combat-menu button.refused { opacity: 0.55; }
+.dnd5e-combat-menu button.refused i { color: #d0604a; }
 
 /* ---- chance de toucher près du curseur (§15.3) ---- */
 .dnd5e-combat-hitchance {

@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-324 scénarios (`tools/scenarios/`), joués dans le client du MJ par le connecteur : `node tools/reload.mjs && node
+325 scénarios (`tools/scenarios/`), joués dans le client du MJ par le connecteur : `node tools/reload.mjs && node
 tools/scenario.mjs <noms>`. **Scène** : vide = l'« Arène de test » ; sinon la scène que le scénario demande (sauté si elle manque).
 Les scénarios d'un sous-dossier ne font pas partie de la passe complète : `node tools/scenario.mjs tools/scenarios/<dossier>`. Les
 `balayage-*` ne se jouent que nommés. Choisir sans connaître les noms : `--grep <mot>`, `--section <§>`, `--scene <nom>` ; `--list` montre
@@ -183,6 +183,7 @@ la sélection sans rien jouer.
 | `rampe` |  | §17.2 | À terre : mode ramper posé et retiré |
 | `ravenloft-options` |  | §19.9 | Morsure vampirique, Attraction de la mort, Retour à la vie, Chemin vers la tombe, Sentinelle au seuil de la mort |
 | `reduction` |  | §16.11 §156 | Égide arcanique, Esquive instinctive, Lien protecteur |
+| `refus-clics` | Arène des refus | §411 | attaque, menu, zone hors de portée, téléportation |
 | `regeneration` |  | §18.13 | soin au début du tour, coupée par le feu, troll à 0 PV |
 | `regle-forcee` | Arène des refus | §408 | fenêtre de légalité, alerte au MJ, carte marquée |
 | `releve-sorts-1` |  | §157 | Flou, Assassin imaginaire, Duel forcé, État cadavérique, châtiments, Repli expéditif |

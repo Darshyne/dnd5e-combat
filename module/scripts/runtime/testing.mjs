@@ -304,14 +304,16 @@ function menu({ tokenId, targetId, run=null }) {
   try { entries = game.modules.get(MODULE_ID).api.ui.tokenMenu(target); }
   catch(err) { giveBack(); throw err; }
   const labels = entries.map(e => e.label);
+  // §411 : les entrées grisées et leur raison.
+  const refused = Object.fromEntries(entries.filter(e => e.refused).map(e => [e.label, e.refused]));
   const entry = run ? entries.find(e => e.label === run) : null;
   if ( !entry ) {
     giveBack();
     if ( run ) throw new Error(`no menu entry « ${run} » (${labels.join(" | ")})`);
-    return { labels };
+    return { labels, refused };
   }
   Promise.resolve(entry.run()).catch(err => console.error(`${MODULE_ID} | test menu`, err)).finally(giveBack);
-  return { labels, started: true };
+  return { labels, refused, started: true };
 }
 
 /**

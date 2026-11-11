@@ -91,7 +91,7 @@ contexte du moment) et sert de clé `on` aux déclarations de contenu.
 | Hook | Annulable | Émis dans |
 |---|---|---|
 | `dnd5e.createMeasuredTemplate` | oui | `adapter/self-area.mjs`, `adapter/storm.mjs` |
-| `dnd5e.postCreateMeasuredTemplate` |  | `adapter/self-area.mjs`, `adapter/storm.mjs` |
+| `dnd5e.postCreateMeasuredTemplate` |  | `adapter/self-area.mjs`, `adapter/storm.mjs`, `ui/pointer.mjs` |
 | `dnd5e.teleport` | oui | `runtime/teleport.mjs` |
 
 ## Hooks écoutés, dans l'ordre d'appel

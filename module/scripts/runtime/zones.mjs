@@ -41,7 +41,7 @@ const currentTurnKey = () => turnKeyOf(game.combat?.started ? game.combat.round 
 
 /**
  * Intention « déplacer la zone vers ce point ». Rend `true` quand c'est réglé (déplacée, ou abandon choisi) ; `false`
- * quand le point ne va pas (trop loin) et qu'on peut en choisir un autre.
+ * quand le point était trop loin et que le joueur a renoncé (§411 : il peut aussi forcer) — on peut en choisir un autre.
  * @param {Activity} activity
  * @param {{x: number, y: number}} point
  */
@@ -49,12 +49,10 @@ export async function moveZone(activity, point) {
   const zone = movableZoneOf(activity);
   if ( !zone ) return true;
   const { region, rule, cost } = zone;
-  if ( tooFarForZone(zone, point) ) {
-    ui.notifications.warn(loc("Zone.TropLoin", { item: activity.item.name, max: rule.distance, units: rule.units }));
-    return false;
-  }
-  // Mode souple (§6) : le tour de la pose, le budget — on dit ce qui cloche, le joueur décide.
+  // Mode souple (§6) : le tour de la pose, le budget — on dit ce qui cloche, le joueur décide. §411 : la distance aussi (avant : refus sec).
   const lines = [];
+  const far = tooFarForZone(zone, point);
+  if ( far ) lines.push(loc("Zone.TropLoin", { item: activity.item.name, max: rule.distance, units: rule.units }));
   if ( !canMoveArea(readAreaState(region), currentTurnKey()) ) lines.push(loc("Zone.MemeTour", { item: activity.item.name }));
   const combatant = combatantFor(activity.actor);
   if ( combatant && cost ) {
@@ -63,7 +61,7 @@ export async function moveZone(activity, point) {
     }
   }
   if ( lines.length && !(await askAnyway(`${activity.item.name} — ${activity.actor?.name ?? ""}`, lines,
-    { actor: activity.actor, item: activity.item })) ) return true;
+    { actor: activity.actor, item: activity.item })) ) return !far;   // renoncé : trop loin, un autre point se choisit
   const payload = { region: region.uuid, point: { x: point.x, y: point.y }, actor: activity.actor?.uuid ?? null, cost };
   await viaActiveGM(MOVE_ZONE_QUERY, handleMoveZone, payload, { noGm: "Zone.SansMJ", label: "area move" });
   return true;

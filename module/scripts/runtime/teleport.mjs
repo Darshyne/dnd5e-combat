@@ -14,6 +14,7 @@ import { LIGHT } from "../core/illumination.mjs";
 import { afterTeleportOptions } from "./teleport-options.mjs";
 import { carryPassengers, choosePassengers } from "./passengers.mjs";
 import { loc, notice, log } from "./shared.mjs";
+import { askAnyway } from "./turn.mjs";
 import { occupiedAt } from "./actions.mjs";
 import { timedWait } from "../adapter/dialogs.mjs";
 import { whileAwaiting } from "../adapter/awaiting.mjs";
@@ -22,8 +23,8 @@ import { whileAwaiting } from "../adapter/awaiting.mjs";
 /*  Téléportation (§16.10)                      */
 /* -------------------------------------------- */
 
-/** Refus de la dernière destination, par token : l'intention reprend la visée au lieu d'abandonner. */
-const refusedTeleports = new Set();
+/** Refus de la dernière destination, par token : l'intention demande s'il faut forcer, sinon reprend la visée au lieu d'abandonner. */
+const refusedTeleports = new Map();   // §411 : uuid du token → `{ to, lines }`, de quoi forcer
 
 /**
  * La portée d'une téléportation, dans l'unité de la scène : celle de l'activité native (`teleport.value`, préparée par
@@ -46,39 +47,59 @@ export function onTeleport(activity, plans) {
     const doc = token?.document;
     const to = plan?.destination;
     if ( !doc || !to ) continue;
-    // « Jusqu'à 9 m » (Foulée brumeuse) : la destination du plan est celle du clic — le cœur ne la borne pas toujours.
-    const limit = teleportLimit(activity, doc.parent);
-    const travelled = (limit !== null) ? distanceBetween(doc, doc, { posB: { x: to.x, y: to.y, elevation: to.elevation ?? doc._source.elevation } }).value : 0;
-    if ( (limit !== null) && (travelled > limit + 1e-6) ) {
-      ui.notifications.warn(loc("Teleport.TropLoin", { distance: limit, units: doc.parent.grid.units }));
-      notice(doc, loc("Retour.TropLoin"));
-      refusedTeleports.add(doc.uuid);
-      return false;
-    }
-    if ( occupiedAt(doc, to) ) {
-      ui.notifications.warn(loc("Teleport.CaseOccupee"));
-      notice(doc, loc("Retour.CaseOccupee"));
-      refusedTeleports.add(doc.uuid);
-      return false;
-    }
-    const center = doc.getCenterPoint ? doc.getCenterPoint(to) : { x: to.x, y: to.y };
-    // §367 : Marche dans l'ombre — « en Pénombre ou dans les Ténèbres, vers un espace … lui aussi en Pénombre ou dans les Ténèbres ».
-    const lit = tooBrightFor(activity, doc, { ...center, elevation: to.elevation ?? doc._source.elevation ?? 0 });
-    if ( lit ) {
-      ui.notifications.warn(loc(`Teleport.TropEclaire.${lit}`));
-      notice(doc, loc("Retour.TropEclaire"));
-      refusedTeleports.add(doc.uuid);
-      return false;
-    }
-    // C12-b : Porte dimensionnelle — « un lieu que vous voyez, ou que vous décrivez » (`teleport.unseen`) : pas d'exigence de vue.
-    const unseen = activity?.item ? contentOf(activity.item).entry?.teleport?.unseen === true : false;
-    if ( !unseen && isVisionAvailable() && (canSeePoint(doc, { ...center, elevation: to.elevation ?? 0 }) === false) ) {
-      ui.notifications.warn(loc("Teleport.NonVue"));
-      notice(doc, loc("Retour.NonVue"));
-      refusedTeleports.add(doc.uuid);
-      return false;
-    }
+    const issues = teleportIssues(activity, doc, to);
+    if ( !issues.length ) continue;
+    // §411 (issue #44, lot 4) : plus de refus sec. Le déplacement est annulé (le hook est synchrone) ; l'intention (`teleportSelf`,
+    // `handleNearSpace`) demande ensuite, et peut forcer la même case.
+    notice(doc, loc(issues[0].notice));
+    refusedTeleports.set(doc.uuid, { to: { x: to.x, y: to.y, elevation: to.elevation ?? doc._source.elevation ?? 0 }, lines: issues.map(i => i.line) });
+    return false;
   }
+  return true;
+}
+
+/**
+ * Ce qui cloche dans une destination de téléportation : `[{ line, notice }]` (phrase de la fenêtre, texte flottant). « Jusqu'à 9 m » ; un
+ * espace inoccupé ; §367 Marche dans l'ombre ; une case que l'on voit (C12-b : sauf `teleport.unseen`, Porte dimensionnelle).
+ * @param {Activity|null} activity
+ * @param {TokenDocument} doc
+ * @param {{x: number, y: number, elevation?: number}} to
+ */
+export function teleportIssues(activity, doc, to) {
+  const issues = [];
+  // « Jusqu'à 9 m » (Foulée brumeuse) : la destination du plan est celle du clic — le cœur ne la borne pas toujours.
+  const limit = teleportLimit(activity, doc.parent);
+  const travelled = (limit !== null) ? distanceBetween(doc, doc, { posB: { x: to.x, y: to.y, elevation: to.elevation ?? doc._source.elevation } }).value : 0;
+  if ( (limit !== null) && (travelled > limit + 1e-6) ) {
+    issues.push({ line: loc("Teleport.TropLoin", { distance: limit, units: doc.parent.grid.units }), notice: "Retour.TropLoin" });
+  }
+  if ( occupiedAt(doc, to) ) issues.push({ line: loc("Teleport.CaseOccupee"), notice: "Retour.CaseOccupee" });
+  const center = doc.getCenterPoint ? doc.getCenterPoint(to) : { x: to.x, y: to.y };
+  // §367 : Marche dans l'ombre — « en Pénombre ou dans les Ténèbres, vers un espace … lui aussi en Pénombre ou dans les Ténèbres ».
+  const lit = tooBrightFor(activity, doc, { ...center, elevation: to.elevation ?? doc._source.elevation ?? 0 });
+  if ( lit ) issues.push({ line: loc(`Teleport.TropEclaire.${lit}`), notice: "Retour.TropEclaire" });
+  const unseen = activity?.item ? contentOf(activity.item).entry?.teleport?.unseen === true : false;
+  if ( !unseen && isVisionAvailable() && (canSeePoint(doc, { ...center, elevation: to.elevation ?? 0 }) === false) ) {
+    issues.push({ line: loc("Teleport.NonVue"), notice: "Retour.NonVue" });
+  }
+  return issues;
+}
+
+/**
+ * §411 : la dernière destination refusée de ce token — « Faire quand même » ? Forcé : le token y est téléporté (`blink`, sans la
+ * validation), le MJ et la table prévenus. Rend true si c'est fait.
+ */
+async function forceRefusedTeleport(activity, doc) {
+  const refused = refusedTeleports.get(doc.uuid);
+  if ( !refused ) return false;
+  refusedTeleports.delete(doc.uuid);
+  const item = activity?.item ?? null;
+  const go = await askAnyway(`${item?.name ?? loc("Teleport.Titre")} — ${doc.name}`, refused.lines, { actor: doc.actor, item, token: doc });
+  if ( !go ) return false;
+  const { x, y, elevation } = refused.to;
+  // Une case prise : dnd5e ne laisse pas finir un déplacement sur une autre créature (canvas/token.mjs, `constrainMovementPath`) sauf
+  // `ignoreTokens` — forcer, c'est y aller quand même.
+  await doc.move([{ x, y, elevation, action: "blink", snapped: true }], { constrainOptions: { ignoreTokens: true }, [MODULE_ID]: { cleared: true } });
   return true;
 }
 
@@ -200,9 +221,13 @@ export async function teleportSelf(activity) {
       if ( chosen ) {
         teleporting.chosen = null;
         if ( await teleportTo(activity, token, chosen) ) return done();
-        continue;   // refusée (case prise, hors de vue, trop loin) : la visée se rouvre
       }
-      if ( !refusedTeleports.has(token.uuid) ) return false;   // abandonnée (Échap), pas refusée
+      if ( !refusedTeleports.has(token.uuid) ) {
+        if ( chosen ) continue;
+        return false;   // abandonnée (Échap), pas refusée
+      }
+      // §411 : refusée (case prise, hors de vue, trop loin) — forcer, sinon la visée se rouvre.
+      if ( await forceRefusedTeleport(activity, token) ) return done();
     }
     return false;
   } finally { teleporting = null; }
@@ -258,17 +283,17 @@ export async function handleNearSpace({ token: uuid, distance, units, mustMove=f
         if ( !to ) return null;
         // Un clic n'est pas borné par la planification du cœur : la portée se relit ici.
         const travelled = distanceBetween(doc, doc, { posB: { x: to.x, y: to.y, elevation: to.elevation ?? doc._source.elevation } }).value;
-        if ( travelled > limit + 1e-6 ) {
-          ui.notifications.warn(loc("Teleport.TropLoin", { distance: Math.round(limit * 10) / 10, units: doc.parent.grid.units }));
-          continue;
-        }
+        // §411 : ce qui cloche (trop loin, case prise, hors de vue) se dit dans une fenêtre — forcer, sinon choisir une autre case.
         const at = { x: to.x, y: to.y, elevation: to.elevation ?? doc._source.elevation ?? 0 };
+        const lines = [];
+        if ( travelled > limit + 1e-6 ) lines.push(loc("Teleport.TropLoin", { distance: Math.round(limit * 10) / 10, units: doc.parent.grid.units }));
         if ( anchors.length && !anchors.some(a => distanceBetween(doc, a, { posA: at }).value <= reach + 1e-6) ) {
-          ui.notifications.warn(loc("EspaceProche.TropLoinCibles", { distance: label }));
-          continue;
+          lines.push(loc("EspaceProche.TropLoinCibles", { distance: label }));
         }
-        if ( onTeleport(null, [{ token: object, plan: { destination: to } }]) === false ) continue;
-        await doc.move([{ x: to.x, y: to.y, elevation: doc._source.elevation ?? 0, action: "blink", snapped: true }], { [MODULE_ID]: { cleared: true } });
+        lines.push(...teleportIssues(null, doc, to).map(i => i.line));
+        if ( lines.length && !(await askAnyway(`${item || doc.name} — ${doc.name}`, [...new Set(lines)], { actor: doc.actor, token: doc })) ) continue;
+        await doc.move([{ x: to.x, y: to.y, elevation: doc._source.elevation ?? 0, action: "blink", snapped: true }],
+          { ...(lines.length ? { constrainOptions: { ignoreTokens: true } } : {}), [MODULE_ID]: { cleared: true } });
         log(`${doc.name}: comes back in the chosen space (${Math.round(travelled * 10) / 10} ${doc.parent.grid.units})`);
         return { x: to.x, y: to.y };
       }

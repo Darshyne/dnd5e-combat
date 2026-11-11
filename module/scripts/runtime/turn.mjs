@@ -28,7 +28,7 @@ import { pilotUsage, refundCommand, spellCommandUsage } from "./pilot.mjs";
 import { route } from "./router.mjs";
 import { log, loc, sleep, viaActiveGM } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
-import { forcedReasons } from "../core/forced.mjs";
+import { forcedReasons, mergeIssues } from "../core/forced.mjs";
 import { somaticBlockOf, registerSomaticHandsSetting } from "../adapter/hands.mjs";
 import { missingResources } from "../adapter/resources.mjs";
 import { reportForced, overriddenFlag } from "./forced.mjs";
@@ -403,9 +403,14 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const chained = chainOutliers(activity, aimed.map(t => t.document));
   const lost = (origin && !activity.target?.template?.type) ? aimed.filter(t => !unseen.includes(t)
     && locationUnknown({ hidden: hiddenDcOf(t.actor) !== null, sees: canSee(origin, t.document) })) : [];
-  if ( !use.lines.length && !legend.length && !range.blocking.length && !seenBy.length && !wrongType.length && !charmed.length && !unseen.length && !lost.length && !fenced.length && !stormed.length && !offPlane.length && !chained.length ) return true;
+  // §411 : ce que le clic a déjà relevé et que la légalité ne voit pas (contact, ligne de vue, approche impossible, type de cible,
+  // lien, Enchaînement, rebond) — `issues` : des raisons traduites ; `issuesCoverRange` : elles disent déjà la portée.
+  const extra = (usageConfig[MODULE_ID]?.issues ?? []).filter(l => typeof l === "string" && l);
+  if ( extra.length && usageConfig[MODULE_ID]?.issuesCoverRange ) range.blocking = [];
+  if ( !extra.length && !use.lines.length && !legend.length && !range.blocking.length && !seenBy.length && !wrongType.length && !charmed.length && !unseen.length && !lost.length && !fenced.length && !stormed.length && !offPlane.length && !chained.length ) return true;
 
-  const lines = [
+  const lines = mergeIssues(
+    extra,
     ...use.lines,
     ...legend,
     ...range.blocking.map(r => loc((r.issue === "tooClose") ? "Souci.tooClose" : "Souci.outOfRange", { name: r.name })),
@@ -419,7 +424,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     ...stormed.map(t => loc("Souci.noRangedWeaponsAt", { name: t.name, item: t.item.name })),
     ...chained.map(t => loc("Souci.chainTooFar", { name: t.name, first: aimed[0].name, distance: chainLimit(chainOf(activity.item), aimed[0].document),
       units: aimed[0].document.parent.grid.units }))
-  ];
+  );
   // Une action tentée hors de son tour est souvent une réaction (attaque d'opportunité).
   const asReaction = !!combatant && !own && (request.cost === "action") && (budget.reaction > 0);
   const buttons = [{ action: "go", label: loc("UtiliserQuandMeme"), default: !asReaction }];

@@ -54,9 +54,9 @@ export default {
       const started = await ctx.engine("castFromBar", { tokenId: mage.id, itemId, sheet, x: pos.x + ((n + 1) * grid), y: pos.y + grid });
       if ( sheet ) {
         const asked = await ctx.call("list-dialogs", { dialogsOnly: true, waitMs: 8000 });
-        const forced = (asked.windows ?? []).find(d => (d.buttons ?? []).some(b => b.action === "yes") && !(d.fields ?? []).some(f => f.name === "profile"));
+        const forced = (asked.windows ?? []).find(d => (d.buttons ?? []).some(b => ["yes", "go"].includes(b.action)) && !(d.fields ?? []).some(f => f.name === "profile"));
         if ( !ctx.expect(!!forced, `${source} : le MJ peut lancer sans emplacement (« Plus de charge »)`) ) continue;
-        await ctx.call("answer-dialog", { id: forced.id, button: "yes" });
+        await ctx.call("answer-dialog", { id: forced.id, button: (forced.buttons ?? []).some(b => b.action === "go") ? "go" : "yes" });
       }
       const wanted = started.profiles[index];
       if ( !ctx.expect(!!wanted, `${source} : la forme ${label} existe (${started.profiles.map(p => p.name).join(" / ")})`) ) continue;
@@ -108,8 +108,8 @@ export default {
       await ctx.call("answer-dialog", { id: form.id, fields: { count: "1" }, button: "summon" });
       if ( !slots6 ) {
         const asked = await ctx.call("list-dialogs", { dialogsOnly: true, waitMs: 6000 });
-        const forced = (asked.windows ?? []).find(d => (d.buttons ?? []).some(b => b.action === "yes"));
-        if ( forced ) await ctx.call("answer-dialog", { id: forced.id, button: "yes" });
+        const forced = (asked.windows ?? []).find(d => (d.buttons ?? []).some(b => ["yes", "go"].includes(b.action)));
+        if ( forced ) await ctx.call("answer-dialog", { id: forced.id, button: (forced.buttons ?? []).some(b => b.action === "go") ? "go" : "yes" });
       }
       let captured = null;
       for ( let i = 0; i < 20; i++ ) {

@@ -30,6 +30,7 @@ import { log, loc, sleep, viaActiveGM } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { forcedReasons } from "../core/forced.mjs";
 import { somaticBlockOf, registerSomaticHandsSetting } from "../adapter/hands.mjs";
+import { missingResources } from "../adapter/resources.mjs";
 import { reportForced, overriddenFlag } from "./forced.mjs";
 import { antimagicAround, barrierBetween } from "../adapter/barriers.mjs";
 import { rangedBanAround, formLockAround } from "../adapter/areas.mjs";
@@ -146,7 +147,7 @@ export function openLegalityDialogs() {
  * @param {Activity} activity
  * @param {{cost?: string|null, attackMode?: string|null, recast?: boolean}} [options]
  */
-export function useIssues(activity, { cost: forcedCost=null, attackMode=null, recast=false }={}) {
+export function useIssues(activity, { cost: forcedCost=null, attackMode=null, recast=false, usageConfig=null }={}) {
   // §16.15 : un objet piloté agit au tour de son lanceur, avec son budget ; la commande ouverte ce tour couvre le geste.
   const pilot = pilotOfActor(activity.actor);
   const combatant = pilot ? summonerCombatant(pilot) : combatantFor(activity.actor);
@@ -174,6 +175,11 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
   const incapacitated = pilot ? [] : conditionUseIssues({ statuses: Array.from(activity.actor?.statuses ?? []), cost,
     noReactions: reactionsBlocked(activity.actor), actionOrBonus: !!budget && actionOrBonusOnly(activity.actor), budget,
     castsSpell: casting, longActivation });
+  // §410 (issue #44, lot 3) : ce qui manque — emplacement, utilisations, quantité, préparation (forcer = ne pas le dépenser).
+  const missing = (pilot || ordered) ? missingResources(null) : missingResources(activity, usageConfig, { recast });
+  // Ce que runtime/usage.mjs a trouvé en manque (§77 : l'emplacement corrigé, les utilisations relues sur la copie réparée de l'item).
+  const lacking = usageConfig?.[MODULE_ID]?.lacking ?? null;
+  if ( lacking && !missing.keys.some(k => ["noSlot", "noUses", "noQuantity"].includes(k)) ) missing.keys.unshift(lacking);
   // §409 (issue #44) : composante somatique sans main libre.
   const handsFull = (casting && !pilot) ? somaticBlockOf(activity) : null;
   // §22 : « en Rage, vous ne pouvez pas lancer de sorts ».
@@ -216,6 +222,7 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
     ...(outOfAmmunition(activity, attackMode) ? [loc("Souci.noAmmunition", { item: activity.item.name })] : []),
     ...(silenced ? [loc("Souci.silenced")] : []),
     ...(handsFull ? [loc("Souci.noFreeHand", { items: handsFull.items.join(", ") })] : []),
+    ...missing.keys.map(k => loc(`Souci.${k}`, { item: activity.item.name })),
     ...(raging ? [loc("Souci.rage")] : []),
     ...(heavyRage ? [loc("Souci.rageHeavyArmor")] : []),
     ...(familiarAttack ? [loc("Souci.familiarAttack")] : []),
@@ -227,7 +234,7 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
     ...limits.issues.map(i => loc(`Souci.${i}`, { item: limits.item ?? "" })),
     ...incapacitated.map(i => loc(`Souci.${i}`))
   ];
-  return { combatant, budget, own, request, cost, lines, budgetLines };
+  return { combatant, budget, own, request, cost, lines, budgetLines, missing };
 }
 
 /**
@@ -336,10 +343,9 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   // Ce que l'intention a fixé d'avance (effet exclusif, mode d'attaque) va sur la carte, où le moteur le lit.
   // §16.40 : les options du contenu d'abord — coût de la règle (noté sur la carte juste après), emplacement le plus bas,
   // sans fenêtre ; aucun emplacement : rien n'est utilisé.
-  if ( !applyLowestSlot(activity, usageConfig, dialogConfig) ) {
-    ui.notifications.warn(loc("Souci.noSlot", { item: activity.item.name }));
-    return false;
-  }
+  // §410 : plus d'emplacement pour une règle `lowestSlot` — plus de refus sec : la fenêtre de légalité le dit (`missingResources`, cible
+  // « spellSlots »), le joueur peut forcer sans le dépenser.
+  applyLowestSlot(activity, usageConfig, dialogConfig);
   // §65 : une action de base au choix (Échappée agile : Se désengager OU Se cacher) — demandée avant tout, puis l'utilisation repart.
   const choices = basicChoiceOf(activity);
   if ( choices && !choices.includes(usageConfig[MODULE_ID]?.basicChoice) ) {
@@ -371,7 +377,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   // Mode d'attaque déjà choisi par le clic (« main secondaire » du menu : `engage`), sinon inconnu jusqu'au jet.
   // Un coût imposé par l'intention (§16.26 : Taille, une attaque d'arme pour l'action Bonus), sinon celui de l'activation.
   const use = useIssues(activity, { cost: usageConfig[MODULE_ID]?.cost ?? null,
-    attackMode: usageConfig[MODULE_ID]?.attackMode ?? null, recast: !!usageConfig[MODULE_ID]?.recast });
+    attackMode: usageConfig[MODULE_ID]?.attackMode ?? null, recast: !!usageConfig[MODULE_ID]?.recast, usageConfig });
   const { combatant, budget, own, request } = use;
   const legend = legendaryIssues(activity, combatant, own);
   const range = assessRange(activity);
@@ -432,7 +438,12 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
       ...(reasons.length ? { overridden: overriddenFlag(reasons) } : {}) } };
     const message = foundry.utils.mergeObject(messageConfig ?? {}, choice === "reaction"
       ? { data: { flags: { [MODULE_ID]: { cost: "reaction" } } } } : {}, { inplace: false });
-    activity.use(config, dialogConfig, message);
+    // §410 : ce qui manque n'est pas dépensé — la relance « forcée » du §77 (runtime/usage.mjs : rien n'est consommé, le sort à son niveau).
+    // Sans la fenêtre de dnd5e, comme l'ancienne relance du §77 : la forme d'une invocation, le profil d'un enchantement se choisissent
+    // dans celles du moteur (ui/pointer.mjs, `forced`).
+    const forcedUse = use.missing.keys.some(k => ["noSlot", "noUses", "noQuantity"].includes(k));
+    if ( forcedUse ) config[MODULE_ID].forced = true;
+    activity.use(config, forcedUse ? { ...(dialogConfig ?? {}), configure: false } : dialogConfig, message);
   });
   return false;
 }

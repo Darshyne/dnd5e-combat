@@ -102,8 +102,8 @@ export default {
               saw = saw || ((field.options ?? []).length > 1);
               chose = (field.options ?? []).at(-1)?.value ?? chose;
               await ctx.call("answer-dialog", { id: w.id, fields: { [field.name]: chose }, button: "use" }).catch(() => {});
-            } else if ( (w.buttons ?? []).some(b => b.action === "yes") ) {
-              await ctx.call("answer-dialog", { id: w.id, button: "yes" }).catch(() => {});
+            } else if ( (w.buttons ?? []).some(b => ["yes", "go"].includes(b.action)) ) {
+              await ctx.call("answer-dialog", { id: w.id, button: (w.buttons ?? []).some(b => b.action === "go") ? "go" : "yes" }).catch(() => {});
             } else if ( (w.className === "DialogV2") && (w.buttons ?? []).length && !answered.has(w.id) ) {
               // La suite d'un chemin du moteur (l'arme de la créature pour Arme élémentaire, Arme magique) : son bouton par défaut.
               answered.add(w.id);

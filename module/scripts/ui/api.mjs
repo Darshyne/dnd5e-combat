@@ -110,7 +110,9 @@ function cell(activity) {
   if ( movableZoneOf(activity) ) return { issues: issues(activity), cost: cost(activity) };
   let result;
   try { result = useIssues(activity); } catch { return { issues: issues(activity), cost: null }; }
-  return { issues: result.lines, cost: result.request?.cost ?? costFor(activity) ?? null };
+  // §410 : `resources` — le moteur juge aussi emplacements, utilisations, quantité et préparation (une interface n'a plus à les juger) ;
+  // `forceable` — toutes ces raisons s'ouvrent dans la fenêtre « Utiliser quand même » (§408).
+  return { issues: result.lines, cost: result.request?.cost ?? costFor(activity) ?? null, resources: true, forceable: true };
 }
 
 /**

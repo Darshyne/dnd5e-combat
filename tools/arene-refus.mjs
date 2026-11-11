@@ -88,6 +88,11 @@ try {
       .catch(err => console.log(`propriété du joueur : ${err.message} (réglage « Outils de test » requis)`));
   }
 
+  // Emplacements de sort pleins : le pré-tiré stocke `value` à 0, le maximum est calculé par dnd5e (un scénario peut aussi les avoir vidés).
+  await mcp.call("run-script", { code: `for ( const id of ${JSON.stringify(Object.values(ids))} ) { const a = game.actors.get(id); if ( !a?.system?.spells ) continue;
+    const u = {}; for ( const [k, s] of Object.entries(a.system.spells) ) if ( s?.max ) u[\`system.spells.\${k}.value\`] = s.max; if ( Object.keys(u).length ) await a.update(u); } return true;` })
+    .catch(err => console.log(`emplacements : ${err.message} (réglage « Outils de test » requis)`));
+
   const scenes = await mcp.call("list-scenes", {});
   let scene = (Array.isArray(scenes) ? scenes : Object.values(scenes).find(Array.isArray)).find(s => s.name === ARENE_REFUS.name);
   const { cols, rows, grid } = ARENE_REFUS;

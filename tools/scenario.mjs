@@ -288,6 +288,8 @@ function makeContext(mcp) {
     async ensureItem(token, uuid, { system={}, byUuid=false, ready=false }={}) {
       const { data } = await mcp.call("get-compendium-entry", { uuid });
       Object.assign(data.system ??= {}, system);   // retouches (ex. { method: "atwill" } : un sort sans emplacement)
+      // §410 : un sort prêté est prêt à lancer — préparé (le moteur refuse désormais un sort non préparé, fenêtre « Utiliser quand même »).
+      if ( (data.type === "spell") && !("prepared" in system) ) data.system.prepared = 1;
       const identifier = data.system?.identifier;
       // §393 : `byUuid` reconnaît l'objet prêté par son uuid d'origine, pas par son identifiant — la Hache des seigneurs nains du DMG
       // et celle du SRD 2024 ont le même identifiant, et la seconde réutilisait la première (charge déjà dépensée).
@@ -301,7 +303,15 @@ function makeContext(mcp) {
       const { data: tok } = await mcp.call("get-scene-object", { type: "Token", objectId: token.id });
       const items = (await mcp.call("get-actor", { actorId: tok.actorId })).items ?? [];
       const existing = items.find(i => foundry_get(i, match.path) === match.value);
-      if ( existing ) return existing._id;
+      if ( existing ) {
+        // §410 : un sort déjà sur la fiche mais non préparé est préparé le temps du scénario (le moteur refuse un sort non préparé).
+        if ( (existing.type === "spell") && !existing.system?.prepared && !("prepared" in system) ) {
+          await mcp.call("upsert-actor-item", { actorId: tok.actorId, itemData: { "system.prepared": 1 }, match: { path: "_id", value: existing._id } });
+          ctx.restore(() => mcp.call("upsert-actor-item", { actorId: tok.actorId, itemData: { "system.prepared": existing.system?.prepared ?? 0 },
+            match: { path: "_id", value: existing._id } }).catch(() => {}));
+        }
+        return existing._id;
+      }
       const { _id, folder, ownership, _stats, ...itemData } = data;
       const r = await mcp.call("upsert-actor-item", { actorId: tok.actorId, itemData, match });
       const id = r.itemId ?? r.id ?? r.item?._id ?? (await ctx.itemId(token.id, identifier));

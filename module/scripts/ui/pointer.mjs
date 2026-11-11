@@ -356,7 +356,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const skipsDialog = (dialogConfig?.configure === false) || (enchantKind === "ownWeapon")
     || ((enchantKind === "weapon") && (!!ours.engaged || (game.user.targets.size > 0)));
   if ( ["enchant", "transform"].includes(activity?.type) && canvas.ready && activity.actor?.isOwner
-    && asksProfile({ configure: skipsDialog ? false : dialogConfig?.configure, chosen: !!ours.summonForm, confirmed: !!ours.confirmed, own: isWildShape(activity),
+    && asksProfile({ configure: skipsDialog ? false : dialogConfig?.configure, chosen: !!ours.summonForm, confirmed: !!ours.confirmed && !ours.forced, own: isWildShape(activity),
       profiles: ((activity.type === "enchant") ? activity.availableEnchantments : activity.availableProfiles)?.length ?? 0 }) ) {
     closeSheetFor(activity);
     stopTargeting();
@@ -411,7 +411,8 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   const chooseCount = !!chooseRule;
   if ( (activity?.type === "summon") && canvas.ready && activity.actor?.isOwner && !lightChoiceOf(activity)
     && asksSummonForm({ configure: dialogConfig?.configure, choices: summonChoicesOf(activity), chosen: !!ours.summonForm,
-      confirmed: !!ours.confirmed, otherChoice: !!ours.lightChoice, always: chooseCount,
+      // §410 : une relance « forcée » sans ressource (fenêtre de légalité, §77) est confirmée mais n'a pas encore choisi sa forme.
+      confirmed: !!ours.confirmed && !ours.forced, otherChoice: !!ours.lightChoice, always: chooseCount,
       willSummon: !!usageConfig.create?.summons || !!contentOf(activity.item).entry?.placesSummons || (game.user.targets.size > 0) }) ) {
     closeSheetFor(activity);
     stopTargeting();

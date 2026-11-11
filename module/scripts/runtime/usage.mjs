@@ -25,7 +25,6 @@ import { contentOf } from "../adapter/content.mjs";
 import { movableZoneOf } from "./zones.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
-import { whileAwaiting } from "../adapter/awaiting.mjs";
 import { summonChoicesOf, applySummonCount, applyPreferredActors, concentrationOn } from "../adapter/summons.mjs";
 
 export const AUTO_USAGE_SETTING = "autoUsage";
@@ -85,24 +84,6 @@ function repairSelfUses(activity) {
   item.prepareFinalAttributes?.();
   log(`${activity.item.name}: the activity's uses are the item's (${activity.item.system.uses.value}/${activity.item.system.uses.max})`);
   return activity.item.system.activities.get(activity.id) ?? activity;
-}
-
-/** §77 : plus de ressources — le MJ choisit de lancer quand même (rien n'est consommé) ou non ; relance l'utilisation d'origine. */
-async function askForced(activity, usageConfig, messageConfig) {
-  const name = activity.item.name;
-  // §381 : la table voit que le MJ décide (sablier au-dessus de la créature, ou bandeau discret pour un monstre).
-  const ok = await whileAwaiting(activity.actor ?? null, "choice", () => foundry.applications.api.DialogV2.confirm({
-    window: { title: loc("SansCharge.Titre") },
-    content: `<p>${loc("SansCharge.Texte", { name })}</p>`,
-    yes: { label: loc("SansCharge.Lancer"), icon: "fa-solid fa-wand-sparkles" },
-    no: { label: loc("SansCharge.Renoncer") },
-    rejectClose: false
-  })).catch(() => false);
-  if ( !ok ) return log(`${name}: no charges left, the GM gives up`);
-  const original = activity.actor?.items.get(activity.item.id)?.system.activities.get(activity.id);
-  if ( !original ) return;
-  log(`${name}: no charges left, cast anyway by the GM (nothing consumed)`);
-  await original.use({ ...usageConfig, [MODULE_ID]: { ...(usageConfig[MODULE_ID] ?? {}), forced: true } }, { configure: false }, messageConfig);
 }
 
 /**
@@ -179,12 +160,12 @@ function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
   // §106 : le niveau est un vrai choix — la fenêtre de dnd5e reste (avec l'emplacement corrigé ci-dessus, s'il l'a été).
   if ( auto && !lacking && activity.requiresSpellSlot && usageConfig.consume?.spellSlot && (usageConfig.scaling !== false)
     && canCastHigher(slots, Number(activity.item.system.level) || 0) ) auto = false;
+  const slotLacking = lacking;
   if ( !lacking ) lacking = lacksUses(activity, usageConfig);
-  // §77 : plus de ressources — le MJ peut toujours lancer, après avertissement ; un joueur, dnd5e le refuse.
-  if ( lacking && game.user.isGM ) {
-    askForced(activity, usageConfig, messageConfig);
-    return false;
-  }
+  // §77, §410 (issue #44, lot 3) : plus de ressources — plus de refus sec ni de fenêtre propre au MJ : ce qui manque est noté pour la
+  // fenêtre de légalité (runtime/turn.mjs, inscrite après), qui le dit à tous, MJ et joueurs ; forcé, l'utilisation repart avec
+  // `forced` (ci-dessus : rien n'est consommé, le sort à son niveau).
+  if ( lacking ) usageConfig[MODULE_ID] = { ...(usageConfig[MODULE_ID] ?? {}), lacking: slotLacking ? "noSlot" : "noUses" };
   if ( auto ) dialogConfig.configure = false;
   placeAlways(activity, usageConfig);
 }

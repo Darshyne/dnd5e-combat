@@ -53,6 +53,8 @@ import { climbSystemOn, whileClimbSystem } from "../core/climb-system.mjs";
 import { setClimbSystem } from "./climb-system.mjs";
 import { enqueue } from "./queue.mjs";
 import { esc, isExecutor, loc, locEsc, log, notice, say, waitForDice } from "./shared.mjs";
+import { askAnyway } from "./turn.mjs";
+import { forceMoveLater } from "./move-gate.mjs";
 import { askFallReactions } from "./reactions.mjs";
 import { isEthereal } from "../adapter/plane.mjs";
 
@@ -104,12 +106,13 @@ async function elevationSettled(token, from, ms=3000) {
 }
 
 /** Ce que ce grimpeur peut monter maintenant : cases au plus (budget du tour, plafond), coût d'une case. */
-export function climbRoom(token) {
+export function climbRoom(token, { forced=false }={}) {
   const grid = token.parent.grid;
   const { multiplier } = climbingOf(token);
   const cap = movementCap(token);
   const history = historyCosts(token);
-  const remaining = Number.isFinite(cap) ? Math.max(0, cap - history.spent - history.excluded) : Infinity;
+  // §412 : forcé, le budget du tour ne borne plus la montée (le plafond, si).
+  const remaining = (Number.isFinite(cap) && !forced) ? Math.max(0, cap - history.spent - history.excluded) : Infinity;
   const elevation = token._source.elevation ?? 0;
   const { ceiling } = boundsUnder(token);
   // §217 : ni au-delà du plafond, ni au-delà du sommet du mur (le grimpeur n'aurait plus où s'accrocher et tomberait).
@@ -120,12 +123,21 @@ export function climbRoom(token) {
 }
 
 /**
+ * §412 (issue #44, lot 5) : une limite de règle de l'escalade (pas assez de déplacement ce tour) — la fenêtre de légalité ; true si le joueur
+ * force (le MJ et la table prévenus).
+ */
+const forceClimb = (token, line) => askAnyway(loc("Escalade.TitreForce", { name: token.name }), [line], { actor: token.actor, token });
+
+/** Les options d'un pas d'escalade forcé : la garde du déplacement ne le rejuge pas (runtime/move-gate.mjs, `forcedMove`). */
+const forcedStep = forced => (forced ? { [MODULE_ID]: { forcedMove: true } } : {});
+
+/**
  * §216 : « S'agripper au bord » — au bord d'un toit, d'un chemin de ronde, d'un étage, le token passe par-dessus et se retrouve
  * accroché au mur côté vide, la tête à hauteur du bord (adapter/climb.mjs, `edgesBelowOf`), en escalade : il descend ensuite le long du
  * mur. Coût en combat : la hauteur descendue au prix de l'escalade, plus la case (le pendant de « Se hisser »). Le test des règles
  * « maison » est dû comme pour grimper.
  */
-export async function grabEdge(token, edge) {
+export async function grabEdge(token, edge, { forced=false }={}) {
   if ( !token?.isOwner || !edge || !climbSystemOn() ) return false;
   const grid = token.parent.grid;
   const feet = token._source.elevation ?? 0;
@@ -135,9 +147,9 @@ export async function grabEdge(token, edge) {
   if ( combatant ) {
     const { spent, excluded } = historyCosts(token);
     const left = movementCap(token) - spent - excluded;
-    if ( cost > left + 1e-6 ) {
-      ui.notifications.warn(loc("Escalade.HisserPasAssez", { name: token.name, cost: `${cost} ${grid.units}`, left: `${Math.max(0, Math.floor(left * 10) / 10)} ${grid.units}` }));
-      return false;
+    if ( (cost > left + 1e-6) && !forced ) {
+      const line = loc("Escalade.HisserPasAssez", { name: token.name, cost: `${cost} ${grid.units}`, left: `${Math.max(0, Math.floor(left * 10) / 10)} ${grid.units}` });
+      return (await forceClimb(token, line)) ? grabEdge(token, edge, { forced: true }) : false;
     }
   }
   if ( (climbRules() === "house") && !native && !(await houseCheckPassed(token, CLIMB_DC)) ) return false;
@@ -146,7 +158,7 @@ export async function grabEdge(token, edge) {
   await token.update({ movementAction: "climb", [`flags.${MODULE_ID}.${CLIMB_FLAG}`]: { from: mode, checkedAt: Date.now() } }, ALTITUDE_OPTIONS);
   await statusSettled(token, true);
   const step = { x: edge.x, y: edge.y, elevation: edge.elevation, action: "displace", ...((edge.level !== from) ? { level: edge.level } : {}) };
-  await token.move([step], { [MODULE_ID]: { altitude: true, planned: true, cleared: true }, constrainOptions: { ignoreWalls: true } });
+  await token.move([step], { [MODULE_ID]: { altitude: true, planned: true, cleared: true, ...(forced ? { forcedMove: true } : {}) }, constrainOptions: { ignoreWalls: true } });
   if ( Math.abs((token._source.elevation ?? 0) - edge.elevation) > 1e-6 ) {
     await token.update({ movementAction: mode, [`flags.${MODULE_ID}.${CLIMB_FLAG}`]: null }, ALTITUDE_OPTIONS);
     ui.notifications.warn(loc("Escalade.Impossible", { name: token.name }));
@@ -335,12 +347,16 @@ async function houseCheckPassed(token, dc) {
  * @param {{cells?: number|null, acrobatic?: boolean}} [options]  Cases à monter, sans fenêtre (scénarios).
  * @returns {Promise<boolean>}
  */
-export async function startClimb(token, { cells=null, acrobatic=false }={}) {
+export async function startClimb(token, { cells=null, acrobatic=false, forced=false }={}) {
   if ( !canClimb(token) ) return false;
   if ( acrobatic && (isClimbing(token) || !acrobaticFor(token)) ) return false;
-  const room = climbRoom(token);
+  const room = climbRoom(token, { forced });
   if ( room.max < 1 ) {
-    ui.notifications.warn(loc((room.remaining < room.cost) ? "Escalade.PasDeDeplacement" : "Escalade.Plafond", { name: token.name }));
+    // §412 : plus de déplacement ce tour — forçable ; le plafond (rien à monter) ne l'est pas.
+    if ( room.remaining < room.cost ) {
+      return (await forceClimb(token, loc("Escalade.PasDeDeplacement", { name: token.name }))) ? startClimb(token, { cells, acrobatic, forced: true }) : false;
+    }
+    ui.notifications.warn(loc("Escalade.Plafond", { name: token.name }));
     return false;
   }
   const wanted = Number.isFinite(cells) ? Math.floor(cells) : await askCells(token, room);
@@ -360,7 +376,7 @@ export async function startClimb(token, { cells=null, acrobatic=false }={}) {
     // l'écrivaient se marchaient dessus) ; on l'attend, sinon dnd5e mettrait le grimpeur « En chute » entre la montée et le statut.
     await statusSettled(token, true);
   }
-  await token.move([{ elevation: from + (n * grid.distance), action: "climb" }], walkOptions());
+  await token.move([{ elevation: from + (n * grid.distance), action: "climb" }], { ...walkOptions(), ...forcedStep(forced) });
   // §217 : une montée qui passe la limite d'un niveau (20 ft : First → Second Floor) se termine en deux temps chez le cœur — jugée trop
   // tôt, elle passait pour refusée : le mode était rendu, le grimpeur restait en l'air et tombait.
   await elevationSettled(token, from);
@@ -395,11 +411,11 @@ export function canClimbCeiling(token) {
  * Ce qu'il faut pour gagner le plafond d'ici : le perchoir (pieds), les cases à monter, et si le budget du tour les paie.
  * @returns {{perch: number, cells: number, affordable: boolean, room: object}|null}
  */
-export function ceilingRoom(token) {
+export function ceilingRoom(token, { forced=false }={}) {
   const perch = ceilingPerchFor(token);
   if ( perch === null ) return null;
   const grid = token.parent.grid;
-  const room = climbRoom(token);
+  const room = climbRoom(token, { forced });
   const cells = Math.max(0, Math.ceil(((perch - (token._source.elevation ?? 0)) / grid.distance) - 1e-6));
   return { perch, cells, affordable: cells <= room.max, room };
 }
@@ -410,13 +426,12 @@ export function ceilingRoom(token) {
  * le token. Refusé par le cœur (budget, plafond), tout est rendu.
  * @returns {Promise<boolean>}
  */
-export async function climbToCeiling(token) {
+export async function climbToCeiling(token, { forced=false }={}) {
   if ( !canClimbCeiling(token) ) return false;
-  const need = ceilingRoom(token);
+  const need = ceilingRoom(token, { forced });
   if ( !need ) return false;
   if ( !need.affordable ) {
-    ui.notifications.warn(loc("Escalade.PasDeDeplacement", { name: token.name }));
-    return false;
+    return (await forceClimb(token, loc("Escalade.PasDeDeplacement", { name: token.name }))) ? climbToCeiling(token, { forced: true }) : false;
   }
   if ( (climbRules() === "house") && !canWalkCeilingsAt(token) && !(await houseCheckPassed(token, CEILING_DC)) ) return false;
   const already = isClimbing(token);
@@ -426,7 +441,7 @@ export async function climbToCeiling(token) {
     await token.update({ movementAction: "climb", [`flags.${MODULE_ID}.${CLIMB_FLAG}`]: { from: mode, checkedAt: Date.now() } }, ALTITUDE_OPTIONS);
     await statusSettled(token, true);
   }
-  if ( need.cells > 0 ) await token.move([{ elevation: need.perch, action: "climb" }], walkOptions());
+  if ( need.cells > 0 ) await token.move([{ elevation: need.perch, action: "climb" }], { ...walkOptions(), ...forcedStep(forced) });
   if ( Math.abs((token._source.elevation ?? 0) - need.perch) > 1e-6 ) {
     if ( !already ) await token.update({ movementAction: mode, [`flags.${MODULE_ID}.${CLIMB_FLAG}`]: null }, ALTITUDE_OPTIONS);
     ui.notifications.warn(loc("Escalade.Impossible", { name: token.name }));
@@ -448,9 +463,9 @@ export function canClimbDown(token) {
 }
 
 /** Ce que ce grimpeur peut descendre maintenant : cases au plus (budget du tour, hauteur au-dessus du sol), coût d'une case. */
-export function descentRoom(token) {
+export function descentRoom(token, { forced=false }={}) {
   const grid = token.parent.grid;
-  const room = climbRoom(token);
+  const room = climbRoom(token, { forced });
   const height = Math.max(0, (token._source.elevation ?? 0) - groundUnder(token));
   const max = climbableCells({ remaining: room.remaining, gridDistance: grid.distance, multiplier: room.multiplier, ceilingCells: height / grid.distance });
   return { ...room, max };
@@ -463,12 +478,12 @@ export function descentRoom(token) {
  * @param {{cells?: number|null}} [options]
  * @returns {Promise<boolean>}
  */
-export async function climbDown(token, { cells=null }={}) {
+export async function climbDown(token, { cells=null, forced=false }={}) {
   if ( !canClimbDown(token) ) return false;
-  const room = descentRoom(token);
+  const room = descentRoom(token, { forced });
   if ( room.max < 1 ) {
-    ui.notifications.warn(loc("Escalade.PasDeDeplacement", { name: token.name }));
-    return false;
+    if ( forced || !(room.remaining < room.cost) ) return false;   // rien à descendre
+    return (await forceClimb(token, loc("Escalade.PasDeDeplacement", { name: token.name }))) ? climbDown(token, { cells, forced: true }) : false;
   }
   const wanted = Number.isFinite(cells) ? Math.floor(cells) : await askCells(token, room, { down: true });
   if ( !(wanted >= 1) ) return false;
@@ -479,7 +494,7 @@ export async function climbDown(token, { cells=null }={}) {
     await token.update({ [`flags.${MODULE_ID}.${CLIMB_FLAG}`]: { ...(climbFlag(token) ?? {}), ceiling: false } }, ALTITUDE_OPTIONS);
     await statusSettled(token, true);
   }
-  await token.move([{ elevation: from - (n * grid.distance), action: "climb" }], walkOptions());
+  await token.move([{ elevation: from - (n * grid.distance), action: "climb" }], { ...walkOptions(), ...forcedStep(forced) });
   await elevationSettled(token, from);
   if ( Math.abs((token._source.elevation ?? 0) - from) < 1e-6 ) {
     ui.notifications.warn(loc("Escalade.Impossible", { name: token.name }));
@@ -498,7 +513,7 @@ export async function climbDown(token, { cells=null }={}) {
  * @param {TokenDocument} token
  * @param {{dir: string, x: number, y: number, ground: number, rise: number, level: string}} ledge
  */
-export async function hoistOnto(token, ledge) {
+export async function hoistOnto(token, ledge, { forced=false }={}) {
   if ( !token?.isOwner || !ledge || !climbSystemOn() ) return false;
   const grid = token.parent.grid;
   const cost = ledgeCost({ rise: ledge.rise, multiplier: climbingOf(token).multiplier, gridDistance: grid.distance });
@@ -506,14 +521,14 @@ export async function hoistOnto(token, ledge) {
   if ( combatant ) {
     const { spent, excluded } = historyCosts(token);
     const left = movementCap(token) - spent - excluded;
-    if ( cost > left + 1e-6 ) {
-      ui.notifications.warn(loc("Escalade.HisserPasAssez", { name: token.name, cost: `${cost} ${grid.units}`, left: `${Math.max(0, Math.floor(left * 10) / 10)} ${grid.units}` }));
-      return false;
+    if ( (cost > left + 1e-6) && !forced ) {
+      const line = loc("Escalade.HisserPasAssez", { name: token.name, cost: `${cost} ${grid.units}`, left: `${Math.max(0, Math.floor(left * 10) / 10)} ${grid.units}` });
+      return (await forceClimb(token, line)) ? hoistOnto(token, ledge, { forced: true }) : false;
     }
   }
   const from = token._source.level;
   const step = { x: ledge.x, y: ledge.y, elevation: ledge.ground, action: "displace", ...((ledge.level !== from) ? { level: ledge.level } : {}) };
-  await token.move([step], { [MODULE_ID]: { altitude: true, planned: true, cleared: true }, constrainOptions: { ignoreWalls: true } });
+  await token.move([step], { [MODULE_ID]: { altitude: true, planned: true, cleared: true, ...(forced ? { forcedMove: true } : {}) }, constrainOptions: { ignoreWalls: true } });
   if ( Math.abs((token._source.elevation ?? 0) - ledge.ground) > 1e-6 ) {
     ui.notifications.warn(loc("Escalade.Impossible", { name: token.name }));
     return false;
@@ -561,14 +576,15 @@ const syncFlip = token => enqueue(`climb-flip:${token.uuid}`, async () => {
 function onPreMoveToken(token, movement, operation) {
   if ( !isClimbing(token) || !concerned(token) ) return true;
   const flags = operation?.[MODULE_ID] ?? continuedFlags(token, movement);
-  if ( flags?.altitude || flags?.forced || operation?.isUndo || game.user.isGM || (climbRules() === "house") ) return true;
+  if ( flags?.altitude || flags?.forced || flags?.forcedMove || operation?.isUndo || game.user.isGM || (climbRules() === "house") ) return true;
   const walking = w => !CONFIG.Token.movement.actions[w.action]?.teleport && !["displace", "fall"].includes(w.action);
   const steps = movement.pending.waypoints.filter(walking);
   // §196 : au mur, pas de pas loin du mur (en l'air) — on redescend ou on se laisse tomber, comme au plafond.
   if ( !isOnCeiling(token) ) {
     if ( !steps.some(w => !holdsWallAt(token, positionOf(w))) ) return true;
-    ui.notifications.warn(loc("Escalade.MurFini", { name: token.name }));
+    // §412 : la fenêtre de légalité ; forcé, le même trajet repart (`forcedMove`).
     notice(token, loc("Retour.Escalade.MurFini"));
+    forceMoveLater(token, movement, [{ key: "wallEnds", line: loc("Escalade.MurFini", { name: token.name }) }]);
     return false;
   }
   const off = steps.find(w => !hangsAt(token, positionOf(w)));
@@ -576,8 +592,8 @@ function onPreMoveToken(token, movement, operation) {
   const slips = !off && steps.find(w => !canWalkCeilingsAt(token, positionOf(w)));
   if ( !off && !slips ) return true;
   const key = off ? "PlafondFini" : "Glissant";
-  ui.notifications.warn(loc(`Escalade.${key}`, { name: token.name }));
   notice(token, loc(`Retour.Escalade.${key}`));
+  forceMoveLater(token, movement, [{ key: `ceiling.${key}`, line: loc(`Escalade.${key}`, { name: token.name }) }]);
   return false;
 }
 

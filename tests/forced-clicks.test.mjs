@@ -22,3 +22,15 @@ describe("§411 mergeIssues", () => {
     expect(mergeIssues(["", null, "a"], undefined, [42])).toEqual(["a"]);
   });
 });
+
+import { forcedKey } from "../module/scripts/core/forced.mjs";
+
+describe("§412 forcedKey — memory of a forced movement refusal", () => {
+  it("ignores order and duplicates", () => {
+    expect(forcedKey(["occupied", "exhausted", "occupied"])).toBe(forcedKey(["exhausted", "occupied"]));
+  });
+  it("drops empty keys", () => {
+    expect(forcedKey(["", null, "leash"])).toBe("leash");
+    expect(forcedKey(undefined)).toBe("");
+  });
+});

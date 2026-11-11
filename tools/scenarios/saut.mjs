@@ -14,6 +14,26 @@ const MODULE_ID = "dnd5e-combat";
 const BOOTS = "Compendium.dnd-dungeon-masters-guide.equipment.Item.dmgBootsOfStridi";
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+/**
+ * §412 : un refus de règle ouvre désormais la fenêtre de légalité au lieu d'un refus sec — l'appel attend la réponse. Ici on renonce
+ * (« Renoncer ») et le texte de la fenêtre rejoint `warnings`, comme l'ancien avertissement.
+ */
+async function declining(ctx, name, call) {
+  const seen = [];
+  let done = false;
+  const pending = call().finally(() => { done = true; });
+  while ( !done ) {
+    const r = await ctx.call("list-dialogs", { dialogsOnly: true, waitMs: 800 }).catch(() => null);
+    for ( const d of r?.windows ?? [] ) {
+      if ( !(d.title ?? "").endsWith(` — ${name}`) ) continue;
+      seen.push([d.content, d.text].filter(Boolean).join(" "));
+      await ctx.call("answer-dialog", { id: d.id, button: "cancel" }).catch(() => {});
+    }
+  }
+  const out = await pending;
+  return { ...out, warnings: [...(out?.warnings ?? []), ...seen] };
+}
+
 export default {
   name: "saut — longueur avec et sans élan, Bottes, atterrissage, chute automatique",
 
@@ -56,7 +76,7 @@ export default {
       }
       await pause(800);
     };
-    const jump = (k, high=false) => ctx.engine("jump", { tokenId: hero.id, cell: at(k), high });
+    const jump = (k, high=false) => declining(ctx, hero.name, () => ctx.engine("jump", { tokenId: hero.id, cell: at(k), high }));
     const spent = async () => (await ctx.engine("movement", { tokenId: hero.id })).combat?.spent ?? null;
     const auto = await ctx.engine("setting", { key: "autoFall", value: "combat" });
     ctx.restore(() => ctx.engine("setting", { key: "autoFall", value: auto.before }));

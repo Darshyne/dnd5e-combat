@@ -19,6 +19,7 @@ import { firstEntry, shouldTrigger, turnKeyOf } from "../core/area.mjs";
 import { route } from "./router.mjs";
 import { levelAtLeast } from "./levels.mjs";
 import { log, loc, viaActiveGM } from "./shared.mjs";
+import { askAnyway } from "./turn.mjs";
 
 export const PICKUP_QUERY = `${MODULE_ID}.pickUp`;
 /** « Il faut 10 minutes pour les récupérer. » */
@@ -154,8 +155,11 @@ export function pickUpEntries(token) {
 }
 
 /** Ramasser : par le MJ actif (la région et l'horloge du monde sont à lui). */
-export function pickUp(token, region) {
-  return viaActiveGM(PICKUP_QUERY, handlePickUp, { token: token.uuid, region: region.uuid },
+export async function pickUp(token, region) {
+  // §412 (issue #44, lot 5) : en combat (une minute de ramassage), la fenêtre de légalité chez qui ramasse ; forcé, le MJ actif ramasse quand même.
+  const forced = !!game.combat?.started;
+  if ( forced && !(await askAnyway(`${region.name ?? ""} — ${token.name}`, [loc("Dispersion.EnCombat")], { actor: token.actor, token })) ) return false;
+  return viaActiveGM(PICKUP_QUERY, handlePickUp, { token: token.uuid, region: region.uuid, forced },
     { noGm: "Dispersion.SansMJ", fallback: false, timeout: 15000, label: "scattered item: pick up" });
 }
 
@@ -175,12 +179,12 @@ async function giveBack(actor, data) {
   return actor.createEmbeddedDocuments("Item", [copy]);
 }
 
-export async function handlePickUp({ token: tokenUuid, region: regionUuid }) {
+export async function handlePickUp({ token: tokenUuid, region: regionUuid, forced=false }) {
   const token = await fromUuid(tokenUuid);
   const region = await fromUuid(regionUuid);
   const scatter = region ? readAreaState(region)?.scatter : null;
   if ( !token?.actor || !scatter?.item ) return false;
-  if ( game.combat?.started ) {
+  if ( game.combat?.started && !forced ) {
     ui.notifications.warn(loc("Dispersion.EnCombat"));
     return false;
   }

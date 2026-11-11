@@ -27,6 +27,7 @@ import { committedPosition, turnKeyAt } from "../adapter/turn.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
+import { askAnyway } from "./turn.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 
 const turnKey = combat => (combat?.started ? `${combat.id}.${combat.round}.${combat.turn}` : "hors-combat");
@@ -99,13 +100,18 @@ export async function escapeSwallow(actor) {
 }
 
 /** « it can't use Bite while it has a swallowed target » — refusé, sur le client qui utilise. */
-function onPreUse(activity) {
+function onPreUse(activity, usageConfig, dialogConfig, messageConfig) {
   const actor = activity?.actor;
   const rule = swallowItemOf(actor);
   if ( !rule?.forbids || (englishNameOf(activity.item).toLowerCase() !== rule.forbids.toLowerCase()) ) return;
+  if ( usageConfig?.[MODULE_ID]?.swallowForced ) return;
   const token = actor.token ?? actor.getActiveTokens?.(false, true)?.[0] ?? null;
   if ( !token || !swallowedIn(token).length ) return;
-  ui.notifications.warn(loc("Avale.Interdit", { source: token.name, item: activity.item.name }));
+  // §412 (issue #44, lot 5) : la fenêtre de légalité ; forcée, la même utilisation repart (le MJ prévenu).
+  askAnyway(`${activity.item.name} — ${token.name}`, [loc("Avale.Interdit", { source: token.name, item: activity.item.name })],
+    { actor, item: activity.item, token }).then(go => {
+    if ( go ) activity.use({ ...usageConfig, [MODULE_ID]: { ...(usageConfig?.[MODULE_ID] ?? {}), swallowForced: true } }, dialogConfig, messageConfig);
+  }).catch(err => console.error(`${MODULE_ID} | swallow: forced use`, err));
   return false;
 }
 

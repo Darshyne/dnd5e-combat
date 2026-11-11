@@ -2452,5 +2452,10 @@
   "DND5ECOMBAT.Dissipation.ZoneNom": "{spell} (level {level}) — {caster}",
   "DND5ECOMBAT.Dissipation.TitreZone": "{item}: {spell}",
   "DND5ECOMBAT.Souci.noLineOfSight": "{name}: no line of sight from here.",
-  "DND5ECOMBAT.Teleport.Titre": "Teleportation"
+  "DND5ECOMBAT.Teleport.Titre": "Teleportation",
+  "DND5ECOMBAT.Deplacement.Titre": "Movement — {name}",
+  "DND5ECOMBAT.Saut.Titre": "Jump — {name}",
+  "DND5ECOMBAT.Escalade.TitreForce": "Climbing — {name}",
+  "DND5ECOMBAT.Force.TitreAction": "Action — {name}",
+  "DND5ECOMBAT.Force.AlerteSansObjet": "{user} overrode a rule for {actor}: {reasons}"
 }

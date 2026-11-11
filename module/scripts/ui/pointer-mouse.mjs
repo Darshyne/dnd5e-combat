@@ -14,7 +14,7 @@ import { pocketedFamiliar, recallFamiliar, recallRefusal } from "../runtime/fami
 import { leapProblem } from "../runtime/projectiles.mjs";
 import { chainOf, chainLimit, chainOutliers } from "../adapter/chain.mjs";
 import { tetherOfActivity, tetheredToken } from "../adapter/tether.mjs";
-import { closeLegalityDialogs, openLegalityDialogs } from "../runtime/turn.mjs";
+import { askAnyway, closeLegalityDialogs, openLegalityDialogs } from "../runtime/turn.mjs";
 import { doorState, setDoorOpen } from "../runtime/doors.mjs";
 import { cleaveCandidates } from "../adapter/mastery.mjs";
 import { cancelPendingRoll, pendingRoll } from "../runtime/cancel.mjs";
@@ -421,8 +421,18 @@ function dashHover(event) {
 function dashTo(point) {
   const at = dashCell(point);
   const refusal = dashRefusal(dashing.activity, at);
-  if ( refusal ) { ui.notifications.warn(refusal.text); return floatNotice(dashing.token, refusal.short, "refused"); }
+  if ( refusal && !refusal.forceable ) { ui.notifications.warn(refusal.text); return floatNotice(dashing.token, refusal.short, "refused"); }
   const { activity, usage } = dashing;
+  // §412 (issue #44, lot 5) : trop loin, case prise, pas en vue — la fenêtre de légalité ; forcée, la ruée part (le MJ prévenu) ; renoncée,
+  // la visée reste ouverte comme avant.
+  if ( refusal ) {
+    floatNotice(dashing.token, refusal.short, "refused");
+    return exclusive(async () => {
+      if ( !(await askAnyway(`${activity.item.name} — ${dashing.token.name}`, [refusal.text], { actor: activity.actor, item: activity.item, token: dashing.token })) ) return;
+      stopTargeting();
+      await dashStrike(activity, usage, at, { forced: true });
+    }).catch(err => console.error(`${MODULE_ID} | dash strike`, err));
+  }
   stopTargeting();
   return exclusive(() => dashStrike(activity, usage, at)).catch(err => console.error(`${MODULE_ID} | dash strike`, err));
 }

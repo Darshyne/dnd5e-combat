@@ -29,6 +29,7 @@ import { boundsUnder, levelAt, clearanceOf, modeRefusalFor, groundModeOf, effect
 import { pilotOf, isIntangible } from "../adapter/pilot.mjs";
 import { route } from "./router.mjs";
 import { loc, log, notice } from "./shared.mjs";
+import { forceMoveLater } from "./move-gate.mjs";
 import { isEthereal } from "../adapter/plane.mjs";
 
 export const ALTITUDE_SETTING = "altitude";
@@ -269,7 +270,7 @@ function levelOnlyMove(token, last) {
  * Monter ou descendre sur place : le mode suit l'élévation voulue — au-dessus du sol voler, dessous fouir, au sol le
  * mode au sol. Même mode qu'avant : on laisse l'alignement ordinaire faire.
  */
-function verticalMove(token, last) {
+function verticalMove(token, last, movement=null, forced=false) {
   const { ground, ceiling } = boundsUnder(token);
   const clearance = clearanceOf(token.parent);
   const wanted = last.elevation ?? 0;
@@ -280,9 +281,13 @@ function verticalMove(token, last) {
   log(`${token.name}: elevation ${token._source.elevation} → ${wanted} in place (level ${token._source.level}, ground ${ground}, ceiling ${ceiling}): ${current} → ${to}`);
   if ( placementOf(to) === placementOf(current) ) return null;
   if ( modeRefusalFor(token.actor, to) ) {
-    // Le MJ pose où il veut : une créature sans vol laissée en l'air est « En chute » (dnd5e).
-    if ( game.user.isGM ) return true;
-    refuse(token, "SansVitesse", { mode: game.i18n.localize(CONFIG.Token.movement.actions[to]?.label ?? to) });
+    // Le MJ pose où il veut : une créature sans vol laissée en l'air est « En chute » (dnd5e). §412 : un joueur qui force aussi.
+    if ( game.user.isGM || forced ) return true;
+    // §412 (issue #44, lot 5) : la fenêtre de légalité ; forcé, la même montée repart (`forcedMove`), comme le MJ la poserait.
+    const mode = game.i18n.localize(CONFIG.Token.movement.actions[to]?.label ?? to);
+    notice(token, loc("Retour.Altitude.SansVitesse"));
+    if ( movement ) forceMoveLater(token, movement, [{ key: `noSpeed.${to}`, line: loc("Altitude.SansVitesse", { name: token.name, mode }) }]);
+    else refuse(token, "SansVitesse", { mode });
     return false;
   }
   const elevation = coherentElevation(to, wanted, ground, clearance, ceiling);
@@ -324,7 +329,7 @@ function onPreMoveToken(token, movement, operation) {
   if ( isLevelOnly(origin, waypoints) ) return levelOnlyMove(token, waypoints.at(-1));
 
   if ( isPureVertical(origin, waypoints) ) {
-    const verdict = verticalMove(token, waypoints.at(-1));
+    const verdict = verticalMove(token, waypoints.at(-1), movement, !!flags?.forcedMove);
     if ( verdict !== null ) return verdict;
   }
 

@@ -51,7 +51,9 @@ export async function reportForced({ actor, item=null, reasons, targets=[], toke
   const where = tokenOf(actor, token);
   if ( where ) notice(where, { key: "Retour.Force" }, "forced", { all: true, action: "overridden", outcome: "success" });
   if ( forcedAlertsOn() && gmAlertsOn() ) {
-    const text = loc(targets.length ? "Force.AlerteCibles" : "Force.Alerte", {
+    // §412 : un geste sans objet (un déplacement, une escalade) — « … pour {actor} : {reasons} », sans « — » vide.
+    const key = itemName ? (targets.length ? "Force.AlerteCibles" : "Force.Alerte") : "Force.AlerteSansObjet";
+    const text = loc(key, {
       user: game.user.name, item: itemName, actor: actor?.name ?? "", targets: targets.join(", "), reasons: reasons.join(" · ") });
     await alertGM({ text, item: itemName || null, actor });
   }

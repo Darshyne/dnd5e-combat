@@ -19,6 +19,26 @@ const ROOF = { i: 34, j: 33 };            // la case du toit de chaume, à l'oue
 const CORRIDOR = { x: 4340, y: 5180 };    // le couloir couvert, contre le mur sud de l'écurie
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+/**
+ * §412 : un refus de règle ouvre désormais la fenêtre de légalité au lieu d'un refus sec — l'appel attend la réponse. Ici on renonce
+ * (« Renoncer ») et le texte de la fenêtre rejoint `warnings`, comme l'ancien avertissement.
+ */
+async function declining(ctx, name, call) {
+  const seen = [];
+  let done = false;
+  const pending = call().finally(() => { done = true; });
+  while ( !done ) {
+    const r = await ctx.call("list-dialogs", { dialogsOnly: true, waitMs: 800 }).catch(() => null);
+    for ( const d of r?.windows ?? [] ) {
+      if ( !(d.title ?? "").endsWith(` — ${name}`) ) continue;
+      seen.push([d.content, d.text].filter(Boolean).join(" "));
+      await ctx.call("answer-dialog", { id: d.id, button: "cancel" }).catch(() => {});
+    }
+  }
+  const out = await pending;
+  return { ...out, warnings: [...(out?.warnings ?? []), ...seen] };
+}
+
 export default {
   scene: "keep",
   name: "escalade — se hisser sur un toit, s'agripper au bord, pas à travers un plafond, chemin et coût en combat",
@@ -85,7 +105,7 @@ export default {
     // Sans cette vérification, la suite passait à vide : un grimpeur resté au sol « ne se hisse pas » non plus.
     if ( !ctx.expect(up.done && (up.after.elevation === 15), `en combat, grimpe 3 cases : pieds à ${up.after.elevation} ft`) ) return;
     const left = (await ctx.engine("movement", { tokenId: hero.id })).combat;
-    const refused = await ctx.engine("hoist", { tokenId: hero.id, dir: "w" });
+    const refused = await declining(ctx, hero.name, () => ctx.engine("hoist", { tokenId: hero.id, dir: "w" }));
     ctx.expect(!refused.done && (refused.after.elevation === up.after.elevation), `en combat, déplacement dépensé ${left?.spent} sur ${left?.speed} : se hisser refusé (${refused.after.elevation} ft)`);
   }
 };

@@ -20,6 +20,7 @@ import { combatantFor, readBudget, writeBudget, isOwnTurn } from "../adapter/tur
 import { joinToken } from "./actions.mjs";
 import { saveActivityOf } from "./triggers.mjs";
 import { log, loc, locEsc, notice, rolledAndShown, say, viaActiveGM } from "./shared.mjs";
+import { askAnyway } from "./turn.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { concentrationOn } from "../adapter/summons.mjs";
 import { route } from "./router.mjs";
@@ -83,7 +84,9 @@ export async function payAction(token) {
   const before = readBudget(combatant);
   const own = isOwnTurn(combatant);
   const issues = checkUse(before, request, { isOwnTurn: own });
-  if ( issues.length && !game.user.isGM ) { ui.notifications.warn(loc(`Souci.${issues[0]}`)); return false; }
+  // §412 (issue #44, lot 5) : pas de refus sec — la fenêtre de légalité ; forcée, l'action est prise quand même (le MJ prévenu).
+  if ( issues.length && !game.user.isGM
+    && !(await askAnyway(loc("Force.TitreAction", { name: token.name }), issues.map(i => loc(`Souci.${i}`)), { actor: token.actor, token })) ) return false;
   await writeBudget(combatant, spendUse(before, request, { isOwnTurn: own, attacksPerAction: 1 }));
   return true;
 }

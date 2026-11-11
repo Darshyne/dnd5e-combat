@@ -33,6 +33,7 @@ import { route } from "./router.mjs";
 import { loc, notice, log, rolledAndShown } from "./shared.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { onTeleport } from "./teleport.mjs";
+import { askAnyway } from "./turn.mjs";
 import { onDashTemplate, onDashUsed } from "./dash.mjs";
 import { onPreMoveToken, noteWindward } from "./move-gate.mjs";
 import { identifierOf } from "../adapter/content.mjs";
@@ -223,8 +224,11 @@ async function walkSafely(token, plan, flags={}) {
  * Aller au point cliqué, sur le niveau affiché — ou sur `level` (niveau de la scène), que seuls les scénarios passent
  * (runtime/testing.mjs) : le MJ du scénario ne regarde pas forcément le niveau d'arrivée.
  */
-export async function moveTo(token, point, { action=null, level=null }={}) {
-  if ( isGrappled(token) ) return ui.notifications.warn(loc("Empoignade.Immobile", { name: token.name }));
+export async function moveTo(token, point, { action=null, level=null, forced=false }={}) {
+  // §412 (issue #44, lot 5) : Agrippé, déplacement épuisé — la fenêtre de légalité ; forcé, le trajet sans plafond, marqué `forcedMove`.
+  const force = async lines => (await askAnyway(loc("Deplacement.Titre", { name: token.name }), lines, { actor: token.actor, token }))
+    ? moveTo(token, point, { action, level, forced: true }) : undefined;
+  if ( !forced && isGrappled(token) ) return force([loc("Empoignade.Immobile", { name: token.name })]);
   // §218 : « En chute » en l'air — il tombe d'abord (dégâts compris), le déplacement se refait une fois au sol.
   if ( fallingAloft(token) ) { await fallNow(token); return; }
   const cell = cellUnder(token, point);
@@ -233,15 +237,15 @@ export async function moveTo(token, point, { action=null, level=null }={}) {
   const to = stairs ? { cells: stairs.around, level: stairs.level } : { cell, ...(level ? { level } : {}) };
   // §18.25 : le chemin peut passer par une porte fermée — on marche jusqu'à elle, on l'ouvre, on repart (quelques portes au plus).
   for ( let opened = 0; opened <= MAX_DOORS_PER_MOVE; opened++ ) {
-    const plan = planPath(token, to, { maxCost: movementCap(token), throughDoors: opened < MAX_DOORS_PER_MOVE });
+    const plan = planPath(token, to, { maxCost: forced ? Infinity : movementCap(token), throughDoors: opened < MAX_DOORS_PER_MOVE });
     if ( !plan ) return ui.notifications.warn(loc("Deplacement.AucunChemin"));
     if ( stairs && plan.arrives && !plan.door ) return enterStairs(token, plan, stairs, cell, action);
     if ( !plan.waypoints.length && !plan.door ) {
-      if ( !plan.arrives ) ui.notifications.warn(loc("Deplacement.Epuise"));
+      if ( !plan.arrives && !forced ) return force([loc("Deplacement.Epuise")]);
       return;
     }
     if ( action ) plan.waypoints.forEach(w => { w.action = action; });
-    if ( plan.waypoints.length && !(await walkSafely(token, plan)) ) return;
+    if ( plan.waypoints.length && !(await walkSafely(token, plan, forced ? { forcedMove: true } : {})) ) return;
     // Pas de porte, ou le déplacement du tour s'épuise avant elle : on s'arrête là.
     if ( !plan.door || !plan.arrives ) return;
     await plan.door.update({ ds: CONST.WALL_DOOR_STATES.OPEN });
@@ -403,7 +407,7 @@ const MAX_DOORS_PER_MOVE = 3;
  * Dextérité (Acrobaties) DD 10, sinon À terre. Un saut en longueur garde sa hauteur : s'il arrive au-dessus d'un sol plus bas, dnd5e pose
  * « En chute » et la chute suit (runtime/falls.mjs). Sur le client de celui qui saute.
  */
-export async function jumpTo(token, point, { high=false, configure=true, highOffered=false }={}) {
+export async function jumpTo(token, point, { high=false, configure=true, highOffered=false, forced=false }={}) {
   const grid = canvas.scene.grid;
   const units = grid.units;
   const cell = cellUnder(token, point);
@@ -419,14 +423,21 @@ export async function jumpTo(token, point, { high=false, configure=true, highOff
   const info = { rise, ground, horizontal, high: options.high, long: options.long, runningStart: options.runningStart };
   // Un refus : le message, et ce que l'appelant peut lire (raison, mesures).
   const refuse = (key, data) => { ui.notifications.warn(loc(key, data)); return { done: false, reason: key, ...info }; };
+  // §412 (issue #44, lot 5) : une limite de règle (trop haut, trop long, pas assez de déplacement) — la fenêtre de légalité ; forcé, le
+  // même saut sans ces limites (`forced`), marqué `forcedMove`, le MJ prévenu. Renoncé : ce que l'appelant lisait d'un refus.
+  const overLimit = async (key, data) => {
+    if ( !(await askAnyway(loc("Saut.Titre", { name: token.name }), [loc(key, data)], { actor: token.actor, token })) ) return { done: false, reason: key, ...info };
+    return jumpTo(token, point, { high, configure, highOffered, forced: true });
+  };
   const fmt = n => `${Math.floor(toGrid(n) * 10) / 10} ${units}`;
   let elevation = here;
   let jump;
   if ( high ) {
     if ( rise <= 1e-6 ) return refuse("Saut.RienAMonter");
     // La hauteur se saute ; le déplacement horizontal, lui, se paie à part.
-    const up = jumpCost(rise, options.high, options.fixed);
-    if ( !up.ok ) return refuse("Saut.TropHaut", { max: fmt(up.limit), elan: loc(options.runningStart ? "Saut.AvecElan" : "Saut.SansElan") });
+    let up = jumpCost(rise, options.high, options.fixed);
+    if ( !up.ok && !forced ) return overLimit("Saut.TropHaut", { max: fmt(up.limit), elan: loc(options.runningStart ? "Saut.AvecElan" : "Saut.SansElan") });
+    if ( !up.ok ) up = { ok: true, cost: rise, fixed: null };
     jump = { ...up, cost: up.cost + horizontal, distance: rise + horizontal };
     elevation = ground;
   } else if ( (horizontal <= ft(grid.distance) + 1e-6) && (rise <= -ft(grid.distance) + 1e-6) ) {
@@ -437,13 +448,14 @@ export async function jumpTo(token, point, { high=false, configure=true, highOff
     // L'entrée « Sauter en hauteur ici » n'est proposée que si le réglage de monde l'affiche (bêta) : le refus n'y renvoie qu'alors.
     if ( rise > 1e-6 ) return refuse(highOffered ? "Saut.PlusHaut" : "Saut.PlusHautSansMenu");
     jump = { ...jumpCost(horizontal, options.long, options.fixed), distance: horizontal };
-    if ( !jump.ok ) return refuse("Saut.TropLong", { max: fmt(jump.limit), elan: loc(options.runningStart ? "Saut.AvecElan" : "Saut.SansElan") });
+    if ( !jump.ok && !forced ) return overLimit("Saut.TropLong", { max: fmt(jump.limit), elan: loc(options.runningStart ? "Saut.AvecElan" : "Saut.SansElan") });
+    if ( !jump.ok ) jump = { ok: true, cost: horizontal, distance: horizontal, fixed: null };
   }
   // Le déplacement qu'il reste ce tour (le même compte que l'anneau de l'interface : plafond du moteur moins l'historique du cœur).
   if ( options.combatant ) {
     const { spent, excluded } = historyCosts(token);
     const left = movementCap(token) - spent - excluded;
-    if ( toGrid(jump.cost) > left + 1e-6 ) return refuse("Saut.PasAssez", { cost: fmt(jump.cost), left: `${Math.floor(left * 10) / 10} ${units}` });
+    if ( !forced && (toGrid(jump.cost) > left + 1e-6) ) return overLimit("Saut.PasAssez", { cost: fmt(jump.cost), left: `${Math.floor(left * 10) / 10} ${units}` });
   }
   // Saut fixe : le cœur comptera toute la distance ; la différence est rendue, et le saut fixe est pris pour le tour.
   const refund = (jump.fixed && options.combatant) ? Math.max(0, toGrid(jump.distance - jump.cost)) : 0;
@@ -458,7 +470,7 @@ export async function jumpTo(token, point, { high=false, configure=true, highOff
   // §219 : vers plus bas d'au moins une case, depuis un toit à ciel ouvert — par-dessus le « garde-fou » que les cartes à niveaux posent au
   // bord des toits (Restored Keep : le mur du bord est du toit de l'écurie, sur Second Floor). D'une pièce couverte, ses murs arrêtent.
   const overWalls = !high && (rise <= -ft(grid.distance) + 1e-6) && !Number.isFinite(boundsUnder(token, from).ceiling);
-  const moved = await walkSafely(token, { waypoints: [...rising, dest], beyond: [], arrives: true }, overWalls ? { overWalls: true } : {});
+  const moved = await walkSafely(token, { waypoints: [...rising, dest], beyond: [], arrives: true }, { ...(overWalls ? { overWalls: true } : {}), ...(forced ? { forcedMove: true } : {}) });
   if ( (moved === false) && jump.fixed && options.combatant ) {
     const b = readBudget(options.combatant);
     await writeBudget(options.combatant, { ...b, fixedJump: false, jumped: Math.max(0, (Number(b.jumped) || 0) - refund) });
@@ -521,19 +533,22 @@ function doorSideCells(token, wall) {
  * §18.24 : s'avancer au contact d'une porte avant d'y agir (ouvrir, fermer, crocheter, forcer). Comme un geste de contact
  * (§18.22), on ne bouge que si l'on y arrive ce tour-ci. true : au contact (ou grille sans cases, où l'on agit sur place).
  */
-export async function approachDoor(token, wall) {
+export async function approachDoor(token, wall, { forced=false }={}) {
   const grid = token.parent.grid;
   if ( grid.isGridless || !grid.isSquare ) return true;
   const cells = doorSideCells(token, wall);
   if ( !cells.length ) return true;
   const here = cellOf(token);
   if ( cells.some(c => (c.i === here.i) && (c.j === here.j)) ) return true;
-  if ( isGrappled(token) ) { ui.notifications.warn(loc("Empoignade.Immobile", { name: token.name })); return false; }
-  const plan = planPath(token, { cells, level: token._source.level ?? undefined }, { maxCost: movementCap(token) });
+  // §412 (issue #44, lot 5) : Agrippé, hors d'atteinte ce tour-ci — la fenêtre de légalité ; forcé, le trajet sans plafond (`forcedMove`).
+  const force = async line => (await askAnyway(loc("Deplacement.Titre", { name: token.name }), [line], { actor: token.actor, token }))
+    && approachDoor(token, wall, { forced: true });
+  if ( !forced && isGrappled(token) ) return force(loc("Empoignade.Immobile", { name: token.name }));
+  const plan = planPath(token, { cells, level: token._source.level ?? undefined }, { maxCost: forced ? Infinity : movementCap(token) });
   if ( !plan ) { ui.notifications.warn(loc("Deplacement.AucunChemin")); return false; }
-  if ( !plan.arrives ) { ui.notifications.warn(loc("Porte.HorsDatteinte")); return false; }
+  if ( !plan.arrives && !forced ) return force(loc("Porte.HorsDatteinte"));
   if ( !plan.waypoints.length ) return true;
-  if ( !(await walkSafely(token, plan)) ) return false;
+  if ( !(await walkSafely(token, plan, forced ? { forcedMove: true } : {})) ) return false;
   // Arrêté en route (attaque d'opportunité qui renverse, contrainte du cœur) : on n'agit pas à distance.
   const at = cellOf(token);
   return cells.some(c => (c.i === at.i) && (c.j === at.j));

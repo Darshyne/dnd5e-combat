@@ -79,8 +79,12 @@ export function dashRefusal(activity, destination) {
   const problem = dashProblem(token, { x: destination.x, y: destination.y, elevation: token._source.elevation ?? 0 }, limit);
   if ( !problem ) return null;
   const text = loc(problem[0], { distance: limit, units: token.parent.grid.units });
-  return { text, short: problem[1] ? loc(problem[1]) : text };
+  // §412 : trop loin, case prise, pas en vue — des règles, forçables ; sur place, un mur sur le trajet — non.
+  return { text, short: problem[1] ? loc(problem[1]) : text, forceable: DASH_FORCEABLE.has(problem[0]), occupied: problem[0] === "Teleport.CaseOccupee" };
 }
+
+/** §412 : les refus de ruée qu'on peut forcer. */
+const DASH_FORCEABLE = new Set(["Teleport.TropLoin", "Teleport.CaseOccupee", "Teleport.NonVue"]);
 
 /** Les créatures qu'une ruée vers cette case toucherait (aperçu au survol). */
 export function dashPreview(activity, destination) {
@@ -101,17 +105,18 @@ export function dashPreview(activity, destination) {
  * @param {{x: number, y: number}} destination  Case d'arrivée (coin haut-gauche).
  * @returns {Promise<boolean>}  true si l'activité a été lancée.
  */
-export async function dashStrike(activity, [config, dialog, message]=[], destination) {
+export async function dashStrike(activity, [config, dialog, message]=[], destination, { forced=false }={}) {
   const rule = lineDashOf(activity);
   const token = usageTokenOf(activity);
   if ( !rule || !token || !destination ) return false;
   const refusal = dashRefusal(activity, destination);
-  if ( refusal ) throw new Error(refusal.text);
+  // §412 : forcée (la fenêtre a déjà été vue, ui/pointer-mouse.mjs), une ruée refusée pour une règle part quand même.
+  if ( refusal && !(forced && refusal.forceable) ) throw new Error(refusal.text);
   const to = { x: destination.x, y: destination.y, elevation: token._source.elevation ?? 0 };
   const targets = dashTargets(token, to, rule);
   log(`${token.name}: ${activity.item.name} to (${to.x}, ${to.y}) — ${targets.map(t => t.name).join(", ") || "nobody"} near the path`);
   const use = { ...(config ?? {}), create: { ...(config?.create ?? {}), measuredTemplate: false },
-    [MODULE_ID]: { ...(config?.[MODULE_ID] ?? {}), dash: { token: token.uuid, x: to.x, y: to.y, elevation: to.elevation } } };
+    [MODULE_ID]: { ...(config?.[MODULE_ID] ?? {}), dash: { token: token.uuid, x: to.x, y: to.y, elevation: to.elevation, ...(refusal?.occupied ? { occupied: true } : {}) } } };
   const card = foundry.utils.mergeObject(message ?? {}, { data: {
     system: { targets: targets.map(describeTarget) },
     flags: { [MODULE_ID]: { dash: { x: to.x, y: to.y } } }
@@ -127,7 +132,7 @@ export async function onDashUsed(activity, usageConfig, results) {
   const token = fromUuidSync(dash.token, { strict: false });
   if ( !token?.isOwner ) return;
   await token.move([{ x: dash.x, y: dash.y, elevation: dash.elevation ?? token._source.elevation ?? 0, action: "blink", snapped: true }],
-    { [MODULE_ID]: { cleared: true } });
+    { ...(dash.occupied ? { constrainOptions: { ignoreTokens: true } } : {}), [MODULE_ID]: { cleared: true } });
 }
 
 /** Le bouton « Placer la zone » de la carte d'une ruée : rien à poser, les cibles sont déjà sur la carte. */

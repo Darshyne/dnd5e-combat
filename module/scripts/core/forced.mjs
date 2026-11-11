@@ -33,3 +33,8 @@ export function forwardsIssue(kind, { blind=false }={}) {
 export function mergeIssues(...lists) {
   return [...new Set(lists.flat().filter(l => (typeof l === "string") && l))];
 }
+
+/** §412 : la clé d'un ensemble de raisons (clés stables), sans ordre ni doublon — la mémoire d'un refus forcé. */
+export function forcedKey(keys) {
+  return [...new Set((keys ?? []).filter(Boolean).map(String))].sort().join(",");
+}

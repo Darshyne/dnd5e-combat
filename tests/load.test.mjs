@@ -9,6 +9,12 @@ const hooks = {};
 const once = {};
 const api = {};
 
+// Délai du chargement : importer les ~510 fichiers du module prend 5 à 7 s seul, mais 11 à 13 s dans la passe
+// complète `npm test` sur un PC Windows à 16 cœurs (mesuré le 2026-11-11), parce que les autres fichiers de test
+// occupent tous les cœurs en même temps — d'où l'échec systématique avec le délai par défaut de 10 s. 60 s laisse
+// une marge de près de cinq fois la pire mesure. Même délai dans `reference.test.mjs`, qui charge le même module.
+const LOAD_TIMEOUT = 60000;
+
 beforeAll(async () => {
   const same = fn => fn;
   globalThis.Hooks = { on: (h, f) => (hooks[h] ??= []).push(f), once: (h, f) => (once[h] ??= []).push(f), callAll() {} };
@@ -20,7 +26,7 @@ beforeAll(async () => {
   globalThis.CONFIG = { queries: {}, DND5E: { statusEffects: {} } };
   await import("../module/scripts/dnd5e-combat.mjs");
   once.init.forEach(fn => fn());
-});
+}, LOAD_TIMEOUT);
 
 describe("chargement du module", () => {
   it("se charge et s'active sans Midi-QOL", () => {

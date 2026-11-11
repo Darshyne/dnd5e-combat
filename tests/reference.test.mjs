@@ -9,6 +9,10 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { build, REFERENCE_DIR } from "../tools/lib/reference.mjs";
 
+// Le premier `build()` charge tout le module : 11 à 13 s dans la passe complète `npm test` sur ce PC (mesuré le
+// 2026-11-11, contre 5 à 7 s seul). Même délai et même raison que `load.test.mjs`.
+const LOAD_TIMEOUT = 60000;
+
 describe("référence générée", () => {
   it("docs/reference/ est à jour (sinon : npm run reference)", async () => {
     const pages = await build();
@@ -16,10 +20,10 @@ describe("référence générée", () => {
       .filter(([name, text]) => !existsSync(join(REFERENCE_DIR, name)) || (readFileSync(join(REFERENCE_DIR, name), "utf8") !== text))
       .map(([name]) => name);
     expect(stale, "pages à régénérer par `npm run reference`").toEqual([]);
-  }, 30000);
+  }, LOAD_TIMEOUT);
 
   it("chaque hook émis est nommé (aucun nom non résolu)", async () => {
     const pages = await build();
     expect(pages["HOOKS.md"]).not.toMatch(/Non résolus/);
-  }, 30000);
+  }, LOAD_TIMEOUT);
 });

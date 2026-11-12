@@ -38,3 +38,22 @@ export function mergeIssues(...lists) {
 export function forcedKey(keys) {
   return [...new Set((keys ?? []).filter(Boolean).map(String))].sort().join(",");
 }
+
+/** §417 : ce que devient un refus du moteur. `level` : selon le niveau d'automatisation — aujourd'hui la fenêtre, à tous les niveaux. */
+export const REFUSAL_MODES = Object.freeze(["level", "window", "notice", "strict", "off"]);
+
+/**
+ * §417 : le réglage « Action impossible » traduit en gestes. `window` : la fenêtre s'ouvre ; `proceed` : true = l'action part sans
+ * attendre, false = elle ne peut pas partir (fenêtre sans « utiliser quand même »), null = celui qui agit décide ; `warn` : un avis à
+ * l'écran de celui qui agit ; `report` : le MJ et la table sont prévenus, la carte marquée. Le MJ garde toujours la main : en refus strict,
+ * il a la fenêtre entière.
+ * @param {string} mode
+ * @param {{isGM?: boolean}} [who]
+ */
+export function refusalOutcome(mode, { isGM=false }={}) {
+  const m = (!REFUSAL_MODES.includes(mode) || (mode === "level")) ? "window" : mode;
+  if ( m === "off" ) return { mode: m, window: false, proceed: true, warn: false, report: false };
+  if ( m === "notice" ) return { mode: m, window: false, proceed: true, warn: true, report: true };
+  if ( (m === "strict") && !isGM ) return { mode: m, window: true, proceed: false, warn: false, report: false };
+  return { mode: m, window: true, proceed: null, warn: false, report: true };
+}

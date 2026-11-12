@@ -2457,5 +2457,14 @@
   "DND5ECOMBAT.Saut.Titre": "Jump — {name}",
   "DND5ECOMBAT.Escalade.TitreForce": "Climbing — {name}",
   "DND5ECOMBAT.Force.TitreAction": "Action — {name}",
-  "DND5ECOMBAT.Force.AlerteSansObjet": "{user} overrode a rule for {actor}: {reasons}"
+  "DND5ECOMBAT.Force.AlerteSansObjet": "{user} overrode a rule for {actor}: {reasons}",
+  "DND5ECOMBAT.Reglages.Groupe.flow": "Flow",
+  "DND5ECOMBAT.Reglage.refusalMode.Nom": "Impossible action",
+  "DND5ECOMBAT.Reglage.refusalMode.Aide": "What DAS does when an action is not allowed (out of range, no action left, hands full, unprepared spell, movement spent…). Window: whoever acts reads the reasons and may use it anyway, the GM is warned. Notice only: the action goes through, a notice shows, the GM is warned and the card is marked. Strict refusal: a player reads the reasons and can only cancel; the GM keeps the full window. No check: nothing is reported.",
+  "DND5ECOMBAT.Reglage.refusalMode.level": "Follow the automation level (window)",
+  "DND5ECOMBAT.Reglage.refusalMode.window": "« Use anyway » window",
+  "DND5ECOMBAT.Reglage.refusalMode.notice": "Notice only, the action goes through",
+  "DND5ECOMBAT.Reglage.refusalMode.strict": "Strict refusal for players",
+  "DND5ECOMBAT.Reglage.refusalMode.off": "No check",
+  "DND5ECOMBAT.Refus.Strict": "Only the GM can override this."
 }

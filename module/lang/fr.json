@@ -2457,5 +2457,14 @@
   "DND5ECOMBAT.Saut.Titre": "Saut — {name}",
   "DND5ECOMBAT.Escalade.TitreForce": "Escalade — {name}",
   "DND5ECOMBAT.Force.TitreAction": "Action — {name}",
-  "DND5ECOMBAT.Force.AlerteSansObjet": "{user} a passé outre une règle pour {actor} : {reasons}"
+  "DND5ECOMBAT.Force.AlerteSansObjet": "{user} a passé outre une règle pour {actor} : {reasons}",
+  "DND5ECOMBAT.Reglages.Groupe.flow": "Déroulement",
+  "DND5ECOMBAT.Reglage.refusalMode.Nom": "Action impossible",
+  "DND5ECOMBAT.Reglage.refusalMode.Aide": "Ce que fait DAS quand une action n'est pas permise (hors de portée, plus d'action, main prise, sort non préparé, déplacement épuisé…). Fenêtre : celui qui agit lit les raisons et peut utiliser quand même, le MJ est prévenu. Simple avertissement : l'action part, un avis s'affiche, le MJ est prévenu et la carte marquée. Refus strict : un joueur lit les raisons et ne peut que renoncer ; le MJ, lui, garde la fenêtre. Aucun contrôle : rien n'est signalé.",
+  "DND5ECOMBAT.Reglage.refusalMode.level": "Selon le niveau d'automatisation (fenêtre)",
+  "DND5ECOMBAT.Reglage.refusalMode.window": "Fenêtre « utiliser quand même »",
+  "DND5ECOMBAT.Reglage.refusalMode.notice": "Simple avertissement, l'action part",
+  "DND5ECOMBAT.Reglage.refusalMode.strict": "Refus strict pour les joueurs",
+  "DND5ECOMBAT.Reglage.refusalMode.off": "Aucun contrôle",
+  "DND5ECOMBAT.Refus.Strict": "Seul le MJ peut passer outre."
 }

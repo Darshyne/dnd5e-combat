@@ -28,10 +28,13 @@ import { pilotUsage, refundCommand, spellCommandUsage } from "./pilot.mjs";
 import { route } from "./router.mjs";
 import { log, loc, sleep, viaActiveGM } from "./shared.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
-import { forcedReasons, mergeIssues } from "../core/forced.mjs";
+import { forcedReasons as passedReasons, mergeIssues } from "../core/forced.mjs";
 import { somaticBlockOf, registerSomaticHandsSetting } from "../adapter/hands.mjs";
 import { missingResources } from "../adapter/resources.mjs";
-import { reportForced, overriddenFlag } from "./forced.mjs";
+import { reportForced, overriddenFlag, refusal } from "./forced.mjs";
+
+/** §417 : les raisons passées outre — aucune quand le réglage « Action impossible » coupe le contrôle (ni alerte, ni carte marquée). */
+const forcedReasons = choice => (refusal().report ? passedReasons(choice) : []);
 import { antimagicAround, barrierBetween } from "../adapter/barriers.mjs";
 import { rangedBanAround, formLockAround } from "../adapter/areas.mjs";
 import { isRangedWeaponAttack } from "../adapter/cover.mjs";
@@ -123,6 +126,22 @@ const LEGALITY_CLASS = "dnd5e-combat-legality";
 
 /** La fenêtre de légalité. §381 : `actor` — la table voit qu'on attend sa décision (sablier au-dessus de son token). */
 function confirmDialog(title, lines, buttons, actor=null) {
+  // §417 : le réglage « Action impossible ». Simple avertissement ou aucun contrôle : l'action part par son bouton par défaut, sans
+  // fenêtre. Refus strict : un joueur lit les raisons et ne peut que renoncer ; le MJ garde la fenêtre entière.
+  const outcome = refusal();
+  if ( !outcome.window ) {
+    if ( outcome.warn ) {
+      const text = document.createElement("div");
+      text.innerHTML = lines.join(" · ");
+      ui.notifications.warn(`${title} : ${text.textContent}`);
+    }
+    const go = buttons.find(b => b.default && (b.action !== "cancel")) ?? buttons.find(b => b.action !== "cancel");
+    return Promise.resolve(go?.action ?? "go");
+  }
+  if ( outcome.proceed === false ) {
+    lines = [...lines, `<em>${loc("Refus.Strict")}</em>`];
+    buttons = [{ action: "cancel", label: loc("Renoncer"), default: true }];
+  }
   const release = actor ? markAwaiting(actor, "choice") : () => {};
   return foundry.applications.api.DialogV2.wait({
     window: { title },

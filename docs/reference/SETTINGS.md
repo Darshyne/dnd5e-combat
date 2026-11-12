@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-125 réglages, relevés sur chaque `game.settings.register` du module chargé. **Portée** : `world` = la table (MJ),
+126 réglages, relevés sur chaque `game.settings.register` du module chargé. **Portée** : `world` = la table (MJ),
 `client` = ce poste, `user` = ce joueur. **Onglet** : celui de la fenêtre de réglages DAS (`core/settings-layout.mjs`) ; sans onglet,
 le réglage est une mémoire interne ou se règle ailleurs (interrupteur, fenêtre dédiée). Le libellé est celui de `lang/fr.json`.
 
@@ -19,6 +19,7 @@ le réglage est une mémoire interne ou se règle ailleurs (interrupteur, fenêt
 | `groupRollSeconds` | Jets demandés : délai des joueurs (s) | world | Number | `60` |  | `runtime/group-roll.mjs` |
 | `provideBasicActions` | Actions de base sur les personnages | world | Boolean | `true` |  | `runtime/basics.mjs` |
 | `realTimeClock` | Horloge en temps réel hors combat | world | Boolean | `false` |  | `runtime/clock.mjs` |
+| `refusalMode` | Action impossible | world | String | `"level"` | level, window, notice, strict, off | `runtime/forced.mjs` |
 | `sidebarButton` | Bouton DAS dans l'onglet Réglages | client | Boolean | `true` |  | `ui/settings.mjs` |
 | `theaterOfMind` | Théâtre de l'esprit | world | Boolean | `false` |  | `runtime/theater.mjs` |
 

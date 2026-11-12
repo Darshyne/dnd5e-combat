@@ -519,6 +519,7 @@
     "provideBasicActions",
     "quickRolls",
     "realTimeClock",
+    "refusalMode",
     "releaseTargets",
     "sidebarButton",
     "situationalCursor",

@@ -39,3 +39,26 @@ describe("retour « Forcé »", () => {
     expect(actionSound("overridden", "failure")).toBeNull();
   });
 });
+
+// §417 : le réglage « Action impossible » — ce que devient un refus.
+describe("refusalOutcome", async () => {
+  const { refusalOutcome, REFUSAL_MODES } = await import("../module/scripts/core/forced.mjs");
+  it("par défaut et « selon le niveau » : la fenêtre, celui qui agit décide, le MJ est prévenu", () => {
+    for ( const mode of ["level", "window", undefined, "inconnu"] ) {
+      expect(refusalOutcome(mode)).toMatchObject({ window: true, proceed: null, report: true });
+    }
+  });
+  it("simple avertissement : pas de fenêtre, l'action part, avis et signalement", () => {
+    expect(refusalOutcome("notice")).toMatchObject({ window: false, proceed: true, warn: true, report: true });
+  });
+  it("refus strict : un joueur ne peut que renoncer, le MJ garde la fenêtre entière", () => {
+    expect(refusalOutcome("strict", { isGM: false })).toMatchObject({ window: true, proceed: false, report: false });
+    expect(refusalOutcome("strict", { isGM: true })).toMatchObject({ window: true, proceed: null, report: true });
+  });
+  it("aucun contrôle : ni fenêtre, ni avis, ni signalement", () => {
+    expect(refusalOutcome("off")).toMatchObject({ window: false, proceed: true, warn: false, report: false });
+  });
+  it("cinq modes, « level » en tête (le défaut)", () => {
+    expect(REFUSAL_MODES).toEqual(["level", "window", "notice", "strict", "off"]);
+  });
+});

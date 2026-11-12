@@ -1972,5 +1972,14 @@
   "DND5ECOMBAT.Retour.TropEclaire": "Luz forte demais",
   "DND5ECOMBAT.Souci.tooBright": "{item}: você deve estar em Luz Fraca ou Escuridão",
   "DND5ECOMBAT.Souci.noRangedWeapons": "dentro de {item}, ataques à distância com armas são impossíveis",
-  "DND5ECOMBAT.Souci.noRangedWeaponsAt": "{name} está dentro de {item}: ataques à distância com armas são impossíveis ali"
+  "DND5ECOMBAT.Souci.noRangedWeaponsAt": "{name} está dentro de {item}: ataques à distância com armas são impossíveis ali",
+  "DND5ECOMBAT.Reglages.Groupe.flow": "Fluxo",
+  "DND5ECOMBAT.Reglage.refusalMode.Nom": "Ação impossível",
+  "DND5ECOMBAT.Reglage.refusalMode.Aide": "O que o DAS faz quando uma ação não é permitida (fora de alcance, sem ação, mãos ocupadas, magia não preparada, deslocamento esgotado…). Janela: quem age lê os motivos e pode usar mesmo assim, o Mestre é avisado. Apenas aviso: a ação acontece, um aviso aparece, o Mestre é avisado e o cartão é marcado. Recusa estrita: um jogador lê os motivos e só pode desistir; o Mestre mantém a janela completa. Sem controle: nada é sinalizado.",
+  "DND5ECOMBAT.Reglage.refusalMode.level": "Conforme o nível de automação (janela)",
+  "DND5ECOMBAT.Reglage.refusalMode.window": "Janela « usar mesmo assim »",
+  "DND5ECOMBAT.Reglage.refusalMode.notice": "Apenas aviso, a ação acontece",
+  "DND5ECOMBAT.Reglage.refusalMode.strict": "Recusa estrita para os jogadores",
+  "DND5ECOMBAT.Reglage.refusalMode.off": "Sem controle",
+  "DND5ECOMBAT.Refus.Strict": "Só o Mestre pode ignorar esta regra."
 }

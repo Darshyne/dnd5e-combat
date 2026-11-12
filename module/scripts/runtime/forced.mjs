@@ -13,6 +13,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { alertGM, gmAlertsOn } from "./gm-alert.mjs";
+import { REFUSAL_MODES, refusalOutcome } from "../core/forced.mjs";
 import { log, loc, notice } from "./shared.mjs";
 
 /**
@@ -22,6 +23,16 @@ import { log, loc, notice } from "./shared.mjs";
 export const FORCED_HOOK = `${MODULE_ID}.forced`;
 /** Réglage de monde : prévenir le MJ quand un joueur passe outre (la table voit toujours le texte flottant). */
 export const FORCED_ALERTS_SETTING = "forcedAlerts";
+
+/** §417 : réglage de monde « Action impossible » — fenêtre, simple avertissement, refus strict pour les joueurs, aucun contrôle. */
+export const REFUSAL_SETTING = "refusalMode";
+
+/** §417 : ce que devient un refus pour ce client (core/forced.mjs, `refusalOutcome`). */
+export function refusal() {
+  let mode = "level";
+  try { mode = game.settings.get(MODULE_ID, REFUSAL_SETTING); } catch { /* réglage pas encore déclaré */ }
+  return refusalOutcome(mode, { isGM: game.user?.isGM === true });
+}
 
 function forcedAlertsOn() {
   try { return game.settings.get(MODULE_ID, FORCED_ALERTS_SETTING) !== false; } catch { return true; }
@@ -44,7 +55,7 @@ function tokenOf(actor, token=null) {
  * @returns {Promise<boolean>}  vrai si l'avertissement est parti.
  */
 export async function reportForced({ actor, item=null, reasons, targets=[], token=null }) {
-  if ( !reasons?.length ) return false;
+  if ( !reasons?.length || !refusal().report ) return false;   // §417 : « aucun contrôle » — personne n'est prévenu
   const itemName = (typeof item === "string") ? item : (item?.name ?? "");
   if ( Hooks.call(FORCED_HOOK, { actor, item, reasons, targets, user: game.user }) === false ) return false;
   log(`rule overridden by ${game.user.name}: ${itemName || "?"} (${actor?.name ?? "?"}) — ${reasons.join(" | ")}`);
@@ -66,6 +77,9 @@ export function overriddenFlag(reasons) {
 }
 
 export function registerForced() {
+  game.settings.register(MODULE_ID, REFUSAL_SETTING, { scope: "world", config: true, type: String, default: "level",
+    name: `DND5ECOMBAT.Reglage.${REFUSAL_SETTING}.Nom`, hint: `DND5ECOMBAT.Reglage.${REFUSAL_SETTING}.Aide`,
+    choices: Object.fromEntries(REFUSAL_MODES.map(m => [m, `DND5ECOMBAT.Reglage.${REFUSAL_SETTING}.${m}`])) });
   game.settings.register(MODULE_ID, FORCED_ALERTS_SETTING, { scope: "world", config: true, type: Boolean, default: true,
     name: `DND5ECOMBAT.Reglage.${FORCED_ALERTS_SETTING}.Nom`, hint: `DND5ECOMBAT.Reglage.${FORCED_ALERTS_SETTING}.Aide` });
 }

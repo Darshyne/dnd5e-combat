@@ -10,6 +10,7 @@
  *  4. Lien protecteur, égide pleine : l'Ogre touche le Protégé (Résistance du Lien : moitié) ; l'Abjurateur subit le même montant, que
  *     son égide absorbe (ce sont des dégâts qu'il subit) — ses PV ne bougent pas.
  *  5. Lien protecteur, égide vide : les mêmes dégâts partagés font baisser les PV de l'Abjurateur.
+ *     Avec BLFX actif (§156) : son déclencheur de partage est désarmé sur l'effet, et il ne partage pas une seconde fois.
  *  6. Égide projetée (réaction) : l'Ogre touche le Protégé, l'égide de l'Abjurateur absorbe à sa place ; vide, le Protégé subit le reste.
  * Tout se remet : PV, réserve, emplacements, effets (le lanceur ajoute son filet de sécurité).
  */
@@ -142,6 +143,15 @@ export default {
     await pause(2000);
     const bonded = await live();
     ctx.expect(bonded.effects.prot.some(n => /Warding Bond|Bonded|Lien protecteur|Lié/i.test(n)), `le Protégé porte le Lien protecteur (${bonded.effects.prot.join(", ")})`);
+    // §156 : un module d'animations (BLFX) partage aussi les dégâts du Lien ; le moteur désarme son déclencheur à la pose de l'effet.
+    const foreign = (await ctx.call("run-script", { waitMs: 8000, args: { prot: prot.id }, code: `
+      const id = "boss-loot-assets-premium", P = canvas.tokens.get(args.prot).actor;
+      const marks = P.effects.map(e => e.flags?.[id]?.blfxCustom?.trigger).filter(t => t != null);
+      return { active: !!game.modules.get(id)?.active, marks };` })).result ?? { active: false, marks: [] };
+    if ( !foreign.active ) ctx.log("BLFX inactif dans ce monde : son désarmement (§156) n'est pas vérifié ici");
+    else if ( ctx.expect(foreign.marks.length > 0, `BLFX actif : il a marqué l'effet du Lien (${foreign.marks.join(", ") || "aucune marque"})`) ) {
+      ctx.expect(foreign.marks.every(t => t === `${MODULE_ID}:applyDamage`), `BLFX actif : son partage est désarmé (${foreign.marks.join(", ")})`);
+    }
     const shared = async label => {
       const h = await strike(prot);
       if ( !ctx.expect(!!h, `${label} : l'Ogre touche le Protégé (20 essais au plus)`) ) return null;
@@ -151,6 +161,7 @@ export default {
       ctx.log(`${label} : jet ${h.dealt}, Protégé −${lostProt}, égide −${absorbed} (réserve ${h.before.ward.value}), Abjurateur −${lostAbj}`);
       ctx.expect(lostProt === Math.floor(h.dealt / 2), `${label} : Résistance du Lien, le Protégé perd la moitié (${lostProt} pour ${h.dealt})`);
       ctx.expect(h.msgs.some(m => m.flags?.[MODULE_ID]?.shared), `${label} : le partage est annoncé`);
+      ctx.expect(!h.msgs.some(m => /same fate/i.test(`${m.flavor ?? ""} ${m.content ?? ""}`)), `${label} : aucun second partage par un autre module (« same fate »)`);
       return { h, lostProt, absorbed, lostAbj };
     };
     const full = await shared("égide pleine");

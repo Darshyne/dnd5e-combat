@@ -35,7 +35,7 @@ import { requestSkillAid } from "./skill-aid.mjs";
 import { levelAtLeast } from "./levels.mjs";
 import { route } from "./router.mjs";
 import { log, loc, sleep, isExecutor } from "./shared.mjs";
-import { whileAwaiting } from "../adapter/awaiting.mjs";
+import { markAwaiting } from "../adapter/awaiting.mjs";
 
 export const GROUP_ROLL_QUERY = `${MODULE_ID}.groupRoll`;
 export const SECONDS_SETTING = "groupRollSeconds";
@@ -242,11 +242,15 @@ export async function promptGroupRoll(message, actor) {
   return inLine.after(() => {
     // Lancé ailleurs pendant l'attente (le MJ a lancé pour lui) : rien à ouvrir.
     if ( resultOf(game.messages.get(message.id) ?? message, actor) ) return "rolled";
-    return whileAwaiting(actor, "roll", () => promptGroupRollNow(message, actor), { seconds: seconds > 0 ? seconds : null });
+    // §425 : l'attente (le sablier, la ligne de la File du MJ) tombe dès que les dés sont partis, pas quand la fenêtre se ferme — une
+    // interface voisine garde la sienne ouverte sur le verdict, et le joueur n'est alors plus attendu. Une question posée après le jet
+    // (Inspiration héroïque, Inspiration bardique) pose sa propre attente.
+    const release = markAwaiting(actor, "roll", { seconds: seconds > 0 ? seconds : null });
+    return promptGroupRollNow(message, actor, { onRolled: release }).finally(release);
   }, `group roll: ${actor.name}`);
 }
 
-async function promptGroupRollNow(message, actor) {
+async function promptGroupRollNow(message, actor, { onRolled=null }={}) {
   const request = requestOf(message);
   if ( !request || !actor ) return "cancelled";
   if ( resultOf(message, actor) ) return "rolled";
@@ -272,6 +276,7 @@ async function promptGroupRollNow(message, actor) {
     deferred = deferBonus;
     try { done = await rollFor(message, actor, { configure, advantage, disadvantage, mode, aids: granted, flags, deferBonus }); }
     finally { entry.rolling = !!done; }
+    if ( done ) onRolled?.();
     return done;
   };
   try { return await runPrompt(); }

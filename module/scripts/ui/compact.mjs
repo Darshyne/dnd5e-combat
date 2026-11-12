@@ -17,7 +17,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc, waitForDice } from "../runtime/shared.mjs";
-import { modifierLines, bonusLines } from "./chat.mjs";
+import { modifierLines, bonusLines, d20Note } from "./chat.mjs";
 
 export const CHAT_COMPACT_SETTING = "chatCompact";
 
@@ -53,13 +53,15 @@ function foldedIn(carrier) {
 
 const damageLabel = type => game.i18n.localize(CONFIG.DND5E.damageTypes[type]?.label ?? CONFIG.DND5E.healingTypes?.[type]?.label ?? type ?? "");
 
-/** « Attaque : 17 (d20 : 12, critique) ». */
+/** « Attaque : 17 (d20 : 12, critique) » ; avec deux d20 (issue #47) : « Attaque : 9 (Désavantage — d20 : 4 gardé, 17 écarté) ». */
 function attackLine(message) {
   const roll = message.rolls?.[0];
   if ( !roll ) return null;
   const d20 = roll.dice?.[0]?.total ?? null;
   const notes = [];
-  if ( d20 !== null ) notes.push(loc("LabelValue", { label: "d20", value: d20 }));
+  const twoDice = d20Note(roll);
+  if ( twoDice ) notes.push(twoDice);
+  else if ( d20 !== null ) notes.push(loc("LabelValue", { label: "d20", value: d20 }));
   if ( roll.isCritical ) notes.push(loc("Compact.Critique"));
   else if ( roll.isFumble ) notes.push(loc("Compact.Echec"));
   return { css: roll.isCritical ? "hit" : (roll.isFumble ? "miss" : "note"), title: roll.formula,

@@ -7,6 +7,7 @@ import { loc } from "../runtime/shared.mjs";
 import { typesLabel } from "../adapter/eligibility.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { convertLength } from "../core/units.mjs";
+import { keptAndDropped } from "../core/d20.mjs";
 
 function block(lines) {
   const div = document.createElement("div");
@@ -49,6 +50,22 @@ export function modifierLines(modifiers) {
   if ( modifiers.disadvantage?.length ) lines.push({ css: "miss", text: loc("LabelValue", { label: loc("Desavantage"), value: modifiers.disadvantage.map(describe).join(", ") }) });
   if ( modifiers.advantage?.length && modifiers.disadvantage?.length ) lines.push({ css: "pending", text: loc("SAnnulent") });
   return lines;
+}
+
+/**
+ * Issue #47 : « Désavantage — d20 : 16 gardé, 19 écarté ». La ligne de jet de dnd5e, comme la carte unique, ne montrait que le dé
+ * gardé : un Désavantage se lisait comme un jet normal, ou le total et le dé comme deux dés. null pour un jet à un seul d20.
+ */
+export function d20Note(roll) {
+  const dice = keptAndDropped(roll?.dice?.[0]?.results, roll?.options?.advantageMode);
+  if ( !dice ) return null;
+  return loc("Compact.DeuxDes", { mode: loc(dice.mode === 1 ? "Avantage" : "Desavantage"), kept: dice.kept.join(", "), dropped: dice.dropped.join(", ") });
+}
+
+/** Sous le jet d'attaque déplié (ou sans carte unique) : les deux d20 d'un Avantage ou d'un Désavantage. */
+function renderD20(message, html) {
+  const note = (message.type === "attack") ? d20Note(message.rolls?.[0]) : null;
+  if ( note ) html.querySelector(".message-content")?.append(block([{ css: "note", text: note }]));
 }
 
 function renderModifiers(html, modifiers) {
@@ -206,6 +223,7 @@ export function registerChat() {
   route("dnd5e.renderChatMessage", (message, html) => {
     const overridden = message.getFlag(MODULE_ID, "overridden");
     if ( overridden?.length ) renderOverridden(html, overridden);
+    if ( message.isContentVisible !== false ) renderD20(message, html);   // un jet secret garde ses dés
     const modifiers = message.getFlag(MODULE_ID, "modifiers");
     if ( modifiers ) renderModifiers(html, modifiers);
     const bonuses = message.getFlag(MODULE_ID, "bonuses");

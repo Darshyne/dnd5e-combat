@@ -542,6 +542,7 @@
   "DND5ECOMBAT.Compact.Soins": "Soins",
   "DND5ECOMBAT.Compact.Critique": "critique",
   "DND5ECOMBAT.Compact.Echec": "échec critique",
+  "DND5ECOMBAT.Compact.DeuxDes": "{mode} — d20 : {kept} gardé, {dropped} écarté",
   "DND5ECOMBAT.Compact.Details": "Détails ({n})",
   "DND5ECOMBAT.Compact.Masquer": "Masquer les détails",
   "DND5ECOMBAT.Reglage.situationalCursor.Nom": "Curseur selon la situation",

@@ -87,10 +87,32 @@ function acknowledge(key) {
   acknowledgedRanges.set(key, now);
 }
 
+/**
+ * §416 : les soucis de portée passés outre à l'utilisation, par activité et par cibles, sans le mode d'attaque (inconnu à ce moment :
+ * dnd5e le pose au jet). Le jet d'attaque qui suit ne repose pas la question pour les mêmes cibles et le même souci ; un souci
+ * nouveau (une autre cible, « trop près » au lieu de « hors de portée ») la repose.
+ */
+const forcedRanges = new Map();
+const withoutMode = key => { const [uuid, , ids] = key.split("|"); return `${uuid}|${ids ?? ""}`; };
+const blockingSignature = problems => problems.filter(r => ["outOfRange", "tooClose"].includes(r.issue)).map(r => `${r.name}:${r.issue}`).sort().join(",");
+function rememberForced(key, blocking) {
+  const now = Date.now();
+  for ( const [k, v] of forcedRanges ) if ( (now - v.at) >= ACK_LIFETIME ) forcedRanges.delete(k);
+  if ( key ) forcedRanges.set(withoutMode(key), { at: now, signature: blockingSignature(blocking) });
+}
+function sameAsForced(key, problems) {
+  const known = key ? forcedRanges.get(withoutMode(key)) : null;
+  if ( !known || ((Date.now() - known.at) >= ACK_LIFETIME) ) return false;
+  const signature = blockingSignature(problems);
+  return !!signature && (signature === known.signature);
+}
+
 /** Sépare les soucis de portée en bloquants (hors de portée) et simples rappels (portée longue). */
 function assessRange(activity, attackMode=null) {
   const { key, problems } = rangeProblems(activity, attackMode);
   if ( acknowledged(key) ) return { key, blocking: [] };
+  // §416 : la même portée, déjà passée outre à l'utilisation — le mode d'attaque, connu seulement au jet, change la clé, pas le souci.
+  if ( attackMode && sameAsForced(key, problems) ) return { key, blocking: [], forced: problems.filter(r => ["outOfRange", "tooClose"].includes(r.issue)) };
   for ( const r of problems.filter(r => r.issue === "longRange") ) ui.notifications.info(loc("PorteeLongue", { name: r.name }));
   const blocking = problems.filter(r => ["outOfRange", "tooClose"].includes(r.issue));
   if ( problems.length && !blocking.length ) acknowledge(key);   // rappel donné une fois
@@ -434,6 +456,7 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
   confirmDialog(`${activity.item.name} — ${combatant?.name ?? activity.actor?.name ?? ""}`, lines, buttons, activity.actor ?? null).then(choice => {
     if ( (choice !== "go") && (choice !== "reaction") ) return;
     acknowledge(range.key);
+    if ( range.blocking.length ) rememberForced(range.key, range.blocking);   // §416 : le jet d'attaque ne redemande pas
     // §408 : ce qui est passé outre — le MJ et la table prévenus, la carte marquée (« Utiliser ma Réaction » règle le budget).
     const reasons = forcedReasons({ lines, budgetLines: use.budgetLines, action: choice });
     if ( reasons.length ) reportForced({ actor: activity.actor, item: activity.item, reasons, targets: aimed.map(t => t.name), token: origin })
@@ -548,6 +571,11 @@ function onPostAttackRollConfiguration(rolls, config, dialogConfig, messageConfi
   if ( config[MODULE_ID]?.confirmed || !activity?.item ) return true;
   const options = rolls[0]?.options ?? {};
   const range = assessRange(activity, options.attackMode ?? null);
+  // §416 : portée déjà passée outre à l'utilisation — pas de seconde fenêtre ni de seconde alerte, la carte d'attaque reste marquée.
+  if ( range.forced?.length && messageConfig ) {
+    const forcedLines = range.forced.map(r => loc((r.issue === "tooClose") ? "Souci.tooClose" : "Souci.outOfRange", { name: r.name }));
+    foundry.utils.setProperty(messageConfig, `data.flags.${MODULE_ID}.overridden`, overriddenFlag(forcedReasons({ lines: forcedLines, action: "go" })));
+  }
   if ( !range.blocking.length ) return true;
 
   const beyondReach = canBeThrown(activity) && !options.attackMode?.startsWith("thrown");

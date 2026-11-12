@@ -17,6 +17,7 @@ import { duplicatesAgainst } from "../adapter/duplicates.mjs";
 import { announce, matching } from "./triggers.mjs";
 import { route } from "./router.mjs";
 import { log, loc, sleep } from "./shared.mjs";
+import { levelAtLeast } from "./levels.mjs";
 import { reactionApproach } from "./actions.mjs";
 import { isObjectToken } from "../adapter/bodies.mjs";
 import { poolsOf } from "../adapter/absorb.mjs";
@@ -510,6 +511,9 @@ function onEnemyTurnEnd(combat, prior) {
  * @returns {Array<string|{token: string, enters: true}>}  UUID des tokens qui peuvent réagir.
  */
 export function opportunityThreats(token, waypoints) {
+  // §117, §416 : règle générale — niveau Assisté et au-dessus. Au niveau Essentiel, aucun chemin ne la juge (ni `preMoveToken`,
+  // ni la marche au clic de runtime/actions.mjs, qui passait encore par ici).
+  if ( !levelAtLeast("assisted") ) return [];
   if ( !game.combat?.started || !token.actor || !waypoints.length ) return [];
   const mover = combatantFor(token.actor);
   if ( !mover ) return [];

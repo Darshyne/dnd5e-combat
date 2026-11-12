@@ -13,6 +13,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { mergeEntries, validateEntry, CONTENT_VERSION, ENTRY_KEYS } from "../core/content.mjs";
 import { CONTENT, SOURCES } from "../content/index.mjs";
 import { ENCHANTMENT_SOURCES } from "../content/sources.mjs";
+import { BASIC_ACTIONS } from "../content/actions.mjs";
 import { factsFor } from "./facts.mjs";
 import { scrollSpellOf } from "./scrolls.mjs";
 import { isObjectToken } from "./bodies.mjs";
@@ -26,6 +27,8 @@ export const OVERRIDES_SETTING = "contentOverrides";
  * §117 : le contenu par objet ne s'applique qu'au niveau Intégral (runtime/levels.mjs). Fermé, `contentOf` ne rend rien : chaque
  * objet garde le comportement de dnd5e et les règles générales du moteur.
  */
+/** §416 : les identifiants des actions de base du moteur (content/actions.mjs) — leur entrée reste lue quand le contenu est fermé. */
+const GENERAL_RULES = new Set(Object.values(BASIC_ACTIONS).map(a => a.identifier).filter(Boolean));
 let contentEnabled = true;
 export function setContentEnabled(enabled) {
   contentEnabled = !!enabled;
@@ -143,7 +146,12 @@ function itemLayer(item) {
  */
 export function contentOf(item) {
   const { id } = identifierOf(item);
-  if ( !contentEnabled ) return { identifier: id, entry: null, layers: { text: false, module: false, world: false, item: false } };
+  if ( !contentEnabled ) {
+    // §416 : une action de base du moteur est une règle générale (niveau Assisté), pas le contenu d'un objet — sans le choix exclusif de
+    // l'Attaque à mains nues, une Lutte ratée posait À terre ET Agrippé à ce niveau.
+    const general = (id && GENERAL_RULES.has(id)) ? (CONTENT[id] ?? null) : null;
+    return { identifier: id, entry: general ? mergeEntries([general]) : null, layers: { text: false, module: !!general, world: false, item: false } };
+  }
   const layers = { text: textLayer(item), enchant: enchantmentLayer(item), module: id ? CONTENT[id] ?? null : null, world: id ? worldOverrides()[id] ?? null : null, item: itemLayer(item) };
   return {
     identifier: id,

@@ -2020,5 +2020,8 @@
   "DND5ECOMBAT.File.MaFenetre": "Janela aberta neste cliente",
   "DND5ECOMBAT.File.EnsuiteUne": "1 outro pedido em seguida",
   "DND5ECOMBAT.File.Ensuite": "{n} outros pedidos em seguida",
-  "DND5ECOMBAT.File.MJ": "Mestre"
+  "DND5ECOMBAT.File.MJ": "Mestre",
+  "DND5ECOMBAT.File.AttenduUn": "1 personagem aguardado",
+  "DND5ECOMBAT.File.Attendus": "{count} personagens aguardados",
+  "DND5ECOMBAT.File.VoirSuivi": "Rolagens em andamento"
 }

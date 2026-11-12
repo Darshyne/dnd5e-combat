@@ -47,7 +47,7 @@ function pendingGroupRolls() {
     if ( !requestOf(message) ) continue;
     const view = viewOf(message);
     for ( const entry of view?.entries ?? [] ) {
-      if ( entry.status !== "rolled" ) pending.push({ messageId: view.id, actor: entry.uuid, label: testTitle(view.request) });
+      if ( entry.status !== "rolled" ) pending.push({ messageId: view.id, actor: entry.uuid, label: testTitle(view.request), since: message.timestamp ?? 0 });
     }
   }
   return pending;
@@ -73,6 +73,14 @@ export async function forceLine(id) {
   if ( !game.user.isGM ) return false;
   const line = queue().players.find(l => l.id === id);
   if ( !line ) return false;
+  // §423 : une demande de jets — « Lancer pour ceux qui tardent », comme la fenêtre de suivi des jets : chaque jet est fait ici.
+  if ( line.source === "group" ) {
+    log(`group roll forced from the GM queue (${line.label}, ${line.actors.length} waiting)`);
+    let rolled = false;
+    for ( const actor of line.actors ) rolled = (await forceGroupRoll(line.groupRoll, actor)) || rolled;
+    changed();
+    return rolled;
+  }
   const actor = line.actor ? await fromUuid(line.actor) : null;
   const token = tokenOfActor(actor);
   if ( token ) notice(token, { key: "Attente.Avis", data: { name: line.userName } }, "refused", { all: true, action: "forced", outcome: "success" });

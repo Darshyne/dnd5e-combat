@@ -2505,5 +2505,8 @@
   "DND5ECOMBAT.File.MaFenetre": "Window open on this client",
   "DND5ECOMBAT.File.EnsuiteUne": "1 more request after this",
   "DND5ECOMBAT.File.Ensuite": "{n} more requests after this",
-  "DND5ECOMBAT.File.MJ": "GM"
+  "DND5ECOMBAT.File.MJ": "GM",
+  "DND5ECOMBAT.File.AttenduUn": "1 character awaited",
+  "DND5ECOMBAT.File.Attendus": "{count} characters awaited",
+  "DND5ECOMBAT.File.VoirSuivi": "Rolls in progress"
 }

@@ -11,6 +11,7 @@
 
 import { GM_QUEUE_HOOK, queue, forceLine, rollBlocked, answerLine } from "../runtime/gm-queue.mjs";
 import { combatWindowSeconds, windowsUnlimited } from "../adapter/dialogs.mjs";
+import { openTracker } from "./group-roll-tracker.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc, esc } from "../runtime/shared.mjs";
 
@@ -56,6 +57,23 @@ function mineRow(line) {
   </li>`;
 }
 
+/**
+ * §423 : une demande de jets (§242) — une seule ligne : le test, combien de personnages sont attendus, et le renvoi vers « Jets en
+ * cours », la fenêtre qui en montre le détail. « Lancer pour ceux qui tardent » fait ici ce que fait le bouton du suivi.
+ */
+function groupRow(line) {
+  return `<li class="das-wait das-wait--mine">
+    <img src="icons/svg/d20-highlight.svg" alt="">
+    <div class="das-wait__text"><strong>${esc(line.label)}</strong>
+      <small>${esc(loc(line.count === 1 ? "File.AttenduUn" : "File.Attendus", { count: line.count }))}${line.userName ? ` — ${esc(line.userName)}` : ""}</small></div>
+    <span class="das-wait__time" data-since="${line.since}">${esc(loc("Attente.Depuis", { n: elapsed(line.since) }))}</span>
+    <div class="das-wait__answers">
+      <button type="button" data-action="tracker"><i class="fa-solid fa-dice-d20"></i>${esc(loc("File.VoirSuivi"))}</button>
+      <button type="button" data-action="force" data-id="${esc(line.id)}"><i class="fa-solid fa-forward"></i>${esc(loc("JetGroupe.Suivi.LancerTous", { count: line.count }))}</button>
+    </div>
+  </li>`;
+}
+
 let WaitsClass = null;
 const WaitsApp = () => WaitsClass ??= class PlayerWaits extends foundry.applications.api.ApplicationV2 {
   static DEFAULT_OPTIONS = {
@@ -63,7 +81,7 @@ const WaitsApp = () => WaitsClass ??= class PlayerWaits extends foundry.applicat
     classes: ["das-player-waits"],
     window: { icon: "fa-solid fa-list-check", resizable: true },
     position: { width: 440, height: "auto" },
-    actions: { force: PlayerWaits.#force, forceAll: PlayerWaits.#forceAll, roll: PlayerWaits.#roll, answer: PlayerWaits.#answer }
+    actions: { force: PlayerWaits.#force, forceAll: PlayerWaits.#forceAll, roll: PlayerWaits.#roll, answer: PlayerWaits.#answer, tracker: PlayerWaits.#tracker }
   };
 
   get title() {
@@ -76,7 +94,7 @@ const WaitsApp = () => WaitsClass ??= class PlayerWaits extends foundry.applicat
     const section = (title, rows) => (rows.length ? `<h4 class="das-queue__title">${esc(loc(title))}</h4><ul class="das-waits">${rows.join("")}</ul>` : "");
     const mine = q.mine.map(mineRow);
     // §422 : un jet demandé (§242) — le bouton est celui de la fenêtre de suivi des jets, « Lancer pour lui ».
-    const players = q.players.map(l => row(l, l.groupRoll
+    const players = q.players.map(l => (l.source === "group") ? groupRow(l) : row(l, l.groupRoll
       ? `<button type="button" data-action="force" data-id="${esc(l.id)}"><i class="fa-solid fa-dice-d20"></i>${esc(loc("JetGroupe.Suivi.LancerPour", { name: actorOf(l)?.name ?? l.userName }))}</button>`
       : `<button type="button" data-action="force" data-id="${esc(l.id)}" data-tooltip="${esc(loc("Attente.ForcerAide"))}">
       <i class="fa-solid fa-forward"></i>${esc(loc("Attente.Forcer"))}</button>`));
@@ -126,6 +144,10 @@ const WaitsApp = () => WaitsClass ??= class PlayerWaits extends foundry.applicat
   static async #roll(event, target) {
     target.disabled = true;
     await rollBlocked(target.dataset.id);
+  }
+
+  static #tracker() {
+    openTracker();
   }
 
   static #answer(event, target) {

@@ -2505,5 +2505,8 @@
   "DND5ECOMBAT.File.MaFenetre": "Fenêtre ouverte sur ce poste",
   "DND5ECOMBAT.File.EnsuiteUne": "1 autre demande ensuite",
   "DND5ECOMBAT.File.Ensuite": "{n} autres demandes ensuite",
-  "DND5ECOMBAT.File.MJ": "MJ"
+  "DND5ECOMBAT.File.MJ": "MJ",
+  "DND5ECOMBAT.File.AttenduUn": "1 personnage attendu",
+  "DND5ECOMBAT.File.Attendus": "{count} personnages attendus",
+  "DND5ECOMBAT.File.VoirSuivi": "Jets en cours"
 }

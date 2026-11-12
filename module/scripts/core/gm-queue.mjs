@@ -12,8 +12,9 @@
  * §422 : deux précisions que seul ce client connaît.
  *  - `prompts` : les fenêtres ouvertes sur ce poste (adapter/dialogs.mjs) — leur texte et leurs boutons, pour que le MJ réponde depuis la
  *    file à ce que le moteur lui demande (`prompt` sur la ligne de `mine`) ;
- *  - `groupRolls` : les jets demandés encore attendus (§242) — la ligne du joueur porte `groupRoll` (la carte de la demande), son
- *    forçage est alors « Lancer pour lui », celui de la fenêtre de suivi des jets, et non la fermeture d'une fenêtre.
+ *  - `groupRolls` : les jets demandés encore attendus (§242). §423 : une demande de jets a déjà sa fenêtre de suivi (« Jets en cours »),
+ *    avec une carte par personnage ; la file n'en répète pas le détail — UNE ligne par demande (`source: "group"`), qui dit le test et
+ *    combien de personnages sont attendus, et renvoie au suivi. Les fenêtres de jet de ces personnages n'ont pas d'autre ligne.
  *
  * Pur : aucune dépendance à Foundry.
  */
@@ -54,6 +55,23 @@ export function gmQueue({ awaiting=[], waits=[], blocked=[], prompts=[], groupRo
     players.push({ id: `wait:${w.id}`, source: "wait", userId: w.userId, userName: w.userName ?? "", actor: w.actor ?? null,
       kind: "choice", label: w.label ?? "", since: w.since ?? 0, seconds: null, waitIds: [w.id], prompt: null, groupRoll: null });
   }
+  // §423 : les jets demandés — une ligne par demande. Les lignes de leurs fenêtres de jet s'y fondent (elles donnent les joueurs attendus
+  // et depuis quand) ; les personnages attendus viennent de la carte de la demande, qu'une fenêtre soit annoncée ou non.
+  const requests = new Map();
+  for ( const g of groupRolls ) {
+    const group = requests.get(g.messageId) ?? { id: `group:${g.messageId}`, source: "group", userId: null, userName: "", actor: null, kind: "roll",
+      label: g.label ?? "", since: g.since ?? 0, seconds: null, waitIds: [], prompt: null, groupRoll: g.messageId, actors: [], users: [] };
+    if ( !group.actors.includes(g.actor) ) group.actors.push(g.actor);
+    requests.set(g.messageId, group);
+  }
+  for ( let n = players.length - 1; n >= 0; n-- ) {
+    const group = players[n].groupRoll ? requests.get(players[n].groupRoll) : null;
+    if ( !group ) continue;
+    const [gone] = players.splice(n, 1);
+    if ( gone.userName && !group.users.includes(gone.userName) ) group.users.unshift(gone.userName);
+    if ( gone.since && (!group.since || (gone.since < group.since)) ) group.since = gone.since;
+  }
+  for ( const group of requests.values() ) players.push({ ...group, userName: group.users.join(", "), count: group.actors.length });
   const bySince = (a, b) => (a.since - b.since) || String(a.id).localeCompare(String(b.id));
   mine.sort(bySince);
   players.sort(bySince);
@@ -64,5 +82,5 @@ export function gmQueue({ awaiting=[], waits=[], blocked=[], prompts=[], groupRo
 /** Une empreinte de la file : elle ne change que si une ligne arrive, part, ou gagne son libellé ou ses boutons (pas avec le temps). */
 export function queueSignature(queue) {
   return [...queue.mine, ...queue.players, ...queue.blocked]
-    .map(l => `${l.id}|${l.label ?? ""}|${l.prompt?.id ?? ""}|${l.groupRoll ?? ""}`).join(";");
+    .map(l => `${l.id}|${l.label ?? ""}|${l.prompt?.id ?? ""}|${l.groupRoll ?? ""}|${l.count ?? ""}`).join(";");
 }

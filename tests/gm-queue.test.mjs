@@ -72,14 +72,29 @@ describe("gmQueue — fenêtres de ce poste et jets demandés", () => {
     expect(gmQueue({ awaiting }).mine[0].prompt).toBeNull();
   });
 
-  it("un jet demandé encore attendu marque la ligne du joueur : son forçage est « Lancer pour lui »", () => {
-    const q = gmQueue({ awaiting, groupRolls: [{ messageId: "m7", actor: "Actor.sylaene", label: "Test de Perception" }] });
-    expect(q.players.find(l => l.id === "a2")).toMatchObject({ groupRoll: "m7", label: "Test de Perception" });
+  it("§423 : une demande de jets tient en UNE ligne — le test, les personnages attendus, les joueurs — et les fenêtres de jet s'y fondent", () => {
+    const groupRolls = [{ messageId: "m7", actor: "Actor.sylaene", label: "Jet d'initiative", since: 99 }, { messageId: "m7", actor: "Actor.kaalisti", label: "Jet d'initiative", since: 99 }];
+    const q = gmQueue({ awaiting, groupRolls });
+    const group = q.players.find(l => l.source === "group");
+    expect(group).toMatchObject({ id: "group:m7", groupRoll: "m7", label: "Jet d'initiative", count: 2, actors: ["Actor.sylaene", "Actor.kaalisti"], userName: "Alara", since: 10 });
+    expect(q.players.some(l => l.id === "a2")).toBe(false);   // la fenêtre de jet d'Alara n'a plus sa ligne à elle
+    expect(q.players.map(l => l.id)).toEqual(["group:m7", "a3"]);
   });
 
-  it("seul un jet (pas un choix) du même personnage est rattaché à la demande", () => {
+  it("§423 : une demande sans fenêtre annoncée garde sa ligne (le moment de la demande pour ancienneté)", () => {
+    const q = gmQueue({ groupRolls: [{ messageId: "m9", actor: "Actor.x", label: "Test", since: 42 }] });
+    expect(q.players).toHaveLength(1);
+    expect(q.players[0]).toMatchObject({ id: "group:m9", count: 1, userName: "", since: 42 });
+  });
+
+  it("seul un jet (pas un choix) du même personnage se fond dans la demande", () => {
     const q = gmQueue({ awaiting, groupRolls: [{ messageId: "m7", actor: "Actor.bramo", label: "Test" }] });
-    expect(q.players.find(l => l.id === "a3").groupRoll).toBeNull();
+    expect(q.players.find(l => l.id === "a3")).toBeTruthy();
+  });
+
+  it("§423 : l'empreinte change quand un personnage a lancé (un attendu de moins)", () => {
+    const two = [{ messageId: "m7", actor: "Actor.a", label: "T" }, { messageId: "m7", actor: "Actor.b", label: "T" }];
+    expect(queueSignature(gmQueue({ groupRolls: two }))).not.toBe(queueSignature(gmQueue({ groupRolls: two.slice(1) })));
   });
 
   it("l'empreinte change quand la fenêtre arrive", () => {

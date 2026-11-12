@@ -139,7 +139,8 @@ export default {
       for ( const stop = Date.now() + 20000; !card && (Date.now() < stop); await pause(700) ) card = (await ctx.messagesSince(since)).find(m => m.flags?.[MODULE_ID]?.catalyst);
       const c = card?.flags?.[MODULE_ID]?.catalyst;
       ctx.expect(c?.success === false && c?.outcome === "stunned", `au début de son tour, la sauvegarde ratée, forme dépensée : Étourdi (${JSON.stringify(c ?? null)})`);
-      const STUN = /Involuntary Change|Changement involontaire/i;
+      // Nom de l'effet selon la langue du client : « Transformation involontaire (Étourdi) » dans la traduction Ravenloft-fr.
+      const STUN = /Involuntary Change|Changement involontaire|Transformation involontaire/i;
       ctx.expect(await has(STUN), "l'effet Étourdi de l'item est posé");
       await next(); await next();   // tour du Zombi, puis round 3 : son tour suivant commence
       ctx.expect(!(await has(STUN)), "au début de son tour suivant, il n'est plus Étourdi");

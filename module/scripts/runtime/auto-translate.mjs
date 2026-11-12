@@ -17,12 +17,21 @@ export const AUTO_TRANSLATE_SETTING = "autoTranslate";
 
 const enabled = () => !!game.babele && game.settings.get(MODULE_ID, AUTO_TRANSLATE_SETTING);
 
+/** Le document existe-t-il encore ? Lecture du compendium faite, il a pu être supprimé entre-temps. */
+function exists(doc) {
+  try { return !!fromUuidSync(doc.uuid, { strict: false }); } catch { return false; }
+}
+
 async function retranslate(docs) {
   const reference = referenceReader();
   for ( const doc of docs ) {
     const plan = await retranslationOf(doc, reference);
     if ( !plan.fields.length ) continue;
-    await applyRetranslation(doc, plan);
+    // Forme sauvage à 0 PV (scénario `forme-sauvage`, banc de test 2026-11-11) : l'acteur transformé est retiré pendant la
+    // lecture de la référence, et sa mise à jour échouait (« The Actor … does not exist in actors »). Rien à traduire.
+    if ( !exists(doc) ) continue;
+    try { await applyRetranslation(doc, plan); }
+    catch(err) { if ( exists(doc) ) throw err; continue; }
     log(`translation applied on creation: ${doc.name} (${[...new Set(plan.fields)].join(", ")})`);
   }
 }

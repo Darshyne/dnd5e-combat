@@ -1,5 +1,6 @@
 /** §381 (issue #35) : qui la table attend — ce qui se calcule sans Foundry. */
 import { describe, it, expect } from "vitest";
+import { gmLabel } from "../module/scripts/core/awaiting.mjs";
 import { AWAITING_STALE_MS, applyAwaiting, awaitingAlive, awaitingEntry, awaitingLeft, awaitingPlacement, pruneAwaiting }
   from "../module/scripts/core/awaiting.mjs";
 
@@ -81,5 +82,18 @@ describe("tableau des attentes", () => {
     list = applyAwaiting(list, { type: "drop", userId: "u2" });
     expect(list.map(e => e.id)).toEqual(["c"]);
     expect(applyAwaiting(list, { type: "remove", id: "c" })).toEqual([]);
+  });
+});
+
+// §426 : le libellé réservé aux MJ voyage à part ; l'attente diffusée ne le porte toujours pas.
+describe("libellé réservé aux MJ", () => {
+  it("une ligne courte : espaces resserrés, 80 caractères au plus", () => {
+    expect(gmLabel("  Inspiration   héroïque\n— Paladin ")).toBe("Inspiration héroïque — Paladin");
+    expect(gmLabel("x".repeat(200))).toHaveLength(80);
+    expect(gmLabel(null)).toBe("");
+  });
+  it("l'attente diffusée ne le garde pas, même si on le lui donne", () => {
+    const e = awaitingEntry({ id: "a1", userId: "u1", kind: "choice", since: 1, label: "Inspiration héroïque", gmLabel: "Inspiration héroïque" });
+    expect(JSON.stringify(e)).not.toMatch(/Inspiration/);
   });
 });

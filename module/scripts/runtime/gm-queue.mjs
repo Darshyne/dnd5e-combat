@@ -12,7 +12,7 @@
  */
 import { MODULE_ID } from "../constants.mjs";
 import { gmQueue, queueSignature } from "../core/gm-queue.mjs";
-import { AWAITING_HOOK, awaitingList } from "../adapter/awaiting.mjs";
+import { AWAITING_HOOK, awaitingList, awaitingLabels } from "../adapter/awaiting.mjs";
 import { FORCE_WINDOWS_QUERY, PLAYER_WAITS_HOOK, forcePlayerWait, playerWaits } from "../adapter/player-wait.mjs";
 import { combatWindowSeconds, windowsUnlimited, PROMPTS_HOOK, localPrompts, answerPrompt } from "../adapter/dialogs.mjs";
 import { requestOf, viewOf, testTitle } from "../adapter/group-roll.mjs";
@@ -37,7 +37,8 @@ const FORCE_GRACE_MS = 4000;
  */
 export function queue() {
   if ( !game.user?.isGM ) return gmQueue();
-  return gmQueue({ awaiting: awaitingList(), waits: playerWaits(), blocked: blockedRolls(), prompts: localPrompts(), groupRolls: pendingGroupRolls() });
+  return gmQueue({ awaiting: awaitingList(), waits: playerWaits(), blocked: blockedRolls(), prompts: localPrompts(), groupRolls: pendingGroupRolls(),
+    labels: awaitingLabels() });
 }
 
 /** §422 : les jets demandés par le MJ (§242) que quelqu'un n'a pas encore lancés — `{ messageId, actor, label }`, parmi les derniers messages. */

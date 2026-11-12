@@ -41,6 +41,16 @@ export function awaitingEntry(raw={}) {
   };
 }
 
+/**
+ * §426 : le libellé d'une attente réservé aux MJ (le titre de la fenêtre : « Inspiration héroïque — Paladin »). Il ne fait PAS partie de
+ * l'attente diffusée (`awaitingEntry` ne le garde pas) : il voyage à part, vers les seuls MJ, pour leur File. Une ligne, 80 caractères
+ * au plus ; chaîne vide si rien d'utilisable.
+ */
+export function gmLabel(text) {
+  const clean = String(text ?? "").replace(/\s+/g, " ").trim();
+  return (clean.length > 80) ? `${clean.slice(0, 79)}…` : clean;
+}
+
 /** Une attente est-elle encore valable à `now` ? Ni oubliée (pas de nouvelles), ni au-delà de la fin de son délai. */
 export function awaitingAlive(entry, now) {
   if ( !entry ) return false;

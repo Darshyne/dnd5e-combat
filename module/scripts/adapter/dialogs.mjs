@@ -121,7 +121,8 @@ function showQueued(dialog) {
  */
 export function promptWait(config, { awaiting=null, aside=false }={}) {
   const open = () => {
-    const release = awaiting ? markAwaiting(awaiting.actor ?? null, awaiting.kind, { token: awaiting.token ?? null }) : null;
+    const release = awaiting ? markAwaiting(awaiting.actor ?? null, awaiting.kind,
+      { token: awaiting.token ?? null, label: config?.window?.title ?? null }) : null;
     let untrack = () => {};
     return foundry.applications.api.DialogV2.wait({
       ...config,
@@ -148,7 +149,8 @@ export function timedWait(config, { fallback=null, seconds=null, front=false, aw
   const shown = unlimited ? null : (seconds ?? combatWindowSeconds());
   // §401 : à son tour — la fenêtre s'ouvre quand la précédente de ce poste est fermée ; son compte à rebours part à l'ouverture.
   return inLine(() => {
-    const release = awaiting ? markAwaiting(awaiting.actor ?? null, awaiting.kind, { seconds: shown, token: awaiting.token ?? null }) : null;
+    const release = awaiting ? markAwaiting(awaiting.actor ?? null, awaiting.kind,
+      { seconds: shown, token: awaiting.token ?? null, label: config?.window?.title ?? null }) : null;   // §426 : le titre, pour les MJ
     const track = { awaitingId: release?.id ?? null, actor: awaiting?.actor ?? null };
     const waiting = unlimited ? waitForForce(config, { fallback, front, track }) : countdownWait(config, { fallback, seconds: shown, front, track });
     return release ? waiting.finally(release) : waiting;

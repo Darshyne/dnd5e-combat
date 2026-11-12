@@ -101,3 +101,21 @@ describe("gmQueue — fenêtres de ce poste et jets demandés", () => {
     expect(queueSignature(gmQueue({ awaiting, prompts }))).not.toBe(queueSignature(gmQueue({ awaiting })));
   });
 });
+
+// §426 : ce que demande la fenêtre d'un joueur, connu des MJ seuls.
+describe("gmQueue — libellés réservés aux MJ", () => {
+  const awaiting = [{ id: "a2", userId: "u1", userName: "Alara", actor: "Actor.sylaene", kind: "choice", gm: false, since: 10 }];
+  it("une fenêtre ouverte chez un joueur de sa propre initiative prend le libellé reçu par le MJ", () => {
+    expect(gmQueue({ awaiting, labels: { a2: "Inspiration héroïque — Sylaene" } }).players[0].label).toBe("Inspiration héroïque — Sylaene");
+  });
+  it("le libellé d'une question posée par le MJ garde la priorité", () => {
+    const waits = [{ id: "w1", userId: "u1", actor: "Actor.sylaene", label: "Réaction" }];
+    expect(gmQueue({ awaiting, waits, labels: { a2: "Autre" } }).players[0].label).toBe("Réaction");
+  });
+  it("sans libellé reçu, la ligne reste sans libellé (le panneau dit la sorte)", () => {
+    expect(gmQueue({ awaiting }).players[0].label).toBe("");
+  });
+  it("l'empreinte change quand le libellé arrive", () => {
+    expect(queueSignature(gmQueue({ awaiting, labels: { a2: "X" } }))).not.toBe(queueSignature(gmQueue({ awaiting })));
+  });
+});

@@ -29,10 +29,11 @@ const matches = (entry, wait) => (wait.userId === entry.userId) && (!entry.actor
  * @param {object[]} [sources.blocked]     Les jets dus par un auteur absent : `{ messageId, userId, userName, actor, actorName, item, heal }`.
  * @param {object[]} [sources.prompts]     Les fenêtres ouvertes sur ce poste : `{ id, awaitingId, title, text, buttons }`.
  * @param {object[]} [sources.groupRolls]  Les jets demandés encore attendus : `{ messageId, actor, label }`.
+ * @param {object} [sources.labels]        §426 : ce que demandent les fenêtres, par identifiant d'attente — connu des MJ seuls.
  * @returns {{mine: object[], players: object[], blocked: object[], count: number}}
  *   Une ligne : `{ id, source: "awaiting"|"wait", userId, userName, actor, kind, label, since, seconds, waitIds, prompt, groupRoll }`.
  */
-export function gmQueue({ awaiting=[], waits=[], blocked=[], prompts=[], groupRolls=[] }={}) {
+export function gmQueue({ awaiting=[], waits=[], blocked=[], prompts=[], groupRolls=[], labels={} }={}) {
   const used = new Set();
   const line = entry => {
     const own = waits.filter(w => matches(entry, w));
@@ -41,7 +42,7 @@ export function gmQueue({ awaiting=[], waits=[], blocked=[], prompts=[], groupRo
     const asked = ((entry.kind === "roll") && entry.actor) ? (groupRolls.find(g => g.actor === entry.actor) ?? null) : null;
     return {
       id: entry.id, source: "awaiting", userId: entry.userId, userName: entry.userName ?? "", actor: entry.actor ?? null,
-      kind: entry.kind ?? "choice", label: own.find(w => w.label)?.label ?? asked?.label ?? prompt?.title ?? "",
+      kind: entry.kind ?? "choice", label: own.find(w => w.label)?.label ?? asked?.label ?? prompt?.title ?? labels[entry.id] ?? "",
       since: entry.since ?? 0, seconds: entry.seconds ?? null, waitIds: own.map(w => w.id),
       prompt: prompt ? { id: prompt.id, text: prompt.text ?? "", buttons: prompt.buttons ?? [] } : null,
       groupRoll: asked?.messageId ?? null

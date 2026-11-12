@@ -11,7 +11,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
-import { applyAwaiting, awaitingEntry, pruneAwaiting } from "../core/awaiting.mjs";
+import { applyAwaiting, awaitingEntry, gmLabel, pruneAwaiting } from "../core/awaiting.mjs";
 
 export const AWAITING_QUERY = `${MODULE_ID}.awaiting`;
 /**
@@ -51,6 +51,29 @@ export function changeAwaiting(change) {
 /** Les attentes ouvertes sur ce client (pour les rafraîchir, ou répondre à un client qui arrive). */
 export const ownAwaiting = () => [...mine.values()];
 
+/**
+ * §426 : ce qu'une fenêtre demande, pour les MJ seulement. L'attente diffusée à la table ne le dit jamais (core/awaiting.mjs) ; le
+ * libellé part à part, vers les seuls MJ connectés, et un client qui n'est pas MJ ne le garde pas même s'il le recevait.
+ *  - `ownLabels` : ceux des attentes ouvertes sur ce client (pour un MJ qui arrive) ;
+ *  - `knownLabels` : ceux que ce client connaît, les siens compris — rempli chez un MJ seulement.
+ */
+const ownLabels = new Map();
+const knownLabels = new Map();
+
+/** §426 : les libellés connus de ce client, par identifiant d'attente — vide chez un joueur. */
+export function awaitingLabels() {
+  const alive = new Set(known.map(e => e.id));
+  for ( const id of [...knownLabels.keys()] ) if ( !alive.has(id) ) knownLabels.delete(id);
+  return Object.fromEntries(knownLabels);
+}
+
+function sendLabel(id, label, to=null) {
+  for ( const user of (to ? [to] : game.users) ) {
+    if ( !user.active || user.isSelf || !user.isGM ) continue;
+    user.query(AWAITING_QUERY, { type: "label", id, label }, { timeout: 5000 }).catch(() => {});
+  }
+}
+
 function send(payload) {
   for ( const user of game.users ) {
     if ( !user.active || user.isSelf ) continue;
@@ -82,7 +105,7 @@ function tokenOf(actor, token) {
  * @param {{seconds?: number|null, token?: TokenDocument|Token|null}} [options]  `seconds` : le délai de la fenêtre, s'il y en a un.
  * @returns {() => void}
  */
-export function markAwaiting(actor, kind, { seconds=null, token=null }={}) {
+export function markAwaiting(actor, kind, { seconds=null, token=null, label=null }={}) {
   if ( !game?.user ) return () => {};
   const now = Date.now();
   const entry = awaitingEntry({
@@ -95,11 +118,20 @@ export function markAwaiting(actor, kind, { seconds=null, token=null }={}) {
   mine.set(entry.id, entry);
   changeAwaiting({ type: "add", entry });
   send({ type: "add", entry });
+  // §426 : ce que la fenêtre demande, aux seuls MJ.
+  const told = gmLabel(label);
+  if ( told ) {
+    ownLabels.set(entry.id, told);
+    if ( game.user.isGM ) knownLabels.set(entry.id, told);
+    sendLabel(entry.id, told);
+  }
   let released = false;
   const release = () => {
     if ( released ) return;
     released = true;
     mine.delete(entry.id);
+    ownLabels.delete(entry.id);
+    knownLabels.delete(entry.id);
     changeAwaiting({ type: "remove", id: entry.id });
     send({ type: "remove", id: entry.id });
   };
@@ -127,7 +159,21 @@ export async function whileAwaiting(actor, kind, fn, options={}) {
  * les attentes ouvertes ici (rendues telles quelles).
  */
 export function receiveAwaiting(payload={}, { user }={}) {
-  if ( payload.type === "sync" ) return ownAwaiting();
+  if ( payload.type === "sync" ) {
+    // §426 : un MJ qui arrive reçoit aussi les libellés des attentes ouvertes ici.
+    if ( user?.isGM ) for ( const [id, label] of ownLabels ) sendLabel(id, label, user);
+    return ownAwaiting();
+  }
+  if ( payload.type === "label" ) {
+    // Gardé par un MJ seulement, et seulement pour une attente de celui qui l'envoie.
+    const entry = known.find(e => e.id === payload.id);
+    if ( !game.user.isGM || !entry || (user && (entry.userId !== user.id)) ) return false;
+    const told = gmLabel(payload.label);
+    if ( !told ) return false;
+    knownLabels.set(entry.id, told);
+    publish();
+    return true;
+  }
   // Un client ne parle que de ses propres attentes.
   const from = user?.id ?? null;
   if ( payload.type === "add" ) {

@@ -193,6 +193,34 @@ function onQueueChanged(q) {
   }, Math.max(0, due));
 }
 
+const TOOL = "das-gm-queue";
+
+/**
+ * §427 : la pastille du bouton « File du MJ » (barre d'outils des tokens) — combien de lignes attendent. Posée sur le bouton lui-même :
+ * rien n'est redessiné.
+ */
+function showCount() {
+  if ( !game.user?.isGM ) return;
+  const button = document.querySelector(`#scene-controls [data-tool="${TOOL}"]`);
+  if ( !button ) return;
+  const count = queue().count;
+  button.classList.toggle("das-queue-waiting", count > 0);
+  if ( count > 0 ) button.dataset.count = String(count);
+  else delete button.dataset.count;
+}
+
 export function registerPlayerWaitsUI() {
-  route(GM_QUEUE_HOOK, onQueueChanged, { always: true, label: "GM queue: panel not refreshed" });
+  route(GM_QUEUE_HOOK, q => { onQueueChanged(q); showCount(); }, { always: true, label: "GM queue: panel not refreshed" });
+  // §427 : un bouton pour ouvrir la File à la main (elle ne s'ouvre seule que quand la partie est retenue), à côté de « Lancer un combat ».
+  route("getSceneControlButtons", controls => {
+    const tokens = controls.tokens;
+    if ( !tokens?.tools || !game.user.isGM ) return;
+    const last = Math.max(0, ...Object.values(tokens.tools).map(t => t.order ?? 0));
+    tokens.tools[TOOL] = {
+      name: TOOL, order: last + 1, icon: "fa-solid fa-list-check", title: "DND5ECOMBAT.Attente.Titre",
+      button: true, visible: true,
+      onChange: () => { openPlayerWaits(); }
+    };
+  }, { always: true, label: "GM queue: tool" });
+  route("renderSceneControls", () => showCount(), { always: true, label: "GM queue: count on the tool" });
 }

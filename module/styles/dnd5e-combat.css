@@ -827,3 +827,10 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-player-waits .das-wait__answers { flex: 1 0 100%; display: flex; gap: 6px; flex-wrap: wrap; }
 .das-player-waits .das-wait__answers button { flex: 1 1 auto; width: auto; }
 .dnd5e-combat-queued { margin: 6px 0 0; font-size: var(--font-size-12); opacity: 0.8; text-align: center; }
+/* §427 : la pastille du bouton « File du MJ ». */
+#scene-controls [data-tool="das-gm-queue"] { position: relative; }
+#scene-controls [data-tool="das-gm-queue"].das-queue-waiting::after {
+  content: attr(data-count); position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 3px;
+  border-radius: 8px; background: var(--color-level-error, #c0392b); color: #fff; font-size: 11px; line-height: 16px; text-align: center;
+  pointer-events: none;
+}

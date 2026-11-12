@@ -98,7 +98,7 @@ contexte du moment) et sert de clé `on` aux déclarations de contenu.
 
 ## Hooks écoutés, dans l'ordre d'appel
 
-132 hooks, relevés par `api.routes()` sur le module chargé au niveau d'automatisation « full ». Un seul écouteur par hook
+133 hooks, relevés par `api.routes()` sur le module chargé au niveau d'automatisation « full ». Un seul écouteur par hook
 (`runtime/router.mjs`) appelle les inscrits dans cet ordre, qui est celui des `register…()` de `dnd5e-combat.mjs`. **MJ** : l'inscrit
 ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendant `false`.
 
@@ -825,8 +825,9 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 1. theatre of the mind: tool
 2. climbing switch: tool
 3. group roll: tool
-4. combat launch: tool
-5. factions: tool
+4. GM queue: tool
+5. combat launch: tool
+6. factions: tool
 
 ### `getUserContextOptions`
 
@@ -973,6 +974,10 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 ### `renderGamePause`
 
 1. combat launch: pause message not shown
+
+### `renderSceneControls`
+
+1. GM queue: count on the tool
 
 ### `renderSettings`
 

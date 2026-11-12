@@ -9,7 +9,7 @@ fonction d'API, un hook, un réglage, une entrée de contenu ou un scénario : `
 |---|---|
 | [API.md](API.md) | que publie `api`, avec quels arguments, et où est le code ? (343 chemins) |
 | [HOOKS.md](HOOKS.md) | quels hooks le moteur émet-il (38), lesquels écoute-t-il, et dans quel ordre ? |
-| [SETTINGS.md](SETTINGS.md) | quel réglage porte cette clé, sa portée, son défaut, son onglet ? (127) |
+| [SETTINGS.md](SETTINGS.md) | quel réglage porte cette clé, sa portée, son défaut, son onglet ? (128) |
 | [CONTENT.md](CONTENT.md) | quels items utilisent telle clé du contenu, tel moment, telle action ? |
 | [SCENARIOS.md](SCENARIOS.md) | quel scénario vérifie quoi, sur quelle scène ? |
 

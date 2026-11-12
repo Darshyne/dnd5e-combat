@@ -33,6 +33,33 @@ import { requestSave } from "./neighbours.mjs";
 import { duplicateEffectsOf } from "../adapter/duplicates.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
 import { log, loc, waitForDice, notice } from "./shared.mjs";
+import { damageFlow } from "./flow.mjs";
+
+/**
+ * §419 : la fenêtre du MJ avant l'application — qui, quoi, combien (le jet, avant résistances et sauvegardes), sur qui. Sans délai : c'est
+ * le MJ qui a demandé à valider. Fermée sans choix : rien n'est appliqué.
+ */
+async function confirmApplication(command, resolution, activity, source) {
+  const damages = deserializeDamages(resolution.damageRoll?.damages ?? []);
+  const total = damages.reduce((sum, d) => sum + (Number(d.value) || 0), 0);
+  const types = [...new Set(damages.map(d => d.type).filter(Boolean))]
+    .map(t => CONFIG.DND5E.damageTypes[t]?.label ?? CONFIG.DND5E.healingTypes[t]?.label ?? t).join(", ");
+  const part = m => ((m === 1) ? "" : (m === 0.5) ? " (½)" : (m === 0) ? " (0)" : ` (×${m})`);
+  const targets = command.entries.map(e => {
+    const t = resolution.targets.find(x => x.token === e.token);
+    return `${t?.name ?? "?"}${part(e.multiplier)}`;
+  }).join(", ");
+  const heal = !!resolution.plan?.heal;
+  const choice = await foundry.applications.api.DialogV2.wait({
+    window: { title: loc("Degats.ValiderTitre", { item: activity?.item?.name ?? "" }) },
+    classes: ["dnd5e-combat-damage-validate"],
+    content: `<p>${loc(heal ? "Degats.ValiderSoins" : "Degats.ValiderTexte", { source: source?.name ?? activity?.actor?.name ?? "", total, types, targets })}</p>`,
+    buttons: [{ action: "apply", label: loc("Degats.Appliquer"), icon: "fa-solid fa-check", default: true },
+      { action: "refuse", label: loc("Degats.NePasAppliquer"), icon: "fa-solid fa-xmark" }],
+    rejectClose: false
+  });
+  return choice === "apply";
+}
 import { holdForAtCost } from "./success-at-cost.mjs";
 import { waitForAnimations } from "./animations.mjs";
 import { isRangedWeaponAttack } from "../adapter/cover.mjs";
@@ -142,6 +169,12 @@ export const COMMANDS = {
     const damageMessage = game.messages.get(resolution.damageRoll?.messageId);
     const activity = carrier.getAssociatedActivity?.({ scaled: true }) ?? null;
     const source = await fromUuid(speakerTokenUuid(carrier) ?? "");
+    // §419 : réglage « Dégâts », validés par le MJ — rien n'est appliqué (ni PV, ni effets) sans son accord ; refusé, la résolution se
+    // clôt sans rien toucher. Seulement quand il y a un jet à appliquer : un effet seul part comme avant.
+    if ( resolution.damageRoll && damageFlow().validate && !(await confirmApplication(command, resolution, activity, source)) ) {
+      log(`${activity?.item?.name ?? "action"}: application refused by the GM`);
+      return [{ type: "applied", entries: [], extra: [] }];
+    }
     // §112 : les PV tombent quand l'animation (BLFX, par Sequencer) arrive, pas à son départ.
     await waitForAnimations([source?.uuid, ...command.entries.map(e => e.token)]);
     const resave = carrier.getFlag(MODULE_ID, "resave");

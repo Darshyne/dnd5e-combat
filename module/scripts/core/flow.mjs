@@ -18,3 +18,20 @@ export function offersReaction(mode, { playerOwned=false }={}) {
   if ( m === "players" ) return playerOwned === true;
   return true;
 }
+
+/**
+ * Réglage « Dégâts » (§419). `level` : selon le niveau d'automatisation — aujourd'hui lancés et appliqués d'office, dès que le niveau
+ * résout les actions.
+ */
+export const DAMAGE_MODES = Object.freeze(["level", "auto", "click", "validate", "clickValidate"]);
+
+/**
+ * Les deux gestes que le réglage peut demander autour d'un jet de dégâts ou de soins : `click` — l'auteur lance lui-même ses dés (une
+ * fenêtre, un bouton) au lieu du jet enchaîné ; `validate` — le MJ confirme avant que le résultat ne soit appliqué.
+ * @param {string} mode
+ * @returns {{click: boolean, validate: boolean}}
+ */
+export function damageSteps(mode) {
+  const m = (!DAMAGE_MODES.includes(mode) || (mode === "level")) ? "auto" : mode;
+  return { click: (m === "click") || (m === "clickValidate"), validate: (m === "validate") || (m === "clickValidate") };
+}

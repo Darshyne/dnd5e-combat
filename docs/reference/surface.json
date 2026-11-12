@@ -455,6 +455,7 @@
     "criticalMode",
     "criticalNpc",
     "criticalTable",
+    "damageFlow",
     "dataFixes",
     "ddbNotice",
     "debugAllModules",

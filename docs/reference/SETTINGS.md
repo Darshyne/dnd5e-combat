@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-127 réglages, relevés sur chaque `game.settings.register` du module chargé. **Portée** : `world` = la table (MJ),
+128 réglages, relevés sur chaque `game.settings.register` du module chargé. **Portée** : `world` = la table (MJ),
 `client` = ce poste, `user` = ce joueur. **Onglet** : celui de la fenêtre de réglages DAS (`core/settings-layout.mjs`) ; sans onglet,
 le réglage est une mémoire interne ou se règle ailleurs (interrupteur, fenêtre dédiée). Le libellé est celui de `lang/fr.json`.
 
@@ -14,6 +14,7 @@ le réglage est une mémoire interne ou se règle ailleurs (interrupteur, fenêt
 | `autoTranslate` | Traduire à la création | world | Boolean | `true` |  | `runtime/auto-translate.mjs` |
 | `autoUsage` | Utiliser sans la fenêtre de dnd5e | world | Boolean | `true` |  | `runtime/usage.mjs` |
 | `combatLaunchButton` | Bouton « Lancer un combat » | world | Boolean | `true` |  | `runtime/combat-launch.mjs` |
+| `damageFlow` | Dégâts et soins | world | String | `"level"` | level, auto, click, validate, clickValidate | `runtime/flow.mjs` |
 | `dataFixes` | Corriger la donnée premium à la création | world | Boolean | `true` |  | `runtime/data-fixes.mjs` |
 | `etherealPlane` | Plan Éthéré automatisé | world | Boolean | `true` |  | `runtime/ethereal.mjs` |
 | `groupRollSeconds` | Jets demandés : délai des joueurs (s) | world | Number | `60` |  | `runtime/group-roll.mjs` |

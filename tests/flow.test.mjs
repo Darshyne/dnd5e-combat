@@ -22,3 +22,19 @@ describe("offersReaction", () => {
     expect(REACTION_MODES).toEqual(["level", "ask", "players", "off"]);
   });
 });
+
+// §419 : le réglage « Dégâts ».
+describe("damageSteps", async () => {
+  const { damageSteps, DAMAGE_MODES } = await import("../module/scripts/core/flow.mjs");
+  it("par défaut et « selon le niveau » : ni clic ni validation", () => {
+    for ( const mode of ["level", "auto", undefined, "inconnu"] ) expect(damageSteps(mode)).toEqual({ click: false, validate: false });
+  });
+  it("au clic, validés, ou les deux", () => {
+    expect(damageSteps("click")).toEqual({ click: true, validate: false });
+    expect(damageSteps("validate")).toEqual({ click: false, validate: true });
+    expect(damageSteps("clickValidate")).toEqual({ click: true, validate: true });
+  });
+  it("cinq modes, « level » en tête (le défaut)", () => {
+    expect(DAMAGE_MODES).toEqual(["level", "auto", "click", "validate", "clickValidate"]);
+  });
+});

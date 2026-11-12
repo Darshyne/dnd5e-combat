@@ -27,7 +27,7 @@ import {
   GROUP_FLAG, GROUP_HANDLER, rollArguments, rollMethodOf, canRoll, testTitle, keyLabel, breakdownOf, requestOf, viewOf, systemModeOf
 } from "../adapter/group-roll.mjs";
 import { rollerFor } from "../adapter/concentration.mjs";
-import { closeRollDialogAfter } from "../adapter/dialogs.mjs";
+import { closeRollDialogAfter, inLine } from "../adapter/dialogs.mjs";
 import { aidsFor, isGuided } from "../adapter/skill-aid.mjs";
 import { inspirationOf, offerInspiration, offerRollBonus, keptD20 } from "../adapter/inspiration.mjs";
 import { offerHeroicD20 } from "./heroic.mjs";
@@ -235,7 +235,15 @@ export async function promptGroupRoll(message, actor) {
   if ( !requestOf(message) || !actor || resultOf(message, actor) ) return promptGroupRollNow(message, actor);
   // §381 : la table voit qu'on attend ce jet (sablier au-dessus du token) jusqu'à ce qu'il parte, soit pris ailleurs ou expire.
   const seconds = answerSeconds();
-  return whileAwaiting(actor, "roll", () => promptGroupRollNow(message, actor), { seconds: seconds > 0 ? seconds : null });
+  // §424 : à son tour. Une demande de jet laisse passer la question du moteur déjà ouverte sur ce poste (réaction, sauvegarde, refus) :
+  // elle s'ouvre après, quelle que soit l'interface qui l'affiche (fenêtre de dnd5e ou fenêtre plein écran d'un voisin, qui a sa propre
+  // file et ne connaît pas celle du moteur). Elle ne retient pas les questions suivantes (`after`) : son délai est long (réglage
+  // `groupRollSeconds`), celui d'une réaction court — une réaction qui arrive pendant le jet s'ouvre aussitôt, par-dessus.
+  return inLine.after(() => {
+    // Lancé ailleurs pendant l'attente (le MJ a lancé pour lui) : rien à ouvrir.
+    if ( resultOf(game.messages.get(message.id) ?? message, actor) ) return "rolled";
+    return whileAwaiting(actor, "roll", () => promptGroupRollNow(message, actor), { seconds: seconds > 0 ? seconds : null });
+  }, `group roll: ${actor.name}`);
 }
 
 async function promptGroupRollNow(message, actor) {

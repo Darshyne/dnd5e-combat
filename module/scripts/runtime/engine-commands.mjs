@@ -34,7 +34,7 @@ import { duplicateEffectsOf } from "../adapter/duplicates.mjs";
 import { placeItemEffect } from "../adapter/effects.mjs";
 import { log, loc, waitForDice, notice } from "./shared.mjs";
 import { damageFlow } from "./flow.mjs";
-import { markAwaiting } from "../adapter/awaiting.mjs";
+import { promptWait } from "../adapter/dialogs.mjs";
 
 /**
  * §419 : la fenêtre du MJ avant l'application — qui, quoi, combien (le jet, avant résistances et sauvegardes), sur qui. Sans délai : c'est
@@ -51,16 +51,15 @@ async function confirmApplication(command, resolution, activity, source) {
     return `${t?.name ?? "?"}${part(e.multiplier)}`;
   }).join(", ");
   const heal = !!resolution.plan?.heal;
-  // §421 : la table voit que le MJ décide (bandeau « Le MJ décide… », sans désigner de créature : pas d'acteur).
-  const release = markAwaiting(null, "choice");
-  const choice = await foundry.applications.api.DialogV2.wait({
+  // §421 : la table voit que le MJ décide (bandeau « Le MJ décide… », sans désigner de créature : pas d'acteur). §422 : suivie — le MJ
+  // peut répondre depuis sa File.
+  const choice = await promptWait({
     window: { title: loc("Degats.ValiderTitre", { item: activity?.item?.name ?? "" }) },
     classes: ["dnd5e-combat-damage-validate"],
     content: `<p>${loc(heal ? "Degats.ValiderSoins" : "Degats.ValiderTexte", { source: source?.name ?? activity?.actor?.name ?? "", total, types, targets })}</p>`,
     buttons: [{ action: "apply", label: loc("Degats.Appliquer"), icon: "fa-solid fa-check", default: true },
-      { action: "refuse", label: loc("Degats.NePasAppliquer"), icon: "fa-solid fa-xmark" }],
-    rejectClose: false
-  }).finally(release);
+      { action: "refuse", label: loc("Degats.NePasAppliquer"), icon: "fa-solid fa-xmark" }]
+  }, { awaiting: { actor: null, kind: "choice" } });
   return choice === "apply";
 }
 import { holdForAtCost } from "./success-at-cost.mjs";

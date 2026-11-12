@@ -96,13 +96,15 @@ export function markAwaiting(actor, kind, { seconds=null, token=null }={}) {
   changeAwaiting({ type: "add", entry });
   send({ type: "add", entry });
   let released = false;
-  return () => {
+  const release = () => {
     if ( released ) return;
     released = true;
     mine.delete(entry.id);
     changeAwaiting({ type: "remove", id: entry.id });
     send({ type: "remove", id: entry.id });
   };
+  release.id = entry.id;   // §422 : pour relier la fenêtre ouverte à sa ligne de la File du MJ
+  return release;
 }
 
 /**

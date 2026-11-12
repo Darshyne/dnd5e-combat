@@ -14,7 +14,9 @@ import { MODULE_ID } from "../constants.mjs";
 import { gmQueue, queueSignature } from "../core/gm-queue.mjs";
 import { AWAITING_HOOK, awaitingList } from "../adapter/awaiting.mjs";
 import { FORCE_WINDOWS_QUERY, PLAYER_WAITS_HOOK, forcePlayerWait, playerWaits } from "../adapter/player-wait.mjs";
-import { combatWindowSeconds, windowsUnlimited } from "../adapter/dialogs.mjs";
+import { combatWindowSeconds, windowsUnlimited, PROMPTS_HOOK, localPrompts, answerPrompt } from "../adapter/dialogs.mjs";
+import { requestOf, viewOf, testTitle } from "../adapter/group-roll.mjs";
+import { forceGroupRoll } from "./group-roll.mjs";
 import { blockedRolls, rollForAbsent } from "./engine.mjs";
 import { route } from "./router.mjs";
 import { log, notice, tokenOfActor, isExecutor } from "./shared.mjs";
@@ -35,8 +37,22 @@ const FORCE_GRACE_MS = 4000;
  */
 export function queue() {
   if ( !game.user?.isGM ) return gmQueue();
-  return gmQueue({ awaiting: awaitingList(), waits: playerWaits(), blocked: blockedRolls() });
+  return gmQueue({ awaiting: awaitingList(), waits: playerWaits(), blocked: blockedRolls(), prompts: localPrompts(), groupRolls: pendingGroupRolls() });
 }
+
+/** §422 : les jets demandés par le MJ (§242) que quelqu'un n'a pas encore lancés — `{ messageId, actor, label }`, parmi les derniers messages. */
+function pendingGroupRolls() {
+  const pending = [];
+  for ( const message of game.messages?.contents.slice(-GROUP_LOOKBACK) ?? [] ) {
+    if ( !requestOf(message) ) continue;
+    const view = viewOf(message);
+    for ( const entry of view?.entries ?? [] ) {
+      if ( entry.status !== "rolled" ) pending.push({ messageId: view.id, actor: entry.uuid, label: testTitle(view.request) });
+    }
+  }
+  return pending;
+}
+const GROUP_LOOKBACK = 50;
 
 let last = "";
 function changed() {
@@ -61,6 +77,8 @@ export async function forceLine(id) {
   const token = tokenOfActor(actor);
   if ( token ) notice(token, { key: "Attente.Avis", data: { name: line.userName } }, "refused", { all: true, action: "forced", outcome: "success" });
   log(`${line.userName}'s window forced by the GM (${line.label || line.kind})`);
+  // §422 : un jet demandé — « Lancer pour lui », comme la fenêtre de suivi des jets : le jet est fait ici, sa fenêtre se ferme chez lui.
+  if ( line.groupRoll ) return forceGroupRoll(line.groupRoll, line.actor);
   // Une question posée par ce client : elle sait se lâcher si la réponse ne revient pas (adapter/player-wait.mjs).
   if ( line.waitIds.length ) {
     for ( const waitId of line.waitIds ) await forcePlayerWait(waitId);
@@ -70,6 +88,18 @@ export async function forceLine(id) {
   try { if ( user?.active ) await user.query(FORCE_WINDOWS_QUERY, {}, { timeout: FORCE_GRACE_MS }); }
   catch(err) { console.warn(`${MODULE_ID} | forcing ${line.userName}'s windows`, err); }
   return true;
+}
+
+/**
+ * §422 : le MJ répond depuis sa file à ce que le moteur lui demande — le bouton `action` de la fenêtre de la ligne `id` de `mine`, comme
+ * s'il l'avait cliqué dans la fenêtre. Rend false si la ligne n'a pas (ou plus) de fenêtre sur ce poste.
+ * @param {string} id
+ * @param {string} action
+ */
+export function answerLine(id, action) {
+  if ( !game.user.isGM ) return false;
+  const line = queue().mine.find(l => l.id === id);
+  return line?.prompt ? answerPrompt(line.prompt.id, action) : false;
 }
 
 /**
@@ -86,6 +116,7 @@ export function registerGmQueue() {
   const always = { always: true };
   route(AWAITING_HOOK, changed, { ...always, label: "GM queue: not refreshed (awaiting)" });
   route(PLAYER_WAITS_HOOK, changed, { ...always, label: "GM queue: not refreshed (waits)" });
+  route(PROMPTS_HOOK, changed, { ...always, label: "GM queue: not refreshed (windows of this client)" });
   // Une résolution qui avance peut lever un blocage (le jet est arrivé).
   route("updateChatMessage", (message, changes) => { if ( changes.flags?.[MODULE_ID]?.resolution ) changed(); },
     { ...always, label: "GM queue: not refreshed (resolution)" });

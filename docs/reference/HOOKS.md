@@ -4,7 +4,7 @@
 
 ## Hooks émis par le moteur
 
-39 hooks `dnd5e-combat.*`, relevés sur chaque `Hooks.call` / `Hooks.callAll` du code. **Annulable** : émis par
+40 hooks `dnd5e-combat.*`, relevés sur chaque `Hooks.call` / `Hooks.callAll` du code. **Annulable** : émis par
 `Hooks.call` — un écouteur qui rend `false` arrête la suite. La description est le commentaire placé juste avant la constante
 qui nomme le hook, sinon juste avant la ligne d'émission (la première qui en a un) ; les § renvoient au journal.
 
@@ -33,6 +33,7 @@ qui nomme le hook, sinon juste avant la ligne d'émission (la première qui en a
 | `dnd5e-combat.groundMenu` |  | `entries, context` | `ui/pointer-menu.mjs` | §243 | §243 : sur le client qui construit le menu d'une case (clic droit, `api.ui.groundMenu`) : `(entries, { token, point })` — pousser `{ icon, label, run(event) }`, placées avant celles du moteur ; rien d'autre (le hook par… |
 | `dnd5e-combat.groupRoll` |  | `{ ...shown, final, cancelled }` | `runtime/group-roll.mjs` | §242 | §242 : sur chaque client, à chaque changement d'une carte de jets demandés : le point de la carte (DD retiré pour un joueur quand il est caché), avec `final` (vrai une fois, quand tous ont lancé ou que c'est annulé) et… |
 | `dnd5e-combat.groupRollPrompt` |  | `prompt` | `runtime/group-roll.mjs` | §242 | §242 : chez le joueur qui doit lancer, avant d'ouvrir la fenêtre de jet : `(prompt)` (champs décrits plus haut). Une interface qui prend la demande met dans `prompt.result` la promesse de son issue ; sans preneur, la fe… |
+| `dnd5e-combat.localPrompts` |  | `localPrompts()` | `adapter/dialogs.mjs` | §422 | §422 : sur ce client, quand une fenêtre du moteur s'y ouvre ou s'y ferme : `(prompts)`, `[{ id, awaitingId, actor, title, text, buttons: [{ action, label, icon }], since }]`. Local : rien n'est diffusé (le texte d'une f… |
 | `dnd5e-combat.lockAttempt` |  | `{ door: wall, token, ...attemptReport(method, outcome, total) }` | `runtime/doors.mjs` | §247 | §247 : chez le MJ actif, après chaque essai jugé sur une serrure (crocheter, forcer, clé) : `({ door, token, method, outcome, total })`, `outcome` « success », « failure » ou « gm » (pas de DD : le MJ tranche). Lecture… |
 | `dnd5e-combat.masteryRest` |  | `actor` | `runtime/mastery-choices.mjs` | §222 | §222 : sur chaque client propriétaire de l'acteur, après un Repos long qui lui laisse changer des bottes d'arme : `(actor)`. Lecture seule. |
 | `dnd5e-combat.noise` |  | `{ token, point: doorPoint(wall), scene: wall.parent, cause: "forceDoor", wall }` | `runtime/doors.mjs` | §244 | §244 : chez le MJ actif, un bruit à signaler aux modules qui font entendre les créatures : `({ token, point, scene, cause, wall })` — aujourd'hui seulement `cause: "forceDoor"`, émis à chaque essai pour forcer une porte… |
@@ -97,7 +98,7 @@ contexte du moment) et sert de clé `on` aux déclarations de contenu.
 
 ## Hooks écoutés, dans l'ordre d'appel
 
-131 hooks, relevés par `api.routes()` sur le module chargé au niveau d'automatisation « full ». Un seul écouteur par hook
+132 hooks, relevés par `api.routes()` sur le module chargé au niveau d'automatisation « full ». Un seul écouteur par hook
 (`runtime/router.mjs`) appelle les inscrits dans cet ordre, qui est celui des `register…()` de `dnd5e-combat.mjs`. **MJ** : l'inscrit
 ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendant `false`.
 
@@ -451,6 +452,10 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 ### `dnd5e-combat.gmQueue`
 
 1. GM queue: panel not refreshed
+
+### `dnd5e-combat.localPrompts`
+
+1. GM queue: not refreshed (windows of this client)
 
 ### `dnd5e-combat.masteryRest`
 

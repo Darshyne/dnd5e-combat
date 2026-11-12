@@ -9,7 +9,7 @@
  * tient la liste, il ne les remplace pas.
  */
 
-import { GM_QUEUE_HOOK, queue, forceLine, rollBlocked } from "../runtime/gm-queue.mjs";
+import { GM_QUEUE_HOOK, queue, forceLine, rollBlocked, answerLine } from "../runtime/gm-queue.mjs";
 import { combatWindowSeconds, windowsUnlimited } from "../adapter/dialogs.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc, esc } from "../runtime/shared.mjs";
@@ -36,6 +36,26 @@ function row(line, button) {
   </li>`;
 }
 
+/**
+ * §422 : une demande faite au MJ — la créature concernée en tête (le MJ sait que c'est lui : son nom de compte n'apprend rien), ce que la
+ * fenêtre demande, et ses boutons : cliquer ici, c'est cliquer dans la fenêtre. Sans fenêtre connue de ce poste (une demande ouverte chez
+ * un autre MJ), la ligne seule.
+ */
+function mineRow(line) {
+  const actor = actorOf(line);
+  const title = actor?.name ?? loc("File.MJ");
+  const buttons = (line.prompt?.buttons ?? []).map(b => `<button type="button" data-action="answer" data-id="${esc(line.id)}" data-choice="${esc(b.action)}">
+    ${b.icon ? `<i class="${esc(b.icon)}"></i>` : ""}${esc(b.label)}</button>`).join("");
+  return `<li class="das-wait das-wait--mine">
+    <img src="${esc(actor?.img ?? "icons/svg/mystery-man.svg")}" alt="">
+    <div class="das-wait__text"><strong>${esc(title)}</strong>
+      <small>${esc(line.prompt?.text || what(line))}</small></div>
+    <span class="das-wait__time" data-since="${line.since}">${esc(loc("Attente.Depuis", { n: elapsed(line.since) }))}</span>
+    ${buttons ? `<div class="das-wait__answers">${buttons}</div>`
+      : `<span class="das-muted das-wait__note" data-tooltip="${esc(loc("File.MaFenetre"))}"><i class="fa-solid fa-window-restore"></i></span>`}
+  </li>`;
+}
+
 let WaitsClass = null;
 const WaitsApp = () => WaitsClass ??= class PlayerWaits extends foundry.applications.api.ApplicationV2 {
   static DEFAULT_OPTIONS = {
@@ -43,7 +63,7 @@ const WaitsApp = () => WaitsClass ??= class PlayerWaits extends foundry.applicat
     classes: ["das-player-waits"],
     window: { icon: "fa-solid fa-list-check", resizable: true },
     position: { width: 440, height: "auto" },
-    actions: { force: PlayerWaits.#force, forceAll: PlayerWaits.#forceAll, roll: PlayerWaits.#roll }
+    actions: { force: PlayerWaits.#force, forceAll: PlayerWaits.#forceAll, roll: PlayerWaits.#roll, answer: PlayerWaits.#answer }
   };
 
   get title() {
@@ -54,8 +74,11 @@ const WaitsApp = () => WaitsClass ??= class PlayerWaits extends foundry.applicat
     const q = queue();
     if ( !q.count ) return `<p class="das-muted">${esc(loc("Attente.Aucune"))}</p>`;
     const section = (title, rows) => (rows.length ? `<h4 class="das-queue__title">${esc(loc(title))}</h4><ul class="das-waits">${rows.join("")}</ul>` : "");
-    const mine = q.mine.map(l => row(l, `<span class="das-muted das-wait__note" data-tooltip="${esc(loc("File.MaFenetre"))}"><i class="fa-solid fa-window-restore"></i></span>`));
-    const players = q.players.map(l => row(l, `<button type="button" data-action="force" data-id="${esc(l.id)}" data-tooltip="${esc(loc("Attente.ForcerAide"))}">
+    const mine = q.mine.map(mineRow);
+    // §422 : un jet demandé (§242) — le bouton est celui de la fenêtre de suivi des jets, « Lancer pour lui ».
+    const players = q.players.map(l => row(l, l.groupRoll
+      ? `<button type="button" data-action="force" data-id="${esc(l.id)}"><i class="fa-solid fa-dice-d20"></i>${esc(loc("JetGroupe.Suivi.LancerPour", { name: actorOf(l)?.name ?? l.userName }))}</button>`
+      : `<button type="button" data-action="force" data-id="${esc(l.id)}" data-tooltip="${esc(loc("Attente.ForcerAide"))}">
       <i class="fa-solid fa-forward"></i>${esc(loc("Attente.Forcer"))}</button>`));
     const blocked = q.blocked.map(b => `<li class="das-wait das-wait--blocked">
       <img src="${esc(actorOf(b)?.img ?? "icons/svg/mystery-man.svg")}" alt="">
@@ -104,6 +127,11 @@ const WaitsApp = () => WaitsClass ??= class PlayerWaits extends foundry.applicat
     target.disabled = true;
     await rollBlocked(target.dataset.id);
   }
+
+  static #answer(event, target) {
+    target.disabled = true;
+    answerLine(target.dataset.id, target.dataset.choice);
+  }
 };
 
 /** Ouvre (ou ramène devant) le panneau « File du MJ », MJ seulement. */
@@ -134,11 +162,12 @@ function onQueueChanged(q) {
   if ( app ) return q.count ? app.render() : app.close();
   if ( !windowsUnlimited() ) return;   // avec un délai, rien ne retient la partie : la fenêtre se résout, le jet d'un absent est lancé
   if ( q.blocked.some(l => !dismissed.has(l.id)) ) return void openPlayerWaits();
-  const pending = q.players.filter(l => !dismissed.has(l.id));
+  // §422 : un jet demandé a déjà sa fenêtre de suivi à l'écran — il n'ouvre pas le panneau.
+  const pending = q.players.filter(l => !dismissed.has(l.id) && !l.groupRoll);
   if ( !pending.length ) return;
   const due = pending[0].since + (combatWindowSeconds() * 1000) - Date.now();
   opener = setTimeout(() => {
-    if ( queue().players.some(l => !dismissed.has(l.id)) ) openPlayerWaits();
+    if ( queue().players.some(l => !dismissed.has(l.id) && !l.groupRoll) ) openPlayerWaits();
   }, Math.max(0, due));
 }
 

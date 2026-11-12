@@ -822,3 +822,8 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-player-waits .das-queue__title:first-child { margin-top: 0; }
 .das-player-waits .das-wait--blocked { outline: 1px solid var(--color-level-error, #c0392b); }
 .das-player-waits .das-wait__note { flex: 0 0 auto; padding: 0 6px; }
+/* §422 : répondre depuis la File du MJ ; ce qui attend son tour dans une fenêtre. */
+.das-player-waits .das-wait--mine { flex-wrap: wrap; }
+.das-player-waits .das-wait__answers { flex: 1 0 100%; display: flex; gap: 6px; flex-wrap: wrap; }
+.das-player-waits .das-wait__answers button { flex: 1 1 auto; width: auto; }
+.dnd5e-combat-queued { margin: 6px 0 0; font-size: var(--font-size-12); opacity: 0.8; text-align: center; }

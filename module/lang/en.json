@@ -2502,5 +2502,8 @@
   "DND5ECOMBAT.File.Soin": "Healing not rolled: {item}",
   "DND5ECOMBAT.File.Lancer": "Roll for them",
   "DND5ECOMBAT.File.LancerAide": "You roll the dice for them; the action resumes.",
-  "DND5ECOMBAT.File.MaFenetre": "Window open on this client"
+  "DND5ECOMBAT.File.MaFenetre": "Window open on this client",
+  "DND5ECOMBAT.File.EnsuiteUne": "1 more request after this",
+  "DND5ECOMBAT.File.Ensuite": "{n} more requests after this",
+  "DND5ECOMBAT.File.MJ": "GM"
 }

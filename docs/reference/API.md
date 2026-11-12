@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-334 fonctions dans 33 groupes, relevées sur l'objet réel du module chargé. La description est le
+336 fonctions dans 33 groupes, relevées sur l'objet réel du module chargé. La description est le
 commentaire de la fonction dans le code (début seulement) ; le fichier est relatif à `module/scripts/`. Les valeurs non
 fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de test du connecteur, MJ seulement.
 
@@ -291,6 +291,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.mcp.fortified` | `({ tokenId })` | `runtime/testing-rules.mjs` | §289 : Faveur de vigueur — le bonus de Constitution accordé maintenant à un soin (0 s'il est déjà pris depuis le début de son tour). |
 | `api.mcp.gmAlerts` | `()` | `runtime/testing.mjs` | §364 : les alertes MJ affichées dans le bandeau de ce client (textes). |
 | `api.mcp.gmQueue` | `()` | `runtime/testing.mjs` | §421 : la File du MJ — `{ mine, players, blocked, count, window }` (`window` : le panneau est-il ouvert ?). |
+| `api.mcp.gmQueueAnswer` | `({ id, action })` | `runtime/testing.mjs` | §422 : le MJ répond depuis sa file — le bouton `action` de la fenêtre de la ligne `id` de « À moi de décider ». |
 | `api.mcp.gmQueueForce` | `({ id })` | `runtime/testing.mjs` | §421 : le MJ force la ligne `id` de « J'attends un joueur ». |
 | `api.mcp.gmQueueRoll` | `({ id })` | `runtime/testing.mjs` | §421 : le MJ lance à la place d'un auteur parti le jet de la ligne `id` de « Bloqué ». |
 | `api.mcp.grab` | `({ tokenId, dir=null })` | `runtime/testing-moves.mjs` | §216 : « S'agripper au bord » vers `dir` (ou le premier bord), comme l'entrée de menu ; rend les bords proposés et la position. |
@@ -408,6 +409,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
+| `api.queue.answer` | `(id, action)` | `runtime/gm-queue.mjs` | §422 : le MJ répond depuis sa file à ce que le moteur lui demande — le bouton `action` de la fenêtre de la ligne `id` de `mine`, comme s'il l'avait cliqué dans la fenêtre. Rend false si la ligne n'a pas (ou plus) de fen… |
 | `api.queue.force` | `(id)` | `runtime/gm-queue.mjs` | Le MJ force la ligne `id` de « J'attends un joueur » : sa fenêtre se ferme chez lui avec la réponse que le délai aurait donnée. La table le voit (texte au-dessus du token). Rend false si la ligne n'existe plus, ou chez… |
 | `api.queue.list` | `()` | `runtime/gm-queue.mjs` | MJ : la file — `{ mine, players, blocked, count }` (ce que le moteur lui demande, les joueurs attendus, les actions dont l'auteur est parti) ; vide chez un joueur. Une ligne : `{ id, userId, userName, actor, kind, label… |
 | `api.queue.open` | `()` | `ui/player-waits.mjs` | Ouvre (ou ramène devant) le panneau « File du MJ », MJ seulement. |

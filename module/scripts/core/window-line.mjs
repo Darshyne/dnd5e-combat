@@ -26,6 +26,18 @@ export function createWindowLine({ capMs=() => 13000, wait=ms => new Promise(res
     const turn = Promise.race([before, wait(capMs())]);
     return turn.then(() => { entry.open = true; return open(); }).finally(() => { entries.delete(entry); release(); });
   }
+  /**
+   * §422 : `open` après la fenêtre en cours (même plafond), sans prendre place dans la file — les suivantes ne l'attendent pas. Pour une
+   * fenêtre sans délai que l'utilisateur a provoquée lui-même (un refus) : elle ne s'empile pas sur une question, mais ne retient
+   * aucune des questions qui suivent.
+   */
+  inLine.after = (open, label="") => {
+    const entry = { label, since: now(), open: false, aside: true };
+    entries.add(entry);
+    return Promise.race([last, wait(capMs())]).then(() => { entry.open = true; return open(); }).finally(() => entries.delete(entry));
+  };
+  /** §422 : combien de fenêtres attendent encore leur tour (pas encore ouvertes). */
+  inLine.waiting = () => [...entries].filter(e => !e.open).length;
   inLine.state = () => [...entries].map(e => ({ ...e }));
   return inLine;
 }

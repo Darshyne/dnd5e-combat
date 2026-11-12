@@ -2502,5 +2502,8 @@
   "DND5ECOMBAT.File.Soin": "Soins non lancés : {item}",
   "DND5ECOMBAT.File.Lancer": "Lancer à sa place",
   "DND5ECOMBAT.File.LancerAide": "Vous lancez les dés à sa place ; l'action reprend.",
-  "DND5ECOMBAT.File.MaFenetre": "Fenêtre ouverte sur ce poste"
+  "DND5ECOMBAT.File.MaFenetre": "Fenêtre ouverte sur ce poste",
+  "DND5ECOMBAT.File.EnsuiteUne": "1 autre demande ensuite",
+  "DND5ECOMBAT.File.Ensuite": "{n} autres demandes ensuite",
+  "DND5ECOMBAT.File.MJ": "MJ"
 }

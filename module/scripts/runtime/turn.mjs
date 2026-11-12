@@ -7,7 +7,7 @@ import {
   distanceBetween, usageTokenOf as usageToken, currentTurnKey, freshBudgetFor, movementOf } from "../adapter/turn.mjs";
 import { usageLimitProblems, markUsedThisTurn, applyLowestSlot } from "../adapter/limits.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
-import { markAwaiting } from "../adapter/awaiting.mjs";
+import { promptWait } from "../adapter/dialogs.mjs";
 import { basicActionOf, basicActionOfActivity, basicChoiceOf } from "../adapter/basics.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
@@ -142,14 +142,10 @@ function confirmDialog(title, lines, buttons, actor=null) {
     lines = [...lines, `<em>${loc("Refus.Strict")}</em>`];
     buttons = [{ action: "cancel", label: loc("Renoncer"), default: true }];
   }
-  const release = actor ? markAwaiting(actor, "choice") : () => {};
-  return foundry.applications.api.DialogV2.wait({
-    window: { title },
-    classes: [LEGALITY_CLASS],
-    content: `<ul>${lines.map(l => `<li>${l}</li>`).join("")}</ul>`,
-    buttons,
-    rejectClose: false
-  }).finally(release);
+  // §422 : à son tour — elle passe après la question ouverte sur ce poste au lieu de s'empiler dessus, sans retenir les suivantes ;
+  // et suivie (adapter/dialogs.mjs, `promptWait`) : chez un MJ, sa ligne de la File porte ses boutons.
+  return promptWait({ window: { title }, classes: [LEGALITY_CLASS], content: `<ul>${lines.map(l => `<li>${l}</li>`).join("")}</ul>`, buttons },
+    { awaiting: actor ? { actor, kind: "choice" } : null, aside: true });
 }
 
 /**

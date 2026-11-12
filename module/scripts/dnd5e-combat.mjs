@@ -105,7 +105,7 @@ import { registerGroupRoll, rollsApi } from "./runtime/group-roll.mjs";
 import { registerGroupRollUI, openGroupRoll } from "./ui/group-roll.mjs";
 import { registerGroupRollTracker, openTracker } from "./ui/group-roll-tracker.mjs";
 import { registerPlayerWaits, forceWait } from "./runtime/player-waits.mjs";
-import { registerGmQueue, queue, forceLine, rollBlocked } from "./runtime/gm-queue.mjs";
+import { registerGmQueue, queue, forceLine, rollBlocked, answerLine } from "./runtime/gm-queue.mjs";
 import { registerAwaiting } from "./runtime/awaiting.mjs";
 import { registerAwaitingUI } from "./ui/awaiting.mjs";
 import { registerPlayerWaitsUI, openPlayerWaits } from "./ui/player-waits.mjs";
@@ -285,7 +285,7 @@ const state = {
     force: id => forceWait(id),
     open: openPlayerWaits },
   // §421 : la File du MJ — ce qu'il doit décider, les joueurs attendus, les actions bloquées.
-  queue: { list: queue, force: forceLine, roll: rollBlocked, open: openPlayerWaits },
+  queue: { list: queue, force: forceLine, roll: rollBlocked, answer: answerLine, open: openPlayerWaits },
   // §282 : Inspiration héroïque — `has(actor)`, `set(actor, on)` (MJ : la donne ou la retire, carte et retour à la table), `mode()` : le
   // réglage de ce client (« on », « failure », « off »).
   heroic: { has: hasHeroic,

@@ -7,8 +7,8 @@ fonction d'API, un hook, un réglage, une entrée de contenu ou un scénario : `
 
 | Page | Pour répondre à |
 |---|---|
-| [API.md](API.md) | que publie `api`, avec quels arguments, et où est le code ? (350 chemins) |
-| [HOOKS.md](HOOKS.md) | quels hooks le moteur émet-il (39), lesquels écoute-t-il, et dans quel ordre ? |
+| [API.md](API.md) | que publie `api`, avec quels arguments, et où est le code ? (352 chemins) |
+| [HOOKS.md](HOOKS.md) | quels hooks le moteur émet-il (40), lesquels écoute-t-il, et dans quel ordre ? |
 | [SETTINGS.md](SETTINGS.md) | quel réglage porte cette clé, sa portée, son défaut, son onglet ? (128) |
 | [CONTENT.md](CONTENT.md) | quels items utilisent telle clé du contenu, tel moment, telle action ? |
 | [SCENARIOS.md](SCENARIOS.md) | quel scénario vérifie quoi, sur quelle scène ? |

@@ -51,3 +51,38 @@ describe("gmQueue", () => {
     expect(gmQueue()).toEqual({ mine: [], players: [], blocked: [], count: 0 });
   });
 });
+
+// §422 : les boutons des demandes faites au MJ, les jets demandés.
+describe("gmQueue — fenêtres de ce poste et jets demandés", () => {
+  const awaiting = [
+    { id: "a1", userId: "gm", userName: "MJ", actor: "Actor.ogre", kind: "reaction", gm: true, since: 30 },
+    { id: "a2", userId: "u1", userName: "Alara", actor: "Actor.sylaene", kind: "roll", gm: false, since: 10 },
+    { id: "a3", userId: "u2", userName: "Bramo", actor: "Actor.bramo", kind: "choice", gm: false, since: 20 }
+  ];
+  const prompts = [{ id: "a1", awaitingId: "a1", title: "Réaction — Ogre", text: "Le Guerrier quitte votre allonge.", buttons: [{ action: "use0", label: "Gourdin" }, { action: "none", label: "Ne pas réagir" }] }];
+
+  it("la fenêtre ouverte sur ce poste donne à la ligne du MJ son texte et ses boutons", () => {
+    const q = gmQueue({ awaiting, prompts });
+    expect(q.mine[0].prompt).toEqual({ id: "a1", text: "Le Guerrier quitte votre allonge.", buttons: prompts[0].buttons });
+    expect(q.mine[0].label).toBe("Réaction — Ogre");
+    expect(q.players.every(l => l.prompt === null)).toBe(true);
+  });
+
+  it("sans fenêtre connue de ce poste (un autre MJ), la ligne reste sans boutons", () => {
+    expect(gmQueue({ awaiting }).mine[0].prompt).toBeNull();
+  });
+
+  it("un jet demandé encore attendu marque la ligne du joueur : son forçage est « Lancer pour lui »", () => {
+    const q = gmQueue({ awaiting, groupRolls: [{ messageId: "m7", actor: "Actor.sylaene", label: "Test de Perception" }] });
+    expect(q.players.find(l => l.id === "a2")).toMatchObject({ groupRoll: "m7", label: "Test de Perception" });
+  });
+
+  it("seul un jet (pas un choix) du même personnage est rattaché à la demande", () => {
+    const q = gmQueue({ awaiting, groupRolls: [{ messageId: "m7", actor: "Actor.bramo", label: "Test" }] });
+    expect(q.players.find(l => l.id === "a3").groupRoll).toBeNull();
+  });
+
+  it("l'empreinte change quand la fenêtre arrive", () => {
+    expect(queueSignature(gmQueue({ awaiting, prompts }))).not.toBe(queueSignature(gmQueue({ awaiting })));
+  });
+});

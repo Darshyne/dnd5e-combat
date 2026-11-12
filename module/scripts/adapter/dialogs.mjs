@@ -60,6 +60,78 @@ export function expireLater(expire, ms, unlimited=windowsUnlimited()) {
 
 const countdownText = n => game.i18n.format("DND5ECOMBAT.Delai.Auto", { n });
 
+/* -------------------------------------------- */
+/*  §422 : les fenêtres ouvertes sur ce poste    */
+/* -------------------------------------------- */
+
+/**
+ * §422 : sur ce client, quand une fenêtre du moteur s'y ouvre ou s'y ferme : `(prompts)`, `[{ id, awaitingId, actor, title, text,
+ * buttons: [{ action, label, icon }], since }]`. Local : rien n'est diffusé (le texte d'une fenêtre ne quitte pas le poste où elle est
+ * ouverte). La File du MJ s'en sert pour répondre depuis son panneau ; la même liste : `localPrompts()`.
+ */
+export const PROMPTS_HOOK = `${MODULE_ID}.localPrompts`;
+
+const prompts = new Map();
+
+/** Les fenêtres du moteur ouvertes sur ce poste, la plus ancienne d'abord. */
+export function localPrompts() {
+  return [...prompts.values()].map(({ choose, ...p }) => p).sort((a, b) => a.since - b.since);
+}
+
+/** Répond à la fenêtre `id` en cliquant son bouton `action` — exactement ce que ferait la souris. Rend false si elle n'existe plus. */
+export function answerPrompt(id, action) {
+  return prompts.get(id)?.choose(action) ?? false;
+}
+
+function trackPrompt(dialog, config, { awaitingId=null, actor=null }={}) {
+  const id = awaitingId ?? foundry.utils.randomID();
+  const text = document.createElement("div");
+  text.innerHTML = config.content ?? "";
+  prompts.set(id, {
+    id, awaitingId, actor: actor?.uuid ?? null, title: config.window?.title ?? "", text: text.textContent.replace(/\s+/g, " ").trim(),
+    buttons: (config.buttons ?? []).map(b => ({ action: b.action, label: b.label ?? b.action, icon: b.icon ?? null })), since: Date.now(),
+    choose: action => {
+      const button = [...(dialog.element?.querySelectorAll("button[data-action]") ?? [])].find(b => b.dataset.action === action);
+      if ( !button ) return false;
+      button.click();
+      return true;
+    }
+  });
+  Hooks.callAll(PROMPTS_HOOK, localPrompts());
+  return () => { if ( prompts.delete(id) ) Hooks.callAll(PROMPTS_HOOK, localPrompts()); };
+}
+
+/** §422 : la ligne « N autres demandes ensuite » d'une fenêtre ouverte — ce qui attend son tour dans la file de ce poste. */
+const QUEUED = `<p class="dnd5e-combat-queued" hidden></p>`;
+function showQueued(dialog) {
+  const line = dialog.element?.querySelector(".dnd5e-combat-queued");
+  if ( !line ) return;
+  const n = inLine.waiting();
+  line.hidden = n === 0;
+  line.textContent = n ? game.i18n.format(`DND5ECOMBAT.File.${n === 1 ? "EnsuiteUne" : "Ensuite"}`, { n }) : "";
+}
+
+/**
+ * §422 : une fenêtre SANS délai (une décision du MJ, un refus), suivie comme les autres — sa ligne dans la File du MJ avec ses boutons,
+ * et l'attente diffusée (`awaiting`) tant qu'elle est ouverte. `aside` : elle passe après la question en cours sur ce poste, sans
+ * retenir les suivantes (core/window-line.mjs, `after`).
+ * @param {object} config  Configuration de `DialogV2.wait`.
+ * @param {{awaiting?: {actor: Actor|null, kind: string, token?: object}|null, aside?: boolean}} [options]
+ * @returns {Promise<*>}  Le bouton choisi ; null si on la ferme.
+ */
+export function promptWait(config, { awaiting=null, aside=false }={}) {
+  const open = () => {
+    const release = awaiting ? markAwaiting(awaiting.actor ?? null, awaiting.kind, { token: awaiting.token ?? null }) : null;
+    let untrack = () => {};
+    return foundry.applications.api.DialogV2.wait({
+      ...config,
+      rejectClose: false,
+      render: (event, dialog) => { untrack(); untrack = trackPrompt(dialog, config, { awaitingId: release?.id ?? null, actor: awaiting?.actor ?? null }); }
+    }).finally(() => { untrack(); release?.(); });
+  };
+  return aside ? inLine.after(open, `promptWait: ${config?.window?.title ?? ""}`) : open();
+}
+
 /**
  * Une fenêtre à boutons qui se résout seule au bout du délai.
  * @param {object} config           Configuration de `DialogV2.wait` (window, content, buttons…).
@@ -77,7 +149,8 @@ export function timedWait(config, { fallback=null, seconds=null, front=false, aw
   // §401 : à son tour — la fenêtre s'ouvre quand la précédente de ce poste est fermée ; son compte à rebours part à l'ouverture.
   return inLine(() => {
     const release = awaiting ? markAwaiting(awaiting.actor ?? null, awaiting.kind, { seconds: shown, token: awaiting.token ?? null }) : null;
-    const waiting = unlimited ? waitForForce(config, { fallback, front }) : countdownWait(config, { fallback, seconds: shown, front });
+    const track = { awaitingId: release?.id ?? null, actor: awaiting?.actor ?? null };
+    const waiting = unlimited ? waitForForce(config, { fallback, front, track }) : countdownWait(config, { fallback, seconds: shown, front, track });
     return release ? waiting.finally(release) : waiting;
   }, `timedWait: ${config?.window?.title ?? ""}`);
 }
@@ -90,11 +163,12 @@ export function timedWait(config, { fallback=null, seconds=null, front=false, aw
 export const inLine = createWindowLine({ capMs: () => (windowsUnlimited() ? 30000 : (combatWindowSeconds() + 3) * 1000) });
 
 /** Une fenêtre à compte à rebours : `fallback` au bout de `seconds`. */
-function countdownWait(config, { fallback, seconds, front }) {
+function countdownWait(config, { fallback, seconds, front, track={} }) {
   let left = seconds;
   let timer = null;
   let timedOut = false;
   let disarm = () => {};
+  let untrack = () => {};
   // Barre de progression menée par le même minuteur que la fermeture (une animation CSS sur la durée
   // dérive d'avec lui dans un onglet en arrière-plan) : à chaque seconde, elle part vers la valeur de la
   // seconde suivante, avec une transition d'une seconde — fluide, et vide au moment où la fenêtre se ferme.
@@ -112,17 +186,20 @@ function countdownWait(config, { fallback, seconds, front }) {
   return foundry.applications.api.DialogV2.wait({
     ...config,
     classes: [...(config.classes ?? []), "dnd5e-combat-timed"],
-    content: `${config.content ?? ""}${countdown}`,
+    content: `${config.content ?? ""}${countdown}${QUEUED}`,
     rejectClose: false,
     render: (event, dialog) => {
       if ( front ) dialog.bringToFront?.();
       if ( timer ) return;
+      untrack = trackPrompt(dialog, config, track);
+      showQueued(dialog);
       // §381 : le MJ force (menu du token) — comme au bout du délai.
       disarm = expireLater(() => { clearInterval(timer); timedOut = true; dialog.close(); }, 0, true);
       requestAnimationFrame(() => update(dialog));   // après la première peinture, sinon pas de transition
       timer = setInterval(() => {
         left -= 1;
         update(dialog);
+        showQueued(dialog);
         if ( left > 0 ) return;
         clearInterval(timer);
         timedOut = true;
@@ -132,28 +209,38 @@ function countdownWait(config, { fallback, seconds, front }) {
     close: () => {
       clearInterval(timer);
       disarm();
+      untrack();
       return timedOut ? fallback : null;
     }
   });
 }
 
 /** §290 : une fenêtre sans délai — elle attend le joueur ; le MJ peut la forcer (elle rend alors `fallback`). */
-function waitForForce(config, { fallback, front }) {
+function waitForForce(config, { fallback, front, track={} }) {
   let forced = false;
   let disarm = () => {};
+  let untrack = () => {};
+  let queued = null;
   const waiting = `<p class="dnd5e-combat-waiting"><i class="fa-solid fa-hourglass-half"></i> ${game.i18n.localize("DND5ECOMBAT.Attente.Joueur")}</p>`;
   return foundry.applications.api.DialogV2.wait({
     ...config,
     classes: [...(config.classes ?? []), "dnd5e-combat-timed"],
-    content: `${config.content ?? ""}${waiting}`,
+    content: `${config.content ?? ""}${waiting}${QUEUED}`,
     rejectClose: false,
     render: (event, dialog) => {
       if ( front ) dialog.bringToFront?.();
+      untrack();
+      untrack = trackPrompt(dialog, config, track);
+      showQueued(dialog);
+      clearInterval(queued);
+      queued = setInterval(() => showQueued(dialog), 1000);
       disarm();
       disarm = expireLater(() => { forced = true; dialog.close(); }, 0, true);
     },
     close: () => {
       disarm();
+      untrack();
+      clearInterval(queued);
       return forced ? fallback : null;
     }
   });

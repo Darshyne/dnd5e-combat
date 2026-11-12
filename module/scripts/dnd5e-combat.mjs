@@ -1,4 +1,5 @@
 import { registerLevel, gated, automationLevel, levelAtLeast } from "./runtime/levels.mjs";
+import { registerFlow } from "./runtime/flow.mjs";
 import { MODULE_ID, MIN_SYSTEM_VERSION } from "./constants.mjs";
 import { readUnitFactors } from "./adapter/units.mjs";
 import { registerEngine } from "./runtime/engine.mjs";
@@ -344,6 +345,7 @@ Hooks.once("init", () => {
   gated(registerVanilla);   // §395 : « sans DAS » — marque ce qui découle d'une action lancée sans DAS, avant toute autre inscription
   gated(registerCorrection);   // §396 : correction du MJ — la zone remise ne résout rien à la pose
   gated(registerClimbSystem);   // §224 : l'interrupteur de l'escalade et des chutes — avant l'altitude et l'escalade, qui le lisent
+  gated(registerFlow);   // §418 : les réglages du cadre « Déroulement » (réactions)
   gated(registerPerf);   // §98 : le seuil du relevé des temps, avant que les hooks ne tournent
   gated(registerContent);
   gated(registerFactions);   // §181 : la table des factions, avant toute règle qui juge ami / ennemi

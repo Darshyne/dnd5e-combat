@@ -14,6 +14,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
+import { offersReaction } from "../core/flow.mjs";
 import { reactionAvailable } from "../core/turn.mjs";
 import { eligibleReactions } from "../core/reaction.mjs";
 import { stepsOf } from "../core/triggers.mjs";
@@ -204,6 +205,11 @@ export function reactiveStrikesOf(actor) {
  * porte un item `reactiveSpell` : une action d'incantation, une seule créature visée, sans zone, qui fait quelque chose à
  * la cible (attaque, sauvegarde, dégâts), à portée autre que personnelle ; préparé, ou toujours disponible (sort mineur, pacte, inné, à volonté).
  */
+/** §418 : le réglage de monde « Réactions » (déclaré par runtime/flow.mjs). */
+function reactionMode() {
+  try { return game.settings.get(MODULE_ID, "reactionPrompts"); } catch { return "level"; }
+}
+
 export function reactiveSpellsOf(actor) {
   if ( !actor?.items.some(i => contentOf(i).entry?.reactiveSpell === true) ) return [];
   const options = [];
@@ -240,6 +246,12 @@ export function reactiveSpellsOf(actor) {
  * @returns {Promise<{used: string, message: string|null}|null>}
  */
 export async function askReaction(actor, payload) {
+  // §418 : le réglage « Réactions » (cadre « Déroulement ») — pas proposée, pas prise : celui qui la veut l'utilise lui-même. L'outil de
+  // scénario (`auto`, la première option sans fenêtre) n'est pas une question : il passe.
+  if ( !payload?.auto && !offersReaction(reactionMode(), { playerOwned: actor?.hasPlayerOwner === true }) ) {
+    console.debug(`${MODULE_ID} | reaction of ${actor?.name}: not offered (setting)`);
+    return null;
+  }
   const userId = rollerFor(actor) ?? game.users.activeGM?.id ?? null;
   try {
     if ( userId && (userId !== game.user.id) ) return await queryPlayer(game.users.get(userId), REACTION_QUERY, payload,

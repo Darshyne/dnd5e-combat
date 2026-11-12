@@ -1981,5 +1981,11 @@
   "DND5ECOMBAT.Reglage.refusalMode.notice": "Apenas aviso, a ação acontece",
   "DND5ECOMBAT.Reglage.refusalMode.strict": "Recusa estrita para os jogadores",
   "DND5ECOMBAT.Reglage.refusalMode.off": "Sem controle",
-  "DND5ECOMBAT.Refus.Strict": "Só o Mestre pode ignorar esta regra."
+  "DND5ECOMBAT.Refus.Strict": "Só o Mestre pode ignorar esta regra.",
+  "DND5ECOMBAT.Reglage.reactionPrompts.Nom": "Reações",
+  "DND5ECOMBAT.Reglage.reactionPrompts.Aide": "Quando uma reação é possível (ataque de oportunidade, Escudo, Contramágica, Ripostar…), o DAS a oferece em uma janela. Perguntar a todos: o jogador para seu personagem, o Mestre para suas criaturas. Apenas jogadores: nada é oferecido ao Mestre para suas criaturas, que ele ativa usando o item. Nunca perguntar: todas as reações são feitas à mão. Uma reação não oferecida não é gasta.",
+  "DND5ECOMBAT.Reglage.reactionPrompts.level": "Conforme o nível de automação (perguntar a todos)",
+  "DND5ECOMBAT.Reglage.reactionPrompts.ask": "Perguntar a todos",
+  "DND5ECOMBAT.Reglage.reactionPrompts.players": "Perguntar aos jogadores, não para as criaturas do Mestre",
+  "DND5ECOMBAT.Reglage.reactionPrompts.off": "Nunca perguntar"
 }

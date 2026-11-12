@@ -804,7 +804,7 @@ function foundry_set(obj, path, value) {
 }
 
 const PINNED = { sneakAttackMode: "auto", combatWindowSeconds: 10, realTimeClock: false, flanking: "off",
-  theaterOfMind: false, autoUsage: true, zoneChoice: "never" };
+  theaterOfMind: false, autoUsage: true, zoneChoice: "never", refusalMode: "level", reactionPrompts: "level" };
 const pinned = {};
 for ( const [key, value] of Object.entries(PINNED) ) {
   pinned[key] = await mcp.call("call-module-api", { moduleId: "dnd5e-combat", fn: "setting", args: { key, value }, waitMs: 8000 })

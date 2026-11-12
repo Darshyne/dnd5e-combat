@@ -518,6 +518,7 @@
     "portent",
     "provideBasicActions",
     "quickRolls",
+    "reactionPrompts",
     "realTimeClock",
     "refusalMode",
     "releaseTargets",

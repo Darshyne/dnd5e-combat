@@ -2466,5 +2466,11 @@
   "DND5ECOMBAT.Reglage.refusalMode.notice": "Simple avertissement, l'action part",
   "DND5ECOMBAT.Reglage.refusalMode.strict": "Refus strict pour les joueurs",
   "DND5ECOMBAT.Reglage.refusalMode.off": "Aucun contrôle",
-  "DND5ECOMBAT.Refus.Strict": "Seul le MJ peut passer outre."
+  "DND5ECOMBAT.Refus.Strict": "Seul le MJ peut passer outre.",
+  "DND5ECOMBAT.Reglage.reactionPrompts.Nom": "Réactions",
+  "DND5ECOMBAT.Reglage.reactionPrompts.Aide": "Quand une réaction est possible (attaque d'opportunité, Bouclier, Contresort, Riposte…), DAS la propose dans une fenêtre. Demander à chacun : le joueur pour son personnage, le MJ pour ses créatures. Aux joueurs seulement : rien n'est proposé au MJ pour ses créatures, il les déclenche lui-même en utilisant l'objet. Ne jamais demander : toutes les réactions se jouent à la main. Une réaction non proposée n'est pas dépensée.",
+  "DND5ECOMBAT.Reglage.reactionPrompts.level": "Selon le niveau d'automatisation (demander à chacun)",
+  "DND5ECOMBAT.Reglage.reactionPrompts.ask": "Demander à chacun",
+  "DND5ECOMBAT.Reglage.reactionPrompts.players": "Demander aux joueurs, pas pour les créatures du MJ",
+  "DND5ECOMBAT.Reglage.reactionPrompts.off": "Ne jamais demander"
 }

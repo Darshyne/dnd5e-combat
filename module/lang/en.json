@@ -2466,5 +2466,11 @@
   "DND5ECOMBAT.Reglage.refusalMode.notice": "Notice only, the action goes through",
   "DND5ECOMBAT.Reglage.refusalMode.strict": "Strict refusal for players",
   "DND5ECOMBAT.Reglage.refusalMode.off": "No check",
-  "DND5ECOMBAT.Refus.Strict": "Only the GM can override this."
+  "DND5ECOMBAT.Refus.Strict": "Only the GM can override this.",
+  "DND5ECOMBAT.Reglage.reactionPrompts.Nom": "Reactions",
+  "DND5ECOMBAT.Reglage.reactionPrompts.Aide": "When a reaction is possible (opportunity attack, Shield, Counterspell, Riposte…), DAS offers it in a window. Ask everyone: the player for their character, the GM for their creatures. Players only: nothing is offered to the GM for their creatures, who triggers them by using the item. Never ask: every reaction is played by hand. A reaction that is not offered is not spent.",
+  "DND5ECOMBAT.Reglage.reactionPrompts.level": "Follow the automation level (ask everyone)",
+  "DND5ECOMBAT.Reglage.reactionPrompts.ask": "Ask everyone",
+  "DND5ECOMBAT.Reglage.reactionPrompts.players": "Ask players, not for the GM's creatures",
+  "DND5ECOMBAT.Reglage.reactionPrompts.off": "Never ask"
 }

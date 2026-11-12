@@ -117,3 +117,15 @@ export const ARENE_REFUS = Object.freeze({
   tokens: Object.freeze({ "Mage des refus": [6, 5], "Clerc des refus": [6, 7], "Guerrier des refus": [6, 3], "Mannequin des refus": [7, 5],
     "Cible lointaine des refus": [37, 5] })
 });
+
+/**
+ * §414 : l'« Arène de l'abjuration » (`tools/arene-abjuration.mjs`) — scène plate de 20 × 10 cases de 140 px (5 ft), pour l'Égide
+ * arcanique dans des conditions de jeu : l'Abjurateur (Magicien pré-tiré monté au niveau 6, sous-classe Abjurateur, Int 18, 40 PV),
+ * le Protégé (Guerrier pré-tiré, 60 PV) à 10 ft de lui, l'Ogre (gourdin 2d8 + 4 ; Grand, 2 × 2 cases : 7-8 × 6-7) qui touche
+ * l'Abjurateur (en diagonale) et le Protégé (au-dessus) sans bouger. Positions en cases du canevas, marge comprise.
+ */
+export const ARENE_ABJURATION = Object.freeze({
+  name: "Arène de l'abjuration",
+  cols: 20, rows: 10, grid: 140,
+  tokens: Object.freeze({ "Abjurateur": [6, 5], "Protégé": [8, 5], "Ogre": [7, 6] })
+});

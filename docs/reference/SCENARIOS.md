@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-326 scénarios (`tools/scenarios/`), joués dans le client du MJ par le connecteur : `node tools/reload.mjs && node
+327 scénarios (`tools/scenarios/`), joués dans le client du MJ par le connecteur : `node tools/reload.mjs && node
 tools/scenario.mjs <noms>`. **Scène** : vide = l'« Arène de test » ; sinon la scène que le scénario demande (sauté si elle manque).
 Les scénarios d'un sous-dossier ne font pas partie de la passe complète : `node tools/scenario.mjs tools/scenarios/<dossier>`. Les
 `balayage-*` ne se jouent que nommés. Choisir sans connaître les noms : `--grep <mot>`, `--section <§>`, `--scene <nom>` ; `--list` montre
@@ -82,6 +82,7 @@ la sélection sans rien jouer.
 | `duree` |  | §16.37 | Lumière du jour prend fin avec l'heure du monde |
 | `ecarts-sorts-2` |  | §403 | écarts moyens des sorts, second lot (§403) |
 | `ecarts-sorts` |  | §402 | écarts moyens des sorts corrigés (§402) |
+| `egide-abjurateur` | Arène de l'abjuration | §414 §16.11 §38 §156 | création, absorption, recharge, Lien protecteur, Égide projetée |
 | `egide-projetee` |  | §38 | l'égide du Magicien absorbe les dégâts du Guerrier |
 | `elevation` |  | §14.2 | une zone au sol épargne une créature en vol |
 | `emanations-sur-soi` |  | §86 §47 | Présence royale de Yolande, Invocation d'êtres sylvestres (alliés épargnés) |

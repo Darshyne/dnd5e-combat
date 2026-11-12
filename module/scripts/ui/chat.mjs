@@ -12,13 +12,28 @@ import { keptAndDropped } from "../core/d20.mjs";
 function block(lines) {
   const div = document.createElement("div");
   div.classList.add("dnd5e-combat-result");
-  for ( const { css, text } of lines ) {
+  for ( const line of lines ) {
     const p = document.createElement("p");
-    p.classList.add(css);
-    p.textContent = text;
+    p.classList.add(line.css);
+    fillLine(p, line);
     div.append(p);
   }
   return div;
+}
+
+/**
+ * Le contenu d'une ligne : son `text`, ou ses morceaux `nodes` — une chaîne, ou `{ struck }` pour un nombre barré (le dé écarté
+ * d'un Avantage ou d'un Désavantage, issue #47).
+ */
+export function fillLine(p, { text, nodes }) {
+  if ( !nodes ) { p.textContent = text; return; }
+  for ( const node of nodes ) {
+    if ( typeof node === "string" ) { p.append(node); continue; }
+    const s = document.createElement("s");
+    s.textContent = node.struck;
+    s.dataset.tooltip = loc("Compact.Ecarte");
+    p.append(s);
+  }
 }
 
 const statusName = id => game.i18n.localize(CONFIG.statusEffects[id]?.name ?? id);
@@ -53,19 +68,22 @@ export function modifierLines(modifiers) {
 }
 
 /**
- * Issue #47 : « Désavantage — d20 : 16 gardé, 19 écarté ». La ligne de jet de dnd5e, comme la carte unique, ne montrait que le dé
- * gardé : un Désavantage se lisait comme un jet normal, ou le total et le dé comme deux dés. null pour un jet à un seul d20.
+ * Issue #47 : « Désavantage : 11, 13 », le 13 barré — le dé gardé puis le dé écarté. La ligne de jet de dnd5e, comme la carte unique,
+ * ne montrait que le dé gardé : un Désavantage se lisait comme un jet normal, ou le total et le dé comme deux dés. Rend les morceaux
+ * d'une ligne (`fillLine`), ou null pour un jet à un seul d20.
  */
-export function d20Note(roll) {
+export function d20Nodes(roll) {
   const dice = keptAndDropped(roll?.dice?.[0]?.results, roll?.options?.advantageMode);
   if ( !dice ) return null;
-  return loc("Compact.DeuxDes", { mode: loc(dice.mode === 1 ? "Avantage" : "Desavantage"), kept: dice.kept.join(", "), dropped: dice.dropped.join(", ") });
+  const nodes = [loc("LabelValue", { label: loc(dice.mode === 1 ? "Avantage" : "Desavantage"), value: dice.kept.join(", ") })];
+  for ( const d of dice.dropped ) nodes.push(", ", { struck: String(d) });
+  return nodes;
 }
 
 /** Sous le jet d'attaque déplié (ou sans carte unique) : les deux d20 d'un Avantage ou d'un Désavantage. */
 function renderD20(message, html) {
-  const note = (message.type === "attack") ? d20Note(message.rolls?.[0]) : null;
-  if ( note ) html.querySelector(".message-content")?.append(block([{ css: "note", text: note }]));
+  const nodes = (message.type === "attack") ? d20Nodes(message.rolls?.[0]) : null;
+  if ( nodes ) html.querySelector(".message-content")?.append(block([{ css: "note", nodes }]));
 }
 
 function renderModifiers(html, modifiers) {

@@ -17,7 +17,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc, waitForDice } from "../runtime/shared.mjs";
-import { modifierLines, bonusLines, d20Note } from "./chat.mjs";
+import { modifierLines, bonusLines, d20Nodes, fillLine } from "./chat.mjs";
 
 export const CHAT_COMPACT_SETTING = "chatCompact";
 
@@ -53,19 +53,21 @@ function foldedIn(carrier) {
 
 const damageLabel = type => game.i18n.localize(CONFIG.DND5E.damageTypes[type]?.label ?? CONFIG.DND5E.healingTypes?.[type]?.label ?? type ?? "");
 
-/** « Attaque : 17 (d20 : 12, critique) » ; avec deux d20 (issue #47) : « Attaque : 9 (Désavantage — d20 : 4 gardé, 17 écarté) ». */
+/** « Attaque : 17 (d20 : 12, critique) » ; avec deux d20 (issue #47) : « Attaque : 9 (Désavantage : 4, 17) », le dé écarté barré. */
 function attackLine(message) {
   const roll = message.rolls?.[0];
   if ( !roll ) return null;
   const d20 = roll.dice?.[0]?.total ?? null;
   const notes = [];
-  const twoDice = d20Note(roll);
-  if ( twoDice ) notes.push(twoDice);
-  else if ( d20 !== null ) notes.push(loc("LabelValue", { label: "d20", value: d20 }));
+  const twoDice = d20Nodes(roll);
+  if ( !twoDice && (d20 !== null) ) notes.push(loc("LabelValue", { label: "d20", value: d20 }));
   if ( roll.isCritical ) notes.push(loc("Compact.Critique"));
   else if ( roll.isFumble ) notes.push(loc("Compact.Echec"));
-  return { css: roll.isCritical ? "hit" : (roll.isFumble ? "miss" : "note"), title: roll.formula,
-    text: `${loc("LabelValue", { label: loc("Compact.Attaque"), value: roll.total })}${notes.length ? ` (${notes.join(", ")})` : ""}` };
+  const css = roll.isCritical ? "hit" : (roll.isFumble ? "miss" : "note");
+  const head = loc("LabelValue", { label: loc("Compact.Attaque"), value: roll.total });
+  // Deux d20 : « Attaque : 9 (Désavantage : 4, 17, critique) », le 17 barré.
+  if ( twoDice ) return { css, title: roll.formula, nodes: [`${head} (`, ...twoDice, `${notes.map(n => `, ${n}`).join("")})`] };
+  return { css, title: roll.formula, text: `${head}${notes.length ? ` (${notes.join(", ")})` : ""}` };
 }
 
 /** « Dégâts : 9 (6 tranchants + 3 feu) » — par type, comme le plateau de dégâts du système. */
@@ -103,11 +105,11 @@ function renderSummary(carrier, html) {
   }
   const div = document.createElement("div");
   div.classList.add("dnd5e-combat-result", "dnd5e-combat-rolls");
-  for ( const { css, text, title } of lines ) {
+  for ( const line of lines ) {
     const p = document.createElement("p");
-    p.classList.add(css);
-    p.textContent = text;
-    if ( title ) p.title = title;
+    p.classList.add(line.css);
+    fillLine(p, line);
+    if ( line.title ) p.title = line.title;
     div.append(p);
   }
   const button = document.createElement("button");

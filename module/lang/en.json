@@ -542,7 +542,7 @@
   "DND5ECOMBAT.Compact.Soins": "Healing",
   "DND5ECOMBAT.Compact.Critique": "critical",
   "DND5ECOMBAT.Compact.Echec": "fumble",
-  "DND5ECOMBAT.Compact.DeuxDes": "{mode} — d20: {kept} kept, {dropped} dropped",
+  "DND5ECOMBAT.Compact.Ecarte": "dropped die",
   "DND5ECOMBAT.Compact.Details": "Details ({n})",
   "DND5ECOMBAT.Compact.Masquer": "Hide details",
   "DND5ECOMBAT.Reglage.situationalCursor.Nom": "Situational cursor",

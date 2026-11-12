@@ -2,7 +2,7 @@
  * Issue #47 — le mode du jet d'attaque (Avantage, Désavantage, jet normal) : ce que le moteur décide, ce que dnd5e lance, et ce que
  * la carte unique en dit. L'Ensorceleur tire un Trait de feu sur le Zombi.
  *  - Zombi Invisible : Désavantage seul — deux d20, le plus bas gardé ; la ligne « Attaque » de la carte montre les deux dés
- *    (sans le dé écarté, « 22 (d20 : 16) » se lit comme un jet normal, ou comme deux dés dont le plus haut est pris).
+ *    (« 22 (Désavantage : 16, 19) », le 19 barré ; sans le dé écarté, « 22 (d20 : 16) » se lit comme un jet normal, ou comme deux dés dont le plus haut est pris).
  *  - Zombi Invisible et Aveuglé : Avantage et Désavantage s'annulent — un seul d20, les deux raisons et « s'annulent » sur la carte.
  *  - Zombi Aveuglé : Avantage seul — deux d20, le plus haut gardé, les deux dés sur la carte.
  * Les états sont retirés en fin de scénario.
@@ -41,7 +41,7 @@ export default {
     }
     // Les nombres de la ligne « Attaque : 22 (d20 : 16 …) » après le total : un dé pour un jet normal, deux sinon.
     const diceShown = line => (line.match(/\(([^)]*)\)/)?.[1] ?? "").replace(/d20/g, "").match(/\d+/g) ?? [];
-    const diceShownIn = text => /d20/.test(text) ? (text.replace(/d20/g, "").match(/\d+/g) ?? []) : [];
+    const diceShownIn = text => text.match(/\d+/g) ?? [];
 
     // 1. Désavantage seul.
     await status("invisible", true);
@@ -57,7 +57,7 @@ export default {
     ctx.expect(both.advantage.includes("attacker.unseen") && both.disadvantage.includes("target.unseen"), `Zombi invisible et aveuglé : les deux raisons (${[...both.advantage, ...both.disadvantage].join(", ")})`);
     ctx.expect(both.mode === 0 && /^1d20/.test(both.formula), `ils s'annulent : un seul d20 (mode ${both.mode}, ${both.formula})`);
     ctx.expect(diceShown(both.line).length === 1, `la carte montre un seul d20 (« ${both.line} »)`);
-    ctx.expect(!both.detail.some(l => /d20/.test(l)), `jet normal : pas de ligne de dés sous le jet d'attaque (${JSON.stringify(both.detail)})`);
+    ctx.expect(!both.detail.some(l => /\d/.test(l)), `jet normal : pas de ligne de dés sous le jet d'attaque (${JSON.stringify(both.detail)})`);
     ctx.expect(both.lines.length >= 4, `la carte nomme l'Avantage, le Désavantage et dit qu'ils s'annulent (${both.lines.length} lignes)`);
 
     // 3. Avantage seul.

@@ -21,7 +21,7 @@ import { stepsOf } from "../core/triggers.mjs";
 import { rollerFor } from "./concentration.mjs";
 import { timedWait } from "./dialogs.mjs";
 import { queryPlayer, waitLabel } from "./player-wait.mjs";
-import { contentOf } from "./content.mjs";
+import { contentOf, identifierOf } from "./content.mjs";
 import { markReactionAdvantage, markReactionDamage, markReactionDisadvantage } from "./marks.mjs";
 import { combatantFor, readBudget, currentTurnKey } from "./turn.mjs";
 import { originItemOf, comesFromItemEffect } from "./facts.mjs";
@@ -168,7 +168,11 @@ export function meleeAttacksOf(actor) {
     // Fouet épineux), ni capacité (Pacte de la lame), ni consommable (parchemin) ; pour un monstre, ses armes et ses
     // attaques naturelles (capacité à attaque d'arme : Griffes, Morsure).
     const weaponItem = item.type === "weapon";
-    if ( actor.type === "character" ? (!weaponItem || !item.system.equipped) : !(weaponItem || (item.type === "feat")) ) continue;
+    // §428 : l'Attaque à mains nues ne se « tient » pas — elle compte toujours, équipée ou non. Celle que le moteur pose sur les
+    // personnages est créée non équipée (adapter/basics.mjs) : un personnage qui n'avait qu'un arc en main n'avait aucune attaque de
+    // corps à corps, donc aucune attaque d'opportunité (vu en jeu par l'utilisateur, le 2026-11-12).
+    const held = item.system.equipped || (identifierOf(item).id === "unarmed-strike");
+    if ( actor.type === "character" ? (!weaponItem || !held) : !(weaponItem || (item.type === "feat")) ) continue;
     for ( const activity of item.system.activities ?? [] ) {
       if ( (activity.type !== "attack") || (activity.attack?.type?.value !== "melee") ) continue;
       if ( !["weapon", "unarmed"].includes(activity.attack?.type?.classification) ) continue;

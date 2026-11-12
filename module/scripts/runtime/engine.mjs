@@ -380,6 +380,43 @@ function askToRollDamage(message, resolution) {
 const damageRolling = new Set();
 
 /**
+ * §421 : les jets de dégâts ou de soins qu'une résolution attend d'un auteur qui n'est plus connecté — personne ne les lancera. Lus dans
+ * les derniers messages : `{ messageId, userId, userName, actor, actorName, item, heal }`.
+ */
+export function blockedRolls() {
+  const stuck = [];
+  for ( const message of game.messages?.contents.slice(-LOOKBACK) ?? [] ) {
+    const resolution = resolutionOn(message);
+    if ( !resolution || !wantsDamageRoll(resolution) || (message.author?.active !== false) ) continue;
+    const activity = message.getAssociatedActivity?.() ?? null;
+    stuck.push({ messageId: message.id, userId: message.author?.id ?? null, userName: message.author?.name ?? "",
+      actor: activity?.actor?.uuid ?? null, actorName: activity?.actor?.name ?? message.speaker?.alias ?? "",
+      item: activity?.item?.name ?? "", heal: !!resolution.plan?.heal });
+  }
+  return stuck;
+}
+
+/**
+ * §421 : le MJ actif lance, à la place d'un auteur parti, le jet que sa résolution attend. Ce sont les dés du MJ ; la résolution reprend
+ * comme si l'auteur les avait lancés. Rend false si rien n'est dû, si l'auteur est là, ou si le jet est déjà parti.
+ * @param {string} messageId  Le message qui porte la résolution.
+ */
+export async function rollForAbsent(messageId) {
+  if ( !isExecutor() ) return false;
+  const message = game.messages.get(messageId);
+  const resolution = message ? resolutionOn(message) : null;
+  if ( !resolution || !wantsDamageRoll(resolution) || (message.author?.active !== false) || damageRolling.has(resolution.id) ) return false;
+  damageRolling.add(resolution.id);
+  log(`damage roll for ${message.author?.name ?? "an absent author"}, by the GM`);
+  try { await rollDamageFor(message, resolution, isCriticalHit(resolution)); return true; }
+  catch(err) {
+    damageRolling.delete(resolution.id);
+    console.error(`${MODULE_ID} | damage roll for an absent author failed`, err);
+    return false;
+  }
+}
+
+/**
  * Après un F5 du MJ : une fenêtre de réaction ouverte n'a plus personne pour l'écouter. La
  * résolution, elle, est écrite : on la referme en rejugeant chaque cible contre sa CA du moment
  * (si le Bouclier a été lancé entre-temps, il compte).

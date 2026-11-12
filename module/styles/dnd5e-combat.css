@@ -817,3 +817,8 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-float-theme .das-float-theme__kind { display: inline-flex; align-items: center; gap: 6px; width: auto; padding: 3px 9px; font-size: 12px; line-height: 1.4; }
 .das-float-theme .das-float-theme__kind .sw { width: 10px; height: 10px; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5); }
 .das-float-theme .das-float-theme__kind.off { opacity: 0.45; }
+/* §421 : la File du MJ — ses trois parts. */
+.das-player-waits .das-queue__title { margin: 8px 0 4px; font-size: var(--font-size-12); text-transform: none; opacity: 0.8; border: none; }
+.das-player-waits .das-queue__title:first-child { margin-top: 0; }
+.das-player-waits .das-wait--blocked { outline: 1px solid var(--color-level-error, #c0392b); }
+.das-player-waits .das-wait__note { flex: 0 0 auto; padding: 0 6px; }

@@ -4,7 +4,7 @@
 
 ## Hooks émis par le moteur
 
-38 hooks `dnd5e-combat.*`, relevés sur chaque `Hooks.call` / `Hooks.callAll` du code. **Annulable** : émis par
+39 hooks `dnd5e-combat.*`, relevés sur chaque `Hooks.call` / `Hooks.callAll` du code. **Annulable** : émis par
 `Hooks.call` — un écouteur qui rend `false` arrête la suite. La description est le commentaire placé juste avant la constante
 qui nomme le hook, sinon juste avant la ligne d'émission (la première qui en a un) ; les § renvoient au journal.
 
@@ -29,6 +29,7 @@ qui nomme le hook, sinon juste avant la ligne d'émission (la première qui en a
 | `dnd5e-combat.feedback` | oui | `{ token: uuid, action, outcome, kind, text: noticeText(text, loc), sound: src }` | `runtime/shared.mjs` | §252 | §252 : sur le client qui agit, pour une action vue de toute la table, juste avant de jouer son son : `({ token, action, outcome, kind, text, sound })`. Annulable : `false` empêche le son seulement (le texte flottant est… |
 | `dnd5e-combat.forced` | oui | `{ actor, item, reasons, targets, user: game.user }` | `runtime/forced.mjs` | §408 | §408 : sur le client de celui qui passe outre un refus du moteur, avant tout avertissement : `({ actor, item, reasons, targets, user })`. Annulable : `false` et le moteur ne prévient personne (ni texte flottant, ni aler… |
 | `dnd5e-combat.gmAlert` | oui | `{ text, item: itemName, actor: actorDoc }` | `runtime/gm-alert.mjs` | §364 | §364 : chez le MJ actif, avant de poster une alerte MJ (et seulement si le réglage `gmAlerts` est allumé) : `({ text, item, actor })` — `item` le nom de l'item, `actor` l'acteur ou null. Annulable : `false` et ni carte,… |
+| `dnd5e-combat.gmQueue` |  | `now` | `runtime/gm-queue.mjs` | §421 | §421 : chez un MJ, quand une ligne de sa file arrive, part ou reçoit son libellé : `(queue)`, `{ mine, players, blocked, count }` — ce que le moteur lui demande, les joueurs attendus, les actions dont l'auteur est parti… |
 | `dnd5e-combat.groundMenu` |  | `entries, context` | `ui/pointer-menu.mjs` | §243 | §243 : sur le client qui construit le menu d'une case (clic droit, `api.ui.groundMenu`) : `(entries, { token, point })` — pousser `{ icon, label, run(event) }`, placées avant celles du moteur ; rien d'autre (le hook par… |
 | `dnd5e-combat.groupRoll` |  | `{ ...shown, final, cancelled }` | `runtime/group-roll.mjs` | §242 | §242 : sur chaque client, à chaque changement d'une carte de jets demandés : le point de la carte (DD retiré pour un joueur quand il est caché), avec `final` (vrai une fois, quand tous ont lancé ou que c'est annulé) et… |
 | `dnd5e-combat.groupRollPrompt` |  | `prompt` | `runtime/group-roll.mjs` | §242 | §242 : chez le joueur qui doit lancer, avant d'ouvrir la fenêtre de jet : `(prompt)` (champs décrits plus haut). Une interface qui prend la demande met dans `prompt.result` la promesse de son issue ; sans preneur, la fe… |
@@ -96,7 +97,7 @@ contexte du moment) et sert de clé `on` aux déclarations de contenu.
 
 ## Hooks écoutés, dans l'ordre d'appel
 
-130 hooks, relevés par `api.routes()` sur le module chargé au niveau d'automatisation « full ». Un seul écouteur par hook
+131 hooks, relevés par `api.routes()` sur le module chargé au niveau d'automatisation « full ». Un seul écouteur par hook
 (`runtime/router.mjs`) appelle les inscrits dans cet ordre, qui est celui des `register…()` de `dnd5e-combat.mjs`. **MJ** : l'inscrit
 ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendant `false`.
 
@@ -423,7 +424,8 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 
 ### `dnd5e-combat.awaiting`
 
-1. awaiting: hourglass not drawn
+1. GM queue: not refreshed (awaiting)
+2. awaiting: hourglass not drawn
 
 ### `dnd5e-combat.awaitingSettings`
 
@@ -446,6 +448,10 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 1. auras: recalculation requested
 2. factions: window refresh
 
+### `dnd5e-combat.gmQueue`
+
+1. GM queue: panel not refreshed
+
 ### `dnd5e-combat.masteryRest`
 
 1. weapon mastery window not opened after a Long Rest
@@ -456,7 +462,7 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 
 ### `dnd5e-combat.playerWaits`
 
-1. player waits: GM window not refreshed
+1. GM queue: not refreshed (waits)
 
 ### `dnd5e-combat.refreshAuras`
 
@@ -1050,10 +1056,11 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 1. chained damage roll
 2. targets released
 3. chained projectiles
-4. group roll: progress not announced
-5. visual feedback above tokens
-6. success at a cost: card refresh
-7. group roll: tracker not refreshed
+4. GM queue: not refreshed (resolution)
+5. group roll: progress not announced
+6. visual feedback above tokens
+7. success at a cost: card refresh
+8. group roll: tracker not refreshed
 
 ### `updateCombat`
 
@@ -1133,3 +1140,4 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 
 1. debug: relay
 2. awaiting: a disconnected user's prompts not cleared
+3. GM queue: a roll due by a player who left

@@ -14,6 +14,7 @@ import { timedWait } from "../adapter/dialogs.mjs";
 import { hamperedBy } from "./reactions.mjs";
 import { scrollReadingFor, scrollReadOf } from "../adapter/scrolls.mjs";
 import { forceWait } from "./player-waits.mjs";
+import { queue, forceLine, rollBlocked } from "./gm-queue.mjs";
 import { pickCandidates, upgradeOf } from "../adapter/pick-targets.mjs";
 import { castOnPicked } from "./pick-targets.mjs";
 import { clockState } from "./clock.mjs";
@@ -502,6 +503,15 @@ async function castPicked({ targetIds=[], upgrade=false, ...args }) {
 }
 
 /** Ce que `api.mcp` expose. */
+/** §421 : la File du MJ — `{ mine, players, blocked, count, window }` (`window` : le panneau est-il ouvert ?). */
+function gmQueueState() {
+  return { ...queue(), window: !!foundry.applications.instances.get("das-player-waits") };
+}
+/** §421 : le MJ force la ligne `id` de « J'attends un joueur ». */
+const gmQueueForce = ({ id }) => forceLine(id);
+/** §421 : le MJ lance à la place d'un auteur parti le jet de la ligne `id` de « Bloqué ». */
+const gmQueueRoll = ({ id }) => rollBlocked(id);
+
 /** §290 : les attentes du MJ (fenêtres du combat sans délai) — `{ waits: [...], window: bool }`. */
 function waits() {
   return { waits: playerWaits(), window: !!foundry.applications.instances.get("das-player-waits") };
@@ -563,4 +573,4 @@ async function atCost({ action="list", id=null, cost, card=null, tokenId=null, m
   throw new Error(`unknown action: ${action}`);
 }
 
-export const testApi = Object.freeze({ atCost, barrier, gmAlerts, controls, menu, wall, wallSide, cover, coverPreview, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, rangeCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, clickCard, summonAt, castFromBar, summonCaptured, owners, makeScroll, scrollReading, hampered, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, hood, removeItemEffect, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, awaiting, forcePlayerWait, pickTargets, castPicked , debugThrow, debugReport, debugClear, debugVerbose, connectionTest, visionMatrix, screenHere, setOwners, sightIssues, screenAfterUpdate, controlToken });
+export const testApi = Object.freeze({ gmQueue: gmQueueState, gmQueueForce, gmQueueRoll, atCost, barrier, gmAlerts, controls, menu, wall, wallSide, cover, coverPreview, issues, planning, stormStrike, storm, placeRegionAt, effectOrigins, enchant, overrideContent, heal, hurt, rollSave, rollCheck, range, rangeCheck, naturalOne, perf, threats, attackReasons, perceived, inventory, budget, identify, itemData, stairs, plan, movement, move, windows, closeWindow, view, reports, rollCard, status, reload, clickCard, summonAt, castFromBar, summonCaptured, owners, makeScroll, scrollReading, hampered, stats, teleport, teleportPick, restoreItem, runMacro, saveChance, portent, transpose, dash, chatCards, setting, foreignSetting, viewScene, sequencer, stairsAt, takeStairs, follow, unfollow, followState, endings, actionEnd, use, familiar, familiarPocket, familiarRecall, skillAids, skillAid, animations: animationState, toggleLight, hood, removeItemEffect, lightState, advanceTime, longRest, shortRest, clock, door, lock, diagnosticScan, diagnosticRepair, diagnosticBackups, diagnosticRestore, diagnosticForget, factions, sees, stealth, scatter, flammable, climb, climbState, climbHolds, climbToward, climbCeiling, climbDown, reachCheck, dropDown, rawMove, jump, hoist, grab, ready, burning, masteries, etherealWalls, flight, groupRoll, groupRollState, groupRollBreakdown, groupRollForce, groupRollMode, placeMenu, settingsChanged, placeItemEffect, concentrate, upkeep, stand, rangedPlacement, chainCheck, tokenLight, damageTypes, fortified, catalyst, grappleState, waits, awaiting, forcePlayerWait, pickTargets, castPicked , debugThrow, debugReport, debugClear, debugVerbose, connectionTest, visionMatrix, screenHere, setOwners, sightIssues, screenAfterUpdate, controlToken });

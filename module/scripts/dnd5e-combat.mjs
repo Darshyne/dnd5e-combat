@@ -105,6 +105,7 @@ import { registerGroupRoll, rollsApi } from "./runtime/group-roll.mjs";
 import { registerGroupRollUI, openGroupRoll } from "./ui/group-roll.mjs";
 import { registerGroupRollTracker, openTracker } from "./ui/group-roll-tracker.mjs";
 import { registerPlayerWaits, forceWait } from "./runtime/player-waits.mjs";
+import { registerGmQueue, queue, forceLine, rollBlocked } from "./runtime/gm-queue.mjs";
 import { registerAwaiting } from "./runtime/awaiting.mjs";
 import { registerAwaitingUI } from "./ui/awaiting.mjs";
 import { registerPlayerWaitsUI, openPlayerWaits } from "./ui/player-waits.mjs";
@@ -283,6 +284,8 @@ const state = {
      */
     force: id => forceWait(id),
     open: openPlayerWaits },
+  // §421 : la File du MJ — ce qu'il doit décider, les joueurs attendus, les actions bloquées.
+  queue: { list: queue, force: forceLine, roll: rollBlocked, open: openPlayerWaits },
   // §282 : Inspiration héroïque — `has(actor)`, `set(actor, on)` (MJ : la donne ou la retire, carte et retour à la table), `mode()` : le
   // réglage de ce client (« on », « failure », « off »).
   heroic: { has: hasHeroic,
@@ -436,6 +439,7 @@ Hooks.once("init", () => {
   gated(registerSwallow);
   gated(registerBasics);
   gated(registerAwaiting);   // §381 : qui la table attend — réglages, requête entre clients, déconnexions
+  gated(registerGmQueue);   // §421 : la File du MJ — forcer toute fenêtre d'un joueur, lancer pour un auteur parti
   gated(registerPlayerWaits);   // §290 : fenêtres du combat sans délai — le réglage, et la requête « forcer » chez chaque joueur
   gated(registerAnimations);   // §112 : l'application attend la fin de l'animation (Sequencer / BLFX)
   gated(registerFamiliars);   // §107 : vision et poche dimensionnelle des familiers (leurs actions de base : registerBasics)

@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-327 fonctions dans 32 groupes, relevées sur l'objet réel du module chargé. La description est le
+334 fonctions dans 33 groupes, relevées sur l'objet réel du module chargé. La description est le
 commentaire de la fonction dans le code (début seulement) ; le fichier est relatif à `module/scripts/`. Les valeurs non
 fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de test du connecteur, MJ seulement.
 
@@ -290,6 +290,9 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.mcp.foreignSetting` | `({ namespace, key, value })` | `runtime/testing.mjs` | MJ : lit un réglage de monde d'un autre espace (`namespace.key`) et, avec `value`, l'écrit → `{ key, before, now }`, ou `{ absent: true }`. |
 | `api.mcp.fortified` | `({ tokenId })` | `runtime/testing-rules.mjs` | §289 : Faveur de vigueur — le bonus de Constitution accordé maintenant à un soin (0 s'il est déjà pris depuis le début de son tour). |
 | `api.mcp.gmAlerts` | `()` | `runtime/testing.mjs` | §364 : les alertes MJ affichées dans le bandeau de ce client (textes). |
+| `api.mcp.gmQueue` | `()` | `runtime/testing.mjs` | §421 : la File du MJ — `{ mine, players, blocked, count, window }` (`window` : le panneau est-il ouvert ?). |
+| `api.mcp.gmQueueForce` | `({ id })` | `runtime/testing.mjs` | §421 : le MJ force la ligne `id` de « J'attends un joueur ». |
+| `api.mcp.gmQueueRoll` | `({ id })` | `runtime/testing.mjs` | §421 : le MJ lance à la place d'un auteur parti le jet de la ligne `id` de « Bloqué ». |
 | `api.mcp.grab` | `({ tokenId, dir=null })` | `runtime/testing-moves.mjs` | §216 : « S'agripper au bord » vers `dir` (ou le premier bord), comme l'entrée de menu ; rend les bords proposés et la position. |
 | `api.mcp.grappleState` | `({ tokenId })` | `runtime/testing-rules.mjs` | K4 (§325) : les empoignades que subit un token — DD d'évasion, allonge de la prise, prise tenue. |
 | `api.mcp.groupRoll` | `({ tokenIds=[], wait=true, ...request })` | `runtime/testing-rules.mjs` | §242 : une demande de jets aux tokens donnés, comme le bouton « Demander » ; `wait: false` rend la carte tout de suite (les joueurs peuvent prendre leur temps), sinon le point final. |
@@ -401,6 +404,15 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.perf.reset` | `()` | `runtime/perf.mjs` | Remet à zéro le relevé de ce client (temps des inscrits, avertissements, tâches longues). |
 | `api.perf.table` | `(limit=25)` | `runtime/perf.mjs` | Affiche en console les `limit` lignes les plus coûteuses de `report()`, puis les tâches longues ; ne rend rien. |
 
+## `api.queue`
+
+| Chemin | Signature | Fichier | Description |
+|---|---|---|---|
+| `api.queue.force` | `(id)` | `runtime/gm-queue.mjs` | Le MJ force la ligne `id` de « J'attends un joueur » : sa fenêtre se ferme chez lui avec la réponse que le délai aurait donnée. La table le voit (texte au-dessus du token). Rend false si la ligne n'existe plus, ou chez… |
+| `api.queue.list` | `()` | `runtime/gm-queue.mjs` | MJ : la file — `{ mine, players, blocked, count }` (ce que le moteur lui demande, les joueurs attendus, les actions dont l'auteur est parti) ; vide chez un joueur. Une ligne : `{ id, userId, userName, actor, kind, label… |
+| `api.queue.open` | `()` | `ui/player-waits.mjs` | Ouvre (ou ramène devant) le panneau « File du MJ », MJ seulement. |
+| `api.queue.roll` | `(id)` | `runtime/gm-queue.mjs` | Le MJ lance à la place d'un auteur parti le jet que doit la ligne `id` de « Bloqué » (ou l'identifiant de son message). MJ actif. @param {string} id |
+
 ## `api.reports`
 
 | Chemin | Signature | Fichier | Description |
@@ -501,7 +513,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 |---|---|---|---|
 | `api.waits.force` | `(id)` | `dnd5e-combat.mjs` | MJ : force l'attente `id` (le client du joueur résout ses fenêtres comme au bout du délai) → vrai si l'attente existait ; faux pour un joueur. |
 | `api.waits.list` | `()` | `adapter/player-wait.mjs` | Les attentes en cours, la plus ancienne d'abord. |
-| `api.waits.open` | `()` | `ui/player-waits.mjs` | Ouvre (ou ramène devant) la fenêtre de suivi, MJ seulement. |
+| `api.waits.open` | `()` | `ui/player-waits.mjs` | Ouvre (ou ramène devant) le panneau « File du MJ », MJ seulement. |
 
 ## `api.welcome`
 

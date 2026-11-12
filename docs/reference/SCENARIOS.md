@@ -184,7 +184,7 @@ la sélection sans rien jouer.
 | `protection-mal-bien` |  | §268 | ni Charmé ni Effrayé par un fiélon |
 | `rampe` |  | §17.2 | À terre : mode ramper posé et retiré |
 | `ravenloft-options` |  | §19.9 | Morsure vampirique, Attraction de la mort, Retour à la vie, Chemin vers la tombe, Sentinelle au seuil de la mort |
-| `reduction` |  | §16.11 §156 | Égide arcanique, Esquive instinctive, Lien protecteur |
+| `reduction` |  | §16.11 §156 §414 §415 | Égide arcanique, Esquive instinctive |
 | `refus-clics` | Arène des refus | §411 | attaque, menu, zone hors de portée, téléportation |
 | `regeneration` |  | §18.13 | soin au début du tour, coupée par le feu, troll à 0 PV |
 | `regle-forcee` | Arène des refus | §408 | fenêtre de légalité, alerte au MJ, carte marquée |

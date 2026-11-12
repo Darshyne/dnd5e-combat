@@ -6,29 +6,27 @@
  *  2. Esquive instinctive (PHB, donnée au Roublard) : touché, le Roublard réagit (`autoReact: "first"`), les dégâts de
  *     l'attaque sont divisés par deux (arrondi inférieur). `autoReact` est recopié sur la carte par le client qui UTILISE
  *     l'attaque — celui du MJ qui porte le connecteur : il doit avoir le code ≥ 0.38.0 (F5).
- *  3. Lien protecteur (PHB) lancé par le Magicien sur le Guerrier : le Guerrier touché, le Magicien subit le même montant (après la Résistance du Guerrier, §156)
- *     — par le moteur, ou par BLFX s'il est actif (il l'automatise déjà : le moteur s'efface, un seul propriétaire).
+ * Le Lien protecteur (partage des dégâts, §156) se vérifie dans `egide-abjurateur` (Arène de l'abjuration, §414) : ici, l'état des
+ * tokens partagés de l'Arène de test faussait le résultat (§415).
  * Les items sont donnés AVANT d'inscrire les remises en état (qui s'exécutent de la dernière à la première) : les effets
  * tombent avant que leurs items ne soient retirés — une animation BLFX ne se retire que si l'item d'origine existe encore.
  */
 const pause = ms => new Promise(r => setTimeout(r, ms));
 
 export default {
-  name: "réduction — Égide arcanique, Esquive instinctive, Lien protecteur",
+  name: "réduction — Égide arcanique, Esquive instinctive",
 
   async run(ctx) {
     const mage = await ctx.token("Magicien");
     const zombi = await ctx.token("Zombi");
     const rogue = await ctx.token("Roublard");
-    const fighter = await ctx.token("Guerrier");
     const grid = await ctx.gridSize();
 
     const wardId = await ctx.ensureItem(mage, "Compendium.dnd-players-handbook.classes.Item.phbwzdArcaneWard");
     await ctx.ensureItem(mage, "Compendium.dnd-players-handbook.spells.Item.phbsplMageArmor0");
-    await ctx.ensureItem(mage, "Compendium.dnd-players-handbook.spells.Item.phbsplWardingBon");
     await ctx.ensureItem(rogue, "Compendium.dnd-players-handbook.classes.Item.phbrgeUncannyDod");
 
-    const tokens = [mage, zombi, rogue, fighter];
+    const tokens = [mage, zombi, rogue];
     const hp0 = new Map();   // PV d’origine : la remise en état
     const startHp = new Map();   // PV de départ d’une attaque, quand ils diffèrent
     const effects0 = new Map();
@@ -112,25 +110,5 @@ export default {
     const dmgMsg = dodge.messages.find(m => m.type === "damage");
     const total = dmgMsg?.rolls?.reduce?.((s, r) => s + (r.total ?? 0), 0);
     ctx.expect(t?.damage?.applied === Math.trunc((total ?? 0) / 2), `${t?.damage?.applied} PV perdus pour ${total} lancés`);
-
-    // 3. Lien protecteur : Magicien → Guerrier. L'égide retirée d'abord : elle absorberait les dégâts partagés.
-    await ctx.call("remove-embedded-item", { documentType: "Actor", id: mage.actorId, itemId: wardId }).catch(() => {});
-    await ctx.use({ tokenId: mage.id, identifier: "warding-bond", activityType: "utility", targetTokenIds: [fighter.id] });
-    await pause(1500);
-    // PV pleins : un plancher à 0 fausserait la comparaison.
-    const mageActor = await ctx.call("get-actor", { actorId: mage.actorId });
-    const mageMax = (mageActor.system ?? mageActor.actor?.system)?.attributes?.hp?.max ?? hp0.get(mage.id);
-    await ctx.setHp(mage, mageMax);
-    await nextTo(fighter);
-    const bond = await strike(fighter);
-    if ( !ctx.expect(!!bond, "le Zombi touche le Guerrier (20 essais au plus)") ) return;
-    const lostFighter = hp0.get(fighter.id) - await ctx.hp(fighter);
-    const lostMage2 = mageMax - await ctx.hp(mage);
-    // §156 : le moteur partage toujours, BLFX présent ou non (son déclencheur « applyDamage » est désarmé : pas de « same fate »).
-    const recent = (await ctx.call("list-chat-messages", { limit: 12 })).messages ?? [];
-    const shared = bond.messages.find(m => m.flags?.["dnd5e-combat"]?.shared) ?? recent.find(m => m.flags?.["dnd5e-combat"]?.shared);
-    ctx.expect(!!shared, "partage des dégâts annoncé par le moteur");
-    ctx.expect(!recent.some(m => /same fate/i.test(m.flavor ?? m.content ?? "")), "BLFX ne partage pas une seconde fois");
-    ctx.expect((lostFighter > 0) && (lostMage2 === lostFighter), `le Guerrier perd ${lostFighter} PV, le Magicien aussi : ${lostMage2}`);
   }
 };

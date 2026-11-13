@@ -13,7 +13,10 @@ export const MONK = Object.freeze({
   "slow-fall": { triggers: [{ on: "falls", do: [{ type: "use", activity: "cWpSb7kUmzdpFoc4" }, { type: "reduce" }] }] },
   // §123 : « touchez une créature » — Main guérisseuse (Guerrier de la miséricorde), Toucher du médecin (sa Main guérisseuse),
   // Ultime miséricorde (« touchez le cadavre ») : « personnelles » dans les données du Manuel des joueurs, au contact en vrai.
-  "hand-of-healing": { ranges: { iDDZmeoYTIdWukLQ: { value: 5, units: "ft" } } },
+  "hand-of-healing": { ranges: { iDDZmeoYTIdWukLQ: { value: 5, units: "ft" }, ugC7uePiAZLSL55l: { value: 5, units: "ft" } },
+    // §438 : Manuel 3.0.0 — la Main guérisseuse du Toucher du médecin est l'activité `ugC7uePiAZLSL55l` de cet item (niveau 6, quand le
+    // Toucher du médecin arrive) ; l'item Toucher du médecin n'a plus d'activité.
+    cures: ["blinded", "deafened", "paralyzed", "poisoned", "stunned"], curesOn: "ugC7uePiAZLSL55l" },
   // C12-f : Toucher du médecin — la Main guérisseuse « met aussi fin à l'un de ces états : Aveuglé, Assourdi, Paralysé, Empoisonné, Étourdi ».
   "physicians-touch": { ranges: { stWL2fvcxsh0HFw2: { value: 5, units: "ft" } }, cures: ["blinded", "deafened", "paralyzed", "poisoned", "stunned"], curesOn: "stWL2fvcxsh0HFw2" },
   // C12-f : Incarnation élémentaire — « la Résistance à l'un de ces types, au choix » (la donnée pose les cinq) ; les clés de la foudre et du
@@ -42,10 +45,13 @@ export const MONK = Object.freeze({
   "heightened-focus": { flurryStrikes: 3 },
   "fleet-step": { fleetStep: { item: "monks-focus", activity: "0MuRZ0Ur95xQTKFq" } },
   "monks-focus": {
-    flurry: { activity: "2ghJTBhilLrFn9xT", strikes: 2 },
-    basicActions: { EFzidO6yAapw8d60: "disengage", "7xj7b6e8tDznDSrE": ["disengage", "dodge"], "0MuRZ0Ur95xQTKFq": ["dash", "disengage"] },
+    // §438 : Manuel 3.0.0 — à partir du niveau 10, le Déluge, la Défense patiente et le Pas du vent payés d'un point sont des activités
+    // « Heightened » de cet item (`r0ou…`, `KpoK…`, `R3sq…`), et le Pas du vent payé d'un point (`Iv2Y…`) est distinct du gratuit.
+    flurry: { activity: ["2ghJTBhilLrFn9xT", "r0ou3Al6Dn3tgUC6"], strikes: 2 },
+    basicActions: { EFzidO6yAapw8d60: "disengage", "7xj7b6e8tDznDSrE": ["disengage", "dodge"], "0MuRZ0Ur95xQTKFq": ["dash", "disengage"],
+      KpoKztsxm5yuJWk6: ["disengage", "dodge"], Iv2YrISquTZWEjjN: ["dash", "disengage"], R3sqnBDwAjve0FvW: ["dash", "disengage"] },
     // §208 : Pas du vent par un point de focus — « et votre distance de saut est doublée pour le tour ».
-    jump: { double: ["0MuRZ0Ur95xQTKFq"] }
+    jump: { double: ["0MuRZ0Ur95xQTKFq", "Iv2YrISquTZWEjjN", "R3sqnBDwAjve0FvW"] }
   },
   // Frappe étourdissante (niveau 5) : au plus une fois par tour, sur un coup d'arme de moine ou à mains nues, 1 point impose un JS
   // de Constitution ; la cible qui le rate est Étourdie jusqu'au début du prochain tour du moine, celle qui le réussit voit sa

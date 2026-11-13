@@ -304,7 +304,8 @@ export function validateExtras(entry, at, errors) {
       && (!("weapons" in f) || (Array.isArray(f.weapons) && f.weapons.length && f.weapons.every(k => WEAPON_KINDS.includes(k))));
     if ( !ok ) errors.push(`${at}hitFollowUp: { use: [{ item: identifier, activity: id }], choose?: integer ≥ 1, weapons?: [weapon kinds] }`);
   }
-  if ( ("flurry" in entry) && !(isObject(entry.flurry) && isId(entry.flurry.activity) && Number.isInteger(entry.flurry.strikes) && (entry.flurry.strikes > 0)
+  // §438 : une activité, ou une liste (le Déluge « Heightened » du Manuel 3.0.0).
+  if ( ("flurry" in entry) && !(isObject(entry.flurry) && (isId(entry.flurry.activity) || (Array.isArray(entry.flurry.activity) && entry.flurry.activity.length && entry.flurry.activity.every(isId))) && Number.isInteger(entry.flurry.strikes) && (entry.flurry.strikes > 0)
     && (!("weapons" in entry.flurry) || (typeof entry.flurry.weapons === "boolean"))
     && Object.keys(entry.flurry).every(k => ["activity", "strikes", "weapons"].includes(k))) ) {
     errors.push(`${at}flurry: { activity, strikes, weapons? }`);

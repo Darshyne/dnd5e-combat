@@ -651,7 +651,7 @@
  *     oneAttack?: true                          l'enchantement de l'item vaut pour une attaque : l'attaque est offerte aussitôt, et
  *                                               l'enchantement tombe après elle (Frappe assurée, §23)
  *     martialArts?: true                        Arts martiaux (§24) : une frappe à mains nues peut se payer de l'action Bonus
- *     flurry?: { activity, strikes, weapons? }  Déluge de coups (§24) : l'activité ouvre `strikes` frappes à mains nues gratuites ;
+ *     flurry?: { activity, strikes, weapons? }  Déluge de coups (§24) : l'activité (ou l'une d'une liste, §438) ouvre `strikes` frappes gratuites ;
  *                                               `weapons` : des attaques d'arme aussi (Prêtre de guerre, §27)
  *     stunningStrike?: { activity, focus }      Frappe étourdissante (§24) : après un coup, une fois par tour, la sauvegarde de l'item
  *                                               contre une utilisation de l'item `focus` (identifiant)

@@ -52,7 +52,11 @@ export const CLERIC = Object.freeze({
   // C12-j : Éclat protecteur amélioré (Lumière 6) — « vous regagnez toutes les utilisations d'Éclat protecteur après un Repos court ou long ».
   "improved-warding-flare": { regainOnShortRest: ["warding-flare"] },
   "warding-flare": { triggers: [{ on: "enemyAttacks", if: { "source.nearSelf": { distance: 30, units: "ft" }, "self.seesSource": true },
-    do: [{ type: "use", activity: "dnd5eactivity000" }, { type: "disadvantage" }] }] },
+    do: [{ type: "use", activity: "dnd5eactivity000" }, { type: "disadvantage" }] },
+    // §438 : Manuel 3.0.0 — à partir du niveau 6, l'Éclat est l'activité `6V4FAVqgjzctbpoC` (les PV temporaires d'Éclat amélioré en
+    // plus) et `dnd5eactivity000` est cachée : seule l'activité visible à ce niveau est proposée (adapter/reactions.mjs, `levelHidden`).
+    { on: "enemyAttacks", if: { "source.nearSelf": { distance: 30, units: "ft" }, "self.seesSource": true },
+      do: [{ type: "use", activity: "6V4FAVqgjzctbpoC" }, { type: "disadvantage" }] }] },
   // Impacts bénis (niveau 7), option Impact divin : 1d8 radiants (au choix nécrotiques ou radiants : radiants d'office) ;
   // 2d8 avec Impacts bénis améliorés (niveau 14).
   "blessed-strikes": { triggers: [divineStrike("1d8", false), divineStrike("2d8", true)] },

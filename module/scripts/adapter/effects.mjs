@@ -59,6 +59,25 @@ export function setTextExpiry(effect) {
  * Un effet déjà porté venant du même effet d'item est remplacé. MJ actif.
  * @returns {Promise<ActiveEffect|null>}
  */
+/**
+ * §438 : un effet de compendium (« effet distant » de dnd5e 6.1 : une activité qui pointe `Compendium.<pack>.ActiveEffect.<id>` au lieu
+ * de porter l'effet — Manuel des joueurs 3.0.0, effets « AC +N » de Jeu de jambes évasif) posé sur l'acteur au nom de l'item, comme
+ * `placeItemEffect` pose un effet de l'item : copie précédente retirée, origine = l'item, `compendiumSource` = l'effet du compendium.
+ */
+export async function placeRemoteEffect(item, uuid, actor) {
+  const source = uuid ? await fromUuid(uuid) : null;
+  if ( !source || !actor || (source.documentName !== "ActiveEffect") ) return null;
+  const old = actor.effects.filter(e => (e._stats?.compendiumSource === uuid) && (e.origin === item.uuid)).map(e => e.id);
+  if ( old.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", old);
+  const data = foundry.utils.mergeObject(source.toObject(), {
+    disabled: false, transfer: false, origin: item.uuid, system: { origin: { item: item.uuid } },
+    _stats: { compendiumSource: uuid, duplicateSource: null }
+  }, { inplace: false });
+  delete data._id;
+  const [created] = await actor.createEmbeddedDocuments("ActiveEffect", [data]);
+  return created ?? null;
+}
+
 export async function placeItemEffect(item, effectId, actor, { scaling=0, dependentOn=null }={}) {
   const source = item?.effects?.get(effectId);
   if ( !source || !actor ) return null;

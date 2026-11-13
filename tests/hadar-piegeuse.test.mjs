@@ -216,7 +216,7 @@ describe("sorts au tour du lanceur (§91)", () => {
 
 describe("Foulée des fées, Échappatoire brumeuse, Ange vengeur (§92)", () => {
   it("contenu", () => {
-    expect(CONTENT["steps-of-the-fey"].afterTeleport.options).toEqual([{ activity: "QUbshQXhUDQqlu2s" }, { activity: "48TdRWDqCVcC9mh4", around: "left" }]);
+    expect(CONTENT["steps-of-the-fey"].afterTeleport.options.slice(0, 2)).toEqual([{ activity: "QUbshQXhUDQqlu2s" }, { activity: "48TdRWDqCVcC9mh4", around: "left" }]);
     expect(CONTENT["misty-escape"].saveDamage).toEqual({ kj8zIhPbjs4UIHtc: "none" });
     expect(CONTENT["avenging-angel"].emanation).toMatchObject({ on: "turnStart", affects: "enemy", radiusFormula: "@scale.paladin.aura", whileActive: true });
     for ( const id of ["steps-of-the-fey", "misty-escape", "avenging-angel"] ) {

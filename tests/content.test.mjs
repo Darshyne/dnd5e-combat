@@ -270,7 +270,7 @@ describe("contenu livré", () => {
       "spider-climb", "spike-growth", "spirit-guardians", "spirit-shroud", "spiritual-weapon", "staff-of-power", "staff-of-striking",
       "staff-of-swarming-insects", "staff-of-the-magi", "staff-of-thunder-and-lightning", "staff-of-withering", "staggering-smite",
       "starry-wisp", "steady-aim", "steel-wind-strike", "stench", "steps-of-the-fey", "stinking-cloud", "stomp",
-      "stone-of-controlling-earth-elementals", "stones-endurance", "storm-of-vengeance", "stormborn", "storms-thunder",
+      "stone-of-controlling-earth-elementals", "stones-endurance", "storm-of-radiance", "storm-of-vengeance", "stormborn", "storms-thunder",
       "studied-attacks", "stunning-strike", "subtle-spell", "suggestion", "summon-aberration", "summon-beast", "summon-celestial",
       "summon-construct", "summon-dragon", "summon-elemental", "summon-fey", "summon-fiend", "summon-undead", "sun-blade", "sunbeam",
       "sunburst", "superior-inspiration", "superior-potion-of-healing", "supreme-healing", "supreme-potion-of-healing",
@@ -987,7 +987,7 @@ describe("§300 : repasse, lot C5 (zones, émanations, entrées)", () => {
     expect(CONTENT["plant-growth"].difficultTerrain).toEqual({ cost: 4 });
     expect(CONTENT["plant-growth"].usageLimits.dnd5eactivity000.cost).toBe("action");
     for ( const id of ["wrath-of-the-sea", "stormborn"] ) {
-      expect(CONTENT[id].pickTargets).toMatchObject({ radius: "@scale.sea.wrath-range", max: 1, check: "enemies" });
+      expect(CONTENT[id].pickTargets).toMatchObject({ radius: "5 + 5 * min(1, floor(@classes.druid.levels / 6))", max: 1, check: "enemies" });
       expect(CONTENT[id].triggers[0].on).toBe("failedSave");
     }
     expect(CONTENT["aura-of-vitality"].pickTargets).toMatchObject({ radius: 30, max: 1, self: true });

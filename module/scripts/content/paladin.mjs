@@ -97,7 +97,10 @@ export const PALADIN = Object.freeze({
     emanation: { on: "turnStart", affects: "enemy", activity: "UV3wzKmXpqDjWDAy", radiusFormula: "@scale.paladin.aura", radius: 10, units: "ft", whileActive: true },
     triggers: [
       { on: "isDamaged", via: "effect", fromEffect: "ucmM8P37dhbuz8eK", do: [{ type: "remove" }] },
-      { on: "preAttackRoll", via: "effect", fromEffect: "ucmM8P37dhbuz8eK", if: { "target.hasEffect": "avenging-angel" }, do: [{ type: "advantage" }] }
+      { on: "preAttackRoll", via: "effect", fromEffect: "ucmM8P37dhbuz8eK", if: { "target.hasEffect": "avenging-angel" }, do: [{ type: "advantage" }] },
+      // §438 : Manuel 3.0.0 — l'aura pose l'Effrayé commun du compendium `dnd5e.effects` (`OpCz3oGBfDZfxAlt`), pas un effet de l'item.
+      { on: "isDamaged", via: "effect", fromEffect: "OpCz3oGBfDZfxAlt", do: [{ type: "remove" }] },
+      { on: "preAttackRoll", via: "effect", fromEffect: "OpCz3oGBfDZfxAlt", if: { "target.hasEffect": "avenging-angel" }, do: [{ type: "advantage" }] }
     ]
   }
 });

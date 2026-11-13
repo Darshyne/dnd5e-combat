@@ -1,0 +1,127 @@
+/**
+ * §438 : le Manuel des joueurs 3.0.0 (identifiants du SRD de dnd5e 6.1, activités rangées derrière une porte de niveau, échelles retirées,
+ * effets de compendium) — le contenu lit la nouvelle forme ET l'ancienne (fiches faites avec le 2.2.0).
+ */
+import { describe, it, expect } from "vitest";
+import { validateEntry } from "../module/scripts/core/content.mjs";
+import { CONTENT, SRD_ALIASES } from "../module/scripts/content/index.mjs";
+import { hiddenAtLevel } from "../module/scripts/core/level-gate.mjs";
+
+/** Une formule de dés évaluée sans Foundry : les données remplacées, `NdF` rendu « N|F » pour lire le nombre et les faces. */
+function dice(formula, levels) {
+  const text = formula.replace(/@classes\.(\w+)\.levels/g, (_, c) => String(levels[c] ?? 0));
+  const m = /^(.+?)d(.+)$/.exec(text);
+  const num = s => Function("min", "max", "floor", `return (${s});`)(Math.min, Math.max, Math.floor);
+  return `${num(m[1])}d${num(m[2])}`;
+}
+const radius = (formula, druid) => Function("min", "floor", `return (${formula.replace("@classes.druid.levels", String(druid))});`)(Math.min, Math.floor);
+const damageOf = (id, i=0) => CONTENT[id].triggers[i].do.find(s => s.type === "damage").formula;
+
+describe("§438 : identifiants du Manuel 3.0.0", () => {
+  it("Tempête radieuse de Jallarzi sous son identifiant du SRD", () => {
+    expect(SRD_ALIASES["storm-of-radiance"]).toBe("jallarzis-storm-of-radiance");
+    expect(CONTENT["storm-of-radiance"]).toEqual(CONTENT["jallarzis-storm-of-radiance"]);
+    expect(CONTENT["black-tentacles"]).toBeTruthy();
+  });
+});
+
+describe("§438 : échelles retirées — dés lus sur le niveau de classe", () => {
+  it("Coup brutal : 1d10, 2d10 au niveau 17", () => {
+    const f = damageOf("brutal-strike");
+    expect(f).not.toMatch(/@scale/);
+    expect(dice(f, { barbarian: 9 })).toBe("1d10");
+    expect(dice(f, { barbarian: 16 })).toBe("1d10");
+    expect(dice(f, { barbarian: 17 })).toBe("2d10");
+  });
+  it("Frappe effroyable (Traqueur des ténèbres) : 2d6, 2d8 au niveau 11", () => {
+    const f = damageOf("dread-ambusher");
+    expect(dice(f, { ranger: 3 })).toBe("2d6");
+    expect(dice(f, { ranger: 10 })).toBe("2d6");
+    expect(dice(f, { ranger: 11 })).toBe("2d8");
+  });
+  it("Frappes effroyables (Vagabond féerique) : 1d4, 1d6 au niveau 11", () => {
+    const f = damageOf("dreadful-strikes");
+    expect(dice(f, { ranger: 3 })).toBe("1d4");
+    expect(dice(f, { ranger: 11 })).toBe("1d6");
+  });
+  it("Courroux des mers : 1,50 m, 3 m au niveau 6 (forme 2.2.0 et 3.0.0)", () => {
+    for ( const id of ["wrath-of-the-sea", "stormborn"] ) {
+      const f = CONTENT[id].pickTargets.radius;
+      expect(f).not.toMatch(/@scale/);
+      expect(radius(f, 3)).toBe(5);
+      expect(radius(f, 5)).toBe(5);
+      expect(radius(f, 6)).toBe(10);
+      expect(radius(f, 20)).toBe(10);
+    }
+    expect(CONTENT["wrath-of-the-sea"].pickTargets.activities).toEqual(["nNTYj4vqURV4Dhjt", "9U9AoJYvcrCQtIMm"]);
+  });
+});
+
+describe("§438 : activités derrière une porte de niveau", () => {
+  it("hiddenAtLevel", () => {
+    expect(hiddenAtLevel(null, 3)).toBe(false);
+    expect(hiddenAtLevel({ min: null, max: null }, 3)).toBe(false);
+    expect(hiddenAtLevel({ min: null, max: 5 }, 5)).toBe(false);
+    expect(hiddenAtLevel({ min: null, max: 5 }, 6)).toBe(true);
+    expect(hiddenAtLevel({ min: 6, max: null }, 5)).toBe(true);
+    expect(hiddenAtLevel({ min: 6, max: null }, 6)).toBe(false);
+    expect(hiddenAtLevel({ min: 6 }, Number.NaN)).toBe(false);
+  });
+  it("Éclat protecteur : l'activité 2.2.0 (jusqu'au niveau 5 en 3.0.0) et celle du niveau 6", () => {
+    const used = CONTENT["warding-flare"].triggers.map(t => t.do.find(s => s.type === "use").activity);
+    expect(used).toEqual(["dnd5eactivity000", "6V4FAVqgjzctbpoC"]);
+    for ( const t of CONTENT["warding-flare"].triggers ) expect(t.on).toBe("enemyAttacks");
+  });
+  it("Concentration du moine : Déluge de base et « Heightened », Pas du vent payé d'un point", () => {
+    const focus = CONTENT["monks-focus"];
+    expect(focus.flurry.activity).toEqual(["2ghJTBhilLrFn9xT", "r0ou3Al6Dn3tgUC6"]);
+    expect(focus.basicActions.KpoKztsxm5yuJWk6).toEqual(["disengage", "dodge"]);
+    expect(focus.basicActions.Iv2YrISquTZWEjjN).toEqual(["dash", "disengage"]);
+    expect(focus.basicActions.R3sqnBDwAjve0FvW).toEqual(["dash", "disengage"]);
+    expect(focus.jump.double).toEqual(expect.arrayContaining(["0MuRZ0Ur95xQTKFq", "Iv2YrISquTZWEjjN", "R3sqnBDwAjve0FvW"]));
+    // Ancienne forme intacte.
+    expect(focus.basicActions["7xj7b6e8tDznDSrE"]).toEqual(["disengage", "dodge"]);
+  });
+  it("flurry : une activité ou une liste, rien d'autre", () => {
+    expect(validateEntry({ flurry: { activity: "2ghJTBhilLrFn9xT", strikes: 2 } })).toEqual([]);
+    expect(validateEntry({ flurry: { activity: ["2ghJTBhilLrFn9xT", "r0ou3Al6Dn3tgUC6"], strikes: 2 } })).toEqual([]);
+    expect(validateEntry({ flurry: { activity: [], strikes: 2 } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ flurry: { activity: ["court"], strikes: 2 } }).length).toBeGreaterThan(0);
+  });
+  it("Toucher du médecin : la Main guérisseuse du niveau 6 de Main guérisseuse, et l'ancienne activité", () => {
+    expect(CONTENT["hand-of-healing"].ranges).toMatchObject({ iDDZmeoYTIdWukLQ: { value: 5 }, ugC7uePiAZLSL55l: { value: 5 } });
+    expect(CONTENT["hand-of-healing"].curesOn).toBe("ugC7uePiAZLSL55l");
+    expect(CONTENT["hand-of-healing"].cures).toEqual(CONTENT["physicians-touch"].cures);
+    expect(CONTENT["physicians-touch"].curesOn).toBe("stWL2fvcxsh0HFw2");
+  });
+  it("Pas féeriques : l'Échappatoire brumeuse du niveau 6 (Réaction, deux Foulées) ; l'ancien item garde la sienne", () => {
+    const steps = CONTENT["steps-of-the-fey"];
+    expect(steps.triggers.some(t => (t.on === "isDamaged") && t.do.some(s => s.activity === "Z2DMzP2QpvVjNVLY"))).toBe(true);
+    expect(steps.afterTeleport.options.map(o => o.activity)).toEqual(expect.arrayContaining(["zgz1KLkZUycIeVF9", "PPflqO75qwj2WJP9"]));
+    expect(steps.saveDamage).toEqual({ PPflqO75qwj2WJP9: "none" });
+    expect(steps.breaksOn).toBeUndefined();   // Provocation (ennemis) ne doit pas tomber à leur attaque
+    expect(CONTENT["misty-escape"].triggers[0].do[0].activity).toBe("2ceGTpBbBclN3qF9");
+  });
+});
+
+describe("§438 : effets du compendium de dnd5e à la place des effets de l'item", () => {
+  it("Ange vengeur : l'Effrayé commun, en plus de l'ancien", () => {
+    const from = CONTENT["avenging-angel"].triggers.map(t => `${t.on}:${t.fromEffect}`);
+    expect(from).toEqual(expect.arrayContaining(["isDamaged:ucmM8P37dhbuz8eK", "preAttackRoll:ucmM8P37dhbuz8eK",
+      "isDamaged:OpCz3oGBfDZfxAlt", "preAttackRoll:OpCz3oGBfDZfxAlt"]));
+  });
+  it("Vengeance ardente : l'Aveuglé commun tombe à la fin du tour", () => {
+    expect(CONTENT["searing-vengeance"].effectEnds).toEqual({ KOXCayzftTFF9Kam: "casterTurnEnd", "4odkdDU1wBQrCMJ1": "casterTurnEnd" });
+  });
+});
+
+describe("§438 : rien de compté deux fois", () => {
+  it("Affinité élémentaire : pas avec l'aptitude 3.0.0 du même type", () => {
+    const triggers = CONTENT["elemental-affinity"].triggers;
+    expect(triggers).toHaveLength(5);
+    for ( const t of triggers ) {
+      const type = t.if["activity.dealsType"];
+      expect(t.if.not).toEqual({ "source.hasFeature": `elemental-affinity-${type}` });
+    }
+  });
+});

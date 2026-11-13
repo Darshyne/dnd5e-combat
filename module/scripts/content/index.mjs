@@ -90,7 +90,9 @@ export const ENTRY_TABLES = Object.freeze([
 export const SRD_ALIASES = Object.freeze({
   "black-tentacles": "evards-black-tentacles", "acid-arrow": "melfs-acid-arrow", "resilient-sphere": "otilukes-resilient-sphere",
   "arcane-sword": "mordenkainens-sword", "faithful-hound": "mordenkainens-faithful-hound",
-  "magnificent-mansion": "mordenkainens-magnificent-mansion"
+  "magnificent-mansion": "mordenkainens-magnificent-mansion",
+  // §438 : le Manuel des joueurs 3.0.0 prend aussi ces identifiants du SRD.
+  "storm-of-radiance": "jallarzis-storm-of-radiance"
 });
 
 function build() {

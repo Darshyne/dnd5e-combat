@@ -12,6 +12,7 @@ import { askChoice } from "../adapter/choices.mjs";
 import { distanceBetween } from "../adapter/turn.mjs";
 import { loc, log } from "./shared.mjs";
 import { lengthIn } from "../adapter/units.mjs";
+import { levelHidden } from "../adapter/reactions.mjs";
 
 /** Les options que les traits de l'acteur ajoutent à cette téléportation. */
 function optionsFor(actor, spell) {
@@ -21,7 +22,8 @@ function optionsFor(actor, spell) {
     if ( !rule?.spells?.includes(spell) ) continue;
     for ( const option of rule.options ?? [] ) {
       const activity = item.system.activities?.get(option.activity);
-      if ( activity ) out.push({ ...option, activity, item });
+      // §438 : une option d'un niveau que l'acteur n'a pas (Manuel 3.0.0 : Échappatoire brumeuse, niveau 6 des Pas féeriques) : non.
+      if ( activity && !levelHidden(activity) ) out.push({ ...option, activity, item });
     }
   }
   return out;

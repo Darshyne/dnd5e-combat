@@ -10,7 +10,9 @@
 const meta = (activity, kind) => ({ metamagic: { activity, kind } });
 
 /** Affinité élémentaire : « un type choisi » — celui de la Résistance que l'aptitude a donnée. */
-const affinity = type => ({ on: "preDamageRoll", if: { "activity.isSpell": true, "activity.dealsType": type, "source.resists": type },
+// §438 : pas quand l'acteur a l'aptitude du Manuel 3.0.0 pour ce type (`elemental-affinity-<type>`) : son effet ajoute déjà le Charisme.
+const affinity = type => ({ on: "preDamageRoll", if: { "activity.isSpell": true, "activity.dealsType": type, "source.resists": type,
+    not: { "source.hasFeature": `elemental-affinity-${type}` } },
   do: [{ type: "damage", formula: "@abilities.cha.mod", damageType: type }] });
 
 export const SORCERER = Object.freeze({

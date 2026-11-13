@@ -52,7 +52,9 @@ export const BARBARIAN = Object.freeze({
     noOpportunityAttacks: ["uacly0JAXLVwAS6y"],
     triggers: [
       { on: "preDamageRoll", if: { "activity.isAttack": true, "source.hasEffect": "brutal-strike" },
-        do: [{ type: "damage", formula: "@scale.barbarian.brutal-strike", damageType: "weapon" }] },
+        // §438 : 1d10, 2d10 au niveau 17 — lu sur le niveau de Barbare. L'échelle `@scale.barbarian.brutal-strike` (classe, Manuel 2.2.0) est
+        // devenue `@scale.brutal-strike.damage` (l'aptitude, Manuel 3.0.0) : ni l'une ni l'autre n'existe sur toutes les fiches.
+        do: [{ type: "damage", formula: "(1 + floor(@classes.barbarian.levels / 17))d10", damageType: "weapon" }] },
       { on: "preAttackRoll", via: "effect", fromEffect: "Q0ou16II1WEcCdyW",
         if: { "target.hasEffect": { item: "brutal-strike", effect: "Q0ou16II1WEcCdyW" }, not: { "target.hasEffectFrom": { item: "brutal-strike", effect: "Q0ou16II1WEcCdyW" } } },
         do: [{ type: "attackBonus", formula: "5" }, { type: "consume", side: "target" }] }

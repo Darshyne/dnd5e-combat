@@ -113,7 +113,7 @@ export function onFlurryUsed(message) {
   if ( (message.type !== "usage") || !message.author?.isSelf ) return;
   const activity = message.getAssociatedActivity?.();
   const rule = activity?.item ? contentOf(activity.item).entry?.flurry : null;
-  if ( !rule || (rule.activity !== activity.id) ) return;
+  if ( !rule || ![rule.activity].flat().includes(activity.id) ) return;
   // Le budget est écrit par le MJ actif juste après la carte : on lui laisse un instant.
   setTimeout(() => offerFlurry(activity.actor), 800);
 }

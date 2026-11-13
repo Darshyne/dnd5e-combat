@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-868 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+869 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -61,9 +61,9 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `critMove` | 1 | `remarkable-athlete` |
 | `cunningStrikeMax` | 1 | `improved-cunning-strike` |
 | `cunningStrikes` | 3 | `cunning-strike`, `devious-strikes`, `supreme-sneak` |
-| `cures` | 13 | `boon-of-speed`, `dispel-evil-and-good`, `greater-restoration`, `lay-on-hands`, `lesser-restoration`, `physicians-touch`, … |
+| `cures` | 14 | `boon-of-speed`, `dispel-evil-and-good`, `greater-restoration`, `hand-of-healing`, `lay-on-hands`, `lesser-restoration`, … |
 | `curesAll` | 7 | `elixir-of-health`, `hand-of-ultimate-mercy`, `heal`, `keoghtoms-ointment`, `mass-heal`, `potion-of-vitality`, … |
-| `curesOn` | 4 | `dispel-evil-and-good`, `lay-on-hands`, `physicians-touch`, `restoring-touch` |
+| `curesOn` | 5 | `dispel-evil-and-good`, `hand-of-healing`, `lay-on-hands`, `physicians-touch`, `restoring-touch` |
 | `damageShield` | 2 | `resistance`, `ring-of-warmth` |
 | `dataFixes` | 63 | `antimatter-rifle`, `antitoxin`, `armor-of-vulnerability`, `awareness-ioun-stone`, `bead-of-force`, `belt-of-dwarvenkind`, … |
 | `devours` | 1 | `blackrazor` |
@@ -227,7 +227,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `saveAdvantageFrom` | 1 | `protection-from-evil-and-good` |
 | `saveAdvantageSize` | 1 | `ensnaring-strike` |
 | `saveAutoSuccess` | 3 | `enthrall`, `flesh-to-stone`, `friends` |
-| `saveDamage` | 7 | `black-tentacles`, `contact-other-plane`, `evards-black-tentacles`, `holy-water`, `misty-escape`, `pale-tincture`, … |
+| `saveDamage` | 8 | `black-tentacles`, `contact-other-plane`, `evards-black-tentacles`, `holy-water`, `misty-escape`, `pale-tincture`, … |
 | `savedEffects` | 6 | `flesh-to-stone`, `heat-metal`, `mace-of-disruption`, `ottos-irresistible-dance`, `ray-of-enfeeblement`, `stunning-strike` |
 | `saveDisadvantageFor` | 3 | `shatter`, `talisman-of-pure-good`, `talisman-of-ultimate-evil` |
 | `scatter` | 2 | `ball-bearings`, `caltrops` |
@@ -271,7 +271,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `thrownDamage` | 1 | `thrown-weapon-fighting` |
 | `trace` | 7 | `armor-of-agathys`, `blade-ward`, `dispel-evil-and-good`, `flame-blade`, `moonlight-step`, `produce-flame`, … |
 | `transpose` | 1 | `tricksters-transposition` |
-| `triggers` | 266 | `abjure-foes`, `absorb-elements`, `absorption-ioun-stone`, `acid-arrow`, `air-element`, `ancient-might`, … |
+| `triggers` | 267 | `abjure-foes`, `absorb-elements`, `absorption-ioun-stone`, `acid-arrow`, `air-element`, `ancient-might`, … |
 | `untypedDamage` | 2 | `mm-wight-life-drain`, `otilukes-freezing-sphere` |
 | `upkeep` | 1 | `crown-of-madness` |
 | `usageLimits` | 11 | `action-surge`, `flame-blade`, `indomitable`, `pact-of-the-chain`, `plant-growth`, `produce-flame`, … |
@@ -286,7 +286,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `zoneAffects` | 16 | `brute-spirit`, `conjure-barrage`, `conjure-volley`, `conjure-woodland-beings`, `cordon-of-arrows`, `coward-spirit`, … |
 | `zoneBound` | 1 | `spirit-guardians` |
 | `zoneCharges` | 1 | `cordon-of-arrows` |
-| `zoneEffects` | 2 | `jallarzis-storm-of-radiance`, `silence` |
+| `zoneEffects` | 3 | `jallarzis-storm-of-radiance`, `silence`, `storm-of-radiance` |
 | `zoneEnd` | 1 | `delayed-blast-fireball` |
 | `zoneLasts` | 2 | `antimagic-cone`, `symbol` |
 | `zoneMax` | 2 | `decanter-of-endless-water`, `slow` |
@@ -315,7 +315,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `enemyAttacks → use` | 4 | `arrow-catching-shield`, `cosmic-omen`, `protection`, `warding-flare` |
 | `enemyDisengages → use` | 1 | `sentinel` |
 | `enter → replay` | 3 | `ball-bearings`, `caltrops`, `prismatic-wall` |
-| `enter,turnEnd → replay` | 19 | `black-tentacles`, `blade-barrier`, `cloud-of-daggers`, `cloudkill`, `conjure-celestial`, `conjure-woodland-beings`, … |
+| `enter,turnEnd → replay` | 20 | `black-tentacles`, `blade-barrier`, `cloud-of-daggers`, `cloudkill`, `conjure-celestial`, `conjure-woodland-beings`, … |
 | `enter,turnStart → replay` | 2 | `sleet-storm`, `web` |
 | `failedSave → banish` | 2 | `dispel-evil-and-good`, `divine-word` |
 | `failedSave → breakConcentration` | 2 | `earthquake`, `sleet-storm` |
@@ -338,7 +338,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `isDamaged → damage` | 1 | `warding-bond` |
 | `isDamaged → remove` | 26 | `abjure-foes`, `animal-friendship`, `armor-of-agathys`, `avenging-angel`, `calm-emotions`, `channel-divinity`, … |
 | `isDamaged → resave` | 6 | `dominate-beast`, `dominate-monster`, `dominate-person`, `hideous-laughter`, `symbiotic-being`, `tashas-hideous-laughter` |
-| `isDamaged → use` | 8 | `absorb-elements`, `boon-of-energy-resistance`, `fount-of-moonlight`, `hellish-rebuke`, `mist-walker`, `misty-escape`, … |
+| `isDamaged → use` | 9 | `absorb-elements`, `boon-of-energy-resistance`, `fount-of-moonlight`, `hellish-rebuke`, `mist-walker`, `misty-escape`, … |
 | `isHit → damage` | 4 | `armor-of-agathys`, `avenger-spirit`, `corrosive-form`, `fire-shield` |
 | `isHit → halve` | 4 | `beguiling-defenses`, `sentinel-at-deaths-door`, `toxic-escape`, `uncanny-dodge` |
 | `isHit → miss` | 1 | `illusory-self` |

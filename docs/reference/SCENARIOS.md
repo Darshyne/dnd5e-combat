@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-339 scénarios (`tools/scenarios/`), joués dans le client du MJ par le connecteur : `node tools/reload.mjs && node
+340 scénarios (`tools/scenarios/`), joués dans le client du MJ par le connecteur : `node tools/reload.mjs && node
 tools/scenario.mjs <noms>`. **Scène** : vide = l'« Arène de test » ; sinon la scène que le scénario demande (sauté si elle manque).
 Les scénarios d'un sous-dossier ne font pas partie de la passe complète : `node tools/scenario.mjs tools/scenarios/<dossier>`. Les
 `balayage-*` ne se jouent que nommés. Choisir sans connaître les noms : `--grep <mot>`, `--section <§>`, `--scene <nom>` ; `--list` montre
@@ -75,6 +75,7 @@ la sélection sans rien jouer.
 | `deroulement-refus` | Arène des refus | §417 §416 | fenêtre, refus strict, simple avertissement, aucun contrôle |
 | `diagnostic-ddb` |  | §245 §257 | objet DDB aux ids d'activité changés signalé, puis remplacé par l'officiel, avec et sans verrou |
 | `diagnostic-effets` |  | §202 | enchantement perdu rétabli, au nom de l'objet traduit |
+| `diagnostic-phb3` |  | §438 | sous-classes et objets du Manuel des joueurs 3.0.0 |
 | `diagnostic-traduction` |  | §203 | textes restés en anglais, traduction du compendium reprise |
 | `diagnostic` |  | §177 | analyse, réparation sauvegardée, restauration exacte |
 | `dissipation` |  | §37.2 | d'office, par un test, par l'emplacement |

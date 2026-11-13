@@ -11,7 +11,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { INCAPACITATING } from "../core/conditions.mjs";
-import { formRefusal, formMustEnd, knownFormsMax } from "../core/wildshape.mjs";
+import { formRefusal, formMustEnd, knownFormsMax, moonLevelsFormula, moonSpellLists } from "../core/wildshape.mjs";
 import { expiryTime } from "../core/area.mjs";
 import { readTimeFactors } from "./areas.mjs";
 import { evalRuleFormula } from "./projectiles.mjs";
@@ -108,13 +108,32 @@ function revertItemData() {
 export async function transformActor(actor, source, activity) {
   let original = actor;
   if ( actor.isPolymorphed ) original = (await actor.revertOriginalForm({ renderSheet: false })) ?? originalOf(actor);
-  await original.transformInto(await withConcreteImage(source), activity.settings, { renderSheet: false });
+  await original.transformInto(await withConcreteImage(source), moonSettings(activity.settings), { renderSheet: false });
   const shaped = game.actors.filter(a => a.isPolymorphed && (a.getFlag("dnd5e", "originalActor") === original.id))
     .sort((a, b) => (b._stats?.createdTime ?? 0) - (a._stats?.createdTime ?? 0))[0] ?? null;
   if ( !shaped ) return null;
   await shaped.setFlag(MODULE_ID, "wildShape", { item: activity.item?.name ?? null, expiresAt: formExpiry(activity) });
   if ( !revertActivityOf(shaped) ) await shaped.createEmbeddedDocuments("Item", [revertItemData()]);
   return shaped;
+}
+
+/**
+ * §432 : les réglages de la transformation, le Cercle de la Lune lu sous ses deux identifiants (`moon` du Manuel des joueurs,
+ * `circle-moon` du préréglage de dnd5e 6.1) — CA minimale, PV temporaires, sorts du cercle. Une copie : ni l'activité ni le préréglage
+ * de dnd5e (`CONFIG.DND5E.transformation.presets.wildshape`) ne sont modifiés. Rien à changer : les réglages tels quels.
+ */
+export function moonSettings(settings) {
+  if ( !settings ) return settings;
+  const lists = Array.from(settings.spellLists ?? []);
+  const changes = {};
+  for ( const key of ["minimumAC", "tempFormula"] ) {
+    const formula = moonLevelsFormula(settings[key]);
+    if ( formula !== settings[key] ) changes[key] = formula;
+  }
+  const widened = moonSpellLists(lists);
+  if ( widened.length !== lists.length ) changes.spellLists = widened;
+  if ( !Object.keys(changes).length ) return settings;
+  return (typeof settings.clone === "function") ? settings.clone(changes) : { ...settings, ...changes };
 }
 
 /**

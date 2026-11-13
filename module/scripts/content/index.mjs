@@ -16,6 +16,7 @@ import { CHOICES } from "./choices.mjs";
 import { TARGETS, EFFECT_EXPIRIES, USAGE_LIMITS, ENCHANT_TARGETS, PACTS } from "./targets.mjs";
 import { TRACES, TRACE_RULES } from "./traces.mjs";
 import { TELEPORTS } from "./teleports.mjs";
+import { MAGICAL, ANTIMAGIC_ZONES, ANTIMAGIC_ZONE_LASTS } from "./antimagic.mjs";
 import { ABSORBS } from "./absorbs.mjs";
 import { SUMMONS, PLACES_SUMMONS, TARGETED_SUMMONS } from "./summons.mjs";
 import { MOVABLES } from "./movables.mjs";
@@ -67,7 +68,7 @@ export const BRICKS = Object.freeze([
   [NO_REACTIONS, "noReactions"], [ACTION_OR_BONUS, "actionOrBonus"], [SINGLE_ATTACK, "singleAttack"], [SPELL_FAILURES, "spellFailure"], [NO_ATTACKS_OR_SPELLS, "noAttacksOrSpells"], [NO_SPELLS, "noSpells"], [KNOWN_TO_ORIGIN, "knownToOrigin"], [CURES, "cures"],
   [FIGHTING_ADVANTAGE, "advantageIfFighting"], [SAVED_EFFECTS, "savedEffects"], [SIZE_CHANGES, "resize"],
   [ORDER_LISTS, "orders"], [ENDS_WHEN, "endsWhen"], [BANISHES, "banishes"], [WARDS_CONDITIONS, "wardsConditions"],
-  [GM_ALERTS, "gmAlert"]
+  [GM_ALERTS, "gmAlert"], [MAGICAL, "magical"], [ANTIMAGIC_ZONES, "antimagicZone"], [ANTIMAGIC_ZONE_LASTS, "zoneLasts"]
 ].map(Object.freeze));
 
 /**

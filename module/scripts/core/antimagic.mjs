@@ -13,11 +13,12 @@ export const ANTIMAGIC_BEHAVIOR = "dnd5e.antimagic";
 
 /**
  * Un item dont les effets sont magiques — la règle de la migration de dnd5e (`_migrateEffectMagical`) : un sort, un parchemin, ou un
- * item à la propriété `mgc`.
- * @param {{type?: string, subtype?: string, properties?: Iterable<string>}} item
+ * item à la propriété `mgc` ; §436 : ou une capacité que le contenu dit magique (`magical`).
+ * @param {{type?: string, subtype?: string, properties?: Iterable<string>, magical?: boolean}} item
  */
 export function isMagicalSource(item) {
   if ( !item ) return false;
+  if ( item.magical === true ) return true;
   if ( item.type === "spell" ) return true;
   if ( (item.type === "consumable") && (item.subtype === "scroll") ) return true;
   return new Set(item.properties ?? []).has("mgc");
@@ -27,10 +28,11 @@ export function isMagicalSource(item) {
  * Une utilisation que le champ interdit à qui s'y tient, et dont il protège qui s'y tient : un sort lancé (parchemin compris), ou une
  * activité d'un objet magique — sauf l'attaque d'une arme magique, qui frappe comme une arme ordinaire (dnd5e retire déjà son bonus,
  * `magicAvailable`).
- * @param {{spellCast?: boolean, item?: object, activityType?: string}} use
+ * @param {{spellCast?: boolean, item?: object, activityType?: string, magical?: boolean}} use
  */
-export function isMagicalUse({ spellCast=false, item=null, activityType=null }={}) {
-  if ( spellCast ) return true;
+export function isMagicalUse({ spellCast=false, item=null, activityType=null, magical=false }={}) {
+  // §436 : une activité `cast` (sort lancé par une capacité ou un objet) ; une capacité que le contenu dit magique (`magical`).
+  if ( spellCast || magical || (activityType === "cast") ) return true;
   if ( !isMagicalSource(item) ) return false;
   return !((item.type === "weapon") && (activityType === "attack"));
 }

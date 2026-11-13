@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-337 scénarios (`tools/scenarios/`), joués dans le client du MJ par le connecteur : `node tools/reload.mjs && node
+338 scénarios (`tools/scenarios/`), joués dans le client du MJ par le connecteur : `node tools/reload.mjs && node
 tools/scenario.mjs <noms>`. **Scène** : vide = l'« Arène de test » ; sinon la scène que le scénario demande (sauté si elle manque).
 Les scénarios d'un sous-dossier ne font pas partie de la passe complète : `node tools/scenario.mjs tools/scenarios/<dossier>`. Les
 `balayage-*` ne se jouent que nommés. Choisir sans connaître les noms : `--grep <mot>`, `--section <§>`, `--scene <nom>` ; `--list` montre
@@ -18,6 +18,7 @@ la sélection sans rien jouer.
 | `actions-tour` |  | §15.2 | Pointe, Dague, Dague en main secondaire |
 | `agrandissement` |  | §16.58 | Agrandissement (token 2×2), Rapetissement, retour à la taille d'origine |
 | `alerte-mj` |  | §364 §366 §365 | bandeau, carte chuchotée, filtre d'activité, réglage |
+| `antimagie-diagnostic` |  | §436 | diagnostic des effets magiques non marqués |
 | `antimagie` |  | §436 | statut lu, effets suspendus, sort refusé et forçable, attaque ordinaire |
 | `apercu-abri` |  |  | sources, état posé à la main, cohérence avec le verdict |
 | `appel-de-la-foudre` |  | §70 | nuage qui reste, éclair visé dessous, orage déjà là, relance |

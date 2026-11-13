@@ -6,6 +6,7 @@
  *  2. Le Magicien lance le Champ : la région porte `dnd5e.antimagic`, le Magicien a le statut.
  *  3. Le Guerrier entre dans le champ : statut, Bénédiction suspendue ; il en sort : plus de statut, Bénédiction rétablie.
  *  4. Le Zombi, dehors, lance Flamme sacrée sur le Magicien : non affecté (raison `antimagic`), PV inchangés.
+ *  4 bis. Poussée télékinétique (Manuel des monstres, capacité dite magique) : sans effet sur le Magicien ; refusée au Zombi dans le champ.
  *  5. Le Magicien lance Trait de feu (une cible ; Projectile magique ouvrirait d'abord la visée des projectiles) : fenêtre de légalité — « Renoncer » : rien ; « Utiliser quand même » : carte marquée
  *     `overridden` (la raison du champ), alerte au MJ.
  *  6. Le Guerrier, dans le champ, frappe le Bandit avec une arme non magique : aucun souci de légalité, l'attaque se résout.
@@ -120,6 +121,21 @@ export default {
     await pause(1500);
     const log = (await ctx.engineLog()).filter(l => /unaffected/.test(l) && /\(antimagic/.test(l));
     ctx.expect(log.length > 0 && ((await ctx.hp(mage)) === hp), `Flamme sacrée sur le Magicien dans le champ → ${log.at(-1) ?? "rien au journal"}`);
+
+    // 4 bis. Une capacité de monstre dite magique (content/antimagic.mjs) : Poussée télékinétique de l'Esprit frappeur, du Manuel des
+    // monstres — de l'extérieur sur le Magicien : non affecté ; depuis le champ : le souci du champ.
+    const thrust = await ctx.ensureItem(zombi, "Compendium.dnd-monster-manual.actors.Actor.mmPoltergeist000.Item.mmTelekineticThr").catch(() => null);
+    if ( thrust ) {
+      const t = await ctx.use({ tokenId: zombi.id, itemId: thrust, targetTokenIds: [mage.id], consume: false });
+      if ( t.usageMessageId ) await ctx.settle(t.usageMessageId, { timeoutMs: 30000 }).catch(() => null);
+      await pause(1500);
+      const tlog = (await ctx.engineLog()).filter(l => /unaffected/.test(l) && /\(antimagic/.test(l) && /Telekinetic|télékinétique/i.test(l));
+      ctx.expect(tlog.length > 0, `Poussée télékinétique sur le Magicien dans le champ → ${tlog.at(-1) ?? "rien au journal"}`);
+      await place(zombi, m.x, m.y + grid);
+      const tIssues = await ctx.engine("issues", { tokenId: zombi.id, itemId: thrust });
+      ctx.expect(tIssues.some(l => /no power inside|aucun pouvoir/i.test(l)), `dans le champ, la Poussée télékinétique est refusée (${tIssues.join(" ; ") || "aucun souci"})`);
+      await place(zombi, m.x + 5 * grid, m.y);
+    } else ctx.log("Manuel des monstres absent : capacité de monstre non jouée");
 
     // 5. Trait de feu depuis le champ : refusé, forçable.
     const missile = await lend(mage, "phbsplFireBolt00");

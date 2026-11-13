@@ -8,6 +8,7 @@
 import { ANTIMAGIC_STATUS, ANTIMAGIC_BEHAVIOR, isMagicalSource, isMagicalUse, shouldMarkMagical } from "../core/antimagic.mjs";
 import { isSpellCast } from "./scrolls.mjs";
 import { originItemOf } from "./facts.mjs";
+import { contentOf } from "./content.mjs";
 
 /** dnd5e connaît-il le comportement de région de l'antimagie (6.1 et plus) ? */
 export const antimagicBehaviorKnown = () => !!CONFIG.RegionBehavior?.dataModels?.[ANTIMAGIC_BEHAVIOR];
@@ -17,7 +18,8 @@ export const inAntimagic = actor => !!actor?.statuses?.has?.(ANTIMAGIC_STATUS);
 
 /** Les faits purs d'un item (core/antimagic.mjs). */
 export const itemFacts = item => item ? {
-  type: item.type, subtype: item.system?.type?.value, properties: Array.from(item.system?.properties ?? [])
+  type: item.type, subtype: item.system?.type?.value, properties: Array.from(item.system?.properties ?? []),
+  magical: contentOf(item).entry?.magical === true
 } : null;
 
 /** Une utilisation que le champ interdit et dont il protège : un sort lancé, ou une activité d'objet magique (pas une attaque d'arme). */
@@ -88,3 +90,30 @@ export function markAppliedEffect(effect) {
   effect.updateSource({ "system.magical": true });
   return true;
 }
+
+/**
+ * Diagnostic (§436) : les effets d'un item magique **déjà** sur une fiche sans la marque — ajoutés avant la migration 6.1 du monde, ou
+ * hors d'elle. Rend leurs ids.
+ * @param {Item} item
+ */
+export function unmarkedItemEffects(item) {
+  const facts = itemFacts(item);
+  if ( !isMagicalSource(facts) ) return [];
+  return (item.effects ?? []).filter(e => shouldMarkMagical({ type: e.type, magical: e.system?.magical, statuses: e.statuses }, facts))
+    .map(e => e.id);
+}
+
+/** Diagnostic (§436) : les effets posés sur un acteur depuis un item magique, sans la marque. Rend leurs ids. */
+export function unmarkedAppliedEffects(actor) {
+  return (actor?.effects ?? []).filter(e => e.system && ("magical" in e.system)
+    && shouldMarkMagical({ type: e.type, magical: e.system.magical, statuses: e.statuses }, itemFacts(originItemOf(e))))
+    .map(e => e.id);
+}
+
+/** Marquer ces effets d'un document (item ou acteur). Rend le nombre marqué. */
+export async function markEffects(doc, ids) {
+  const present = ids.filter(id => doc.effects?.get(id));
+  if ( present.length ) await doc.updateEmbeddedDocuments("ActiveEffect", present.map(_id => ({ _id, "system.magical": true })));
+  return present.length;
+}
+

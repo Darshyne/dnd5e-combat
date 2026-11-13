@@ -101,7 +101,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
-| `api.content.builtin` | _données (849 clés)_ |  |  |
+| `api.content.builtin` | _données (868 clés)_ |  |  |
 | `api.content.facts` | _liste (65)_ |  |  |
 | `api.content.identifierOf` | `(item)` | `adapter/content.mjs` | L'identifiant sous lequel un item est reconnu, et d'où il vient. §19.9 : un item premium sans identifiant (Ravenloft) en reçoit un à sa création sur une fiche — dnd5e 6 l'écrit d'après le nom (documents/item.mjs:1146, `… |
 | `api.content.inspect` | `(actor)` | `adapter/content.mjs` | Pour l'inspection en jeu : ce que chaque item d'un acteur déclare, et d'où. |
@@ -117,7 +117,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.content.register` | `(source, table, { sources={} }={})` | `runtime/content.mjs` | Enregistre la table de contenu d'un autre module (voir l'en-tête). Validée entrée par entrée comme le contenu livré. @param {string} source L'id du module qui l'apporte. @param {Record<string, object>} table `{ identifi… |
 | `api.content.registered` | `()` | `content/index.mjs` | Ce qui est enregistré : `{ source: [identifiants] }`. |
 | `api.content.set` | `(identifier, entry)` | `adapter/content.mjs` | Écrit (ou retire, avec `null`) l'entrée d'un identifiant dans la surcouche du monde. MJ uniquement. |
-| `api.content.shipped` | _données (849 clés)_ |  |  |
+| `api.content.shipped` | _données (868 clés)_ |  |  |
 | `api.content.sources` | `()` | `content/index.mjs` | Les sources enregistrées : `{ source: { id de document: identifiant } }`. |
 | `api.content.unregister` | `(source)` | `content/index.mjs` | Retire la table d'un module (et ses sources, §277). @returns {boolean} Si elle était enregistrée. |
 | `api.content.validate` | `(entry)` | `runtime/content.mjs` | Les erreurs d'une entrée de contenu (`string[]`, vide = valide), contre le schéma `core/content/entry.mjs`. Ne change rien. |

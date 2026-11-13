@@ -334,7 +334,8 @@ function describe({ item, tab, mod, version, pack, owner, actorId, frEntry, effe
   const bad = [];
   if ( emptyDamage ) bad.push("part de dégâts vide");
   const posed = new Set(acts.flatMap(a => (a.effects ?? []).map(e => e._id)));
-  for ( const a of acts ) for ( const e of a.effects ?? [] ) if ( !effectIds.has(e._id) ) bad.push(`effet lié absent (${a.name || a.type})`);
+  // §438 : un « effet distant » de dnd5e 6.1 (`uuid` vers un compendium d'effets, Manuel 3.0.0) n'est pas sur l'item : pas un défaut.
+  for ( const a of acts ) for ( const e of a.effects ?? [] ) if ( !e.uuid && !effectIds.has(e._id) ) bad.push(`effet lié absent (${a.name || a.type})`);
   const entryText = entry ? JSON.stringify(entry) : "";
   for ( const e of effects ) {
     if ( e.transfer || posed.has(e._id) || entryText.includes(e._id) || entryText.includes(JSON.stringify(e.name)) ) continue;

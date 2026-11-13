@@ -6,6 +6,7 @@ import { describe, it, expect } from "vitest";
 import { validateEntry } from "../module/scripts/core/content.mjs";
 import { CONTENT, SRD_ALIASES } from "../module/scripts/content/index.mjs";
 import { hiddenAtLevel } from "../module/scripts/core/level-gate.mjs";
+import { phbDifferences, phbShape, renamedSourceItem, citesSubclass } from "../module/scripts/core/phb-update.mjs";
 
 /** Une formule de dés évaluée sans Foundry : les données remplacées, `NdF` rendu « N|F » pour lire le nombre et les faces. */
 function dice(formula, levels) {
@@ -123,5 +124,43 @@ describe("§438 : rien de compté deux fois", () => {
       const type = t.if["activity.dealsType"];
       expect(t.if.not).toEqual({ "source.hasFeature": `elemental-affinity-${type}` });
     }
+  });
+});
+
+describe("§438 : remise à jour des fiches (diagnostic)", () => {
+  const act = (type, extra={}) => ({ type, effects: [], damage: { parts: [] }, visibility: { level: { min: null, max: null } }, ...extra });
+  const old = { system: { identifier: "improved-brutal-strike", activities: { aaaaaaaaaaaaaaaa: act("utility") }, advancement: {} },
+    effects: [{ _id: "eeeeeeeeeeeeeeee", system: { changes: [{ key: "system.attributes.movement.speed", type: "add", value: "-15" }] } }] };
+  it("même forme : rien", () => {
+    expect(phbDifferences(phbShape(old), phbShape(structuredClone(old)))).toEqual([]);
+  });
+  it("l'état de la fiche ne compte pas (utilisations, nom)", () => {
+    const used = structuredClone(old);
+    used.system.activities.aaaaaaaaaaaaaaaa.uses = { spent: 2 };
+    used.system.activities.aaaaaaaaaaaaaaaa.name = "Traduit";
+    used.effects[0].name = "Traduit";
+    expect(phbDifferences(phbShape(used), phbShape(old))).toEqual([]);
+  });
+  it("identifiant, activités, effets, contenu, avancement", () => {
+    const ref = structuredClone(old);
+    ref.system.identifier = "brutal-strike";
+    ref.system.activities.bbbbbbbbbbbbbbbb = act("damage");
+    ref.effects.push({ _id: "ffffffffffffffff", system: { changes: [] } });
+    ref.effects[0].system.changes = [{ key: "system.attributes.movement.bonus", type: "subtract", value: "15" }];
+    ref.system.advancement = { x: { type: "ItemChoice" } };
+    expect(phbDifferences(phbShape(old), phbShape(ref))).toEqual(["identifier", "activities", "effects", "content", "advancement"]);
+  });
+  it("une porte de niveau ajoutée est un changement de contenu", () => {
+    const ref = structuredClone(old);
+    ref.system.activities.aaaaaaaaaaaaaaaa.visibility.level.max = 5;
+    expect(phbDifferences(phbShape(old), phbShape(ref))).toEqual(["content"]);
+  });
+  it("sorts d'une sous-classe renommée, formules qui citent l'ancien identifiant", () => {
+    expect(renamedSourceItem("subclass:vengeance", "vengeance", "oath-vengeance")).toBe("subclass:oath-vengeance");
+    expect(renamedSourceItem("class:paladin", "vengeance", "oath-vengeance")).toBeNull();
+    expect(renamedSourceItem(undefined, "fey", "fey-wanderer")).toBeNull();
+    expect(citesSubclass({ activities: { a: { damage: { parts: [{ custom: { formula: "@scale.fey.dreadful-strike" } }] } } } }, "fey")).toBe(true);
+    expect(citesSubclass({ x: "@scale.fey-wanderer.die" }, "fey")).toBe(false);
+    expect(citesSubclass({ x: "max(@subclasses.moon.levels, 1)" }, "moon")).toBe(true);
   });
 });

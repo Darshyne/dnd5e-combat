@@ -16,6 +16,7 @@ import { contentOf } from "../../adapter/content.mjs";
 import { dataFixPlanOf, applyDataFixes } from "../../adapter/data-fixes.mjs";
 import { sourceKind } from "../../core/item-sources.mjs";
 import { unmarkedItemEffects, unmarkedAppliedEffects, markEffects } from "../../adapter/antimagic.mjs";
+import { phbDifferences, phbShape, renamedSourceItem, citesSubclass } from "../../core/phb-update.mjs";
 
 /**
  * §202 : les effets d'une référence du compendium, prêts à recopier — un effet au nom d'origine (anglais) de l'objet prend le nom
@@ -235,6 +236,9 @@ const phbEffects = {
       if ( !source || !SOURCES.test(source) ) continue;
       const reference = await fromUuid(source).catch(() => null);
       if ( !reference?.effects?.size ) continue;
+      // §438 : un objet d'une ancienne version dont l'identifiant ou les activités ont changé (Manuel 3.0.0) se remplace (`phb3-items`) ;
+      // y recopier les effets neufs mélangerait les deux formes.
+      if ( phbDifferences(phbShape(item.toObject()), phbShape(reference.toObject())).some(r => ["identifier", "activities"].includes(r)) ) continue;
       const missing = reference.effects.filter(e => !item.effects.has(e.id));
       if ( !missing.length ) continue;
       const copies = effectsOf(reference, missing);
@@ -661,6 +665,105 @@ const magicalEffects = {
   }
 };
 
+/* -------------------------------------------- */
+/*  10. Manuel des joueurs 3.0.0                  */
+/* -------------------------------------------- */
+
+/**
+ * §438 : les fiches faites avec le Manuel des joueurs 2.2.0 gardent leurs objets tels qu'ils étaient ; dnd5e 6.1.0 ne migre qu'un
+ * identifiant de sous-classe (Cercle de la Lune, `SubclassData.#migrateMoonIdentifier`) et le module du Manuel n'a aucun code de
+ * migration. Deux vérifications, à la demande de l'utilisateur (2026-11-14) :
+ *  - `phb3-subclasses` : l'identifiant d'une sous-classe du Manuel remis à celui de sa référence (`vengeance` → `oath-vengeance`), et
+ *    les sorts qu'elle a donnés (`system.sourceItem` « subclass:<id> », dnd5e.mjs:23417) suivis. Cochée d'office. L'aperçu signale les
+ *    objets qui citent encore l'ancien identifiant dans une formule (`@scale.fey.…` des anciennes Frappes effroyables) : à remplacer ;
+ *  - `phb3-items` : les aptitudes et sorts du Manuel dont la référence a changé (identifiant, activités, effets, contenu, avancement)
+ *    remplacés par elle — même id, état de la fiche gardé (utilisations, préparation, origine d'avancement) comme le nettoyage de
+ *    Midi-QOL le fait. Une tâche par fiche, l'aperçu liste chaque objet et ce qui change ; rien n'est coché d'office.
+ */
+const PHB_ITEM = /^Compendium\.dnd-players-handbook\.(classes|feats|origins|spells)\.Item\./;
+const sourceOf = item => item._stats?.compendiumSource ?? item.flags?.dnd5e?.sourceId ?? "";
+
+const phb3Subclasses = {
+  id: "phb3-subclasses", icon: "fa-solid fa-signature",
+  async scan() {
+    const t = tr("Phb3Subclasses");
+    const tasks = [];
+    for ( const item of allItems() ) {
+      if ( (item.type !== "subclass") || !PHB_ITEM.test(sourceOf(item)) ) continue;
+      const reference = await fromUuid(sourceOf(item)).catch(() => null);
+      const from = item._source.system?.identifier ?? item.system.identifier;
+      const to = reference?.system?.identifier;
+      if ( !to || (from === to) ) continue;
+      const actor = item.actor;
+      const spells = (actor?.items ?? []).filter(i => (i.type === "spell") && renamedSourceItem(i._source.system?.sourceItem, from, to));
+      const citing = (actor?.items ?? []).filter(i => (i !== item) && citesSubclass(i._source.system, from));
+      const text = [t("Line", { from: esc(from), to: esc(to) }),
+        spells.length ? t("Spells", { count: spells.length }) : null,
+        citing.length ? `⚠ ${t("Cites", { from: esc(from), names: esc(citing.map(i => i.name).join(", ")) })}` : null].filter(Boolean).join("<br>");
+      tasks.push({ root: rootOf(item), where: whereOf(item), text, preselect: true,
+        apply: async () => {
+          const own = fresh(item);
+          await own.update({ "system.identifier": to });
+          for ( const spell of spells ) await fresh(spell).update({ "system.sourceItem": renamedSourceItem(spell._source.system.sourceItem, from, to) });
+          return text;
+        } });
+    }
+    return tasks;
+  }
+};
+
+/** L'objet du Manuel remplacé par sa référence : données de la référence, état de la fiche gardé (midiReplacement), plus sa classe. */
+function phb3Replacement(item, reference) {
+  const data = midiReplacement(item, reference);
+  const old = item.toObject().system ?? {};
+  if ( old.classIdentifier && !data.system.classIdentifier ) data.system.classIdentifier = old.classIdentifier;
+  return data;
+}
+
+/** Les objets du Manuel d'une fiche à revoir : `{ item, reference, reasons }` (référence null : elle n'existe plus). */
+async function phb3Outdated(actor) {
+  const out = [];
+  for ( const item of actor.items ) {
+    if ( !["feat", "spell"].includes(item.type) || !PHB_ITEM.test(sourceOf(item)) ) continue;
+    const reference = await fromUuid(sourceOf(item)).catch(() => null);
+    if ( !reference ) { out.push({ item, reference: null, reasons: [] }); continue; }
+    const reasons = phbDifferences(phbShape(item.toObject()), phbShape(reference.toObject()));
+    if ( reasons.length ) out.push({ item, reference, reasons });
+  }
+  return out;
+}
+
+const phb3Items = {
+  id: "phb3-items", icon: "fa-solid fa-book-open",
+  async scan() {
+    const t = tr("Phb3Items");
+    const tasks = [];
+    for ( const actor of game.actors ) {
+      const outdated = await phb3Outdated(actor);
+      if ( !outdated.length ) continue;
+      const lines = outdated.map(({ item, reference, reasons }) => reference
+        ? `♻ ${esc(item.name)} — ${reasons.map(r => t(`Reason.${r}`)).join(", ")}`
+        : `⚠ ${t("Gone", { name: esc(item.name) })}`);
+      const replaceable = outdated.filter(o => o.reference);
+      tasks.push({ root: rootOf(actor), where: `<b>${esc(actor.name)}</b>`, text: lines.join("<br>"), preselect: false,
+        ...(replaceable.length ? { apply: async () => {
+          const sheet = fresh(actor);
+          const done = [];
+          for ( const { item, reference } of replaceable ) {
+            const current = sheet.items.get(item.id);
+            if ( !current ) continue;
+            const data = phb3Replacement(current, reference);
+            await sheet.deleteEmbeddedDocuments("Item", [current.id]);
+            await sheet.createEmbeddedDocuments("Item", [data], { keepId: true });
+            done.push(`♻ ${esc(current.name)} ← ${esc(reference.name)}`);
+          }
+          return done.join("<br>");
+        } } : {}) });
+    }
+    return tasks;
+  }
+};
+
 /** Les vérifications, dans l'ordre où les macros les proposaient. */
 export const CHECKS = Object.freeze([cleanMidi, phbEffects, lostEffects, scrolls, ddb, pileBasics, creatures, retranslate, dataFixes,
-  magicalEffects]);
+  magicalEffects, phb3Subclasses, phb3Items]);

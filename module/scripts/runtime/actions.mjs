@@ -39,6 +39,7 @@ import { onPreMoveToken, noteWindward } from "./move-gate.mjs";
 import { identifierOf } from "../adapter/content.mjs";
 import { samePlane } from "../adapter/plane.mjs";
 import { enclosureBetween } from "../adapter/facts.mjs";
+import { useDespiteAntimagic } from "./antimagic.mjs";
 export { afterTeleport, currentTeleport, selfTeleportOf, teleportClick, teleportSelf, teleportTo } from "./teleport.mjs";
 export { dashLimit, dashPreview, dashProblem, dashRefusal, dashStrike, dashTargets, lineDashOf, transpose } from "./dash.mjs";
 
@@ -788,7 +789,8 @@ export async function engage(token, target, activity, { mode=null, fast=false, u
   const config = { ...usageConfig, [MODULE_ID]: { ...usageConfig?.[MODULE_ID], engaged: true, ...(mode ? { attackMode: mode } : {}), ...(choice ? { choice } : {}),
     ...(lines.length ? { issues: mergeIssues(usageConfig?.[MODULE_ID]?.issues ?? [], lines), issuesCoverRange: coverRange || !!usageConfig?.[MODULE_ID]?.issuesCoverRange } : {}) } };
   if ( event && !config.event ) config.event = event;
-  await activity.use(config, dialogConfig, messageConfig);
+  // §436 : sous le statut `antimagic`, dnd5e refuserait sèchement un sort — la fenêtre du moteur d'abord, forçable.
+  await useDespiteAntimagic(activity, extra => activity.use({ ...config, [MODULE_ID]: { ...config[MODULE_ID], ...extra } }, dialogConfig, messageConfig));
 }
 
 /**
@@ -804,7 +806,8 @@ export async function castOnTargets(activity, [config, dialog, message], picks) 
   for ( const uuid of picks ) fromUuidSync(uuid, { strict: false })?.object?.setTarget(true, { releaseOthers: false, groupSelection: true });
   const messageConfig = foundry.utils.deepClone(message ?? {});
   if ( messageConfig.data?.system ) delete messageConfig.data.system.targets;
-  await activity.use({ ...config, [MODULE_ID]: { ...(config?.[MODULE_ID] ?? {}), engaged: true } }, dialog, messageConfig);
+  await useDespiteAntimagic(activity, extra => activity.use({ ...config, [MODULE_ID]: { ...(config?.[MODULE_ID] ?? {}), engaged: true, ...extra } },
+    dialog, messageConfig));
 }
 
 /* -------------------------------------------- */

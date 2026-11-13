@@ -14,6 +14,7 @@ import { distanceBetween } from "./turn.mjs";
 import { readUnitFactors, lengthIn } from "./units.mjs";
 import { isSpellCast } from "./scrolls.mjs";
 import { samePlane } from "./plane.mjs";
+import { inAntimagic, magicalUse, antimagicSourceName } from "./antimagic.mjs";
 
 /**
  * §161 : Globe d'invulnérabilité — « un sort de niveau 5 ou moins lancé de l'extérieur ne peut affecter quoi que ce soit dans
@@ -82,7 +83,7 @@ async function statusesOfRef(ref) {
  * Pourquoi l'action ne peut pas affecter la créature de ce token, ou null : type interdit, règle du contenu, ou
  * immunité à chacun de ses effets quand elle ne fait rien d'autre (core/eligibility.mjs, `immuneToAll`).
  * §225 : d'abord le plan — une créature dans l'Éthéré n'est affectée que par ce qui vient de l'Éthéré, et inversement.
- * @returns {Promise<{reason: "plane"|"enclosed"|"globe"|"type"|"content"|"immune", detail?: string}|null>}
+ * @returns {Promise<{reason: "plane"|"enclosed"|"antimagic"|"globe"|"type"|"content"|"immune", detail?: string}|null>}
  */
 export async function unaffectedBy(activity, plan, token, { castLevel=null }={}) {
   const actor = token?.actor;
@@ -91,6 +92,8 @@ export async function unaffectedBy(activity, plan, token, { castLevel=null }={})
   // §232 : une sphère d'Otiluke entre l'auteur et la cible — ni dedans vers dehors, ni dehors vers dedans.
   const sphere = enclosureBetween(activity.actor, actor);
   if ( sphere ) return { reason: "enclosed", detail: sphere.name };
+  // §436 : le statut `antimagic` de dnd5e 6.1 — ni sort ni objet magique n'affecte qui se tient dans le champ, d'où qu'ils viennent.
+  if ( inAntimagic(actor) && magicalUse(activity) ) return { reason: "antimagic", detail: antimagicSourceName(actor) };
   const globe = globeAgainst(activity, token, castLevel ?? Number(activity.item?.system?.level ?? 0));
   if ( globe ) return { reason: "globe", detail: globe.name };
   const rule = targetRuleOf(activity);

@@ -13,6 +13,7 @@ import { contentOf } from "./content.mjs";
 import { originItemOf, creatureTypeOf } from "./facts.mjs";
 import { distanceBetween } from "./turn.mjs";
 import { lengthIn } from "./units.mjs";
+import { inAntimagic, antimagicSourceName } from "./antimagic.mjs";
 
 /** Les émanations `key` de la scène : `{ holder, item, rule }`, une par lanceur et par item. */
 export function zonesOf(scene, key) {
@@ -42,9 +43,20 @@ export function insideZone(holder, token, rule, pos=undefined) {
   return distanceBetween(holder, token, pos ? { posB: pos } : {}).value <= radiusOf(token.parent, rule) + 1e-6;
 }
 
-/** §163 : le Champ antimagie dans lequel se tient ce token, ou null. */
+/**
+ * Le champ antimagie dans lequel se tient ce token, ou null : `{ name, status, item? }`. §436 : d'abord le statut `antimagic` de dnd5e
+ * 6.1 (posé par une région `dnd5e.antimagic` — le Champ du SRD, celui du Manuel par le moteur, runtime/antimagic.mjs —, ou à la main) ;
+ * sinon (dnd5e 6.0, région absente) le globe `everywhere` du §163, lu sur l'effet du lanceur du champ.
+ */
 export function antimagicAround(token) {
-  return zonesOf(token?.parent, "globe").find(z => z.rule.everywhere && insideZone(z.holder, token, z.rule)) ?? null;
+  if ( inAntimagic(token?.actor) ) return { name: antimagicSourceName(token.actor), status: true, item: null };
+  const zone = zonesOf(token?.parent, "globe").find(z => z.rule.everywhere && insideZone(z.holder, token, z.rule)) ?? null;
+  return zone ? { ...zone, name: zone.item.name, status: false } : null;
+}
+
+/** §436 : le token serait-il dans un globe `everywhere` (§163) à `pos` ? Le globe, ou null. */
+export function antimagicGlobeAt(token, pos) {
+  return zonesOf(token?.parent, "globe").find(z => z.rule.everywhere && insideZone(z.holder, token, z.rule, pos)) ?? null;
 }
 
 /**

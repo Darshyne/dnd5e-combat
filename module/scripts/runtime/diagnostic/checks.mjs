@@ -15,6 +15,7 @@ import { referenceReader, retranslationOf, applyRetranslation } from "../../adap
 import { contentOf } from "../../adapter/content.mjs";
 import { dataFixPlanOf, applyDataFixes } from "../../adapter/data-fixes.mjs";
 import { sourceKind } from "../../core/item-sources.mjs";
+import { unmarkedItemEffects, unmarkedAppliedEffects, markEffects } from "../../adapter/antimagic.mjs";
 
 /**
  * §202 : les effets d'une référence du compendium, prêts à recopier — un effet au nom d'origine (anglais) de l'objet prend le nom
@@ -626,5 +627,40 @@ const dataFixes = {
   }
 };
 
+/* -------------------------------------------- */
+/*  9. Effets magiques non marqués (antimagie)    */
+/* -------------------------------------------- */
+
+/**
+ * §436 : la marque `system.magical` que la migration de dnd5e 6.1 pose sur les effets d'un sort, d'un parchemin ou d'un item `mgc`, et
+ * que le moteur pose à la création (runtime/antimagic.mjs) — sans elle, le statut `antimagic` ne suspend pas l'effet. Ici, ce qui était
+ * déjà sur les fiches : les effets des items magiques, et les effets posés sur les acteurs depuis eux. Rien d'autre ne change.
+ */
+const magicalEffects = {
+  id: "magical-effects", icon: "fa-solid fa-wand-sparkles",
+  async scan() {
+    const t = tr("MagicalEffects");
+    const tasks = [];
+    for ( const scanned of allItems() ) {
+      const ids = unmarkedItemEffects(scanned);
+      if ( !ids.length ) continue;
+      const text = t("Line", { name: esc(scanned.name), count: ids.length });
+      tasks.push({ root: rootOf(scanned), where: whereOf(scanned), text, preselect: true,
+        apply: async () => { await markEffects(fresh(scanned), ids); return text; } });
+    }
+    const actors = [...game.actors];
+    for ( const scene of game.scenes ) for ( const token of scene.tokens ) if ( !token.actorLink && token.actor ) actors.push(token.actor);
+    for ( const scanned of actors ) {
+      const ids = unmarkedAppliedEffects(scanned);
+      if ( !ids.length ) continue;
+      const text = t("Line", { name: esc(scanned.name), count: ids.length });
+      tasks.push({ root: rootOf(scanned), where: `<b>${esc(scanned.name)}</b>`, text, preselect: true,
+        apply: async () => { await markEffects(fresh(scanned), ids); return text; } });
+    }
+    return tasks;
+  }
+};
+
 /** Les vérifications, dans l'ordre où les macros les proposaient. */
-export const CHECKS = Object.freeze([cleanMidi, phbEffects, lostEffects, scrolls, ddb, pileBasics, creatures, retranslate, dataFixes]);
+export const CHECKS = Object.freeze([cleanMidi, phbEffects, lostEffects, scrolls, ddb, pileBasics, creatures, retranslate, dataFixes,
+  magicalEffects]);

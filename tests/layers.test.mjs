@@ -83,7 +83,8 @@ describe("un seul chemin pour toute action", () => {
   it("engage (clic, menu, visée) finit dans activity.use()", () => {
     const code = source("runtime/actions.mjs");
     const body = code.slice(code.indexOf("export async function engage"), code.indexOf("/*", code.indexOf("export async function engage")));
-    expect(body).toMatch(/await activity\.use\(/);
+    // §436 : par `useDespiteAntimagic` (la fenêtre forçable sous le statut `antimagic`), qui appelle toujours `activity.use`.
+    expect(body).toMatch(/await (activity\.use\(|useDespiteAntimagic\(activity, extra => activity\.use\()/);
   });
 });
 

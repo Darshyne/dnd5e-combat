@@ -826,6 +826,10 @@
  *     globe?: { radius, units, maxLevel, everywhere? }  §161 : tant que le lanceur porte un effet de l'item, un sort de niveau `maxLevel`
  *                                               ou moins lancé de l'extérieur de l'Émanation n'y affecte personne (Globe d'invulnérabilité) ;
  *                                               §163 `everywhere` : d'où qu'il soit lancé, et aucun sort ne s'y lance (Champ antimagie)
+ *     magical?: true                            §436 : les activités de l'item sont magiques (action Magie, effet magique d'un monstre) :
+ *                                               le statut `antimagic` de dnd5e les refuse à qui s'y tient et en protège qui s'y tient
+ *     antimagicZone?: true                      §436 : la région d'une activité de l'item reçoit le comportement `dnd5e.antimagic` du
+ *                                               système quand l'activité ne l'a pas (Champ antimagie du Manuel, Cône antimagie)
  *     recastCost?: "bonus"|"action"             §164 : le coût d'une relance pendant la concentration (Vif carquois : une action Bonus)
  *     levitate?: { effect, height, units }      §164 : le porteur de l'effet s'élève de `height` à la pose, redescend quand il tombe (Lévitation)
  *     prismatic?: { indigo, violet }            §164 : un d8 par cible choisit la couleur — 1 à 5 : le type des dégâts (feu, acide,

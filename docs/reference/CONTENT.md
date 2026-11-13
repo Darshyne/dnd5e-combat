@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-849 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+868 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -17,6 +17,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `afterSmite` | 1 | `smite-of-protection` |
 | `afterSneak` | 1 | `wails-from-the-grave` |
 | `afterTeleport` | 2 | `misty-escape`, `steps-of-the-fey` |
+| `antimagicZone` | 2 | `antimagic-cone`, `antimagic-field` |
 | `atTurnStart` | 3 | `aura-of-vitality`, `phantasmal-force`, `witch-bolt` |
 | `atZero` | 3 | `ancient-might`, `necrotic-husk`, `power-of-shadow` |
 | `aura` | 16 | `aura-of-alacrity`, `aura-of-authority`, `aura-of-bravery`, `aura-of-courage`, `aura-of-devotion`, `aura-of-life`, … |
@@ -154,6 +155,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `lifesteal` | 1 | `vampiric-touch` |
 | `light` | 14 | `continual-flame`, `darkness`, `daylight`, `faerie-fire`, `fire-shield`, `flame-blade`, … |
 | `limitedAction` | 1 | `haste` |
+| `magical` | 20 | `animate-trees`, `captains-charm`, `darkness-aura`, `deathly-teleport`, `ethereal-jaunt`, `ethereal-stride`, … |
 | `magicEvasion` | 1 | `circle-of-power` |
 | `martialArts` | 1 | `martial-arts` |
 | `maxSpellDamageVs` | 1 | `demonomicon-of-iggwilv` |
@@ -286,7 +288,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `zoneCharges` | 1 | `cordon-of-arrows` |
 | `zoneEffects` | 2 | `jallarzis-storm-of-radiance`, `silence` |
 | `zoneEnd` | 1 | `delayed-blast-fireball` |
-| `zoneLasts` | 1 | `symbol` |
+| `zoneLasts` | 2 | `antimagic-cone`, `symbol` |
 | `zoneMax` | 2 | `decanter-of-endless-water`, `slow` |
 
 ## Déclencheurs : moment → action

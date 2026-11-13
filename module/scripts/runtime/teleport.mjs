@@ -18,6 +18,8 @@ import { askAnyway } from "./turn.mjs";
 import { occupiedAt } from "./actions.mjs";
 import { timedWait } from "../adapter/dialogs.mjs";
 import { whileAwaiting } from "../adapter/awaiting.mjs";
+import { antimagicAround, antimagicGlobeAt } from "../adapter/barriers.mjs";
+import { antimagicRegionAt } from "../adapter/antimagic.mjs";
 
 /* -------------------------------------------- */
 /*  Téléportation (§16.10)                      */
@@ -74,6 +76,11 @@ export function teleportIssues(activity, doc, to) {
     issues.push({ line: loc("Teleport.TropLoin", { distance: limit, units: doc.parent.grid.units }), notice: "Retour.TropLoin" });
   }
   if ( occupiedAt(doc, to) ) issues.push({ line: loc("Teleport.CaseOccupee"), notice: "Retour.CaseOccupee" });
+  // §436 : Champ antimagie — ni vers lui, ni depuis lui (statut `antimagic` de dnd5e 6.1 au départ, région `dnd5e.antimagic` ou globe
+  // du §163 à l'arrivée).
+  const position = { x: to.x, y: to.y, elevation: to.elevation ?? doc._source.elevation ?? 0 };
+  const field = antimagicAround(doc)?.name ?? antimagicRegionAt(doc, position)?.name ?? antimagicGlobeAt(doc, position)?.item?.name ?? null;
+  if ( field ) issues.push({ line: loc("Teleport.Antimagie", { item: field }), notice: "Retour.Antimagie" });
   const center = doc.getCenterPoint ? doc.getCenterPoint(to) : { x: to.x, y: to.y };
   // §367 : Marche dans l'ombre — « en Pénombre ou dans les Ténèbres, vers un espace … lui aussi en Pénombre ou dans les Ténèbres ».
   const lit = tooBrightFor(activity, doc, { ...center, elevation: to.elevation ?? doc._source.elevation ?? 0 });

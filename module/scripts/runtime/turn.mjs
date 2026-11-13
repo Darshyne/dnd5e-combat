@@ -36,6 +36,7 @@ import { reportForced, overriddenFlag, refusal } from "./forced.mjs";
 /** §417 : les raisons passées outre — aucune quand le réglage « Action impossible » coupe le contrôle (ni alerte, ni carte marquée). */
 const forcedReasons = choice => (refusal().report ? passedReasons(choice) : []);
 import { antimagicAround, barrierBetween } from "../adapter/barriers.mjs";
+import { magicalUse } from "../adapter/antimagic.mjs";
 import { rangedBanAround, formLockAround } from "../adapter/areas.mjs";
 import { isRangedWeaponAttack } from "../adapter/cover.mjs";
 import { selfTeleportOf, tooBrightFor } from "./teleport.mjs";
@@ -221,8 +222,10 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
   const handsFull = (casting && !pilot) ? somaticBlockOf(activity) : null;
   // §22 : « en Rage, vous ne pouvez pas lancer de sorts ».
   const raging = isSpellCast(activity.item) && isRaging(activity.actor);   // §48 : lire un parchemin aussi
-  // §163 : Champ antimagie — on n'y lance aucun sort.
-  const antimagic = (isSpellCast(activity.item) && !pilot) ? antimagicAround(usageToken(activity)) : null;
+  // §163, §436 : Champ antimagie — aucun sort ne s'y lance ; §436 : ni activité d'objet magique (hors attaque d'arme : dnd5e retire déjà
+  // son bonus). Le statut `antimagic` de dnd5e 6.1 d'abord, le globe du §163 sinon.
+  const antimagicArea = (!pilot && magicalUse(activity)) ? antimagicAround(usageToken(activity)) : null;
+  const antimagic = (antimagicArea && (antimagicArea.status || isSpellCast(activity.item))) ? antimagicArea : null;
   // §269 : Forme gazeuse — « la cible ne peut ni attaquer ni lancer de sorts » (l'action qui y met fin reste permise).
   const shapeless = ((activity.type === "attack") || isSpellCast(activity.item))
     ? (activity.actor?.effects ?? []).map(e => (!e.disabled && !e.isSuppressed) ? originItemOf(e) : null)
@@ -267,7 +270,8 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
     ...(shapeless ? [loc("Souci.noAttacksOrSpells", { item: shapeless.name })] : []),
     ...(befuddled ? [loc("Souci.noSpells", { item: befuddled.name })] : []),
     ...(unarmored ? [loc("Souci.untrainedArmor", { item: unarmored.name })] : []),
-    ...(antimagic ? [loc("Souci.antimagic", { item: antimagic.item.name })] : []),
+    ...(antimagic ? [loc(isSpellCast(activity.item) ? "Souci.antimagic" : "Souci.antimagicItem",
+      { item: antimagic.name, use: activity.item.name })] : []),
     ...limits.issues.map(i => loc(`Souci.${i}`, { item: limits.item ?? "" })),
     ...incapacitated.map(i => loc(`Souci.${i}`))
   ];

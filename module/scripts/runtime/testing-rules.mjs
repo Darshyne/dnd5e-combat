@@ -386,7 +386,9 @@ export function effectOrigins({ tokenId }) {
   return (actor?.effects ?? []).map(e => {
     const item = originItemOf(e);
     return { id: e.id, effect: e.name, origin: e.origin ?? null, systemOrigin: e.system?.origin ?? null, item: item?.name ?? null,
-      identifier: item ? identifierOf(item).id : null, statuses: Array.from(e.statuses ?? []), disabled: !!e.disabled };
+      identifier: item ? identifierOf(item).id : null, statuses: Array.from(e.statuses ?? []), disabled: !!e.disabled,
+      // §436 : suspendu (antimagie de dnd5e 6.1 : `system.magical` sous le statut `antimagic`), marqué magique.
+      suppressed: !!e.isSuppressed, magical: !!e.system?.magical };
   });
 }
 

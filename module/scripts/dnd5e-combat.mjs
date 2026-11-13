@@ -117,6 +117,7 @@ import { registerPassivePerception } from "./runtime/passive.mjs";
 import { registerIllumination } from "./runtime/illumination.mjs";
 import { registerLights } from "./runtime/lights.mjs";
 import { registerEffects } from "./runtime/effects.mjs";
+import { registerAntimagic } from "./runtime/antimagic.mjs";
 import { registerWildShape } from "./runtime/wildshape.mjs";
 import { registerEnchant } from "./runtime/enchant.mjs";
 import { registerTether } from "./runtime/tether.mjs";
@@ -474,6 +475,7 @@ Hooks.once("init", () => {
   gated(registerIllumination);
   gated(registerLights);
   gated(registerEffects);
+  gated(registerAntimagic);   // §436 : antimagie de dnd5e 6.1 (comportement du Champ du Manuel, effets magiques marqués)
   gated(registerWildShape);
   gated(registerEnchant);
   gated(registerTether);

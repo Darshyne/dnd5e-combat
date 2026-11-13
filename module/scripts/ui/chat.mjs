@@ -130,6 +130,7 @@ function unaffectedText({ reason, detail }) {
   if ( reason === "type" ) return loc("NonAffecte.type", { types: typesLabel((detail ?? "").split(",").filter(Boolean)) });
   if ( reason === "immune" ) return loc("NonAffecte.immune", { status: statusName(detail) });
   if ( reason === "globe" ) return loc("NonAffecte.globe", { item: detail ?? "" });
+  if ( reason === "antimagic" ) return loc("NonAffecte.antimagic", { item: detail ?? "" });
   if ( reason === "plane" ) return loc("NonAffecte.plane");
   if ( reason === "enclosed" ) return loc("NonAffecte.enclosed", { item: detail ?? "" });
   return loc("NonAffecte.content");

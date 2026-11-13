@@ -298,8 +298,9 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 7. wall: burning side not chosen _(MJ)_
 8. zone light not placed _(MJ)_
 9. vision: sources to rebuild
-10. perception: display not refreshed
-11. wall: ring side not asked
+10. antimagic: region behavior not added _(MJ)_
+11. perception: display not refreshed
+12. wall: ring side not asked
 
 ### `createSequencerEffect`
 
@@ -870,12 +871,14 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 6. light effect not completed
 7. effect: stale start not reset
 8. effect: end on rest or next turn not applied
-9. size: change not added
+9. antimagic: applied effect not marked magical
+10. size: change not added
 
 ### `preCreateItem`
 
 1. content: flags on creation _(stop)_
 2. potion: cast spell not marked
+3. antimagic: item effects not marked magical
 
 ### `preCreateMeasuredTemplate`
 

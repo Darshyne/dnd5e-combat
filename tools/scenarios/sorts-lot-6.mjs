@@ -85,7 +85,9 @@ export default {
         for ( const e of (await ctx.effects(t)).filter(e => !h.effects.has(e._id ?? e.id) && !e.flags?.[MODULE_ID]?.aura) ) {
           await ctx.call("remove-embedded-effect", { ...target, effectId: e._id ?? e.id }).catch(() => {});
         }
-        await ctx.call("update-scene-object", { type: "Token", objectId: t.id, data: { hidden: false } }).catch(() => {});
+        // §435 : le Renvoi de la Dissipation du mal et du bien bannit pour de bon un mort-vivant qui rate (§402, `banish`) : la marque du
+        // moteur restait sur le Zombi, et le Dédale le croyait déjà banni (rien caché) — l'échec, une fois sur deux, de la passe.
+        await ctx.call("update-scene-object", { type: "Token", objectId: t.id, data: { hidden: false, [`flags.${MODULE_ID}.-=banished`]: null } }).catch(() => {});
         await ctx.call("move-token", { tokenId: t.id, x: h.pos.x, y: h.pos.y, elevation: h.pos.elevation ?? 0 }).catch(() => {});
         if ( t !== bandit ) await ctx.setHp(t, h.hp);
       }

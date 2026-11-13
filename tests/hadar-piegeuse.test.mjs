@@ -298,3 +298,19 @@ describe("Collège des esprits (§96)", () => {
     expect(validateEntry({ effectStatuses: { court: ["frightened"] } }).length).toBeGreaterThan(0);
   });
 });
+
+describe("§435 : la Submersion du Monster Manual n'est pas le marteau « Whelm » du Guide", () => {
+  it("identifiant propre, sans entrée livrée : seule la couche texte (dégâts au début du tour de l'Élémentaire) s'y applique", async () => {
+    const { SOURCE_IDENTIFIERS } = await import("../module/scripts/content/sources.mjs");
+    expect(SOURCE_IDENTIFIERS.mmWhelm000000000).toBe("mm-whelm");
+    expect(CONTENT["mm-whelm"]).toBeUndefined();
+    expect(CONTENT.whelm?.triggers?.[0]?.fromEffect).toBe("esmyGn6aLpCfWsFm");
+  });
+
+  it("le texte de la Submersion donne les dégâts au début du tour de la créature qui l'a posée", async () => {
+    const { monsterRecurring } = await import("../module/scripts/core/monster-text.mjs");
+    const html = "<p>While Grappled, the target takes [[/damage average activity=khxVwH3AB0sx1qRG]] damage at the start of each of the elemental's turns.</p>";
+    expect(monsterRecurring(html, [{ id: "rN76liiHkUoMRMJN", statuses: ["grappled", "restrained"] }]).triggers)
+      .toEqual([{ on: "originTurnStart", via: "effect", do: [{ type: "damage", to: "bearer", activity: "khxVwH3AB0sx1qRG" }] }]);
+  });
+});

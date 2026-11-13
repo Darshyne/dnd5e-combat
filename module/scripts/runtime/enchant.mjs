@@ -17,6 +17,14 @@ export const ENCHANT_QUERY = `${MODULE_ID}.enchant`;
 /** §16.45 : la réécriture qui attend l'enchantement d'une arme (uuid → options), lue au `dnd5e.preApplyEnchantment`. */
 const pactRewrites = new Map();
 
+/** §435 : l'activation en cours d'un profil d'un objet qui s'enchante lui-même (uuid de l'item → promesse), pour qui doit l'attendre. */
+const selfSwitches = new Map();
+
+/** §435 : la promesse de l'activation sur place du profil de cet item (enchantement de soi), ou null s'il n'y en a pas en cours. */
+export function selfSwitchOf(item) {
+  return selfSwitches.get(item?.uuid) ?? null;
+}
+
 async function handleEnchant({ activity: activityUuid, item: itemUuid, profile, message: messageUuid, concentration: concUuid, pactDamage }, { user }={}) {
   const activity = await fromUuid(activityUuid);
   const item = await fromUuid(itemUuid);
@@ -92,7 +100,7 @@ export function registerEnchant() {
     updates.push({ _id: profile, disabled: false, origin: activity.uuid, "system.origin": data.system?.origin ?? {}, "flags.dnd5e": data.flags.dnd5e });
     // Les « riders » du profil (activité « Use » du parchemin, cachée tant qu'aucun enchantement ne la déclare) : copiés comme dnd5e le fait
     // à la pose d'un enchantement (data/active-effect/enchantment.mjs, `collectRiders`).
-    item.updateEmbeddedDocuments("ActiveEffect", updates).then(async () => {
+    const switching = item.updateEmbeddedDocuments("ActiveEffect", updates).then(async () => {
       // §433 : dnd5e 6.1 ne rend les riders que d'un enchantement APPLIQUÉ (`isApplied` : `transfer` vrai, enchantment.mjs:285), et un effet
       // cité par une activité de son item n'est jamais transféré (`isOnActivity`, active-effect-data-model.mjs:57) : le profil activé sur
       // place ne peut pas répondre. La question est posée à une copie en mémoire, sous un autre identifiant et marquée appliquée ; ce
@@ -106,9 +114,14 @@ export function registerEnchant() {
       if ( riders.length ) await foundry.documents.modifyBatch(riders);
       // Le nom que le profil donne (« Scroll of Protection: Undead ») : dnd5e n'applique pas ses changements à un profil de l'objet.
       const named = (item.effects.get(profile)?.system?.changes ?? item.effects.get(profile)?.changes ?? []).find(c => c.key === "name")?.value;
-      if ( named && (named !== item.name) ) await item.update({ name: named });
+      // §435 : un nom qui décore (« {} (Active) », Courroux sauvage) ne vaut que le temps de l'effet : il n'est pas écrit sur l'objet (il
+      // y resterait, littéralement « {} (Active) », après la fin de l'effet). Seul un nom complet (le parchemin) l'est.
+      if ( named && !named.includes("{}") && (named !== item.name) ) await item.update({ name: named });
       log(`${item.name}: its own profile "${item.effects.get(profile)?.name}" switched on`);
-    }).catch(err => console.error(`${MODULE_ID} | ${item.name}: profile not switched on`, err));
+      return item.effects.get(profile) ?? null;
+    }).catch(err => { console.error(`${MODULE_ID} | ${item.name}: profile not switched on`, err); return null; })
+      .finally(() => { if ( selfSwitches.get(item.uuid) === switching ) selfSwitches.delete(item.uuid); });
+    selfSwitches.set(item.uuid, switching);
     return false;
   }, { cancellable: true, label: "self enchantment: profile not switched on" });
   CONFIG.queries[ENCHANT_QUERY] = handleEnchant;

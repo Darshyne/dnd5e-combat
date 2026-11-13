@@ -11,7 +11,8 @@ import { MODULE_ID } from "../constants.mjs";
 import { handleChoiceQuery } from "./choices.mjs";
 import { rollerFor } from "./concentration.mjs";
 import { queryPlayer, waitLabel } from "./player-wait.mjs";
-import { heroicWanted, HEROIC_MODES } from "../core/heroic.mjs";
+import { heroicWanted, HEROIC_MODES, liveDice } from "../core/heroic.mjs";
+import { d20Keep } from "../core/d20.mjs";
 
 export const HEROIC_QUERY = `${MODULE_ID}.heroic`;
 export const HEROIC_SETTING = "heroicInspiration";
@@ -42,8 +43,9 @@ export function d20Facts(roll) {
   if ( !die || !Number.isFinite(roll.total) ) return null;
   const values = die.results.filter(r => !r.rerolled).map(r => r.result);
   if ( !values.length ) return null;
-  const keep = (die.modifiers ?? []).find(m => /^k[hl]/.test(m)) ?? "";
-  const mode = (values.length < 2) ? null : keep.startsWith("kl") ? "disadvantage" : "advantage";
+  // §435 : dnd5e écrit `adv` / `dis` sur le d20, pas `kh` / `kl` — un Désavantage était lu comme un Avantage (le mauvais d20 gardé).
+  const keep = d20Keep(die.modifiers, die.options?.advantageMode);
+  const mode = (values.length < 2) ? null : (keep === "kl") ? "disadvantage" : "advantage";
   return { values, mode, total: roll.total,
     criticalSuccess: Number(die.options?.criticalSuccess) || 20, criticalFailure: Number(die.options?.criticalFailure) || 1 };
 }
@@ -55,13 +57,11 @@ export function d20Facts(roll) {
 export function damageDice(rolls) {
   const dice = [];
   rolls.forEach((roll, r) => {
-    roll.dice.forEach((term, t) => {
-      term.results.forEach((res, k) => {
-        if ( !res.active || res.rerolled || res.discarded ) return;
-        dice.push({ roll: r, term: t, result: k, faces: term.faces, value: res.result, type: roll.options?.type ?? null,
-          properties: [...(roll.options?.properties ?? [])], modifiers: (term.modifiers ?? []).filter(m => /^(min|max)\d+$/.test(m)) });
-      });
-    });
+    // §435 : les dés du jet que l'Attaquant sauvage écarte (`{2d6,2d6}kh`) ne sont pas proposés — leur relance ne changerait rien.
+    for ( const { term, result: res, index } of liveDice(roll.terms) ) {
+      dice.push({ roll: r, result: index, faces: term.faces, value: res.result, type: roll.options?.type ?? null,
+        properties: [...(roll.options?.properties ?? [])], modifiers: (term.modifiers ?? []).filter(m => /^(min|max)\d+$/.test(m)) });
+    }
   });
   return dice;
 }

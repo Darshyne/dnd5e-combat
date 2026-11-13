@@ -15,6 +15,7 @@
  * en vigueur au moment de l'écrire : les deux corrections se cumulent dans n'importe quel ordre.
  */
 
+import { d20Keep } from "../core/d20.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { offerInspiration, offerRollBonus, keptD20 } from "../adapter/inspiration.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
@@ -144,7 +145,8 @@ async function hypervigilance(message, combatant) {
   if ( !item ) return;
   const die = message.rolls?.[0]?.dice?.find(d => d.faces === 20);
   const kept = die?.results?.find(r => r.active && !r.discarded)?.result;
-  const keep = die?.modifiers?.find(m => /^k[hl]/.test(m))?.slice(0, 2) ?? null;
+  // §435 : la garde lue aussi sur `adv` / `dis` (dnd5e 6) — sinon « 2d20 » sans garde, la somme des deux dés.
+  const keep = die ? d20Keep(die.modifiers, die.options?.advantageMode) : null;
   const formula = initiativeReroll(contentOf(item).entry.rerollInitiative, { number: die?.number, kept, keep });
   if ( !formula ) return;
   const answer = await askChoice(actor, {

@@ -7,6 +7,8 @@
 import { ARENE_SORTS } from "../lib/stages.mjs";
 
 const MM = "Compendium.dnd-monster-manual.actors.Actor";
+// §435 : la Submersion a son identifiant propre (« mm-whelm », content/sources.mjs) — « whelm » est le marteau légendaire du Guide.
+const WHELM = new Set(["mm-whelm", "whelm"]);
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 function setPath(obj, path, value) {
@@ -36,7 +38,7 @@ export default {
       const { data: tok } = await ctx.call("get-scene-object", { type: "Token", objectId: enemy.id });
       const w = tok.actorLink ? { documentType: "Actor", id: tok.actorId } : { uuid: `Scene.${scene}.Token.${enemy.id}.Actor.${tok.actorId}` };
       for ( const e of (await ctx.engine("effectOrigins", { tokenId: enemy.id })) ?? [] ) {
-        if ( e.identifier === "whelm" ) await ctx.call("remove-embedded-effect", { ...w, effectId: e.id }).catch(() => {});
+        if ( WHELM.has(e.identifier) ) await ctx.call("remove-embedded-effect", { ...w, effectId: e.id }).catch(() => {});
       }
     };
     ctx.restore(async () => {
@@ -60,7 +62,7 @@ export default {
         area: { shape: "rectangle", ...(await ctx.box(enemy)) } });
       await ctx.settle(u.usageMessageId, { timeoutMs: 45000 }).catch(() => null);
       await pause(1500);
-      grappled = (await ctx.engine("effectOrigins", { tokenId: enemy.id }) ?? []).some(e => e.identifier === "whelm");
+      grappled = (await ctx.engine("effectOrigins", { tokenId: enemy.id }) ?? []).some(e => WHELM.has(e.identifier));
     }
     if ( !ctx.expect(grappled, "l'Ennemi est pris par la Submersion (20 essais au plus)") ) return;
     await ctx.setHp(enemy, 999);

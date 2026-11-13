@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-338 scénarios (`tools/scenarios/`), joués dans le client du MJ par le connecteur : `node tools/reload.mjs && node
+339 scénarios (`tools/scenarios/`), joués dans le client du MJ par le connecteur : `node tools/reload.mjs && node
 tools/scenario.mjs <noms>`. **Scène** : vide = l'« Arène de test » ; sinon la scène que le scénario demande (sauté si elle manque).
 Les scénarios d'un sous-dossier ne font pas partie de la passe complète : `node tools/scenario.mjs tools/scenarios/<dossier>`. Les
 `balayage-*` ne se jouent que nommés. Choisir sans connaître les noms : `--grep <mot>`, `--section <§>`, `--scene <nom>` ; `--list` montre
@@ -176,6 +176,7 @@ la sélection sans rien jouer.
 | `partage-case` |  | §105 | Forme d'air, Nuée |
 | `passifs-releve-2` |  | §236 | aptitudes passives du relevé des trous, niveaux 9 à 20 (Arène des sorts) |
 | `passifs-releve` |  | §235 | aptitudes passives du relevé des trous (Arène des sorts) |
+| `phb3` |  | §438 | Manuel des joueurs 3.0.0 : dés du Coup brutal, Affinité élémentaire comptée une fois |
 | `plafond` | Escalade | §192 | Pattes d'araignée, marche au plafond, hors d'allonge, retournement, descente, chute, DD 20 maison |
 | `porte-passager` |  | §264 | le passager suit le lanceur |
 | `porte-serrure` |  | §244 §247 §243 | crocheter, forcer, clé, DD caché |

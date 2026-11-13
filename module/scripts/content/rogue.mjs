@@ -47,9 +47,14 @@ export const ROGUE = Object.freeze({
   },
 
   // Frappes rusées : l'auteur les choisit avant ses dégâts ; Poison se rejoue à la fin de chaque tour de la cible.
+  // §433 : l'effet « Empoisonné » sous ses deux formes — celui de l'item (`RazTM6biKVtNtjEW` : Manuel des joueurs, SRD jusqu'à dnd5e 6.0)
+  // et l'effet commun du compendium `dnd5e.effects` que l'activité du SRD de dnd5e 6.1 pose à sa place (`wAnw5y4atBxNJHUP`).
   "cunning-strike": {
     cunningStrikes: CUNNING_STRIKES,
-    triggers: [{ on: "endOfTurn", via: "effect", fromEffect: "RazTM6biKVtNtjEW", do: [{ type: "resave" }] }]
+    triggers: [
+      { on: "endOfTurn", via: "effect", fromEffect: "RazTM6biKVtNtjEW", do: [{ type: "resave" }] },
+      { on: "endOfTurn", via: "effect", fromEffect: "wAnw5y4atBxNJHUP", do: [{ type: "resave" }] }
+    ]
   },
   // §236 : Faufilement suprême (Voleur 9) — option de Frappe rusée Attaque furtive (1d6) : caché par Se cacher, l'attaque n'y met pas
   // fin si le roublard finit son tour derrière un abri aux trois quarts ou total (runtime/sneak.mjs, runtime/hide.mjs).
@@ -64,7 +69,10 @@ export const ROGUE = Object.freeze({
     cunningStrikes: DEVIOUS_STRIKES,
     triggers: [
       { on: "endOfTurn", via: "effect", fromEffect: "C2IGgt4PnRMxZVey", do: [{ type: "resave" }] },
-      { on: "isDamaged", via: "effect", fromEffect: "C2IGgt4PnRMxZVey", do: [{ type: "remove" }] }
+      { on: "isDamaged", via: "effect", fromEffect: "C2IGgt4PnRMxZVey", do: [{ type: "remove" }] },
+      // §433 : « Inconscient » du compendium `dnd5e.effects`, posé par l'activité du SRD de dnd5e 6.1.
+      { on: "endOfTurn", via: "effect", fromEffect: "HjLkxDzLNBogspf9", do: [{ type: "resave" }] },
+      { on: "isDamaged", via: "effect", fromEffect: "HjLkxDzLNBogspf9", do: [{ type: "remove" }] }
     ]
   },
 

@@ -391,12 +391,12 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   if ( "brutalStrike" in entry ) {
     const b = entry.brutalStrike;
     const okOption = o => isObject(o) && Object.keys(o).every(k => ["push", "effect"].includes(k)) && (("push" in o) || ("effect" in o))
-      && (!("effect" in o) || isId(o.effect))
+      && (!("effect" in o) || isId(o.effect) || (Array.isArray(o.effect) && o.effect.length && o.effect.every(isId)))
       && (!("push" in o) || (isObject(o.push) && Number.isFinite(o.push.distance) && (o.push.distance > 0) && (typeof o.push.units === "string")));
     if ( !isObject(b) || !Object.keys(b).every(k => ["options", "count"].includes(k))
       || (("options" in b) && !(isObject(b.options) && Object.values(b.options).every(okOption)))
       || (("count" in b) && !(Number.isInteger(b.count) && (b.count > 0))) ) {
-      errors.push(`${at}brutalStrike: { options?: { <name>: { push?: { distance, units }, effect?: <effect id> } }, count?: integer }`);
+      errors.push(`${at}brutalStrike: { options?: { <name>: { push?: { distance, units }, effect?: <effect id> | [<effect id>] } }, count?: integer }`);
     }
   }
   if ( "effectChanges" in entry ) {
@@ -404,9 +404,10 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     const okChange = c => isObject(c) && (typeof c.key === "string") && c.key && (typeof c.type === "string") && c.type
       && ["string", "number", "boolean"].includes(typeof c.value) && (!("replace" in c) || (c.replace === true))
       && (!("ifCaster" in c) || ((typeof c.ifCaster === "string") && c.ifCaster))
-      && Object.keys(c).every(k => ["key", "type", "value", "replace", "ifCaster"].includes(k));
+      && (!("unlessKey" in c) || ((typeof c.unlessKey === "string") && c.unlessKey))
+      && Object.keys(c).every(k => ["key", "type", "value", "replace", "ifCaster", "unlessKey"].includes(k));
     if ( !isObject(e) || !Object.entries(e).every(([id, list]) => isId(id) && Array.isArray(list) && list.length && list.every(okChange)) ) {
-      errors.push(`${at}effectChanges: { <effect id>: [{ key, type, value, replace?, ifCaster? }] }`);
+      errors.push(`${at}effectChanges: { <effect id>: [{ key, type, value, replace?, ifCaster?, unlessKey? }] }`);
     }
   }
   if ( "grantsSpeeds" in entry ) {

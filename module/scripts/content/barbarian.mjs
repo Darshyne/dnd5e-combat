@@ -15,6 +15,9 @@ const onceOnOwnTurn = (condition, formula, damageType) => ({
   do: [{ type: "damage", formula, damageType }]
 });
 
+/** « Staggered » (Coup chancelant) : Désavantage aux sauvegardes — l'effet est vide dans la donnée. */
+const STAGGERED_SAVES = ["str", "dex", "con", "int", "wis", "cha"].map(a => ({ key: `system.abilities.${a}.save.roll.mode`, type: "add", value: "-1" }));
+
 export const BARBARIAN = Object.freeze({
   // Rage : l'effet de l'item (G5XZTi4zYTFiHVll), activé par « Expend Rage ». « Elle dure jusqu'à la fin de votre tour suivant » ;
   // on l'entretient en attaquant un ennemi, en imposant une sauvegarde à un ennemi ou par une action Bonus.
@@ -34,21 +37,36 @@ export const BARBARIAN = Object.freeze({
   // l'échelle de la sous-classe) du type de l'arme et un effet. Coup puissant : poussée de 4,50 m (le déplacement du barbare vers elle
   // reste au joueur) ; Coup handicapant : -4,50 m de Vitesse jusqu'au début de votre prochain tour (« Hamstrung »). La question, la marque
   // et les effets : runtime/barbarian.mjs.
+  // §433 : le SRD de dnd5e 6.1 range les quatre coups sur cet item — « Staggered » (`uacly0JAXLVwAS6y`) et « Sundered »
+  // (`Q0ou16II1WEcCdyW`) y sont des effets de Coup brutal, et non plus de Coup brutal amélioré : leurs règles sont redites ici sous ces
+  // identifiants. Les options, elles, restent données par Coup brutal amélioré (niveau 13).
   "brutal-strike": {
     brutalStrike: { options: { forceful: { push: { distance: 15, units: "ft" } }, hamstring: { effect: "bg9jWpPRIJ0Q2vPY" } } },
-    effectEnds: { bg9jWpPRIJ0Q2vPY: "casterTurnStart" },
-    // « Hamstrung » écrit sur `movement.speed`, valeur dérivée que dnd5e réécrit : la Vitesse au sol.
-    effectChanges: { bg9jWpPRIJ0Q2vPY: [{ key: "system.attributes.movement.walk", type: "add", value: "-15" }] },
-    triggers: [{ on: "preDamageRoll", if: { "activity.isAttack": true, "source.hasEffect": "brutal-strike" },
-      do: [{ type: "damage", formula: "@scale.barbarian.brutal-strike", damageType: "weapon" }] }]
+    effectEnds: { bg9jWpPRIJ0Q2vPY: "casterTurnStart", uacly0JAXLVwAS6y: "casterTurnStart", Q0ou16II1WEcCdyW: "casterTurnStart" },
+    // « Hamstrung » écrit sur `movement.speed`, valeur dérivée que dnd5e réécrit : la Vitesse au sol. §433 : pas quand l'effet retire
+    // déjà la vitesse par `movement.bonus` (SRD de dnd5e 6.1), sinon −30 ft.
+    effectChanges: {
+      bg9jWpPRIJ0Q2vPY: [{ key: "system.attributes.movement.walk", type: "add", value: "-15", unlessKey: "system.attributes.movement.bonus" }],
+      uacly0JAXLVwAS6y: STAGGERED_SAVES
+    },
+    noOpportunityAttacks: ["uacly0JAXLVwAS6y"],
+    triggers: [
+      { on: "preDamageRoll", if: { "activity.isAttack": true, "source.hasEffect": "brutal-strike" },
+        do: [{ type: "damage", formula: "@scale.barbarian.brutal-strike", damageType: "weapon" }] },
+      { on: "preAttackRoll", via: "effect", fromEffect: "Q0ou16II1WEcCdyW",
+        if: { "target.hasEffect": { item: "brutal-strike", effect: "Q0ou16II1WEcCdyW" }, not: { "target.hasEffectFrom": { item: "brutal-strike", effect: "Q0ou16II1WEcCdyW" } } },
+        do: [{ type: "attackBonus", formula: "5" }, { type: "consume", side: "target" }] }
+    ]
   },
   // Coup brutal amélioré (13) : Coup chancelant — Désavantage à la prochaine sauvegarde, pas d'attaque d'opportunité, jusqu'au début de
   // votre prochain tour (« Staggered », vide dans la donnée : toutes ses sauvegardes jusque-là, simplification) ; Coup fendant — +5 à la
   // prochaine attaque d'une autre créature contre elle (« Sundered », consommé).
   "improved-brutal-strike": {
-    brutalStrike: { options: { staggering: { effect: "L9N4evZo1jt46dap" }, sundering: { effect: "tUyuyTQGmpUqMcFe" } } },
+    // §433 : l'effet de l'option, sous l'identifiant de cet item (Manuel des joueurs, SRD jusqu'à dnd5e 6.0) ou sous celui de Coup brutal
+    // (SRD de dnd5e 6.1) — le premier qu'un item de Coup brutal de l'acteur porte.
+    brutalStrike: { options: { staggering: { effect: ["L9N4evZo1jt46dap", "uacly0JAXLVwAS6y"] }, sundering: { effect: ["tUyuyTQGmpUqMcFe", "Q0ou16II1WEcCdyW"] } } },
     effectEnds: { L9N4evZo1jt46dap: "casterTurnStart", tUyuyTQGmpUqMcFe: "casterTurnStart" },
-    effectChanges: { L9N4evZo1jt46dap: ["str", "dex", "con", "int", "wis", "cha"].map(a => ({ key: `system.abilities.${a}.save.roll.mode`, type: "add", value: "-1" })) },
+    effectChanges: { L9N4evZo1jt46dap: STAGGERED_SAVES },
     noOpportunityAttacks: ["L9N4evZo1jt46dap"],
     triggers: [{ on: "preAttackRoll", via: "effect", fromEffect: "tUyuyTQGmpUqMcFe",
       if: { "target.hasEffect": "improved-brutal-strike", not: { "target.hasEffectFrom": "improved-brutal-strike" } },

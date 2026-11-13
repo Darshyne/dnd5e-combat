@@ -256,7 +256,8 @@
  *     quietPose?: true                          §300 : la zone qui dure n'agit pas à sa pose — seulement aux moments déclarés
  *                                               (Tempête de neige, Nuage nauséabond : ceux qui sont déjà dedans sauvegardent au début de leur tour)
  *     brutalStrike?: { options?, count? }       C12-e : Coup brutal — options offertes avec Témérité (`push` : poussée ; `effect` :
- *                                               effet de l'item posé sur la cible touchée), nombre d'options par coup (runtime/barbarian.mjs)
+ *                                               effet de l'item posé sur la cible touchée, ou liste d'identifiants — §433 : le premier qu'un
+ *                                               item de Coup brutal de l'acteur porte), nombre d'options par coup (runtime/barbarian.mjs)
  *     dataFixes?: [{ path, value, from? } | { effect, path, value, from? } | { effect, create }]
  *                                               O1 (§335) : corrections de la donnée premium de l'objet (coût, charges, DD, dégâts, effets
  *                                               portés, effet manquant), écrites par le MJ actif à la création et par le diagnostic — core/data-fixes.mjs
@@ -408,9 +409,10 @@
  *     effectStatuses?: { <id d'effet>: string[] | { set: string[] } }  §96 : états ajoutés à cet effet de l'item quand il est posé
  *                                               (Esprit couard : l'effet « Frightened » de la donnée n'a pas l'état) ; §334 : `set`
  *                                               les remplace (Rayon pétrifiant : l'effet « Restrained » porte Pétrifié)
- *     effectChanges?: { <id d'effet>: [{ key, type, value, replace? }] }
+ *     effectChanges?: { <id d'effet>: [{ key, type, value, replace?, unlessKey? }] }
  *                                               changements ajoutés à cet effet de l'item quand il est posé (§53 : Vol, Escalade —
  *                                               les données ne donnent pas la vitesse) ; `value: "@walk"` = la vitesse au sol du porteur ;
+ *                                               `unlessKey` : pas si l'effet porte déjà un changement de cette autre clé (§433) ;
  *                                               `replace` : remplace le changement de même clé que porte déjà l'effet (§195 : Pattes
  *                                               d'araignée, dont la formule ne donne pas la Vitesse) ; `ifCaster` : seulement si le
  *                                               lanceur porte un item de cet identifiant (C12-e : Maléfice occulte)

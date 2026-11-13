@@ -93,7 +93,16 @@ export function registerEnchant() {
     // Les « riders » du profil (activité « Use » du parchemin, cachée tant qu'aucun enchantement ne la déclare) : copiés comme dnd5e le fait
     // à la pose d'un enchantement (data/active-effect/enchantment.mjs, `collectRiders`).
     item.updateEmbeddedDocuments("ActiveEffect", updates).then(async () => {
-      const riders = await item.effects.get(profile)?.system?.collectRiders?.({ dnd5e: { enchantmentProfile: profile, activityId: activity.id } }) ?? [];
+      // §433 : dnd5e 6.1 ne rend les riders que d'un enchantement APPLIQUÉ (`isApplied` : `transfer` vrai, enchantment.mjs:285), et un effet
+      // cité par une activité de son item n'est jamais transféré (`isOnActivity`, active-effect-data-model.mjs:57) : le profil activé sur
+      // place ne peut pas répondre. La question est posée à une copie en mémoire, sous un autre identifiant et marquée appliquée ; ce
+      // qu'elle rend dépend d'elle (`dependentOn`) : l'identifiant du profil y est remis. Rien n'est écrit sur l'effet.
+      const switched = item.effects.get(profile);
+      const probeId = foundry.utils.randomID();
+      const probe = switched?.clone({ _id: probeId, transfer: true }, { keepId: true });
+      const asProfile = data => JSON.parse(JSON.stringify(data).replaceAll(probeId, profile));
+      const riders = (await probe?.system?.collectRiders?.({ dnd5e: { enchantmentProfile: profile, activityId: activity.id } }) ?? [])
+        .map(op => ({ ...op, ...(op.updates ? { updates: asProfile(op.updates) } : {}), ...(op.data ? { data: asProfile(op.data) } : {}) }));
       if ( riders.length ) await foundry.documents.modifyBatch(riders);
       // Le nom que le profil donne (« Scroll of Protection: Undead ») : dnd5e n'applique pas ses changements à un profil de l'objet.
       const named = (item.effects.get(profile)?.system?.changes ?? item.effects.get(profile)?.changes ?? []).find(c => c.key === "name")?.value;

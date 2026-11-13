@@ -166,7 +166,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `noBonus` | 2 | `confusion`, `ice-spear` |
 | `noDamage` | 10 | `avenger-spirit`, `bestow-curse`, `commanders-strike`, `ensnaring-strike`, `feinting-attack`, `geas`, … |
 | `noOpportunity` | 18 | `agile`, `blazing-movement`, `bubble-dash`, `charging-horn`, `engulf`, `entangling-trail`, … |
-| `noOpportunityAttacks` | 3 | `improved-brutal-strike`, `open-hand-technique`, `shocking-grasp` |
+| `noOpportunityAttacks` | 4 | `brutal-strike`, `improved-brutal-strike`, `open-hand-technique`, `shocking-grasp` |
 | `noRangedWeapons` | 1 | `storm-of-vengeance` |
 | `noReactions` | 5 | `arms-of-hadar`, `confusion`, `fetid-cloud`, `mm-beholder-eye-rays`, `slow` |
 | `noSpells` | 1 | `befuddlement` |
@@ -350,8 +350,8 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `isTargeted → use` | 3 | `rod-of-absorption`, `shield`, `staff-of-the-magi` |
 | `moves → replay` | 1 | `spike-growth` |
 | `preAttackRoll → advantage` | 26 | `assassinate`, `avenging-angel`, `clairvoyant-combatant`, `distracting-strike`, `faerie-fire`, `feinting-attack`, … |
-| `preAttackRoll → attackBonus` | 2 | `blade-ward`, `improved-brutal-strike` |
-| `preAttackRoll → consume` | 9 | `distracting-strike`, `feinting-attack`, `guiding-bolt`, `improved-brutal-strike`, `moonlight-step`, `ray-of-enfeeblement`, … |
+| `preAttackRoll → attackBonus` | 3 | `blade-ward`, `brutal-strike`, `improved-brutal-strike` |
+| `preAttackRoll → consume` | 10 | `brutal-strike`, `distracting-strike`, `feinting-attack`, `guiding-bolt`, `improved-brutal-strike`, `moonlight-step`, … |
 | `preAttackRoll → disadvantage` | 29 | `bestow-curse`, `blur`, `clairvoyant-combatant`, `cloak-of-displacement`, `compelled-duel`, `dispel-evil-and-good`, … |
 | `preDamageRoll → damage` | 35 | `ancient-might`, `bestow-curse`, `blessed-strikes`, `blessed-strikes-potent-spellcasting`, `brutal-strike`, `celestial-revelation`, … |
 | `savedSave → mark` | 1 | `eyebite` |

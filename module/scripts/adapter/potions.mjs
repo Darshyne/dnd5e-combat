@@ -93,7 +93,8 @@ export function completeEffectChanges(effect) {
   // C12-e : `ifCaster` — un changement que seul un lanceur doté d'une aptitude donne (Maléfice occulte).
   const caster = originItemOf(effect)?.actor ?? null;
   const owns = id => !!caster?.items?.some?.(i => identifierOf(i).id === id);
-  const added = rules[key].filter(c => !current.some(x => x.key === c.key) && (!c.ifCaster || owns(c.ifCaster)))
+  // §433 : `unlessKey` — un changement que la donnée porte déjà sous une autre clé (« Hamstrung » du SRD de dnd5e 6.1 : `movement.bonus`).
+  const added = rules[key].filter(c => !current.some(x => (x.key === c.key) || (c.unlessKey && (x.key === c.unlessKey))) && (!c.ifCaster || owns(c.ifCaster)))
     .map(c => ({ key: c.key, type: c.type, value: String(c.value === "@walk" ? walk : c.value) }));
   if ( added.length ) effect.updateSource({ "system.changes": [...current, ...added] });
   return added.length;

@@ -109,8 +109,9 @@ export const TRIGGERS = Object.freeze({
   }],
 
   // Zone posée par une activité, rejouée par une sœur : « Créer un nuage » (utilitaire) pose la sphère,
-  // « Sauvegarde de début de tour » (dnd5eactivity000, spells24) agit sur qui commence son tour dedans.
-  "stinking-cloud": [{ on: "turnStart", do: [{ type: "replay", activity: "dnd5eactivity000" }] }],
+  // « Sauvegarde de début de tour » agit sur qui commence son tour dedans. Deux identifiants pour la même sœur : `dnd5eactivity000`
+  // (Manuel des joueurs, SRD jusqu'à dnd5e 6.0) et `pyaS54TcG7kx15V2` (SRD de dnd5e 6.1) — seule celle que l'item porte est retenue.
+  "stinking-cloud": [{ on: "turnStart", do: [{ type: "replay", activity: "dnd5eactivity000" }, { type: "replay", activity: "pyaS54TcG7kx15V2" }] }],
   // Tempête de neige : « pénètre dans le Cylindre pour la première fois d'un tour ou y commence son tour » :
   // sauvegarde de Dextérité, À terre sur un échec (l'item n'a pas d'effet : l'état est posé par le moteur).
   "sleet-storm": [

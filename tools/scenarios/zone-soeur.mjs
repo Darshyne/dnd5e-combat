@@ -4,7 +4,8 @@
  * pose. En combat, quand le Guerrier COMMENCE son tour dedans, le moteur rejoue la sœur « Sauvegarde de début de
  * tour » (`replay` avec `activity`) : sauvegarde de Constitution, Empoisonné sur un échec.
  * Sur le Guerrier, pas le Zombi : immunisé contre Empoisonné, le Zombi n'est pas affecté par le nuage (§16.8).
- * Contenu `stinking-cloud` : `{ on: "turnStart", do: [{ type: "replay", activity: "dnd5eactivity000" }] }`.
+ * Contenu `stinking-cloud` : `{ on: "turnStart", do: [{ type: "replay", activity: … }] }`, la sœur sous ses deux identifiants
+ * (`dnd5eactivity000` jusqu'à dnd5e 6.0 et dans le Manuel des joueurs, `pyaS54TcG7kx15V2` dans le SRD de dnd5e 6.1).
  */
 export default {
   name: "zone à activité sœur — Nuage nauséabond, début de tour du Guerrier dedans",
@@ -28,7 +29,7 @@ export default {
     await new Promise(res => setTimeout(res, 2000));
     const region = used.regionId ? (await ctx.call("get-scene-object", { type: "Region", objectId: used.regionId })).data : null;
     const state = region?.flags?.["dnd5e-combat"]?.area;
-    ctx.expect(!!state?.usage && state.activity === "dnd5eactivity000", `zone retenue comme zone qui dure, sœur à rejouer (${JSON.stringify(state && { on: state.on, activity: state.activity })})`);
+    ctx.expect(!!state?.usage && ["dnd5eactivity000", "pyaS54TcG7kx15V2"].includes(state.activity), `zone retenue comme zone qui dure, sœur à rejouer (${JSON.stringify(state && { on: state.on, activity: state.activity })})`);
     ctx.expect(!(await ctx.resolution(used.usageMessageId)), "rien à résoudre à la pose (l'utilitaire n'a pas de plan)");
 
     await ctx.startCombat([mage, guerrier]);

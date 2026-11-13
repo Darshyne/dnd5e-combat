@@ -74,7 +74,8 @@ export function identifierOf(item) {
  * §431 : la classe d'une aptitude, quand plusieurs classes partagent son identifiant — le SRD de dnd5e 6.1 donne `potent-spellcasting`
  * à l'option du Clerc (`phbClcPotentSpel`) comme à celle du Druide (`phbFuryPotentSpe`). D'abord `system.classIdentifier` (dnd5e 6.1,
  * data/item/feat.mjs:177, la classe qui a donné l'aptitude par avancement), puis l'item racine de l'avancement (dnd5e 6.0,
- * data/abstract/item-data-model.mjs:62), enfin le texte `requirements` (« Cleric », « Druid ») s'il nomme une classe de l'acteur.
+ * data/abstract/item-data-model.mjs:62), enfin le texte `requirements` (« Cleric », « Druid ») s'il nomme une classe de l'acteur, ou si
+ * l'acteur n'a aucune classe (§433).
  * Rien de sûr : null.
  */
 export function featureClassOf(item) {
@@ -84,7 +85,11 @@ export function featureClassOf(item) {
   if ( root?.type === "class" ) return root.identifier ?? root.system?.identifier ?? null;
   if ( root?.type === "subclass" ) return root.system?.classIdentifier || null;
   const written = String(item?.system?.requirements ?? "").trim().toLowerCase();
-  return (written && item?.actor?.classes?.[written]) ? written : null;
+  if ( !written ) return null;
+  const classes = item?.actor?.classes ?? {};
+  if ( classes[written] ) return written;
+  // §433 : un acteur sans aucune classe (PNJ qui porte l'aptitude) — le texte seul fait foi, s'il tient en un mot (« Druid »).
+  return (!Object.keys(classes).length && /^[a-z]+$/.test(written)) ? written : null;
 }
 
 /**

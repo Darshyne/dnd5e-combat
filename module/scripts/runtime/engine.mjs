@@ -29,7 +29,7 @@ import { canReactToHit } from "./reactions.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
-import { contentOf, identifierOf } from "../adapter/content.mjs";
+import { contentOf, identifierOf, enchantmentSourcesOf } from "../adapter/content.mjs";
 import { duplicatesAgainst } from "../adapter/duplicates.mjs";
 import { log, loc, isExecutor, whenCanvasReady } from "./shared.mjs";
 import { damageFlow } from "./flow.mjs";
@@ -168,7 +168,11 @@ export function slotHealBonus(healer, activity) {
   const level = spellCastLevel(item);
   if ( !healer || (item?.type !== "spell") || (level < 1) || !["spell", "pact", undefined, ""].includes(item.system.method) ) return null;
   const has = key => healer.items.some(i => contentOf(i).entry?.[key] === true);
-  const bonus = { disciple: has("discipleOfLife") ? 2 + level : 0, healer: has("blessedHealer") ? 2 + level : 0 };
+  // §433 : le SRD de dnd5e 6.1 fait de Disciple de la vie un enchantement du sort de soin (« 2 + @item.level » sur `healing.bonus`) — un
+  // sort qui le porte a déjà son bonus dans la formule : le moteur n'ajoute pas le sien.
+  const enchantedBy = enchantmentSourcesOf(item);
+  const inFormula = healer.items.some(i => (contentOf(i).entry?.discipleOfLife === true) && enchantedBy.includes(identifierOf(i).id));
+  const bonus = { disciple: (has("discipleOfLife") && !inFormula) ? 2 + level : 0, healer: has("blessedHealer") ? 2 + level : 0 };
   return (bonus.disciple || bonus.healer) ? bonus : null;
 }
 

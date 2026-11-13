@@ -189,6 +189,16 @@ function brutalRules(actor) {
   return options.size ? { options, count } : null;
 }
 
+/** §433 : l'item et l'effet d'une option — le premier des identifiants donnés qu'un item de Coup brutal de l'acteur porte. */
+function brutalEffectOf(actor, option) {
+  const items = [option.item, ...Array.from(actor?.items ?? []).filter(i => (i !== option.item) && contentOf(i).entry?.brutalStrike)];
+  for ( const effect of [option.effect].flat() ) {
+    const item = items.find(i => i?.effects?.has?.(effect));
+    if ( item ) return { item, effect };
+  }
+  return null;
+}
+
 /** Les choix offerts : une option, ou deux différentes (Coup brutal amélioré, niveau 17). */
 function brutalChoices(names, count) {
   if ( count < 2 ) return names.map(n => [n]);
@@ -263,8 +273,10 @@ async function onBrutalResolution(resolution) {
         log(`Brutal Strike, ${name}: ${target.name} pushed ${cells} square(s)`);
       }
       if ( option.effect ) {
-        await placeItemEffect(option.item, option.effect, target.actor);
-        log(`Brutal Strike, ${name}: effect placed on ${target.name}`);
+        // §433 : l'effet de l'option est sur l'item qui la déclare (Coup brutal amélioré) ou, dans le SRD de dnd5e 6.1, sur Coup brutal.
+        const from = brutalEffectOf(actor, option);
+        const placed = from ? await placeItemEffect(from.item, from.effect, target.actor) : null;
+        log(placed ? `Brutal Strike, ${name}: effect placed on ${target.name}` : `Brutal Strike, ${name}: no effect of this option on ${actor.name}'s items`);
       }
       notice(target, loc(`CoupBrutal.Option.${name}`), "loss");
     }

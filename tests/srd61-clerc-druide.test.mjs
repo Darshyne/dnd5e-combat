@@ -42,6 +42,16 @@ describe("§431 : la classe d'une aptitude au même identifiant (potent-spellcas
     expect(hasClassFeature(actorWith(["druid"], [{ id: "elemental-fury-potent-spellcasting" }]),
       ["elemental-fury-potent-spellcasting", "potent-spellcasting"], "druid")).toBe(true);
   });
+
+  it("§433 : un PNJ sans classe qui porte l'option — le texte `requirements` dit laquelle", () => {
+    const npc = actorWith([], [{ id: "potent-spellcasting", requirements: "Druid" }]);
+    expect(featureClassOf(npc.items[0])).toBe("druid");
+    expect(hasClassFeature(npc, "potent-spellcasting", "druid")).toBe(true);
+    expect(hasClassFeature(npc, "potent-spellcasting", "cleric")).toBe(false);
+    // Un texte qui n'est pas un nom de classe seul (« Druid 7 », vide) ne dit rien.
+    expect(featureClassOf(actorWith([], [{ id: "potent-spellcasting", requirements: "Circle of the Land" }]).items[0])).toBe(null);
+    expect(hasClassFeature(actorWith([], [{ id: "potent-spellcasting" }]), "potent-spellcasting", "druid")).toBe(false);
+  });
 });
 
 describe("§431 : Impact divin et Attaque primitive retirés par l'une ou l'autre forme de l'option", () => {

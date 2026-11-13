@@ -224,7 +224,8 @@ export function useIssues(activity, { cost: forcedCost=null, attackMode=null, re
   const raging = isSpellCast(activity.item) && isRaging(activity.actor);   // §48 : lire un parchemin aussi
   // §163, §436 : Champ antimagie — aucun sort ne s'y lance ; §436 : ni activité d'objet magique (hors attaque d'arme : dnd5e retire déjà
   // son bonus). Le statut `antimagic` de dnd5e 6.1 d'abord, le globe du §163 sinon.
-  const antimagicArea = (!pilot && magicalUse(activity)) ? antimagicAround(usageToken(activity)) : null;
+  // Déjà forcé avant `use` (runtime/antimagic.mjs, `useDespiteAntimagic`) : pas de seconde fenêtre.
+  const antimagicArea = (!pilot && magicalUse(activity) && !usageConfig?.[MODULE_ID]?.antimagicForced) ? antimagicAround(usageToken(activity)) : null;
   const antimagic = (antimagicArea && (antimagicArea.status || isSpellCast(activity.item))) ? antimagicArea : null;
   // §269 : Forme gazeuse — « la cible ne peut ni attaquer ni lancer de sorts » (l'action qui y met fin reste permise).
   const shapeless = ((activity.type === "attack") || isSpellCast(activity.item))
@@ -482,7 +483,8 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
       .catch(err => console.error(`${MODULE_ID} | forced: alert`, err));
     // Les options du moteur déjà posées (choix de la lumière, cibles désignées…) repartent avec la confirmation.
     const config = { ...usageConfig, [MODULE_ID]: { ...(usageConfig?.[MODULE_ID] ?? {}), confirmed: true,
-      ...(reasons.length ? { overridden: overriddenFlag(reasons) } : {}) } };
+      // §436 : une raison déjà passée outre avant `use` (antimagie, runtime/antimagic.mjs) reste sur la carte.
+      ...(reasons.length ? { overridden: overriddenFlag([...(usageConfig?.[MODULE_ID]?.overridden ?? []), ...reasons]) } : {}) } };
     const message = foundry.utils.mergeObject(messageConfig ?? {}, choice === "reaction"
       ? { data: { flags: { [MODULE_ID]: { cost: "reaction" } } } } : {}, { inplace: false });
     // §410 : ce qui manque n'est pas dépensé — la relance « forcée » du §77 (runtime/usage.mjs : rien n'est consommé, le sort à son niveau).

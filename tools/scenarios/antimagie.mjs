@@ -6,7 +6,7 @@
  *  2. Le Magicien lance le Champ : la région porte `dnd5e.antimagic`, le Magicien a le statut.
  *  3. Le Guerrier entre dans le champ : statut, Bénédiction suspendue ; il en sort : plus de statut, Bénédiction rétablie.
  *  4. Le Zombi, dehors, lance Flamme sacrée sur le Magicien : non affecté (raison `antimagic`), PV inchangés.
- *  5. Le Magicien lance Projectile magique : fenêtre de légalité — « Renoncer » : rien ; « Utiliser quand même » : carte marquée
+ *  5. Le Magicien lance Trait de feu (une cible ; Projectile magique ouvrirait d'abord la visée des projectiles) : fenêtre de légalité — « Renoncer » : rien ; « Utiliser quand même » : carte marquée
  *     `overridden` (la raison du champ), alerte au MJ.
  *  6. Le Guerrier, dans le champ, frappe le Bandit avec une arme non magique : aucun souci de légalité, l'attaque se résout.
  * Remet positions, effets, PV.
@@ -84,13 +84,15 @@ export default {
 
     // 2. Le Champ.
     const field = await lend(mage, "phbsplAntimagicF");
-    const used = await ctx.use({ tokenId: mage.id, itemId: field, targetTokenIds: [mage.id], consume: false });
-    if ( used.usageMessageId ) await ctx.settle(used.usageMessageId, { timeoutMs: 30000 }).catch(() => null);
+    // La pose sans clic du moteur (§47), comme à la table : le connecteur seul (`use-activity`) coupe la pose des gabarits.
+    const used = await ctx.engine("use", { tokenId: mage.id, itemId: field, activityType: "utility" });
+    for ( const r of used.regions ?? [] ) ctx.restore(() => ctx.call("delete-scene-object", { type: "Region", objectId: r.id }).catch(() => {}));
+    if ( used.messageId ) await ctx.settle(used.messageId, { timeoutMs: 30000 }).catch(() => null);
     await pause(2500);
-    const regions = (await ctx.call("list-scene-objects", { type: "Region" }).catch(() => null))?.objects ?? [];
+    const regions = used.regions ?? [];
     const fieldRegion = await (async () => {
       for ( const r of regions ) {
-        const { data } = await ctx.call("get-scene-object", { type: "Region", objectId: r.id ?? r._id }).catch(() => ({ data: null }));
+        const { data } = await ctx.call("get-scene-object", { type: "Region", objectId: r.id }).catch(() => ({ data: null }));
         if ( (data?.behaviors ?? []).some(x => x.type === "dnd5e.antimagic") ) return data;
       }
       return null;
@@ -119,24 +121,29 @@ export default {
     const log = (await ctx.engineLog()).filter(l => /unaffected/.test(l) && /\(antimagic/.test(l));
     ctx.expect(log.length > 0 && ((await ctx.hp(mage)) === hp), `Flamme sacrée sur le Magicien dans le champ → ${log.at(-1) ?? "rien au journal"}`);
 
-    // 5. Projectile magique depuis le champ : refusé, forçable.
-    const missile = await lend(mage, "phbsplMagicMissi");
+    // 5. Trait de feu depuis le champ : refusé, forçable.
+    const missile = await lend(mage, "phbsplFireBolt00");
     const issues = await ctx.engine("issues", { tokenId: mage.id, itemId: missile });
     ctx.expect(issues.some(l => /no spell can be cast|aucun sort/i.test(l)), `le souci du champ (${issues.join(" ; ") || "aucun souci"})`);
     const alerts = messages => messages.filter(msg => msg.flags?.[MODULE_ID]?.gmAlert);
     const usages = messages => messages.filter(msg => (msg.type === "usage") && (msg.flags?.[MODULE_ID]?.overridden?.length));
+    // Comme un clic du moteur (`engine use`) : dnd5e 6.1 refuserait sèchement le sort (`requireMagic`), la fenêtre du moteur passe avant.
     const attempt = async button => {
       const since = await ctx.lastMessageId();
-      ctx.call("use-activity", { tokenId: mage.id, itemId: missile, configure: false, targetTokenIds: [zombi.id],
-        usageConfig: { [MODULE_ID]: { autoReact: "none" } } }).catch(() => null);
+      ctx.engine("use", { tokenId: mage.id, itemId: missile, activityType: "attack" }).catch(() => null);
       const d = await legality(mage);
       if ( !d ) return null;
       await ctx.call("answer-dialog", { id: d.id, button });
+      if ( button === "go" ) {
+        // Une autre raison de la légalité (pas de cible désignée…) : passée outre aussi, la carte garde la raison du champ.
+        const more = await legality(mage, 2500);
+        if ( more ) await ctx.call("answer-dialog", { id: more.id, button: "go" });
+      }
       await pause(button === "go" ? 3500 : 1500);
       return ctx.messagesSince(since);
     };
     let after = await attempt("cancel");
-    if ( ctx.expect(!!after, "Projectile magique dans le champ : la fenêtre de légalité s'ouvre") ) {
+    if ( ctx.expect(!!after, "Trait de feu dans le champ : la fenêtre de légalité s'ouvre") ) {
       ctx.expect(!usages(after).length && !alerts(after).length, `renoncé : ni carte, ni alerte (${after.length} message(s))`);
     }
     after = await attempt("go");
@@ -144,7 +151,7 @@ export default {
       const reasons = usages(after)[0]?.flags?.[MODULE_ID]?.overridden ?? [];
       ctx.expect(reasons.some(r => /no spell can be cast|aucun sort/i.test(r)), `forcé : la carte porte la raison du champ (${reasons.join(" | ")})`);
       const text = alerts(after)[0]?.flags?.[MODULE_ID]?.gmAlert?.text ?? "";
-      ctx.expect(!!text && /Magicien/.test(text), `une alerte au MJ (${text})`);
+      ctx.expect(!!text && /no spell can be cast|aucun sort/i.test(text), `une alerte au MJ, avec la raison du champ (${text})`);
       const card = usages(after)[0];
       if ( card ) await ctx.settle(card._id ?? card.id, { timeoutMs: 30000 }).catch(() => null);
     }

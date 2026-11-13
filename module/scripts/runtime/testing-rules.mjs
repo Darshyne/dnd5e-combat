@@ -50,6 +50,7 @@ import { readyOptionsOf, slotsFor, heldEffectOf } from "../adapter/ready.mjs";
 import { finite, gmOnly, viewedToken } from "./testing-shared.mjs";
 import { etherealWallsOf, etherealWallBetween } from "../adapter/plane.mjs";
 import { requestGroupRoll, groupRollView, rollsApi } from "./group-roll.mjs";
+import { useDespiteAntimagic } from "./antimagic.mjs";
 
 /**
  * §43.2 : les effets auxquels une action met fin — ceux du token (`own`), ceux qu'un autre lui retire (`byOther`) ; et le
@@ -369,7 +370,9 @@ export async function use({ tokenId, itemId, activityType=null, extra=null, cons
   });
   let used;
   // `consume` : comme un vrai clic, ressources dépensées (§77 : sans charge, la fenêtre « Plus de charge » du MJ).
-  try { used = await activity.use({ ...(consume ? {} : { consume: false }), [MODULE_ID]: { confirmed: true, autoReact: "none", ...(extra ?? {}) } }, { configure: true }); }
+  // §436 : comme un clic du moteur — sous le statut `antimagic`, sa fenêtre forçable avant le refus sec de dnd5e.
+  try { used = await useDespiteAntimagic(activity, more => activity.use({ ...(consume ? {} : { consume: false }),
+    [MODULE_ID]: { confirmed: true, autoReact: "none", ...(extra ?? {}), ...more } }, { configure: true })); }
   finally { Hooks.off("renderActivityUsageDialog", hook); }
   for ( let i = 0; (i < 30) && !mine().length; i++ ) await sleep(100);
   return {

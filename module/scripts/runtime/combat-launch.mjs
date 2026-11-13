@@ -24,6 +24,7 @@ import { contentOf } from "../adapter/content.mjs";
 import { requestGroupRoll } from "./group-roll.mjs";
 import { route } from "./router.mjs";
 import { log, loc, isExecutor } from "./shared.mjs";
+import { tokenArt } from "../adapter/token-art.mjs";
 
 export const LAUNCH_STATE = "combatLaunch";
 export const LAUNCH_BUTTON = "combatLaunchButton";
@@ -77,7 +78,7 @@ export function launchCandidates(scene=canvas.scene) {
     });
     const summon = summonRule(token);
     return {
-      id: token.id, uuid: token.uuid, name: token.name, img: token.texture?.src ?? actor.img,
+      id: token.id, uuid: token.uuid, name: token.name, img: tokenArt(token),
       actorKey: (token.actorLink ? actor.id : token.actorId) ?? actor.id,
       player, online, creature: isCreature(actor), alive: alive(actor), sameLevel: sameLevel(token),
       notCombatant: token.getFlag?.(MODULE_ID, "notCombatant") === true || actor.getFlag?.(MODULE_ID, "notCombatant") === true,

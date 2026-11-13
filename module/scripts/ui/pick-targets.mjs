@@ -5,6 +5,7 @@
  */
 
 import { pickCandidates, upgradeOf } from "../adapter/pick-targets.mjs";
+import { tokenArt } from "../adapter/token-art.mjs";
 import { loc } from "../runtime/shared.mjs";
 
 const esc = s => foundry.utils.escapeHTML(String(s ?? ""));
@@ -15,7 +16,7 @@ export async function askPickTargets(activity) {
   const rows = creatures.map(({ token, distance }, i) => `
     <label class="dnd5e-combat-pick-row">
       <input type="checkbox" name="pick" value="${i}" ${creatures[i].checked ? "checked" : ""}>
-      <img src="${esc(token.texture?.src)}" alt="">
+      <img src="${esc(tokenArt(token))}" alt="">
       <span class="name">${esc(token.name)}</span>
       <span class="distance">${esc(`${Math.round(distance * 10) / 10} ${units}`)}</span>
     </label>`).join("");

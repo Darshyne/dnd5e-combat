@@ -23,6 +23,7 @@ import { lengthIn } from "../adapter/units.mjs";
 import { burnTick } from "./flammable.mjs";
 import { samePlane } from "../adapter/plane.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
+import { tokenArt } from "../adapter/token-art.mjs";
 const currentTurnKey = () => turnKeyOf(game.combat?.started ? game.combat.round : null, game.combat?.turn);
 
 /** Le token peut-il subir la zone ? Pas celui qui l'a posée depuis lui-même, pas un mort. */
@@ -155,7 +156,7 @@ function casterPulse(region, caster, at) {
 /** §403 : le lanceur choisit au plus `max` créatures dans la zone ; sans réponse, le choix d'office. */
 async function pickPulseTargets(caster, item, max, inside, chosen) {
   const checked = new Set(chosen.map(t => t.uuid));
-  const candidates = inside.map(t => ({ token: t.uuid, name: t.name, img: t.texture?.src ?? "", checked: checked.has(t.uuid), enemy: areEnemies(caster, t) }));
+  const candidates = inside.map(t => ({ token: t.uuid, name: t.name, img: tokenArt(t), checked: checked.has(t.uuid), enemy: areEnemies(caster, t) }));
   const answer = await askZoneChoice(caster.actor, { item: item.name, max, candidates });
   if ( !answer ) return chosen;
   const keep = new Set(answer.tokens.slice(0, max));

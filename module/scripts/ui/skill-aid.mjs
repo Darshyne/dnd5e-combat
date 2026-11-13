@@ -10,6 +10,7 @@
  */
 
 import { aidsFor, isGuided } from "../adapter/skill-aid.mjs";
+import { tokenArt } from "../adapter/token-art.mjs";
 import { inspirationOf } from "../adapter/inspiration.mjs";
 import { requestSkillAid } from "../runtime/skill-aid.mjs";
 import { route } from "../runtime/router.mjs";
@@ -97,7 +98,7 @@ function onRender(app, element) {
     const tip = status ? loc(`AideTest.Etat.${status}`) : gain;
     return `<button type="button" class="dnd5e-combat-aid" data-aid="${esc(keyOf(aid))}" data-status="${status}"
       data-tooltip="${esc(tip)}" ${status ? "disabled" : ""}>
-      <img src="${esc(aid.token.texture?.src ?? aid.helper.img)}" alt=""><span>${esc(label)}</span><small>${esc(status ? tip : gain)}</small></button>`;
+      <img src="${esc(tokenArt(aid.token, aid.helper.img))}" alt=""><span>${esc(label)}</span><small>${esc(status ? tip : gain)}</small></button>`;
   }).join("");
   let section = element.querySelector(".dnd5e-combat-aids");
   if ( !section ) {

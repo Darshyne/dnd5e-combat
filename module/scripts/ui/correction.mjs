@@ -10,6 +10,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { useWithoutDas } from "../runtime/vanilla.mjs";
 import { route } from "../runtime/router.mjs";
 import { loc, esc } from "../runtime/shared.mjs";
+import { tokenArt } from "../adapter/token-art.mjs";
 
 const windowId = "das-correction";
 let CorrectionClass = null;
@@ -72,7 +73,7 @@ const CorrectionApp = () => CorrectionClass ??= class CorrectionApp extends foun
     if ( !zone && shape.attack ) outcomes.push(`<label>${esc(loc("Correction.Attaque.Libelle"))}${select("attack", ATTACK_OUTCOMES, v.attack, "Correction.Attaque")}</label>`);
     if ( !zone && shape.save ) outcomes.push(`<label>${esc(loc("Correction.Sauvegarde.Libelle"))}${select("save", SAVE_OUTCOMES, v.save, "Correction.Sauvegarde")}</label>`);
     if ( !zone && shape.damage ) outcomes.push(`<label>${esc(loc("Correction.Degats.Libelle"))}${select("damage", DAMAGE_MODES, v.damage, "Correction.Degats")}</label>`);
-    const people = targets.map(t => `<div class="das-group-roll__actor on"><img src="${esc(t.texture?.src ?? t.actor?.img)}" alt="">
+    const people = targets.map(t => `<div class="das-group-roll__actor on"><img src="${esc(tokenArt(t))}" alt="">
       <span class="name">${esc(t.name)}</span></div>`).join("");
     return `<form class="das-group-roll__body" autocomplete="off">
       <p class="das-muted">${esc(loc("Correction.Aide", { actor: activity.actor?.name ?? "" }))}</p>

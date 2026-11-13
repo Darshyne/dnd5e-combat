@@ -36,6 +36,7 @@ import { levelAtLeast } from "./levels.mjs";
 import { route } from "./router.mjs";
 import { log, loc, sleep, isExecutor } from "./shared.mjs";
 import { markAwaiting } from "../adapter/awaiting.mjs";
+import { tokenArt } from "../adapter/token-art.mjs";
 
 export const GROUP_ROLL_QUERY = `${MODULE_ID}.groupRoll`;
 export const SECONDS_SETTING = "groupRollSeconds";
@@ -308,7 +309,7 @@ async function promptGroupRollNow(message, actor, { onRolled=null }={}) {
         askedKinds.add(aid.kind);
         const ok = await requestSkillAid({ kind: aid.kind, helper: aid.helper, tester: aid.tester, ...test });
         if ( !ok ) askedKinds.delete(aid.kind);   // refusée : une autre du même genre peut être demandée
-        else granted.push({ kind: aid.kind, helper: aid.helper.name, img: aid.token?.texture?.src ?? aid.helper.img ?? null });
+        else granted.push({ kind: aid.kind, helper: aid.helper.name, img: aid.token ? tokenArt(aid.token, aid.helper.img) : (aid.helper.img ?? null) });
         if ( ok && (aid.kind === "guidance") ) await untilApplied(() => isGuided(actor, test.skill));
         if ( ok && (aid.kind === "inspiration") ) await untilApplied(() => !!inspirationOf(actor));
         return ok;

@@ -21,6 +21,7 @@ import { flammableOf, groundFlammableState, igniteUnder } from "./flammable.mjs"
 import { log } from "./shared.mjs";
 import { enterAllInside } from "./areas.mjs";
 import { LOOKBACK, TRANSIENT_LINGER_MS, dispatcher, openingFor } from "./engine.mjs";
+import { tokenArt } from "../adapter/token-art.mjs";
 
 /* -------------------------------------------- */
 /*  Zones d'effet                               */
@@ -160,7 +161,7 @@ async function askAreaChoice(area, activity, targets) {
   const chosen = new Set(targets.map(t => t.token));
   const candidates = eligible.map(c => {
     const token = fromUuidSync(c.token, { strict: false });
-    return { token: c.token, name: c.name, img: token?.texture?.src ?? "", checked: chosen.has(c.token),
+    return { token: c.token, name: c.name, img: token ? tokenArt(token) : "", checked: chosen.has(c.token),
       enemy: !!(casterToken && token && areEnemies(casterToken, token)) };
   });
   const answer = await askZoneChoice(caster, { item: activity.item?.name ?? activity.name, max: area.max ?? null, candidates });

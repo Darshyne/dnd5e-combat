@@ -49,6 +49,14 @@ export default {
     await pause(1500);
     await lend(`${PHB}.feats.Item.phbftSkulker0000`);
     const club = await lend(`${PHB}.equipment.Item.phbwepClub000000`, { "system.equipped": true, "system.proficient": 1 });
+    // §435 : la Cible a une CA basse et l'attaque cachée a l'Avantage — un raté n'arrivait qu'une fois sur vingt ou trente (une passe sur
+    // trois sans aucun raté en 25 essais). Sa CA relevée le temps de l'essai : les deux issues viennent souvent, la règle jugée est la même.
+    const tScene = (await ctx.scene()).sceneId;
+    const { data: tTok } = await ctx.call("get-scene-object", { type: "Token", objectId: target.id });
+    const tUuid = tTok.actorLink ? `Actor.${tTok.actorId}` : `Scene.${tScene}.Token.${target.id}.Actor.${tTok.actorId}`;
+    const guard = await ctx.call("upsert-embedded-effect", { uuid: tUuid, effectData: { name: "Garde haute (essai)", img: "icons/svg/shield.svg",
+      transfer: false, disabled: false, changes: [{ key: "system.attributes.ac.bonus", value: "+6", type: "add" }] }, match: { path: "name", value: "Garde haute (essai)" } });
+    ctx.restore(() => ctx.call("remove-embedded-effect", { uuid: tUuid, effectId: guard.effectId ?? guard.id ?? guard.effect?._id }).catch(() => {}));
     const t = await ctx.position(target);
     await ctx.call("move-token", { tokenId: caster.id, x: t.x - grid, y: t.y, elevation: 0 });
     await pause(800);

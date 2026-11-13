@@ -102,7 +102,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
 | `api.content.builtin` | _données (849 clés)_ |  |  |
-| `api.content.facts` | _liste (64)_ |  |  |
+| `api.content.facts` | _liste (65)_ |  |  |
 | `api.content.identifierOf` | `(item)` | `adapter/content.mjs` | L'identifiant sous lequel un item est reconnu, et d'où il vient. §19.9 : un item premium sans identifiant (Ravenloft) en reçoit un à sa création sur une fiche — dnd5e 6 l'écrit d'après le nom (documents/item.mjs:1146, `… |
 | `api.content.inspect` | `(actor)` | `adapter/content.mjs` | Pour l'inspection en jeu : ce que chaque item d'un acteur déclare, et d'où. |
 | `api.content.of` | `(item)` | `adapter/content.mjs` | L'entrée effective d'un item, couches combinées. `null` si rien n'est déclaré nulle part. @returns {{entry: object\|null, identifier: string\|null, layers: {module: boolean, world: boolean, item: boolean}}} |

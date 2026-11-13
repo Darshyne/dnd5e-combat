@@ -6,7 +6,7 @@ import { effectHolds } from "../module/scripts/core/feats.mjs";
 const facts = Object.fromEntries(["activity.type", "activity.isAttack", "activity.isSpell", "activity.isWeapon", "activity.weaponKind", "activity.identifier", "activity.id",
   "activity.hasProperty", "source.hasStatus", "source.hasEffect", "source.creatureType", "source.allyNearTarget", "source.summonNearTarget", "source.seesTarget",
   "target.hasStatus", "target.hasMark", "target.hasEffect", "target.hasEffectFrom", "hit.stoppableBy", "hit.critical", "damage.resisted", "target.grappledBySource", "target.wieldsProperty", "target.isSelf", "self.hasShield", "self.wieldsWeapon", "target.hasFeature", "activity.ability", "target.sizeAtMost", "target.within", "target.seesSource", "target.creatureType", "target.immuneTo", "activity.isMelee", "target.hasTempHp", "target.atZero", "target.isDead", "damage.hasType", "target.hpAtMost", "condition.gained",
-  "target.wounded", "target.bloodied", "source.classLevelAtLeast", "target.nearSelf", "self.seesTarget", "target.hasNotActed", "source.onOwnTurn", "activity.dealsType", "source.hasFeature", "activity.cantripOf", "activity.school", "activity.enchantedBy", "source.wildShaped", "activity.classSpell", "source.resists", "source.nearSelf", "self.seesSource", "source.hasEffectFromTarget", "source.hasSense", "target.allied"].map(k => [k, true]));
+  "target.wounded", "target.bloodied", "source.classLevelAtLeast", "target.nearSelf", "self.seesTarget", "target.hasNotActed", "source.onOwnTurn", "activity.dealsType", "source.hasFeature", "source.hasClassFeature", "activity.cantripOf", "activity.school", "activity.enchantedBy", "source.wildShaped", "activity.classSpell", "source.resists", "source.nearSelf", "self.seesSource", "source.hasEffectFromTarget", "source.hasSense", "target.allied"].map(k => [k, true]));
 const MOMENTS_LIST = "isHit, isDamaged, leavesReach, enemyDisengages, enter, turnStart, turnEnd, moves, preDamageRoll, hit, failedSave, savedSave, startOfTurn, endOfTurn, originTurnStart, preAttackRoll, castsSpell, isMissed, enemyTurnEnd, isTargeted, isAttacked, enemyAttacks, allyAttacks, gainsCondition, allyIsHit, allyIsDamaged, enemyAttacked, falls, allyFalls";
 
 describe("validation d'une entrée", () => {
@@ -797,8 +797,10 @@ describe("§277 : sources enregistrées avec une table", () => {
 
 describe("§293 : créatures de votre choix dans un rayon (pickTargets)", () => {
   it("le Renvoi des morts-vivants déclare sa liste et la Calcination à la place", () => {
-    expect(CONTENT["channel-divinity"].pickTargets).toMatchObject({ activities: ["aOptL5pMaj3WtR8S"], radius: 30, units: "ft",
-      upgrade: { item: "sear-undead", activity: "fW3U8L8Ca9a6O9Wx" } });
+    // §431 : et « Sear Undead » du Conduit divin (SRD de dnd5e 6.1), proposée si le clerc a l'item Calcination.
+    expect(CONTENT["channel-divinity"].pickTargets).toMatchObject({ activities: ["aOptL5pMaj3WtR8S", "rprxorXdFoHbRERZ"], radius: 30, units: "ft",
+      upgrade: [{ item: "sear-undead", activity: "fW3U8L8Ca9a6O9Wx" },
+        { item: "channel-divinity-cleric", activity: "rprxorXdFoHbRERZ", requires: "sear-undead" }] });
     expect(CONTENT["sear-undead"].pickTargets.activities).toEqual(["fW3U8L8Ca9a6O9Wx"]);
   });
   it("la déclaration est vérifiée", () => {

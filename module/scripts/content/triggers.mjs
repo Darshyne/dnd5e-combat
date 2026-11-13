@@ -246,8 +246,10 @@ export const TRIGGERS = Object.freeze({
   // §299 : Présence zélée (Zélateur) — « Avantage aux jets d'attaque et de sauvegarde jusqu'au début de votre prochain tour » : la
   // donnée ne porte que les sauvegardes.
   "zealous-presence": [{ on: "preAttackRoll", via: "effect", if: { "source.hasEffect": "zealous-presence" }, do: [{ type: "advantage" }] }],
-  "channel-divinity": [{ on: "isDamaged", via: "effect", fromEffect: "iUeSbfduM7K8XrCF", do: [{ type: "remove" }] }],
-  "channel-divinity-cleric": [{ on: "isDamaged", via: "effect", fromEffect: "iUeSbfduM7K8XrCF", do: [{ type: "remove" }] }],
+  // §431 : dans le SRD de dnd5e 6.1, « Sear Undead » est une activité du Conduit divin qui pose le même effet « Turned » : ses propres
+  // dégâts ne le font pas tomber (`otherActivity` ; le Renvoi, lui, n'inflige aucun dégât).
+  "channel-divinity": [{ on: "isDamaged", via: "effect", fromEffect: "iUeSbfduM7K8XrCF", by: "otherActivity", do: [{ type: "remove" }] }],
+  "channel-divinity-cleric": [{ on: "isDamaged", via: "effect", fromEffect: "iUeSbfduM7K8XrCF", by: "otherActivity", do: [{ type: "remove" }] }],
   "sear-undead": [{ on: "isDamaged", via: "effect", fromEffect: "OftTd0Eiwnls76cX", by: "otherActivity", do: [{ type: "remove" }] }],
 
   // Riposte (SPEC §16.9, B9) : « si une créature vous touche avec une attaque au corps à corps… ».

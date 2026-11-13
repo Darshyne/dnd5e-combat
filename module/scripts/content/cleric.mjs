@@ -11,10 +11,14 @@ import { potentSpellcasting } from "./druid.mjs";
 
 /**
  * Impact divin : « une fois à chacun de vos tours, quand vous touchez une créature par un jet d'attaque avec une arme ». Pas pour un clerc
- * qui a reçu l'option Incantation puissante (item du Manuel ; relevé des trous, 2026-10-22).
+ * qui a reçu l'option Incantation puissante (item du Manuel ; relevé des trous, 2026-10-22) — §431 : sous l'identifiant du Manuel et du
+ * SRD de dnd5e 6.0 (`blessed-strikes-potent-spellcasting`) ou sous celui du SRD 6.1 (`potent-spellcasting`, partagé avec le Druide : celui
+ * du Clerc seulement).
  */
+const potentOption = { any: [{ "source.hasFeature": "blessed-strikes-potent-spellcasting" },
+  { "source.hasClassFeature": { id: "potent-spellcasting", class: "cleric" } }] };
 const divineStrike = (formula, improved) => ({ on: "preDamageRoll", oncePerTurn: true,
-  if: { all: [{ "activity.isWeapon": true }, { not: { "source.hasFeature": "blessed-strikes-potent-spellcasting" } },
+  if: { all: [{ "activity.isWeapon": true }, { not: potentOption },
     improved ? { "source.hasFeature": "improved-blessed-strikes" } : { not: { "source.hasFeature": "improved-blessed-strikes" } }] },
   do: [{ type: "damage", formula, damageType: "radiant" }] });
 
@@ -22,12 +26,24 @@ const divineStrike = (formula, improved) => ({ on: "preDamageRoll", oncePerTurn:
  * Incantation puissante, l'autre option d'Impacts bénis : « ajoutez votre modificateur de Sagesse aux dégâts de tout sort mineur de
  * Clerc ». L'avancement du Clerc ne donne que « Impacts bénis » (Impact divin par défaut) ; l'item d'option du Manuel (« Blessed
  * Strikes: Potent Spellcasting », `blessed-strikes-potent-spellcasting`) posé sur la fiche porte la règle et retire l'Impact divin.
+ * §431 : l'item du SRD de dnd5e 6.1 (`potent-spellcasting`) porte lui-même un effet qui ajoute la Sagesse aux sorts mineurs de Clerc
+ * (changement `damage` / `dnd5e.bonus`, condition `item.classIdentifier`) : aucune entrée sous ce nom, sinon le bonus compterait deux fois.
  */
 
-/** §293 : Calcination des morts-vivants (`phbclcSearUndead`), son activité « Channel Divinity: Turn Undead ». */
+/** §293 : Calcination des morts-vivants (`phbclcSearUndead`), son activité « Channel Divinity: Turn Undead » (Manuel, SRD de dnd5e 6.0). */
 const SEAR_UNDEAD = "fW3U8L8Ca9a6O9Wx";
-/** §293 : l'activité « Turn Undead » du Conduit divin (`phbclcChannelDiv`). */
-const TURN_UNDEAD = Object.freeze({ activities: ["aOptL5pMaj3WtR8S"], radius: 30, units: "ft", upgrade: { item: "sear-undead", activity: SEAR_UNDEAD } });
+/**
+ * §431 : dans le SRD de dnd5e 6.1, l'item Calcination n'a plus d'activité ; c'est le Conduit divin (`channel-divinity-cleric`) qui porte
+ * « Sear Undead » (sauvegarde, même effet « Turned » que le Renvoi, plus les dégâts radiants), visible au niveau 5 du Clerc.
+ */
+const SEAR_UNDEAD_61 = "rprxorXdFoHbRERZ";
+/**
+ * §293 : l'activité « Turn Undead » du Conduit divin (`phbclcChannelDiv`) — §431 : et « Sear Undead » du SRD 6.1, sur le même item. La
+ * Calcination proposée à la place du Renvoi : l'activité de l'item Calcination (ancienne forme), sinon celle du Conduit divin si le clerc
+ * a l'item Calcination (niveau 5).
+ */
+const TURN_UNDEAD = Object.freeze({ activities: ["aOptL5pMaj3WtR8S", SEAR_UNDEAD_61], radius: 30, units: "ft",
+  upgrade: [{ item: "sear-undead", activity: SEAR_UNDEAD }, { item: "channel-divinity-cleric", activity: SEAR_UNDEAD_61, requires: "sear-undead" }] });
 
 export const CLERIC = Object.freeze({
   // Éclat protecteur (Lumière 3) : en Réaction, le clerc donne le Désavantage au jet d'attaque d'une créature qu'il voit à 9 m ou
@@ -40,7 +56,7 @@ export const CLERIC = Object.freeze({
   // Impacts bénis (niveau 7), option Impact divin : 1d8 radiants (au choix nécrotiques ou radiants : radiants d'office) ;
   // 2d8 avec Impacts bénis améliorés (niveau 14).
   "blessed-strikes": { triggers: [divineStrike("1d8", false), divineStrike("2d8", true)] },
-  "blessed-strikes-potent-spellcasting": potentSpellcasting("cleric"),
+  "blessed-strikes-potent-spellcasting": potentSpellcasting("cleric"),   // §431 : pas `potent-spellcasting` (dnd5e 6.1 le fait seul)
   // Guérison suprême (niveau 17) : « prenez la valeur maximale pour chaque dé » d'un sort ou d'une Conduit divin qui soigne.
   "supreme-healing": { supremeHealing: true },
   // §295 : Faveur du filou (Domaine de la ruse) — « jusqu'à ce que vous terminiez un Repos long » (la donnée : un round).

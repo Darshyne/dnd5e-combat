@@ -9,9 +9,15 @@
 
 /** Attaques primitives : « un jet d'attaque avec une arme ou une attaque de Bête sous Forme sauvage ». */
 const primalHit = { any: [{ "activity.isWeapon": true }, { "source.wildShaped": true, "activity.isAttack": true }] };
-/** Attaque primitive, pas pour un druide qui a reçu l'option Incantation puissante (item du Manuel ; relevé des trous, 2026-10-22). */
+/**
+ * Attaque primitive, pas pour un druide qui a reçu l'option Incantation puissante (item du Manuel ; relevé des trous, 2026-10-22) — §431 :
+ * sous l'identifiant du Manuel et du SRD de dnd5e 6.0 ou sous celui du SRD 6.1 (`potent-spellcasting`, partagé avec le Clerc : celui du
+ * Druide seulement).
+ */
+const POTENT_IDS = ["elemental-fury-potent-spellcasting", "potent-spellcasting"];
+const potentOption = { any: [{ "source.hasFeature": POTENT_IDS[0] }, { "source.hasClassFeature": { id: POTENT_IDS[1], class: "druid" } }] };
 const primalStrike = (formula, improved) => ({ on: "preDamageRoll", oncePerTurn: true,
-  if: { all: [primalHit, { not: { "source.hasFeature": "elemental-fury-potent-spellcasting" } },
+  if: { all: [primalHit, { not: potentOption },
     improved ? { "source.hasFeature": "improved-elemental-fury" } : { not: { "source.hasFeature": "improved-elemental-fury" } }] },
   do: [{ type: "damage", formula, damageType: "fire" }] });
 
@@ -20,6 +26,8 @@ const primalStrike = (formula, improved) => ({ on: "preDamageRoll", oncePerTurn:
  * mineur de Druide ». L'avancement du Druide ne donne que « Fureur élémentaire » (Attaques primitives par défaut) ; le Manuel a un item
  * par option (« Elemental Fury: Potent Spellcasting », `elemental-fury-potent-spellcasting`) : posé sur la fiche, il porte la règle et
  * retire l'Attaque primitive. Même règle pour le Clerc (relevé des trous, 2026-10-22 — avant, il fallait la surcouche du monde, et l'Attaque restait).
+ * §431 : l'item du SRD de dnd5e 6.1 (`potent-spellcasting`) porte lui-même un effet qui ajoute la Sagesse aux sorts mineurs de sa classe
+ * (changement `damage` / `dnd5e.bonus`, condition `item.classIdentifier`) : aucune entrée sous ce nom, sinon le bonus compterait deux fois.
  */
 export const potentSpellcasting = cls => ({ triggers: [{ on: "preDamageRoll", if: { "activity.cantripOf": cls },
   do: [{ type: "damage", formula: "@abilities.wis.mod", damageType: "weapon" }] }] });
@@ -56,7 +64,7 @@ export const DRUID = Object.freeze({
   "elemental-fury-potent-spellcasting": potentSpellcasting("druid"),
   // §236 : Fureur élémentaire améliorée (niveau 15) — l'Attaque primitive passe à 2d8 (« elemental-fury ») ; Incantation puissante : « un
   // sort mineur de Druide d'une portée d'au moins 3 m porte 90 m plus loin » (adapter/turn.mjs, `rangeOf`).
-  "improved-elemental-fury": { cantripRange: { class: "druid", add: { value: 300, units: "ft" }, requires: "elemental-fury-potent-spellcasting" } },
+  "improved-elemental-fury": { cantripRange: { class: "druid", add: { value: 300, units: "ft" }, requires: POTENT_IDS } },
   // Forme lunaire (Lune 10), Radiance lunaire améliorée : un coup porté sous Forme sauvage ajoute 2d10 radiants, au plus une
   // fois par tour.
   "lunar-form": { triggers: [{ on: "preDamageRoll", oncePerTurn: true, if: { "source.wildShaped": true, "activity.isAttack": true },

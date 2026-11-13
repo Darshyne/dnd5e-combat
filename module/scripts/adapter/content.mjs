@@ -71,6 +71,36 @@ export function identifierOf(item) {
 }
 
 /**
+ * §431 : la classe d'une aptitude, quand plusieurs classes partagent son identifiant — le SRD de dnd5e 6.1 donne `potent-spellcasting`
+ * à l'option du Clerc (`phbClcPotentSpel`) comme à celle du Druide (`phbFuryPotentSpe`). D'abord `system.classIdentifier` (dnd5e 6.1,
+ * data/item/feat.mjs:177, la classe qui a donné l'aptitude par avancement), puis l'item racine de l'avancement (dnd5e 6.0,
+ * data/abstract/item-data-model.mjs:62), enfin le texte `requirements` (« Cleric », « Druid ») s'il nomme une classe de l'acteur.
+ * Rien de sûr : null.
+ */
+export function featureClassOf(item) {
+  const own = item?.system?.classIdentifier;
+  if ( own ) return own;
+  const root = item?.system?.advancementRootItem;
+  if ( root?.type === "class" ) return root.identifier ?? root.system?.identifier ?? null;
+  if ( root?.type === "subclass" ) return root.system?.classIdentifier || null;
+  const written = String(item?.system?.requirements ?? "").trim().toLowerCase();
+  return (written && item?.actor?.classes?.[written]) ? written : null;
+}
+
+/**
+ * §431 : l'acteur a-t-il une aptitude de cet identifiant (ou de l'un d'eux) pour cette classe ? Une aptitude dont la classe est connue
+ * et différente ne compte pas ; dont la classe est inconnue, compte si l'acteur a des niveaux dans la classe demandée.
+ */
+export function hasClassFeature(actor, ids, cls) {
+  const wanted = [ids].flat();
+  return Array.from(actor?.items ?? []).some(i => {
+    if ( !wanted.includes(identifierOf(i).id) ) return false;
+    const of = featureClassOf(i);
+    return of ? (of === cls) : !!actor?.classes?.[cls];
+  });
+}
+
+/**
  * O5b (§340) : les identifiants des objets dont un enchantement actif est posé sur cet item — par l'id de l'effet d'enchantement
  * (content/sources.mjs, `ENCHANTMENT_SOURCES` : il reste celui de l'effet d'origine), sinon par l'objet qui l'a posé
  * (`system.origin.activity`, activity/enchant.mjs), quand il existe encore.

@@ -39,8 +39,9 @@ export const TARGETS = Object.freeze({
   // Renvoi des morts-vivants (§16.25) : « chaque Mort-vivant de votre choix dans un rayon de 9 m ». Conduit divin du clerc
   // (PHB et dnd5e 6 : `channel-divinity` / `channel-divinity-cleric`) : la seule activité « Turn Undead » ; Étincelle divine
   // vise n'importe qui. Calcination des morts-vivants remplace le Renvoi (même sauvegarde, même effet, plus les dégâts).
-  "channel-divinity": { unaffectedIf: { "activity.id": "aOptL5pMaj3WtR8S", not: { "target.creatureType": "undead" } } },
-  "channel-divinity-cleric": { unaffectedIf: { "activity.id": "aOptL5pMaj3WtR8S", not: { "target.creatureType": "undead" } } },
+  // §431 : le SRD de dnd5e 6.1 met « Sear Undead » (rprxorXdFoHbRERZ) sur le Conduit divin — morts-vivants seuls, elle aussi.
+  "channel-divinity": { unaffectedIf: { "activity.id": ["aOptL5pMaj3WtR8S", "rprxorXdFoHbRERZ"], not: { "target.creatureType": "undead" } } },
+  "channel-divinity-cleric": { unaffectedIf: { "activity.id": ["aOptL5pMaj3WtR8S", "rprxorXdFoHbRERZ"], not: { "target.creatureType": "undead" } } },
   "sear-undead": { types: ["undead"] },
   // Prière de guérison 2024 (§16.38) : « une créature ne peut plus être affectée par ce sort avant d'avoir terminé un Repos
   // long » — l'effet « Guéris par prière » que le sort pose la marque (et tombe au repos long, EFFECT_EXPIRIES ci-dessous).

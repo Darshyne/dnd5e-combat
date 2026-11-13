@@ -35,12 +35,22 @@ export function pickTargetsOf(activity) {
   return (rule && rule.activities?.includes(activity.id)) ? rule : null;
 }
 
-/** L'activité qui peut remplacer celle-ci (`upgrade`), sur un item du même acteur, ou null. */
+/**
+ * L'activité qui peut remplacer celle-ci (`upgrade`), sur un item du même acteur, ou null. §431 : une liste est lue dans l'ordre (la
+ * Calcination du Manuel et du SRD de dnd5e 6.0, puis celle du SRD 6.1, portée par le Conduit divin) ; `requires`, un item que le
+ * lanceur doit avoir en plus ; jamais l'activité elle-même (« Sear Undead » 6.1 utilisée directement).
+ */
 export function upgradeOf(activity, rule=pickTargetsOf(activity)) {
-  const wanted = rule?.upgrade;
-  if ( !wanted || !activity?.actor ) return null;
-  const item = activity.actor.items.find(i => identifierOf(i).id === wanted.item);
-  return item?.system?.activities?.get?.(wanted.activity) ?? null;
+  if ( !rule?.upgrade || !activity?.actor ) return null;
+  const items = Array.from(activity.actor.items);
+  const has = id => items.some(i => identifierOf(i).id === id);
+  for ( const wanted of [rule.upgrade].flat() ) {
+    if ( wanted.requires && !has(wanted.requires) ) continue;
+    const found = items.find(i => (identifierOf(i).id === wanted.item) && i.system?.activities?.get?.(wanted.activity))
+      ?.system.activities.get(wanted.activity);
+    if ( found && (found !== activity) && (found.id !== activity.id) ) return found;
+  }
+  return null;
 }
 
 /**

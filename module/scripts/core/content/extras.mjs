@@ -66,8 +66,11 @@ export function validateExtras(entry, at, errors) {
       // §300 : ou une formule de données de jet (Courroux des mers : « @scale.sea.wrath-range »).
       if ( !((Number.isFinite(p.radius) && (p.radius > 0)) || ((typeof p.radius === "string") && p.radius.trim())) ) errors.push(`${at}pickTargets.radius: positive number or formula`);
       if ( !["ft", "m"].includes(p.units) ) errors.push(`${at}pickTargets.units: ft, m`);
-      if ( ("upgrade" in p) && !(isObject(p.upgrade) && (typeof p.upgrade.item === "string") && p.upgrade.item && isId(p.upgrade.activity)) ) {
-        errors.push(`${at}pickTargets.upgrade: { item: identifier, activity: activity id }`);
+      // §431 : ou une liste, la première que le lanceur a l'emporte ; `requires` : un item que le lanceur doit avoir en plus.
+      const upgradeOk = u => isObject(u) && (typeof u.item === "string") && u.item && isId(u.activity)
+        && (!("requires" in u) || ((typeof u.requires === "string") && u.requires)) && Object.keys(u).every(k => ["item", "activity", "requires"].includes(k));
+      if ( ("upgrade" in p) && !(Array.isArray(p.upgrade) ? (p.upgrade.length && p.upgrade.every(upgradeOk)) : upgradeOk(p.upgrade)) ) {
+        errors.push(`${at}pickTargets.upgrade: { item: identifier, activity: activity id, requires?: identifier } or a list of them`);
       }
       // §296 : `max` (nombre de créatures), `self` (le lanceur aussi), `check` (qui est coché d'avance), `filter` (« bloodied »).
       if ( ("max" in p) && !(Number.isInteger(p.max) && (p.max > 0)) ) errors.push(`${at}pickTargets.max: positive integer`);

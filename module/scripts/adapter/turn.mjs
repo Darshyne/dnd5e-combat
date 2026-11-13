@@ -12,7 +12,7 @@
 
 import { spentMovement } from "../core/movement.mjs";
 import { MODULE_ID } from "../constants.mjs";
-import { contentOf, identifierOf } from "./content.mjs";
+import { contentOf, identifierOf, hasClassFeature } from "./content.mjs";
 import { basicActionOf } from "./basics.mjs";
 import { originItemOf, comesFromItemEffect } from "./facts.mjs";
 import { spellClassOf } from "./spell-class.mjs";
@@ -306,13 +306,15 @@ function spellSniperRange(activity, range) {
 /**
  * §236 : Fureur élémentaire améliorée, Incantation puissante — « quand vous lancez un sort mineur de Druide d'une portée d'au moins 3 m,
  * sa portée augmente de 90 m ». La règle `cantripRange` d'un item du lanceur, s'il a l'item d'option qu'elle demande (`requires`).
+ * §431 : `requires` peut nommer plusieurs identifiants (celui du Manuel, celui du SRD de dnd5e 6.1) ; l'item doit être de la classe de
+ * la règle (`potent-spellcasting` est aussi l'option du Clerc en 6.1).
  */
 function cantripRange(activity, range) {
   const item = activity.item;
   const actor = activity.actor;
   if ( (item?.type !== "spell") || (Number(item.system?.level) !== 0) || !Number.isFinite(range.value) || !range.units || !actor ) return range;
-  const owns = id => actor.items.some(i => identifierOf(i).id === id);
-  const rule = Array.from(actor.items).map(i => contentOf(i).entry?.cantripRange).find(r => r && (!r.requires || owns(r.requires)));
+  const rule = Array.from(actor.items).map(i => contentOf(i).entry?.cantripRange)
+    .find(r => r && (!r.requires || hasClassFeature(actor, r.requires, r.class)));
   if ( !rule || ((spellClassOf(item) || (actor.classes?.[rule.class] ? rule.class : null)) !== rule.class) ) return range;
   const factors = readUnitFactors();
   let add, least;

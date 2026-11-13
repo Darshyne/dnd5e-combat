@@ -14,7 +14,7 @@ import { seesBetween, canSee } from "./vision.mjs";
 import { chargedFeet } from "./variants.mjs";
 import { lightOnToken, inSunlight } from "./illumination.mjs";
 import { LIGHT } from "../core/illumination.mjs";
-import { contentOf, identifierOf, enchantmentSourcesOf } from "./content.mjs";
+import { contentOf, identifierOf, enchantmentSourcesOf, hasClassFeature } from "./content.mjs";
 import { distanceBetween } from "./turn.mjs";
 import { readUnitFactors } from "./units.mjs";
 import { isWithinRange } from "../core/units.mjs";
@@ -336,6 +336,9 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     "source.wildShaped": want => (!!source?.isPolymorphed === want),
     // §26 : « le dé de votre Marque du chasseur passe à d10 » (Tueur implacable) — l'acteur a-t-il un item de cet identifiant ?
     "source.hasFeature": id => (source?.items ?? []).some(i => identifierOf(i).id === id),
+    // §431 : l'acteur a un item de cet identifiant (ou de l'un d'eux) donné par cette classe — `potent-spellcasting`, partagé par le
+    // Clerc et le Druide dans le SRD de dnd5e 6.1 : { "source.hasClassFeature": { id: "potent-spellcasting", class: "cleric" } }.
+    "source.hasClassFeature": ({ id, class: cls }={}) => hasClassFeature(source, id, cls),
     // §302 : la cible a un item de cet identifiant (Transe : « ne dort pas »).
     "target.hasFeature": id => (target?.items ?? []).some(i => identifierOf(i).id === id),
     // §302 : la caractéristique de l'attaque (dnd5e : `activity.ability`, la meilleure pour une arme de Finesse) — Rayon affaiblissant.

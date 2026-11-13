@@ -342,8 +342,9 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   if ( "cantripRange" in entry ) {
     const r = entry.cantripRange;
     if ( !isObject(r) || (typeof r.class !== "string") || !r.class || !isObject(r.add) || !Number.isFinite(r.add.value) || (typeof r.add.units !== "string")
-      || (("requires" in r) && ((typeof r.requires !== "string") || !r.requires)) || !Object.keys(r).every(k => ["class", "add", "requires"].includes(k)) ) {
-      errors.push(`${at}cantripRange: { class, add: { value, units }, requires? }`);
+      || (("requires" in r) && !(((typeof r.requires === "string") && r.requires) || (Array.isArray(r.requires) && r.requires.length
+        && r.requires.every(id => (typeof id === "string") && id)))) || !Object.keys(r).every(k => ["class", "add", "requires"].includes(k)) ) {
+      errors.push(`${at}cantripRange: { class, add: { value, units }, requires?: identifier or list (§431) }`);
     }
   }
   if ( ("fleetStep" in entry) && !(isObject(entry.fleetStep) && (typeof entry.fleetStep.item === "string") && entry.fleetStep.item && isId(entry.fleetStep.activity)

@@ -153,7 +153,10 @@ export default {
     await part("Perturbations synaptiques", async () => {
       const spell = await lend(caster, `${PHB}.spells.Item.phbsplSynapticSt`, { "system.method": "atwill" });
       const c = await ctx.position(target);
-      const got = await until(failed, { tokenId: caster.id, itemId: spell, activityType: "save", targetTokenIds: [target.id],
+      // §435 : la zone prend aussi le Lanceur (et la Cible voisine) — la sauvegarde lue est celle de la Cible, pas celle du premier de la
+      // liste (le Lanceur, qui réussit souvent : quinze lancers sans « raté » lu).
+      const cibleFailed = r => r?.targets?.find(t => t.name === "Cible")?.save?.success === false;
+      const got = await until(cibleFailed, { tokenId: caster.id, itemId: spell, activityType: "save", targetTokenIds: [target.id],
         area: { shape: "circle", x: c.x + ARENE_SORTS.grid / 2, y: c.y + ARENE_SORTS.grid / 2, radius: ARENE_SORTS.grid * 4 } });
       ctx.expect(!!got && await has(target, "synaptic-static"), "Perturbations : la Cible rate et porte l'effet");
       await startFight([target, caster]);

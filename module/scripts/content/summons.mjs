@@ -104,6 +104,11 @@ export const SUMMONS = Object.freeze({
   // §230 : « Si vous avez déjà un destrier de ce sort, il est remplacé par le nouveau » ; la monture volante (« Fly 60 ft. (requires
   // level 4+ spell) », note Foundry : activité « Summon Flying Steed » à partir d'un emplacement de niveau 4) — l'incantation gratuite
   // de Fidèle destrier (paladin niveau 5, au niveau 2 du sort) ne la donne pas.
+  // §430 : `minLevels` ne vaut que pour les données d'avant le SRD 6.1 (dnd5e 6.0.x, module premium du PHB, fiches existantes). Dans
+  // le SRD de dnd5e 6.1.0, l'activité « Summon Flying Steed » n'existe plus : la seule activité « Summon Steed » (`dnd5eactivity000`)
+  // porte l'effet « Flying Steed » (`phbeffFlyingStee`, Vol 60 ft) avec `level.min: 4`, et dnd5e ne l'applique au destrier qu'à partir
+  // d'un sort de niveau 4 (data/activity/base-activity.mjs `applicableEffects`, par `relevantLevel` ; documents/activity/summon.mjs,
+  // « Add applied effects »). La règle n'y a rien à faire : aucune entrée pour `dnd5eactivity000`, donc aucune porte, aucun avertissement.
   // §259 : « la monture disparaît si elle tombe à 0 point de vie ».
   // §305 : « le destrier disparaît… si vous mourez ».
   "find-steed": { ...vanishing, replaces: true, vanishesWithCaster: true, minLevels: { o4YsONnsS8rOOEaS: 4 } },

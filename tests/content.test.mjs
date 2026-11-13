@@ -1068,6 +1068,17 @@ describe("§305 : repasse, lot C10 (invocations, compagnons, familiers)", () => 
   });
 });
 
+describe("§430 : Appel de destrier, données d'avant et d'après le SRD 6.1", () => {
+  it("la porte de la monture volante ne vise que l'ancienne activité « Summon Flying Steed »", () => {
+    const { minLevels } = CONTENT["find-steed"].summon;
+    // dnd5e 6.0.x et le PHB premium : deux activités, la volante (o4YsONnsS8rOOEaS) seulement à partir du niveau 4.
+    expect(minLevels).toEqual({ o4YsONnsS8rOOEaS: 4 });
+    // SRD 6.1 : une seule activité (dnd5eactivity000), l'effet « Flying Steed » est filtré par dnd5e (level.min 4) — aucune porte ici.
+    expect(minLevels.dnd5eactivity000).toBeUndefined();
+    expect(validateEntry(CONTENT["find-steed"], { facts })).toEqual([]);
+  });
+});
+
 describe("§306 : repasse, lot C11 (Métamagie, magie des sous-classes)", () => {
   it("les déclarations du lot", () => {
     expect(CONTENT["improved-illusions"].rangedFeat).toEqual({ kind: "spell", spellRange: { value: 60, units: "ft", school: "ill" } });

@@ -16,3 +16,21 @@ export function keptAndDropped(results, advantageMode=0) {
   const mode = (advantageMode === 1) || (advantageMode === -1) ? advantageMode : ((Math.max(...dropped) > Math.max(...kept)) ? -1 : 1);
   return { mode, kept, dropped };
 }
+
+/**
+ * §435 : la garde d'un d20 lancé avec l'Avantage ou le Désavantage, lue sur ses modificateurs. dnd5e 6 écrit `adv` / `dis` (`adv2` :
+ * Précision elfique ; `D20Die#applyAdvantage`), un dé écrit à la main `kh` / `kl` ; le mode noté par dnd5e (`options.advantageMode` :
+ * 1 Avantage, -1 Désavantage) l'emporte quand il est connu.
+ * @param {string[]} modifiers
+ * @param {number} [advantageMode]
+ * @returns {"kh"|"kl"|null}  `kh` : le plus haut compte ; `kl` : le plus bas ; null : aucune garde.
+ */
+export function d20Keep(modifiers, advantageMode) {
+  if ( advantageMode === 1 ) return "kh";
+  if ( advantageMode === -1 ) return "kl";
+  for ( const m of modifiers ?? [] ) {
+    if ( /^(?:kh|adv)/.test(m) ) return "kh";
+    if ( /^(?:kl|dis)/.test(m) ) return "kl";
+  }
+  return null;
+}

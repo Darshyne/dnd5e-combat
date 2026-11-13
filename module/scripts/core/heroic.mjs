@@ -67,3 +67,30 @@ export function damageDiceLow(dice) {
 export function rerolledDamage(value, old, now) {
   return Math.max(0, value + now - old);
 }
+
+/**
+ * §435 : les dés qui comptent dans les termes d'un jet — un dé de chaque terme de dés (`faces`, `results`), et, dans un groupe (`PoolTerm` :
+ * `{2d6,2d6}kh` de l'Attaquant sauvage), seulement les jets que le groupe garde : relancer un dé du jet écarté ne changerait rien au
+ * total. Un résultat écarté, relancé ou inactif ne compte pas. Objets simples : `{ faces, results, modifiers }` ou `{ rolls, results }`.
+ * @param {object[]} terms
+ * @returns {Array<{term: object, result: object, index: number}>}  `index` : la place du résultat dans son terme
+ */
+export function liveDice(terms) {
+  const out = [];
+  for ( const term of terms ?? [] ) {
+    if ( Array.isArray(term?.rolls) ) {
+      term.rolls.forEach((roll, i) => {
+        const r = term.results?.[i];
+        if ( r && ((r.active === false) || r.discarded) ) return;
+        out.push(...liveDice(roll?.terms));
+      });
+      continue;
+    }
+    if ( !Number.isFinite(term?.faces) || !Array.isArray(term.results) ) continue;
+    term.results.forEach((res, index) => {
+      if ( (res.active === false) || res.rerolled || res.discarded ) return;
+      out.push({ term, result: res, index });
+    });
+  }
+  return out;
+}

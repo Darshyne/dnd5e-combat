@@ -27,6 +27,9 @@ export const SOURCE_IDENTIFIERS = Object.freeze({
   mmMistyEscape000: "mm-misty-escape",
   E2ZOsODrA6ydRBro: "mm-misty-escape",
   mmWeb00000000000: "mm-web",
+  // §435 : la Submersion de l'Élémentaire de l'eau n'est pas le marteau légendaire « Whelm » du Guide (content/item-fixes.mjs, O3) —
+  // l'entrée de l'arme remplaçait la couche texte de la créature, et ses dégâts au début de son tour (`originTurnStart`) étaient perdus.
+  mmWhelm000000000: "mm-whelm",
   Z40sOvc1VYKqWqA6: "mm-rally",
   // §334 : défauts de donnée propres à une créature — clé « acteur.item » de la source de compendium (l'id d'item est partagé).
   "mmHomunculus0000.mmBite0000000000": "mm-homunculus-bite",

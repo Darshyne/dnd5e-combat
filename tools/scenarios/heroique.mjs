@@ -49,7 +49,7 @@ export default {
           if ( !/h[ée]ro[iï]que|Heroic/i.test(text) ) continue;
           const b = (d.buttons ?? []).find(x => pick.test(x.label ?? ""));
           if ( b ) await ctx.call("answer-dialog", { id: d.id, button: b.action ?? b.label }).catch(() => {});
-          return { text, buttons: (d.buttons ?? []).map(x => x.label) };
+          return { id: d.id, text, buttons: (d.buttons ?? []).map(x => x.label) };
         }
       }
       return null;
@@ -77,13 +77,20 @@ export default {
       await later;
       await pause(1000);
       const msgs = await ctx.messagesSince(since);
-      const raw = msgs.find(m => m.type === "attack")?.rolls?.[0]?.total;
+      const first = msgs.find(m => m.type === "attack")?.rolls?.[0];
+      const raw = first?.total;
       const card = msgs.find(m => m.flags?.[MODULE_ID]?.heroic?.kind === "d20")?.flags?.[MODULE_ID]?.heroic;
       const t = r?.targets?.[0];
       const roll = r?.attack?.roll ?? {};
       ctx.expect(!!card, `attaque : carte de relance (d20 ${card?.old} → ${card?.new})`);
-      ctx.expect(Number.isFinite(raw) && card && (roll.total === raw - card.old + card.new),
-        `attaque : total ${raw} − ${card?.old} + ${card?.new} = ${roll.total}`);
+      // §435 : avec Avantage ou Désavantage (le Guerrier À terre), « vous ne relancez qu'un seul des d20 » (PHB 2024, Tests d20) : le d20
+      // relancé remplace l'ancien, puis le plus haut (Avantage) ou le plus bas (Désavantage) des deux compte. Sans eux, un seul d20.
+      const d20s = ((first?.dice ?? []).find(d => d.faces === 20)?.results ?? []).map(x => x?.result ?? x).filter(Number.isFinite);
+      const keep = /d20(?:kl|dis)/.test(first?.formula ?? "") ? Math.min : /d20(?:kh|adv)/.test(first?.formula ?? "") ? Math.max : (...v) => v[0];
+      const after = card ? d20s.map((v, i) => (i === d20s.indexOf(card.old)) ? card.new : v) : d20s;
+      const expected = (Number.isFinite(raw) && d20s.length) ? raw - keep(...d20s) + keep(...after) : NaN;
+      ctx.expect(card && (roll.total === expected),
+        `attaque : total ${raw} (d20 ${d20s.join(", ")}) → d20 ${after.join(", ")} = ${expected}, résolution ${roll.total}`);
       const should = roll.isCritical || (!roll.isFumble && (roll.total >= t?.ac));
       ctx.expect(t && (t.hit === should), `attaque : ${roll.total} contre CA ${t?.ac} → ${t?.hit ? "touché" : "raté"}, comme il se doit`);
       ctx.expect(!(await inspiredNow()), "attaque : l'Inspiration est dépensée");
@@ -98,9 +105,10 @@ export default {
       const since = await ctx.lastMessageId();
       const before = await ctx.hp(zombi);
       const u = await attack();
-      await answer(ids, /Garder|Keep/i);
-      const ids2 = await known();
-      const dmg = answer(ids2, /^\d+$/, 15000);   // le premier dé : sa tuile porte sa valeur
+      const kept = await answer(ids, /Garder|Keep/i);
+      // §435 : la question des dégâts s'ouvre aussitôt après (jet de dégâts enchaîné, sans Dice So Nice) — souvent avant qu'une nouvelle liste
+      // des fenêtres soit prise : elle s'y trouvait, exclue, jamais répondue. Seule la question de l'attaque est exclue.
+      const dmg = answer([...ids, kept?.id].filter(Boolean), /^\d+$/, 15000);   // le premier dé : sa tuile porte sa valeur
       const r = await ctx.settle(u.usageMessageId, { timeoutMs: 45000 }).catch(() => null);
       const seen = await dmg;
       if ( !r?.targets?.[0]?.hit ) continue;

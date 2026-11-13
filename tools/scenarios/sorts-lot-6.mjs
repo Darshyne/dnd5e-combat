@@ -85,7 +85,9 @@ export default {
         for ( const e of (await ctx.effects(t)).filter(e => !h.effects.has(e._id ?? e.id) && !e.flags?.[MODULE_ID]?.aura) ) {
           await ctx.call("remove-embedded-effect", { ...target, effectId: e._id ?? e.id }).catch(() => {});
         }
-        await ctx.call("update-scene-object", { type: "Token", objectId: t.id, data: { hidden: false } }).catch(() => {});
+        // §435 : le Renvoi de la Dissipation du mal et du bien bannit pour de bon un mort-vivant qui rate (§402, `banish`) : la marque du
+        // moteur restait sur le Zombi, et le Dédale le croyait déjà banni (rien caché) — l'échec, une fois sur deux, de la passe.
+        await ctx.call("update-scene-object", { type: "Token", objectId: t.id, data: { hidden: false, [`flags.${MODULE_ID}.-=banished`]: null } }).catch(() => {});
         await ctx.call("move-token", { tokenId: t.id, x: h.pos.x, y: h.pos.y, elevation: h.pos.elevation ?? 0 }).catch(() => {});
         if ( t !== bandit ) await ctx.setHp(t, h.hp);
       }
@@ -134,13 +136,13 @@ export default {
       return { since, usage: u.usageMessageId };
     };
     /** Lance des javelines (12 au plus) jusqu'à l'issue voulue (`hit`), en répondant selon `answers` ; rend l'essai retenu. */
-    const until = async (hit, answers) => {
+    const until = async (hit, answers, ms=8000) => {
       for ( let n = 0; n < 12; n++ ) {
         await ctx.call("upsert-actor-item", { actorId: pal.actorId, itemData: { "system.quantity": 10 }, match: { path: "_id", value: javelin } });
         const ids = await known();
         const before = await ctx.hp(bandit);
         const a = await throwAt();
-        const asked = await answerAll(ids, answers, 8000);
+        const asked = await answerAll(ids, answers, ms);
         const r = await ctx.settle(a.usage, { timeoutMs: 45000 }).catch(() => null);
         const touched = r?.targets?.find(t => t.name === bandit.name)?.hit === true;
         if ( touched !== hit ) { await pause(1500); continue; }
@@ -176,7 +178,9 @@ export default {
       await tough(); await place(bandit, 4, 0); await place(zombi, 5, 0);
       await setSlots({ ...slots0, spell3: 1 });
       if ( !ctx.expect(await fight([pal, bandit, zombi]), "combat : au tour du Paladin") ) return;
-      const res = await until(false, [[/rate |misses/i, LIGHTNING], [/Châtiment|Smite|toucher|hit/i, NONE]]);
+      // §435 : un raté de peu passe d'abord par la fenêtre « réussite à un prix » du MJ (jusqu'à 16 s, runtime/success-at-cost.mjs) ;
+      // la question de la Flèche de foudre vient après — au-delà des 8 s d'écoute, elle restait sans réponse (une passe sur deux).
+      const res = await until(false, [[/rate |misses/i, LIGHTNING], [/Châtiment|Smite|toucher|hit/i, NONE]], 30000);
       if ( !ctx.expect(!!res, "la javeline rate le Bandit (12 essais au plus)") ) return;
       const offered = res.asked.flatMap(d => d.buttons ?? []);
       ctx.expect(offered.some(b => LIGHTNING.test(b)), `Flèche de foudre proposée après le raté (${offered.join(" / ")})`);

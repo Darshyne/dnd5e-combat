@@ -36,7 +36,20 @@ async function forgetSpotters(actor) {
   for ( const t of tokensOf(actor) ) if ( t.isOwner && t.getFlag(MODULE_ID, "stealth") ) await t.unsetFlag(MODULE_ID, "stealth");
 }
 
-export async function endHiding(actor, why) {
+/** §435 : la fin de cachette en cours par créature (uuid → promesse) — l'issue d'un tir du Tireur embusqué l'attend. */
+const endings = new Map();
+
+export function endHiding(actor, why) {
+  const key = actor?.uuid;
+  const run = (endings.get(key) ?? Promise.resolve()).catch(() => {}).then(() => endHidingNow(actor, why));
+  if ( key ) {
+    endings.set(key, run);
+    run.catch(() => {}).finally(() => { if ( endings.get(key) === run ) endings.delete(key); });
+  }
+  return run;
+}
+
+async function endHidingNow(actor, why) {
   const effects = hiddenEffectsOf(actor);
   if ( !effects.length || !actor.isOwner ) return;
   // §236 : Faufilement suprême — l'état retiré par un jet d'attaque est gardé, pour que l'Attaque furtive le rende (runtime/sneak.mjs).
@@ -168,7 +181,14 @@ async function sniperOutcome(resolution) {
   if ( !resolution?.plan?.attack || ![STEPS.DONE, STEPS.MISSED].includes(resolution.step) ) return;
   const from = fromUuidSync(resolution.source ?? "", { strict: false });
   const actor = (from?.documentName === "Actor") ? from : (from?.actor ?? null);
-  if ( !actor || !hasSniper(actor) || !actor.getFlag(MODULE_ID, "hiddenBeforeAttack") ) return;
+  if ( !actor || !hasSniper(actor) ) return;
+  // §435 : un tir raté se tranche avant même que dnd5e appelle `dnd5e.rollAttackV2` (vu au banc : l'issue « missed » publiée, l'état
+  // caché encore là, pas de drapeau) — la fin de cachette du jet n'a pas commencé. L'attendre (3 s au plus), sinon le Tireur embusqué
+  // perdait sa cachette sur un raté.
+  for ( const stop = Date.now() + 3000; !endings.has(actor.uuid) && !actor.getFlag(MODULE_ID, "hiddenBeforeAttack")
+    && hiddenEffectsOf(actor).length && (Date.now() < stop); ) await new Promise(r => setTimeout(r, 100));
+  await endings.get(actor.uuid)?.catch(() => {});
+  if ( !actor.getFlag(MODULE_ID, "hiddenBeforeAttack") ) return;
   const missed = (resolution.targets ?? []).every(t => !t.hit);
   if ( missed && await restoreHiding(actor, { plain: true }) ) { log(`hide: ${actor.name} missed from hiding — still hidden (Skulker)`); return; }
   // Touchée : l'Attaque furtive (Roublard) peut encore la rendre ; sinon, la cachette gardée ne sert plus.

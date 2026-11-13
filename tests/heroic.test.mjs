@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { heroicWanted, keptOf, rerolledD20, damageDiceLow, rerolledDamage } from "../module/scripts/core/heroic.mjs";
+import { heroicWanted, keptOf, rerolledD20, damageDiceLow, rerolledDamage, liveDice } from "../module/scripts/core/heroic.mjs";
 
 describe("§282 Inspiration héroïque", () => {
   it("suit le réglage du client : à chaque jet, sur un échec (ou une issue inconnue), jamais", () => {
@@ -39,5 +39,24 @@ describe("§282 Inspiration héroïque", () => {
   it("dégâts : la part du type bouge de la différence, jamais sous zéro", () => {
     expect(rerolledDamage(9, 2, 6)).toBe(13);
     expect(rerolledDamage(1, 3, 1)).toBe(0);
+  });
+});
+
+describe("dés relançables d'un jet de dégâts (§435)", () => {
+  const d6 = (...values) => ({ faces: 6, results: values.map(v => ({ result: v, active: true })) });
+
+  it("un terme de dés simple : chacun de ses résultats actifs", () => {
+    expect(liveDice([d6(3, 5), { operator: "+" }, { number: 3 }]).map(d => d.result.result)).toEqual([3, 5]);
+  });
+
+  it("Attaquant sauvage {2d6,2d6}kh : seuls les dés du jet gardé", () => {
+    const pool = { rolls: [{ terms: [d6(3, 3)] }, { terms: [d6(4, 1)] }],
+      results: [{ result: 6, active: true }, { result: 5, active: false, discarded: true }] };
+    expect(liveDice([pool, { operator: "+" }, { number: 3 }]).map(d => d.result.result)).toEqual([3, 3]);
+  });
+
+  it("un résultat relancé ou écarté ne compte pas", () => {
+    const term = { faces: 8, results: [{ result: 1, active: false, rerolled: true }, { result: 7, active: true }, { result: 2, discarded: true }] };
+    expect(liveDice([term]).map(d => d.result.result)).toEqual([7]);
   });
 });

@@ -7,6 +7,7 @@ import { masterySlots } from "../core/mastery.mjs";
 import { baseWeapons, chosenMasteries, masterySourcesOf, restAllowanceOf } from "../adapter/mastery.mjs";
 import { judgeMasteries } from "./mastery-choices.mjs";
 import { MODULE_ID } from "../constants.mjs";
+import { selfSwitchOf } from "./enchant.mjs";
 import { naturalOneFor } from "./natural-one.mjs";
 import { combatantFor, readBudget, rangeOf } from "../adapter/turn.mjs";
 import { useIssues, legendaryIssues, rangeProblems } from "./turn.mjs";
@@ -210,7 +211,13 @@ export async function enchant({ tokenId, itemId, activityId, targetItemId, profi
   if ( !activity || !target ) throw new Error("activity or item not found");
   const profileId = profile ?? activity.effects?.[0]?._id;
   // O9h (§363) : un enchantement de soi se pose sans les restrictions, comme dnd5e le fait (activity/enchant.mjs, `_triggerSubsequentActions`).
-  const effect = await activity.applyEnchantment(profileId, target, { strict: !(activity.enchant?.self && (target === activity.item)) });
+  let effect = await activity.applyEnchantment(profileId, target, { strict: !(activity.enchant?.self && (target === activity.item)) });
+  // §435 : un objet qui s'enchante lui-même (Dague venimeuse, Courroux sauvage) — dnd5e ne crée rien, le moteur active le profil sur place
+  // (runtime/enchant.mjs) après le hook : l'attendre, et rendre ce profil ; ses riders sont déjà posés.
+  if ( !effect ) {
+    const switched = await selfSwitchOf(target);
+    if ( switched ) return { effectId: switched.id, riders: 0, self: true };
+  }
   // O8e (§348) : sans carte de chat, dnd5e ne crée pas les « riders » (activités et effets ajoutés par l'enchantement : « Swear Oath »
   // de l'Arc du serment) ; ils sont demandés ici comme la carte le ferait (`collectRiders`, chemin enchantmentProfile + activityId).
   const riders = effect ? (await effect.system?.collectRiders?.({ dnd5e: { enchantmentProfile: profileId, activityId } }) ?? []) : [];

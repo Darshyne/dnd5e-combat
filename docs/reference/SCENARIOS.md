@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-333 scénarios (`tools/scenarios/`), joués dans le client du MJ par le connecteur : `node tools/reload.mjs && node
+336 scénarios (`tools/scenarios/`), joués dans le client du MJ par le connecteur : `node tools/reload.mjs && node
 tools/scenario.mjs <noms>`. **Scène** : vide = l'« Arène de test » ; sinon la scène que le scénario demande (sauté si elle manque).
 Les scénarios d'un sous-dossier ne font pas partie de la passe complète : `node tools/scenario.mjs tools/scenarios/<dossier>`. Les
 `balayage-*` ne se jouent que nommés. Choisir sans connaître les noms : `--grep <mot>`, `--section <§>`, `--scene <nom>` ; `--list` montre
@@ -314,6 +314,9 @@ la sélection sans rien jouer.
 | `sous-classes-ravenloft` |  | §95 | Patron Mort-vivant, Sorcellerie de l'ombre, Fantôme, Gardien creux |
 | `soutien-intention` |  | §15.2 | avantage d'un allié, action préparée |
 | `sphere-otiluke` |  | §232 | cible consentante, rien ne traverse |
+| `srd61-barbare` |  | §434 §433 | Coup brutal du SRD 6.1 : handicapant, puissant, chancelant, fendant, deux effets |
+| `srd61-clerc` |  | §434 §433 | Disciple de la vie du SRD 6.1 : sort enchanté, non enchanté, ancienne forme (bonus compté une fois) |
+| `srd61-roublard` |  | §434 §433 | Frappe rusée (Poison) et Frappes sournoises (Assommer) du SRD 6.1 : effet commun, sauvegarde rejouée, fin sur dégâts |
 | `succes-a-un-prix` | Arène du succès à un prix | §242 | attaque, pastille, pause, sauvegarde, jet demandé |
 | `suivre` | keep | §41.3 | un token en suit un autre, la boucle refusée, l'ordre qui tombe |
 | `taille` |  | §16.26 | Taille |

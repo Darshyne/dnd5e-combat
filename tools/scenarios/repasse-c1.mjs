@@ -143,8 +143,11 @@ export default {
     });
 
     await part("Agrandissement sur un allié consentant", async () => {
+      // §435 : les boutons du moteur sont « unwilling » puis « willing » (runtime/engine.mjs, question « consentant ? ») ; l'ancien motif
+      // (« oui / yes / fail… ») n'en reconnaissait aucun : le premier, « pas consentant », était cliqué, et un Allié qui réussissait sa
+      // sauvegarde ne portait rien (une passe sur deux). Le bouton est choisi par son id : `^willing`.
       const spell = await lend(caster, `${PHB}.spells.Item.phbsplEnlargeRed`, { "system.method": "atwill" });
-      const { seen } = await answering([[/consent|willing/i, /oui|yes|fail|rater|consent/i]],
+      const { seen } = await answering([[/consent|willing/i, /^willing\b/i]],
         async () => settled(await ctx.use({ tokenId: caster.id, itemId: spell, activityType: "save", targetTokenIds: [ally.id] })));
       const effects = await ctx.effectsFrom(ally, "enlarge-reduce");
       ctx.expect(effects.length === 1, `Agrandissement : l'Allié porte un seul effet (${effects.map(e => e.effect).join(", ")} ; fenêtres : ${seen.map(s => s.text).join(" | ")})`);

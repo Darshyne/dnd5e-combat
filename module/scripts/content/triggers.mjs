@@ -56,7 +56,10 @@ export const TRIGGERS = Object.freeze({
   // Zones qui durent : « sauvegarde en entrant ou en finissant son tour dedans, une fois par tour »
   // §402 : « une créature métamorphosée (Forme sauvage, Métamorphose) qui rate reprend sa forme véritable » (`revertForm`).
   "moonbeam": [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }, { on: "failedSave", do: [{ type: "revertForm" }] }],
-  "spirit-guardians": [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }],
+  // §438 : Manuel 3.0.0 (SRD de dnd5e 6.1) — l'émanation est posée par « Cast Spell » (utilitaire, comportement de dnd5e : la Vitesse
+  // divisée par deux) ; la sauvegarde est l'activité `dnd5eactivity000`, sans zone. Le rejeu la nomme : sur l'ancienne forme, c'est
+  // l'activité qui a posé la zone (même résultat qu'avant).
+  "spirit-guardians": [{ on: ["enter", "turnEnd"], do: [{ type: "replay", activity: "dnd5eactivity000" }] }],
   "cloud-of-daggers": [{ on: ["enter", "turnEnd"], do: [{ type: "replay" }] }],
   // §75 : Cordon de flèches (version simple, demandée par l'utilisateur) — la sphère de 9 m que pose l'action du sort ; une créature qui y
   // entre ou y termine son tour reçoit un projectile : la sauvegarde de Dextérité de l'activité sœur (2d4 perforants). Quatre

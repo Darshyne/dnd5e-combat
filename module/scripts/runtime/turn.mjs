@@ -706,7 +706,7 @@ async function onUsageMessage(message) {
   if ( message.getFlag(MODULE_ID, "readiedRelease") ) after = { ...after, readied: false };
   // §24 : Déluge de coups — les frappes à mains nues qu'il ouvre.
   const flurry = contentOf(activity.item).entry?.flurry;
-  if ( flurry && (flurry.activity === activity.id) ) {
+  if ( flurry && [flurry.activity].flat().includes(activity.id) ) {
     // §295 : Credo accru (Moine 10) — « trois frappes à mains nues au lieu de deux » : le plus grand `flurryStrikes` des items du porteur.
     const strikes = Math.max(flurry.strikes, ...Array.from(combatant.actor?.items ?? []).map(i => contentOf(i).entry?.flurryStrikes ?? 0));
     after = { ...after, flurry: strikes, flurryAny: flurry.weapons === true };

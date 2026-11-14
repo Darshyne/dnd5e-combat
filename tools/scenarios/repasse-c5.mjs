@@ -106,15 +106,34 @@ export default {
       const spell = await lend(caster, `${PHB}.spells.Item.phbsplSpiritGuar`, { "system.method": "atwill" });
       const c = await clearField();
       await moveTo(target, c.x - 2 * grid, c.y);
-      const used = await ctx.use({ tokenId: caster.id, itemId: spell, activityType: "save",
-        area: { shape: "circle", x: c.x + grid / 2, y: c.y + grid / 2, radius: 3.5 * grid } });
+      // §438 : Manuel 3.0.0 — l'émanation est posée par « Cast Spell » avec le comportement de dnd5e (Vitesse divisée par deux) ; le
+      // connecteur pose sa zone sans ce comportement : le sort est lancé comme au clic (dnd5e pose l'émanation, rattachée au lanceur), la
+      // sauvegarde de la pose est le rejeu « enter » de la sœur, et la zone « avance » quand le lanceur fait un pas.
+      const v3 = !!((await ctx.call("get-actor", { actorId: caster.actorId })).items ?? []).find(i => i._id === spell)?.system?.activities?.tevaatMC9LZxVPLS;
+      let used, r, since;
+      if ( v3 ) {
+        ctx.log("forme 3.0.0 : émanation de dnd5e, rattachée au Lanceur");
+        since = await ctx.lastMessageId();
+        const u = await ctx.engine("use", { tokenId: caster.id, itemId: spell, activityId: "tevaatMC9LZxVPLS" });
+        used = { regionId: u?.regions?.[0]?.id ?? null };
+        await pause(3000);
+        const targets = [];
+        for ( const m of await ticks(since, "enter") ) targets.push(...((await ctx.settle(m.id, { timeoutMs: 40000 }).catch(() => null))?.targets ?? []));
+        r = { targets };
+      } else {
+        used = await ctx.use({ tokenId: caster.id, itemId: spell, activityType: "save",
+          area: { shape: "circle", x: c.x + grid / 2, y: c.y + grid / 2, radius: 3.5 * grid } });
+        r = await settled(used);
+        since = used.usageMessageId;
+      }
       if ( used?.regionId ) regions.push(used.regionId);
-      const r = await settled(used);
       ctx.expect(named(r).includes("Cible"), `à la pose, la Cible sauvegarde (${named(r).join(", ")})`);
-      ctx.expect(await has(target, "spirit-guardians"), "la Cible a la Vitesse divisée par deux");
-      const since = used.usageMessageId;
-      await shiftRegion(used.regionId, grid);
-      ctx.expect((await ticks(since, "enter")).length === 0, "la zone avance d'une case : la Cible, déjà dedans, ne resauvegarde pas");
+      let speedHalved = false;
+      for ( let i = 0; (i < 6) && !speedHalved; i++ ) { speedHalved = await has(target, "spirit-guardians"); if ( !speedHalved ) await pause(500); }
+      ctx.expect(speedHalved, "la Cible a la Vitesse divisée par deux");
+      const posed = (await ticks(since, "enter")).length;
+      if ( v3 ) { await moveTo(caster, c.x - grid, c.y); await pause(3000); } else await shiftRegion(used.regionId, grid);
+      ctx.expect((await ticks(since, "enter")).length === posed, "la zone avance d'une case : la Cible, déjà dedans, ne resauvegarde pas");
       await moveTo(target, c.x - 2 * grid, c.y + 7 * grid);
       await pause(1500);
       ctx.expect(!await has(target, "spirit-guardians"), "sortie de l'émanation, la Vitesse divisée par deux tombe");
@@ -122,7 +141,7 @@ export default {
       await startFight([caster, target]);
       await ctx.nextTurn(); await ctx.nextTurn(); await pause(1500);
       const before = (await ticks(since, "enter")).length;
-      await moveTo(target, c.x - grid, c.y);
+      await moveTo(target, c.x - (v3 ? 2 : 1) * grid, c.y);
       let n = before;
       for ( let i = 0; (i < 10) && (n <= before); i++ ) { await pause(1000); n = (await ticks(since, "enter")).length; }
       ctx.expect(n > before, "au round suivant, la Cible revient dans l'émanation : elle « entre » et resauvegarde");
@@ -198,11 +217,16 @@ export default {
       await moveTo(ally, c.x, c.y - 8 * grid);
       await moveTo(target, c.x - grid, c.y);
       await moveTo(other, c.x + grid, c.y);
-      const list = await ctx.engine("pickTargets", { tokenId: caster.id, itemId: item, activityId: "nNTYj4vqURV4Dhjt" });
+      // §438 : Manuel 3.0.0 — « Manifest Ocean Spray » est utilitaire (l'émanation, sans jet) ; la sauvegarde est la sœur
+      // `9U9AoJYvcrCQtIMm`. Manuel 2.2.0 : la manifestation porte la sauvegarde.
+      const manifest = ((await ctx.call("get-actor", { actorId: caster.actorId })).items ?? []).find(i => i._id === item)?.system?.activities?.nNTYj4vqURV4Dhjt;
+      const saveId = (manifest?.type === "utility") ? "9U9AoJYvcrCQtIMm" : "nNTYj4vqURV4Dhjt";
+      if ( saveId !== "nNTYj4vqURV4Dhjt" ) ctx.log("forme 3.0.0 : la sauvegarde est l'activité sœur");
+      const list = await ctx.engine("pickTargets", { tokenId: caster.id, itemId: item, activityId: saveId });
       const shown = (list.creatures ?? []).map(x => `${x.name}${x.checked ? " ✓" : ""}`);
       ctx.expect((list.max === 1) && shown.some(s => s.startsWith("Cible")) && (shown.filter(s => s.endsWith("✓")).length === 1),
         `une créature au choix dans l'émanation (${shown.join(", ")}, rayon ${list.radius} ${list.units})`);
-      const r = await settled(await ctx.engine("castPicked", { tokenId: caster.id, itemId: item, activityId: "nNTYj4vqURV4Dhjt", targetIds: [target.id] }));
+      const r = await settled(await ctx.engine("castPicked", { tokenId: caster.id, itemId: item, activityId: saveId, targetIds: [target.id] }));
       ctx.expect(named(r).includes("Cible") && !named(r).includes("Cible voisine"), `seule la Cible sauvegarde (${named(r).join(", ")})`);
       ctx.expect(await ctx.hp(other) === 999, "la Cible voisine ne prend rien");
     });

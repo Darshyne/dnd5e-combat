@@ -38,10 +38,12 @@ export const RANGER = Object.freeze({
   // Embuscade effrayante (Traqueur des ténèbres 3), Frappe effroyable : « vous pouvez » ajouter 2d6 psychiques à un coup d'arme, au
   // plus une fois par tour (2d8 avec Rafale du traqueur : l'échelle de la sous-classe), autant de fois que le modificateur de Sagesse
   // par repos long — §223 (#12) : proposée avant le jet de dégâts, une utilisation de l'activité dépensée.
-  "dread-ambusher": { triggers: [{ on: "preDamageRoll", oncePerTurn: true, ask: { uses: "DMVf7FTyTC2HCAf9" }, if: { "activity.isWeapon": true },
-    do: [{ type: "damage", formula: "@scale.gloom.dreadful-strike", damageType: "psychic" }] }] },
+  // §438 : Manuel 3.0.0 — deux activités, « (2d6) » jusqu'au niveau 10, « (2d8) » ensuite, qui consomment les utilisations de l'item
+  // (et non plus les leurs) : la visible à ce niveau compte (adapter/uses.mjs).
+  "dread-ambusher": { triggers: [{ on: "preDamageRoll", oncePerTurn: true, ask: { uses: ["DMVf7FTyTC2HCAf9", "NGiX54LWGJGvMMwL"] }, if: { "activity.isWeapon": true },
+    do: [{ type: "damage", formula: "2d(6 + 2 * min(1, floor(@classes.ranger.levels / 11)))", damageType: "psychic" }] }] },
   // Frappes effroyables (Vagabond féerique 3) : un coup d'arme ajoute 1d4 psychiques, limité à une fois par tour et par cible,
   // 1d6 au niveau 11 — le moteur les limite à une fois par tour.
   "dreadful-strikes": { triggers: [{ on: "preDamageRoll", oncePerTurn: true, if: { "activity.isWeapon": true },
-    do: [{ type: "damage", formula: "@scale.fey.dreadful-strike", damageType: "psychic" }] }] }
+    do: [{ type: "damage", formula: "1d(4 + 2 * min(1, floor(@classes.ranger.levels / 11)))", damageType: "psychic" }] }] }
 });

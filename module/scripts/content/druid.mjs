@@ -54,10 +54,11 @@ export const DRUID = Object.freeze({
       do: [{ type: "use", activity: "nu3AqVu9lyqeFwr3" }, { type: "bonus", formula: "1d6" }] }
   ] },
   // §300 : « choisissez une autre créature que vous voyez dans l'émanation » — une seule, à la manifestation comme au tour suivant.
-  "wrath-of-the-sea": { ...seaPush, pickTargets: { activities: ["nNTYj4vqURV4Dhjt", "9U9AoJYvcrCQtIMm"], radius: "@scale.sea.wrath-range", units: "ft", max: 1, check: "enemies" } },
+  // §438 : le rayon (1,50 m, 3 m au niveau 6) lu sur le niveau de Druide — l'échelle `@scale.sea.wrath-range` a disparu du Manuel 3.0.0.
+  "wrath-of-the-sea": { ...seaPush, pickTargets: { activities: ["nNTYj4vqURV4Dhjt", "9U9AoJYvcrCQtIMm"], radius: "5 + 5 * min(1, floor(@classes.druid.levels / 6))", units: "ft", max: 1, check: "enemies" } },
   // §295 : Protégé de dame Nature (Cercle de la terre 10) — « immunité à l'état Empoisonné » ; la donnée ne porte que les Résistances.
   "natures-ward": { grantsConditionImmunities: ["poisoned"] },
-  "stormborn": { ...seaPush, pickTargets: { activities: ["jOppnQcyBPpUizBN"], radius: "@scale.sea.wrath-range", units: "ft", max: 1, check: "enemies" } },
+  "stormborn": { ...seaPush, pickTargets: { activities: ["jOppnQcyBPpUizBN"], radius: "5 + 5 * min(1, floor(@classes.druid.levels / 6))", units: "ft", max: 1, check: "enemies" } },
   // Fureur élémentaire (niveau 7), option Attaques primitives : « une fois à chacun de vos tours, 1d8 dégâts de feu, de foudre, de
   // froid ou de tonnerre » — feu d'office (le choix n'est pas demandé) ; 2d8 avec Fureur élémentaire améliorée (niveau 15).
   "elemental-fury": { triggers: [primalStrike("1d8", false), primalStrike("2d8", true)] },

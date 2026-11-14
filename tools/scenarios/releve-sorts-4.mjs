@@ -34,9 +34,9 @@ export default {
       const { data } = await ctx.call("get-scene-object", { type: "Token", objectId: t.id });
       return data.actorLink ? { documentType: "Actor", id: data.actorId } : { uuid: `Scene.${sceneId}.Token.${t.id}.Actor.${data.actorId}` };
     };
-    const clearNew = async t => {
+    const clearNew = async (t, only=null) => {
       const target = await targetOf(t);
-      for ( const e of (await ctx.effects(t)).filter(e => !effects0.get(t.id).has(e._id ?? e.id) && !e.flags?.["dnd5e-combat"]?.aura) ) {
+      for ( const e of (await ctx.effects(t)).filter(e => !effects0.get(t.id).has(e._id ?? e.id) && !e.flags?.["dnd5e-combat"]?.aura && (!only || only(e))) ) {
         await ctx.call("remove-embedded-effect", { ...target, effectId: e._id ?? e.id }).catch(() => {});
       }
     };
@@ -44,6 +44,10 @@ export default {
     const reset = async () => {
       if ( ctx.ownCombat ) await ctx.call("end-combat", { combatId: ctx.ownCombat }).catch(() => {});
       ctx.ownCombat = null;
+      // §438 : les concentrations d'abord — leur fin retire la zone, et dnd5e retire alors lui-même les effets de son comportement
+      // (auras du Manuel 3.0.0) ; les retirer en même temps faisait une erreur « does not exist » chez le MJ.
+      for ( const t of all ) await clearNew(t, e => (e.statuses ?? []).includes("concentrating") || /^Concentrat/i.test(e.name ?? ""));
+      await pause(1500);
       for ( const t of all ) await clearNew(t);   // la concentration du lanceur emporte ses invocations
       await pause(1500);
       for ( const t of await ctx.liveTokens() ) if ( !tokens0.has(t.id) ) await ctx.call("delete-scene-object", { type: "Token", objectId: t.id }).catch(() => {});
@@ -96,12 +100,26 @@ export default {
       return null;
     };
 
+    /**
+     * §438 : Manuel 3.0.0 — l'aura n'a plus d'effet sur l'item : son activité porte un comportement de zone de dnd5e
+     * (`applyActiveEffect`, effet du compendium d'effets), laissé à dnd5e (décision de l'utilisateur). Le sort est alors lancé comme au
+     * clic (`api.mcp.use` : dnd5e pose l'émanation, le moteur la rattache au lanceur) ; l'ancienne forme garde l'appel du connecteur.
+     */
+    const castAura = async (itemId, rest={}) => {
+      const item = ((await ctx.call("get-actor", { actorId: pal.actorId })).items ?? []).find(i => i._id === itemId);
+      const v3 = Object.values(item?.system?.activities ?? {}).some(a => (a.behaviors ?? []).some(b => b.type === "applyActiveEffect"));
+      if ( !v3 ) return ctx.use({ tokenId: pal.id, itemId, targetTokenIds: [pal.id], consume: false, ...rest });
+      ctx.log("forme 3.0.0 : l'aura est la zone de dnd5e");
+      const used = await ctx.engine("use", { tokenId: pal.id, itemId });
+      for ( const r of used?.regions ?? [] ) ctx.restore(() => ctx.call("delete-scene-object", { type: "Region", objectId: r.id }).catch(() => {}));
+      return used;
+    };
     /** L'aura est lancée le Guerrier à 10 cases ; il entre à 1,50 m du Paladin, puis repart. */
     const auraCase = (label, id, identifier) => part(label, async () => {
       const itemId = await lend(pal, id);
       const p = await ctx.position(pal);
       await place(fighter, p.x - 10 * grid, p.y);
-      await ctx.use({ tokenId: pal.id, itemId, targetTokenIds: [pal.id], consume: false });
+      await castAura(itemId);
       await pause(2500);
       const on = async () => (await ctx.effectsFrom(fighter, identifier)).length > 0;
       ctx.expect(!(await on()), `${label} : rien sur le Guerrier hors de l'aura`);
@@ -120,7 +138,7 @@ export default {
       const p = await ctx.position(pal);
       await place(fighter, p.x - grid, p.y);
       if ( !ctx.expect(await fight([pal, fighter]), "Aura de vie : tour du Paladin") ) return;
-      await ctx.use({ tokenId: pal.id, itemId, targetTokenIds: [pal.id], consume: false });
+      await castAura(itemId);
       await pause(2500);
       await ctx.setHp(fighter, 0);
       await pause(1500);

@@ -108,7 +108,10 @@ export default {
     const dreadUses = async () => {
       const actor = await ctx.call("get-actor", { actorId: hero.actorId });
       const item = (actor.items ?? []).find(i => i.system?.identifier === "dread-ambusher");
-      return item?.system?.activities?.DMVf7FTyTC2HCAf9?.uses?.spent ?? null;
+      // §438 : Manuel 3.0.0 — l'activité consomme les utilisations de l'item (les siennes sont vides).
+      const act = item?.system?.activities?.DMVf7FTyTC2HCAf9;
+      const ownUses = (act?.uses?.max ?? "") !== "";
+      return ownUses ? (act?.uses?.spent ?? null) : (item?.system?.uses?.spent ?? null);
     };
     /** Attaque jusqu'à toucher (10 essais) ; rend le jet d'attaque, le jet de dégâts, ses dégâts bonus et la fenêtre vue. */
     const hit = async ({ fresh=false, dread=null }={}) => {
@@ -150,19 +153,19 @@ export default {
       // Refusée au premier coup : ni dégâts psychiques ni utilisation dépensée.
       const declined = await hit({ fresh: true, dread: false });
       if ( !ctx.expect(!!declined, "coup refusé (10 essais au plus)") ) return;
-      ctx.expect(!!declined.dialog && !declined.bonuses.some(b => /dreadful-strike/.test(b)) && declined.bonuses.includes("1d6 force"),
+      ctx.expect(!!declined.dialog && !declined.bonuses.some(b => /dreadful-strike| psychic$/.test(b)) && declined.bonuses.includes("1d6 force"),
         `Frappe effroyable proposée (${declined.dialog?.title ?? "aucune fenêtre"}) et refusée : ${declined.bonuses.join(", ")}`);
       ctx.expect((await dreadUses()) === spent0, `refusée : aucune utilisation dépensée (${spent0})`);
       // Acceptée au coup suivant du même tour : +2d6 psychiques, une utilisation dépensée.
       const first = await hit({ fresh: true, dread: true });
       if ( !ctx.expect(!!first, "premier coup (10 essais au plus)") ) return;
-      ctx.expect(first.bonuses.includes("1d6 force") && first.bonuses.some(b => /dreadful-strike psychic/.test(b)) && first.rolls.includes("2d6") && !first.bonuses.includes("1d8 slashing"),
+      ctx.expect(first.bonuses.includes("1d6 force") && first.bonuses.some(b => /dreadful-strike psychic|^2d6 psychic$/.test(b)) && first.rolls.includes("2d6") && !first.bonuses.includes("1d8 slashing"),
         `Frappe effroyable acceptée, Bandit indemne : ${first.bonuses.join(", ")} ; jets ${first.rolls.join(" + ")}`);
       await pause(1000);
       ctx.expect((await dreadUses()) === (spent0 ?? 0) + 1, `une utilisation dépensée (${spent0} → ${await dreadUses()})`);
       const second = await hit();
       if ( !ctx.expect(!!second, "second coup (10 essais au plus)") ) return;
-      ctx.expect(!second.dialog && second.bonuses.includes("1d6 force") && !second.bonuses.some(b => /dreadful-strike/.test(b)) && second.bonuses.includes("1d8 slashing"),
+      ctx.expect(!second.dialog && second.bonuses.includes("1d6 force") && !second.bonuses.some(b => /dreadful-strike| psychic$/.test(b)) && second.bonuses.includes("1d8 slashing"),
         `second coup du tour, sans question, Bandit blessé : ${second.bonuses.join(", ")}`);
     });
 

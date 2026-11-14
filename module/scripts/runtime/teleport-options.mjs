@@ -12,6 +12,7 @@ import { askChoice } from "../adapter/choices.mjs";
 import { distanceBetween } from "../adapter/turn.mjs";
 import { loc, log } from "./shared.mjs";
 import { lengthIn } from "../adapter/units.mjs";
+import { levelHidden } from "../adapter/level-gate.mjs";
 
 /** Les options que les traits de l'acteur ajoutent à cette téléportation. */
 function optionsFor(actor, spell) {
@@ -21,7 +22,8 @@ function optionsFor(actor, spell) {
     if ( !rule?.spells?.includes(spell) ) continue;
     for ( const option of rule.options ?? [] ) {
       const activity = item.system.activities?.get(option.activity);
-      if ( activity ) out.push({ ...option, activity, item });
+      // §438 : une option d'un niveau que l'acteur n'a pas (Manuel 3.0.0 : Échappatoire brumeuse, niveau 6 des Pas féeriques) : non.
+      if ( activity && !levelHidden(activity) ) out.push({ ...option, activity, item });
     }
   }
   return out;
@@ -56,6 +58,10 @@ export async function afterTeleportOptions(activity, token, from) {
   canvas.tokens.setTargets(targets.map(t => t.id));
   log(`${chosen.item.name}: ${chosen.activity.name}${chosen.around ? ` on ${targets.map(t => t.name).join(", ") || "nobody"}` : ""}`);
   if ( chosen.around && !targets.length ) return;
-  await chosen.activity.use({ [MODULE_ID]: { confirmed: true } }, { configure: false })
+  // §438 : les créatures sont déjà désignées (`around`) — pas de gabarit à poser (la Foulée narquoise et la Foulée effroyable du Manuel
+  // 3.0.0 portent un rayon de 1,50 m : dnd5e attendait un clic sur le canevas).
+  // Les cibles du message (`givenTargets`, §104) : le moteur n'attend pas de zone.
+  await chosen.activity.use({ [MODULE_ID]: { confirmed: true }, ...(chosen.around ? { create: { measuredTemplate: false } } : {}) }, { configure: false },
+    chosen.around ? { data: { flags: { [MODULE_ID]: { givenTargets: true } } } } : {})
     .catch(err => console.error(`${MODULE_ID} | teleport option`, err));
 }

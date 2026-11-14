@@ -279,7 +279,8 @@
  *     retort?: { damageType }                   C12-f : la réaction de l'item ratée par l'attaquant lui renvoie les dégâts que le
  *                                               porteur subit (Défenses envoûtantes, runtime/reactions.mjs)
  *     enterOnPose?: true                        C12-b : une zone qui dure, posée par une activité qui ne résout rien elle-même : les
- *                                               créatures qu'elle recouvre en apparaissant y entrent (Invocation de céleste)
+ *                                               créatures qu'elle recouvre en apparaissant y entrent (Invocation de céleste ; §438 :
+ *                                               Esprits gardiens 3.0.0). Rien quand l'activité qui pose est celle qui rejoue
  *     hitDefense?: true                         C12-e : qui touche le porteur d'un jet d'attaque a le Désavantage à ses autres jets
  *                                               contre lui pendant ce tour (Tactiques défensives : Défense multiattaque)
  *     effectsFirst?: true                       §303 : les effets de l'activité posés avant ses dégâts ou son soin (Aide : PV max relevés
@@ -651,7 +652,7 @@
  *     oneAttack?: true                          l'enchantement de l'item vaut pour une attaque : l'attaque est offerte aussitôt, et
  *                                               l'enchantement tombe après elle (Frappe assurée, §23)
  *     martialArts?: true                        Arts martiaux (§24) : une frappe à mains nues peut se payer de l'action Bonus
- *     flurry?: { activity, strikes, weapons? }  Déluge de coups (§24) : l'activité ouvre `strikes` frappes à mains nues gratuites ;
+ *     flurry?: { activity, strikes, weapons? }  Déluge de coups (§24) : l'activité (ou l'une d'une liste, §438) ouvre `strikes` frappes gratuites ;
  *                                               `weapons` : des attaques d'arme aussi (Prêtre de guerre, §27)
  *     stunningStrike?: { activity, focus }      Frappe étourdissante (§24) : après un coup, une fois par tour, la sauvegarde de l'item
  *                                               contre une utilisation de l'item `focus` (identifiant)

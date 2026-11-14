@@ -33,7 +33,8 @@ export const WARLOCK = Object.freeze({
   // Défenses envoûtantes (Archifée 10) : touché par un attaquant visible, l'occultiste peut, en Réaction, diviser les dégâts par
   // deux et soumettre l'attaquant à une sauvegarde de Sagesse — l'activité vise l'attaquant.
   // C12-g : Vengeance ardente (Céleste 14) — les créatures Aveuglées le sont « jusqu'à la fin du tour en cours » (le tour de l'occultiste).
-  "searing-vengeance": { effectEnds: { KOXCayzftTFF9Kam: "casterTurnEnd" } },
+  // §438 : Manuel 3.0.0 — l'Aveuglé commun du compendium `dnd5e.effects` (`4odkdDU1wBQrCMJ1`), posé par l'activité de l'item.
+  "searing-vengeance": { effectEnds: { KOXCayzftTFF9Kam: "casterTurnEnd", "4odkdDU1wBQrCMJ1": "casterTurnEnd" } },
   // C12-f : « sur un échec, l'attaquant subit des dégâts psychiques égaux aux dégâts que vous avez subis » (`retort`).
   "beguiling-defenses": { retort: { damageType: "psychic" }, triggers: [{ on: "isHit", if: { "target.seesSource": true },
     do: [{ type: "use", activity: "Y2cMdoDnGTyEqs0l", target: "source" }, { type: "halve" }] }] },
@@ -51,10 +52,17 @@ export const WARLOCK = Object.freeze({
       { on: "preAttackRoll", via: "effect", fromEffect: "HMegeL0quWtCaUFV", if: { "source.hasEffectFromTarget": "clairvoyant-combatant" }, do: [{ type: "disadvantage" }] }
     ]
   },
+  // §438 : Manuel 3.0.0 — l'Échappatoire brumeuse (Archifée 6) est rangée ici, derrière le niveau 6 : la Réaction aux dégâts
+  // (« Escape », `Z2DMzP2QpvVjNVLY`, qui renvoie au lancement), Foulée évanescente (`zgz1…`) et Foulée effroyable (`PPfl…`). Les options
+  // d'un niveau que l'acteur n'a pas ne sont pas proposées (`levelHidden`). Foulée évanescente : l'Invisible commun ne cesse pas encore
+  // à l'attaque (`breaksOn` vaudrait aussi pour Provocation, posée par le même item sur les ennemis).
   "steps-of-the-fey": {
-    afterTeleport: { spells: ["misty-step"], options: [{ activity: "QUbshQXhUDQqlu2s" }, { activity: "48TdRWDqCVcC9mh4", around: "left" }] },
     triggers: [{ on: "preAttackRoll", via: "effect", fromEffect: "sERUxQRn17lzEQbl", if: { "source.hasEffect": "steps-of-the-fey", not: { "source.hasEffectFromTarget": "steps-of-the-fey" } },
-      do: [{ type: "disadvantage" }] }]
+      do: [{ type: "disadvantage" }] },
+    { on: "isDamaged", do: [{ type: "use", activity: "Z2DMzP2QpvVjNVLY" }] }],
+    afterTeleport: { spells: ["misty-step"], options: [{ activity: "QUbshQXhUDQqlu2s" }, { activity: "48TdRWDqCVcC9mh4", around: "left" },
+      { activity: "zgz1KLkZUycIeVF9" }, { activity: "PPflqO75qwj2WJP9", around: "left" }, { activity: "PPflqO75qwj2WJP9", around: "arrival" }] },
+    saveDamage: { PPflqO75qwj2WJP9: "none" }
   },
   // §92 : Échappatoire brumeuse — deux options de plus : Foulée évanescente (Invisible jusqu'au début de votre tour suivant, ou
   // jusqu'à une attaque, des dégâts, un sort : `breaksOn`) et Foulée effroyable (Sagesse ou 2d10 psychiques, à 1,50 m de la case

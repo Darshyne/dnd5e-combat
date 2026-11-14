@@ -143,7 +143,7 @@ export default {
       const r = await ctx.settle(u.usageMessageId, { timeoutMs: 45000 }).catch(() => null);
       // Une Riposte qui touche ouvre la question des manœuvres au toucher : « Rien », sans quoi ses dégâts attendent la fin du délai
       // et tombent pendant la partie suivante.
-      await answer(ids, /^Rien$|^Aucune|^None/i, 4000);
+      await answer(ids, /^Rien$|^Aucune|^None/i, 9000);   // même délai que `swing` : le choix par défaut remplacerait le dé de la Riposte
       await pause(3000);
       return { r, since, before, after: await spent(), hit: r?.targets?.find(t => t.name === "Guerrier")?.hit ?? null };
     };
@@ -196,7 +196,9 @@ export default {
     const swing = async () => {
       const since = await ctx.lastMessageId();
       const u = await ctx.use({ tokenId: fighter.id, itemId: sword, activityType: "attack", targetTokenIds: [bandit.id] });
-      await answer(await known(), /^Rien$|^Aucune|^None/i, 3000);   // la question des manœuvres au toucher : rien
+      // La question des manœuvres au toucher : rien. 9 s : passé le délai, son choix par défaut (Croc-en-jambe) partait et, une manœuvre
+      // par attaque, remplaçait le dé promis de la Feinte.
+      await answer(await known(), /^Rien$|^Aucune|^None/i, 9000);
       const r = await ctx.settle(u.usageMessageId, { timeoutMs: 45000 }).catch(() => null);
       await pause(2500);
       const msgs = await ctx.messagesSince(since);
@@ -206,6 +208,11 @@ export default {
 
     // Feinte : sur le Bandit — aucun dégât, l'effet posé ; l'attaque suivante a l'Avantage ; touchée, +1d8.
     const feint = await ctx.itemId(fighter.id, "feinting-attack");
+    // Les coups du Bandit (Parade, Riposte) ont pu laisser le Guerrier à 0 PV, donc À terre : son Désavantage annulerait l'Avantage de
+    // la Feinte. Il est relevé avant.
+    await ctx.setHp(fighter, hp0);
+    for ( const s of ["unconscious", "prone"] ) await ctx.call("set-status", { tokenId: fighter.id, statusId: s, active: false }).catch(() => {});
+    await pause(800);
     let feinted = null;
     for ( let n = 0; (n < 15) && !feinted; n++ ) {
       await tough(); await refill(); await clearBandit();

@@ -14,6 +14,7 @@
  */
 
 import { MODULE_ID } from "../constants.mjs";
+import { levelHidden } from "./level-gate.mjs";
 import { offersReaction } from "../core/flow.mjs";
 import { reactionAvailable } from "../core/turn.mjs";
 import { eligibleReactions } from "../core/reaction.mjs";
@@ -115,6 +116,7 @@ export function reactionOptions(actor, window, declarations) {
  */
 function affordable(activityUuid) {
   const activity = fromUuidSync(activityUuid, { strict: false });
+  if ( levelHidden(activity) ) return false;
   // §301 : une activité nommée que l'item n'a pas (deux items de même identifiant : l'Énergie psionique du guerrier et du roublard).
   if ( !activity && /\.Activity\./.test(activityUuid ?? "") && fromUuidSync(activityUuid.split(".Activity.")[0], { strict: false }) ) return false;
   const item = activity?.item;

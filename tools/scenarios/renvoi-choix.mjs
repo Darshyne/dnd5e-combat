@@ -7,7 +7,9 @@
  *  - Renvoi sur le Zombi seul : une sauvegarde de Sagesse, Renvoyé s'il la rate, aucun dégât ;
  *  - case cochée : la Calcination part sur le Zombi et le Bandit, sans zone — le Bandit (humanoïde) n'est pas affecté, le Zombi
  *    qui rate subit les dégâts radiants ; une utilisation de Conduit divin dépensée.
- * Remet positions, PV, effets ; retire les items prêtés.
+ * §438 : avec le Manuel 3.0.0, la Calcination est une activité du Conduit divin visible au niveau 5 du Clerc : au niveau 1 elle n'est pas
+ * proposée ; le Clerc passe au niveau 5 le temps du scénario (rendu ensuite).
+ * Remet positions, PV, effets, niveau ; retire les items prêtés.
  */
 const CLASSES = "dnd-players-handbook.classes";
 const TURN = "aOptL5pMaj3WtR8S";
@@ -45,6 +47,21 @@ export default {
     };
     const channel = await lend("phbclcChannelDiv", { "system.uses.max": "9", "system.uses.spent": 0 });
     await lend("phbclcSearUndead");
+    // §438 : la Calcination du Manuel 3.0.0 (activité du Conduit divin, porte de niveau 5).
+    const sheetOf = async () => (await ctx.call("get-actor", { actorId: cleric.actorId })).items ?? [];
+    const gated = !!(await sheetOf()).find(i => i._id === channel)?.system?.activities?.rprxorXdFoHbRERZ;
+    const cls = (await sheetOf()).find(i => (i.type === "class") && (i.system?.identifier === "cleric"));
+    if ( gated && cls ) {
+      const levels0 = cls.system.levels;
+      const setLevel = n => ctx.call("upsert-actor-item", { actorId: cleric.actorId, itemData: { "system.levels": n }, match: { path: "_id", value: cls._id } });
+      ctx.restore(() => setLevel(levels0).catch(() => {}));
+      if ( levels0 < 5 ) {
+        const low = await ctx.engine("pickTargets", { tokenId: cleric.id, itemId: channel, activityId: TURN });
+        ctx.expect(!low.upgrade, `niveau ${levels0} : la Calcination du Manuel 3.0.0 (niveau 5) n'est pas proposée (${low.upgrade ?? "rien"})`);
+        await setLevel(5);
+        await pause(800);
+      }
+    }
 
     // Le Clerc au centre, trois créatures à 9 m au plus (6 cases), le Magicien à 8 cases.
     const c = await ctx.position(cleric);

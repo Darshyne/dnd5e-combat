@@ -20,6 +20,7 @@ import { reactionsBlocked, actionOrBonusOnly } from "../adapter/reactions.mjs";
 import { saveChanceOf } from "../adapter/hitchance.mjs";
 import { identifierOf, contentOf, worldOverrides, setWorldOverride } from "../adapter/content.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
+import { placeRemoteEffect } from "../adapter/effects.mjs";
 import { attackContext, areAdjacent, coverAgainst } from "../adapter/conditions.mjs";
 import { attackModifiers } from "../core/conditions.mjs";
 import { portentDice, portentOf, rollPortent } from "../adapter/portent.mjs";
@@ -154,6 +155,8 @@ export function stats({ tokenId }) {
     bonuses: { mwak: attack("mwak"), rwak: attack("rwak"), msak: attack("msak"), rsak: attack("rsak"),
       save: rolls.ability?.save?.bonus ?? "" },
     size: actor?.system?.traits?.size ?? null,
+    // §438 : les résistances préparées (effets à conditions de dnd5e 6.1 compris : Plénitude stellaire du Manuel 3.0.0).
+    resistances: Array.from(actor?.system?.traits?.dr?.value ?? []),
     mods: Object.fromEntries(Object.entries(actor?.system?.abilities ?? {}).map(([k, v]) => [k, v.mod ?? null])),
     statuses: Array.from(actor?.statuses ?? []),
     // K6 (§327) : Réactions perdues, action OU action Bonus (effets `noReactions`, `actionOrBonus`).
@@ -361,11 +364,13 @@ export async function portent({ tokenId, roll=false, rolls=null, clear=false }) 
  * qui la coupe (`create.measuredTemplate: false`). Sans emplacement ; la fenêtre de dnd5e, si elle s'ouvre, est relevée puis validée ; réactions du MJ refusées. Rend la carte
  * d'utilisation et les régions nées de cette activité dans les 3 s (une pose interactive, elle, attendrait un clic : rien).
  */
-export async function use({ tokenId, itemId, activityType=null, extra=null, consume=false }) {
+export async function use({ tokenId, itemId, activityType=null, activityId=null, extra=null, consume=false }) {
   gmOnly();
   const token = canvas.scene?.tokens.get(tokenId);
   const item = token?.actor?.items.get(itemId);
-  const activity = item?.system.activities.find(a => !activityType || (a.type === activityType));
+  // §438 : `activityId` — une activité nommée (Esprits gardiens du Manuel 3.0.0 : la zone est posée par « Cast Spell »).
+  const activity = activityId ? item?.system.activities.get(activityId)
+    : item?.system.activities.find(a => !activityType || (a.type === activityType));
   if ( !activity ) throw new Error("activity not found");
   const before = new Set(canvas.scene.regions.map(r => r.id));
   const mine = () => canvas.scene.regions.filter(r => !before.has(r.id) && (r.getFlag("dnd5e", "activity") === activity.uuid));
@@ -596,13 +601,22 @@ export function groupRollMode({ tokenId, ...request }) {
  * §285 : pose sur un token l'effet `effectId` de l'item `itemId` du lanceur `casterId`, avec son id (comme l'application de dnd5e) et
  * l'item pour origine — ce que l'échec de la sauvegarde aurait posé, sans le hasard du jet. Rend l'id.
  */
-export async function placeItemEffect({ tokenId, casterId, itemId, effectId }) {
+export async function placeItemEffect({ tokenId, casterId, itemId, effectId, uuid=null }) {
   gmOnly();
   const item = viewedToken({ tokenId: casterId }).actor?.items.get(itemId);
+  // §438 : un effet du compendium d'effets (Manuel des joueurs 3.0.0 : Cercle de pouvoir, posé par un comportement de zone de dnd5e),
+  // copié avec l'item pour origine (adapter/effects.mjs, `placeRemoteEffect`).
+  if ( uuid ) {
+    if ( !item ) throw new Error("item not found");
+    const created = await placeRemoteEffect(item, uuid, viewedToken({ tokenId }).actor);
+    if ( !created ) throw new Error("remote effect not found");
+    return { effectId: created.id };
+  }
   const source = item?.effects.get(effectId);
   if ( !source ) throw new Error("item effect not found");
   const actor = viewedToken({ tokenId }).actor;
-  const data = foundry.utils.mergeObject(source.toObject(), { origin: item.uuid, transfer: false, disabled: false });
+  // §438 : `system.origin.item` aussi (les effets du Manuel 3.0.0 y portent l'item du compendium), comme adapter/effects.mjs.
+  const data = foundry.utils.mergeObject(source.toObject(), { origin: item.uuid, transfer: false, disabled: false, system: { origin: { item: item.uuid } } });
   const [created] = await actor.createEmbeddedDocuments("ActiveEffect", [data], { keepId: true });
   return { effectId: created?.id ?? null };
 }

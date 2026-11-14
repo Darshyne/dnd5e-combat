@@ -342,12 +342,16 @@ function releaseZoneBound(scene, tokens=null) {
         const item = originItemOf(effect);
         // Pas l'item du lanceur sur lui-même (sa Concentration), seulement ce que la zone a posé sur une autre créature.
         if ( !item || (item.actor === actor) || (contentOf(item).entry?.zoneBound !== true) ) continue;
+        // §438 : un effet posé par un comportement de zone de dnd5e (`system.origin.behavior` : la Vitesse divisée par deux des Esprits
+        // gardiens du Manuel 3.0.0) — dnd5e le retire lui-même à la sortie ; le retirer aussi faisait une erreur du serveur.
+        if ( effect.system?.origin?.behavior ) continue;
         if ( zones.some(z => (z.item === item.uuid) && isInside(token, z.region)) ) continue;
         gone.push(effect.id);
       }
       if ( !gone.length ) continue;
       const left = gone.filter(id => actor.effects.has(id));
-      if ( left.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", left);
+      // Un à un : un effet retiré entre-temps (par dnd5e, par un autre client) ne fait pas échouer les autres.
+      for ( const id of left ) if ( actor.effects.has(id) ) await actor.deleteEmbeddedDocuments("ActiveEffect", [id]).catch(() => null);
       log(`${token.name}: out of the area, ${left.length} effect(s) bound to it removed`);
     }
   });

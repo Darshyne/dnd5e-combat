@@ -57,6 +57,17 @@ export default {
     const settled = async used => (used?.usageMessageId ? ctx.settle(used.usageMessageId, { timeoutMs: 40000 }).catch(() => null) : null);
     const damageOf = async used => (await ctx.messagesSince(used.usageMessageId)).find(m => m.type === "damage") ?? null;
     const bonusesOf = m => m?.flags?.["dnd5e-combat"]?.bonuses ?? [];
+    /**
+     * §438 : la Sagesse d'Incantation puissante, comptée une fois. Ancienne forme (Manuel 2.2.0, SRD 6.0) : une part du moteur. Forme du
+     * SRD 6.1 / Manuel 3.0.0 (`potent-spellcasting`) : l'effet de l'item (`dnd5e.bonus`) l'ajoute à la formule, le moteur se tait (§431).
+     */
+    const wisAdded = async (m, t) => {
+      const engine = bonusesOf(m).filter(b => b.formula === "@abilities.wis.mod").length;
+      const mod = (await ctx.engine("stats", { tokenId: t.id }))?.mods?.wis;
+      const formula = (m?.rolls ?? []).map(r => r.formula).join(" + ").replace(/\s/g, "");
+      const system = Number.isFinite(mod) && (mod > 0) && formula.split("+").slice(1).some(t => t === String(mod)) ? 1 : 0;
+      return { once: (engine + system) === 1, text: `moteur ${engine}, formule « ${formula} », Sagesse ${mod}` };
+    };
     /** Pendant `action`, répond aux fenêtres du MJ dont le texte correspond, par le premier bouton qui correspond. */
     const answering = async (rules, action) => {
       const known = new Set(((await ctx.call("list-dialogs", {}).catch(() => null))?.windows ?? []).map(w => w.id));
@@ -93,6 +104,8 @@ export default {
     const adjacent = async (t, to) => { const p = await ctx.position(to); await ctx.call("move-token", { tokenId: t.id, x: p.x + grid, y: p.y, elevation: 0 }); await pause(800); };
 
     await part("Incantation puissante (Druide)", async () => {
+      // §438 : dnd5e 6.1 lit la classe du sort mineur par son `sourceItem` (« class:druid ») sur la fiche : la classe est prêtée.
+      await lend(caster, `${CLASSES}phbdrdDruid00000`, { levels: 7 });
       await lend(caster, `${CLASSES}phbdrdElementalF`);
       await lend(caster, `${CLASSES}phbFuryPotentSpe`);
       const wisp = await lend(caster, `${SPELLS}phbsplStarryWisp`, { method: "atwill", sourceItem: "class:druid" });
@@ -103,7 +116,8 @@ export default {
         if ( r?.targets?.[0]?.hit ) damage = await damageOf(used);
       }
       ctx.expect(!!damage, "Druide : Poussière d'étoile touche en 8 essais");
-      ctx.expect(bonusesOf(damage).some(b => b.formula === "@abilities.wis.mod"), `Druide : + Sagesse aux dégâts (${JSON.stringify(bonusesOf(damage))})`);
+      const wisD = await wisAdded(damage, caster);
+      ctx.expect(wisD.once, `Druide : + Sagesse aux dégâts, une fois (${wisD.text})`);
       const dagger = await lend(caster, "Compendium.dnd-players-handbook.equipment.Item.phbwepDagger0000", { equipped: true });
       await adjacent(caster, target);
       let hitDamage = null;
@@ -116,6 +130,7 @@ export default {
     });
 
     await part("Incantation puissante (Clerc)", async () => {
+      await lend(caster, `${CLASSES}phbclcCleric0000`, { levels: 7 });
       await lend(caster, `${CLASSES}phbclcBlessedStr`);
       await lend(caster, `${CLASSES}phbClcPotentSpel`);
       const flame = await lend(caster, `${SPELLS}phbsplSacredFlam`, { method: "atwill", sourceItem: "class:cleric" });
@@ -125,7 +140,8 @@ export default {
         const r = await settled(used);
         if ( r?.targets?.[0]?.save?.success === false ) damage = await damageOf(used);
       }
-      ctx.expect(bonusesOf(damage).some(b => b.formula === "@abilities.wis.mod"), `Clerc : + Sagesse aux dégâts de la Flamme sacrée (${JSON.stringify(bonusesOf(damage))})`);
+      const wisC = await wisAdded(damage, caster);
+      ctx.expect(wisC.once, `Clerc : + Sagesse aux dégâts de la Flamme sacrée, une fois (${wisC.text})`);
     });
 
     await part("Chasseur implacable", async () => {

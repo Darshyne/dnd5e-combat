@@ -17,7 +17,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { planCommand, currentCommand, canTranspose } from "../core/pilot.mjs";
 import { summonItemOf } from "./summons.mjs";
-import { contentOf, identifierOf } from "./content.mjs";
+import { contentOf, identifierOf, summonRuleOf } from "./content.mjs";
 import { combatantFor, isOwnTurn } from "./turn.mjs";
 import { lengthIn } from "./units.mjs";
 import { isObjectToken } from "./bodies.mjs";
@@ -30,7 +30,7 @@ import { isObjectToken } from "./bodies.mjs";
 export function pilotOf(tokenDoc) {
   if ( !tokenDoc?.actor ) return null;
   const item = summonItemOf(tokenDoc);
-  const summon = item ? contentOf(item).entry?.summon : null;
+  const summon = summonRuleOf(item);
   if ( !summon?.pilot || !item.actor ) return null;
   return { token: tokenDoc, item, summoner: item.actor, rule: summon.pilot, summon, endsSpell: summon.endsSpell === true };
 }
@@ -134,7 +134,7 @@ export function commandLabel(activity) {
 /** Ce que l'objet fait autour de lui (`summon.pulse`) : la règle et l'activité de son item, ou null. */
 export function pulseOf(tokenDoc) {
   const item = summonItemOf(tokenDoc);
-  const rule = item ? contentOf(item).entry?.summon?.pulse : null;
+  const rule = summonRuleOf(item)?.pulse ?? null;
   if ( !rule ) return null;
   // §164 : plusieurs identifiants possibles (Invocation d'élémentaire : un item par élément).
   const own = tokenDoc.actor?.items.find(i => [rule.item].flat().includes(identifierOf(i).id));
@@ -157,7 +157,7 @@ export function isIntangible(tokenDoc) {
  */
 export function spellCommandOf(activity) {
   const item = activity?.item;
-  const summon = item ? contentOf(item).entry?.summon : null;
+  const summon = summonRuleOf(item);
   if ( !summon?.pilot || (activity.type !== "utility") || (activity.activation?.type !== summon.pilot.cost) ) return null;
   for ( const scene of game.scenes ) {
     const token = scene.tokens.find(t => t.actor?.getFlag("dnd5e", "summon.origin") === item.uuid);
@@ -175,7 +175,7 @@ export function summonsOfWith(actor, key) {
       const origin = token.actor?.getFlag("dnd5e", "summon.origin");
       if ( !origin ) continue;
       const item = fromUuidSync(origin, { strict: false });
-      if ( (item?.actor !== actor) || !contentOf(item).entry?.summon?.[key] ) continue;
+      if ( (item?.actor !== actor) || !summonRuleOf(item)?.[key] ) continue;
       out.push(token);
     }
   }

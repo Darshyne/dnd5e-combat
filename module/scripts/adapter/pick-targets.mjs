@@ -13,6 +13,7 @@ import { isDefeated } from "./movement.mjs";
 import { samePlane } from "./plane.mjs";
 import { areEnemies } from "./factions.mjs";
 import { excludedByRule } from "./eligibility.mjs";
+import { levelHidden } from "./level-gate.mjs";
 
 /** En sang : à la moitié de ses PV maximum ou moins (et pas à 0 : Survivance ne relève personne). */
 const isBloodied = actor => { const hp = actor?.system?.attributes?.hp ?? {}; const max = hp.effectiveMax ?? hp.max ?? 0;
@@ -38,7 +39,8 @@ export function pickTargetsOf(activity) {
 /**
  * L'activité qui peut remplacer celle-ci (`upgrade`), sur un item du même acteur, ou null. §431 : une liste est lue dans l'ordre (la
  * Calcination du Manuel et du SRD de dnd5e 6.0, puis celle du SRD 6.1, portée par le Conduit divin) ; `requires`, un item que le
- * lanceur doit avoir en plus ; jamais l'activité elle-même (« Sear Undead » 6.1 utilisée directement).
+ * lanceur doit avoir en plus ; jamais l'activité elle-même (« Sear Undead » 6.1 utilisée directement). §438 : jamais une activité cachée à
+ * ce niveau par la donnée (« Sear Undead » du Manuel 3.0.0, visible au niveau 5 du Clerc : dnd5e refuserait de l'utiliser).
  */
 export function upgradeOf(activity, rule=pickTargetsOf(activity)) {
   if ( !rule?.upgrade || !activity?.actor ) return null;
@@ -48,7 +50,7 @@ export function upgradeOf(activity, rule=pickTargetsOf(activity)) {
     if ( wanted.requires && !has(wanted.requires) ) continue;
     const found = items.find(i => (identifierOf(i).id === wanted.item) && i.system?.activities?.get?.(wanted.activity))
       ?.system.activities.get(wanted.activity);
-    if ( found && (found !== activity) && (found.id !== activity.id) ) return found;
+    if ( found && (found !== activity) && (found.id !== activity.id) && !levelHidden(found) ) return found;
   }
   return null;
 }

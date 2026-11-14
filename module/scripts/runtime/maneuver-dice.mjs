@@ -38,7 +38,7 @@ import { maximizeDice } from "../core/max-dice.mjs";
 import { weaponKind } from "../adapter/messages.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
 import { currentTurnKey, combatantFor, readBudget, writeBudget, distanceBetween, historyCosts, speakerTokenOf } from "../adapter/turn.mjs";
-import { placeItemEffect } from "../adapter/effects.mjs";
+import { placeItemEffect, placeRemoteEffect } from "../adapter/effects.mjs";
 import { usesLeftFor } from "../adapter/inspiration.mjs";
 import { payWithoutUse } from "../adapter/reactions.mjs";
 import { askChoice } from "../adapter/choices.mjs";
@@ -49,6 +49,27 @@ import { log, loc, notice, sleep, say, locEsc } from "./shared.mjs";
 
 const FLAG = "pendingDie";
 const MAX_FLAG = "maxDamage";
+
+/**
+ * Le bonus de CA d'un dé lancé (`rolledAc`) posé sur `recipient`. L'effet modèle de l'item (Manuel 2.2.0, vide dans la donnée) reçoit le
+ * total. §438 : le Manuel 3.0.0 n'a plus d'effet sur l'item ; l'activité pointe douze effets « AC +N » de son compendium — celui dont le
+ * bonus vaut le total est posé. Rien ne convient : rien (le joueur garde les boutons de la carte).
+ */
+async function placeAcBonus(activity, rule, recipient, total, name=null) {
+  const own = await placeItemEffect(activity.item, rule.effect, recipient);
+  if ( own ) {
+    await own.update({ ...(name ? { name } : {}), "system.changes": [{ key: "system.attributes.ac.bonus", type: "add", value: String(total) }] });
+    return own;
+  }
+  for ( const ref of activity.effects ?? [] ) {
+    if ( !ref?.uuid ) continue;
+    const source = await fromUuid(ref.uuid).catch(() => null);
+    const changes = source?.system?.changes ?? source?.changes ?? [];
+    if ( !changes.some(c => (c.key === "system.attributes.ac.bonus") && (Number(c.value) === total)) ) continue;
+    return placeRemoteEffect(activity.item, ref.uuid, recipient);
+  }
+  return null;
+}
 
 /** La formule de la première part de dégâts de l'activité, lue avec les données de l'acteur. */
 function dieOf(activity) {
@@ -84,11 +105,8 @@ async function onPostUse(activity, usageConfig, results) {
     await roll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }), flavor: `${activity.item.name} : ${activity.roll.name || "CA"}` });
     // Après la résolution de l'utilitaire, qui pose l'effet de la donnée (vide) : on le remplace par le nôtre, le bonus écrit dedans.
     await sleep(1500);
-    const effect = await placeItemEffect(activity.item, rolled.effect, actor);
-    if ( effect ) {
-      await effect.update({ "system.changes": [{ key: "system.attributes.ac.bonus", type: "add", value: String(roll.total) }] });
-      log(`${activity.item.name}: +${roll.total} to ${actor.name}'s AC`);
-    }
+    const effect = await placeAcBonus(activity, rolled, actor, roll.total);
+    if ( effect ) log(`${activity.item.name}: +${roll.total} to ${actor.name}'s AC`);
   }
 }
 
@@ -245,9 +263,8 @@ async function chosenAc(activity, rule, self, other) {
     options: [{ id: "self", label: self.name }, { id: "other", label: other.name }]
   }) : null;
   const recipient = (answer?.id === "other") ? other.actor : actor;
-  const effect = await placeItemEffect(activity.item, rule.effect, recipient);
+  const effect = await placeAcBonus(activity, rule, recipient, roll.total, `${activity.item.name} (+${roll.total})`);
   if ( !effect ) return;
-  await effect.update({ name: `${activity.item.name} (+${roll.total})`, "system.changes": [{ key: "system.attributes.ac.bonus", type: "add", value: String(roll.total) }] });
   log(`${activity.item.name}: +${roll.total} to ${recipient.name}'s AC`);
 }
 

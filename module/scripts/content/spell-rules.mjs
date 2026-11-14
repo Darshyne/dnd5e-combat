@@ -235,7 +235,9 @@ export const SPELL_RULES = Object.freeze({
   // §300 : seule une créature qui COMMENCE son tour dans le nuage sauvegarde — rien à l'incantation.
   "stinking-cloud": { noActions: "gFid0DG5HydORpr3", quietPose: true },
   // §300 : « la Vitesse d'une créature est divisée par deux dans l'émanation » — l'effet tombe à sa sortie.
-  "spirit-guardians": { zoneBound: true },
+  // §438 : `enterOnPose` — forme 3.0.0, posée par « Cast Spell » : ceux qu'elle recouvre en apparaissant sauvegardent (comme quand la
+  // sauvegarde posait elle-même la zone ; sur l'ancienne forme rien ne change, runtime/engine-areas.mjs).
+  "spirit-guardians": { zoneBound: true, enterOnPose: true },
   // §302 : Contagion — « Désavantage aux sauvegardes de la caractéristique choisie » (les effets de la donnée ne posent qu'Empoisonné).
   "contagion": { effectChanges: {
     S8jxTZQbT8KKSg5V: [{ key: "system.abilities.str.save.roll.mode", type: "add", value: "-1" }],

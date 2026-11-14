@@ -101,7 +101,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
-| `api.content.builtin` | _données (868 clés)_ |  |  |
+| `api.content.builtin` | _données (869 clés)_ |  |  |
 | `api.content.facts` | _liste (65)_ |  |  |
 | `api.content.identifierOf` | `(item)` | `adapter/content.mjs` | L'identifiant sous lequel un item est reconnu, et d'où il vient. §19.9 : un item premium sans identifiant (Ravenloft) en reçoit un à sa création sur une fiche — dnd5e 6 l'écrit d'après le nom (documents/item.mjs:1146, `… |
 | `api.content.inspect` | `(actor)` | `adapter/content.mjs` | Pour l'inspection en jeu : ce que chaque item d'un acteur déclare, et d'où. |
@@ -117,7 +117,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.content.register` | `(source, table, { sources={} }={})` | `runtime/content.mjs` | Enregistre la table de contenu d'un autre module (voir l'en-tête). Validée entrée par entrée comme le contenu livré. @param {string} source L'id du module qui l'apporte. @param {Record<string, object>} table `{ identifi… |
 | `api.content.registered` | `()` | `content/index.mjs` | Ce qui est enregistré : `{ source: [identifiants] }`. |
 | `api.content.set` | `(identifier, entry)` | `adapter/content.mjs` | Écrit (ou retire, avec `null`) l'entrée d'un identifiant dans la surcouche du monde. MJ uniquement. |
-| `api.content.shipped` | _données (868 clés)_ |  |  |
+| `api.content.shipped` | _données (869 clés)_ |  |  |
 | `api.content.sources` | `()` | `content/index.mjs` | Les sources enregistrées : `{ source: { id de document: identifiant } }`. |
 | `api.content.unregister` | `(source)` | `content/index.mjs` | Retire la table d'un module (et ses sources, §277). @returns {boolean} Si elle était enregistrée. |
 | `api.content.validate` | `(entry)` | `runtime/content.mjs` | Les erreurs d'une entrée de contenu (`string[]`, vide = valide), contre le schéma `core/content/entry.mjs`. Ne change rien. |
@@ -325,7 +325,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.mcp.perceived` | `({ observerId, targetIds=[] })` | `runtime/testing-rules.mjs` | §62 : ce que le client voit à l'écran par les yeux d'un token — le MJ en prend le contrôle (sa vision devient celle de ce token), on lit `isVisible` et le filtre de détection de chaque cible (le contour de l'ouïe, ou d'… |
 | `api.mcp.perf` | `({ limit=20, reset=false }={})` | `runtime/testing.mjs` | §98 : le relevé des temps du moteur sur le client du MJ (les `limit` lignes les plus coûteuses), et les tâches longues. |
 | `api.mcp.pickTargets` | `(args)` | `runtime/testing.mjs` | §293 : la liste « créatures de votre choix dans un rayon » qu'aurait la fenêtre (sans ce que voit l'utilisateur). |
-| `api.mcp.placeItemEffect` | `({ tokenId, casterId, itemId, effectId })` | `runtime/testing-rules.mjs` | §285 : pose sur un token l'effet `effectId` de l'item `itemId` du lanceur `casterId`, avec son id (comme l'application de dnd5e) et l'item pour origine — ce que l'échec de la sauvegarde aurait posé, sans le hasard du je… |
+| `api.mcp.placeItemEffect` | `({ tokenId, casterId, itemId, effectId, uuid=null })` | `runtime/testing-rules.mjs` | §285 : pose sur un token l'effet `effectId` de l'item `itemId` du lanceur `casterId`, avec son id (comme l'application de dnd5e) et l'item pour origine — ce que l'échec de la sauvegarde aurait posé, sans le hasard du je… |
 | `api.mcp.placeMenu` | `({ tokenId, wallId=null, x=null, y=null, probe=null })` | `runtime/testing.mjs` | §243, §247 : les entrées du menu d'une porte (`wallId`) ou d'une case (`x`, `y`) pour `tokenId`, lues par l'API publique (`api.ui.doorMenu`, `api.ui.groundMenu`), avec celles des voisins. `probe` : une entrée d'essai aj… |
 | `api.mcp.placeRegionAt` | `({ x, y })` | `runtime/testing-areas.mjs` | §70 : valide la pose de région en cours (`RegionLayer#placeRegion` : celle de dnd5e pour la zone d'un sort, ou la visée de l'éclair) au point (x, y) de la scène, comme un clic : la forme y est centrée, puis la fin de `#… |
 | `api.mcp.plan` | `({ tokenId, cell, point, levelId, maxCost })` | `runtime/testing-moves.mjs` | Le chemin que prendrait le moteur, sans bouger. `maxCost` : plafond de coût (unité de la grille), sinon celui du tour. |
@@ -379,7 +379,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.mcp.transpose` | `({ tokenId })` | `runtime/testing-moves.mjs` | §38.2 : l'échange de place du Troc du filou, comme l'entrée du menu (depuis l'illusion ou son lanceur) ; positions avant / après. |
 | `api.mcp.unfollow` | `({ tokenId })` | `runtime/testing-moves.mjs` | Le token `tokenId` (scène affichée) cesse de suivre son meneur (§41.3) → `{ stopped }`. |
 | `api.mcp.upkeep` | `({ tokenId, maintain=false })` | `runtime/testing-rules.mjs` | §285 : l'entretien d'un sort (Couronne du dément) — l'état, l'entrée du menu offerte, et `maintain` : l'action Magie prise. |
-| `api.mcp.use` | `({ tokenId, itemId, activityType=null, extra=null, consume=false })` | `runtime/testing-rules.mjs` | Une activité utilisée comme au clic (§47) : pose de zone de dnd5e comprise — à la différence de `use-activity` du connecteur, qui la coupe (`create.measuredTemplate: false`). Sans emplacement ; la fenêtre de dnd5e, si e… |
+| `api.mcp.use` | `({ tokenId, itemId, activityType=null, activityId=null, extra=null, consume=false })` | `runtime/testing-rules.mjs` | Une activité utilisée comme au clic (§47) : pose de zone de dnd5e comprise — à la différence de `use-activity` du connecteur, qui la coupe (`create.measuredTemplate: false`). Sans emplacement ; la fenêtre de dnd5e, si e… |
 | `api.mcp.view` | `({ levelId })` | `runtime/testing-moves.mjs` | Affiche un niveau de la scène chez le MJ (un déplacement du moteur fait suivre la vue : le scénario la rend). |
 | `api.mcp.viewScene` | `({ sceneId })` | `runtime/testing.mjs` | Affiche une scène chez le MJ (`Scene#view`) : activer une scène déjà active ne change pas ce que le MJ regarde (vu le 2026-10-22 : un balayage joué contre l'Arène de test, affichée, l'Arène des sorts étant active). Rend… |
 | `api.mcp.visionMatrix` | `({ observerIds=[], targetIds=[], screen=true })` | `runtime/testing-vision.mjs` | La vision de chaque paire : règles et écran. @param {{observerIds: string[], targetIds: string[], screen?: boolean}} args @returns {{vision: boolean, rows: Array<{observer: string, target: string, rules: object, screen:… |

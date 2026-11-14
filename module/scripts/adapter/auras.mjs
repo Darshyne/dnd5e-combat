@@ -51,6 +51,14 @@ function fromActivity(item) {
   return {};
 }
 
+/** §438 : l'item a-t-il une activité dont un comportement de dnd5e 6.1 pose un effet par une région (`applyActiveEffect`) ? */
+function systemAura(item) {
+  for ( const activity of item?.system?.activities ?? [] ) {
+    for ( const behavior of activity?.behaviors ?? [] ) if ( behavior?.type === "applyActiveEffect" ) return true;
+  }
+  return false;
+}
+
 /** Les auras portées par un acteur. */
 export function aurasOf(actor) {
   const auras = [];
@@ -75,6 +83,10 @@ export function aurasOf(actor) {
     // §18.12 : des changements déclarés remplacent l'effet de l'item (absent, vide ou faux dans le Monster Manual).
     const effect = merged.changes ? null
       : ((merged.effect ? item.effects.get(merged.effect) : null) ?? item.effects.find(e => e.transfer) ?? item.effects.contents[0]);
+    // §438 (décision de l'utilisateur, 2026-11-14) : un sort du Manuel 3.0.0 qui n'a plus d'effet à lui mais une activité à comportement
+    // `applyActiveEffect` (Manteau du croisé, Aura de vie, Aura de pureté, Cercle de pouvoir : effet du compendium du Manuel posé par la
+    // région de dnd5e 6.1, dnd5e.mjs:14159-14205) — dnd5e tient l'aura lui-même : le moteur n'en fait pas une seconde.
+    if ( !effect && !merged.changes && systemAura(item) ) continue;
     if ( (!effect && !merged.changes) || !Number.isFinite(merged.radius) ) {
       console.warn(`${MODULE_ID} | aura "${item.name}" of ${actor.name} ignored: ${(effect || merged.changes) ? "unknown radius" : "no effect to copy"}`);
       continue;

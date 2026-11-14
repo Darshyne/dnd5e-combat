@@ -138,18 +138,21 @@ export default {
 
     await part("Renvoi des morts-vivants, lanceur Neutralisé", async () => {
       await lend(caster, `${PHB}.classes.Item.phbclcChannelDiv`, { "system.uses.max": "9", "system.uses.spent": 0 });
-      const channel = (await actorOf(caster)).items.find(i => i.system?.identifier === "channel-divinity")?._id;
+      // §438 : `channel-divinity` (Manuel 2.2.0), `channel-divinity-cleric` (Manuel 3.0.0, SRD de dnd5e 6.1).
+      const channelItem = (await actorOf(caster)).items.find(i => ["channel-divinity", "channel-divinity-cleric"].includes(i.system?.identifier));
+      const channel = channelItem?._id;
+      const turnedOn = async () => (await ctx.effectsFrom(undead, channelItem?.system?.identifier ?? "channel-divinity")).length;
       let turned = false;
       for ( let n = 0; (n < 15) && !turned; n++ ) {
         const r = await ctx.engine("castPicked", { tokenId: caster.id, itemId: channel, activityId: "aOptL5pMaj3WtR8S", targetIds: [undead.id] });
         if ( r?.usageMessageId ) await ctx.settle(r.usageMessageId, { timeoutMs: 30000 }).catch(() => null);
         await pause(1200);
-        turned = (await ctx.effectsFrom(undead, "channel-divinity")).length > 0;
+        turned = (await turnedOn()) > 0;
       }
       if ( !ctx.expect(turned, "le Mort-vivant est Renvoyé (15 essais au plus)") ) return;
       await ctx.call("set-status", { tokenId: caster.id, statusId: "incapacitated", active: true });
       await pause(3000);
-      ctx.expect((await ctx.effectsFrom(undead, "channel-divinity")).length === 0, "le Lanceur Neutralisé : le Renvoi prend fin");
+      ctx.expect((await turnedOn()) === 0, "le Lanceur Neutralisé : le Renvoi prend fin");
     });
 
     await part("Vol draconique, porteur Neutralisé", async () => {

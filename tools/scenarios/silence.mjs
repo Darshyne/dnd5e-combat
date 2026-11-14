@@ -52,7 +52,11 @@ export default {
     ctx.expect(atCast.length === 1 && (atCast[0].statuses ?? []).includes("deafened"),
       `déjà dedans à la pose, désigné comme cible : l'effet est porté, une seule fois (${atCast.map(e => `${e.name} [${(e.statuses ?? []).join(", ")}]`).join(" ; ")})`);
     const region = (await ctx.call("get-scene-object", { type: "Region", objectId: regionId })).data;
-    ctx.expect((region.behaviors ?? []).some(b => b.type === "applyActiveEffect"), "la région porte le comportement « appliquer un effet » du cœur");
+    // §438 : Manuel 3.0.0 — la donnée porte son propre comportement (`dnd5e.applyActiveEffect`, l'effet « Silenced » du compendium
+    // d'effets) ; le moteur ne pose plus le sien (l'effet n'est porté qu'une fois, vérifié plus haut).
+    const kinds = (region.behaviors ?? []).map(b => b.type);
+    ctx.expect(kinds.some(t => ["applyActiveEffect", "dnd5e.applyActiveEffect"].includes(t)),
+      `la région porte un comportement « appliquer un effet », du cœur ou de dnd5e (${kinds.join(", ")})`);
 
     // Sortie, puis retour.
     await ctx.call("move-token", { tokenId: zombi.id, x: home.x, y: home.y - 6 * grid, elevation: home.elevation });

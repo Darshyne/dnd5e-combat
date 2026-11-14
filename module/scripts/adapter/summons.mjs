@@ -10,7 +10,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { initiativeAfter } from "../core/turn.mjs";
-import { contentOf } from "./content.mjs";
+import { summonRuleOf } from "./content.mjs";
 import { expiryTime } from "../core/area.mjs";
 import { readTimeFactors } from "./areas.mjs";
 import { summonChoices, profilesAtLevel, mmActorId, srdMonsterId, actorIdOf } from "../core/summon.mjs";
@@ -168,8 +168,8 @@ function ownDurationOf(tokenDoc, item) {
 export async function noteSummonExpiry(tokenDoc, now=game.time.worldTime) {
   const item = summonItemOf(tokenDoc);
   // §305 : une invocation qui part au Repos long (Compagnon sauvage) n'a pas d'heure de fin.
-  if ( item && (contentOf(item).entry?.summon?.endsOnLongRest === true) ) return null;
-  const lasts = item ? (contentOf(item).entry?.summon?.lasts ?? ownDurationOf(tokenDoc, item)) : null;
+  if ( item && (summonRuleOf(item)?.endsOnLongRest === true) ) return null;
+  const lasts = item ? (summonRuleOf(item)?.lasts ?? ownDurationOf(tokenDoc, item)) : null;
   if ( !lasts ) return null;
   // §107 : un familier rappelé de sa poche dimensionnelle garde l'heure de fin notée à son invocation.
   if ( Number.isFinite(tokenDoc.getFlag(MODULE_ID, "expiresAt")) ) return null;
@@ -205,7 +205,7 @@ export function expiredSummons(now=game.time.worldTime) {
 export function replacedSummons(tokenDoc) {
   const origin = tokenDoc?.actor?.getFlag?.("dnd5e", "summon.origin");
   const item = origin ? fromUuidSync(origin, { strict: false }) : null;
-  if ( !item || (contentOf(item).entry?.summon?.replaces !== true) ) return [];
+  if ( !item || (summonRuleOf(item)?.replaces !== true) ) return [];
   const born = tokenDoc._stats?.createdTime ?? Infinity;
   const out = [];
   for ( const scene of game.scenes ) {
@@ -230,7 +230,7 @@ export function summonItemOf(tokenDoc) {
  */
 export async function makeSummonHostile(tokenDoc) {
   const item = summonItemOf(tokenDoc);
-  if ( contentOf(item).entry?.summon?.hostile !== true ) return false;
+  if ( summonRuleOf(item)?.hostile !== true ) return false;
   const hostile = CONST.TOKEN_DISPOSITIONS.HOSTILE;
   if ( tokenDoc.disposition !== hostile ) await tokenDoc.update({ disposition: hostile });
   const actor = (tokenDoc.actorLink === false) ? (tokenDoc.baseActor ?? game.actors.get(tokenDoc.actorId)) : tokenDoc.actor;
@@ -263,7 +263,7 @@ export async function tieSummonToConcentration(tokenDoc) {
   if ( !effect ) return null;
   // §16.15 : `endsSpell` — retirer cet objet mettra fin à la concentration (runtime/pilot.mjs). Noté sur le token : à sa
   // suppression, l'acteur synthétique d'un token non lié n'est plus sûr.
-  const summon = contentOf(item).entry?.summon ?? {};
+  const summon = summonRuleOf(item) ?? {};
   await tokenDoc.update({ [`flags.${MODULE_ID}`]: { summonedBy: effect.uuid,
     ...(summon.endsSpell ? { endsSpell: true } : {}), ...(summon.endsAtZero ? { endsAtZero: true } : {}) } });
   return effect;
@@ -293,7 +293,7 @@ export async function removeSummonsOf(effectUuid) {
  */
 export async function joinSummonerCombat(tokenDoc) {
   const item = summonItemOf(tokenDoc);
-  const rule = item ? contentOf(item).entry?.summon : null;
+  const rule = summonRuleOf(item);
   if ( !rule || (rule.initiative === "none") ) return null;
   const summoner = item.actor;
   const combat = game.combats.find(c => c.started && c.combatants.some(x => x.actor === summoner)

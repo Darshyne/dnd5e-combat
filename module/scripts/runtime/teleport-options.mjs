@@ -12,7 +12,7 @@ import { askChoice } from "../adapter/choices.mjs";
 import { distanceBetween } from "../adapter/turn.mjs";
 import { loc, log } from "./shared.mjs";
 import { lengthIn } from "../adapter/units.mjs";
-import { levelHidden } from "../adapter/reactions.mjs";
+import { levelHidden } from "../adapter/level-gate.mjs";
 
 /** Les options que les traits de l'acteur ajoutent à cette téléportation. */
 function optionsFor(actor, spell) {

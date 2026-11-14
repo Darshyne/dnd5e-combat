@@ -54,7 +54,7 @@ export const CLERIC = Object.freeze({
   "warding-flare": { triggers: [{ on: "enemyAttacks", if: { "source.nearSelf": { distance: 30, units: "ft" }, "self.seesSource": true },
     do: [{ type: "use", activity: "dnd5eactivity000" }, { type: "disadvantage" }] },
     // §438 : Manuel 3.0.0 — à partir du niveau 6, l'Éclat est l'activité `6V4FAVqgjzctbpoC` (les PV temporaires d'Éclat amélioré en
-    // plus) et `dnd5eactivity000` est cachée : seule l'activité visible à ce niveau est proposée (adapter/reactions.mjs, `levelHidden`).
+    // plus) et `dnd5eactivity000` est cachée : seule l'activité visible à ce niveau est proposée (adapter/level-gate.mjs, `levelHidden`).
     { on: "enemyAttacks", if: { "source.nearSelf": { distance: 30, units: "ft" }, "self.seesSource": true },
       do: [{ type: "use", activity: "6V4FAVqgjzctbpoC" }, { type: "disadvantage" }] }] },
   // Impacts bénis (niveau 7), option Impact divin : 1d8 radiants (au choix nécrotiques ou radiants : radiants d'office) ;

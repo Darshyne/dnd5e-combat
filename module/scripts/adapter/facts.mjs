@@ -72,6 +72,13 @@ export function originItemOf(effect) {
   // `fromUuidSync` ne résout que s'il est déjà en cache, et qui n'est de toute façon pas l'item de l'acteur. L'effet posé depuis
   // l'item de la fiche en garde la trace (`_stats.duplicateSource`, l'effet de cet item) : c'est lui qu'on suit.
   if ( !doc || doc.pack ) {
+    // §438 : le Manuel 3.0.0 écrit dans ses effets `system.origin.item` = l'item du COMPENDIUM, qu'une copie garde (dnd5e ne le récrit que
+    // quand il applique l'effet lui-même, par l'activité). L'origine écrite sur l'effet (`origin` de la source : dnd5e 6.1 la remplace dans
+    // les données préparées par `system.origin`) dit l'item de la fiche qui l'a posé.
+    const own = effect._source?.origin;
+    const written = (own && (own !== uuid)) ? fromUuidSync(own, { strict: false }) : null;
+    const writtenItem = written ? (written.documentName === "Item" ? written : (written.item ?? null)) : null;
+    if ( writtenItem && !writtenItem.pack ) return writtenItem;
     const copied = effect._stats?.duplicateSource ? fromUuidSync(effect._stats.duplicateSource, { strict: false }) : null;
     const owner = copied?.parent;
     if ( owner?.documentName === "Item" && !owner.pack ) return owner;

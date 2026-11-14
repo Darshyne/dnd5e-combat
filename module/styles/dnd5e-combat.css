@@ -281,6 +281,24 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-links { display: flex; align-items: center; gap: 1.2em; padding-top: 0.8em; border-top: 1px solid var(--das-line); }
 .das-links .das-button { margin-left: auto; }
 
+/* Message de mise à jour (§439) */
+.das-news__body h2 i { font-size: 0.8em; margin-right: 0.2em; }
+.das-news__version { margin: 0.5em 0; padding: 0.5em 1em 0.6em; border-radius: 10px; background: var(--das-surface); border: 1px solid var(--das-line); }
+.das-news__version h3 { margin: 0 0 0.2em; font-size: 1.1em; }
+.das-news__version ul { margin: 0; padding-left: 1.2em; }
+.das-news__version li { margin: 0.25em 0; line-height: 1.4; }
+.das-news__list { list-style: none; margin: 0.4em 0; padding: 0; }
+.das-news__list li { display: flex; gap: 0.7em; align-items: baseline; margin: 0.35em 0; padding: 0.55em 0.9em; border-radius: 8px;
+  background: var(--das-surface); border: 1px solid var(--das-line); line-height: 1.4; }
+.das-news__list li.warn { background: var(--das-accent-soft); border-color: var(--das-accent); }
+.das-news__list li.warn > i { color: var(--das-accent); }
+.das-news__list li.info > i { color: var(--das-muted); }
+.das-news__ok { color: var(--das-ok); }
+.das-news__checks { list-style: none; margin: 0.3em 0 0; padding: 0; }
+.das-news__checks .das-link { padding: 0.15em 0; font-size: 0.95em; text-align: left; }
+.das-news .das-links .das-muted { flex: 1; }
+.das-hero .das-link { margin-left: 0.6em; }
+
 /* Diagnostic */
 .das-diagnostic__body { display: flex; flex-direction: column; height: 100%; }
 .das-tabs { display: flex; gap: 0.3em; padding: 0.6em 1em 0; background: var(--das-surface); border-bottom: 1px solid var(--das-line); }

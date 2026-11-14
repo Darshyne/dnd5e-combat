@@ -27,7 +27,7 @@ export const SETTINGS_TABS = Object.freeze([
       g("groupRoll", "fa-solid fa-dice-d20", ["groupRollSeconds", "combatLaunchButton"]),
       g("interface", "fa-solid fa-window-maximize", ["sidebarButton"])
     ],
-    tools: [{ id: "welcome", icon: "fa-solid fa-dragon" }, { id: "diagnostic", icon: "fa-solid fa-stethoscope" },
+    tools: [{ id: "welcome", icon: "fa-solid fa-dragon" }, { id: "releaseNotes", icon: "fa-solid fa-bullhorn" }, { id: "diagnostic", icon: "fa-solid fa-stethoscope" },
       { id: "reports", icon: "fa-solid fa-flag" }, { id: "debugReport", icon: "fa-solid fa-bug", everyone: true }] },
   { id: "combat", icon: "fa-solid fa-shield-halved",
     keys: ["heroicInspiration", "cover", "flanking", "flankingSide", "flankingConga", "aurasOnlyInCombat", "zoneChoice", "npcSaveChoice", "legendaryResistance", "portent", "combatWindowUnlimited", "combatWindowSeconds",

@@ -83,11 +83,22 @@ export async function useDespiteAntimagic(activity, use) {
   const line = loc(isSpellCast(item) ? "Souci.antimagic" : "Souci.antimagicItem", { item: antimagicSourceName(actor), use: item.name });
   const go = await askAnyway(`${item.name} — ${token?.name ?? actor.name}`, [line], { actor, item, token });
   if ( !go ) return null;
-  const lifted = actor.effects.filter(e => e.statuses?.has(ANTIMAGIC_STATUS) && !e.disabled).map(e => e.id);
-  await actor.updateEmbeddedDocuments("ActiveEffect", lifted.map(_id => ({ _id, disabled: true })));
-  log(`${actor.name}: antimagic lifted for ${item.name} (forced)`);
+  return withAntimagicLifted(actor, item, () => use({ antimagicForced: true, overridden: overriddenFlag([line]) }));
+}
+
+/**
+ * Les effets du statut antimagie de l'acteur désactivés le temps de `run`, puis rétablis : dnd5e accepte alors l'activité (`canUse`).
+ * Aussi pour la relance de la légalité (runtime/turn.mjs) quand une autre raison est passée outre après le champ : sans cela, la relance
+ * se heurterait au refus de dnd5e, sans carte (vu sur le banc le 2026-11-14 : Trait de feu sans cible désignée).
+ */
+export async function withAntimagicLifted(actor, item, run) {
+  const lifted = (actor?.effects ?? []).filter(e => e.statuses?.has(ANTIMAGIC_STATUS) && !e.disabled).map(e => e.id);
+  if ( lifted.length ) {
+    await actor.updateEmbeddedDocuments("ActiveEffect", lifted.map(_id => ({ _id, disabled: true })));
+    log(`${actor.name}: antimagic lifted for ${item?.name ?? "?"} (forced)`);
+  }
   try {
-    return await use({ antimagicForced: true, overridden: overriddenFlag([line]) });
+    return await run();
   } finally {
     const still = lifted.filter(id => actor.effects.get(id));   // sorti du champ entre-temps : dnd5e a retiré l'effet
     if ( still.length ) await actor.updateEmbeddedDocuments("ActiveEffect", still.map(_id => ({ _id, disabled: false })));

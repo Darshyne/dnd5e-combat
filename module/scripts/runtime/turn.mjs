@@ -32,6 +32,7 @@ import { forcedReasons as passedReasons, mergeIssues } from "../core/forced.mjs"
 import { somaticBlockOf, registerSomaticHandsSetting } from "../adapter/hands.mjs";
 import { missingResources } from "../adapter/resources.mjs";
 import { reportForced, overriddenFlag, refusal } from "./forced.mjs";
+import { withAntimagicLifted } from "./antimagic.mjs";
 
 /** §417 : les raisons passées outre — aucune quand le réglage « Action impossible » coupe le contrôle (ni alerte, ni carte marquée). */
 const forcedReasons = choice => (refusal().report ? passedReasons(choice) : []);
@@ -492,7 +493,11 @@ function onPreUseActivity(activity, usageConfig, dialogConfig, messageConfig) {
     // dans celles du moteur (ui/pointer.mjs, `forced`).
     const forcedUse = use.missing.keys.some(k => ["noSlot", "noUses", "noQuantity"].includes(k));
     if ( forcedUse ) config[MODULE_ID].forced = true;
-    activity.use(config, forcedUse ? { ...(dialogConfig ?? {}), configure: false } : dialogConfig, message);
+    const relaunch = () => activity.use(config, forcedUse ? { ...(dialogConfig ?? {}), configure: false } : dialogConfig, message);
+    // §436 : déjà forcé dans un champ antimagie — la relance lève encore le champ, sinon dnd5e la refuse sans carte.
+    if ( usageConfig?.[MODULE_ID]?.antimagicForced ) withAntimagicLifted(activity.actor, activity.item, relaunch)
+      .catch(err => console.error(`${MODULE_ID} | antimagic: relaunch`, err));
+    else relaunch();
   });
   return false;
 }

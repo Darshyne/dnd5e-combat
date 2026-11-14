@@ -34,9 +34,9 @@ export default {
       const { data } = await ctx.call("get-scene-object", { type: "Token", objectId: t.id });
       return data.actorLink ? { documentType: "Actor", id: data.actorId } : { uuid: `Scene.${sceneId}.Token.${t.id}.Actor.${data.actorId}` };
     };
-    const clearNew = async t => {
+    const clearNew = async (t, only=null) => {
       const target = await targetOf(t);
-      for ( const e of (await ctx.effects(t)).filter(e => !effects0.get(t.id).has(e._id ?? e.id) && !e.flags?.["dnd5e-combat"]?.aura) ) {
+      for ( const e of (await ctx.effects(t)).filter(e => !effects0.get(t.id).has(e._id ?? e.id) && !e.flags?.["dnd5e-combat"]?.aura && (!only || only(e))) ) {
         await ctx.call("remove-embedded-effect", { ...target, effectId: e._id ?? e.id }).catch(() => {});
       }
     };
@@ -44,6 +44,10 @@ export default {
     const reset = async () => {
       if ( ctx.ownCombat ) await ctx.call("end-combat", { combatId: ctx.ownCombat }).catch(() => {});
       ctx.ownCombat = null;
+      // §438 : les concentrations d'abord — leur fin retire la zone, et dnd5e retire alors lui-même les effets de son comportement
+      // (auras du Manuel 3.0.0) ; les retirer en même temps faisait une erreur « does not exist » chez le MJ.
+      for ( const t of all ) await clearNew(t, e => (e.statuses ?? []).includes("concentrating") || /^Concentrat/i.test(e.name ?? ""));
+      await pause(1500);
       for ( const t of all ) await clearNew(t);   // la concentration du lanceur emporte ses invocations
       await pause(1500);
       for ( const t of await ctx.liveTokens() ) if ( !tokens0.has(t.id) ) await ctx.call("delete-scene-object", { type: "Token", objectId: t.id }).catch(() => {});

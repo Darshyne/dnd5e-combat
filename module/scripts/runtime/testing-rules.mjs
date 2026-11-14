@@ -361,12 +361,16 @@ export async function portent({ tokenId, roll=false, rolls=null, clear=false }) 
 
 /**
  * MJ : utilise l'item `itemId` du token comme un clic sur la fiche de dnd5e (`item.use({ event })`, sans le moteur ni la fenêtre
- * d'activité forcée) ; n'attend pas la suite → `{ started }`. §436 : dans un champ antimagie, dnd5e n'y trouve aucune activité permise.
+ * d'activité forcée), le MJ ayant désigné `targetIds` ; n'attend pas la suite → `{ started }`. §436 : dans un champ antimagie, dnd5e n'y trouve aucune activité permise.
  */
-export function sheetUse({ tokenId, itemId }) {
+export function sheetUse({ tokenId, itemId, targetIds=null }) {
   gmOnly();
   const item = canvas.scene?.tokens.get(tokenId)?.actor?.items.get(itemId);
   if ( !item ) throw new Error("item not found");
+  if ( Array.isArray(targetIds) ) {   // les cibles désignées du MJ, comme à la table avant le clic
+    for ( const t of Array.from(game.user.targets) ) t.setTarget(false, { releaseOthers: false });
+    for ( const id of targetIds ) canvas.tokens.get(id)?.setTarget(true, { releaseOthers: false });
+  }
   item.use({ event: null }).catch(err => console.error(`${MODULE_ID} | sheetUse`, err));
   return { started: true };
 }

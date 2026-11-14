@@ -106,7 +106,7 @@ export default {
       .then(() => null).catch(err => err.message);
     const ui = ctx.expect(!probe, `la Barre de Combat UI répond (api.mcp.barUse)${probe ? ` — ${probe}` : ""}`);
     if ( ui ) {
-      const bar = () => ctx.call("call-module-api", { moduleId: "darsh-dnd-ui", fn: "barUse", args: { tokenId: mage.id, ref: `Item.${bolt}` } });
+      const bar = () => ctx.call("call-module-api", { moduleId: "darsh-dnd-ui", fn: "barUse", args: { tokenId: mage.id, ref: `Item.${bolt}`, targetIds: [bandit.id] } });
       let after = await attempt(bar, "cancel");
       if ( ctx.expect(!!after, "Barre : Trait de feu dans le champ ouvre la fenêtre « le faire quand même »") ) {
         ctx.expect(!usages(after).length && !alerts(after).length, `Barre, renoncé : ni carte, ni alerte (${after.length} message(s))`);
@@ -115,7 +115,7 @@ export default {
     } else ctx.log("DAS · Combat UI sans `api.mcp.barUse` : la Barre n'est pas jouée");
 
     // 3. Depuis la fiche.
-    const sheet = () => ctx.engine("sheetUse", { tokenId: mage.id, itemId: bolt });
+    const sheet = () => ctx.engine("sheetUse", { tokenId: mage.id, itemId: bolt, targetIds: [bandit.id] });
     let after = await attempt(sheet, "cancel");
     if ( ctx.expect(!!after, "Fiche : Trait de feu dans le champ ouvre la fenêtre « le faire quand même »") ) {
       ctx.expect(!usages(after).length && !alerts(after).length && (itemCards(after).length === 1),

@@ -117,7 +117,7 @@ import { registerPassivePerception } from "./runtime/passive.mjs";
 import { registerIllumination } from "./runtime/illumination.mjs";
 import { registerLights } from "./runtime/lights.mjs";
 import { registerEffects } from "./runtime/effects.mjs";
-import { registerAntimagic } from "./runtime/antimagic.mjs";
+import { registerAntimagic, antimagicApi } from "./runtime/antimagic.mjs";
 import { registerWildShape } from "./runtime/wildshape.mjs";
 import { registerEnchant } from "./runtime/enchant.mjs";
 import { registerTether } from "./runtime/tether.mjs";
@@ -260,6 +260,9 @@ const state = {
   ethereal: etherealApi,   // §225 : `is(token)`, `perceives(observer, target)`, `toggle(tokens?, active?)`
   correction: { ...correctionApi, open: openCorrection },   // §396 : `apply({ activity, level, targets, damage, attack, save, concentration, effects, consume, zone, public })`, `shape(activity)`, `open(item|activity)`
   combatLaunch: { ...launchApi, open: openCombatLaunch },   // §397 : `open()`, `candidates()`, `launch({ participants, npcAuto, grouped, playlist })`, `pending()`
+  // §436 : `use(itemOrActivity, usage, dialog, message)` — comme dnd5e, mais un sort refusé par le seul champ antimagie propose « le faire
+  // quand même » (alerte au MJ) ; `blocks(activity)` : refusée par le seul champ ?
+  antimagic: antimagicApi,
   vanilla: vanillaApi,   // §395 : `use(itemOrActivity, { event })` — lancer par dnd5e seul ; `is(docOrConfig)` — vient-il d'un tel lancement ?
   theater: theaterApi,   // §220 : Théâtre de l'esprit — `active()`, `set(on)` ; hook `dnd5e-combat.theater`
   gm: { alert: alertGM, forced: reportForced },   // §408 : `api.gm.forced({ actor, item, reasons, targets, token })` ; hook `dnd5e-combat.forced`

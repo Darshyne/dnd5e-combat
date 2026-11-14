@@ -377,6 +377,10 @@ export function expiredRegions(now=game.time.worldTime) {
   for ( const scene of game.scenes ) {
     for ( const region of scene.regions ) {
       const at = region.getFlag(MODULE_ID, "expiresAt");
+      // §436 : une zone qui finit au début du tour de son lanceur (Cône antimagie) attend ce tour tant que son combat existe
+      // (runtime/antimagic.mjs) ; l'heure du monde passe au changement de round, avant le tour du lanceur s'il ne joue pas en premier.
+      const turn = region.getFlag(MODULE_ID, "endsOnTurn");
+      if ( turn?.combat && game.combats?.get(turn.combat) ) continue;
       if ( Number.isFinite(at) && (at <= now) ) out.push(region);
     }
   }

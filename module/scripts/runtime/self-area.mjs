@@ -44,7 +44,13 @@ function onPreUse(activity, usageConfig, dialogConfig) {
     if ( usageConfig?.create?.measuredTemplate !== false ) (usageConfig[MODULE_ID] ??= {}).pointZone = true;
     return;
   }
-  if ( ((usageConfig?.create?.measuredTemplate !== true) && !supplied) || !selfAreaOf(activity) ) return;
+  // §438 : une activité dont la zone porte des comportements de dnd5e (`behaviors` : l'aura de l'effet, la Vitesse divisée par deux)
+  // n'a d'effet que par sa zone ; le Manuel 3.0.0 en laisse certaines à `target.prompt: false` (Aura de pureté, Aura de vie), que dnd5e
+  // ne poserait pas (dnd5e.mjs:19142, `measuredTemplate ??= type && prompt`) : sur soi, l'émanation est posée quand même — sauf zone
+  // déjà fournie par l'appelant (`areaPlaced` : outils de test).
+  const behavioral = (activity?.target?.prompt === false) && (activity?.applicableBehaviors?.length > 0)
+    && !usageConfig?.[MODULE_ID]?.areaPlaced;
+  if ( ((usageConfig?.create?.measuredTemplate !== true) && !supplied && !behavioral) || !selfAreaOf(activity) ) return;
   usageConfig.create = { ...(usageConfig.create ?? {}), measuredTemplate: false };
   (usageConfig[MODULE_ID] ??= {}).selfArea = true;
   if ( dialogConfig ) {

@@ -21,6 +21,7 @@ import { route } from "./router.mjs";
 import { log, loc, say, locEsc } from "./shared.mjs";
 import { sideOf } from "../adapter/factions.mjs";
 import { samePlane } from "../adapter/plane.mjs";
+import { shownActivityOf, usesHolderOf } from "../adapter/uses.mjs";
 
 /**
  * L'activité de sauvegarde à rejouer : celle d'où vient l'effet, ou, pour un effet posé par une attaque dont la sauvegarde est
@@ -128,8 +129,8 @@ function onPreRollDamage(config, dialog, message) {
   }
   // §223 : une part au choix dépense une utilisation de l'activité qui en tient le compte (Frappe effroyable : Sagesse par repos long).
   for ( const s of agreed.filter(x => x.ask?.uses) ) {
-    const uses = fromUuidSync(s.item ?? "", { strict: false })?.system?.activities?.get(s.ask.uses);
-    if ( uses ) uses.update({ "uses.spent": (Number(uses.uses?.spent) || 0) + 1 })
+    const uses = usesHolderOf(shownActivityOf(fromUuidSync(s.item ?? "", { strict: false }), s.ask.uses));
+    if ( uses ) uses.spend()
       .then(() => log(`${s.name}: one use spent`), err => console.warn(`${MODULE_ID} | ${s.name}: use not spent`, err));
   }
   const data = activity.getRollData();

@@ -116,8 +116,10 @@ export function validateTrigger(declaration, at, facts, errors) {
   // l'activité de l'item dont elle dépense une utilisation, et sans laquelle elle n'est pas proposée.
   if ( "ask" in declaration ) {
     const a = declaration.ask;
-    const ok = (a === true) || (isObject(a) && Object.keys(a).every(k => k === "uses") && (!("uses" in a) || isId(a.uses)));
-    if ( !ok ) errors.push(`${at}.ask: true or { uses?: activity id (16 characters) }`);
+    // §438 : `uses` peut lister plusieurs activités (Manuel 3.0.0 : une par palier de niveau) — la première que la fiche montre compte.
+    const ids = ("uses" in (isObject(a) ? a : {})) ? [a.uses].flat() : [];
+    const ok = (a === true) || (isObject(a) && Object.keys(a).every(k => k === "uses") && (!("uses" in a) || (ids.length > 0 && ids.every(isId))));
+    if ( !ok ) errors.push(`${at}.ask: true or { uses?: activity id (16 characters) or a list of them }`);
     if ( (d.on.length !== 1) || (d.on[0] !== "preDamageRoll") ) errors.push(`${at}.ask: preDamageRoll as the only moment`);
   }
   // §129 : `free` — une fenêtre de réaction qui ne coûte pas la Réaction (Chanceux : un point de chance), proposée même si elle est prise.

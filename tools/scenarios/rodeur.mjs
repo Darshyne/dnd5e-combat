@@ -108,7 +108,10 @@ export default {
     const dreadUses = async () => {
       const actor = await ctx.call("get-actor", { actorId: hero.actorId });
       const item = (actor.items ?? []).find(i => i.system?.identifier === "dread-ambusher");
-      return item?.system?.activities?.DMVf7FTyTC2HCAf9?.uses?.spent ?? null;
+      // §438 : Manuel 3.0.0 — l'activité consomme les utilisations de l'item (les siennes sont vides).
+      const act = item?.system?.activities?.DMVf7FTyTC2HCAf9;
+      const ownUses = (act?.uses?.max ?? "") !== "";
+      return ownUses ? (act?.uses?.spent ?? null) : (item?.system?.uses?.spent ?? null);
     };
     /** Attaque jusqu'à toucher (10 essais) ; rend le jet d'attaque, le jet de dégâts, ses dégâts bonus et la fenêtre vue. */
     const hit = async ({ fresh=false, dread=null }={}) => {

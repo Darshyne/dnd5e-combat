@@ -12,6 +12,7 @@ import { hasReactionAdvantage, takeReactionAdvantage, hasReactionDisadvantage, t
 import { markModifiers } from "./mastery.mjs";
 import { exclusiveWeaponHindrances } from "../core/attack.mjs";
 import { isVanilla } from "./vanilla-state.mjs";
+import { shownActivityOf, usesHolderOf } from "./uses.mjs";
 export { factsFor, originItemOf, tokenOf, comesFromItemEffect } from "./facts.mjs";
 
 /**
@@ -218,8 +219,9 @@ export function optionalBonusesFor({ actor, activity, sourceToken, targetToken }
   for ( const d of select(declarationsOf(actor), "preDamageRoll", facts) ) {
     if ( !d.ask || ((d.oncePerTurn === true) && bonusSpent(actor, bonusKeyOf(d))) ) continue;
     const item = fromUuidSync(d.item ?? "", { strict: false });
-    const uses = (d.ask.uses && item) ? (item.system.activities?.get(d.ask.uses) ?? null) : null;
-    const left = uses ? Math.max(0, Number(uses.uses?.value) || 0) : Infinity;
+    // §438 : l'activité visible à ce niveau, et ce qui tient son compte (ses utilisations, ou celles de l'item : Manuel 3.0.0).
+    const uses = (d.ask.uses && item) ? shownActivityOf(item, d.ask.uses) : null;
+    const left = uses ? (usesHolderOf(uses)?.left ?? 0) : Infinity;
     if ( d.ask.uses && (!uses || !(left > 0)) ) continue;
     const formula = stepsOf(d, "damage").map(s => {
       try { return Roll.replaceFormulaData(s.formula, (item ?? activity.item)?.getRollData?.() ?? {}, { missing: "0" }); } catch { return s.formula; }

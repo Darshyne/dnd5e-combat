@@ -620,10 +620,13 @@ describe("§19.9 : Dhampir et Domaine de la Tombe", () => {
     expect(validateEntry({ triggers: [{ on: "preDamageRoll", ask: true, do: part }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "preDamageRoll", oncePerTurn: true, ask: { uses: "DMVf7FTyTC2HCAf9" }, do: part }] }, { facts })).toEqual([]);
     expect(validateEntry({ triggers: [{ on: "preDamageRoll", ask: { uses: "court" }, do: part }] }, { facts }))
-      .toEqual(["triggers[0].ask: true or { uses?: activity id (16 characters) }"]);
+      .toEqual(["triggers[0].ask: true or { uses?: activity id (16 characters) or a list of them }"]);
+    // §438 : une liste (une activité par palier de niveau, Manuel 3.0.0) ; vide, refusée.
+    expect(validateEntry({ triggers: [{ on: "preDamageRoll", ask: { uses: ["DMVf7FTyTC2HCAf9", "NGiX54LWGJGvMMwL"] }, do: part }] }, { facts })).toEqual([]);
+    expect(validateEntry({ triggers: [{ on: "preDamageRoll", ask: { uses: [] }, do: part }] }, { facts })).toHaveLength(1);
     expect(validateEntry({ triggers: [{ on: "hit", ask: true, do: [{ type: "status", status: "prone" }] }] }, { facts }))
       .toEqual(["triggers[0].ask: preDamageRoll as the only moment"]);
-    expect(CONTENT["dread-ambusher"].triggers[0].ask).toEqual({ uses: "DMVf7FTyTC2HCAf9" });
+    expect(CONTENT["dread-ambusher"].triggers[0].ask).toEqual({ uses: ["DMVf7FTyTC2HCAf9", "NGiX54LWGJGvMMwL"] });
     expect(CONTENT["dreadful-strikes"].triggers[0].ask).toBeUndefined();
   });
 

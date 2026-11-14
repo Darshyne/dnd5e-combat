@@ -22,6 +22,7 @@ import { log, loc, say, locEsc } from "./shared.mjs";
 import { sideOf } from "../adapter/factions.mjs";
 import { samePlane } from "../adapter/plane.mjs";
 import { shownActivityOf, usesHolderOf } from "../adapter/uses.mjs";
+import { tidyDice } from "../core/formula-tidy.mjs";
 
 /**
  * L'activité de sauvegarde à rejouer : celle d'où vient l'effet, ou, pour un effet posé par une attaque dont la sauvegarde est
@@ -134,6 +135,11 @@ function onPreRollDamage(config, dialog, message) {
       .then(() => log(`${s.name}: one use spent`), err => console.warn(`${MODULE_ID} | ${s.name}: use not spent`, err));
   }
   const data = activity.getRollData();
+  // §438 : la formule écrite avec les données de l'acteur et ses groupes de nombres calculés (`2d(6 + 2 * min(1, floor(5 / 11)))` → `2d6`),
+  // pour le jet et pour ce que la carte en montre.
+  for ( const s of agreed ) {
+    try { s.formula = tidyDice(Roll.replaceFormulaData(s.formula, data, { missing: "0" })); } catch {}
+  }
   for ( const s of agreed ) {
     // Même forme qu'une part du système (data/activity/base-activity.mjs:933-939) ; le critique
     // s'applique à toutes les parts du jet, dés bonus compris (règle 2024).

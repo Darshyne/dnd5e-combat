@@ -260,3 +260,15 @@ describe("§438 : Frappe effroyable — les utilisations de l'activité ou de l'
     expect(shownActivityOf({ system: { activities: new Map([["DMVf7FTyTC2HCAf9", { id: "DMVf7FTyTC2HCAf9" }]]) } }, ids)?.id).toBe("DMVf7FTyTC2HCAf9");
   });
 });
+
+describe("§438 : formules de dés lisibles (groupes de nombres calculés)", async () => {
+  const { tidyDice } = await import("../module/scripts/core/formula-tidy.mjs");
+  it("dés du niveau, rien d'autre", () => {
+    expect(tidyDice("2d(6 + 2 * min(1, floor(5 / 11)))")).toBe("2d6");
+    expect(tidyDice("2d(6 + 2 * min(1, floor(11 / 11)))")).toBe("2d8");
+    expect(tidyDice("(1 + floor(17 / 17))d10")).toBe("2d10");
+    expect(tidyDice("1d8 + @abilities.wis.mod")).toBe("1d8 + @abilities.wis.mod");
+    expect(tidyDice("(1d6)")).toBe("(1d6)");
+    expect(tidyDice("2d6 + max(1, 3)")).toBe("2d6 + 3");
+  });
+});

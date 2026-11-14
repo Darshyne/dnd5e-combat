@@ -13,6 +13,7 @@ import { markModifiers } from "./mastery.mjs";
 import { exclusiveWeaponHindrances } from "../core/attack.mjs";
 import { isVanilla } from "./vanilla-state.mjs";
 import { shownActivityOf, usesHolderOf } from "./uses.mjs";
+import { tidyDice } from "../core/formula-tidy.mjs";
 export { factsFor, originItemOf, tokenOf, comesFromItemEffect } from "./facts.mjs";
 
 /**
@@ -224,7 +225,7 @@ export function optionalBonusesFor({ actor, activity, sourceToken, targetToken }
     const left = uses ? (usesHolderOf(uses)?.left ?? 0) : Infinity;
     if ( d.ask.uses && (!uses || !(left > 0)) ) continue;
     const formula = stepsOf(d, "damage").map(s => {
-      try { return Roll.replaceFormulaData(s.formula, (item ?? activity.item)?.getRollData?.() ?? {}, { missing: "0" }); } catch { return s.formula; }
+      try { return tidyDice(Roll.replaceFormulaData(s.formula, (item ?? activity.item)?.getRollData?.() ?? {}, { missing: "0" })); } catch { return s.formula; }
     }).join(" + ");
     const damageType = [stepsOf(d, "damage")[0]?.damageType].flat()[0] ?? null;
     out.push({ key: bonusKeyOf(d), name: d.name, formula, damageType, uses, left });

@@ -272,3 +272,26 @@ describe("§438 : formules de dés lisibles (groupes de nombres calculés)", asy
     expect(tidyDice("2d6 + max(1, 3)")).toBe("2d6 + 3");
   });
 });
+
+describe("§438 : la formule du Coup brutal se lit en dés simples (carte de chat)", async () => {
+  const { tidyDice } = await import("../module/scripts/core/formula-tidy.mjs");
+  /** Ce que fait `Roll.replaceFormulaData` pour un niveau de classe, puis la mise au propre du moteur (runtime/triggers.mjs). */
+  const shown = (formula, levels) => tidyDice(formula.replace(/@classes\.(\w+)\.levels/g, (_, c) => String(levels[c] ?? 0)));
+  it("le nombre de dés est calculé avant l'affichage : niveau 9 → 1d10, niveau 17 → 2d10", () => {
+    const f = damageOf("brutal-strike");
+    expect(tidyDice("(1 + floor(9 / 17))d10")).toBe("1d10");
+    expect(shown(f, { barbarian: 9 })).toBe("1d10");
+    expect(shown(f, { barbarian: 16 })).toBe("1d10");
+    expect(shown(f, { barbarian: 17 })).toBe("2d10");
+    expect(shown(f, { barbarian: 20 })).toBe("2d10");
+  });
+  it("toute formule de dégâts livrée qui lit un niveau de classe devient des dés simples, du niveau 1 au niveau 20", () => {
+    const formulas = Object.values(SHIPPED).flatMap(e => (e.triggers ?? []).flatMap(t => [t.do ?? []].flat()))
+      .filter(s => (s?.type === "damage") && /@classes\.\w+\.levels/.test(s.formula ?? "")).map(s => s.formula);
+    expect(formulas.length).toBeGreaterThan(0);
+    for ( const f of formulas ) for ( let lv = 1; lv <= 20; lv++ ) {
+      const levels = new Proxy({}, { get: () => lv });
+      expect(shown(f, levels), `${f} au niveau ${lv}`).not.toMatch(/[()]|floor|ceil|min|max/);
+    }
+  });
+});

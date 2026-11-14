@@ -71,6 +71,15 @@ export default {
     ctx.restore(() => ctx.call("update-actor", { actorId: warlock.actorId, actorData: { "system.attributes.hp.temp": temp0 } }).catch(() => {}));
 
     // 1. Foulée des fées.
+    // §438 : Manuel 3.0.0 — les foulées de l'Échappatoire brumeuse (évanescente, effroyable) sont des activités de la Foulée des fées
+    // visibles au niveau 6 d'Occultiste : l'Occultiste y passe le temps du scénario (rendu ensuite).
+    const wcls = ((await ctx.call("get-actor", { actorId: warlock.actorId })).items ?? []).find(i => (i.type === "class") && (i.system?.identifier === "warlock"));
+    if ( wcls && ((wcls.system?.levels ?? 0) < 6) ) {
+      const lv0 = wcls.system.levels;
+      const setLv = n => ctx.call("upsert-actor-item", { actorId: warlock.actorId, itemData: { "system.levels": n }, match: { path: "_id", value: wcls._id } });
+      ctx.restore(() => setLv(lv0).catch(() => {}));
+      await setLv(6);
+    }
     await lend(warlock, `${CLASSES}.phbwlkStepsOfThe`);
     await lend(warlock, `${CLASSES}.phbwlkMistyEscap`);
     const misty = await ctx.ensureItem(warlock, `${SPELLS}.phbsplMistyStep0`);

@@ -58,6 +58,8 @@ export async function afterTeleportOptions(activity, token, from) {
   canvas.tokens.setTargets(targets.map(t => t.id));
   log(`${chosen.item.name}: ${chosen.activity.name}${chosen.around ? ` on ${targets.map(t => t.name).join(", ") || "nobody"}` : ""}`);
   if ( chosen.around && !targets.length ) return;
-  await chosen.activity.use({ [MODULE_ID]: { confirmed: true } }, { configure: false })
+  // §438 : les créatures sont déjà désignées (`around`) — pas de gabarit à poser (la Foulée narquoise et la Foulée effroyable du Manuel
+  // 3.0.0 portent un rayon de 1,50 m : dnd5e attendait un clic sur le canevas).
+  await chosen.activity.use({ [MODULE_ID]: { confirmed: true }, ...(chosen.around ? { create: { measuredTemplate: false } } : {}) }, { configure: false })
     .catch(err => console.error(`${MODULE_ID} | teleport option`, err));
 }

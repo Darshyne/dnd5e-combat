@@ -80,12 +80,19 @@ export default {
         const more = await legality(2500);   // une autre raison (pas de cible désignée…) : passée outre aussi
         if ( more ) await ctx.call("answer-dialog", { id: more.id, button: "go" });
       }
-      await pause(button === "go" ? 3500 : 2000);
+      if ( button !== "go" ) { await pause(2000); return ctx.messagesSince(since); }
+      // Sans cible désignée, le moteur choisit la cible avant de créer la carte : l'attendre (25 s au plus).
+      for ( const stop = Date.now() + 25000; Date.now() < stop; ) {
+        await pause(1500);
+        const got = await ctx.messagesSince(since);
+        if ( got.some(x => x.type === "usage") ) { await pause(1500); return ctx.messagesSince(since); }
+      }
       return ctx.messagesSince(since);
     };
     const forced = async (label, after) => {
       if ( !ctx.expect(!!after, `${label} : la fenêtre se rouvre`) ) return;
       const reasons = usages(after)[0]?.flags?.[MODULE_ID]?.overridden ?? [];
+      if ( !reasons.length ) ctx.log(`messages : ${after.map(x => `${x.type}:${Object.keys(x.flags?.[MODULE_ID] ?? {}).join("+")}`).join(" | ")}`);
       ctx.expect(reasons.some(r => FIELD_REASON.test(r)), `${label}, forcé : la carte porte la raison du champ (${reasons.join(" | ")})`);
       const text = alerts(after)[0]?.flags?.[MODULE_ID]?.gmAlert?.text ?? "";
       ctx.expect(FIELD_REASON.test(text), `${label}, forcé : alerte au MJ avec la raison du champ (${text})`);

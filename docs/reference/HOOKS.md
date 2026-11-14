@@ -178,10 +178,11 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 29. flammable: not burnt out _(MJ)_
 30. help: ends on the helper's turn _(MJ)_
 31. Stealth Attack: cover not judged _(MJ)_
-32. Compulsion: direction not played _(MJ)_
-33. imposed command: not carried out _(MJ)_
-34. control spells: turn behaviour not played _(MJ)_
-35. involuntary change: not played _(MJ)_
+32. antimagic: cone not ended _(MJ)_
+33. Compulsion: direction not played _(MJ)_
+34. imposed command: not carried out _(MJ)_
+35. control spells: turn behaviour not played _(MJ)_
+36. involuntary change: not played _(MJ)_
 
 ### `controlToken`
 
@@ -663,7 +664,8 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 
 ### `dnd5e.preDisplayCardV2`
 
-1. weapon mastery window not opened _(stop)_
+1. antimagic: forcing from the sheet not offered _(stop)_
+2. weapon mastery window not opened _(stop)_
 
 ### `dnd5e.preRollAbilityCheckV2`
 

@@ -5,7 +5,7 @@
  * les champs, ce qu'est une utilisation magique, et la marque `system.magical` que la migration de dnd5e poserait.
  */
 
-import { ANTIMAGIC_STATUS, ANTIMAGIC_BEHAVIOR, isMagicalSource, isMagicalUse, shouldMarkMagical } from "../core/antimagic.mjs";
+import { ANTIMAGIC_STATUS, ANTIMAGIC_BEHAVIOR, isMagicalSource, isMagicalUse, shouldMarkMagical, blockedByAntimagic } from "../core/antimagic.mjs";
 import { isSpellCast } from "./scrolls.mjs";
 import { originItemOf } from "./facts.mjs";
 import { contentOf } from "./content.mjs";
@@ -25,6 +25,26 @@ export const itemFacts = item => item ? {
 /** Une utilisation que le champ interdit et dont il protège : un sort lancé, ou une activité d'objet magique (pas une attaque d'arme). */
 export const magicalUse = activity => !!activity?.item
   && isMagicalUse({ spellCast: isSpellCast(activity.item), item: itemFacts(activity.item), activityType: activity.type });
+
+/**
+ * dnd5e refuse-t-il cette activité seulement à cause du statut antimagie (core/antimagic.mjs `blockedByAntimagic`) ? Les autres raisons
+ * de la cacher sont relues comme dnd5e (`Activity#isHidden`, dnd5e.mjs:18843) : item caché, origine dépendante inactive, harmonisation,
+ * identification, niveau.
+ */
+export function antimagicBlocks(activity) {
+  const item = activity?.item;
+  if ( !item || !inAntimagic(activity.actor) ) return false;
+  const v = activity.visibility ?? {};
+  const level = activity.relevantLevel;
+  const otherHidden = !!activity.isRider || !!item.isHidden || (activity.dependentOrigin?.active === false)
+    || (!!v.requireAttunement && !item.system?.attuned) || (!!v.requireIdentification && !item.system?.identified)
+    || ((v.level?.min ?? -Infinity) > level) || ((v.level?.max ?? Infinity) < level);
+  return blockedByAntimagic({ inAntimagic: true, canUse: !!activity.canUse, itemCanUse: item.canUse, requireMagic: !!v.requireMagic,
+    magicAvailable: item.system?.magicAvailable, otherHidden, magicalUse: magicalUse(activity) });
+}
+
+/** Les activités de cet item que seul le champ refuse (ordre de dnd5e). */
+export const antimagicBlockedActivities = item => Array.from(item?.system?.activities ?? []).filter(antimagicBlocks);
 
 /**
  * Le nom à montrer pour le champ où se tient cet acteur, ou null s'il ne porte pas le statut : l'item qui a créé la région (son

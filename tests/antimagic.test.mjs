@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isMagicalSource, isMagicalUse, shouldMarkMagical, ANTIMAGIC_STATUS, ANTIMAGIC_BEHAVIOR } from "../module/scripts/core/antimagic.mjs";
+import { isMagicalSource, isMagicalUse, shouldMarkMagical, blockedByAntimagic, ANTIMAGIC_STATUS, ANTIMAGIC_BEHAVIOR } from "../module/scripts/core/antimagic.mjs";
 import { SHIPPED } from "../module/scripts/content/index.mjs";
 import { validateEntry } from "../module/scripts/core/content.mjs";
 
@@ -32,6 +32,19 @@ describe("§436 : antimagie", () => {
     expect(isMagicalUse({ item: { type: "feat", magical: true }, activityType: "save" })).toBe(true);
   });
 
+  it("forçable : refusée par dnd5e seulement parce que le champ ôte la magie", () => {
+    const base = { inAntimagic: true, canUse: false, itemCanUse: true, requireMagic: true, magicAvailable: false, magicalUse: true };
+    expect(blockedByAntimagic(base)).toBe(true);
+    expect(blockedByAntimagic({ ...base, inAntimagic: false })).toBe(false);          // hors du champ
+    expect(blockedByAntimagic({ ...base, canUse: true })).toBe(false);                // dnd5e la permet : la légalité du moteur suffit
+    expect(blockedByAntimagic({ ...base, requireMagic: false })).toBe(false);         // cachée pour autre chose
+    expect(blockedByAntimagic({ ...base, magicAvailable: true })).toBe(false);
+    expect(blockedByAntimagic({ ...base, otherHidden: true })).toBe(false);           // harmonisation, niveau… : le forçage n'y peut rien
+    expect(blockedByAntimagic({ ...base, itemCanUse: false })).toBe(false);
+    expect(blockedByAntimagic({ ...base, magicalUse: false })).toBe(false);
+    expect(blockedByAntimagic()).toBe(false);
+  });
+
   it("la marque magique : effet ordinaire d'une source magique, ni état, ni concentration, ni déjà marqué", () => {
     const spell = { type: "spell" };
     expect(shouldMarkMagical({ type: "base" }, spell)).toBe(true);
@@ -48,8 +61,8 @@ describe("§436 : antimagie", () => {
 
 describe("§436 : le contenu de l'antimagie", () => {
   it("capacités de monstres magiques, zones antimagie, durée du Cône", () => {
-    for ( const id of ["eye-rays", "teleport", "etherealness", "possession", "telekinetic-thrust"] ) expect(SHIPPED[id].magical).toBe(true);
-    expect(SHIPPED["shape-shift"]?.magical).toBeUndefined();
+    for ( const id of ["eye-rays", "teleport", "etherealness", "possession", "telekinetic-thrust", "shape-shift", "roar"] ) expect(SHIPPED[id].magical).toBe(true);
+    expect(SHIPPED["shape-shift"]?.magical).toBe(true);   // ajouté à la demande de l'utilisateur (2026-11-14)
     expect(SHIPPED["antimagic-field"].antimagicZone).toBe(true);
     expect(SHIPPED["antimagic-cone"]).toMatchObject({ antimagicZone: true, zoneLasts: { seconds: 6 } });
     expect(SHIPPED["antimagic-field"].globe.everywhere).toBe(true);

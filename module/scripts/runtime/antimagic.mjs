@@ -12,12 +12,13 @@
 
 import { ANTIMAGIC_BEHAVIOR, ANTIMAGIC_STATUS } from "../core/antimagic.mjs";
 import { contentOf } from "../adapter/content.mjs";
-import { antimagicBehaviorKnown, regionHasAntimagic, markItemEffects, markAppliedEffect, inAntimagic, magicalUse,
-  antimagicSourceName } from "../adapter/antimagic.mjs";
+import { antimagicBehaviorKnown, regionHasAntimagic, markItemEffects, markAppliedEffect, antimagicSourceName, antimagicBlocks,
+  antimagicBlockedActivities } from "../adapter/antimagic.mjs";
 import { isSpellCast } from "../adapter/scrolls.mjs";
 import { usageTokenOf } from "../adapter/turn.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
+import { MODULE_ID } from "../constants.mjs";
 import { askAnyway } from "./turn.mjs";
 import { overriddenFlag } from "./forced.mjs";
 
@@ -29,9 +30,39 @@ async function onRegionCreated(region) {
   if ( !item || (contentOf(item).entry?.antimagicZone !== true) ) return;
   const activityUuid = region.getFlag("dnd5e", "activity");
   const activity = activityUuid ? fromUuidSync(activityUuid, { strict: false }) : null;
+  await markTurnEnd(region, item);
   if ( regionHasAntimagic(region, activity) ) return;
   await region.createEmbeddedDocuments("RegionBehavior", [{ type: ANTIMAGIC_BEHAVIOR, name: item.name }]);
   log(`${item.name}: antimagic region behavior added (${region.name})`);
+}
+
+/**
+ * Le Cône antimagie dure « jusqu'au début du prochain tour » du tyrannœil (`zoneLasts` : 6 s, la durée hors combat). En combat, l'heure du
+ * monde avance au changement de round, avant son tour s'il ne joue pas en premier : la zone note son combattant et le round, et tombe
+ * au début de son tour suivant (`onTurnChange`) ; `expiredRegions` (adapter/areas.mjs) l'attend tant que ce combat existe.
+ */
+async function markTurnEnd(region, item) {
+  if ( !contentOf(item).entry?.zoneLasts ) return;
+  const combat = game.combat;
+  if ( !combat?.started ) return;
+  const actor = item.actor;
+  const combatant = combat.combatants.find(c => (c.actor === actor) || (c.token?.actor === actor));
+  if ( !combatant ) return;
+  await region.setFlag(MODULE_ID, "endsOnTurn", { combat: combat.id, combatant: combatant.id, round: combat.round });
+  log(`${item.name}: ends at the start of ${combatant.name}'s next turn`);
+}
+
+/** Début d'un tour : les zones antimagie de ce combattant posées à un round précédent prennent fin. */
+async function onTurnChange(combat, prior, current) {
+  const id = current?.combatantId;
+  if ( !id ) return;
+  for ( const region of Array.from(combat.scene?.regions ?? []) ) {
+    const turn = region.getFlag(MODULE_ID, "endsOnTurn");
+    if ( !turn || (turn.combat !== combat.id) || (turn.combatant !== id) || !(combat.round > turn.round) ) continue;
+    const name = region.name;
+    await region.delete();
+    log(`area "${name}": start of ${combat.combatants.get(id)?.name ?? "?"}'s turn, removed`);
+  }
 }
 
 /**
@@ -46,7 +77,7 @@ async function onRegionCreated(region) {
  */
 export async function useDespiteAntimagic(activity, use) {
   const actor = activity?.actor;
-  if ( !inAntimagic(actor) || activity.canUse || !magicalUse(activity) ) return use({});
+  if ( !antimagicBlocks(activity) ) return use({});
   const item = activity.item;
   const token = usageTokenOf(activity);
   const line = loc(isSpellCast(item) ? "Souci.antimagic" : "Souci.antimagicItem", { item: antimagicSourceName(actor), use: item.name });
@@ -63,8 +94,58 @@ export async function useDespiteAntimagic(activity, use) {
   }
 }
 
+/**
+ * `api.antimagic.use(subject, usage, dialog, message)` : utiliser un item ou une activité comme dnd5e (`item.use` / `activity.use`, mêmes
+ * arguments), mais un sort ou une capacité magique que seul le champ refuse passe par la fenêtre « le faire quand même »
+ * (`useDespiteAntimagic`). Pour la barre de Combat UI, qui appelle `activity.use` directement — dnd5e s'arrête avant tout hook. Un item
+ * dont une activité reste permise suit dnd5e (son choix d'activité) ; sinon, la première activité que seul le champ refuse.
+ * @param {Item|Activity} subject
+ */
+export async function useAntimagic(subject, usage={}, dialog={}, message={}) {
+  const isActivity = !!subject?.item && (subject.documentName !== "Item");
+  const item = isActivity ? subject.item : subject;
+  if ( !item ) return null;
+  let activity = isActivity ? subject : null;
+  if ( !activity ) {
+    const usable = Array.from(item.system?.activities ?? []).some(a => a.canUse);
+    activity = usable ? null : (antimagicBlockedActivities(item)[0] ?? null);
+    if ( !activity ) return item.use(usage, dialog, message);
+  }
+  return useDespiteAntimagic(activity, extra => activity.use(
+    foundry.utils.isEmpty(extra) ? usage : { ...usage, [MODULE_ID]: { ...(usage?.[MODULE_ID] ?? {}), ...extra } }, dialog, message));
+}
+
+/** Le marqueur d'une carte d'item que le joueur a voulue telle quelle (refus du forçage) : la laisser passer. */
+const PLAIN_CARD = "antimagicPlainCard";
+
+/**
+ * Depuis la fiche (et tout `item.use` sans activité permise) : dnd5e, ne trouvant aucune activité utilisable, affiche la carte de l'item
+ * (`Item5e#use` → `displayCard`, dnd5e.mjs:36020). Si une activité n'est refusée que par le champ, la fenêtre « le faire quand même » à la
+ * place ; refusée, la carte part comme dnd5e l'aurait montrée. « Afficher la carte » du menu de la fiche passe aussi par là (dnd5e ne les
+ * distingue pas) : le refus rend la même carte.
+ */
+function onPreDisplayCard(item, message) {
+  if ( !item?.actor || message?.[MODULE_ID]?.[PLAIN_CARD] ) return true;
+  if ( Array.from(item.system?.activities ?? []).some(a => a.canUse) ) return true;
+  const activity = antimagicBlockedActivities(item)[0];
+  if ( !activity ) return true;
+  (async () => {
+    const used = await useDespiteAntimagic(activity, extra => activity.use({ [MODULE_ID]: extra }));
+    if ( used === null ) await item.displayCard({ [MODULE_ID]: { [PLAIN_CARD]: true } });
+  })().catch(err => console.error(`${MODULE_ID} | antimagic: forced use from the sheet failed`, err));
+  return false;
+}
+
+export const antimagicApi = Object.freeze({
+  use: useAntimagic,
+  /** Cette activité n'est-elle refusée que par le champ (donc forçable) ? */
+  blocks: activity => antimagicBlocks(activity)
+});
+
 export function registerAntimagic() {
   route("createRegion", region => onRegionCreated(region), { executor: true, label: "antimagic: region behavior not added" });
+  route("combatTurnChange", onTurnChange, { executor: true, label: "antimagic: cone not ended" });
+  route("dnd5e.preDisplayCardV2", onPreDisplayCard, { cancellable: true, label: "antimagic: forcing from the sheet not offered" });
   route("preCreateItem", item => {
     const n = markItemEffects(item);
     if ( n ) log(`${item.name}: ${n} effect(s) marked magical`);

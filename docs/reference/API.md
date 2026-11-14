@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-336 fonctions dans 33 groupes, relevées sur l'objet réel du module chargé. La description est le
+339 fonctions dans 34 groupes, relevées sur l'objet réel du module chargé. La description est le
 commentaire de la fonction dans le code (début seulement) ; le fichier est relatif à `module/scripts/`. Les valeurs non
 fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de test du connecteur, MJ seulement.
 
@@ -32,6 +32,13 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 |---|---|---|---|
 | `api.ammo.options` | `(item, activity=null)` | `dnd5e-combat.mjs` | Les munitions que l'arme peut tirer et celle que son prochain jet tirerait : `{ options, current, ask }`, ou null si elle n'en tire pas. |
 | `api.ammo.set` | `(item, ammoId)` | `adapter/ammo.mjs` | Retient une munition pour les prochaines attaques de l'arme (toutes ses activités d'attaque), et l'annonce (hook `dnd5e-combat.ammunition`, `(item, ammoId)`, sur chaque client par la mise à jour de l'item). @param {Item… |
+
+## `api.antimagic`
+
+| Chemin | Signature | Fichier | Description |
+|---|---|---|---|
+| `api.antimagic.blocks` | `(activity)` | `runtime/antimagic.mjs` | Cette activité n'est-elle refusée que par le champ (donc forçable) ? |
+| `api.antimagic.use` | `(subject, usage={}, dialog={}, message={})` | `runtime/antimagic.mjs` | `api.antimagic.use(subject, usage, dialog, message)` : utiliser un item ou une activité comme dnd5e (`item.use` / `activity.use`, mêmes arguments), mais un sort ou une capacité magique que seul le champ refuse passe par… |
 
 ## `api.atCost`
 
@@ -101,7 +108,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
-| `api.content.builtin` | _données (869 clés)_ |  |  |
+| `api.content.builtin` | _données (871 clés)_ |  |  |
 | `api.content.facts` | _liste (65)_ |  |  |
 | `api.content.identifierOf` | `(item)` | `adapter/content.mjs` | L'identifiant sous lequel un item est reconnu, et d'où il vient. §19.9 : un item premium sans identifiant (Ravenloft) en reçoit un à sa création sur une fiche — dnd5e 6 l'écrit d'après le nom (documents/item.mjs:1146, `… |
 | `api.content.inspect` | `(actor)` | `adapter/content.mjs` | Pour l'inspection en jeu : ce que chaque item d'un acteur déclare, et d'où. |
@@ -117,7 +124,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.content.register` | `(source, table, { sources={} }={})` | `runtime/content.mjs` | Enregistre la table de contenu d'un autre module (voir l'en-tête). Validée entrée par entrée comme le contenu livré. @param {string} source L'id du module qui l'apporte. @param {Record<string, object>} table `{ identifi… |
 | `api.content.registered` | `()` | `content/index.mjs` | Ce qui est enregistré : `{ source: [identifiants] }`. |
 | `api.content.set` | `(identifier, entry)` | `adapter/content.mjs` | Écrit (ou retire, avec `null`) l'entrée d'un identifiant dans la surcouche du monde. MJ uniquement. |
-| `api.content.shipped` | _données (869 clés)_ |  |  |
+| `api.content.shipped` | _données (871 clés)_ |  |  |
 | `api.content.sources` | `()` | `content/index.mjs` | Les sources enregistrées : `{ source: { id de document: identifiant } }`. |
 | `api.content.unregister` | `(source)` | `content/index.mjs` | Retire la table d'un module (et ses sources, §277). @returns {boolean} Si elle était enregistrée. |
 | `api.content.validate` | `(entry)` | `runtime/content.mjs` | Les erreurs d'une entrée de contenu (`string[]`, vide = valide), contre le schéma `core/content/entry.mjs`. Ne change rien. |
@@ -355,6 +362,7 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.mcp.setOwners` | `({ actorId, users=[], level=3 })` | `runtime/testing-vision.mjs` | Donne un acteur du monde à des joueurs (propriétaires), par leurs noms — le connecteur ignore `ownership` à la création et à la mise à jour d'un acteur. Pour les arènes (tools/arene-vision.mjs : les observateurs à `clau… |
 | `api.mcp.setting` | `({ key, value })` | `runtime/testing.mjs` | Un réglage du moteur (et de lui seul) : rend la valeur d'avant, pour qu'un scénario la remette ; `value` absent : lecture seule. Réservé au MJ (§38.4 : le scénario `presage` désactive le Présage le temps d'une partie). |
 | `api.mcp.settingsChanged` | `()` | `runtime/testing.mjs` | Les réglages de monde du moteur qui ne sont pas à leur valeur par défaut (lecture seule) : ce que la table a choisi. |
+| `api.mcp.sheetUse` | `({ tokenId, itemId })` | `runtime/testing-rules.mjs` | MJ : utilise l'item `itemId` du token comme un clic sur la fiche de dnd5e (`item.use({ event })`, sans le moteur ni la fenêtre d'activité forcée) ; n'attend pas la suite → `{ started }`. §436 : dans un champ antimagie,… |
 | `api.mcp.shortRest` | `({ tokenId })` | `runtime/testing.mjs` | C12-j : un Repos court du token, sans fenêtre (les dés de vie ne sont pas dépensés). |
 | `api.mcp.sightIssues` | `({ tokenId, identifier, targetIds=[] })` | `runtime/testing-vision.mjs` | Issue #42 : le souci « {name} n'est pas en vue : ce sort vise une créature que vous voyez » d'une visée, sans ouvrir la fenêtre de légalité — le même calcul que runtime/turn.mjs (`sightRequired` de l'activité, puis `can… |
 | `api.mcp.skillAid` | `({ tokenId, helperTokenId, kind, skill=null, tool=null })` | `runtime/testing-rules.mjs` | §113 : l'aide demandée comme le ferait le bouton de la fenêtre ; rend si elle est donnée, et si l'Assistance est posée (attendue 10 s). |

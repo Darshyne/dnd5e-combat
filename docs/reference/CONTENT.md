@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-869 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+871 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -155,7 +155,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `lifesteal` | 1 | `vampiric-touch` |
 | `light` | 14 | `continual-flame`, `darkness`, `daylight`, `faerie-fire`, `fire-shield`, `flame-blade`, … |
 | `limitedAction` | 1 | `haste` |
-| `magical` | 20 | `animate-trees`, `captains-charm`, `darkness-aura`, `deathly-teleport`, `ethereal-jaunt`, `ethereal-stride`, … |
+| `magical` | 22 | `animate-trees`, `captains-charm`, `darkness-aura`, `deathly-teleport`, `ethereal-jaunt`, `ethereal-stride`, … |
 | `magicEvasion` | 1 | `circle-of-power` |
 | `martialArts` | 1 | `martial-arts` |
 | `maxSpellDamageVs` | 1 | `demonomicon-of-iggwilv` |

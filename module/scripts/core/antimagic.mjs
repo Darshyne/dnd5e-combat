@@ -50,3 +50,16 @@ export function shouldMarkMagical(effect, originItem) {
   if ( statuses.has("concentrating") || statuses.has(ANTIMAGIC_STATUS) ) return false;
   return isMagicalSource(originItem);
 }
+
+/**
+ * Une activité que dnd5e cache **seulement** à cause du statut antimagie, et que le moteur peut donc proposer de forcer : dnd5e la refuse
+ * (`canUse` faux) parce qu'elle exige la magie (`visibility.requireMagic`, mis sur tout sort et toute activité « cast ») et que l'item
+ * n'en a plus (`magicAvailable` faux sous le statut), l'item lui-même reste utilisable, et c'est une utilisation magique. Toute autre
+ * raison de la cacher (harmonisation, identification, niveau) n'est pas levée par le forçage : pas de proposition.
+ * @param {{inAntimagic?: boolean, canUse?: boolean, itemCanUse?: boolean, requireMagic?: boolean, magicAvailable?: boolean,
+ *   otherHidden?: boolean, magicalUse?: boolean}} facts
+ */
+export function blockedByAntimagic({ inAntimagic=false, canUse=true, itemCanUse=true, requireMagic=false, magicAvailable=true,
+  otherHidden=false, magicalUse=false }={}) {
+  return inAntimagic && !canUse && (itemCanUse !== false) && requireMagic && (magicAvailable === false) && !otherHidden && magicalUse;
+}

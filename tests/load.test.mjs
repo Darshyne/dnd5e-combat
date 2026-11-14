@@ -42,7 +42,7 @@ describe("chargement du module", () => {
       "flammable", "flight", "follow", "followState", "forcePlayerWait", "foreignSetting", "fortified", "gmAlerts", "gmQueue", "gmQueueAnswer", "gmQueueForce", "gmQueueRoll", "grab", "grappleState", "groupRoll", "groupRollBreakdown", "groupRollForce", "groupRollMode", "groupRollState", "hampered", "heal", "hoist", "hood", "hurt", "identify", "inventory", "issues", "itemData", "jump",
       "lightState", "lock", "longRest", "makeScroll", "masteries", "menu", "move", "movement", "naturalOne", "overrideContent", "owners", "perceived", "perf", "pickTargets", "placeItemEffect", "placeMenu", "placeRegionAt",
       "plan", "planning", "portent", "range", "rangeCheck", "rangedPlacement", "rawMove", "reachCheck", "ready", "reload", "removeItemEffect", "reports", "restoreItem", "rollCard",
-      "rollCheck", "rollSave", "runMacro", "saveChance", "scatter", "screenAfterUpdate", "screenHere", "scrollReading", "sees", "sequencer", "setOwners", "setting", "settingsChanged", "shortRest", "sightIssues", "skillAid", "skillAids",
+      "rollCheck", "rollSave", "runMacro", "saveChance", "scatter", "screenAfterUpdate", "screenHere", "scrollReading", "sees", "sequencer", "setOwners", "setting", "settingsChanged", "sheetUse", "shortRest", "sightIssues", "skillAid", "skillAids",
       "stairs", "stairsAt", "stand", "stats", "status", "stealth", "storm", "stormStrike", "summonAt", "summonCaptured", "takeStairs", "teleport",
       "teleportPick", "threats", "timer", "toggleLight", "tokenLight", "transpose", "unfollow", "upkeep", "use", "view", "viewScene", "visionMatrix", "waits", "wall", "wallSide", "windows"]);
     expect(Object.isFrozen(api.api.mcp)).toBe(true);

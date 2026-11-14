@@ -10,7 +10,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { RECALL_RANGE, recallProblem } from "../core/familiar.mjs";
-import { contentOf } from "./content.mjs";
+import { summonRuleOf } from "./content.mjs";
 import { summonItemOf } from "./summons.mjs";
 import { distanceBetween, positionOf } from "./turn.mjs";
 import { cellUnder, footprintOf } from "./movement.mjs";
@@ -23,7 +23,7 @@ import { lengthIn } from "./units.mjs";
 const POCKET = "pocket";
 
 /** Cet item invoque-t-il un familier (`summon.familiar`) ? */
-export const isFamiliarItem = item => !!item && (contentOf(item).entry?.summon?.familiar === true);
+export const isFamiliarItem = item => !!item && (summonRuleOf(item)?.familiar === true);
 
 /** L'item d'origine d'un acteur invoqué, s'il déclare un familier. */
 function familiarItemOfActor(actor) {

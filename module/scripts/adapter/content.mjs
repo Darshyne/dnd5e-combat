@@ -296,6 +296,20 @@ export function castItemOf(item) {
   return m ? (item.actor?.items?.get(m[1]) ?? null) : null;
 }
 
+/**
+ * §438 : la règle d'invocation (`summon`) d'un item, et celle de l'item qui l'a lancé quand c'est une copie de sort (`castItemOf`), la
+ * seconde l'emportant. Le Compagnon sauvage du Manuel des joueurs 3.0.0 n'invoque plus lui-même : son activité « cast » lance Appel de
+ * familier, et le familier a pour origine (`flags.dnd5e.summon.origin`) la copie du sort — ce que déclare `wild-companion` (part au
+ * Repos long) doit encore s'appliquer. Null si aucun des deux ne déclare rien.
+ */
+export function summonRuleOf(item) {
+  if ( !item ) return null;
+  const own = contentOf(item).entry?.summon ?? null;
+  const caster = castItemOf(item);
+  const from = caster ? (contentOf(caster).entry?.summon ?? null) : null;
+  return (own || from) ? { ...(own ?? {}), ...(from ?? {}) } : null;
+}
+
 /** Pour l'inspection en jeu : ce que chaque item d'un acteur déclare, et d'où. */
 export function inspect(actor) {
   return (actor?.items ?? []).map(item => {

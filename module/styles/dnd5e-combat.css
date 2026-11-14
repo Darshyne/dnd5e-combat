@@ -298,6 +298,8 @@ body[data-dnd5e-combat-cursor="invalid"] #board { cursor: url("../assets/cursors
 .das-news__checks .das-link { padding: 0.15em 0; font-size: 0.95em; text-align: left; }
 .das-news .das-links .das-muted { flex: 1; }
 .das-hero .das-link { margin-left: 0.6em; }
+.das-news { max-height: 94vh; }
+.das-news .window-content { overflow-y: auto; }
 
 /* Diagnostic */
 .das-diagnostic__body { display: flex; flex-direction: column; height: 100%; }

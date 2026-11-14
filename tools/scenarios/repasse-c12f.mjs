@@ -119,7 +119,18 @@ export default {
       await ctx.setHp(ally, 10);
       await ctx.call("set-status", { tokenId: ally.id, statusId: "poisoned", active: true });
       await pause(1000);
-      await cast({ tokenId: caster.id, itemId: touch, activityId: "stWL2fvcxsh0HFw2", targetTokenIds: [ally.id], consume: false });
+      // §438 : Manuel 3.0.0, le Toucher du médecin n'a plus d'activité ; c'est la Main guérisseuse du niveau 6 de Moine
+      // (`ugC7uePiAZLSL55l`, item Mains guérisseuses) qui retire l'état. Le Lanceur reçoit un Moine 6 le temps de la partie.
+      const own = ((await ctx.call("get-actor", { actorId: caster.actorId })).items ?? []).find(i => i._id === touch);
+      if ( own?.system?.activities?.stWL2fvcxsh0HFw2 ) {
+        await cast({ tokenId: caster.id, itemId: touch, activityId: "stWL2fvcxsh0HFw2", targetTokenIds: [ally.id], consume: false });
+      } else {
+        ctx.log("forme 3.0.0 : Main guérisseuse du niveau 6 (Mains guérisseuses)");
+        await lend(caster, `${PHB}.classes.Item.phbmnkMonk000000`, { "system.levels": 6 });
+        const hand = await lend(caster, `${PHB}.classes.Item.phbmnkHandOfHeal`, { "system.uses.spent": 0 });
+        await pause(800);
+        await cast({ tokenId: caster.id, itemId: hand, activityId: "ugC7uePiAZLSL55l", targetTokenIds: [ally.id], consume: false });
+      }
       await pause(2500);
       ctx.expect(!(await statuses(ally)).includes("poisoned"), `l'Allié n'est plus Empoisonné (${(await statuses(ally)).join(", ") || "aucun état"})`);
     });

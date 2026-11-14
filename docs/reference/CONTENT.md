@@ -98,7 +98,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `endsOwnConditions` | 1 | `self-restoration` |
 | `endsWhen` | 30 | `banishment`, `bestow-curse`, `channel-divinity`, `channel-divinity-cleric`, `compelled-duel`, `compulsion`, … |
 | `endurance` | 1 | `relentless-endurance` |
-| `enterOnPose` | 1 | `conjure-celestial` |
+| `enterOnPose` | 2 | `conjure-celestial`, `spirit-guardians` |
 | `etherealShift` | 2 | `ethereal-jaunt`, `ethereal-stride` |
 | `evasion` | 2 | `evasion`, `leading-evasion` |
 | `exclusiveWeapon` | 3 | `berserker-axe-enchanted`, `oathbow-enchanted`, `sword-of-vengeance-enchanted` |

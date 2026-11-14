@@ -96,6 +96,30 @@ export default {
       const full = await lend(`${PHB}.classes.Item.phbdrdFullOfStar`);
       await pause(2000);
       const fullEffect = async () => ((await ctx.call("get-actor", { actorId: caster.actorId })).items ?? []).find(i => i._id === full)?.effects?.find(e => e._id === "Z3dPVHxaYqTIvLPg");
+      // §438 : Manuel 3.0.0, l'item Plénitude stellaire n'a plus d'effet ; les résistances sont des changements de l'effet « Starry Form »,
+      // à condition (`classes.druid.levels` ≥ 14) — dnd5e les applique lui-même. Le Lanceur reçoit un Druide 14 le temps de la partie, et
+      // les résistances se lisent sur les données préparées.
+      if ( !(await fullEffect()) ) {
+        await lend(`${PHB}.classes.Item.phbdrdDruid00000`, { "system.levels": 14 });
+        await pause(1000);
+        const resists = async () => {
+          const r = (await ctx.engine("stats", { tokenId: caster.id }))?.resistances ?? [];
+          return ["bludgeoning", "piercing", "slashing"].every(t => r.includes(t));
+        };
+        const shown = async () => ((await ctx.engine("stats", { tokenId: caster.id }))?.resistances ?? []).join(", ") || "aucune";
+        ctx.expect(!(await resists()), `forme 3.0.0, hors de la Forme stellaire : pas de résistances (${await shown()})`);
+        await ctx.engine("placeItemEffect", { tokenId: caster.id, casterId: caster.id, itemId: starry, effectId: "orMzu14BYojAQkUm" });
+        let on3 = false;
+        for ( let n = 0; (n < 20) && !on3; n++ ) { await pause(500); on3 = await resists(); }
+        ctx.expect(on3, `forme 3.0.0, sous la Forme stellaire : résistances contondantes, perforantes, tranchantes (${await shown()})`);
+        for ( const e of await ctx.effects(caster) ) {
+          if ( /Starry|stellaire/i.test(e.name) ) await ctx.call("remove-embedded-effect", { documentType: "Actor", id: caster.actorId, effectId: e._id }).catch(() => {});
+        }
+        let off3 = false;
+        for ( let n = 0; (n < 20) && !off3; n++ ) { await pause(500); off3 = !(await resists()); }
+        ctx.expect(off3, `forme 3.0.0, la Forme stellaire finie : elles tombent (${await shown()})`);
+        return;
+      }
       ctx.expect((await fullEffect())?.disabled === true, "hors de la Forme stellaire : pas de résistances");
       // « Consume Wild Shape » pose sur le druide une copie de l'effet « Starry Form » (effet d'activité : allumer celui de l'item ne
       // s'applique pas à l'acteur dans dnd5e 6).

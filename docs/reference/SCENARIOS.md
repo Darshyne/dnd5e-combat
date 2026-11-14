@@ -106,7 +106,7 @@ la sélection sans rien jouer.
 | `escalier-direct` | keep | §41.2 | un clic sur l'escalier change de niveau, sans dialogue |
 | `escaliers` | keep | §14.2 §18.26 | l'A* du moteur change de niveau par un escalier |
 | `especes` |  | §31 §295 | Acharnement, Ascendance gigante, Révélation céleste, Poussée d'adrénaline, Forme de géant |
-| `esprits-gardiens` |  |  | à la pose, puis fin de tour du Zombi dans l'émanation |
+| `esprits-gardiens` |  | §438 | à la pose, puis fin de tour du Zombi dans l'émanation |
 | `ethere-interrupteur` |  | §225 | l'interrupteur du MJ coupe toute la gestion, sans rien déplacer |
 | `ethere-murs` |  | §225 | les murs se traversent, sauf les murs de force ; pas de chute |
 | `ethere-retour` |  | §225 | retour sur une case occupée (repoussé, dégâts de force), chute au retour, Saut éthéré |
@@ -207,11 +207,11 @@ la sélection sans rien jouer.
 | `releve-sorts-7` |  | §162 | Mur de force, Mur de feu, Mur prismatique, Cage de force |
 | `releve-sorts-8` |  | §163 | Champ antimagie, Coquille antivie |
 | `releve-sorts-9` |  | §164 §309 | Lévitation, Inversion de la gravité, Embruns, Vif carquois, élémentaire, céleste, Grêle d'épines |
-| `renvoi-choix` |  | §293 | Renvoi des morts-vivants : liste des créatures à 9 m, Calcination à la place |
+| `renvoi-choix` |  | §293 §438 | Renvoi des morts-vivants : liste des créatures à 9 m, Calcination à la place |
 | `renvoi` |  | §16.25 | Calcination des morts-vivants |
 | `repasse-arc` |  | §353 | Arc du serment : Avantage, abri et longue portée contre l'ennemi juré |
 | `repasse-c1` |  | §295 | corrections déclaratives de la repasse (Arène des sorts) |
-| `repasse-c10` |  | §305 | invocations : destrier à la mort du lanceur, Compagnon sauvage au Repos long (Arène des sorts) |
+| `repasse-c10` |  | §305 §438 | invocations : destrier à la mort du lanceur, Compagnon sauvage au Repos long (Arène des sorts) |
 | `repasse-c11` |  | §306 | Troisième œil, Illusions améliorées (Arène des sorts) |
 | `repasse-c12a` |  | §316 | Rage persistante à l'initiative (Arène des sorts) |
 | `repasse-c12b` |  | §309 §403 | Invocation de céleste à la pose, Métal brûlant, Choc de vie, Aura de protection contre la magie, Rage en armure lourde |
@@ -346,7 +346,7 @@ la sélection sans rien jouer.
 | `zero-pv` |  | §17 | dégâts à 0 PV (échec), jet contre la mort au début du tour |
 | `zone-duree` |  |  | Rayon de lune, fin de tour du Zombi dedans |
 | `zone-soeur` |  | §16 §16.8 | Nuage nauséabond, début de tour du Guerrier dedans |
-| `zone-sur-soi` |  | §47 | émanation posée sur le lanceur sans clic (Esprits gardiens) |
+| `zone-sur-soi` |  | §47 §438 | émanation posée sur le lanceur sans clic (Esprits gardiens) |
 
 ## `ravenloft/`
 

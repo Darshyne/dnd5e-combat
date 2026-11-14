@@ -244,7 +244,17 @@ export default {
       const circleId = await ctx.ensureItem(caster, PHB("phbsplCircleofPo"));
       await ctx.ensureItem(caster, PHB("phbsplFireball00"));
       ctx.restore(() => ctx.removeEffectsFrom(target, "circle-of-power"));
-      await ctx.engine("placeItemEffect", { tokenId: target.id, casterId: caster.id, itemId: circleId, effectId: "WuYsg2mftQltuDIK" });
+      // §438 : Manuel 3.0.0, l'effet n'est plus sur l'item : un effet du compendium d'effets, posé par le comportement de zone de dnd5e
+      // (`applyActiveEffect`) — copié ici avec le sort pour origine, comme le fait ce comportement (`system.origin.activity`).
+      const circle = ((await ctx.call("get-actor", { actorId: caster.actorId })).items ?? []).find(i => i._id === circleId);
+      const remote = Object.values(circle?.system?.activities ?? {}).flatMap(a => (a.behaviors ?? []).flatMap(b => b.config?.effects ?? []))
+        .find(u => /ActiveEffect/.test(u ?? ""));
+      if ( (circle?.effects ?? []).some(e => e._id === "WuYsg2mftQltuDIK") || !remote ) {
+        await ctx.engine("placeItemEffect", { tokenId: target.id, casterId: caster.id, itemId: circleId, effectId: "WuYsg2mftQltuDIK" });
+      } else {
+        ctx.log(`forme 3.0.0 : effet du compendium ${remote}`);
+        await ctx.engine("placeItemEffect", { tokenId: target.id, casterId: caster.id, itemId: circleId, uuid: remote });
+      }
       const grid = await ctx.gridSize();
       let checked = false;
       for ( let i = 0; (i < 20) && !checked; i++ ) {

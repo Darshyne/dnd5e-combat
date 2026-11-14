@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { validateEntry } from "../module/scripts/core/content.mjs";
-import { CONTENT, SRD_ALIASES } from "../module/scripts/content/index.mjs";
+import { CONTENT, SHIPPED, SRD_ALIASES } from "../module/scripts/content/index.mjs";
 import { hiddenAtLevel } from "../module/scripts/core/level-gate.mjs";
 import { phbDifferences, phbShape, renamedSourceItem, citesSubclass } from "../module/scripts/core/phb-update.mjs";
 
@@ -162,5 +162,78 @@ describe("§438 : remise à jour des fiches (diagnostic)", () => {
     expect(citesSubclass({ activities: { a: { damage: { parts: [{ custom: { formula: "@scale.fey.dreadful-strike" } }] } } } }, "fey")).toBe(true);
     expect(citesSubclass({ x: "@scale.fey-wanderer.die" }, "fey")).toBe(false);
     expect(citesSubclass({ x: "max(@subclasses.moon.levels, 1)" }, "moon")).toBe(true);
+  });
+});
+
+describe("§438 : Calcination du Manuel 3.0.0 derrière sa porte de niveau", async () => {
+  const { upgradeOf } = await import("../module/scripts/adapter/pick-targets.mjs");
+  const TURN = "aOptL5pMaj3WtR8S", SEAR_61 = "rprxorXdFoHbRERZ";
+  const rule = SHIPPED["channel-divinity-cleric"].pickTargets;
+  const cleric = level => {
+    const actor = { classes: { cleric: { identifier: "cleric" } } };
+    const acts = new Map([[TURN, { id: TURN }], [SEAR_61, { id: SEAR_61, visibility: { level: { min: 5, max: null } }, relevantLevel: level }]]);
+    const channel = { name: "Channel Divinity", actor, system: { identifier: "channel-divinity-cleric", activities: acts } };
+    for ( const a of acts.values() ) { a.item = channel; a.actor = actor; }
+    actor.items = [channel, { name: "Sear Undead", actor, system: { identifier: "sear-undead", activities: new Map() } }];
+    return channel.system.activities.get(TURN);
+  };
+  it("niveau 5 : proposée ; niveau 3 (item prêté, activité cachée par dnd5e) : pas proposée", () => {
+    expect(upgradeOf(cleric(5), rule)?.id).toBe(SEAR_61);
+    expect(upgradeOf(cleric(3), rule)).toBe(null);
+  });
+});
+
+describe("§438 : la règle d'invocation suit l'aptitude qui lance le sort (Compagnon sauvage 3.0.0)", async () => {
+  const { summonRuleOf } = await import("../module/scripts/adapter/content.mjs");
+  const companion = { _id: "phbdrdWildCompan", name: "Wild Companion", system: { identifier: "wild-companion" } };
+  const actor = { items: new Map([[companion._id, companion]]) };
+  companion.actor = actor;
+  const copy = { name: "Find Familiar", actor, system: { identifier: "find-familiar" },
+    flags: { dnd5e: { cachedFor: ".Item.phbdrdWildCompan.Activity.iS5gQuNiriMwrrWg" } } };
+  it("la copie lancée par le Compagnon sauvage part au Repos long ; le sort lancé seul, non", () => {
+    // contentOf lit la surcouche du monde (réglage) : vide ici.
+    globalThis.game = { settings: { get: () => ({ v: 0, entries: {} }) } };
+    expect(summonRuleOf(copy)).toMatchObject({ familiar: true, initiative: "own", endsOnLongRest: true });
+    const plain = { ...copy, flags: {} };
+    expect(summonRuleOf(plain)).toMatchObject({ familiar: true, initiative: "own" });
+    expect(summonRuleOf(plain).endsOnLongRest).toBeUndefined();
+    expect(summonRuleOf(null)).toBe(null);
+    expect(summonRuleOf({ name: "x", system: { identifier: "longsword" } })).toBe(null);
+    delete globalThis.game;
+  });
+});
+
+describe("§438 : Liberté de mouvement et les clés de Vitesse de dnd5e 6.1", async () => {
+  const { reducesSpeed, withoutSpeedReductions } = await import("../module/scripts/core/speed-floor.mjs");
+  it("Lenteur 3.0.0 (`movement.multiplier` ×0,5) et 2.2.0 (`movement.speed` ×0,5) réduisent la Vitesse", () => {
+    expect(reducesSpeed({ key: "system.attributes.movement.multiplier", type: "multiply", value: 0.5 })).toBe(true);
+    expect(reducesSpeed({ key: "system.attributes.movement.speed", type: "multiply", value: "0.5" })).toBe(true);
+  });
+  it("`movement.bonus` : soustraire ou ajouter un négatif réduit ; ajouter un positif, non", () => {
+    expect(reducesSpeed({ key: "system.attributes.movement.bonus", type: "subtract", value: "15" })).toBe(true);
+    expect(reducesSpeed({ key: "system.attributes.movement.bonus", type: "add", value: "-10" })).toBe(true);
+    expect(reducesSpeed({ key: "system.attributes.movement.bonus", type: "add", value: "10" })).toBe(false);
+    expect(reducesSpeed({ key: "system.attributes.movement.multiplier", type: "multiply", value: 2 })).toBe(false);
+  });
+  it("le reste de l'effet est gardé (CA, sauvegarde de Dextérité)", () => {
+    const slowed = [{ key: "system.attributes.ac.bonus", type: "add", value: -2 }, { key: "system.attributes.movement.multiplier", type: "multiply", value: 0.5 },
+      { key: "system.abilities.dex.bonuses.save", type: "add", value: -2 }];
+    expect(withoutSpeedReductions(slowed).map(c => c.key)).toEqual(["system.attributes.ac.bonus", "system.abilities.dex.bonuses.save"]);
+  });
+});
+
+describe("§438 : l'origine d'un effet copié du Manuel 3.0.0 (system.origin vers le compendium)", async () => {
+  const { originItemOf } = await import("../module/scripts/adapter/facts.mjs");
+  const own = { documentName: "Item", uuid: "Actor.a.Item.i", pack: null, name: "Clairvoyant Combatant" };
+  const packed = { documentName: "Item", uuid: "Compendium.dnd-players-handbook.classes.Item.phbwlkClairvoyan", pack: "dnd-players-handbook.classes" };
+  const docs = new Map([[own.uuid, own], [packed.uuid, packed]]);
+  it("l'item de la fiche (origin écrite) plutôt que celui du compendium ; sinon comme avant", () => {
+    globalThis.fromUuidSync = uuid => docs.get(uuid) ?? null;
+    const copy = { system: { origin: { item: packed.uuid } }, origin: packed.uuid, _source: { origin: own.uuid } };
+    expect(originItemOf(copy)).toBe(own);
+    expect(originItemOf({ system: { origin: { item: own.uuid } }, _source: {} })).toBe(own);
+    // Sans origine écrite : l'item du compendium (rien de mieux), comme avant.
+    expect(originItemOf({ system: { origin: { item: packed.uuid } }, _source: { origin: null } })).toBe(packed);
+    delete globalThis.fromUuidSync;
   });
 });

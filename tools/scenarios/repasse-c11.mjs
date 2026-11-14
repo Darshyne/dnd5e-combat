@@ -56,7 +56,11 @@ export default {
       await ctx.call("set-status", { tokenId: target.id, statusId: "invisible", active: true });
       await pause(1200);
       const before = await ctx.engine("attackReasons", { attackerId: caster.id, targetId: target.id, itemId: club });
-      await ctx.use({ tokenId: caster.id, itemId: eye, activityId: "lbwgWyEQ7Zc9kz1N", targetTokenIds: [caster.id] });
+      // §438 : Manuel 2.2.0, activité « utility » `lbwgWyEQ7Zc9kz1N` ; Manuel 3.0.0, activité « cast » `AJ9aBhuLHOiy0mqg` (lance Voir l'invisible).
+      const acts = Object.keys(((await ctx.call("get-actor", { actorId: caster.actorId })).items ?? []).find(i => i._id === eye)?.system?.activities ?? {});
+      const see = ["lbwgWyEQ7Zc9kz1N", "AJ9aBhuLHOiy0mqg"].find(id => acts.includes(id));
+      if ( !ctx.expect(!!see, `Troisième œil : une activité Voir l'invisible (${acts.join(", ")})`) ) return;
+      await ctx.use({ tokenId: caster.id, itemId: eye, activityId: see, targetTokenIds: [caster.id] });
       await pause(2500);
       const after = await ctx.engine("attackReasons", { attackerId: caster.id, targetId: target.id, itemId: club });
       ctx.expect(before.disadvantage.includes("target.unseen"), `sans le Troisième œil, la Cible Invisible n'est pas vue (${before.disadvantage.join(", ")})`);

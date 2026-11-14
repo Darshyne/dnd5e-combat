@@ -61,6 +61,8 @@ export default {
     ctx.restore(remettre);
     const part = async (name, fn) => {
       if ( process.env.PART && !name.includes(process.env.PART) ) return;
+      // Le Guerrier du monde peut être À terre (état de `dnd-6` à la copie) : son Désavantage annulerait l'Avantage vérifié ici.
+      for ( const st of ["prone", "unconscious"] ) await ctx.call("set-status", { tokenId: hero.id, statusId: st, active: false }).catch(() => {});
       try { await fn(); } catch ( err ) { ctx.expect(false, `${name} : ${err.message}`); }
       if ( ctx.ownCombat ) { await ctx.call("end-combat", { combatId: ctx.ownCombat }).catch(() => {}); ctx.ownCombat = null; }
       await remettre();

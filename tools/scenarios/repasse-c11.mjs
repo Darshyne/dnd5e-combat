@@ -62,6 +62,8 @@ export default {
       if ( !ctx.expect(!!see, `Troisième œil : une activité Voir l'invisible (${acts.join(", ")})`) ) return;
       await ctx.use({ tokenId: caster.id, itemId: eye, activityId: see, targetTokenIds: [caster.id] });
       await pause(2500);
+      // La forme 3.0.0 lance le sort (copie puis utilisation) : l'effet arrive plus tard — attendu 10 s au plus.
+      for ( let i = 0; (i < 10) && !(await ctx.effects(caster)).some(e => /See Invisib|invisibilit/i.test(e.name ?? "")); i++ ) await pause(1000);
       const after = await ctx.engine("attackReasons", { attackerId: caster.id, targetId: target.id, itemId: club });
       ctx.expect(before.disadvantage.includes("target.unseen"), `sans le Troisième œil, la Cible Invisible n'est pas vue (${before.disadvantage.join(", ")})`);
       ctx.expect(!after.disadvantage.includes("target.unseen"), `avec Détection de l'invisibilité, elle l'est (${after.disadvantage.join(", ") || "rien"})`);

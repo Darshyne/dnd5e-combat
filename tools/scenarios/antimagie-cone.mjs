@@ -10,7 +10,7 @@
  *  4. Tour du Zombi : la zone tombe, plus de statut, Bénédiction rétablie.
  * Remet positions, effets, PV ; le combat est retiré.
  */
-const CONE = "Compendium.dnd-monster-manual.actors.Actor.mmBeholder000000.Item.mmAntimagicCone0";
+const CONE = "Compendium.dnd-monster-manual.features.Item.mmAntimagicCone0";
 const BLESS = "Compendium.dnd-players-handbook.spells.Item.phbsplBless00000";
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -58,7 +58,7 @@ export default {
     await pause(1500);
     if ( !ctx.expect(!!(await bless()), "Bénédiction posée sur le Guerrier") ) return;
 
-    const cone = await ctx.ensureItem(zombi, CONE).catch(() => null);
+    const cone = await ctx.ensureItem(zombi, CONE).catch(err => { ctx.log(`Cône non prêté : ${err.message}`); return null; });
     if ( !cone ) { ctx.log("Manuel des monstres absent : non applicable"); return; }
 
     // 2. Combat, le Guerrier avant le Zombi ; le Cône au tour du Zombi.

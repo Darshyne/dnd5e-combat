@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-343 scénarios (`tools/scenarios/`), joués dans le client du MJ par le connecteur : `node tools/reload.mjs && node
+344 scénarios (`tools/scenarios/`), joués dans le client du MJ par le connecteur : `node tools/reload.mjs && node
 tools/scenario.mjs <noms>`. **Scène** : vide = l'« Arène de test » ; sinon la scène que le scénario demande (sauté si elle manque).
 Les scénarios d'un sous-dossier ne font pas partie de la passe complète : `node tools/scenario.mjs tools/scenarios/<dossier>`. Les
 `balayage-*` ne se jouent que nommés. Choisir sans connaître les noms : `--grep <mot>`, `--section <§>`, `--scene <nom>` ; `--list` montre
@@ -37,6 +37,7 @@ la sélection sans rien jouer.
 | `attente-sablier` |  | §381 | sablier : publiée à l'ouverture, retirée à la réponse, au délai, à l'annulation |
 | `audit-pj` |  |  | audit d'une fiche de PJ (Arène des sorts, copie de la fiche) |
 | `aura-sacree` |  | §86 | aura, Désavantage des attaquants, un Mort-vivant qui touche au corps à corps est Aveuglé s'il rate |
+| `aura-suit-porteur` |  | §438 | la zone suit le porteur |
 | `auras-bonus` |  | §18.12 | Autorité, Commandement des morts-vivants, Bravoure |
 | `auras-monstres` |  | §18.11 | Aura de feu (fin de tour), Puanteur (début de tour) |
 | `avaler` |  | §18.17 | Béhir : avalé, abri total, emporté, dégâts, régurgité, libéré |

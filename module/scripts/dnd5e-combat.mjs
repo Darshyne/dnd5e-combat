@@ -179,6 +179,7 @@ import { registerOil } from "./runtime/oil.mjs";
 import { registerScatter } from "./runtime/scatter.mjs";
 import { registerFlammable } from "./runtime/flammable.mjs";
 import { registerWelcome, openWelcome } from "./ui/welcome.mjs";
+import { openReleaseNotes } from "./ui/release-notes.mjs";
 import { registerFactions, factionsApi } from "./runtime/factions.mjs";
 import { coneOf } from "./adapter/cone.mjs";
 import { canHear as hearingCanHear } from "./adapter/hearing.mjs";
@@ -250,7 +251,7 @@ const state = {
   flee: fleeFrom, save: requestSave, drop: dropHeldBy,
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
   level: automationLevel, levelAtLeast, skippedRoutes,
-  welcome: { open: openWelcome }, diagnostic: { open: openDiagnostic }, debug: Object.freeze({ ...debugApi, open: openDebugReport, testConnection, openConnectionTest }), settings: { open: openSettings, registerWindow },
+  welcome: { open: openWelcome }, releaseNotes: { open: openReleaseNotes }, diagnostic: { open: openDiagnostic }, debug: Object.freeze({ ...debugApi, open: openDebugReport, testConnection, openConnectionTest }), settings: { open: openSettings, registerWindow },
   vision: { canSee: publicCanSee, cone: publicCone, canHear: publicCanHear },
   factions: { ...factionsApi,
     /** Ouvre (ou ramène devant) la fenêtre des factions sur ce client. */

@@ -297,6 +297,7 @@
     "queue.open",
     "queue.roll",
     "reason",
+    "releaseNotes.open",
     "reports.clear",
     "reports.list",
     "reports.open",

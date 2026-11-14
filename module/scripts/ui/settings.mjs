@@ -17,6 +17,7 @@ import { SETTINGS_TABS, placeSettings, matchesQuery, validateWindow, isSuiteTitl
 import { route } from "../runtime/router.mjs";
 import { loc, esc } from "../runtime/shared.mjs";
 import { openWelcome } from "./welcome.mjs";
+import { openReleaseNotes } from "./release-notes.mjs";
 import { openDiagnostic } from "./diagnostic.mjs";
 import { openFactions } from "./factions.mjs";
 import { openFloatTheme } from "./float-theme.mjs";
@@ -398,6 +399,7 @@ export function registerWindow(def) {
 /** Le moteur : ses outils. */
 const ENGINE_TOOLS = Object.freeze({
   welcome: () => openWelcome(),
+  releaseNotes: () => openReleaseNotes(),
   diagnostic: () => openDiagnostic(),
   reports: () => reportsApi.open(),
   debugReport: () => openDebugReport(),

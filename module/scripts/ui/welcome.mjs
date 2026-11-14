@@ -1,6 +1,7 @@
 /**
  * L'écran d'accueil de la suite (SPEC §177) : ouvert chez le MJ actif au premier lancement du moteur dans un monde (réglage
- * `welcomeSeen`), et ensuite par le bouton « Accueil et diagnostic » des réglages du module. Logo, mot de bienvenue, les trois
+ * `welcomeSeen`), et ensuite par le bouton « Accueil et diagnostic » des réglages du module. Ce réglage garde la version vue : quand
+ * elle change, c'est le message de mise à jour qui s'ouvre (§439, ui/release-notes.mjs). Logo, mot de bienvenue, les trois
  * niveaux d'automatisation (§117) en grandes cartes, le diagnostic du monde, les liens. Aspect : celui du site (anthracite,
  * fuchsia, dégradé du logo).
  *
@@ -15,8 +16,8 @@ import { loc, esc } from "../runtime/shared.mjs";
 import { LOGO } from "../runtime/diagnostic/backup.mjs";
 import { openDiagnostic } from "./diagnostic.mjs";
 import { ddbItemsAtRisk } from "../runtime/diagnostic/checks.mjs";
+import { SEEN_SETTING, announceUpdate, markSeen, openReleaseNotes } from "./release-notes.mjs";
 
-const SEEN_SETTING = "welcomeSeen";
 const DDB_SETTING = "ddbNotice";
 const ROTATION_SETTING = "autoRotateNotice";
 const LINKS = Object.freeze({
@@ -69,7 +70,8 @@ export const WelcomeApp = () => WelcomeClass ??= class WelcomeApp extends foundr
         <img src="${LOGO}" alt="DAS" class="das-hero__logo">
         <div>
           <h1>${esc(loc("Accueil.Nom"))}</h1>
-          <p class="das-muted">${esc(loc("Accueil.Version", { version }))}</p>
+          <p class="das-muted">${esc(loc("Accueil.Version", { version }))}
+            <button type="button" class="das-link" data-action="news"><i class="fa-solid fa-bullhorn"></i> ${esc(loc("Accueil.Nouveautes"))}</button></p>
         </div>
       </header>
       <p class="das-lead">${esc(loc("Accueil.Bienvenue"))}</p>
@@ -103,6 +105,7 @@ export const WelcomeApp = () => WelcomeClass ??= class WelcomeApp extends foundr
       button.addEventListener("click", () => this.#choose(button.dataset.level));
     }
     el.querySelector("[data-action=diagnostic]")?.addEventListener("click", () => openDiagnostic());
+    el.querySelector("[data-action=news]")?.addEventListener("click", () => openReleaseNotes());
     el.querySelector("[data-action=close]")?.addEventListener("click", () => this.close());
   }
 
@@ -127,17 +130,13 @@ export const WelcomeApp = () => WelcomeClass ??= class WelcomeApp extends foundr
   }
 };
 
-async function markSeen() {
-  const version = game.modules.get(MODULE_ID)?.version ?? "1";
-  if ( game.user.isGM && (game.settings.get(MODULE_ID, SEEN_SETTING) !== version) ) await game.settings.set(MODULE_ID, SEEN_SETTING, version);
-}
-
 /** Pour l'API : ouvrir l'accueil. */
 export const openWelcome = () => new (WelcomeApp())().render({ force: true });
 
 /**
  * Déclaré même en veille (Midi-QOL actif : le diagnostic sert justement à nettoyer ses traces). Le réglage `welcomeSeen` garde la
- * version du moteur vue par le MJ ; vide = jamais vu : l'accueil s'ouvre au premier `ready` chez le MJ actif.
+ * version du moteur vue par le MJ ; vide = jamais vu : l'accueil s'ouvre au premier `ready` chez le MJ actif ; une autre version que
+ * celle du module : le message de mise à jour (§439).
  */
 export function registerWelcome({ menu=false }={}) {
   game.settings.register(MODULE_ID, SEEN_SETTING, { scope: "world", config: false, type: String, default: "" });
@@ -153,6 +152,7 @@ export function registerWelcome({ menu=false }={}) {
     if ( !game.users.activeGM?.isSelf ) return;
     // Un monde neuf n'a jamais eu l'ancien réglage d'orientation : rien à lui dire (§246).
     if ( !game.settings.get(MODULE_ID, SEEN_SETTING) ) return game.settings.set(MODULE_ID, ROTATION_SETTING, true).then(openWelcome);
+    announceUpdate().catch(err => console.error(`${MODULE_ID} | release notes`, err));
     noticeDdb().catch(err => console.error(`${MODULE_ID} | DDB notice`, err));
     noticeRotation().catch(err => console.error(`${MODULE_ID} | auto-rotation notice`, err));
   }, { label: "welcome screen" });

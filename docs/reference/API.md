@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-339 fonctions dans 34 groupes, relevées sur l'objet réel du module chargé. La description est le
+340 fonctions dans 35 groupes, relevées sur l'objet réel du module chargé. La description est le
 commentaire de la fonction dans le code (début seulement) ; le fichier est relatif à `module/scripts/`. Les valeurs non
 fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de test du connecteur, MJ seulement.
 
@@ -422,6 +422,12 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | `api.queue.list` | `()` | `runtime/gm-queue.mjs` | MJ : la file — `{ mine, players, blocked, count }` (ce que le moteur lui demande, les joueurs attendus, les actions dont l'auteur est parti) ; vide chez un joueur. Une ligne : `{ id, userId, userName, actor, kind, label… |
 | `api.queue.open` | `()` | `ui/player-waits.mjs` | Ouvre (ou ramène devant) le panneau « File du MJ », MJ seulement. |
 | `api.queue.roll` | `(id)` | `runtime/gm-queue.mjs` | Le MJ lance à la place d'un auteur parti le jet que doit la ligne `id` de « Bloqué » (ou l'identifiant de son message). MJ actif. @param {string} id |
+
+## `api.releaseNotes`
+
+| Chemin | Signature | Fichier | Description |
+|---|---|---|---|
+| `api.releaseNotes.open` | `({ since=null }={})` | `ui/release-notes.mjs` | Pour l'API, l'accueil et les réglages : ouvrir le message de mise à jour. `since` : la dernière version vue (les notes des versions sorties depuis) ; sans elle, les dernières notes. |
 
 ## `api.reports`
 

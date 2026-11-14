@@ -60,6 +60,8 @@ export async function afterTeleportOptions(activity, token, from) {
   if ( chosen.around && !targets.length ) return;
   // §438 : les créatures sont déjà désignées (`around`) — pas de gabarit à poser (la Foulée narquoise et la Foulée effroyable du Manuel
   // 3.0.0 portent un rayon de 1,50 m : dnd5e attendait un clic sur le canevas).
-  await chosen.activity.use({ [MODULE_ID]: { confirmed: true }, ...(chosen.around ? { create: { measuredTemplate: false } } : {}) }, { configure: false })
+  // Les cibles du message (`givenTargets`, §104) : le moteur n'attend pas de zone.
+  await chosen.activity.use({ [MODULE_ID]: { confirmed: true }, ...(chosen.around ? { create: { measuredTemplate: false } } : {}) }, { configure: false },
+    chosen.around ? { data: { flags: { [MODULE_ID]: { givenTargets: true } } } } : {})
     .catch(err => console.error(`${MODULE_ID} | teleport option`, err));
 }

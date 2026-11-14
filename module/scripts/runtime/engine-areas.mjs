@@ -123,7 +123,9 @@ export async function onRegionCreated(region) {
       });
       log(`lasting area: acts on ${rules.on.join(", ")}, once per turn${rules.activity ? ` (replays activity ${rules.activity})` : ""}`);
       // C12-b : ceux qu'elle recouvre en apparaissant y entrent (`enterOnPose` : Invocation de céleste).
-      if ( contentOf(activity.item).entry?.enterOnPose === true ) {
+      // §438 : seulement quand la zone est posée par une autre activité que celle qu'elle rejoue (Esprits gardiens du Manuel 3.0.0) ;
+      // l'activité qui rejoue et pose à la fois (forme 2.2.0) résout sa pose elle-même, plus bas.
+      if ( (contentOf(activity.item).entry?.enterOnPose === true) && !(rules.activity && (rules.activity === activity.id)) ) {
         enterAllInside(region);
         log(`${activity.item.name}: the creatures already inside enter the area`);
         return null;

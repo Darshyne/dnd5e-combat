@@ -279,7 +279,8 @@
  *     retort?: { damageType }                   C12-f : la réaction de l'item ratée par l'attaquant lui renvoie les dégâts que le
  *                                               porteur subit (Défenses envoûtantes, runtime/reactions.mjs)
  *     enterOnPose?: true                        C12-b : une zone qui dure, posée par une activité qui ne résout rien elle-même : les
- *                                               créatures qu'elle recouvre en apparaissant y entrent (Invocation de céleste)
+ *                                               créatures qu'elle recouvre en apparaissant y entrent (Invocation de céleste ; §438 :
+ *                                               Esprits gardiens 3.0.0). Rien quand l'activité qui pose est celle qui rejoue
  *     hitDefense?: true                         C12-e : qui touche le porteur d'un jet d'attaque a le Désavantage à ses autres jets
  *                                               contre lui pendant ce tour (Tactiques défensives : Défense multiattaque)
  *     effectsFirst?: true                       §303 : les effets de l'activité posés avant ses dégâts ou son soin (Aide : PV max relevés

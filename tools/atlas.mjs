@@ -12,7 +12,8 @@
  * est tenu dans `prive/atlas/historique.json`, une ligne de plus par item à chaque changement.
  * Lit une COPIE des bases LevelDB (Foundry les verrouille). Le JSON produit contient le texte premium : il va hors du dépôt.
  *   node tools/atlas.mjs <dossier de sortie> [dossier Data de Foundry]
- * Sortie : `atlas-<onglet>.json` (sorts, dons, aptitudes, objets, creatures), `atlas-briques.json` (§367), `atlas-resume.json`, et `prive/ATLAS.md` (comptes, sans texte).
+ * Sortie : `atlas-<onglet>.json` (sorts, dons, aptitudes, objets, creatures), `atlas-briques.json` (§367), `atlas-resume.json`, la page
+ * locale `atlas.html` (si `prive/` est là ; double-clic pour l'ouvrir), et `prive/ATLAS.md` (comptes, sans texte).
  */
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -549,7 +550,7 @@ for ( const kind of ["clé", "moment", "étape"] ) {
   summary.push({ tab: "briques", kind: "briques", key: `${kind}:sans doc`, n: l.filter(b => !b.doc).length });
 }
 
-// Le tableau de bord ne lit que des lignes : les métadonnées du relevé en sont aussi.
+// La page locale ne lit que des lignes : les métadonnées du relevé en sont aussi.
 const meta = [["date", TODAY], ["engine", ENGINE_VERSION], ["previous", previous ?? ""], ["rows", String(rows.length)],
   ["modules", Object.values(versions).map(v => `${v.label} ${v.version}`).join(" · ")]];
 for ( const [key, v] of meta ) summary.push({ tab: "*", kind: "meta", key, n: 0, v });
@@ -557,8 +558,8 @@ writeFileSync(join(out, "atlas-resume.json"), JSON.stringify(summary));
 
 const label = { das: "DAS", sys: "système", part: "partiel", man: "manuel", gm: "MJ", off: "hors combat", text: "texte", bad: "défaut" };
 const md = ["# Atlas de l'automatisation", "",
-  `Généré le ${TODAY} par \`tools/atlas.mjs\` (moteur ${ENGINE_VERSION}). Comptes seulement ; le détail (texte premium) est hors dépôt, dans le`,
-  "tableau de bord « Atlas d'automatisation DAS ». Statuts : relevé de lecture pour les sorts, sinon déduits des champs (`das` règle du",
+  `Généré le ${TODAY} par \`tools/atlas.mjs\` (moteur ${ENGINE_VERSION}). Comptes seulement ; le détail (texte premium) est hors dépôt, dans la`,
+  "page locale « Atlas d'automatisation DAS » (`atlas.html` à côté des JSON). Statuts : relevé de lecture pour les sorts, sinon déduits des champs (`das` règle du",
   "moteur, `sys` données dnd5e résolues par le moteur, `man` annoncé par le texte et porté par personne, `bad` défaut de données).", "",
   `Modules : ${Object.values(versions).map(v => `${v.label} ${v.version}`).join(" · ")}.`, "",
   "| Onglet | Items | " + Object.values(label).join(" | ") + " |", "|---|---|" + Object.keys(label).map(() => "---|").join("")];
@@ -590,7 +591,7 @@ for ( const tab of TABS ) {
 md.push("", "## Briques du moteur", "",
   "Les clés de contenu (`core/content/enums.mjs`), les moments de déclencheur (`core/triggers.mjs`) et les étapes (`do: [{ type }]`)",
   "qu'un item peut déclarer, par nombre d'entrées de contenu qui s'en servent. Détail (description, exemples, onglets) : onglet",
-  "« Briques » du tableau de bord.", "");
+  "« Briques » de la page locale.", "");
 for ( const kind of ["clé", "moment", "étape"] ) {
   const l = bricks.filter(b => b.kd === kind);
   md.push(`- **${kind}s** : ${l.length}, dont ${l.filter(b => !b.u).length} sans usage dans le contenu livré et ${l.filter(b => !b.doc).length} sans description dans le schéma`);
@@ -602,3 +603,11 @@ for ( const r of rows.filter(r => r.bad.length).slice(0, 400) ) md.push(`- ${r.t
 writeFileSync("prive/ATLAS.md", md.join("\n"));
 console.log(`${rows.length} lignes → ${out}`);
 for ( const tab of TABS ) console.log(`  ${tab} : ${rows.filter(r => r.t === tab).length}`);
+
+// Page locale de l'atlas (2026-11-14, remplace le tableau de bord en ligne) : son code est dans les notes privées, qui la construisent
+// à côté des JSON (elle embarque leur texte). Sans `prive/`, seuls les JSON sont écrits.
+const PAGE = "prive/atlas/tableau-page.mjs";
+if ( existsSync(PAGE) ) {
+  const { writePage } = await import(new URL(`../${PAGE}`, import.meta.url));
+  console.log(`page locale : ${writePage(out)}`);
+}

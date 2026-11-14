@@ -37,7 +37,8 @@ export default {
         await ctx.call("remove-embedded-effect", { uuid: `Actor.${mage.actorId}`, effectId: e._id ?? e.id }).catch(() => {});
       }
     });
-    let cast = await ctx.settle(used.usageMessageId);
+    // Forme 3.0.0 : « Cast Spell » ne résout rien (aucune cible, aucun jet) ; seuls les rejeux comptent.
+    let cast = v3 ? { targets: [] } : await ctx.settle(used.usageMessageId);
     if ( v3 ) {
       // La pose ne résout rien : les sauvegardes sont les rejeux « enter » de la sœur, une carte par créature recouverte.
       await new Promise(r => setTimeout(r, 3000));

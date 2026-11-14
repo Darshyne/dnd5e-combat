@@ -237,3 +237,26 @@ describe("§438 : l'origine d'un effet copié du Manuel 3.0.0 (system.origin ver
     delete globalThis.fromUuidSync;
   });
 });
+
+describe("§438 : Frappe effroyable — les utilisations de l'activité ou de l'item, l'activité du niveau", async () => {
+  const { usesHolderOf, shownActivityOf } = await import("../module/scripts/adapter/uses.mjs");
+  it("2.2.0 : les utilisations de l'activité ; 3.0.0 : celles de l'item (itemUses sans cible)", () => {
+    const old = { uses: { max: "3", value: 2, spent: 1 }, consumption: { targets: [{ type: "activityUses", value: "1" }] } };
+    expect(usesHolderOf(old).left).toBe(2);
+    const item = { system: { uses: { value: 0, spent: 3 } } };
+    const v3 = { uses: { max: "", value: 0 }, item, actor: { items: new Map() }, consumption: { targets: [{ type: "itemUses", value: "1", target: "" }] } };
+    expect(usesHolderOf(v3).left).toBe(0);
+    item.system.uses.value = 2;
+    expect(usesHolderOf(v3).left).toBe(2);
+    expect(usesHolderOf({ uses: { max: "" }, consumption: { targets: [] } })).toBe(null);
+  });
+  it("la première activité que la fiche montre à ce niveau", () => {
+    const at = level => ({ system: { activities: new Map([
+      ["DMVf7FTyTC2HCAf9", { id: "DMVf7FTyTC2HCAf9", visibility: { level: { min: null, max: 10 } }, relevantLevel: level }],
+      ["NGiX54LWGJGvMMwL", { id: "NGiX54LWGJGvMMwL", visibility: { level: { min: 11, max: null } }, relevantLevel: level }]]) } });
+    const ids = ["DMVf7FTyTC2HCAf9", "NGiX54LWGJGvMMwL"];
+    expect(shownActivityOf(at(5), ids)?.id).toBe("DMVf7FTyTC2HCAf9");
+    expect(shownActivityOf(at(11), ids)?.id).toBe("NGiX54LWGJGvMMwL");
+    expect(shownActivityOf({ system: { activities: new Map([["DMVf7FTyTC2HCAf9", { id: "DMVf7FTyTC2HCAf9" }]]) } }, ids)?.id).toBe("DMVf7FTyTC2HCAf9");
+  });
+});

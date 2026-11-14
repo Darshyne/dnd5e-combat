@@ -63,7 +63,7 @@ export default {
      */
     const wisAdded = async (m, t) => {
       const engine = bonusesOf(m).filter(b => b.formula === "@abilities.wis.mod").length;
-      const mod = (await ctx.call("get-actor", { actorId: t.actorId }))?.system?.abilities?.wis?.mod;
+      const mod = (await ctx.engine("stats", { tokenId: t.id }))?.mods?.wis;
       const formula = (m?.rolls ?? []).map(r => r.formula).join(" + ").replace(/\s/g, "");
       const system = Number.isFinite(mod) && (mod > 0) && formula.split("+").slice(1).some(t => t === String(mod)) ? 1 : 0;
       return { once: (engine + system) === 1, text: `moteur ${engine}, formule « ${formula} », Sagesse ${mod}` };
@@ -104,6 +104,8 @@ export default {
     const adjacent = async (t, to) => { const p = await ctx.position(to); await ctx.call("move-token", { tokenId: t.id, x: p.x + grid, y: p.y, elevation: 0 }); await pause(800); };
 
     await part("Incantation puissante (Druide)", async () => {
+      // §438 : dnd5e 6.1 lit la classe du sort mineur par son `sourceItem` (« class:druid ») sur la fiche : la classe est prêtée.
+      await lend(caster, `${CLASSES}phbdrdDruid00000`, { levels: 7 });
       await lend(caster, `${CLASSES}phbdrdElementalF`);
       await lend(caster, `${CLASSES}phbFuryPotentSpe`);
       const wisp = await lend(caster, `${SPELLS}phbsplStarryWisp`, { method: "atwill", sourceItem: "class:druid" });
@@ -128,6 +130,7 @@ export default {
     });
 
     await part("Incantation puissante (Clerc)", async () => {
+      await lend(caster, `${CLASSES}phbclcCleric0000`, { levels: 7 });
       await lend(caster, `${CLASSES}phbclcBlessedStr`);
       await lend(caster, `${CLASSES}phbClcPotentSpel`);
       const flame = await lend(caster, `${SPELLS}phbsplSacredFlam`, { method: "atwill", sourceItem: "class:cleric" });

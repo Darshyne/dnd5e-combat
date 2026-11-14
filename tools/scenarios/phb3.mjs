@@ -13,6 +13,14 @@ import { ARENE_SORTS } from "../lib/stages.mjs";
 const MODULE_ID = "dnd5e-combat";
 const PHB = "Compendium.dnd-players-handbook";
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+/** Les d10 d'une formule, nombre évalué (`(1 + floor(9 / 17))d10` → « 1d10 ») ; null sans d10. */
+function brutalDice(formula) {
+  const m = String(formula).replace(/\s/g, "").match(/(\d+|\((?:[^()]|\([^()]*\))*\))d10/);
+  if ( !m ) return null;
+  const expr = m[1].replace(/floor\(/g, "Math.floor(").replace(/min\(/g, "Math.min(").replace(/max\(/g, "Math.max(");
+  if ( !/^[\d+\-*/().,Mathflorinx ]+$/.test(expr) ) return null;
+  return `${Function(`return (${expr});`)()}d10`;
+}
 
 function setPath(obj, path, value) {
   const keys = path.split(".");
@@ -119,7 +127,7 @@ export default {
         });
         if ( !ctx.expect(!!a, `niveau ${level} : le Coup brutal touche (12 essais)`) ) return;
         ctx.log(`niveau ${level} : dégâts « ${a.damage} »`);
-        ctx.expect(a.damage.split(" | ").some(f => f.replace(/\s/g, "").includes(dice)) && !/@scale/.test(a.damage),
+        ctx.expect(a.damage.split(" | ").some(f => brutalDice(f) === dice) && !/@scale/.test(a.damage),
           `niveau ${level} : les dégâts portent ${dice} du Coup brutal (« ${a.damage} »)`);
         await reset();
       }

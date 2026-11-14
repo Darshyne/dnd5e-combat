@@ -167,7 +167,11 @@ export default {
     });
 
     await part("Nuage nauséabond", async () => {
-      const c = await cast("phbsplStinkingCl", bandit);
+      // §438 : Manuel 3.0.0 — « Create Cloud » (utilitaire, `UNmK4NzLyiQsdD1S`) pose le nuage, la sauvegarde de début de tour est une
+      // sœur sans zone ; le Manuel 2.2.0 posait la zone par sa sauvegarde (« Cast and Save »).
+      const cloudId = await ctx.ensureItem(mage, PHB + "phbsplStinkingCl", { system: { method: "atwill" } });
+      const v3 = !!((await ctx.call("get-actor", { actorId: mage.actorId })).items ?? []).find(i => i._id === cloudId)?.system?.activities?.UNmK4NzLyiQsdD1S;
+      const c = await cast("phbsplStinkingCl", bandit, v3 ? "utility" : "save");
       if ( !c?.used?.regionId ) return;
       for ( let n = 1; n <= 6; n++ ) {
         const since = await ctx.lastMessageId();

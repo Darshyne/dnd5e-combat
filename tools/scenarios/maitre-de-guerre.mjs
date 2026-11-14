@@ -206,6 +206,11 @@ export default {
 
     // Feinte : sur le Bandit — aucun dégât, l'effet posé ; l'attaque suivante a l'Avantage ; touchée, +1d8.
     const feint = await ctx.itemId(fighter.id, "feinting-attack");
+    // Les coups du Bandit (Parade, Riposte) ont pu laisser le Guerrier à 0 PV, donc À terre : son Désavantage annulerait l'Avantage de
+    // la Feinte. Il est relevé avant.
+    await ctx.setHp(fighter, hp0);
+    for ( const s of ["unconscious", "prone"] ) await ctx.call("set-status", { tokenId: fighter.id, statusId: s, active: false }).catch(() => {});
+    await pause(800);
     let feinted = null;
     for ( let n = 0; (n < 15) && !feinted; n++ ) {
       await tough(); await refill(); await clearBandit();

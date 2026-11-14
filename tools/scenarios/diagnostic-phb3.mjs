@@ -74,14 +74,15 @@ export default {
     ctx.expect(!!oath && !(await byId("vengeance")), "la sous-classe s'appelle « oath-vengeance »");
     ctx.expect(mark?.system?.sourceItem === "subclass:oath-vengeance", `le sort suit sa sous-classe (${mark?.system?.sourceItem})`);
 
-    // 2. Objets
+    // 2. Objets — la fiche juste avant (le moteur a pu y ajouter ses actions de base après la création).
+    const beforeItems = await sheet();
     const r2 = await api("diagnosticRepair", { checks: ["phb3-items"], roots: [root] });
     if ( r2.backup?.uuid ) backups.push(r2.backup.uuid);
     ctx.expect(!!r2.backup?.uuid && r2.results.length === 1 && r2.results.every(r => r.ok), `réparation des objets : ${r2.results.map(r => r.line).join(" | ") || "aucune"}`);
     const after = await sheet();
     const brutal = after.find(i => i._id === brutalId);
     ctx.expect(!!brutal && LEVEL13.every(id => brutal.system?.activities?.[id]), "Coup brutal : même id, les activités du niveau 13 de la référence sont là");
-    ctx.expect(after.length === before.length, `aucun objet en plus ni en moins (${before.length} → ${after.length})`);
+    ctx.expect(after.length === beforeItems.length, `aucun objet en plus ni en moins (${beforeItems.length} → ${after.length})`);
     ctx.expect(after.find(i => i.type === "class")?.system?.levels === 3, "la classe n'est pas touchée (niveau 3)");
 
     scan = await api("diagnosticScan", { checks });

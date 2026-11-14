@@ -138,7 +138,13 @@ export default {
         await place(bandit, pos0.x, pos0.y);
         // L'activité pose une émanation (gabarit) : la zone est donnée, sur la case du Bandit.
         const box = await ctx.box(bandit);
-        const u = await ctx.use({ tokenId: hero.id, itemId: wrath, activityId: "9U9AoJYvcrCQtIMm", area: { shape: "rectangle", ...box }, usageConfig: { [MODULE_ID]: { confirmed: true } } });
+        // §438 : Manuel 3.0.0 — la sauvegarde `9U9AoJYvcrCQtIMm` n'a plus de gabarit (« une créature dans l'émanation ») : la créature est
+        // désignée par la liste du moteur (`castPicked`), comme au clic.
+        const saveAct = ((await ctx.call("get-actor", { actorId: hero.actorId })).items ?? []).find(i => i._id === wrath)?.system?.activities?.["9U9AoJYvcrCQtIMm"];
+        const picked = !saveAct?.target?.template?.type;
+        const u = picked
+          ? { usageMessageId: (await ctx.engine("castPicked", { tokenId: hero.id, itemId: wrath, activityId: "9U9AoJYvcrCQtIMm", targetIds: [bandit.id] }))?.usageMessageId }
+          : await ctx.use({ tokenId: hero.id, itemId: wrath, activityId: "9U9AoJYvcrCQtIMm", area: { shape: "rectangle", ...box }, usageConfig: { [MODULE_ID]: { confirmed: true } } });
         if ( u.regionId ) ctx.restore(() => ctx.call("delete-scene-object", { type: "Region", objectId: u.regionId }).catch(() => {}));
         const r = await ctx.settle(u.usageMessageId, { timeoutMs: 20000 }).catch(() => null);
         const t = r?.targets?.find(x => x.name === "Bandit");

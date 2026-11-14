@@ -47,7 +47,7 @@ export default {
       `tranche d'élévation posée (${region.elevation.bottom} → ${region.elevation.top})`);
 
     if ( !used.messageId ) return;
-    let cast = await ctx.settle(used.messageId);
+    let cast = v3 ? { targets: [] } : await ctx.settle(used.messageId);
     if ( v3 ) {
       await new Promise(r => setTimeout(r, 3000));
       const ticks = (await ctx.messagesSince(since)).filter(m => (m.type === "usage") && (m.flags?.["dnd5e-combat"]?.areaTick?.event === "enter"));

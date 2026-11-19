@@ -32,3 +32,18 @@ describe("l'étape `resist` et l'entrée", () => {
     expect(validateEntry(CONTENT["superior-hunters-defense"])).toEqual([]);
   });
 });
+
+describe("placesOwnResistance — les effets de l'activité ne sont pas posés quand l'étape pose la Résistance", () => {
+  it("l'activité de réaction de l'entrée, ou celle que l'étape `use` nomme", async () => {
+    const { placesOwnResistance } = await import("../module/scripts/core/turn-resistance.mjs");
+    expect(placesOwnResistance(CONTENT["superior-hunters-defense"], "KAgnJeRtqjDeYJ2S")).toBe(true);
+    const named = { triggers: [{ on: "isHit", do: [{ type: "use", activity: "aaaaaaaaaaaaaaaa" }, { type: "resist" }] }] };
+    expect(placesOwnResistance(named, "aaaaaaaaaaaaaaaa")).toBe(true);
+    expect(placesOwnResistance(named, "bbbbbbbbbbbbbbbb")).toBe(false);
+  });
+  it("une réaction sans `resist` (Esquive instinctive), ou pas d'entrée : non", async () => {
+    const { placesOwnResistance } = await import("../module/scripts/core/turn-resistance.mjs");
+    expect(placesOwnResistance({ triggers: [{ on: "isHit", do: [{ type: "use" }, { type: "halve" }] }] }, "aaaaaaaaaaaaaaaa")).toBe(false);
+    expect(placesOwnResistance(null, "aaaaaaaaaaaaaaaa")).toBe(false);
+  });
+});

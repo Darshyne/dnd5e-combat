@@ -40,6 +40,7 @@ export const RANGER = Object.freeze({
   // Défense supérieure du chasseur (Chasseur 15) — « quand vous subissez des dégâts, votre Réaction vous donne la Résistance à ces
   // dégâts et à tout autre dégât du même type jusqu'à la fin du tour en cours ». Proposée quand une attaque touche ; des dégâts
   // sans jet d'attaque (une sauvegarde ratée) n'ouvrent pas de fenêtre avant d'être appliqués : là, l'activité reste au joueur.
+  // La donnée porte un effet de Résistance par type de dégâts : la Réaction ne pose que celle du coup (étape `resist`).
   "superior-hunters-defense": { triggers: [{ on: "isHit", do: [{ type: "use" }, { type: "resist" }] }] },
 
   // Embuscade effrayante (Traqueur des ténèbres 3), Frappe effroyable : « vous pouvez » ajouter 2d6 psychiques à un coup d'arme, au

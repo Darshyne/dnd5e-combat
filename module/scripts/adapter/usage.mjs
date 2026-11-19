@@ -28,6 +28,7 @@ import { siblingSaveOf, sizeGateOf } from "../core/riders.mjs";
 import { chargeOnlyEffects } from "../core/variants.mjs";
 import { variantPlanOf, useTimeVariant, advantageVariantOf } from "./variants.mjs";
 import { contentOf, castItemOf, entryOfIdentifier, rangeUnitsOf } from "./content.mjs";
+import { placesOwnResistance } from "../core/turn-resistance.mjs";
 import { projectilesOf } from "./projectiles.mjs";
 import { declarationsOfItem } from "./triggers.mjs";
 import { originItemOf } from "./facts.mjs";
@@ -448,6 +449,9 @@ function readPlan(message) {
       // Une activité qui prend une action de base (Ruse : Se cacher, §20) : le moteur la fait (runtime/hide.mjs) ; l'effet
       // « Hiding » de l'item n'est pas posé.
       if ( contentOf(activity.item).entry?.basicActions?.[activity.id] ) return null;
+      // Défense supérieure du chasseur : la donnée porte un effet de Résistance par type de dégâts, que dnd5e poserait tous. Prise en
+      // Réaction, l'étape `resist` pose celle du coup (runtime/reactions.mjs) ; utilisée à la main, la carte les laisse au joueur.
+      if ( message.getFlag?.(MODULE_ID, "reaction") && placesOwnResistance(contentOf(activity.item).entry, activity.id) ) return null;
       // §90 : un dé ajouté à la CA (Chassé-croisé : un effet par valeur du dé dans la donnée) — runtime/maneuver-dice.mjs pose le bon.
       if ( contentOf(activity.item).entry?.rolledAc?.activity === activity.id ) return null;
       // §72 : un test en opposition (`contest`) — l'effet ne se pose que gagné (runtime/contest.mjs).

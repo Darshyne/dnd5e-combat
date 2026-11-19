@@ -11,3 +11,14 @@ export function turnResistanceChanges(types, { resisted=[], immune=[] }={}) {
   return [...new Set(types ?? [])].filter(t => (typeof t === "string") && t && !covered.has(t))
     .map(value => ({ key: "system.traits.dr.value", type: "add", value, phase: "initial" }));
 }
+
+/**
+ * L'entrée déclare-t-elle une réaction `resist` jouée par cette activité ? Le moteur pose alors lui-même la Résistance voulue, et
+ * les effets de l'activité (un par type de dégâts dans la donnée) ne sont pas posés. Fonction pure.
+ * @param {object|null|undefined} entry
+ * @param {string} activityId
+ */
+export function placesOwnResistance(entry, activityId) {
+  return (entry?.triggers ?? []).some(d => (d.do ?? []).some(s => s?.type === "resist")
+    && (d.do ?? []).some(s => (s?.type === "use") && (!s.activity || (s.activity === activityId))));
+}

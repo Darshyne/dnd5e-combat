@@ -42,3 +42,36 @@ describe("le schéma et le contenu", () => {
     }
   });
 });
+
+describe("un d20 fixé (`sets`) — Coup de chance", () => {
+  it("la formule : la valeur, sans dé", async () => {
+    const { rerollFormula } = await import("../module/scripts/core/reroll.mjs");
+    expect(rerollFormula({ sets: 20 })).toBe("20");
+  });
+  it("proposé sur un jet raté, ou sans DD connu ; jamais quand le d20 vaut déjà autant ni sur une réussite", async () => {
+    const { rerollOffered, rerollQuestion } = await import("../module/scripts/core/reroll.mjs");
+    expect(rerollOffered({ sets: 20 }, { d20: 7, total: 12, needed: 15 })).toBe(true);
+    expect(rerollOffered({ sets: 20 }, { d20: 7, total: 12, needed: null })).toBe(true);
+    expect(rerollOffered({ sets: 20 }, { d20: 20, total: 12, needed: 30 })).toBe(false);
+    expect(rerollOffered({ sets: 20 }, { d20: 7, total: 16, needed: 15 })).toBe(false);
+    expect(rerollOffered({ sets: 20 }, { d20: null, total: 12, needed: 15 })).toBe(false);
+    // Une relance ordinaire garde son comportement : il lui faut un DD.
+    expect(rerollOffered({}, { d20: 7, total: 12, needed: null })).toBe(false);
+    expect(rerollOffered({}, { d20: 7, total: 12, needed: 15 })).toBe(true);
+    expect(rerollQuestion({ sets: 20 }, 15)).toBe("QuestionFixe");
+    expect(rerollQuestion({ sets: 20 }, null)).toBe("QuestionFixeTest");
+    expect(rerollQuestion({ advantage: true }, 15)).toBe("QuestionAvantage");
+    expect(rerollQuestion({}, 15)).toBe("QuestionPayee");
+  });
+  it("le schéma et l'entrée du Roublard", async () => {
+    const { validateEntry } = await import("../module/scripts/core/content.mjs");
+    const { CONTENT } = await import("../module/scripts/content/index.mjs");
+    const rule = sets => ({ rollBonus: { activity: "y4PG8Ow1eNEle580", on: ["check"], reroll: sets } });
+    expect(validateEntry(rule({ sets: 20 }))).toEqual([]);
+    expect(validateEntry(rule({ sets: 21 })).length).toBe(1);
+    expect(validateEntry(rule({ sets: 20, advantage: true })).length).toBe(1);
+    expect(CONTENT["stroke-of-luck"].rollBonus)
+      .toEqual({ activity: "y4PG8Ow1eNEle580", on: ["attack", "save", "check"], reroll: { sets: 20 } });
+    expect(validateEntry(CONTENT["stroke-of-luck"])).toEqual([]);
+  });
+});

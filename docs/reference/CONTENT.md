@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-947 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+948 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -116,6 +116,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `formLock` | 1 | `moonbeam` |
 | `fortifiedHealing` | 1 | `boon-of-fortitude` |
 | `fortitude` | 1 | `undead-fortitude` |
+| `freeCast` | 1 | `divine-intervention` |
 | `freeSomatic` | 1 | `war-caster` |
 | `globe` | 2 | `antimagic-field`, `globe-of-invulnerability` |
 | `gmAlert` | 48 | `abjure-foes`, `antilife-shell`, `antimagic-field`, `boon-of-fate`, `compulsion`, `conjure-elemental`, … |

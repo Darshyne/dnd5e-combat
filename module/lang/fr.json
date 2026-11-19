@@ -1295,6 +1295,7 @@
   "DND5ECOMBAT.Robustesse.Carte": "{item} : sauvegarde de Constitution, DD {dc}",
   "DND5ECOMBAT.Robustesse.Reussite": "{item} : 1 PV",
   "DND5ECOMBAT.Chatiment.AucuneFaveur": "Rien",
+  "DND5ECOMBAT.LancementGratuit.Retenu": "{item} : le prochain sort part sans emplacement, dans la même action",
   "DND5ECOMBAT.Metamagie.Retenue": "Métamagie retenue : {item}",
   "DND5ECOMBAT.Inspiration.VaillanceDegats": "Inspiration de combat : ajouter votre dé d'Inspiration bardique ({formula}) aux dégâts de ce coup ?",
   "DND5ECOMBAT.Inspiration.VaillanceDefense": "Inspiration de combat : touché ({total} contre CA {ac}). Prendre votre Réaction pour ajouter votre dé d'Inspiration bardique ({formula}) à votre CA ?",

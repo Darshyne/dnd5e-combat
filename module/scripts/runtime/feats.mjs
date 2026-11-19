@@ -462,9 +462,10 @@ async function endOwnCondition(actor, at) {
 }
 
 /**
- * Sort renforcé (Métamagie, `spellDamageRerolls`) : après le jet de dégâts d'un sort du porteur, la question — relancer les dés bas
- * (au plus `count`) contre ce que coûte l'activité de l'item. Les nouveaux jets comptent. Rend ce qui change à l'agrégat, part par
- * part (runtime/engine-messages.mjs). Simplification : le moteur désigne les dés (la moitié de leur maximum ou moins, les plus bas).
+ * Sort renforcé (Métamagie, `spellDamageRerolls`) : après le jet de dégâts d'un sort du porteur, la question — relancer les dés
+ * bas (au plus `count`) contre ce que coûte l'activité de l'item. Les nouveaux jets comptent. Rend ce qui change à l'agrégat,
+ * part par part (runtime/engine-messages.mjs). Simplification : le moteur désigne les dés (la moitié de leur maximum ou moins,
+ * les plus bas) ; le joueur ne les choisit pas un par un.
  */
 export async function offerSpellDamageRerolls(actor, message) {
   if ( message.getAssociatedActivity?.()?.item?.type !== "spell" ) return [];
@@ -487,7 +488,8 @@ export async function offerSpellDamageRerolls(actor, message) {
       options: [{ id: "no", label: game.i18n.localize("DND5ECOMBAT.SortRenforce.Non") },
         { id: "yes", label: game.i18n.format("DND5ECOMBAT.SortRenforce.Oui", { n: picked.length }) }] });
     if ( answer?.id !== "yes" ) continue;
-    const used = await activity.use({ [MODULE_ID]: { confirmed: true } }, { configure: false }, { create: false }).catch(() => null);
+    const used = await activity.use({ [MODULE_ID]: { confirmed: true } }, { configure: false }, { create: false })
+      .catch(() => null);
     if ( !used ) return [];
     // Les modificateurs qui bornent le dé (« min2 ») valent aussi pour la relance.
     const reroll = await new Roll(picked.map(d => `1d${d.faces}${d.modifiers.join("")}`).join(" + ")).evaluate();
@@ -497,7 +499,8 @@ export async function offerSpellDamageRerolls(actor, message) {
     const card = await reroll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }),
       flavor: game.i18n.format("DND5ECOMBAT.SortRenforce.Carte", { item: item.name, name: actor.name, old: listed,
         change: (change >= 0 ? "+" : "") + change }),
-      flags: { [MODULE_ID]: { spellDamageRerolls: { item: identifierOf(item).id, old: picked.map(d => d.value), now: values } } } });
+      flags: { [MODULE_ID]: { spellDamageRerolls: { item: identifierOf(item).id, old: picked.map(d => d.value),
+        now: values } } } });
     if ( card ) await waitForDice(card);
     log(`${actor.name}: ${item.name}, ${picked.length} damage dice rerolled (${listed} → ${values.join(", ")})`);
     return deltas;

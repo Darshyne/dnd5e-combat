@@ -160,7 +160,8 @@ export async function onDamageMessage(message) {
   // Sort renforcé (Métamagie) : des dés de dégâts d'un sort relancés contre 1 point de sorcellerie ; mêmes parts de l'agrégat.
   for ( const delta of (actor ? await offerSpellDamageRerolls(actor, message) : []) ) {
     const sameProps = d => (d.properties.size === delta.properties.length) && delta.properties.every(p => d.properties.has(p));
-    const part = damage.damages.find(d => (d.type === delta.type) && sameProps(d)) ?? damage.damages.find(d => d.type === delta.type);
+    const part = damage.damages.find(d => (d.type === delta.type) && sameProps(d))
+      ?? damage.damages.find(d => d.type === delta.type);
     if ( part ) part.value = rerolledDamage(part.value, delta.old, delta.now);
   }
   const event = { type: "damageRolled", messageId: message.id, damages: serializeDamages(damage.damages) };

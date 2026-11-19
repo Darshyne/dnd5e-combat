@@ -8,7 +8,8 @@ import { validateEntry } from "../module/scripts/core/content.mjs";
 import { CONTENT } from "../module/scripts/content/index.mjs";
 
 describe("empoweredPicks — les dés proposés à la relance", () => {
-  const dice = [{ value: 6, faces: 6 }, { value: 1, faces: 6 }, { value: 3, faces: 6 }, { value: 2, faces: 6 }, { value: 4, faces: 6 }];
+  const dice = [{ value: 6, faces: 6 }, { value: 1, faces: 6 }, { value: 3, faces: 6 }, { value: 2, faces: 6 },
+    { value: 4, faces: 6 }];
   it("les dés à la moitié de leur maximum ou moins, les plus bas d'abord, au plus `count`", () => {
     expect(empoweredPicks(dice, 2)).toEqual([1, 3]);
     expect(empoweredPicks(dice, 5)).toEqual([1, 3, 2]);
@@ -28,18 +29,21 @@ describe("empoweredPicks — les dés proposés à la relance", () => {
 
 describe("empoweredDeltas — ce qui change à l'agrégat, par part", () => {
   it("les dés d'un même type et des mêmes propriétés sont réunis", () => {
-    const picked = [{ type: "fire", properties: ["mgc"], value: 1 }, { type: "fire", properties: ["mgc"], value: 2 }, { type: "cold", properties: [], value: 1 }];
+    const picked = [{ type: "fire", properties: ["mgc"], value: 1 }, { type: "fire", properties: ["mgc"], value: 2 },
+      { type: "cold", properties: [], value: 1 }];
     expect(empoweredDeltas(picked, [5, 6, 3])).toEqual([
       { type: "fire", properties: ["mgc"], old: 3, now: 11 }, { type: "cold", properties: [], old: 1, now: 3 }]);
   });
   it("un nouveau jet plus bas compte aussi", () => {
-    expect(empoweredDeltas([{ type: "fire", properties: [], value: 3 }], [1])).toEqual([{ type: "fire", properties: [], old: 3, now: 1 }]);
+    expect(empoweredDeltas([{ type: "fire", properties: [], value: 3 }], [1]))
+      .toEqual([{ type: "fire", properties: [], old: 3, now: 1 }]);
   });
 });
 
 describe("l'entrée et le schéma", () => {
   it("Sort renforcé", () => {
-    expect(CONTENT["empowered-spell"]).toEqual({ spellDamageRerolls: { activity: "NkEwJOEFigqsdbZy", count: "max(1, @abilities.cha.mod)" } });
+    expect(CONTENT["empowered-spell"])
+      .toEqual({ spellDamageRerolls: { activity: "NkEwJOEFigqsdbZy", count: "max(1, @abilities.cha.mod)" } });
     expect(validateEntry(CONTENT["empowered-spell"])).toEqual([]);
   });
   it("formes refusées", () => {

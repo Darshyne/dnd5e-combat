@@ -295,7 +295,9 @@ export function validateExtras(entry, at, errors) {
   }
   const reroll = entry.rollBonus?.reroll;
   const paid = isId(entry.rollBonus?.activity);
-  const rerollOk = (reroll === undefined) || (isObject(reroll) && Object.keys(reroll).every(k => ["bonus", "during"].includes(k))
+  const rerollKeys = ["bonus", "during", "advantage"];
+  const rerollOk = (reroll === undefined) || (isObject(reroll) && Object.keys(reroll).every(k => rerollKeys.includes(k))
+    && (!("advantage" in reroll) || ((reroll.advantage === true) && paid))
     && (!("bonus" in reroll) || ((typeof reroll.bonus === "string") && !!reroll.bonus.trim()))
     && (paid ? !("during" in reroll) : ((typeof reroll.bonus === "string") && (typeof reroll.during === "string") && !!reroll.during)));
   const refundOk = !isObject(entry.rollBonus) || !("failRefund" in entry.rollBonus) || ((entry.rollBonus.failRefund === true) && paid && !reroll && !entry.rollBonus.luck);

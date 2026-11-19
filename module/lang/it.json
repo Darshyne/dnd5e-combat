@@ -1084,6 +1084,8 @@
   "DND5ECOMBAT.CoupCritique.Empoignade": "{item}: danni a {name}, che è Afferrato",
   "DND5ECOMBAT.ReactionDesengage": "{mover} si disimpegna accanto a te. Reagire?",
   "DND5ECOMBAT.Relance.Question": "{what}: {total} contro {needed} (d20: {d20}). Ripetere il tiro salvezza con +{bonus} ({item}, una volta per Ira)? Vale il nuovo tiro, anche se più basso.",
+  "DND5ECOMBAT.Relance.QuestionPayee": "{what}: {total} contro {needed} (d20: {d20}). Ritirare con +{bonus} ({item})? Il nuovo tiro vale, anche se più basso.",
+  "DND5ECOMBAT.Relance.QuestionAvantage": "{what}: {total} contro {needed} (d20: {d20}). Ritirare con Vantaggio ({item})? Il nuovo tiro vale, anche se più basso.",
   "DND5ECOMBAT.Relance.Oui": "Ripeti il tiro",
   "DND5ECOMBAT.Relance.Carte": "{item}: {name} ripete il tiro ({what}) — nuovo totale {sum}",
   "DND5ECOMBAT.EspritGarde.Question": "{what}: {total} contro {needed}. Superare comunque il tiro salvezza ({item}, {left} rimasti)?",

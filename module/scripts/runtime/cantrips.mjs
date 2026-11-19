@@ -18,6 +18,8 @@
 import { MODULE_ID } from "../constants.mjs";
 import { STEPS } from "../core/action.mjs";
 import { effectEndsNow } from "../core/effect-ends.mjs";
+import { extendedSeconds } from "../core/extended.mjs";
+import { usageMetamagic, pendingMetamagic } from "../adapter/metamagic.mjs";
 import { contentOf, entryOfIdentifier } from "../adapter/content.mjs";
 import { potionOfCast } from "../adapter/potions.mjs";
 import { durationSeconds } from "../core/rolled-duration.mjs";
@@ -72,6 +74,13 @@ function drawnDuration(effect, item, rule) {
   return drawn.get(key).seconds;
 }
 
+/** Ce sort a-t-il été lancé avec le Sort étendu ? La carte d'origine de l'effet le porte ; sinon ce que son lanceur retient. */
+function extendedCast(effect, item) {
+  const usage = game.messages?.get(effect.system?.origin?.message ?? "");
+  if ( usage ) return usageMetamagic(usage).includes("extended");
+  return pendingMetamagic(item.actor).includes("extended");
+}
+
 /** O9h (§363) : un effet du sort qu'un objet a fait lancer (copie `cachedFor`) dure ce que l'objet déclare (`castDuration`). */
 export function castDurationOf(spell) {
   const potion = spell ? potionOfCast(spell) : null;
@@ -92,6 +101,15 @@ function onPreCreateEffect(effect) {
   const wanted = durations ? Object.entries(durations).find(([id]) => comesFromItemEffect(effect, id))?.[1] : null;
   const seconds = wanted ? drawnDuration(effect, item, wanted) : castDurationOf(item);
   if ( seconds ) effect.updateSource({ duration: { value: seconds, units: "seconds", expiry: null } });
+  // Sort étendu (Métamagie) : l'effet d'un sort lancé avec cette option dure le double (24 heures au plus) ; marqué, pour
+  // l'Avantage aux sauvegardes de Concentration (runtime/feats.mjs). L'option se lit sur la carte du sort, ou — pour l'effet de
+  // concentration, créé pendant l'utilisation — sur ce que le lanceur a retenu.
+  if ( (item?.type === "spell") && extendedCast(effect, item) ) {
+    const longer = extendedSeconds(effect._source?.duration ?? effect.duration);
+    effect.updateSource({ ...(longer ? { duration: { value: longer, units: "seconds", expiry: null } } : {}),
+      [`flags.${MODULE_ID}.extendedSpell`]: true });
+    if ( longer ) log(`${item.name}: ${effect.name} lasts ${longer} s (Extended Spell)`);
+  }
   // §403 : `keepsSpeed` — Liberté de mouvement : « sa Vitesse ne peut pas être réduite par la magie ». Un effet magique (sort, objet
   // magique) posé sur un porteur protégé arrive sans ses réductions de Vitesse (Rayon de givre, Lenteur, Danse irrésistible).
   const changes = effect.system?.changes ?? effect.changes ?? [];

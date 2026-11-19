@@ -6,7 +6,8 @@
  *
  * Genres tenus par le moteur : « quickened » (le sort d'une action se lance par une action Bonus), « careful » (des alliés
  * réussissent d'office leur sauvegarde, sans dégâts s'ils en auraient subi la moitié), « heightened » (une cible a le Désavantage
- * à sa sauvegarde), « distant » (portée doublée ; contact → 9 m), « subtle » (sans composante : pas de Contresort possible).
+ * à sa sauvegarde), « distant » (portée doublée ; contact → 9 m), « subtle » (sans composante : pas de Contresort possible),
+ * « extended » (durée doublée, Avantage aux sauvegardes de Concentration).
  */
 
 import { MODULE_ID } from "../constants.mjs";

@@ -332,6 +332,11 @@ export async function markConcentrationBreaker(source, target) {
 /** Le jet de concentration, sur le client qui le lance : le Désavantage s'il y a une marque récente (moins d'une minute), qui tombe. */
 function onPreRollConcentration(config) {
   const actor = config?.subject;
+  // Sort étendu : « si le sort demande la Concentration, vous avez l'Avantage aux jets de sauvegarde pour la maintenir ».
+  if ( actor?.effects?.some(e => e.statuses?.has?.("concentrating") && e.getFlag(MODULE_ID, "extendedSpell")) ) {
+    config.advantage = true;
+    log(`Extended Spell: Advantage on ${actor.name}'s Concentration saving throw`);
+  }
   const mark = actor?.getFlag?.(MODULE_ID, "concentrationBreaker");
   if ( !mark ) return true;
   if ( (Date.now() - (mark.at ?? 0)) <= 60000 ) {

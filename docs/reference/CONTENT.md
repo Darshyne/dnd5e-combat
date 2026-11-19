@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-947 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+948 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -285,7 +285,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `thrownDamage` | 1 | `thrown-weapon-fighting` |
 | `trace` | 7 | `armor-of-agathys`, `blade-ward`, `dispel-evil-and-good`, `flame-blade`, `moonlight-step`, `produce-flame`, … |
 | `transpose` | 1 | `tricksters-transposition` |
-| `triggers` | 278 | `abjure-foes`, `absorb-elements`, `absorption-ioun-stone`, `acid-arrow`, `air-element`, `ancient-might`, … |
+| `triggers` | 279 | `abjure-foes`, `absorb-elements`, `absorption-ioun-stone`, `acid-arrow`, `air-element`, `ancient-might`, … |
 | `untypedDamage` | 3 | `freezing-sphere`, `mm-wight-life-drain`, `otilukes-freezing-sphere` |
 | `upkeep` | 1 | `crown-of-madness` |
 | `usageLimits` | 11 | `action-surge`, `flame-blade`, `indomitable`, `pact-of-the-chain`, `plant-growth`, `produce-flame`, … |
@@ -359,9 +359,10 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `isHit → miss` | 1 | `illusory-self` |
 | `isHit → penalty` | 4 | `cutting-words`, `gathered-whispers`, `parry`, `quarterstaff-of-the-acrobat` |
 | `isHit → reduce` | 6 | `deflect-attacks`, `deflect-blow`, `gloves-of-missile-snaring`, `parry-maneuver`, `psionic-power`, `stones-endurance` |
+| `isHit → resist` | 1 | `superior-hunters-defense` |
 | `isHit → save` | 1 | `holy-aura` |
 | `isHit → uncrit` | 1 | `sentinel-at-deaths-door` |
-| `isHit → use` | 17 | `beguiling-defenses`, `cutting-words`, `defensive-duelist`, `deflect-attacks`, `deflect-blow`, `gathered-whispers`, … |
+| `isHit → use` | 18 | `beguiling-defenses`, `cutting-words`, `defensive-duelist`, `deflect-attacks`, `deflect-blow`, `gathered-whispers`, … |
 | `isMissed → use` | 1 | `riposte` |
 | `isTargeted → cancel` | 2 | `rod-of-absorption`, `staff-of-the-magi` |
 | `isTargeted → use` | 3 | `rod-of-absorption`, `shield`, `staff-of-the-magi` |

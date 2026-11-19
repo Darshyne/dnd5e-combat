@@ -35,6 +35,8 @@ import { resaveChosen } from "./resave-choice.mjs";
 import { forceReroll } from "./forced-reroll.mjs";
 import { settledResolution } from "../adapter/messages.mjs";
 import { areaShapeOf, sparedFromArea } from "../core/area-shield.mjs";
+import { turnResistanceChanges } from "../core/turn-resistance.mjs";
+import { attackDamageTypes } from "../adapter/smite.mjs";
 
 /** §134 : Rapide — le nom de l'item qui donne le Désavantage aux attaques d'opportunité contre cet acteur, ou null. */
 export function hamperedBy(actor) {
@@ -114,6 +116,23 @@ async function noteRetort(actor, resolution, messageId, source) {
  * @param {(carrierId: string) => Promise} drained  Attend la fin de la résolution d'un autre porteur.
  * @returns {Promise<object[]>}  Un évènement `reactionResolved` par cible consultée.
  */
+/**
+ * Étape `resist` : un effet sur le réacteur, qui lui donne la Résistance aux types de dégâts du coup qu'il vient de recevoir « et à
+ * tout autre dégât du même type jusqu'à la fin du tour en cours » — retiré au changement de tour (drapeau `untilTurnChange`,
+ * runtime/feats.mjs). Posé pendant la fenêtre « touché », donc avant le jet de dégâts : dnd5e l'applique de lui-même.
+ */
+async function grantTurnResistance(actor, activity, answer) {
+  const traits = actor.system?.traits ?? {};
+  const changes = turnResistanceChanges(attackDamageTypes(activity),
+    { resisted: traits.dr?.value ?? [], immune: traits.di?.value ?? [] });
+  if ( !changes.length ) return;
+  const item = answer.used ? (await fromUuid(answer.used))?.item : null;
+  await actor.createEmbeddedDocuments("ActiveEffect", [{ name: answer.name, img: item?.img ?? "icons/svg/shield.svg",
+    origin: item?.uuid ?? null, transfer: false, disabled: false, system: { changes },
+    flags: { [MODULE_ID]: { untilTurnChange: true } } }]);
+  log(`${actor.name}: ${answer.name}, Resistance to ${changes.map(c => c.value).join(", ")} until the end of this turn`);
+}
+
 export async function askHitReactions(resolution, tokens, drained, { auto=null }={}) {
   const events = [];
   const source = await fromUuid(resolution.source ?? "");
@@ -175,6 +194,8 @@ export async function askHitReactions(resolution, tokens, drained, { auto=null }
     if ( answer?.used ) await dropOneAttackEffects(actor, answer.used);
     if ( answer ) log(`${target?.name} reacts (${answer.name}): AC ${target?.ac} -> ${ac}`);
     if ( answer?.halve ) log(`${target?.name}: ${answer.name}, the attack's damage is halved`);
+    // Défense supérieure du chasseur : la Résistance aux types de ce coup, posée avant les dégâts, jusqu'au changement de tour.
+    if ( answer?.resist && actor ) await grantTurnResistance(actor, activity, answer);
     // §19 : les répliques que la réaction a pu créer (Ombres spectrales) comptent pour ce coup.
     const duplicates = answer ? duplicatesAgainst(actor, source) : null;
     if ( answer?.uncrit && target?.critical ) log(`${target?.name}: ${answer.name}, the Critical Hit becomes a normal hit`);

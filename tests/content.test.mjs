@@ -36,7 +36,7 @@ describe("validation d'une entrée", () => {
     const errors = validateEntry({ triggers: [{ on: "onHit", if: { "moon.phase": "full" }, do: [{ type: "smite" }] }] }, { facts });
     expect(errors).toEqual([
       `triggers[0].on: unknown moment "onHit" (${MOMENTS_LIST})`,
-      "triggers[0].do[0].type: unknown \"smite\" (lift, disarm, use, replay, damage, move, status, resave, remove, halve, uncrit, consume, advantage, disadvantage, ward, attackBonus, endCondition, reduce, miss, penalty, bonus, absorb, interpose, mark, save, breakConcentration, cancel, intercept, redirect, banish, revertForm, reroll, cancelForSelf)",
+      "triggers[0].do[0].type: unknown \"smite\" (lift, disarm, use, replay, damage, move, status, resave, remove, halve, uncrit, consume, advantage, disadvantage, ward, attackBonus, endCondition, reduce, miss, penalty, bonus, absorb, interpose, mark, save, breakConcentration, cancel, intercept, redirect, banish, revertForm, reroll, cancelForSelf, resist)",
       "triggers[0].if: unknown fact \"moon.phase\""
     ]);
     expect(validateEntry({ triggers: [{ on: "isHit" }] }, { facts })).toEqual(["triggers[0].do: at least one step"]);
@@ -340,8 +340,8 @@ describe("contenu livré", () => {
       "stone-of-controlling-earth-elementals", "stones-endurance", "storm-of-radiance", "storm-of-vengeance", "stormborn", "storms-thunder",
       "studied-attacks", "stunning-strike", "subtle-spell", "suggestion", "summon-aberration", "summon-beast", "summon-celestial",
       "summon-construct", "summon-dragon", "summon-elemental", "summon-fey", "summon-fiend", "summon-undead", "sun-blade", "sunbeam",
-      "sunburst", "sunlight-weakness", "superior-defense", "superior-inspiration", "superior-potion-of-healing",
-      "supreme-healing", "supreme-potion-of-healing",
+      "sunburst", "sunlight-weakness", "superior-defense", "superior-hunters-defense", "superior-inspiration",
+      "superior-potion-of-healing", "supreme-healing", "supreme-potion-of-healing",
       "supreme-sneak", "survivor-ravenloft", "swallow", "swarm", "sweeping-attack", "swift-quiver", "swoop", "sword-of-kas",
       "sword-of-life-stealing-enchanted", "sword-of-sharpness", "sword-of-sharpness-enchanted", "sword-of-vengeance-enchanted",
       "symbiotic-being", "symbol", "synaptic-static", "tactical-assessment", "tactical-charge", "tactical-mind", "tactical-shift",

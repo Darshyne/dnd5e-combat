@@ -90,6 +90,7 @@ export function reactionOptions(actor, window, declarations) {
     name: activityLabel(d, step), img: d.img, targetSource: step.target === "source", targetSelf: step.target === "self",
     targetTarget: step.target === "target",   // §133 : Protection
     halve: stepsOf(d, "halve").length > 0,
+    resist: stepsOf(d, "resist").length > 0,   // Défense supérieure du chasseur : la Résistance aux types du coup, ce tour
     endCondition: stepsOf(d, "endCondition").length > 0,
     uncrit: stepsOf(d, "uncrit").length > 0,
     reduce: stepsOf(d, "reduce").length > 0,
@@ -436,6 +437,7 @@ export async function handleReactionQuery(payload, { user=null }={}) {
   // (runtime/gates.mjs) lit la réponse au lieu d'attendre une sauvegarde du lanceur.
   const counter = (results && (castLevel !== null)) ? await resolveCounter(actor, activity.item, castLevel) : null;
   return results ? { counter, reduce, penalty, bonus, disadvantage: option.disadvantage === true, used: option.activity, name: option.name, message: results.message?.id ?? null, halve: option.halve === true,
+    resist: option.resist === true,
     uncrit: option.uncrit === true, miss: option.miss === true, reroll: option.reroll === true, absorb: option.absorb === true, interpose: option.interpose === true,
     endCondition: option.endCondition === true, cancel: option.cancel === true,
     cancelForSelf: option.cancelForSelf ? { ifSourceFails: option.cancelForSelf.ifSourceFails === true } : null, intercept: option.intercept === true, redirect: option.redirect === true } : null;

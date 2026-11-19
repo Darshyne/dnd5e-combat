@@ -12,7 +12,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { twiceKeepHighest, rerollOnesOnce, oneMoreKeepBest, resistanceRuleCovers } from "../core/feats.mjs";
-import { ownConditionsRule, pickOwnCondition } from "../core/self-care.mjs";
+import { ownConditionsRule, pickOwnCondition, turnStartHealDue, deathSaveCriticalOf } from "../core/self-care.mjs";
 import { STEPS } from "../core/action.mjs";
 import { attackDamageTypes } from "../adapter/smite.mjs";
 import { inflict } from "../adapter/retaliation.mjs";
@@ -459,6 +459,34 @@ async function endOwnCondition(actor, at) {
 }
 
 /**
+ * Survivant (Champion 18), Sursaut héroïque : l'activité de soins de l'item, au début du tour du porteur Ensanglanté qui a au
+ * moins 1 point de vie. Le texte ne laisse pas le choix (« vous regagnez ») : sans question. MJ actif.
+ */
+async function healAtTurnStart(actor) {
+  const hp = actor.system.attributes?.hp;
+  for ( const item of actor.items ) {
+    const rule = contentOf(item).entry?.turnStartHeal;
+    if ( !turnStartHealDue(rule, { hp: Number(hp?.value) || 0, max: Number(hp?.effectiveMax ?? hp?.max) || 0 }) ) continue;
+    const activity = item.system.activities?.get(rule.activity);
+    if ( !activity ) continue;
+    await activity.use({ [MODULE_ID]: { confirmed: true } }, { configure: false }, {}).catch(() => null);
+    log(`${item.name}: ${actor.name} heals at the start of their turn`);
+    return;
+  }
+}
+
+/** Survivant, Défier la mort : le d20 d'une sauvegarde contre la mort vaut un 20 à partir du seuil déclaré (`criticalSuccess`). */
+function onPreRollDeathSave(config) {
+  const actor = config?.subject;
+  const roll = config?.rolls?.[0];
+  if ( !actor?.items || !roll ) return true;
+  const threshold = deathSaveCriticalOf(actor.items.map(i => contentOf(i).entry?.deathSaveCritical));
+  if ( threshold === null ) return true;
+  roll.options = { ...(roll.options ?? {}), criticalSuccess: Math.min(roll.options?.criticalSuccess ?? 20, threshold) };
+  return true;
+}
+
+/**
  * §236 : Puissance indomptable — « si votre total pour un test de Force ou un jet de sauvegarde de Force est inférieur à votre valeur de
  * Force, vous pouvez utiliser cette valeur à la place ». Au jet, le d20 reçoit un minimum (`options.minimum`, comme le Présage) : total
  * ≥ valeur ⇔ d20 ≥ valeur − bonus. Un bonus en dés (Bénédiction) est compté au plus bas : le total peut alors dépasser la valeur.
@@ -494,6 +522,7 @@ function onTurnChange(combat, prior, current) {
     if ( actor.getFlag(MODULE_ID, "fortifiedHealing") ) await actor.unsetFlag(MODULE_ID, "fortifiedHealing");   // §289 : Santé fortifiée
     if ( (actor.system.attributes?.hp?.value ?? 0) > 0 ) await grappleDamage(actor, combatant.token);
     await endOwnCondition(actor, "turnStart");   // §278
+    await healAtTurnStart(actor);
   });
 }
 
@@ -502,6 +531,7 @@ export function registerFeats() {
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`critMark:${resolution?.id}`, () => onResolution(resolution)), { executor: true, label: "critical mark not placed" });
   route("combatTurnChange", onTurnChange, { executor: true, label: "feat turn start" });
   for ( const hook of ["dnd5e.preRollAbilityCheckV2", "dnd5e.preRollSavingThrowV2"] ) route(hook, onPreRollD20, { cancellable: true, label: "Indomitable Might" });
+  route("dnd5e.preRollDeathSaveV2", onPreRollDeathSave, { cancellable: true, label: "Survivor: death saves" });
   route("dnd5e.preRollConcentrationV2", onPreRollConcentration, { cancellable: true, label: "Mage Slayer: concentration" });
   route("dnd5e.postUseActivity", (activity, usageConfig) => (activity?.actor?.isOwner ? spellRecall(activity, usageConfig) : null), { label: "Boon of Spell Recall" });
   // §134 : Expert élémentaire — le type, demandé à l'arrivée du don, et au chargement pour un don déjà là.

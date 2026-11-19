@@ -52,3 +52,26 @@ export function initiativeRegain(rule, { items={}, exhaustion=0, usesLeft=null }
   if ( rule.uses && !(usesLeft > 0) ) return null;
   return { spent, exhaustion: level, pay: !!rule.uses };
 }
+
+/**
+ * `turnStartHeal` (Survivant, Sursaut héroïque : « au début de chacun de vos tours, vous regagnez des points de vie si vous êtes
+ * Ensanglanté et avez au moins 1 point de vie ») : l'activité de soins se joue-t-elle à ce début de tour ? Ensanglanté : la moitié
+ * des points de vie ou moins. Sans `bloodied`, dès qu'il manque des points de vie.
+ * @param {{bloodied?: true}} rule
+ * @param {{hp: number, max: number}} state
+ */
+export function turnStartHealDue(rule, { hp, max }) {
+  if ( !rule || !(hp >= 1) || !(max > 0) || (hp >= max) ) return false;
+  return rule.bloodied ? (hp <= Math.floor(max / 2)) : true;
+}
+
+/**
+ * `deathSaveCritical` (Survivant, Défier la mort : « un 18 à 20 à une sauvegarde contre la mort vaut un 20 ») : le seuil qui vaut
+ * pour la créature — le plus bas de ceux que ses items déclarent, ou null.
+ * @param {Array<number|undefined|null>} declared
+ * @returns {number|null}
+ */
+export function deathSaveCriticalOf(declared) {
+  const valid = (declared ?? []).filter(n => Number.isInteger(n) && (n >= 2) && (n <= 19));
+  return valid.length ? Math.min(...valid) : null;
+}

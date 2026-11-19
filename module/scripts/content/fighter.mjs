@@ -22,6 +22,10 @@ export const FIGHTER = Object.freeze({
       any: [{ "self.hasShield": true }, { "self.wieldsWeapon": true }] },
       do: [{ type: "use", activity: "Hjm3PZRt6NdVXiFa", target: "target" }, { type: "reduce" }] }] },
   // §301 : Sens tactique (niveau 2) — un test raté : dépenser Second souffle pour ajouter 1d10 ; s'il reste raté, l'utilisation revient.
+  // Survivant (Champion 18) — Défier la mort : « un 18 à 20 à une sauvegarde contre la mort vaut un 20 » (l'Avantage est l'effet
+  // de l'item) ; Sursaut héroïque : « au début de chacun de vos tours, vous regagnez 5 + votre modificateur de Constitution
+  // points de vie si vous êtes Ensanglanté et avez au moins 1 point de vie » — l'activité de soins de l'item.
+  "survivor": { deathSaveCritical: 18, turnStartHeal: { activity: "5Fo0QwzexIPyLP3W", bloodied: true } },
   "tactical-mind": { rollBonus: { activity: "VVEGPoQePVprCF9A", on: ["check"], failRefund: true } },
   // Fougue : « à votre tour, vous pouvez effectuer une action supplémentaire, hors action Magie » ; au niveau 17, deux utilisations
   // mais une seule par tour. L'activité (activation « spéciale ») ne coûte rien au budget ; le moteur y ajoute l'action.

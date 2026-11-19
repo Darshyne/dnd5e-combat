@@ -411,6 +411,12 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   for ( const key of ["grantsResistances", "scoreFloor"] ) {
     if ( (key in entry) && !strings(entry[key]) ) errors.push(`${at}${key}: list of identifiers`);
   }
+  // Sort renforcé : après le jet de dégâts d'un sort, l'activité (qui paie) relance jusqu'à `count` dés (core/empowered.mjs).
+  if ( ("spellDamageRerolls" in entry) && !(isObject(entry.spellDamageRerolls) && isId(entry.spellDamageRerolls.activity)
+    && (typeof entry.spellDamageRerolls.count === "string") && !!entry.spellDamageRerolls.count.trim()
+    && Object.keys(entry.spellDamageRerolls).every(k => ["activity", "count"].includes(k))) ) {
+    errors.push(`${at}spellDamageRerolls: { activity, count: formula }`);
+  }
   // §278 : la liste d'états, ou { statuses?, at?, exhaustion?, uses? } (core/self-care.mjs).
   if ( "endsOwnConditions" in entry ) {
     const e = entry.endsOwnConditions;

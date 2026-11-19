@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-947 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+948 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -257,6 +257,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `sneakBonus` | 1 | `assassinate` |
 | `sniper` | 1 | `skulker` |
 | `spellAttacksMiss` | 1 | `greater-magic-resistance` |
+| `spellDamageRerolls` | 1 | `empowered-spell` |
 | `spellDamageTypes` | 2 | `grave-touched`, `psychic-spells` |
 | `spellFailure` | 1 | `slow` |
 | `spellFixes` | 1 | `wand-of-fear` |

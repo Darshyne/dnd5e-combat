@@ -25,7 +25,10 @@ import { combatantFor, readBudget, writeBudget, movementOf } from "../adapter/tu
 import { readUnitFactors } from "../adapter/units.mjs";
 import { askChoice } from "../adapter/choices.mjs";
 import { route } from "./router.mjs";
-import { log, loc, say, locEsc } from "./shared.mjs";
+import { log, loc, say, locEsc, waitForDice } from "./shared.mjs";
+import { empoweredPicks, empoweredDeltas } from "../core/empowered.mjs";
+import { damageDice } from "../adapter/heroic.mjs";
+import { usesLeftFor } from "../adapter/inspiration.mjs";
 
 const hasRule = (actor, key) => Array.from(actor?.items ?? []).some(i => contentOf(i).entry?.[key] === true);
 
@@ -456,6 +459,50 @@ async function endOwnCondition(actor, at) {
     log(`${item.name}: ${actor.name} ends ${pick.status ?? "one Exhaustion level"} on themself (${at === "turnStart" ? "start" : "end"} of turn)`);
     return;
   }
+}
+
+/**
+ * Sort renforcé (Métamagie, `spellDamageRerolls`) : après le jet de dégâts d'un sort du porteur, la question — relancer les dés bas
+ * (au plus `count`) contre ce que coûte l'activité de l'item. Les nouveaux jets comptent. Rend ce qui change à l'agrégat, part par
+ * part (runtime/engine-messages.mjs). Simplification : le moteur désigne les dés (la moitié de leur maximum ou moins, les plus bas).
+ */
+export async function offerSpellDamageRerolls(actor, message) {
+  if ( message.getAssociatedActivity?.()?.item?.type !== "spell" ) return [];
+  const rolls = message.rolls?.filter(r => r instanceof CONFIG.Dice.DamageRoll) ?? [];
+  if ( !rolls.length ) return [];
+  for ( const item of actor.items ) {
+    const rule = contentOf(item).entry?.spellDamageRerolls;
+    const activity = rule ? item.system.activities?.get(rule.activity) : null;
+    if ( !activity || !(usesLeftFor(activity) > 0) ) continue;
+    let count = 1;
+    try { count = Number(Roll.safeEval(Roll.replaceFormulaData(rule.count, actor.getRollData()))) || 1; }
+    catch { /* formule illisible : un dé */ }
+    const dice = damageDice(rolls);
+    const picked = empoweredPicks(dice, count).map(i => dice[i]);
+    if ( !picked.length ) continue;
+    const listed = picked.map(d => `d${d.faces}: ${d.value}`).join(", ");
+    const answer = await askChoice(actor, { actor: actor.uuid, item: item.name,
+      prompt: game.i18n.format("DND5ECOMBAT.SortRenforce.Question", { item: item.name, dice: listed, n: picked.length }),
+      // « Garder » d'abord : sans réponse dans le délai, askChoice retient la première option — rien n'est dépensé sans accord.
+      options: [{ id: "no", label: game.i18n.localize("DND5ECOMBAT.SortRenforce.Non") },
+        { id: "yes", label: game.i18n.format("DND5ECOMBAT.SortRenforce.Oui", { n: picked.length }) }] });
+    if ( answer?.id !== "yes" ) continue;
+    const used = await activity.use({ [MODULE_ID]: { confirmed: true } }, { configure: false }, { create: false }).catch(() => null);
+    if ( !used ) return [];
+    // Les modificateurs qui bornent le dé (« min2 ») valent aussi pour la relance.
+    const reroll = await new Roll(picked.map(d => `1d${d.faces}${d.modifiers.join("")}`).join(" + ")).evaluate();
+    const values = reroll.dice.map(d => d.total);
+    const deltas = empoweredDeltas(picked, values);
+    const change = deltas.reduce((sum, d) => sum + d.now - d.old, 0);
+    const card = await reroll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }),
+      flavor: game.i18n.format("DND5ECOMBAT.SortRenforce.Carte", { item: item.name, name: actor.name, old: listed,
+        change: (change >= 0 ? "+" : "") + change }),
+      flags: { [MODULE_ID]: { spellDamageRerolls: { item: identifierOf(item).id, old: picked.map(d => d.value), now: values } } } });
+    if ( card ) await waitForDice(card);
+    log(`${actor.name}: ${item.name}, ${picked.length} damage dice rerolled (${listed} → ${values.join(", ")})`);
+    return deltas;
+  }
+  return [];
 }
 
 /**

@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-947 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+948 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -215,7 +215,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `recast` | 6 | `alter-self`, `call-lightning`, `expeditious-retreat`, `swift-quiver`, `telekinesis`, `vampiric-touch` |
 | `recastCost` | 1 | `swift-quiver` |
 | `reckless` | 1 | `reckless-attack` |
-| `regainOnInitiative` | 6 | `archdruid`, `boon-of-fate`, `deaths-friend`, `perfect-focus`, `persistent-rage`, `superior-inspiration` |
+| `regainOnInitiative` | 7 | `archdruid`, `boon-of-fate`, `deaths-friend`, `perfect-focus`, `persistent-rage`, `superior-inspiration`, … |
 | `regainOnShortRest` | 2 | `font-of-inspiration`, `improved-warding-flare` |
 | `regeneration` | 1 | `regeneration` |
 | `relentless` | 1 | `relentless-rage` |

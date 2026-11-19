@@ -32,12 +32,21 @@ export function pickOwnCondition(rule, { statuses, exhaustion=0, usesLeft=null }
  * `regainOnInitiative` : `{ item, upTo }` (§236, Inspiration supérieure : les utilisations de l'item remontent à `upTo` au moins), ou
  * `{ items?, exhaustion?, uses? }` — `items` : identifiants d'items dont toutes les utilisations reviennent ; `exhaustion` : niveaux
  * d'Épuisement retirés ; `uses` : coûte une utilisation de l'item qui porte la règle, et ne se fait que s'il y a quelque chose à gagner.
+ * Ou `{ items, activity }` (Métabolisme surnaturel) : rien n'est écrit ici — l'activité nommée de l'item qui porte la règle fait le
+ * travail (ses consommations, ses soins), proposée au joueur quand un des `items` a des utilisations dépensées et qu'il en
+ * reste une à l'item de la règle.
  * @param {object} rule
  * @param {{items: Record<string, {max: number, spent: number}>, exhaustion: number, usesLeft?: number|null}} state  `items` : par identifiant
- * @returns {{spent: Record<string, number>, exhaustion: number|null, pay: boolean}|null}  les nouvelles valeurs de `uses.spent` par
- *   identifiant, le nouveau niveau d'Épuisement (null : inchangé), et s'il faut payer ; null : rien à faire
+ * @returns {{spent: Record<string, number>, exhaustion: number|null, pay: boolean, use?: string, back?: number}|null}  les
+ *   nouvelles valeurs de `uses.spent` par identifiant, le nouveau niveau d'Épuisement (null : inchangé), et s'il faut payer ; avec `use`,
+ *   l'activité à proposer (`back` : ce qu'elle rendrait) ; null : rien à faire
  */
 export function initiativeRegain(rule, { items={}, exhaustion=0, usesLeft=null }) {
+  if ( rule.activity ) {
+    const back = (rule.items ?? []).reduce((n, id) => n + (items[id]?.max ? (items[id].spent || 0) : 0), 0);
+    if ( !back || ((usesLeft !== null) && !(usesLeft > 0)) ) return null;
+    return { spent: {}, exhaustion: null, pay: false, use: rule.activity, back };
+  }
   const spent = {};
   if ( rule.item ) {
     const s = items[rule.item];

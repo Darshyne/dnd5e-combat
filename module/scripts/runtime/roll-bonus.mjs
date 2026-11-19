@@ -71,7 +71,11 @@ function onPreUpdateCombatant(combatant, changes, options) {
 async function regainOnInitiative(actor) {
   const byId = new Map();
   for ( const i of actor.items ) { const id = identifierOf(i).id; if ( id && !byId.has(id) ) byId.set(id, i); }
-  for ( const owner of actor.items.filter(i => contentOf(i).entry?.regainOnInitiative) ) {
+  // Une règle proposée (`activity` : Métabolisme surnaturel) d'abord : la Concentration parfaite ne vaut que « si vous ne
+  // l'utilisez pas ».
+  const owners = actor.items.filter(i => contentOf(i).entry?.regainOnInitiative)
+    .sort((a, b) => !!contentOf(b).entry.regainOnInitiative.activity - !!contentOf(a).entry.regainOnInitiative.activity);
+  for ( const owner of owners ) {
     const rule = contentOf(owner).entry.regainOnInitiative;
     const items = {};
     for ( const id of [rule.item, ...(rule.items ?? [])].filter(Boolean) ) {
@@ -82,6 +86,21 @@ async function regainOnInitiative(actor) {
     const usesLeft = Number(own?.max) ? (Number(own.max) - (Number(own.spent) || 0)) : null;
     const plan = initiativeRegain(rule, { items, exhaustion: Number(actor.system.attributes?.exhaustion) || 0, usesLeft });
     if ( !plan ) continue;
+    if ( plan.use ) {
+      const activity = owner.system.activities?.get(plan.use);
+      if ( !activity ) continue;
+      const answer = await askChoice(actor, {
+        actor: actor.uuid, item: owner.name,
+        prompt: game.i18n.format("DND5ECOMBAT.RegainInitiative.Question", { item: owner.name, back: plan.back }),
+        // « Non » d'abord : sans réponse dans le délai, askChoice retient la première option — rien ne part sans accord.
+        options: [{ id: "no", label: game.i18n.localize("DND5ECOMBAT.RegainInitiative.Non") },
+          { id: "yes", label: game.i18n.localize("DND5ECOMBAT.RegainInitiative.Oui") }]
+      });
+      if ( answer?.id !== "yes" ) { log(`${actor.name}: ${owner.name} on Initiative — declined`); continue; }
+      await activity.use({ [MODULE_ID]: { confirmed: true } }, { configure: false }, {}).catch(() => null);
+      log(`${actor.name}: ${owner.name} used on Initiative`);
+      continue;
+    }
     for ( const [id, spent] of Object.entries(plan.spent) ) await byId.get(id).update({ "system.uses.spent": spent });
     if ( plan.exhaustion !== null ) await actor.update({ "system.attributes.exhaustion": plan.exhaustion });
     if ( plan.pay ) await owner.update({ "system.uses.spent": (Number(own.spent) || 0) + 1 });

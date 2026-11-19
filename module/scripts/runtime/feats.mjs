@@ -13,6 +13,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { twiceKeepHighest, rerollOnesOnce, oneMoreKeepBest, resistanceRuleCovers } from "../core/feats.mjs";
 import { ownConditionsRule, pickOwnCondition } from "../core/self-care.mjs";
+import { spendsCharges, chargesKept } from "../core/charges.mjs";
 import { STEPS } from "../core/action.mjs";
 import { attackDamageTypes } from "../adapter/smite.mjs";
 import { inflict } from "../adapter/retaliation.mjs";
@@ -458,6 +459,53 @@ async function endOwnCondition(actor, at) {
   }
 }
 
+/** Les utilisations de l'objet avant l'utilisation d'une de ses propriétés à charges : l'activité → ce qui était dépensé. */
+const chargesBefore = new Map();
+
+/** La règle `savesCharges` du porteur, quand cette activité dépense des charges d'un objet magique (core/charges.mjs), ou null. */
+function chargeRuleFor(activity) {
+  const item = activity?.item;
+  const actor = activity?.actor;
+  const rule = actor?.items ? actor.items.map(i => contentOf(i).entry?.savesCharges).find(Boolean) : null;
+  if ( !rule || !item ) return null;
+  const uses = item.system?.uses ?? {};
+  return spendsCharges({ magical: item.system?.properties?.has?.("mgc") === true, consumable: item.type === "consumable",
+    usesMax: Number(uses.max) || 0, recovers: (uses.recovery ?? []).length > 0, targets: activity.consumption?.targets ?? [],
+    itemId: item.id }) ? rule : null;
+}
+
+function onPreUseCharges(activity) {
+  if ( activity?.actor?.isOwner && chargeRuleFor(activity) ) {
+    chargesBefore.set(activity.uuid, Number(activity.item.system.uses?.spent) || 0);
+  }
+  return true;
+}
+
+/**
+ * Utilisation d'objets magiques (Voleur 13) : après une propriété qui a dépensé des charges, le dé — à 6, les charges reviennent.
+ * Sur le client qui a utilisé l'objet.
+ */
+async function keepCharges(activity) {
+  if ( !chargesBefore.has(activity?.uuid) ) return;
+  const before = chargesBefore.get(activity.uuid);
+  chargesBefore.delete(activity.uuid);
+  const rule = chargeRuleFor(activity);
+  const item = activity.item;
+  const spent = (Number(item.system.uses?.spent) || 0) - before;
+  if ( !rule || !(spent > 0) ) return;
+  const actor = activity.actor;
+  const owner = actor.items.find(i => contentOf(i).entry?.savesCharges);
+  const roll = await new Roll(`1d${rule.die}`).evaluate();
+  const kept = chargesKept(roll.total, rule);
+  await roll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }),
+    flavor: game.i18n.format(`DND5ECOMBAT.Charges.${kept ? "Gardees" : "Depensees"}`,
+      { feature: owner?.name ?? "", item: item.name, n: spent }),
+    flags: { [MODULE_ID]: { savesCharges: { item: identifierOf(item).id, spent, kept } } } });
+  if ( kept ) await item.update({ "system.uses.spent": before });
+  log(`${actor.name}: ${owner?.name ?? "charges"} on ${item.name}, d${rule.die} = ${roll.total}`
+    + `${kept ? `, ${spent} charge(s) kept` : ""}`);
+}
+
 /**
  * §236 : Puissance indomptable — « si votre total pour un test de Force ou un jet de sauvegarde de Force est inférieur à votre valeur de
  * Force, vous pouvez utiliser cette valeur à la place ». Au jet, le d20 reçoit un minimum (`options.minimum`, comme le Présage) : total
@@ -504,6 +552,9 @@ export function registerFeats() {
   for ( const hook of ["dnd5e.preRollAbilityCheckV2", "dnd5e.preRollSavingThrowV2"] ) route(hook, onPreRollD20, { cancellable: true, label: "Indomitable Might" });
   route("dnd5e.preRollConcentrationV2", onPreRollConcentration, { cancellable: true, label: "Mage Slayer: concentration" });
   route("dnd5e.postUseActivity", (activity, usageConfig) => (activity?.actor?.isOwner ? spellRecall(activity, usageConfig) : null), { label: "Boon of Spell Recall" });
+  route("dnd5e.preUseActivity", onPreUseCharges, { cancellable: true, label: "Use Magic Device: charges not noted" });
+  route("dnd5e.postUseActivity", activity => (activity?.actor?.isOwner ? keepCharges(activity) : null),
+    { label: "Use Magic Device: charges" });
   // §134 : Expert élémentaire — le type, demandé à l'arrivée du don, et au chargement pour un don déjà là.
   route("createItem", item => (item.parent?.documentName === "Actor" ? enqueue(`elemental:${item.uuid}`, () => askElementalType(item)) : null),
     { executor: true, label: "Elemental Adept: type not asked" });

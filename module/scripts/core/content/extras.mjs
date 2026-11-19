@@ -307,6 +307,14 @@ export function validateExtras(entry, at, errors) {
     && (!("succeed" in entry.rollBonus) || (entry.rollBonus.succeed === true))
     && (!("abilities" in entry.rollBonus) || (Array.isArray(entry.rollBonus.abilities) && entry.rollBonus.abilities.length && entry.rollBonus.abilities.every(a => (typeof a === "string") && a)))
     && Object.keys(entry.rollBonus).every(k => ["activity", "on", "skills", "statuses", "luck", "succeed", "abilities", "reroll", "failRefund", "spellAttack"].includes(k))) ) errors.push(`${at}rollBonus: { activity (or reroll: { bonus, during }), on: [${ROLL_BONUS_ON.join(" | ")}], skills?, statuses?, luck?: true, succeed?: true, abilities?, reroll?: { bonus? }, failRefund?: true }`);
+  // Utilisation d'objets magiques : un d`die` à chaque propriété d'objet magique qui dépense des charges ; à `on` ou plus, elles
+  // ne sont pas dépensées (core/charges.mjs).
+  if ( ("savesCharges" in entry) && !(isObject(entry.savesCharges) && Number.isInteger(entry.savesCharges.die)
+    && (entry.savesCharges.die >= 2) && Number.isInteger(entry.savesCharges.on) && (entry.savesCharges.on >= 1)
+    && (entry.savesCharges.on <= entry.savesCharges.die)
+    && Object.keys(entry.savesCharges).every(k => ["die", "on"].includes(k))) ) {
+    errors.push(`${at}savesCharges: { die: faces, on: lowest roll that keeps the charges }`);
+  }
   if ( ("transpose" in entry) && !(isObject(entry.transpose) && (typeof entry.transpose.summon === "string") && entry.transpose.summon
     && Object.keys(entry.transpose).every(k => k === "summon")) ) errors.push(`${at}transpose: { summon } (identifier of the summoning item)`);
   if ( ("portent" in entry) && !(isObject(entry.portent) && Number.isInteger(entry.portent.dice) && (entry.portent.dice > 0)

@@ -60,6 +60,10 @@ export const ROGUE = Object.freeze({
   // fin si le roublard finit son tour derrière un abri aux trois quarts ou total (runtime/sneak.mjs, runtime/hide.mjs).
   "supreme-sneak": { cunningStrikes: { stealthAttack: { cost: 1, keepsHidden: true } } },
   // §236 : Réflexes du voleur (Voleur 17) — deux tours au premier round, le second à l'initiative moins 10 (runtime/roll-bonus.mjs).
+  // Utilisation d'objets magiques (Voleur 13), Charges — « chaque fois que vous utilisez une propriété d'objet magique qui dépense
+  // des charges, lancez 1d6 ; sur un 6, vous l'utilisez sans les dépenser ». La quatrième harmonisation est l'effet de l'item, la
+  // lecture de tout parchemin est dans adapter/scrolls.mjs.
+  "use-magic-device": { savesCharges: { die: 6, on: 6 } },
   "thiefs-reflexes": { extraFirstTurn: { minus: 10 } },
   // Frappe rusée améliorée (niveau 11) : « jusqu'à deux effets de Frappe rusée ».
   "improved-cunning-strike": { cunningStrikeMax: 2 },

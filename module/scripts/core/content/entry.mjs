@@ -34,7 +34,9 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   }
   if ( "aura" in entry ) validateAura(entry.aura, `${at}aura`, errors);
   if ( "onHit" in entry ) {
-    if ( !isObject(entry.onHit) || !isId(entry.onHit.save) ) errors.push(`${at}onHit.save: activity id (16 characters)`);
+    if ( !isObject(entry.onHit) || !(isId(entry.onHit.save) || (entry.onHit.save === "sole")) ) {
+      errors.push(`${at}onHit.save: activity id (16 characters), or "sole"`);
+    }
     // §345 : `whileEnchanted` — seulement tant que l'item porte cet enchantement (profil, id d'effet) ; `spends` : un coup qui touche y
     // met fin (Dague venimeuse : « le poison reste jusqu'à ce qu'une attaque avec cette arme touche »).
     else {

@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-947 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+948 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -28,7 +28,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `basicActions` | 11 | `adrenaline-rush`, `boon-of-speed`, `conjure-woodland-beings`, `cunning-action`, `deathless-agility`, `evasive-footwork`, … |
 | `blessedHealer` | 1 | `blessed-healer` |
 | `blink` | 1 | `blink` |
-| `blocksHealing` | 4 | `chill-touch`, `mm-beholder-eye-rays`, `pale-tincture`, `wrath-of-the-wild` |
+| `blocksHealing` | 5 | `chill-touch`, `mm-beholder-eye-rays`, `pale-tincture`, `sword-of-wounding-enchanted`, `wrath-of-the-wild` |
 | `bolt` | 1 | `call-lightning` |
 | `bonusAttack` | 1 | `great-weapon-master` |
 | `breaksOn` | 11 | `boon-of-the-night-spirit`, `dust-of-disappearance`, `invisibility`, `mind-sliver`, `mislead`, `misty-escape`, … |
@@ -181,7 +181,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `obscures` | 9 | `cloudkill`, `eversmoking-bottle`, `fog-cloud`, `grenade-smoke`, `incendiary-cloud`, `sleet-storm`, … |
 | `oneAttack` | 1 | `true-strike` |
 | `onFell` | 1 | `dark-ones-blessing` |
-| `onHit` | 1 | `dagger-of-venom` |
+| `onHit` | 2 | `dagger-of-venom`, `sword-of-wounding-enchanted` |
 | `onNatural1` | 6 | `aberrant-anatomy`, `echoing-soul`, `gathered-whispers`, `living-shadow`, `symbiotic-being`, `watchers` |
 | `onUsesSpent` | 6 | `manual-of-bodily-health`, `manual-of-gainful-exercise`, `manual-of-quickness-of-action`, `tome-of-clear-thought`, `tome-of-leadership-and-influence`, `tome-of-understanding` |
 | `openHand` | 1 | `open-hand-technique` |
@@ -285,7 +285,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `thrownDamage` | 1 | `thrown-weapon-fighting` |
 | `trace` | 7 | `armor-of-agathys`, `blade-ward`, `dispel-evil-and-good`, `flame-blade`, `moonlight-step`, `produce-flame`, … |
 | `transpose` | 1 | `tricksters-transposition` |
-| `triggers` | 278 | `abjure-foes`, `absorb-elements`, `absorption-ioun-stone`, `acid-arrow`, `air-element`, `ancient-might`, … |
+| `triggers` | 279 | `abjure-foes`, `absorb-elements`, `absorption-ioun-stone`, `acid-arrow`, `air-element`, `ancient-might`, … |
 | `untypedDamage` | 3 | `freezing-sphere`, `mm-wight-life-drain`, `otilukes-freezing-sphere` |
 | `upkeep` | 1 | `crown-of-madness` |
 | `usageLimits` | 11 | `action-surge`, `flame-blade`, `indomitable`, `pact-of-the-chain`, `plant-growth`, `produce-flame`, … |
@@ -322,7 +322,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `castsSpell → use` | 3 | `absorption-ioun-stone`, `counterspell`, `greater-absorption-ioun-stone` |
 | `endOfTurn → damage` | 5 | `acid-arrow`, `melfs-acid-arrow`, `phantasmal-killer`, `vitriolic-sphere`, `weird` |
 | `endOfTurn → remove` | 6 | `acid-arrow`, `command`, `melfs-acid-arrow`, `moonlight-step`, `steady-aim`, `vitriolic-sphere` |
-| `endOfTurn → resave` | 41 | `beguiling-magic`, `blinding-smite`, `blindness-deafness`, `carrion-crawler-mucus`, `cause-fear`, `compulsion`, … |
+| `endOfTurn → resave` | 42 | `beguiling-magic`, `blinding-smite`, `blindness-deafness`, `carrion-crawler-mucus`, `cause-fear`, `compulsion`, … |
 | `enemyAttacked → use` | 1 | `soul-of-vengeance` |
 | `enemyAttacks → disadvantage` | 2 | `protection`, `warding-flare` |
 | `enemyAttacks → intercept` | 1 | `arrow-catching-shield` |

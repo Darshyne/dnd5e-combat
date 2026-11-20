@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { sizeLimitIn, sizeGateOf, siblingSaveOf, announcesHitSave } from "../module/scripts/core/riders.mjs";
+import { sizeLimitIn, sizeGateOf, siblingSaveOf, soleSaveOf, announcesHitSave } from "../module/scripts/core/riders.mjs";
+import { validateEntry } from "../module/scripts/core/content.mjs";
+import { CONTENT } from "../module/scripts/content/index.mjs";
 
 describe("porte de taille (M3)", () => {
   it("lit la taille en anglais et en français", () => {
@@ -93,5 +95,32 @@ describe("sauvegarde sœur au toucher (M2)", () => {
     expect(siblingSaveOf([attack], GHOUL)).toBeNull();
     // Même forme que la Griffe de la Goule, sans l'amorce : Coup à mains nues du PHB (Lutte/Bousculade).
     expect(siblingSaveOf([attack, save({ activation: { type: "action" } })], "<p>See: &amp;Reference[unarmedstrike]</p>")).toBeNull();
+  });
+});
+
+describe("la seule sauvegarde d'une arme enchantée (onHit.save: \"sole\")", () => {
+  const attack = { id: "attackattackatta", type: "attack" };
+  it("une sauvegarde, quel que soit son id : c'est elle", () => {
+    expect(soleSaveOf([attack, { id: "fhrQrcewmeNh8Jr6", type: "save" }])).toBe("fhrQrcewmeNh8Jr6");
+    const utility = { id: "utilityutilityut", type: "utility" };
+    expect(soleSaveOf([attack, { id: "AutreIdAuHasard0", type: "save" }, utility])).toBe("AutreIdAuHasard0");
+  });
+  it("aucune, ou plusieurs : rien — on ne devine pas", () => {
+    expect(soleSaveOf([attack])).toBeNull();
+    expect(soleSaveOf([attack, { id: "aaaaaaaaaaaaaaaa", type: "save" }, { id: "bbbbbbbbbbbbbbbb", type: "save" }])).toBeNull();
+    expect(soleSaveOf(null)).toBeNull();
+  });
+  it("schéma : un id ou \"sole\", rien d'autre", () => {
+    expect(validateEntry({ onHit: { save: "sole" } })).toEqual([]);
+    expect(validateEntry({ onHit: { save: "abcdefghijklmnop" } })).toEqual([]);
+    expect(validateEntry({ onHit: { save: "unique" } }).length).toBeGreaterThan(0);
+    expect(validateEntry({ onHit: {} }).length).toBeGreaterThan(0);
+  });
+  it("Épée de blessure : la sauvegarde au toucher, plus de soins, la sauvegarde répétée à la fin de ses tours", () => {
+    const entry = CONTENT["sword-of-wounding-enchanted"];
+    expect(entry.onHit).toEqual({ save: "sole" });
+    expect(entry.blocksHealing).toBe(true);
+    expect(entry.triggers).toEqual([{ on: "endOfTurn", via: "effect", fromEffect: "UeuDQeM3fRIB0aMN", do: [{ type: "resave" }] }]);
+    expect(validateEntry(entry)).toEqual([]);
   });
 });

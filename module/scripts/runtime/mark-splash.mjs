@@ -59,10 +59,12 @@ export async function onMarkSplashResolution(resolution) {
       ...choices.map(t => ({ id: t.id, label: t.name }))] });
   const chosen = scene.tokens.get(answer?.id ?? "");
   if ( !chosen ) return;
-  if ( turn ) await source.setFlag(MODULE_ID, "markSplash", turn);
+  // Le tour relu ici : la question a pu durer, et c'est au moment de l'utiliser que l'aptitude est dépensée.
+  const spentTurn = currentTurnKey() ?? turn;
+  if ( spentTurn ) await source.setFlag(MODULE_ID, "markSplash", spentTurn);
   await inflict({ step: { formula, damageType: rule.damageType }, item,
     speaker: ChatMessage.implementation.getSpeaker({ actor: source }), targetUuid: chosen.uuid,
     flavor: game.i18n.format("DND5ECOMBAT.ProieSuperieure.Carte", { item: item.name, name: chosen.name }),
     flags: { [MODULE_ID]: { markSplash: { item: identifierOf(item).id, to: chosen.uuid } } } });
-  log(`${item.name}: ${source.name} also deals ${formula} to ${chosen.name} (within range of ${first.name})`);
+  log(`${item.name}: ${source.name} also deals ${formula} to ${chosen.name} (within range of ${first.name}), turn ${spentTurn}`);
 }

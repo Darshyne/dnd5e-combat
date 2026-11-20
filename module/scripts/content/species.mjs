@@ -11,6 +11,9 @@
 /** Ascendance gigante (Goliath) : les faveurs proposées au coup, une utilisation chacune. */
 export const SPECIES = Object.freeze({
   // Brave (Halfelin) : « l'Avantage aux jets de sauvegarde visant à éviter l'état Effrayé ou à y mettre fin ».
+  // Halfelin, Discrétion naturelle (SRD 5.2) : « vous pouvez prendre l'action Se cacher même quand vous n'êtes masqué que par une
+  // créature d'au moins une taille de plus que vous » (core/hide-screen.mjs).
+  "naturally-stealthy": { hidesBehindLarger: true },
   "brave": { saveAdvantage: ["frightened"] },
   // Résistance naine : « l'Avantage aux jets de sauvegarde visant à éviter l'état Empoisonné ».
   "dwarven-resilience": { saveAdvantage: ["poisoned"] },

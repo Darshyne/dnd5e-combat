@@ -11,6 +11,9 @@ import { MODULE_ID } from "../constants.mjs";
 import { canLocate, isVisionAvailable } from "./vision.mjs";
 import { isObjectToken } from "./bodies.mjs";
 import { areEnemies } from "./factions.mjs";
+import { contentOf } from "./content.mjs";
+import { coverBodies, rectOf } from "./cover.mjs";
+import { screenedByLarger } from "../core/hide-screen.mjs";
 
 export const OUT_OF_ACTION = ["incapacitated", "unconscious", "paralyzed", "petrified", "stunned", "dead"];
 
@@ -22,10 +25,16 @@ export const OUT_OF_ACTION = ["incapacitated", "unconscious", "paralyzed", "petr
 export function enemiesSeeing(token) {
   if ( !isVisionAvailable() || !token?.parent ) return null;
   const defeated = CONFIG.specialStatusEffects.DEFEATED;
-  return token.parent.tokens.filter(other => (other !== token) && other.actor && !other.hidden && !isObjectToken(other)
+  const seeing = token.parent.tokens.filter(other => (other !== token) && other.actor && !other.hidden && !isObjectToken(other)
     && areEnemies(token, other)
     && !OUT_OF_ACTION.some(s => other.actor.statuses.has(s)) && !other.actor.statuses.has(defeated)
     && (canLocate(other, token) === true));
+  // Discrétion naturelle : un ennemi qui ne voit le porteur qu'à travers une créature plus grande que lui ne l'empêche pas de se
+  // cacher.
+  if ( !seeing.length || !token.actor?.items?.some(i => contentOf(i).entry?.hidesBehindLarger === true) ) return seeing;
+  const hider = { rect: rectOf(token), size: token.actor.system?.traits?.size };
+  return seeing.filter(other => !screenedByLarger(rectOf(other), hider, coverBodies(other, token)
+    .map(t => ({ rect: rectOf(t), size: t.actor.system?.traits?.size }))));
 }
 
 /** Les effets de Furtivité d'un acteur. */

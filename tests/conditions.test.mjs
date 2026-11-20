@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  attackModifiers, netMode, combineTargets, isAutoCritical, autoFailSave, verbalSpellBlocked
+  attackModifiers, netMode, combineTargets, isAutoCritical, autoFailSave, verbalSpellBlocked, typeAutoSave
 } from "../module/scripts/core/conditions.mjs";
 
 const attack = over => attackModifiers({ attacker: [], target: [], adjacent: true, ranged: false, ...over });
@@ -257,5 +257,23 @@ describe("§77 : une action ou une action Bonus, pas les deux", () => {
   it("rien de pris, ou sans l'effet : libre", () => {
     expect(conditionUseIssues({ statuses: [], cost: "action", actionOrBonus: true, budget: budget(1, 1) })).toEqual([]);
     expect(conditionUseIssues({ statuses: [], cost: "bonus", budget: budget(0, 1) })).toEqual([]);
+  });
+});
+
+describe("sauvegarde d'office selon le type de créature (saveAutoSuccess.types, saveAutoFail.types)", () => {
+  it("Flétrissement : une Plante rate d'office, les autres lancent", () => {
+    expect(typeAutoSave({ fail: ["plant"] }, "plant")).toEqual({ autoFail: "type:plant" });
+    expect(typeAutoSave({ fail: ["plant"] }, "undead")).toBeNull();
+    expect(typeAutoSave({ fail: ["plant"] }, "")).toBeNull();
+    expect(typeAutoSave({ fail: ["plant"] }, undefined)).toBeNull();
+  });
+  it("Pétrification : une Créature artificielle réussit d'office", () => {
+    expect(typeAutoSave({ success: ["construct"] }, "construct")).toEqual({ autoSucceed: "type:construct" });
+    expect(typeAutoSave({ success: ["construct"] }, "plant")).toBeNull();
+  });
+  it("sans règle, rien ; déclaré des deux côtés, l'échec prime", () => {
+    expect(typeAutoSave({}, "plant")).toBeNull();
+    expect(typeAutoSave(undefined, "plant")).toBeNull();
+    expect(typeAutoSave({ success: ["plant"], fail: ["plant"] }, "plant")).toEqual({ autoFail: "type:plant" });
   });
 });

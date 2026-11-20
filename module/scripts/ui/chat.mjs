@@ -307,7 +307,10 @@ export function fillLine(p, { text, nodes }) {
   }
 }
 
-const statusName = id => game.i18n.localize(CONFIG.statusEffects[id]?.name ?? id);
+// Une raison d'office par type de créature (`type:plant`, core/conditions.mjs) se lit par le nom du type.
+const statusName = id => String(id).startsWith("type:")
+  ? game.i18n.localize(CONFIG.DND5E.creatureTypes[String(id).slice(5)]?.label ?? String(id).slice(5))
+  : game.i18n.localize(CONFIG.statusEffects[id]?.name ?? id);
 
 /**
  * Une distance de règle (« à 5 ft ») dans l'unité de la scène, formatée par dnd5e : « 1,5 m » sur une scène métrique (SPEC §5.7 ;

@@ -97,6 +97,14 @@ describe("validation d'une entrée", () => {
     expect(validateEntry({ aura: { radius: 10 } }, { facts })).toEqual([]);
   });
 
+  it("saveAutoFail : des types de créature, rien d'autre", () => {
+    expect(validateEntry({ saveAutoFail: { types: ["plant"] } }, { facts })).toEqual([]);
+    expect(validateEntry({ saveAutoFail: { types: [] } }, { facts })).toEqual(["saveAutoFail: { types: [creature types] }"]);
+    expect(validateEntry({ saveAutoFail: { types: ["arbre"] } }, { facts })).toHaveLength(1);
+    expect(validateEntry({ saveAutoFail: { types: ["plant"], fighting: true } }, { facts })).toHaveLength(1);
+    expect(CONTENT.blight.saveAutoFail).toEqual({ types: ["plant"] });
+  });
+
   it("onHit : un id d'activité", () => {
     expect(validateEntry({ onHit: { save: "abc" } }, { facts })).toEqual(["onHit.save: activity id (16 characters)"]);
     expect(validateEntry({ onHit: "udF9lrpAQMvL0b9J" }, { facts })).toHaveLength(1);
@@ -207,7 +215,8 @@ describe("contenu livré", () => {
       "banishing-smite", "banishment", "bastion-of-law", "beacon-of-hope", "bead-of-force", "befuddlement", "beguiling-defenses",
       "beguiling-magic", "beguiling-twist", "belt-of-dwarvenkind", "berserker-axe-enchanted", "bestow-curse", "bigbys-hand", "bite",
       "black-tentacles", "blackrazor", "blade-barrier", "blade-ward", "blazing-movement", "blessed-healer", "blessed-strikes",
-      "blessed-strikes-potent-spellcasting", "blessing-of-the-trickster", "blinding-smite", "blindness-deafness", "blink",
+      "blessed-strikes-potent-spellcasting", "blessing-of-the-trickster", "blight",
+      "blinding-smite", "blindness-deafness", "blink",
       "blue-elemental-gem", "blur", "boon-of-combat-prowess", "boon-of-dimensional-travel", "boon-of-energy-resistance",
       "boon-of-fate", "boon-of-fortitude", "boon-of-irresistible-offense", "boon-of-recovery", "boon-of-speed", "boon-of-spell-recall",
       "boon-of-the-night-spirit", "boots-of-elvenkind", "boots-of-speed", "boots-of-striding-and-springing",

@@ -293,3 +293,17 @@ export function curable(statuses, cures) {
 export function fightingAdvantage({ targetInCombat, hostile }) {
   return !!(targetInCombat && hostile);
 }
+
+/**
+ * Réussite ou échec d'office d'une sauvegarde selon le type de la créature (`saveAutoSuccess.types`, `saveAutoFail.types`) :
+ * Pétrification — une Créature artificielle réussit ; Flétrissement — une Plante rate. L'échec d'office prime s'il y a les deux.
+ * @param {{success?: string[], fail?: string[]}} rules  les types déclarés par l'item
+ * @param {string|null|undefined} type                   le type de la créature
+ * @returns {{autoFail: string}|{autoSucceed: string}|null}  la raison, au format `type:<type>`
+ */
+export function typeAutoSave({ success=[], fail=[] }={}, type) {
+  if ( !type ) return null;
+  if ( (fail ?? []).includes(type) ) return { autoFail: `type:${type}` };
+  if ( (success ?? []).includes(type) ) return { autoSucceed: `type:${type}` };
+  return null;
+}

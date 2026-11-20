@@ -11,7 +11,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { current, undoPlan, wantsDamageRoll, isCriticalHit, pendingChoice, pendingAllocation, STEPS, creatureAutoSuccess }
   from "../core/action.mjs";
-import { isAutoCritical, autoFailSave } from "../core/conditions.mjs";
+import { isAutoCritical, autoFailSave, typeAutoSave } from "../core/conditions.mjs";
 import { maximizeDice } from "../core/max-dice.mjs";
 import { spellCastLevel } from "../core/usage.mjs";
 import { unaffectedBy } from "../adapter/eligibility.mjs";
@@ -320,13 +320,18 @@ export async function openingFor(message, usage, extra={}) {
     // Un combat commencé (pas forcément celui qu'affiche ce client) où les deux se trouvent, ennemis l'un de l'autre.
     const fighting = token => !!(caster && token && areEnemies(caster, token) && game.combats.some(c => c.started
       && c.combatants.some(k => k.tokenId === token.id) && c.combatants.some(k => k.tokenId === caster.id)));
-    if ( rule ) targets = targets.map(t => {
+    // `saveAutoFail` — ces types ratent d'office (Flétrissement : une Plante).
+    const failRule = contentOf(activity?.item).entry?.saveAutoFail ?? null;
+    if ( rule || failRule ) targets = targets.map(t => {
       if ( t.autoFail ) return t;
       const token = fromUuidSync(t.token, { strict: false });
       const actor = token?.actor ?? fromUuidSync(t.actor, { strict: false });
-      const own = creatureAutoSuccess(rule, { type: actor?.system?.details?.type?.value, size: actor?.system?.traits?.size });
+      const type = actor?.system?.details?.type?.value;
+      const failed = typeAutoSave({ fail: failRule?.types }, type);
+      if ( failed ) return { ...t, ...failed };
+      const own = creatureAutoSuccess(rule, { type, size: actor?.system?.traits?.size });
       if ( own ) return { ...t, autoSucceed: own };
-      return fighting(token) ? { ...t, autoSucceed: "fighting" } : t;
+      return (rule && fighting(token)) ? { ...t, autoSucceed: "fighting" } : t;
     });
   }
   return { id: foundry.utils.randomID(), ...data, choice, allocation, targets, ...extra };

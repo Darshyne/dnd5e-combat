@@ -497,6 +497,18 @@ export const ITEM_FIXES = Object.freeze({
   "silver-horn-of-valhalla": { summon: { initiative: "own" } },
   // Bouclier animé (SRD 5.2) : « reste animé 1 minute, […] ou jusqu'à ce que vous mouriez ou ayez l'état Neutralisé ».
   "animated-shield": { endsWhen: { incapacitated: "bearer" } },
+  // SRD 5.2 — les autres cors (laiton, bronze, fer, et l'objet générique), comme celui d'argent ; les créatures qu'un objet fait
+  // venir et qui agissent d'elles-mêmes : le djinn de l'Anneau, l'éfrit de la Bouteille, la créature de la Flasque de fer, les
+  // nuées de la Flûte des égouts (« pas sous votre contrôle »). Sans déclaration, posées en plein combat, elles n'y entraient pas.
+  ...Object.fromEntries(["brass-horn-of-valhalla", "bronze-horn-of-valhalla", "iron-horn-of-valhalla", "horn-of-valhalla",
+    "ring-of-djinni-summoning", "efreeti-bottle", "iron-flask", "pipes-of-the-sewers"]
+    .map(id => [id, { summon: { initiative: "own" } }])),
+  // Bâton du python : « le serpent partage votre compte d'Initiative et joue son tour juste après le vôtre ».
+  "staff-of-the-python": { summon: { initiative: "after" } },
+  // Ce qui n'est pas une créature qui agit : le fouet du Jeton-plume et l'Épée dansante (commandés par une action Bonus de leur
+  // porteur), l'image du Jeu d'illusions, le Tapis volant.
+  ...Object.fromEntries(["whip-feather-token", "dancing-sword", "deck-of-illusions", "carpet-of-flying"]
+    .map(id => [id, { summon: { initiative: "none" } }])),
   // Fumées : « la zone est fortement obscurcie » — Grenade fumigène, Urne fumigène, nuée du Bâton du grand essaim.
   "grenade-smoke": { obscures: true },
   "eversmoking-bottle": { obscures: true },

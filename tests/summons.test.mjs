@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { initiativeAfter } from "../module/scripts/core/turn.mjs";
 import { classify } from "../module/scripts/core/combat-launch.mjs";
+import { validateEntry } from "../module/scripts/core/content.mjs";
+import { CONTENT } from "../module/scripts/content/index.mjs";
 import { summonOwnership, summonChoices, asksSummonForm, profilesAtLevel, countChoices, mmActorId, srdMonsterId, asksProfile, actorIdOf } from "../module/scripts/core/summon.mjs";
 
 describe("initiative d'une créature invoquée (§16.13)", () => {
@@ -14,8 +16,6 @@ describe("initiative d'une créature invoquée (§16.13)", () => {
 });
 
 import { planCommand, castCommand, currentCommand, nextPlayableTurn } from "../module/scripts/core/pilot.mjs";
-import { validateEntry } from "../module/scripts/core/content.mjs";
-import { CONTENT } from "../module/scripts/content/index.mjs";
 
 describe("objet piloté (§16.15, B19) : commandes", () => {
   const T = "c.2.0";
@@ -129,7 +129,6 @@ describe("propriétaires d'une créature invoquée par le MJ (§197)", () => {
   });
 });
 
-import { validateEntry } from "../module/scripts/core/content.mjs";
 
 describe("O8f (§349) : invocations hostiles", () => {
   it("summon.hostile : true ou absent", () => {
@@ -257,5 +256,33 @@ describe("images, capteurs et objets posés par un sort : hors du combat (SRD 5.
     const listed = summon => Object.values(classify([token(summon)])).flat().length;
     expect(listed("none")).toBe(0);
     expect(listed("own")).toBe(1);
+  });
+});
+
+describe("invocations d'objets magiques du SRD 5.2 : leur place au combat", () => {
+  const rule = id => CONTENT[id]?.summon?.initiative;
+  it("les quatre autres Cors du Valhalla, comme celui d'argent : leur propre initiative", () => {
+    for ( const id of ["brass-horn-of-valhalla", "bronze-horn-of-valhalla", "iron-horn-of-valhalla", "horn-of-valhalla"] ) {
+      expect(rule(id), id).toBe(rule("silver-horn-of-valhalla"));
+    }
+    expect(rule("silver-horn-of-valhalla")).toBe("own");
+  });
+  it("djinn, éfrit, créature de la Flasque, nuées de la Flûte : leur propre initiative", () => {
+    for ( const id of ["ring-of-djinni-summoning", "efreeti-bottle", "iron-flask", "pipes-of-the-sewers"] ) {
+      expect(rule(id), id).toBe("own");
+    }
+  });
+  it("le serpent du Bâton du python : juste après son maître", () => {
+    expect(rule("staff-of-the-python")).toBe("after");
+  });
+  it("fouet, épée dansante, image, tapis : hors du combat", () => {
+    for ( const id of ["whip-feather-token", "dancing-sword", "deck-of-illusions", "carpet-of-flying"] ) {
+      expect(rule(id), id).toBe("none");
+    }
+  });
+  it("chaque entrée se valide", () => {
+    for ( const id of ["brass-horn-of-valhalla", "staff-of-the-python", "dancing-sword", "efreeti-bottle"] ) {
+      expect(validateEntry({ summon: CONTENT[id].summon }), id).toEqual([]);
+    }
   });
 });

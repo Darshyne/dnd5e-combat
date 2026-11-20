@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-947 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+959 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -208,7 +208,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `rage` | 1 | `rage` |
 | `rangedDefense` | 2 | `arrow-catching-shield`, `shield-of-missile-attraction` |
 | `rangedFeat` | 5 | `1-wand-of-the-war-mage-enchanted`, `crossbow-expert`, `improved-illusions`, `sharpshooter`, `spell-sniper` |
-| `ranges` | 19 | `bastion-of-law`, `dragons-breath`, `dynamite-stick`, `elder-champion`, `hand-of-healing`, `hand-of-ultimate-mercy`, … |
+| `ranges` | 18 | `bastion-of-law`, `dragons-breath`, `dynamite-stick`, `elder-champion`, `hand-of-healing`, `hand-of-ultimate-mercy`, … |
 | `reactions` | 2 | `reactive`, `reactive-heads` |
 | `reactiveSpell` | 1 | `war-caster` |
 | `reactiveStrike` | 1 | `polearm-master` |
@@ -269,7 +269,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `storm` | 1 | `call-lightning` |
 | `studiedAttacks` | 1 | `studied-attacks` |
 | `stunningStrike` | 1 | `stunning-strike` |
-| `summon` | 75 | `animate-dead`, `animate-objects`, `arcane-eye`, `arcane-hand`, `arcane-sword`, `baba-yagas-dancing-broom`, … |
+| `summon` | 88 | `animate-dead`, `animate-objects`, `arcane-eye`, `arcane-hand`, `arcane-sword`, `baba-yagas-dancing-broom`, … |
 | `summonEffectsOnCaster` | 1 | `mislead` |
 | `supremeHealing` | 1 | `supreme-healing` |
 | `swallow` | 2 | `engulf`, `swallow` |

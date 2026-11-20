@@ -3,11 +3,11 @@ import { CONTENT } from "../module/scripts/content/index.mjs";
 import { validateEntry } from "../module/scripts/core/content.mjs";
 
 describe("zones du SRD 5.2 dont la sauvegarde vient à l'entrée et au tour, pas à la pose", () => {
-  it("Zone de vérité : à l'entrée et au début du tour ; rien à la pose ; l'effet tombe en sortant", () => {
+  it("Zone de vérité : à l'entrée et au début du tour ; rien à la pose, et pas d'effet sans sauvegarde ratée", () => {
     const entry = CONTENT["zone-of-truth"];
     expect(entry.triggers).toEqual([{ on: ["enter", "turnStart"], do: [{ type: "replay" }] }]);
     expect(entry.quietPose).toBe(true);
-    expect(entry.zoneEffects).toBe(true);
+    expect(entry.zoneEffects).toBeUndefined();
     expect(validateEntry(entry)).toEqual([]);
   });
   it("Contrôle de l'eau : le tourbillon, à l'entrée et à la FIN du tour ; rien à la pose", () => {

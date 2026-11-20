@@ -301,7 +301,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `zoneAffects` | 16 | `brute-spirit`, `conjure-barrage`, `conjure-volley`, `conjure-woodland-beings`, `cordon-of-arrows`, `coward-spirit`, … |
 | `zoneBound` | 1 | `spirit-guardians` |
 | `zoneCharges` | 1 | `cordon-of-arrows` |
-| `zoneEffects` | 5 | `jallarzis-storm-of-radiance`, `magic-circle`, `silence`, `storm-of-radiance`, `zone-of-truth` |
+| `zoneEffects` | 4 | `jallarzis-storm-of-radiance`, `magic-circle`, `silence`, `storm-of-radiance` |
 | `zoneEnd` | 1 | `delayed-blast-fireball` |
 | `zoneLasts` | 2 | `antimagic-cone`, `symbol` |
 | `zoneMax` | 2 | `decanter-of-endless-water`, `slow` |

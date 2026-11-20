@@ -630,7 +630,8 @@ async function hitInsteadChosen(activity, source, entry, carrier) {
   const rule = activity?.item ? contentOf(activity.item).entry?.hitInstead : null;
   // `"sole"` : la seule sauvegarde de l'item — une activité ajoutée par un enchantement change d'id à chaque pose.
   const saves = rule ? Array.from(activity.item.system.activities ?? []).filter(x => x.type === "save") : [];
-  const sibling = !rule ? null : (rule.activity === "sole") ? soleOf(saves) : (activity.item.system.activities?.get(rule.activity) ?? null);
+  const sibling = !rule ? null : (rule.activity === "sole") ? soleOf(saves)
+    : (activity.item.system.activities?.get(rule.activity) ?? null);
   const actor = source?.actor ?? activity?.actor;
   const target = sibling ? await fromUuid(entry.token) : null;
   const applies = hitInsteadApplies(rule, { isAttack: activity?.type === "attack", hasSibling: !!sibling });

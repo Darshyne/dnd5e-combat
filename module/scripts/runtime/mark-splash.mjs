@@ -9,7 +9,7 @@ import { STEPS } from "../core/action.mjs";
 import { splashTargets, splashAvailable, splashFormula } from "../core/mark-splash.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
-import { distanceBetween, currentTurnKey } from "../adapter/turn.mjs";
+import { distanceBetween } from "../adapter/turn.mjs";
 import { readUnitFactors, lengthIn } from "../adapter/units.mjs";
 import { areEnemies } from "../adapter/factions.mjs";
 import { canSee } from "../adapter/vision.mjs";
@@ -18,6 +18,15 @@ import { askChoice } from "../adapter/choices.mjs";
 import { log, tokenOfActor } from "./shared.mjs";
 
 const seen = new Set();
+
+/**
+ * Le tour en cours du combat où se trouve cette créature (même forme que `currentTurnKey`), ou null hors combat. Lu sur le combat
+ * du combattant plutôt que sur le combat affiché : vu en jeu, celui-ci n'était pas encore connu à la fin de la résolution.
+ */
+function turnKeyOf(token) {
+  const combat = game.combats.find(c => c.started && c.combatants.some(x => x.tokenId === token.id));
+  return combat ? `${combat.id}.${combat.round}.${combat.turn}` : null;
+}
 
 /** La créature porte-t-elle un effet de l'item `mark` posé par cet acteur ? */
 function markedBy(actor, mark, source) {
@@ -42,7 +51,7 @@ export async function onMarkSplashResolution(resolution) {
     .map(t => fromUuidSync(t.token, { strict: false })).find(t => t?.actor && markedBy(t.actor, rule.mark, source));
   if ( !first ) return;
   seen.add(resolution.id);
-  const turn = currentTurnKey();
+  const turn = turnKeyOf(self);
   if ( !splashAvailable(source.getFlag(MODULE_ID, "markSplash") ?? null, turn) ) return;
   const range = lengthIn(rule.range.value, rule.range.units, scene.grid.units, readUnitFactors());
   const alive = t => t.actor && !t.hidden && (t.id !== self.id) && ((t.actor.system?.attributes?.hp?.value ?? 0) > 0);
@@ -59,12 +68,10 @@ export async function onMarkSplashResolution(resolution) {
       ...choices.map(t => ({ id: t.id, label: t.name }))] });
   const chosen = scene.tokens.get(answer?.id ?? "");
   if ( !chosen ) return;
-  // Le tour relu ici : la question a pu durer, et c'est au moment de l'utiliser que l'aptitude est dépensée.
-  const spentTurn = currentTurnKey() ?? turn;
-  if ( spentTurn ) await source.setFlag(MODULE_ID, "markSplash", spentTurn);
+  if ( turn ) await source.setFlag(MODULE_ID, "markSplash", turn);
   await inflict({ step: { formula, damageType: rule.damageType }, item,
     speaker: ChatMessage.implementation.getSpeaker({ actor: source }), targetUuid: chosen.uuid,
     flavor: game.i18n.format("DND5ECOMBAT.ProieSuperieure.Carte", { item: item.name, name: chosen.name }),
     flags: { [MODULE_ID]: { markSplash: { item: identifierOf(item).id, to: chosen.uuid } } } });
-  log(`${item.name}: ${source.name} also deals ${formula} to ${chosen.name} (within range of ${first.name}), turn ${spentTurn}`);
+  log(`${item.name}: ${source.name} also deals ${formula} to ${chosen.name} (within range of ${first.name})`);
 }

@@ -24,10 +24,11 @@ import { atCastLevel } from "../core/usage.mjs";
 import { contentOf } from "./content.mjs";
 import { spellClassOf } from "./spell-class.mjs";
 import { weaponKind } from "./facts.mjs";
+import { retypeOffers } from "../core/retype.mjs";
 
 // §279 : déplacé dans facts.mjs (fait `activity.weaponKind`) ; réexporté pour les appelants existants.
 export { weaponKind };
-import { offerCombatInspirationDamage } from "./inspiration.mjs";
+import { offerCombatInspirationDamage, usesLeftFor } from "./inspiration.mjs";
 
 const SETTLED_STEPS = new Set([STEPS.DONE, STEPS.MISSED, STEPS.UNDONE]);
 
@@ -232,17 +233,34 @@ export function spellRetypes(activity) {
   const item = activity?.item;
   const actor = activity?.actor;
   if ( (item?.type === "weapon") && (activity.type === "attack") && actor ) return weaponRetypes(activity);
+  return spellRetypeOffers(activity).map(o => o.type);
+}
+
+/**
+ * Les types offerts à ce sort et, pour chacun, l'activité qui le paie s'il coûte (Sort transmuté : 1 point de sorcellerie), ou
+ * null.
+ * Un changement payant n'est offert que s'il reste de quoi le payer.
+ * @returns {Array<{type: string, cost: Activity|null}>}
+ */
+export function spellRetypeOffers(activity) {
+  const item = activity?.item;
+  const actor = activity?.actor;
   if ( (item?.type !== "spell") || !actor || !(activity.damage?.parts ?? []).length ) return [];
-  const out = new Set();
+  const rules = [];
+  const payers = new Map();
   for ( const i of actor.items ) {
     const rule = contentOf(i).entry?.spellDamageTypes;
     if ( !rule ) continue;
     // §447 : sans classe, tout sort (Marqué par la tombe).
-    if ( !rule.class ) { for ( const t of rule.types ) out.add(t); continue; }
-    const cls = spellClassOf(item) || (actor.classes?.[rule.class] ? rule.class : null);
-    if ( cls === rule.class ) for ( const t of rule.types ) out.add(t);
+    const cls = rule.class ? (spellClassOf(item) || (actor.classes?.[rule.class] ? rule.class : null)) : null;
+    if ( rule.class && (cls !== rule.class) ) continue;
+    const payer = rule.cost ? i.system.activities?.get(rule.cost) ?? null : null;
+    if ( rule.cost ) payers.set(rule.cost, payer);
+    rules.push({ types: rule.types, from: rule.from, cost: rule.cost ?? null,
+      payable: !rule.cost || (!!payer && (usesLeftFor(payer) > 0)) });
   }
-  return Array.from(out);
+  const own = (activity.damage?.parts ?? []).flatMap(p => [...(p.types ?? [])]);
+  return retypeOffers(rules, own).map(o => ({ type: o.type, cost: o.cost ? payers.get(o.cost) : null }));
 }
 
 
@@ -272,7 +290,14 @@ async function chosenDamageType(carrier, activity) {
     content: `<p>${game.i18n.localize("DND5ECOMBAT.TypeDegats.Texte")}</p>`,
     buttons: types.map((t, i) => ({ action: t, label: label(t), default: i === 0 }))
   }, { fallback: types[0], awaiting: { actor: activity.actor ?? null, kind: "choice" } });
-  const type = types.includes(choice) ? choice : types[0];
+  let type = types.includes(choice) ? choice : types[0];
+  // Un type qui se paie (Sort transmuté) : l'activité de l'item le règle, une fois, au moment du choix ; sans quoi le type du sort.
+  const payer = spellRetypeOffers(activity).find(o => o.type === type)?.cost ?? null;
+  if ( payer ) {
+    const paid = await payer.use({ [MODULE_ID]: { confirmed: true } }, { configure: false }, { create: false }).catch(() => null);
+    if ( !paid ) type = types[0];
+    else console.log(`${MODULE_ID} | ${activity.actor?.name}: ${payer.item.name}, ${activity.item?.name} deals ${type} damage`);
+  }
   if ( carrier?.isOwner ) await carrier.setFlag(MODULE_ID, "damageType", type).catch(() => {});
   return type;
 }

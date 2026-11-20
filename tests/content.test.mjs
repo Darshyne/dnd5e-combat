@@ -349,6 +349,7 @@ describe("contenu livré", () => {
       "telekinetic-thrust", "teleport",
       "tensers-floating-disk", "tentacle-rod", "terrifying-aura", "thiefs-reflexes", "thorn-whip", "thrown-weapon-fighting",
       "thunderous-smite", "thunderwave", "tinderbox", "toll-the-dead", "tome-of-clear-thought", "tome-of-leadership-and-influence", "tome-of-understanding", "torch", "torpor", "touch-of-death", "toxic-escape", "trampling-charge",
+      "transmuted-spell",
       "travel-along-the-tree", "trebuchet", "tricksters-transposition", "trip-attack", "true-resurrection",
       "true-seeing-crystal-ball-of", "true-strike", "truth-serum", "tsunami",
       "twinned-spell", "umbral-dagger", "umbral-form", "unarmed-fighting", "unarmed-strike", "uncanny-dodge", "undead-fortitude", "unraveling-flesh",

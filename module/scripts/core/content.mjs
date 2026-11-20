@@ -249,8 +249,12 @@
  *     quickSearch?: true                        §134 : l'action Chercher se prend par une action Bonus quand elle est libre (Observateur)
  *     haltOnReaction?: { effect }               §133 : une attaque en Réaction (attaque d'opportunité) qui touche pose cet effet de
  *                                               l'item sur la cible (Sentinelle, Halte : Vitesse 0)
- *     spellDamageTypes?: { class?, types }      relevé des trous : un sort de cette classe (§447 : sans classe, tout sort) qui inflige des dégâts peut prendre l'un
- *                                               de ces types, proposé avec ses types au choix avant le jet (Sorts psychiques)
+ *     spellDamageTypes?: { class?, types, from?, cost? }
+ *                                               relevé des trous : un sort de cette classe (§447 : sans classe, tout sort) qui
+ *                                               inflige des dégâts peut prendre l'un de ces types, proposé avec ses types
+ *                                               au choix avant le jet (Sorts psychiques) ; `from` : seulement un sort qui
+ *                                               inflige l'un de ces types ; `cost` : l'activité de l'item qui paie le
+ *                                               changement, proposé tant qu'il reste de quoi (Sort transmuté)
  *     endsOwnConditions?: string[] | { statuses?, at?, exhaustion?, uses? }
  *                                               §236 : à la fin de chacun de ses tours, le porteur met fin à l'un de ces états
  *                                               (Auto-restauration : Charmé, Effrayé, Empoisonné) ; §278 : `at: "turnStart"` (au début),

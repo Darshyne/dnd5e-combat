@@ -47,7 +47,7 @@ export async function onMarkSplashResolution(resolution) {
   const range = lengthIn(rule.range.value, rule.range.units, scene.grid.units, readUnitFactors());
   const alive = t => t.actor && !t.hidden && (t.id !== self.id) && ((t.actor.system?.attributes?.hp?.value ?? 0) > 0);
   const tokens = scene.tokens.filter(alive).map(t => ({ id: t.id, name: t.name, first: t.id === first.id,
-    enemy: areEnemies(self, t), seen: canSee(self.object, t.object) !== false,
+    enemy: areEnemies(self, t), seen: canSee(self, t) !== false,   // des documents de token (adapter/vision.mjs)
     distance: (t.id === first.id) ? 0 : distanceBetween(first, t).value }));   // dans l'unité de la scène
   const choices = splashTargets(tokens, range);
   if ( !choices.length ) return;

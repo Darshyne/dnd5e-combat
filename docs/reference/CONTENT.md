@@ -237,6 +237,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `saveAutoSuccessAgainst` | 1 | `greater-magic-resistance` |
 | `saveDamage` | 8 | `black-tentacles`, `contact-other-plane`, `evards-black-tentacles`, `holy-water`, `misty-escape`, `pale-tincture`, … |
 | `savedEffects` | 6 | `flesh-to-stone`, `heat-metal`, `mace-of-disruption`, `ottos-irresistible-dance`, `ray-of-enfeeblement`, `stunning-strike` |
+| `saveDisadvantageAgainst` | 1 | `demon-armor-enchanted` |
 | `saveDisadvantageFor` | 3 | `shatter`, `talisman-of-pure-good`, `talisman-of-ultimate-evil` |
 | `saveIgnoresCover` | 1 | `sacred-flame` |
 | `scatter` | 2 | `ball-bearings`, `caltrops` |

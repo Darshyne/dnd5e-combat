@@ -996,6 +996,8 @@
  *                                               une seule attaque d'arme, Foncer, Se désengager ou Se cacher) — core/turn.mjs
  *     saveDisadvantageFor?: string[]            §157 : les cibles de ces types de créature font la sauvegarde de l'item avec le Désavantage
  *                                               (Fracassement : « construct »)
+ *     saveDisadvantageAgainst?: { subtypes }    le porteur de l'objet (équipé, harmonisé s'il l'exige) fait avec le Désavantage les
+ *                                               sauvegardes qu'impose une créature de ces sous-types (Armure démoniaque)
  *     halfOnMiss?: true                         §157 : l'attaque de l'item ratée inflige la moitié de ses dégâts, sans effet (Flèche acide de
  *                                               Melf : « sur un échec, la moitié des dégâts initiaux seulement ») — comme le Sort mineur appuyé
  *     potentCantrip?: true                      Sort mineur appuyé (§28) : un tour de magie à dégâts du porteur, raté ou sauvegardé, fait

@@ -61,6 +61,21 @@ export function subtypeMatches(subtype, want) {
   return [want].flat().some(w => String(w ?? "").trim().toLowerCase() === own);
 }
 
+/**
+ * `saveDisadvantageAgainst: { subtypes }` : le porteur de l'objet fait avec le Désavantage les sauvegardes qu'impose une créature
+ * de l'un de ces sous-types (Armure démoniaque : « contre leurs sorts et capacités spéciales »).
+ */
+export function saveDisadvantageAgainstHolds(rule, sourceSubtype) {
+  return Array.isArray(rule?.subtypes) && subtypeMatches(sourceSubtype, rule.subtypes);
+}
+
+/** Les erreurs de la clé. Vide = valide. */
+export function validateSaveDisadvantageAgainst(rule, at) {
+  const ok = rule && (typeof rule === "object") && !Array.isArray(rule) && Array.isArray(rule.subtypes) && rule.subtypes.length
+    && rule.subtypes.every(t => (typeof t === "string") && t.trim()) && Object.keys(rule).every(k => k === "subtypes");
+  return ok ? [] : [`${at}saveDisadvantageAgainst: { subtypes: [creature subtype, …] }`];
+}
+
 /** Les états d'un effet contre lesquels la créature est immunisée (vide : l'effet peut être posé). */
 export function blockedStatuses(statuses, immunities) {
   const immune = new Set(immunities ?? []);

@@ -38,6 +38,7 @@ import { samePlane } from "./plane.mjs";
 import { coverFor } from "./cover.mjs";
 import { dexSaveTakesCover, coverSaveBonus } from "../core/save-cover.mjs";
 import { isBreathWeapon, breathAdvantageHolds } from "../core/breath.mjs";
+import { saveDisadvantageAgainst } from "./save-against.mjs";
 export { applyEffectsToToken, applyMarkToToken, applyStatusToToken, removeEffects, splitPushes } from "./apply-effects.mjs";
 export { TARGETS_QUERY, handleTargetsQuery, showTargetsTo } from "./show-targets.mjs";
 
@@ -446,7 +447,10 @@ export async function requestSaves(usageMessage, save, targets, { askPlayers=tru
     // C12-b : le Sort intensifié vaut pour toutes les sauvegardes du sort, rejouées comprises (Immobilisation de personne) — la cible est
     // notée sur son acteur au lancement (par item), lue à chaque sauvegarde rejouée, oubliée au lancement suivant sans l'option.
     const heightenedNow = await heightenedMark(usageMessage, activity, token, heightened);
-    const disadvantage = heightenedNow || byType || inescapable || !!imposed || mode.disadvantage;
+    // Armure démoniaque : un objet porté donne le Désavantage contre les sauvegardes d'une créature d'un sous-type.
+    const cursed = saveDisadvantageAgainst(actor, activity.actor);
+    if ( cursed ) console.log(`${MODULE_ID} | ${cursed.name}: ${token.name} has Disadvantage against ${activity.item.name}`);
+    const disadvantage = heightenedNow || byType || inescapable || !!imposed || !!cursed || mode.disadvantage;
     const advantage = mode.advantage;
     if ( given?.[token.uuid] ) console.log(`${MODULE_ID} | ${activity.item.name}: ${token.name} has ${given[token.uuid]} on its saving throw (given by the user)`);
     if ( heightenedNow ) console.log(`${MODULE_ID} | Heightened Spell: ${token.name} has Disadvantage on its saving throw`);

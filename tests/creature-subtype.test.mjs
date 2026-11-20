@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { subtypeMatches } from "../module/scripts/core/eligibility.mjs";
+import {
+  subtypeMatches, saveDisadvantageAgainstHolds, validateSaveDisadvantageAgainst
+} from "../module/scripts/core/eligibility.mjs";
+import { validateEntry } from "../module/scripts/core/content.mjs";
 import { ITEM_FIXES } from "../module/scripts/content/item-fixes.mjs";
 import { holds } from "../module/scripts/core/triggers.mjs";
 
@@ -21,5 +24,17 @@ describe("fait target.creatureSubtype : le sous-type d'une créature (Armure dé
     expect(holds(rule.if, facts("Demon"))).toBe(true);
     expect(holds(rule.if, facts("Devil"))).toBe(false);
     expect(holds(rule.if, facts(null))).toBe(false);
+  });
+  it("Armure démoniaque : Désavantage aux sauvegardes qu'impose un démon, pas un diable", () => {
+    const rule = ITEM_FIXES["demon-armor-enchanted"].saveDisadvantageAgainst;
+    expect(rule).toEqual({ subtypes: ["demon"] });
+    expect(saveDisadvantageAgainstHolds(rule, "Demon")).toBe(true);
+    expect(saveDisadvantageAgainstHolds(rule, "Devil")).toBe(false);
+    expect(saveDisadvantageAgainstHolds(rule, "")).toBe(false);
+    expect(saveDisadvantageAgainstHolds(null, "Demon")).toBe(false);
+    expect(validateSaveDisadvantageAgainst(rule, "")).toEqual([]);
+    expect(validateSaveDisadvantageAgainst({ subtypes: [] }, "")).toHaveLength(1);
+    expect(validateSaveDisadvantageAgainst({ subtypes: ["demon"], types: ["fiend"] }, "")).toHaveLength(1);
+    expect(validateEntry({ saveDisadvantageAgainst: rule })).toEqual([]);
   });
 });

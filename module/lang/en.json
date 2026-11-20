@@ -1109,6 +1109,7 @@
   "DND5ECOMBAT.Malediction.Carte": "{item}: the curse on {name} ends",
   "DND5ECOMBAT.Malediction.Retour": "{item}: curse ended",
   "DND5ECOMBAT.Souci.moved": "You have already moved this turn: this is only possible before any movement.",
+  "DND5ECOMBAT.Souci.wrongLight": "You are in Bright Light: this is only possible in Dim Light or Darkness.",
   "DND5ECOMBAT.Souci.needsEffect": "{use} is only possible under {effect}.",
   "DND5ECOMBAT.Souci.barredByEffect": "{use} is not possible under {effect}.",
   "DND5ECOMBAT.Sournoise.Titre": "Cunning Strike — {name}",

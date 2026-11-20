@@ -936,6 +936,7 @@
   "DND5ECOMBAT.Malediction.Carte": "{item}: a maldição em {name} termina",
   "DND5ECOMBAT.Malediction.Retour": "{item}: maldição encerrada",
   "DND5ECOMBAT.Souci.moved": "Você já se moveu neste turno: isso só pode ser feito antes de qualquer deslocamento.",
+  "DND5ECOMBAT.Souci.wrongLight": "Você está em Luz Plena: isso só é possível em Penumbra ou Escuridão.",
   "DND5ECOMBAT.Souci.needsEffect": "{use} só é possível sob o efeito de {effect}.",
   "DND5ECOMBAT.Souci.barredByEffect": "{use} não é possível sob o efeito de {effect}.",
   "DND5ECOMBAT.Sournoise.Titre": "Golpe Ardiloso — {name}",

@@ -1109,6 +1109,7 @@
   "DND5ECOMBAT.Malediction.Carte": "{item} : la malédiction de {name} prend fin",
   "DND5ECOMBAT.Malediction.Retour": "{item} : fin de la malédiction",
   "DND5ECOMBAT.Souci.moved": "Vous vous êtes déjà déplacé à ce tour : ce n'est possible qu'avant tout déplacement.",
+  "DND5ECOMBAT.Souci.wrongLight": "Vous êtes en pleine lumière : ce n'est possible que dans une lumière faible ou les ténèbres.",
   "DND5ECOMBAT.Souci.needsEffect": "{use} n'est possible que sous l'effet de {effect}.",
   "DND5ECOMBAT.Souci.barredByEffect": "{use} n'est pas possible sous l'effet de {effect}.",
   "DND5ECOMBAT.Sournoise.Titre": "Frappe malicieuse — {name}",

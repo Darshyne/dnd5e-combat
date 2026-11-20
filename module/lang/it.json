@@ -1107,6 +1107,7 @@
   "DND5ECOMBAT.Malediction.Carte": "{item}: la maledizione su {name} termina",
   "DND5ECOMBAT.Malediction.Retour": "{item}: maledizione terminata",
   "DND5ECOMBAT.Souci.moved": "Ti sei già mosso in questo turno: è possibile solo prima di qualsiasi movimento.",
+  "DND5ECOMBAT.Souci.wrongLight": "Sei in piena luce: è possibile solo in luce fioca o nell'oscurità.",
   "DND5ECOMBAT.Souci.needsEffect": "{use} è possibile solo sotto l'effetto di {effect}.",
   "DND5ECOMBAT.Souci.barredByEffect": "{use} non è possibile sotto l'effetto di {effect}.",
   "DND5ECOMBAT.Sournoise.Titre": "Colpo Astuto — {name}",

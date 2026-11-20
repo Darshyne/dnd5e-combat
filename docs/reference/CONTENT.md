@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-947 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+948 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -66,8 +66,9 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `cures` | 14 | `boon-of-speed`, `dispel-evil-and-good`, `greater-restoration`, `hand-of-healing`, `lay-on-hands`, `lesser-restoration`, … |
 | `curesAll` | 7 | `elixir-of-health`, `hand-of-ultimate-mercy`, `heal`, `keoghtoms-ointment`, `mass-heal`, `potion-of-vitality`, … |
 | `curesOn` | 5 | `dispel-evil-and-good`, `hand-of-healing`, `lay-on-hands`, `physicians-touch`, `restoring-touch` |
+| `damageByCount` | 1 | `ring-of-shooting-stars` |
 | `damageShield` | 2 | `resistance`, `ring-of-warmth` |
-| `dataFixes` | 108 | `antilife-shell`, `antimatter-rifle`, `antitoxin`, `armor-of-vulnerability`, `awareness-ioun-stone`, `baba-yagas-dancing-broom`, … |
+| `dataFixes` | 109 | `antilife-shell`, `antimatter-rifle`, `antitoxin`, `armor-of-vulnerability`, `awareness-ioun-stone`, `baba-yagas-dancing-broom`, … |
 | `devours` | 1 | `blackrazor` |
 | `difficultTerrain` | 16 | `black-tentacles`, `blade-barrier`, `conjure-minor-elementals`, `earthquake`, `entangle`, `evards-black-tentacles`, … |
 | `discharge` | 1 | `path-to-the-grave` |

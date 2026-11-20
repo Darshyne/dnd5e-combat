@@ -65,12 +65,15 @@ export function swapPartners(self, others) {
  *    main et aucune autre arme » — un bouclier n'est pas une arme) ;
  *  - `inCombat` : la créature se bat (Rôdeur furtif, Brouillard de guerre : « l'action Se cacher pendant un combat ») ;
  *  - `abilityAtLeast` : valeurs de caractéristique minimales (Maître des armures intermédiaires : Dextérité 16).
- * @param {{armor?: string[], oneHanded?: true, inCombat?: true, abilityAtLeast?: Record<string, number>}} rule
+ * @param {{armor?: string[], notArmor?: string[], oneHanded?: true, inCombat?: true, abilityAtLeast?: Record<string, number>}} rule
  * @param {{armor: string|null, weapons: Array<{melee: boolean, twoHanded: boolean}>, inCombat: boolean, abilities: Record<string, number>}} facts
  * @returns {boolean}
  */
 export function effectHolds(rule, facts) {
   if ( rule.armor && !rule.armor.includes(facts.armor) ) return false;
+  // `notArmor` — pas ce genre d'armure : « tant que vous ne portez pas d'armure lourde » (Déplacement rapide, Vagabondage). Sans
+  // armure, la condition tient.
+  if ( rule.notArmor && rule.notArmor.includes(facts.armor) ) return false;
   if ( rule.oneHanded ) {
     const w = facts.weapons ?? [];
     if ( (w.length !== 1) || !w[0].melee || w[0].twoHanded ) return false;

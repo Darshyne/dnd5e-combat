@@ -21,6 +21,9 @@ const STAGGERED_SAVES = ["str", "dex", "con", "int", "wis", "cha"].map(a => ({ k
 export const BARBARIAN = Object.freeze({
   // Rage : l'effet de l'item (G5XZTi4zYTFiHVll), activé par « Expend Rage ». « Elle dure jusqu'à la fin de votre tour suivant » ;
   // on l'entretient en attaquant un ennemi, en imposant une sauvegarde à un ennemi ou par une action Bonus.
+  // Déplacement rapide (SRD 5.2) : « votre Vitesse augmente de 3 m tant que vous ne portez pas d'armure lourde » — l'effet de la
+  // donnée est sans condition (sa note Foundry demande de le désactiver à la main).
+  "fast-movement": { effectWhile: { Ln2upWfCALSwthX1: { if: { notArmor: ["heavy"] } } } },
   "rage": { rage: { effect: "G5XZTi4zYTFiHVll" } },
   // §301 : Représailles (niveau 14) — « quand vous subissez des dégâts d'une créature à 1,50 m, votre Réaction : une attaque au corps à corps
   // avec une arme ou à mains nues contre elle ».

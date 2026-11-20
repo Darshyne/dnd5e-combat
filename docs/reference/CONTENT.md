@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-947 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+950 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -67,7 +67,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `curesAll` | 7 | `elixir-of-health`, `hand-of-ultimate-mercy`, `heal`, `keoghtoms-ointment`, `mass-heal`, `potion-of-vitality`, … |
 | `curesOn` | 5 | `dispel-evil-and-good`, `hand-of-healing`, `lay-on-hands`, `physicians-touch`, `restoring-touch` |
 | `damageShield` | 2 | `resistance`, `ring-of-warmth` |
-| `dataFixes` | 108 | `antilife-shell`, `antimatter-rifle`, `antitoxin`, `armor-of-vulnerability`, `awareness-ioun-stone`, `baba-yagas-dancing-broom`, … |
+| `dataFixes` | 109 | `antilife-shell`, `antimatter-rifle`, `antitoxin`, `armor-of-vulnerability`, `awareness-ioun-stone`, `baba-yagas-dancing-broom`, … |
 | `devours` | 1 | `blackrazor` |
 | `difficultTerrain` | 16 | `black-tentacles`, `blade-barrier`, `conjure-minor-elementals`, `earthquake`, `entangle`, `evards-black-tentacles`, … |
 | `discharge` | 1 | `path-to-the-grave` |
@@ -87,7 +87,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `effectsIf` | 7 | `esoteric-ward`, `hammer-of-thunderbolts-enchanted`, `mm-wereboar-gore`, `psychic-skewer`, `shield-of-the-cavalier`, `silver-needle`, … |
 | `effectStatuses` | 6 | `coward-spirit`, `death-curse`, `divine-word`, `mm-beholder-eye-rays`, `mm-pseudodragon-sting`, `poisoned-needle` |
 | `effectThen` | 1 | `haste` |
-| `effectWhile` | 10 | `aspect-of-the-wilds`, `boon-of-the-night-spirit`, `bracers-of-defense`, `defense`, `dueling`, `full-of-stars`, … |
+| `effectWhile` | 13 | `aspect-of-the-wilds`, `boon-of-the-night-spirit`, `bracers-of-defense`, `defense`, `dueling`, `fast-movement`, … |
 | `elementalAdept` | 1 | `elemental-adept` |
 | `elusive` | 1 | `elusive` |
 | `emanation` | 16 | `avenging-angel`, `death-burst`, `death-throes`, `deathly-stench`, `fear-aura`, `fetid-aura`, … |

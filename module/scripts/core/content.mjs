@@ -216,7 +216,7 @@
  *     initiativeSwap?: true                     §129 : juste après son jet d'initiative, la créature peut échanger son initiative avec celle
  *                                               d'un allié du combat (Vigilant) — runtime/roll-bonus.mjs
  *     healingRerolls?: true                     §129 : aux dés de soins d'un sort de la créature, un 1 est relancé une fois (Guérisseur)
- *     effectWhile?: { <id d'effet>: { if: { armor?, oneHanded?, inCombat?, abilityAtLeast? }, changes? } }
+ *     effectWhile?: { <id d'effet>: { if: { armor?, notArmor?, oneHanded?, inCombat?, abilityAtLeast? }, changes? } }
  *                                               §130 : l'effet transféré de l'item n'est actif que si la condition tient pour le porteur
  *                                               (Défense, Duel…) ; `changes` réécrit les changements de l'effet (données cassées) ; sans
  *                                               `if` (§295), seuls les changements sont réécrits, l'effet reste actif ou non au choix du joueur —

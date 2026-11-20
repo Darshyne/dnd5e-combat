@@ -4,7 +4,7 @@
  *
  * Ce que dnd5e fait déjà seul : Formes du cercle (transformation), Formes du cercle améliorées (sauvegardes de Constitution),
  * Protégé de dame Nature, Plénitude stellaire, Enfant de la tempête, Affinité aquatique (effets), Forme stellaire (Archer, Calice,
- * Dragon : activités et effets), Aval de la terre (sauvegarde et soin), Ressourcement, Archidruide.
+ * Dragon : activités et effets), Aval de la terre (sauvegarde et soin), Archidruide.
  */
 
 /** Attaques primitives : « un jet d'attaque avec une arme ou une attaque de Bête sous Forme sauvage ». */
@@ -70,6 +70,11 @@ export const DRUID = Object.freeze({
     bearers: { radius: 10, units: "ft" } } },
   // §295 : Protégé de dame Nature (Cercle de la terre 10) — « immunité à l'état Empoisonné » ; la donnée ne porte que les Résistances.
   "natures-ward": { grantsConditionImmunities: ["poisoned"] },
+  // Ressourcement (Cercle de la terre 6, SRD 5.2) : « à la fin d'un Repos court, des emplacements dépensés dont la somme des
+  // niveaux ne dépasse pas la moitié de votre niveau de Druide (arrondie au supérieur), aucun du 6e niveau ou plus ; une fois par
+  // Repos long ». L'activité « Recover Spell Slots » de la donnée ne fait que compter son utilisation : c'est elle qui est
+  // dépensée.
+  "natural-recovery": { slotRecovery: { class: "druid", maxLevel: 5, activity: "u0UF6WePUutyp6e6" } },
   "stormborn": { ...seaPush, pickTargets: { activities: ["jOppnQcyBPpUizBN"], radius: "5 + 5 * min(1, floor(@classes.druid.levels / 6))", units: "ft", max: 1, check: "enemies" } },
   // Fureur élémentaire (niveau 7), option Attaques primitives : « une fois à chacun de vos tours, 1d8 dégâts de feu, de foudre, de
   // froid ou de tonnerre » — feu d'office (le choix n'est pas demandé) ; 2d8 avec Fureur élémentaire améliorée (niveau 15).

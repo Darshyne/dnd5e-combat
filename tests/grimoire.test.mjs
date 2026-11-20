@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { ritualMode, recoveryBudget, recoverableLevels } from "../module/scripts/core/grimoire.mjs";
+import { ritualMode, recoveryBudget, recoverableLevels, recoveryUses } from "../module/scripts/core/grimoire.mjs";
+import { validateEntry } from "../module/scripts/core/content.mjs";
+import { CONTENT } from "../module/scripts/content/index.mjs";
 import { validateEntry } from "../module/scripts/core/content.mjs";
 import { SHIPPED } from "../module/scripts/content/index.mjs";
 
@@ -39,5 +41,27 @@ describe("§139 : Restauration magique", () => {
     expect(validateEntry(SHIPPED["ritual-adept"])).toEqual([]);
     expect(validateEntry(SHIPPED["arcane-recovery"])).toEqual([]);
     expect(validateEntry({ slotRecovery: { maxLevel: 5 } }).length).toBeGreaterThan(0);
+  });
+});
+
+describe("où se compte l'utilisation d'une restauration d'emplacements", () => {
+  it("Restauration magique : sur l'item", () => {
+    expect(recoveryUses({ value: 1, max: 1 })).toEqual({ on: "item", left: true });
+    expect(recoveryUses({ value: 0, max: 1 })).toEqual({ on: "item", left: false });
+  });
+  it("Ressourcement : sur l'activité nommée, l'item n'ayant pas d'utilisations", () => {
+    expect(recoveryUses({ value: 0, max: "" }, { value: 1, max: "1" })).toEqual({ on: "activity", left: true });
+    expect(recoveryUses({ value: 0, max: "" }, { value: 0, max: "1" })).toEqual({ on: "activity", left: false });
+  });
+  it("sans compteur nulle part : pas de limite", () => {
+    expect(recoveryUses({ value: 0, max: "" })).toEqual({ on: null, left: true });
+    expect(recoveryUses(null, null)).toEqual({ on: null, left: true });
+  });
+  it("contenu et schéma", () => {
+    expect(CONTENT["natural-recovery"].slotRecovery).toEqual({ class: "druid", maxLevel: 5, activity: "u0UF6WePUutyp6e6" });
+    expect(validateEntry(CONTENT["natural-recovery"])).toEqual([]);
+    expect(validateEntry(CONTENT["arcane-recovery"])).toEqual([]);
+    expect(validateEntry({ slotRecovery: { class: "druid", activity: "court" } }).length).toBe(1);
+    expect(validateEntry({ slotRecovery: { class: "druid", autre: 1 } }).length).toBe(1);
   });
 });

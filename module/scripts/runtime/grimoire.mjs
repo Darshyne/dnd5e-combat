@@ -98,7 +98,7 @@ async function onRestCompleted(actor, result, config) {
   if ( (config?.type !== "short") || !actor?.isOwner ) return;
   const recovery = slotRecoveryOf(actor);
   if ( !recovery ) return;
-  const { item, rule, classLevel } = recovery;
+  const { item, rule, classLevel, counter } = recovery;
   const slots = foundry.utils.deepClone(recovery.slots);
   let budget = recoveryBudget(classLevel);
   const taken = [];
@@ -120,7 +120,12 @@ async function onRestCompleted(actor, result, config) {
   if ( !taken.length ) return;
   const updates = Object.fromEntries([...new Set(taken)].map(level => [`system.spells.spell${level}.value`, slots[level].value]));
   await actor.update(updates);
-  if ( item.system.uses?.max > 0 ) await spendItemUses(item);
+  // L'utilisation se dépense là où elle se compte : l'activité nommée par la règle (Ressourcement), sinon l'item.
+  if ( counter === "activity" ) {
+    const spent = Number(item.system.activities.get(rule.activity)?.uses?.spent) || 0;
+    await item.update({ [`system.activities.${rule.activity}.uses.spent`]: spent + 1 });
+  }
+  else if ( counter === "item" ) await spendItemUses(item);
   const text = loc("Restauration.Faite", { item: item.name, levels: taken.sort((a, b) => a - b).join(", ") });
   notice(tokenOfActor(actor), text, "gain");
   log(`${actor.name}: ${item.name}, spell slots recovered (levels ${taken.join(", ")})`);

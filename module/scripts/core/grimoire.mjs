@@ -20,6 +20,21 @@ export function ritualMode({ ritual, requiresSlot, inCombat, prepared, adept, sl
 }
 
 /**
+ * Où se compte l'utilisation d'une restauration d'emplacements, et s'il en reste : sur l'activité que la règle nomme (Ressourcement
+ * du Druide : l'item n'a pas d'utilisations, chacune de ses deux activités a la sienne), sinon sur l'item (Restauration magique).
+ * Sans compteur (`max` nul ou absent), elle n'est pas limitée.
+ * @param {{value?: number, max?: number|string}|null} itemUses
+ * @param {{value?: number, max?: number|string}|null} activityUses  celles de l'activité nommée par la règle, s'il y en a une
+ * @returns {{on: "activity"|"item"|null, left: boolean}}
+ */
+export function recoveryUses(itemUses, activityUses=null) {
+  const counted = u => Number(u?.max) > 0;
+  if ( counted(activityUses) ) return { on: "activity", left: Number(activityUses.value) > 0 };
+  if ( counted(itemUses) ) return { on: "item", left: Number(itemUses.value) > 0 };
+  return { on: null, left: true };
+}
+
+/**
  * Restauration magique : « des emplacements dépensés dont la somme des niveaux ne dépasse pas la moitié de votre niveau de Magicien
  * (arrondie au supérieur), aucun du 6e niveau ou plus ».
  * @param {number} classLevel

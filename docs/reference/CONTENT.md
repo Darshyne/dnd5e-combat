@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-947 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+948 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -251,7 +251,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `silences` | 1 | `silence` |
 | `singleAttack` | 1 | `slow` |
 | `slippery` | 2 | `grease`, `oil` |
-| `slotRecovery` | 1 | `arcane-recovery` |
+| `slotRecovery` | 2 | `arcane-recovery`, `natural-recovery` |
 | `smite` | 11 | `banishing-smite`, `blinding-smite`, `divine-smite`, `ensnaring-strike`, `hail-of-thorns`, `lightning-arrow`, … |
 | `sneakAttack` | 1 | `sneak-attack` |
 | `sneakBonus` | 1 | `assassinate` |

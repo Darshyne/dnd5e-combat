@@ -804,7 +804,11 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   // §139 : le grimoire du Magicien.
   if ( ("ritualAdept" in entry) && !(entry.ritualAdept && (typeof entry.ritualAdept.class === "string")) ) errors.push(`${at}ritualAdept: { class }`);
   if ( ("slotRecovery" in entry) && !(entry.slotRecovery && (typeof entry.slotRecovery.class === "string")
-    && ((entry.slotRecovery.maxLevel === undefined) || Number.isInteger(entry.slotRecovery.maxLevel))) ) errors.push(`${at}slotRecovery: { class, maxLevel? }`);
+    && ((entry.slotRecovery.maxLevel === undefined) || Number.isInteger(entry.slotRecovery.maxLevel))
+    && ((entry.slotRecovery.activity === undefined) || isId(entry.slotRecovery.activity))
+    && Object.keys(entry.slotRecovery).every(k => ["class", "maxLevel", "activity"].includes(k))) ) {
+    errors.push(`${at}slotRecovery: { class, maxLevel?, activity? }`);
+  }
   for ( const key of ["elementalAdept", "quickSearch", "reactiveStrike", "fleeOnFailedSave", "hardToPerceive"] ) if ( (key in entry) && (entry[key] !== true) ) errors.push(`${at}${key}: true or absent`);
   // O9g (§362) : `{ whileEffect }` — seulement tant que cet effet de l'item s'applique (Bottes de rapidité, talons claqués).
   if ( ("opportunityDisadvantage" in entry) && (entry.opportunityDisadvantage !== true)

@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import { ritualMode, recoveryBudget, recoverableLevels, recoveryUses } from "../module/scripts/core/grimoire.mjs";
 import { validateEntry } from "../module/scripts/core/content.mjs";
 import { CONTENT } from "../module/scripts/content/index.mjs";
-import { validateEntry } from "../module/scripts/core/content.mjs";
 import { SHIPPED } from "../module/scripts/content/index.mjs";
 
 const base = { ritual: true, requiresSlot: true, inCombat: false, prepared: true, adept: false, slotLeft: true };

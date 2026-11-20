@@ -1074,7 +1074,7 @@
   "DND5ECOMBAT.RenvoyerSort.Non": "Non",
   "DND5ECOMBAT.RenvoyerSort.Oui": "Le retourner ({item})",
   "DND5ECOMBAT.RenvoyerSort.Copie": "{spell} (renvoyé)",
-  "DND5ECOMBAT.RenvoyerSort.Carte": "{strike}, retourné contre {name}",
+  "DND5ECOMBAT.RenvoyerSort.Carte": "Sort retourné contre {name}",
   "DND5ECOMBAT.Tirer": "Tirer",
   "DND5ECOMBAT.Repousser": "Repousser",
   "DND5ECOMBAT.SeRelever.Question": "Vous êtes À terre : utiliser votre Réaction pour vous relever ?",

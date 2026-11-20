@@ -1072,7 +1072,7 @@
   "DND5ECOMBAT.RenvoyerSort.Non": "No",
   "DND5ECOMBAT.RenvoyerSort.Oui": "Rimandalo ({item})",
   "DND5ECOMBAT.RenvoyerSort.Copie": "{spell} (rimandato)",
-  "DND5ECOMBAT.RenvoyerSort.Carte": "{strike}, rimandato contro {name}",
+  "DND5ECOMBAT.RenvoyerSort.Carte": "Incantesimo rimandato contro {name}",
   "DND5ECOMBAT.Tirer": "Tira",
   "DND5ECOMBAT.Repousser": "Spingi",
   "DND5ECOMBAT.SeRelever.Question": "Sei Prono: usare la tua Reazione per rialzarti?",

@@ -59,8 +59,11 @@ export function announceContest({ actor, target, mine, theirs, outcome, item }) 
   const verdict = game.i18n.localize(`DND5ECOMBAT.Opposition.${outcome === "win" ? "Gagne" : (outcome === "tie" ? "Egalite" : "Perdu")}`);
   return ChatMessage.implementation.create({
     speaker: ChatMessage.implementation.getSpeaker({ actor }),
-    content: `<p><strong>${item.name}</strong> — ${game.i18n.format("DND5ECOMBAT.Opposition.Resume", {
-      name: actor.name, skill: label(mine.skill), total: mine.total, target: target.name, against: label(theirs.skill), theirs: theirs.total })}</p><p>${verdict}</p>`,
+    content: `<p><strong>${item.name}</strong> — ${theirs.fixed
+      ? game.i18n.format("DND5ECOMBAT.Opposition.ResumeDD", { name: actor.name, skill: label(mine.skill), total: mine.total,
+        target: target.name, dc: theirs.total })
+      : game.i18n.format("DND5ECOMBAT.Opposition.Resume", { name: actor.name, skill: label(mine.skill), total: mine.total,
+        target: target.name, against: label(theirs.skill), theirs: theirs.total })}</p><p>${verdict}</p>`,
     flags: { [MODULE_ID]: { contest: { item: item.uuid, target: target.uuid, mine: mine.total, theirs: theirs.total, outcome } } }
   });
 }

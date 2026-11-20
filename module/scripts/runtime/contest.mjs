@@ -8,7 +8,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { contestOf, rollContestSkill, playerOwnerOf, applyContestWin, announceContest } from "../adapter/contest.mjs";
-import { contestOutcome } from "../core/contest.mjs";
+import { contestOutcome, checkOutcome } from "../core/contest.mjs";
 import { route } from "./router.mjs";
 import { log, loc } from "./shared.mjs";
 
@@ -33,10 +33,13 @@ async function onPostUse(activity, usageConfig, results) {
     ?? [...game.user.targets][0]?.document ?? null;
   if ( !actor || !target?.actor ) return ui.notifications.info(loc("Opposition.SansCible", { item: activity.item.name }));
   const mine = await rollContestSkill(actor, [rule.skill]);
-  const theirs = await targetRoll(target.actor, rule.against);
+  // `dc` : un test contre un DD fixe, sans jet de la cible (Chaîne, Corde).
+  const fixed = Number.isFinite(rule.dc);
+  const theirs = fixed ? { skill: null, total: rule.dc, fixed: true } : await targetRoll(target.actor, rule.against);
   if ( !mine || !theirs ) return;
-  const outcome = contestOutcome(mine.total, theirs.total);
-  log(`${activity.item.name}: ${actor.name} ${mine.skill} ${mine.total} vs ${target.name} ${theirs.skill} ${theirs.total} → ${outcome}`);
+  const outcome = fixed ? checkOutcome(mine.total, rule.dc) : contestOutcome(mine.total, theirs.total);
+  const versus = fixed ? `DC ${rule.dc}` : `${target.name} ${theirs.skill} ${theirs.total}`;
+  log(`${activity.item.name}: ${actor.name} ${mine.skill} ${mine.total} vs ${versus} → ${outcome}`);
   await announceContest({ actor, target, mine, theirs, outcome, item: activity.item });
   if ( outcome !== "win" ) return;
   const n = await applyContestWin(results.message, activity, target, rule);

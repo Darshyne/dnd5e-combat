@@ -223,6 +223,8 @@ describe("§17.3 : ce que les états interdisent", () => {
 });
 
 import { breakMoments, curable, fightingAdvantage } from "../module/scripts/core/conditions.mjs";
+import { validateEntry } from "../module/scripts/core/content.mjs";
+import { CONTENT } from "../module/scripts/content/index.mjs";
 
 describe("§16.47 : règles de sorts", () => {
   it("Tentacules de Hadar : pas de Réaction", () => {
@@ -275,5 +277,12 @@ describe("sauvegarde d'office selon le type de créature (saveAutoSuccess.types,
     expect(typeAutoSave({}, "plant")).toBeNull();
     expect(typeAutoSave(undefined, "plant")).toBeNull();
     expect(typeAutoSave({ success: ["plant"], fail: ["plant"] }, "plant")).toEqual({ autoFail: "type:plant" });
+  });
+  it("schéma de saveAutoFail : des types de créature, rien d'autre ; Flétrissement le déclare", () => {
+    expect(validateEntry({ saveAutoFail: { types: ["plant"] } })).toEqual([]);
+    expect(validateEntry({ saveAutoFail: { types: [] } })).toEqual(["saveAutoFail: { types: [creature types] }"]);
+    expect(validateEntry({ saveAutoFail: { types: ["arbre"] } })).toHaveLength(1);
+    expect(validateEntry({ saveAutoFail: { types: ["plant"], fighting: true } })).toHaveLength(1);
+    expect(CONTENT.blight.saveAutoFail).toEqual({ types: ["plant"] });
   });
 });

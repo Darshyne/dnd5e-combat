@@ -97,14 +97,6 @@ describe("validation d'une entrée", () => {
     expect(validateEntry({ aura: { radius: 10 } }, { facts })).toEqual([]);
   });
 
-  it("saveAutoFail : des types de créature, rien d'autre", () => {
-    expect(validateEntry({ saveAutoFail: { types: ["plant"] } }, { facts })).toEqual([]);
-    expect(validateEntry({ saveAutoFail: { types: [] } }, { facts })).toEqual(["saveAutoFail: { types: [creature types] }"]);
-    expect(validateEntry({ saveAutoFail: { types: ["arbre"] } }, { facts })).toHaveLength(1);
-    expect(validateEntry({ saveAutoFail: { types: ["plant"], fighting: true } }, { facts })).toHaveLength(1);
-    expect(CONTENT.blight.saveAutoFail).toEqual({ types: ["plant"] });
-  });
-
   it("onHit : un id d'activité", () => {
     expect(validateEntry({ onHit: { save: "abc" } }, { facts })).toEqual(["onHit.save: activity id (16 characters)"]);
     expect(validateEntry({ onHit: "udF9lrpAQMvL0b9J" }, { facts })).toHaveLength(1);

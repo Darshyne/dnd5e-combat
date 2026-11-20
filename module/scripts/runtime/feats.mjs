@@ -463,8 +463,8 @@ async function endOwnCondition(actor, at) {
 const chargesBefore = new Map();
 
 /**
- * L'objet de la fiche : après l'utilisation, dnd5e passe aux hooks une activité clonée (mise à l'échelle), dont l'item ne reçoit pas
- * la mise à jour des utilisations.
+ * L'objet de la fiche : après l'utilisation, dnd5e passe aux hooks une activité clonée (mise à l'échelle), dont l'item ne reçoit
+ * pas la mise à jour des utilisations.
  */
 const ownedItemOf = activity => activity?.actor?.items?.get(activity?.item?.id) ?? activity?.item ?? null;
 

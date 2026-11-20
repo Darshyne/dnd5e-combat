@@ -16,6 +16,7 @@ import { ownConditionsRule, pickOwnCondition } from "../core/self-care.mjs";
 import { STEPS } from "../core/action.mjs";
 import { attackDamageTypes } from "../adapter/smite.mjs";
 import { inflict } from "../adapter/retaliation.mjs";
+import { onMarkSplashResolution } from "./mark-splash.mjs";
 import { victimsOf } from "../adapter/grapple.mjs";
 import { enqueue } from "./queue.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
@@ -498,6 +499,8 @@ function onTurnChange(combat, prior, current) {
 }
 
 export function registerFeats() {
+  route(`${MODULE_ID}.resolution`, resolution => enqueue(`markSplash:${resolution?.id}`, () => onMarkSplashResolution(resolution)),
+    { executor: true, label: "Superior Hunter's Prey: extra damage not offered" });
   route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "origin feats (damage)" });
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`critMark:${resolution?.id}`, () => onResolution(resolution)), { executor: true, label: "critical mark not placed" });
   route("combatTurnChange", onTurnChange, { executor: true, label: "feat turn start" });

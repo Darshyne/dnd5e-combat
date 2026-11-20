@@ -128,4 +128,5 @@ export const ENCHANTMENT_SOURCES = Object.freeze({
   "5rHVxAXfNzLO5zxx": "weapon-of-warning",
   UaQkN55ZMKSt9LGT: "1-wand-of-the-war-mage", jqNFw2MJ4B1HG257: "1-wand-of-the-war-mage",
   kejXxpJFzlSWcpm1: "1-wand-of-the-war-mage",
+  "8E4SvTACyo0LzFBk": "dwarven-plate",
 });

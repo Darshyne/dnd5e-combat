@@ -71,6 +71,8 @@ import { waitForAnimations } from "./animations.mjs";
 import { isRangedWeaponAttack } from "../adapter/cover.mjs";
 import { TRANSIENT_LINGER_MS, deserializeDamages, dispatcher, healsDownedToMax, healsMax, hpTierFor, prismaticFor, slotHealBonus, speakerTokenUuid } from "./engine.mjs";
 import { healingTotal, withMaxRaise } from "../core/heal-raises-max.mjs";
+import { budgetIssues, spendBudget } from "./neighbours.mjs";
+import { braceCut } from "../core/forced-move.mjs";
 
 /* -------------------------------------------- */
 /*  Commandes de la machine d'action            */
@@ -614,8 +616,27 @@ async function forcedMove(source, target, { mode, distance, units, follow=false,
     catch(err) { return log(`push: distance "${distance}" unreadable (${err.message})`); }
     if ( !(value > 0) ) return log(`push: distance "${distance}" = ${value}, nothing`);
   }
+  // Harnois nain : « si un effet vous déplace contre votre gré sur le sol, vous pouvez utiliser votre Réaction pour réduire la
+  // distance de 3 m au plus » (`reducesForcedMove`) — demandé au porteur, qui garde sa Réaction s'il ne répond pas.
+  value = await bracedDistance(target, value, units, towards ? "pull" : "push");
+  if ( !(value > 0) ) return log(`${towards ? "pull" : "push"}: ${target.name} not moved (braced)`);
   const { cells, wanted } = await pushAway(source, target, { distance: value, units }, readUnitFactors(), { towards, follow, point });
   log(`${towards ? "pull" : "push"}: ${target.name} ${towards ? "pulled" : "pushed"} ${cells} square(s) out of ${wanted}${cells < wanted ? " (stopped)" : ""}`);
+}
+
+/** `reducesForcedMove` : ce qu'il reste d'un déplacement subi, une fois la Réaction du porteur prise — ou la distance inchangée. */
+async function bracedDistance(target, value, units, mode) {
+  const actor = target?.actor;
+  if ( !actor || !Number.isFinite(value) ) return value;
+  const item = Array.from(actor.items ?? []).find(i => (i.system?.equipped !== false) && contentOf(i).entry?.reducesForcedMove);
+  const cut = item ? braceCut(contentOf(item).entry.reducesForcedMove, value, units) : 0;
+  if ( !(cut > 0) || budgetIssues(actor, "reaction").length ) return value;
+  const answer = await askChoice(actor, { actor: actor.uuid, item: item.name, prompt: loc("Ancrage.Question", { n: cut, units }),
+    options: [{ id: "keep", label: loc("Ancrage.Non") }, { id: "brace", label: loc("Ancrage.Oui", { n: cut, units }) }] });
+  if ( answer?.id !== "brace" ) return value;
+  await spendBudget(actor, "reaction");
+  log(`${item.name}: ${actor.name} takes a Reaction, the ${mode} is reduced by ${cut} ${units}`);
+  return value - cut;
 }
 
 /**

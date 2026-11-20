@@ -20,8 +20,9 @@ describe("damageByCount : des dégâts selon le nombre créé (Anneau des étoil
     expect(formulaForCount(null, 1)).toBeNull();
   });
   it("la sauvegarde sans dégât reçoit la ligne d'une sphère", () => {
-    const plan = dataFixPlan({ effects: [], system: { activities: { GLyk6XaqTk5JOVQ8: { damage: { parts: [] } } } } }, entry.dataFixes);
-    expect(plan.item["system.activities.GLyk6XaqTk5JOVQ8.damage.parts"][0]).toMatchObject({ number: 4, denomination: 12, types: ["lightning"] });
+    const source = { effects: [], system: { activities: { GLyk6XaqTk5JOVQ8: { damage: { parts: [] } } } } };
+    const [part] = dataFixPlan(source, entry.dataFixes).item["system.activities.GLyk6XaqTk5JOVQ8.damage.parts"];
+    expect(part).toMatchObject({ number: 4, denomination: 12, types: ["lightning"] });
   });
   it("la clé est validée", () => {
     const isId = v => (typeof v === "string") && /^[A-Za-z0-9]{16}$/.test(v);

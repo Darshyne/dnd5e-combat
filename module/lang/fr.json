@@ -1,5 +1,6 @@
 {
   "DND5ECOMBAT.Opposition.Resume": "{name} : {skill} {total} contre {target} : {against} {theirs}.",
+  "DND5ECOMBAT.Opposition.ResumeDD": "{name} : {skill} {total} contre DD {dc}, sur {target}.",
   "DND5ECOMBAT.Opposition.Gagne": "Réussite : l'effet est posé.",
   "DND5ECOMBAT.Opposition.Perdu": "Échec.",
   "DND5ECOMBAT.Opposition.Egalite": "Égalité : rien ne change.",

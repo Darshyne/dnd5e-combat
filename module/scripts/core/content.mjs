@@ -829,10 +829,11 @@
  *                                               porte `castsSpell`, fait échouer d'office un sort de niveau `level` ou moins (défaut :
  *                                               le niveau de l'item) ; au-delà, test de la caractéristique d'incantation de celui
  *                                               qui contre, DD 10 + le niveau du sort (core/counter.mjs) — pas de sauvegarde du lanceur
- *     contest?: { activity?, skill, against, effect, exclusive? }
+ *     contest?: { activity?, skill, against | dc, effect, exclusive? }
  *                                               test en opposition (§72, Combat perspicace) : l'auteur jette `skill`, la cible la
  *                                               meilleure de `against` (chez son joueur s'il est connecté) ; gagné, l'effet `effect`
  *                                               de l'activité est posé sur elle (`exclusive` : ceux posés ailleurs tombent)
+ *                                               `dc` à la place de `against` : un DD fixe, sans jet de la cible (Chaîne, Corde)
  *     zoneCharges?: n                           la zone qui dure tombe après n déclenchements (§75) ; §303 : ou une formule du niveau de lancement (Cordon de flèches : « 2 * @item.level »)
  *     pendingDie?: { activity, against: "melee"|"target" }  §89 : l'activité promet son dé au prochain jet de dégâts d'une
  *                                               attaque de l'auteur ce tour-ci, au corps à corps ou contre la cible désignée (Fente,

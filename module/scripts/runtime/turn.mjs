@@ -12,6 +12,7 @@ import { promptWait, htmlText } from "../adapter/dialogs.mjs";
 import { basicActionOf, basicActionOfActivity, basicChoiceOf } from "../adapter/basics.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
+import { linkedBearers } from "../adapter/cast-from.mjs";
 import { isRaging, rageOptionsTaken } from "../adapter/rage.mjs";
 import { secondRageOption } from "../core/limits.mjs";
 import { enemiesSeeing } from "../adapter/hide.mjs";
@@ -66,6 +67,8 @@ export function rangeProblems(activity, attackMode=null) {
   // mesure depuis le lanceur ou depuis l'une de ses invocations `castFrom`, la plus favorable.
   const from = [origin];
   if ( activity.item?.type === "spell" ) from.push(...summonsOfWith(activity.actor, "castFrom").filter(t => t.parent === origin.parent));
+  // Regard de deux esprits : ou depuis l'espace de la créature liée (`castFromBearer`), à la distance dite.
+  if ( activity.item?.type === "spell" ) from.push(...linkedBearers(activity.actor, origin, factors));
   const rank = issue => ({ longRange: 1, outOfRange: 2, tooClose: 3 })[issue] ?? 0;
   // O8h (§351) : une portée minimale (armes de siège) — trop près est aussi bloquant.
   const min = contentOf(activity.item).entry?.minRange ?? null;

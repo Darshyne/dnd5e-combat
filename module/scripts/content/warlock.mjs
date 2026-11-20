@@ -9,6 +9,13 @@
  */
 
 export const WARLOCK = Object.freeze({
+  // Regard de deux esprits (SRD 5.2) : « vous pouvez lancer des sorts comme si vous étiez dans votre espace ou dans celui de
+  // l'autre créature si vous êtes tous deux à 18 m ou moins l'un de l'autre », « jusqu'à la fin de votre prochain tour ». La donnée
+  // n'a aucun effet : une marque créée et reliée à l'activité se pose sur la créature touchée ; elle tient le lien.
+  "gaze-of-two-minds": { castFromBearer: { distance: 60, units: "ft" }, effectEnds: { dasGazeTwoMinds0: "casterTurnEnd" },
+    dataFixes: [{ effect: "dasGazeTwoMinds0", create: { name: "Gaze of Two Minds", type: "base", transfer: false, disabled: false,
+      statuses: [], system: { changes: [] } } },
+    { path: "system.activities.TqjZeWzJpT25ZX8s.effects", from: [], value: [{ _id: "dasGazeTwoMinds0" }] }] },
   // §298 (repasse C3) : Pacte de la chaîne — « vous pouvez lancer Appel de familier par une action Magie » (la donnée dit « 1 heure » :
   // en combat, l'invocation ne coûtait rien).
   "pact-of-the-chain": { usageLimits: { uehA2kfgOCKRIqAs: { cost: "action" }, "5W78W2Opzhax0Jcf": { cost: "action" } } },

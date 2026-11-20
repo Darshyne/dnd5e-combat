@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-947 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+948 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -43,6 +43,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `carriedLight` | 13 | `bullseye-lantern`, `candle`, `flame-tongue-enchanted`, `helm-of-brilliance-enchanted`, `hooded-lantern`, `lamp`, … |
 | `castDuration` | 1 | `oil-of-slipperiness` |
 | `casterPulse` | 6 | `cloudkill`, `delayed-blast-fireball`, `earthquake`, `incendiary-cloud`, `storm-of-vengeance`, `tsunami` |
+| `castFromBearer` | 1 | `gaze-of-two-minds` |
 | `castTargets` | 1 | `potion-of-animal-friendship` |
 | `catalyst` | 1 | `second-skin` |
 | `cellWall` | 2 | `blade-barrier`, `wall-of-thorns` |
@@ -67,7 +68,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `curesAll` | 7 | `elixir-of-health`, `hand-of-ultimate-mercy`, `heal`, `keoghtoms-ointment`, `mass-heal`, `potion-of-vitality`, … |
 | `curesOn` | 5 | `dispel-evil-and-good`, `hand-of-healing`, `lay-on-hands`, `physicians-touch`, `restoring-touch` |
 | `damageShield` | 2 | `resistance`, `ring-of-warmth` |
-| `dataFixes` | 108 | `antilife-shell`, `antimatter-rifle`, `antitoxin`, `armor-of-vulnerability`, `awareness-ioun-stone`, `baba-yagas-dancing-broom`, … |
+| `dataFixes` | 109 | `antilife-shell`, `antimatter-rifle`, `antitoxin`, `armor-of-vulnerability`, `awareness-ioun-stone`, `baba-yagas-dancing-broom`, … |
 | `devours` | 1 | `blackrazor` |
 | `difficultTerrain` | 16 | `black-tentacles`, `blade-barrier`, `conjure-minor-elementals`, `earthquake`, `entangle`, `evards-black-tentacles`, … |
 | `discharge` | 1 | `path-to-the-grave` |
@@ -81,7 +82,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `duringRage` | 4 | `mindless-rage`, `primal-knowledge`, `rage-of-the-wilds`, `vitality-of-the-tree` |
 | `effectChanges` | 22 | `brutal-strike`, `caltrops`, `contagion`, `elemental-epitome`, `fool`, `gaseous-form`, … |
 | `effectDurations` | 6 | `blessing-of-the-trickster`, `clairvoyant-combatant`, `dust-of-disappearance`, `intimidating-presence`, `scroll-of-protection`, `wand-of-paralysis` |
-| `effectEnds` | 48 | `aberrant-anatomy`, `brutal-strike`, `celestial-revelation`, `chill-touch`, `defensive-duelist`, `devour-intellect`, … |
+| `effectEnds` | 49 | `aberrant-anatomy`, `brutal-strike`, `celestial-revelation`, `chill-touch`, `defensive-duelist`, `devour-intellect`, … |
 | `effectsExpire` | 2 | `blessing-of-the-trickster`, `prayer-of-healing` |
 | `effectsFirst` | 2 | `aid`, `heroes-feast` |
 | `effectsIf` | 7 | `esoteric-ward`, `hammer-of-thunderbolts-enchanted`, `mm-wereboar-gore`, `psychic-skewer`, `shield-of-the-cavalier`, `silver-needle`, … |

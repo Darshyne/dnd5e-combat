@@ -49,6 +49,18 @@ export function castTargetRule(own, spellTargets, activityId) {
   return { ...(own ?? {}), ...added };
 }
 
+/**
+ * Le sous-type d'une créature (`details.type.subtype` de dnd5e, texte libre : « Demon », « Devil », « Goblinoid ») est-il celui
+ * attendu, ou l'un de ceux attendus ? Sans égard à la casse ni aux espaces autour ; sans sous-type : non.
+ * @param {string|null|undefined} subtype
+ * @param {string|string[]} want
+ */
+export function subtypeMatches(subtype, want) {
+  const own = String(subtype ?? "").trim().toLowerCase();
+  if ( !own ) return false;
+  return [want].flat().some(w => String(w ?? "").trim().toLowerCase() === own);
+}
+
 /** Les états d'un effet contre lesquels la créature est immunisée (vide : l'effet peut être posé). */
 export function blockedStatuses(statuses, immunities) {
   const immune = new Set(immunities ?? []);

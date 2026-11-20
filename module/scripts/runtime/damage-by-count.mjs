@@ -9,7 +9,8 @@ import { contentOf } from "../adapter/content.mjs";
 import { route } from "./router.mjs";
 import { log } from "./shared.mjs";
 
-const FLAG = "damageByCount";
+// Pas le nom de la clé : `flags.dnd5e-combat.<clé de contenu>` d'un item est lu comme du contenu par objet.
+const FLAG = "countCreated";
 
 async function onPostUse(activity, usageConfig, results) {
   const rules = activity?.item ? contentOf(activity.item).entry?.damageByCount : null;

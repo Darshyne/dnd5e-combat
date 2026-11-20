@@ -239,6 +239,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `savedEffects` | 6 | `flesh-to-stone`, `heat-metal`, `mace-of-disruption`, `ottos-irresistible-dance`, `ray-of-enfeeblement`, `stunning-strike` |
 | `saveDisadvantageFor` | 3 | `shatter`, `talisman-of-pure-good`, `talisman-of-ultimate-evil` |
 | `saveIgnoresCover` | 1 | `sacred-flame` |
+| `saveReflect` | 1 | `staff-of-charming` |
 | `saveResist` | 1 | `staff-of-charming` |
 | `scatter` | 2 | `ball-bearings`, `caltrops` |
 | `scoreFloor` | 1 | `indomitable-might` |

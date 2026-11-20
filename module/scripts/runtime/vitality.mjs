@@ -35,7 +35,7 @@ export async function onVitalityResolution(resolution) {
   const range = lengthIn(rule.range.value, rule.range.units, scene.grid.units, readUnitFactors());
   const tokens = scene.tokens.filter(t => t.actor && !t.hidden && ((t.actor.system?.attributes?.hp?.value ?? 0) > 0))
     .map(t => ({ id: t.id, name: t.name, self: t.id === self.id, ally: !areEnemies(self, t),
-      distance: (t.id === self.id) ? 0 : distanceBetween(self, t) }));
+      distance: (t.id === self.id) ? 0 : distanceBetween(self, t).value }));   // `{ value, units }`, dans l'unité de la scène
   const recipients = vitalityRecipients(tokens, range);
   let amount = 0;
   try { amount = Number(Roll.safeEval(Roll.replaceFormulaData(rule.tempHp, source.getRollData()))) || 0; }

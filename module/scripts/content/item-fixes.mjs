@@ -322,6 +322,10 @@ export const ITEM_FIXES = Object.freeze({
   "dimensional-shackles": { noTeleport: true },
   // Baguette de terreur (SRD 5.2) : « Terreur (cône de 18 m) » — l'activité de la donnée lance le sort tel quel, cône de 9 m.
   "wand-of-fear": { spellFixes: { "9c7SNgBZU2KJjgFg": [{ path: "system.target.template.size", from: "30", value: "60" }] } },
+  // Bâton d'envoûtement (SRD 5.2), Résister à l'enchantement : « si vous ratez un jet de sauvegarde contre un sort d'enchantement
+  // qui ne cible que vous, vous pouvez changer cet échec en réussite ; plus avant l'aube » — l'activité de la donnée ne fait rien.
+  // Renvoyer l'enchantement (la Réaction après une réussite) reste au MJ.
+  "staff-of-charming": { saveResist: { activity: "tEk1wNWngqDYOgOB", schools: ["enc"], singleTarget: true } },
   // Orbe des dragons : « 7 charges, 1d4 + 3 à l'aube » — l'item n'en a aucune, ses sorts payants étaient refusés.
   "orb-of-dragonkind": {
     dataFixes: [{ path: "system.uses.max", from: "", value: "7" }, { path: "system.uses.recovery", from: [], value: [{ period: "dawn", type: "formula", formula: "1d4 + 3" }] }]

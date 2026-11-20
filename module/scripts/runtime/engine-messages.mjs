@@ -20,6 +20,8 @@ import { critMargin } from "../adapter/criticals.mjs";
 import { log, loc, waitForDice } from "./shared.mjs";
 import { atCostMarginOf, holdForAtCost } from "./success-at-cost.mjs";
 import { LOOKBACK, castLevelOfMessage, dispatcher, enrich, openingFor, resolutionOn, serializeDamages, speakerTokenUuid } from "./engine.mjs";
+import { saveResistApplies } from "../core/save-resist.mjs";
+import { askChoice } from "../adapter/choices.mjs";
 
 /* -------------------------------------------- */
 /*  Messages du système → évènements            */
@@ -193,7 +195,10 @@ export async function onSaveMessage(message) {
   const failed = Number.isFinite(dc) && (save.total < dc);
   // Une intention peut imposer le choix (`legendary: "always" | "never"` sur l'utilisation : scénarios, macros), comme `saveChoice`.
   const forced = game.messages.get(resolution.origin ?? carrierId)?.getFlag(MODULE_ID, "legendary") ?? carrier.getFlag(MODULE_ID, "legendary");
-  const resisted = failed ? await legendaryResistance(message, { dc, item: carrier.getAssociatedActivity?.()?.item?.name, forced }) : false;
+  let resisted = failed ? await legendaryResistance(message, { dc, item: carrier.getAssociatedActivity?.()?.item?.name, forced }) : false;
+  // Bâton d'envoûtement : « si vous ratez un jet de sauvegarde contre un sort d'enchantement qui ne cible que vous, vous pouvez
+  // changer cet échec en réussite » (`saveResist`) — proposé au porteur, sur les utilisations de l'activité de l'objet.
+  if ( failed && !resisted ) resisted = await declaredSaveResist(saver, carrier, resolution, { total: save.total, dc });
   // §33 : Inspiration bardique — une sauvegarde ratée : la créature inspirée peut ajouter son dé.
   let total = save.total;
   if ( failed && !resisted ) {
@@ -231,6 +236,29 @@ function saveStatuses(carrier, resolution) {
   const resave = carrier?.getFlag?.(MODULE_ID, "resave")?.effect;
   for ( const s of (resave ? fromUuidSync(resave, { strict: false })?.statuses : null) ?? [] ) out.add(s);
   return Array.from(out);
+}
+
+/** `saveResist` : un objet porté change la sauvegarde ratée en réussite, sur les utilisations de son activité ; demandé, jamais forcé. */
+async function declaredSaveResist(saver, carrier, resolution, { total, dc }) {
+  const spell = carrier?.getAssociatedActivity?.()?.item;
+  if ( !saver || !spell ) return false;
+  const against = { isSpell: spell.type === "spell", school: spell.system?.school ?? null,
+    targets: (resolution.targets ?? []).length };
+  for ( const item of saver.items ?? [] ) {
+    const rule = contentOf(item).entry?.saveResist;
+    if ( !saveResistApplies(rule, against) || (item.system?.equipped === false) ) continue;
+    const activity = item.system.activities?.get(rule.activity);
+    if ( !activity || !((activity.uses?.value ?? 0) > 0) ) continue;
+    const answer = await askChoice(saver, { actor: saver.uuid, item: item.name,
+      prompt: loc("ResisterSort.Question", { spell: spell.name, total, dc }),
+      options: [{ id: "keep", label: loc("ResisterSort.Non") },
+        { id: "resist", label: loc("ResisterSort.Oui", { item: activity.name }) }] });
+    if ( answer?.id !== "resist" ) continue;
+    await activity.update({ "uses.spent": (activity.uses.spent ?? 0) + 1 });
+    log(`${item.name}: ${saver.name} turns the failed saving throw against ${spell.name} (${total} vs DC ${dc}) into a success`);
+    return true;
+  }
+  return false;
 }
 
 /**

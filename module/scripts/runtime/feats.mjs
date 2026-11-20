@@ -462,9 +462,15 @@ async function endOwnCondition(actor, at) {
 /** Les utilisations de l'objet avant l'utilisation d'une de ses propriétés à charges : l'activité → ce qui était dépensé. */
 const chargesBefore = new Map();
 
+/**
+ * L'objet de la fiche : après l'utilisation, dnd5e passe aux hooks une activité clonée (mise à l'échelle), dont l'item ne reçoit pas
+ * la mise à jour des utilisations.
+ */
+const ownedItemOf = activity => activity?.actor?.items?.get(activity?.item?.id) ?? activity?.item ?? null;
+
 /** La règle `savesCharges` du porteur, quand cette activité dépense des charges d'un objet magique (core/charges.mjs), ou null. */
 function chargeRuleFor(activity) {
-  const item = activity?.item;
+  const item = ownedItemOf(activity);
   const actor = activity?.actor;
   const rule = actor?.items ? actor.items.map(i => contentOf(i).entry?.savesCharges).find(Boolean) : null;
   if ( !rule || !item ) return null;
@@ -476,7 +482,7 @@ function chargeRuleFor(activity) {
 
 function onPreUseCharges(activity) {
   if ( activity?.actor?.isOwner && chargeRuleFor(activity) ) {
-    chargesBefore.set(activity.uuid, Number(activity.item.system.uses?.spent) || 0);
+    chargesBefore.set(activity.uuid, Number(ownedItemOf(activity).system.uses?.spent) || 0);
   }
   return true;
 }
@@ -490,7 +496,7 @@ async function keepCharges(activity) {
   const before = chargesBefore.get(activity.uuid);
   chargesBefore.delete(activity.uuid);
   const rule = chargeRuleFor(activity);
-  const item = activity.item;
+  const item = ownedItemOf(activity);
   const spent = (Number(item.system.uses?.spent) || 0) - before;
   if ( !rule || !(spent > 0) ) return;
   const actor = activity.actor;

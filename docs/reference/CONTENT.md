@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-947 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+948 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -105,6 +105,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `evasion` | 2 | `evasion`, `leading-evasion` |
 | `exclusiveWeapon` | 3 | `berserker-axe-enchanted`, `oathbow-enchanted`, `sword-of-vengeance-enchanted` |
 | `extraFirstTurn` | 1 | `thiefs-reflexes` |
+| `extraTurns` | 1 | `time-stop` |
 | `fadesOnLongRest` | 2 | `raise-dead`, `resurrection` |
 | `failMargins` | 3 | `lolths-sting`, `mm-homunculus-bite`, `spiders-sting` |
 | `flammable` | 2 | `oil`, `web` |

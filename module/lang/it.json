@@ -1065,6 +1065,7 @@
   "DND5ECOMBAT.ChoixParCible": "Per {name}: quale effetto?",
   "DND5ECOMBAT.DistanceAucune": "Non spostarla",
   "DND5ECOMBAT.DistanceQuestion": "Di quanto spostare {name}?",
+  "DND5ECOMBAT.ToursAffilee.Jet": "{item}: {n} turni di fila",
   "DND5ECOMBAT.Tirer": "Tira",
   "DND5ECOMBAT.Repousser": "Spingi",
   "DND5ECOMBAT.SeRelever.Question": "Sei Prono: usare la tua Reazione per rialzarti?",

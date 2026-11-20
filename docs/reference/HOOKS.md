@@ -166,27 +166,28 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 13. cursed weapon: wrath not ended _(MJ)_
 14. monster emanation _(MJ)_
 15. regeneration at start of turn _(MJ)_
-16. weapon mastery: mark not removed _(MJ)_
-17. Heroic Warrior: inspiration not given _(MJ)_
-18. feat turn start _(MJ)_
-19. spell effect end not played _(MJ)_
-20. effect end by distance at turn end: not judged _(MJ)_
-21. study to escape: not offered _(MJ)_
-22. Rage: end not evaluated _(MJ)_
-23. swallow: turn not handled _(MJ)_
-24. climbing: check not asked _(MJ)_
-25. Ready: held spell not lost at turn start _(MJ)_
-26. burning: start-of-turn fire damage not dealt _(MJ)_
-27. improvised weapon: not removed at end of turn _(MJ)_
-28. Blink: d6 not rolled _(MJ)_
-29. flammable: not burnt out _(MJ)_
-30. help: ends on the helper's turn _(MJ)_
-31. Stealth Attack: cover not judged _(MJ)_
-32. antimagic: cone not ended _(MJ)_
-33. Compulsion: direction not played _(MJ)_
-34. imposed command: not carried out _(MJ)_
-35. control spells: turn behaviour not played _(MJ)_
-36. involuntary change: not played _(MJ)_
+16. turns in a row: turn not given back _(MJ)_
+17. weapon mastery: mark not removed _(MJ)_
+18. Heroic Warrior: inspiration not given _(MJ)_
+19. feat turn start _(MJ)_
+20. spell effect end not played _(MJ)_
+21. effect end by distance at turn end: not judged _(MJ)_
+22. study to escape: not offered _(MJ)_
+23. Rage: end not evaluated _(MJ)_
+24. swallow: turn not handled _(MJ)_
+25. climbing: check not asked _(MJ)_
+26. Ready: held spell not lost at turn start _(MJ)_
+27. burning: start-of-turn fire damage not dealt _(MJ)_
+28. improvised weapon: not removed at end of turn _(MJ)_
+29. Blink: d6 not rolled _(MJ)_
+30. flammable: not burnt out _(MJ)_
+31. help: ends on the helper's turn _(MJ)_
+32. Stealth Attack: cover not judged _(MJ)_
+33. antimagic: cone not ended _(MJ)_
+34. Compulsion: direction not played _(MJ)_
+35. imposed command: not carried out _(MJ)_
+36. control spells: turn behaviour not played _(MJ)_
+37. involuntary change: not played _(MJ)_
 
 ### `controlToken`
 
@@ -671,27 +672,28 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 13. contest not played
 14. self area: automatic placement
 15. coating: weapon not coated
-16. Boon of Spell Recall
-17. maneuver: promised die or AC not applied
-18. spell ended by a special function: not ended
-19. escape
-20. jump: Step of the Wind doubling not noted
-21. Ready: readied action not chosen
-22. improvised weapon: not requested
-23. effect ending on spell or damage not removed
-24. potion: conditions not removed
-25. healer's kit: stabilization
-26. hide
-27. search
-28. light object: the caster does not shed light
-29. caster light: not lit
-30. light source: not lit
-31. Wild Shape: transformation not done
-32. enchantment: weapon not enchanted
-33. ethereal: Ethereal Jaunt / Stride not applied
-34. Arcane Vigor: Hit Point Dice not spent
-35. restoration: condition not removed
-36. tinderbox: nothing lit
+16. turns in a row: number not rolled
+17. Boon of Spell Recall
+18. maneuver: promised die or AC not applied
+19. spell ended by a special function: not ended
+20. escape
+21. jump: Step of the Wind doubling not noted
+22. Ready: readied action not chosen
+23. improvised weapon: not requested
+24. effect ending on spell or damage not removed
+25. potion: conditions not removed
+26. healer's kit: stabilization
+27. hide
+28. search
+29. light object: the caster does not shed light
+30. caster light: not lit
+31. light source: not lit
+32. Wild Shape: transformation not done
+33. enchantment: weapon not enchanted
+34. ethereal: Ethereal Jaunt / Stride not applied
+35. Arcane Vigor: Hit Point Dice not spent
+36. restoration: condition not removed
+37. tinderbox: nothing lit
 
 ### `dnd5e.preActivityConsumption`
 

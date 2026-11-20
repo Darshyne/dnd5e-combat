@@ -229,6 +229,8 @@ export const SPELL_RULES = Object.freeze({
     dataFixes: [{ effect: "dasMagicCircle00", create: { name: "Inside the Magic Circle", type: "base", transfer: false,
       disabled: false, statuses: [], system: { changes: [] } } },
     { path: "system.activities.dnd5eactivity000.effects", from: [], value: [{ _id: "dasMagicCircle00" }] }] },
+  // Arrêt du temps (SRD 5.2) : « vous jouez 1d4 + 1 tours d'affilée ». La donnée porte le jet ; rien ne donnait les tours.
+  "time-stop": { extraTurns: { formula: "1d4 + 1" } },
   // §300 : « Croissance » — la zone devient un terrain où chaque mètre coûte 4 mètres de déplacement ; elle reste (durée instantanée).
   // Embroussaillement : « temps d'incantation : action » — la donnée laisse l'activation « spéciale » (rien n'était dépensé).
   "plant-growth": { difficultTerrain: { cost: 4 }, usageLimits: { dnd5eactivity000: { cost: "action" } } },

@@ -14,6 +14,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { twiceKeepHighest, rerollOnesOnce, oneMoreKeepBest, resistanceRuleCovers } from "../core/feats.mjs";
 import { ownConditionsRule, pickOwnCondition } from "../core/self-care.mjs";
 import { STEPS } from "../core/action.mjs";
+import { onVitalityResolution } from "./vitality.mjs";
 import { attackDamageTypes } from "../adapter/smite.mjs";
 import { inflict } from "../adapter/retaliation.mjs";
 import { victimsOf } from "../adapter/grapple.mjs";
@@ -501,6 +502,8 @@ export function registerFeats() {
   route("dnd5e.preRollDamageV2", onPreRollDamage, { cancellable: true, label: "origin feats (damage)" });
   route(`${MODULE_ID}.resolution`, resolution => enqueue(`critMark:${resolution?.id}`, () => onResolution(resolution)), { executor: true, label: "critical mark not placed" });
   route("combatTurnChange", onTurnChange, { executor: true, label: "feat turn start" });
+  route(`${MODULE_ID}.resolution`, resolution => enqueue(`vitality:${resolution?.id}`, () => onVitalityResolution(resolution)),
+    { executor: true, label: "Potent Spellcasting: Temporary Hit Points not offered" });
   for ( const hook of ["dnd5e.preRollAbilityCheckV2", "dnd5e.preRollSavingThrowV2"] ) route(hook, onPreRollD20, { cancellable: true, label: "Indomitable Might" });
   route("dnd5e.preRollConcentrationV2", onPreRollConcentration, { cancellable: true, label: "Mage Slayer: concentration" });
   route("dnd5e.postUseActivity", (activity, usageConfig) => (activity?.actor?.isOwner ? spellRecall(activity, usageConfig) : null), { label: "Boon of Spell Recall" });

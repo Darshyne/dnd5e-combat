@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-947 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+948 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -40,6 +40,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `burst` | 3 | `heat-metal`, `ice-knife`, `jolt-to-life` |
 | `byWounds` | 1 | `toll-the-dead` |
 | `cantripRange` | 1 | `improved-elemental-fury` |
+| `cantripVitality` | 1 | `improved-blessed-strikes` |
 | `carriedLight` | 13 | `bullseye-lantern`, `candle`, `flame-tongue-enchanted`, `helm-of-brilliance-enchanted`, `hooded-lantern`, `lamp`, … |
 | `castDuration` | 1 | `oil-of-slipperiness` |
 | `casterPulse` | 6 | `cloudkill`, `delayed-blast-fireball`, `earthquake`, `incendiary-cloud`, `storm-of-vengeance`, `tsunami` |

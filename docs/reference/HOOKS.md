@@ -589,26 +589,28 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 1. pool: spending not written
 2. 0 HP: death or failure not applied
 3. regeneration: stop not recorded
-4. drain: Hit Point maximum not reduced
-5. bite: empowerment not offered
-6. life steal: HP not regained
-7. rise: damage not recorded
-8. effect end on magical healing: not played
-9. swallow: damage from inside not counted _(MJ)_
-10. oil: not ignited
-11. flammable: not ignited by fire damage
+4. trait answering a damage type: effect not applied
+5. drain: Hit Point maximum not reduced
+6. bite: empowerment not offered
+7. life steal: HP not regained
+8. rise: damage not recorded
+9. effect end on magical healing: not played
+10. swallow: damage from inside not counted _(MJ)_
+11. oil: not ignited
+12. flammable: not ignited by fire damage
 
 ### `dnd5e.calculateDamage`
 
 1. damage taken: parts not noted
 2. regeneration: damage types not read
 3. Undead Fortitude: damage types not read
-4. drain: drained portion not read
-5. bite: amount not read
-6. life steal: amount not read
-7. oil: fire damage not noted
-8. flammable: fire damage not noted
-9. floating texts: damage by type
+4. trait answering a damage type: types not read
+5. drain: drained portion not read
+6. bite: amount not read
+7. life steal: amount not read
+8. oil: fire damage not noted
+9. flammable: fire damage not noted
+10. floating texts: damage by type
 
 ### `dnd5e.createMeasuredTemplate`
 

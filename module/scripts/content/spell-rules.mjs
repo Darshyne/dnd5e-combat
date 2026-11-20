@@ -229,6 +229,11 @@ export const SPELL_RULES = Object.freeze({
     dataFixes: [{ effect: "dasMagicCircle00", create: { name: "Inside the Magic Circle", type: "base", transfer: false,
       disabled: false, statuses: [], system: { changes: [] } } },
     { path: "system.activities.dnd5eactivity000.effects", from: [], value: [{ _id: "dasMagicCircle00" }] }] },
+  // Zone de vérité, tourbillon de Contrôle de l'eau (SRD 5.2) : rien à la pose — la sauvegarde vient à l'entrée et au tour de
+  // chacun (content/triggers.mjs) ; « ne peut pas mentir tant qu'elle est dans le rayon » : l'effet tombe en sortant
+  // (`zoneEffects`).
+  "zone-of-truth": { quietPose: true, zoneEffects: true },
+  "control-water": { quietPose: true },
   // §300 : « Croissance » — la zone devient un terrain où chaque mètre coûte 4 mètres de déplacement ; elle reste (durée instantanée).
   // Embroussaillement : « temps d'incantation : action » — la donnée laisse l'activation « spéciale » (rien n'était dépensé).
   "plant-growth": { difficultTerrain: { cost: 4 }, usageLimits: { dnd5eactivity000: { cost: "action" } } },

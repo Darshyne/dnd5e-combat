@@ -224,7 +224,8 @@ describe("contenu livré", () => {
       "comet", "command", "commanders-strike",
       "commanding-presence", "compelled-duel", "compulsion", "confusion", "conjure-animals", "conjure-barrage", "conjure-celestial",
       "conjure-elemental", "conjure-fey", "conjure-minor-elementals", "conjure-volley", "conjure-woodland-beings", "consume-energy", "consume-life",
-      "contact-other-plane", "contagion", "continual-flame", "cordon-of-arrows", "corrosive-form", "cosmic-omen", "countercharm",
+      "contact-other-plane", "contagion", "continual-flame",
+      "control-water", "cordon-of-arrows", "corrosive-form", "cosmic-omen", "countercharm",
       "counterspell", "coward-spirit", "crawler-mucus", "create-undead", "crossbow-expert", "crown-of-madness", "crusaders-mantle", "crusher",
       "cunning-action", "cunning-strike", "cutting-words", "dagger-of-venom", "dancing-lights", "dark-ones-blessing",
       "dark-ones-own-luck", "darkness", "darkness-aura", "daylight", "death-burst", "death-curse", "death-throes", "death-ward",
@@ -357,10 +358,10 @@ describe("contenu livré", () => {
       "wails-from-the-grave", "wall-of-fire", "wall-of-force", "wall-of-ice", "wall-of-stone", "wall-of-thorns", "wand-of-fear",
       "wand-of-paralysis", "wand-of-polymorph", "wand-of-web",
       "wand-of-wonder", "war-caster", "war-magic", "war-priest", "warding-bond", "warding-charm", "warding-flare", "warp-body",
-      "watchers", "water-element", "water-form", "watery-rush", "weakening-breath", "weapon-of-warning-enchanted", "web",
-      "weird", "weird-insight", "whelm", "whirling-form", "wild-companion", "wild-resurgence", "wind-walk", "wind-wall",
-      "witch-bolt", "word-of-radiance", "wrath-of-the-sea", "wrath-of-the-wild", "wrathful-smite", "yellow-elemental-gem",
-      "yolandes-regal-presence", "zealous-presence",
+      "watchers", "water-element", "water-form", "watery-rush", "weakening-breath", "weapon-of-warning-enchanted", "web", "weird",
+      "weird-insight", "whelm", "whirling-form", "wild-companion", "wild-resurgence", "wind-walk", "wind-wall", "witch-bolt",
+      "word-of-radiance", "wrath-of-the-sea", "wrath-of-the-wild", "wrathful-smite", "yellow-elemental-gem",
+      "yolandes-regal-presence", "zealous-presence", "zone-of-truth",
     ]);
     expect(CONTENT["aura-of-protection"].aura.radius).toBe(10);
     expect(CONTENT.hex.triggers).toHaveLength(1);

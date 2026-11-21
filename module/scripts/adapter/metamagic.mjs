@@ -11,6 +11,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
+import { carriesEffectFrom } from "./facts.mjs";
 
 /** Le genre de Métamagie de cette activité (contenu `metamagic: { activity, kind }`), ou null. */
 export function metamagicKindOf(activity) {
@@ -34,6 +35,15 @@ export async function addMetamagic(actor, kind) {
 
 export async function clearMetamagic(actor) {
   if ( actor?.getFlag?.(MODULE_ID, "metamagic") ) await actor.unsetFlag(MODULE_ID, "metamagic");
+}
+
+/**
+ * Les `metamagicRules` des items du lanceur (Sorcellerie incarnée, Apothéose arcanique), et si l'effet qu'elles demandent est sur
+ * lui (la Sorcellerie innée active).
+ */
+export function metamagicRulesOf(actor) {
+  return Array.from(actor?.items ?? []).map(item => contentOf(item).entry?.metamagicRules).filter(Boolean)
+    .map(rule => ({ ...rule, active: carriesEffectFrom(actor, rule.whileEffect) }));
 }
 
 /** Les options portées par la carte d'un sort. */

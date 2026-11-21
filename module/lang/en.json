@@ -1296,6 +1296,7 @@
   "DND5ECOMBAT.Robustesse.Reussite": "{item}: 1 HP",
   "DND5ECOMBAT.Chatiment.AucuneFaveur": "Nothing",
   "DND5ECOMBAT.Metamagie.Retenue": "Metamagic chosen: {item}",
+  "DND5ECOMBAT.Metamagie.Limite": "{item}: no more than {n} Metamagic option(s) on the same spell.",
   "DND5ECOMBAT.Inspiration.VaillanceDegats": "Combat Inspiration: add your Bardic Inspiration die ({formula}) to this hit's damage?",
   "DND5ECOMBAT.Inspiration.VaillanceDefense": "Combat Inspiration: hit ({total} against AC {ac}). Take your Reaction to add your Bardic Inspiration die ({formula}) to your AC?",
   "DND5ECOMBAT.Inspiration.VaillanceCarteDegats": "Combat Inspiration ({bard}): {name} adds {total} to the damage",

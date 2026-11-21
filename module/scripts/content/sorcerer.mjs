@@ -35,6 +35,12 @@ export const SORCERER = Object.freeze({
   "clockwork-cavalcade": { pickTargets: { activities: ["hcsPW0N4FkiDoaIy", "gVIgwimuEujzofWA"], radius: 30, units: "ft", self: true, check: "allies" },
     healPool: { activities: ["hcsPW0N4FkiDoaIy", "gVIgwimuEujzofWA"], choose: true } },
   // §296 : Sort jumeau — « le niveau effectif du sort augmente de 1 » : une cible de plus à la visée de groupe (ui/pointer.mjs).
+  // Sorcellerie incarnée (niveau 7) — « tant que votre Sorcellerie innée est active, jusqu'à deux options de Métamagie sur chaque
+  // sort » (une seule sinon : la règle de la Métamagie) ; la Sorcellerie innée rendue pour 2 points reste l'activité de l'item.
+  "sorcery-incarnate": { metamagicRules: { whileEffect: "innate-sorcery", limit: 2 } },
+  // Apothéose arcanique (niveau 20) — « tant que votre Sorcellerie innée est active, une option de Métamagie à chacun de vos tours
+  // sans dépenser de points de sorcellerie ».
+  "arcane-apotheosis": { metamagicRules: { whileEffect: "innate-sorcery", freePerTurn: true } },
   "twinned-spell": meta("WsG9JmGU7gRGiTRq", "twinned"),
   // Sort chercheur (SRD 5.2) : « si vous faites un jet d'attaque pour un sort et ratez, vous pouvez dépenser 1 point de sorcellerie
   // pour relancer le d20, et devez utiliser le nouveau jet ». Proposé après le jet raté (il n'est pas choisi au lancement, et vaut

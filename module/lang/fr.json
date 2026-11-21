@@ -1296,6 +1296,7 @@
   "DND5ECOMBAT.Robustesse.Reussite": "{item} : 1 PV",
   "DND5ECOMBAT.Chatiment.AucuneFaveur": "Rien",
   "DND5ECOMBAT.Metamagie.Retenue": "Métamagie retenue : {item}",
+  "DND5ECOMBAT.Metamagie.Limite": "{item} : pas plus de {n} option(s) de Métamagie sur un même sort.",
   "DND5ECOMBAT.Inspiration.VaillanceDegats": "Inspiration de combat : ajouter votre dé d'Inspiration bardique ({formula}) aux dégâts de ce coup ?",
   "DND5ECOMBAT.Inspiration.VaillanceDefense": "Inspiration de combat : touché ({total} contre CA {ac}). Prendre votre Réaction pour ajouter votre dé d'Inspiration bardique ({formula}) à votre CA ?",
   "DND5ECOMBAT.Inspiration.VaillanceCarteDegats": "Inspiration de combat ({bard}) : {name} ajoute {total} aux dégâts",

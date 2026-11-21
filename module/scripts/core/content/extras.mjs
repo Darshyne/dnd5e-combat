@@ -283,6 +283,15 @@ export function validateExtras(entry, at, errors) {
       && (entry.smite.blast.radius > 0) && (typeof entry.smite.blast.units === "string") && (typeof entry.smite.blast.ability === "string")
       && Object.keys(entry.smite.blast).every(k => ["activity", "radius", "units", "ability"].includes(k))))
     && Object.keys(entry.smite).every(k => ["damage", "fiends", "save", "effect", "ranged", "any", "burst", "saveAtMostHp", "replaces", "onMiss", "blast"].includes(k))) ) errors.push(`${at}smite: { damage, fiends?, save?, effect?, ranged?, any?, burst?, replaces?, onMiss?: "half", blast?: { activity, radius, units, ability } } (activity ids, effect id)`);
+  // Sorcellerie incarnée, Apothéose arcanique : tant qu'un effet de l'item `whileEffect` est sur le lanceur, `limit` options par
+  // sort au lieu d'une, ou une option sans dépense à chacun de ses tours (`freePerTurn`) — core/metamagic-rules.mjs.
+  if ( ("metamagicRules" in entry) && !(isObject(entry.metamagicRules) && (typeof entry.metamagicRules.whileEffect === "string")
+    && !!entry.metamagicRules.whileEffect && (("limit" in entry.metamagicRules) || ("freePerTurn" in entry.metamagicRules))
+    && (!("limit" in entry.metamagicRules) || (Number.isInteger(entry.metamagicRules.limit) && (entry.metamagicRules.limit >= 2)))
+    && (!("freePerTurn" in entry.metamagicRules) || (entry.metamagicRules.freePerTurn === true))
+    && Object.keys(entry.metamagicRules).every(k => ["whileEffect", "limit", "freePerTurn"].includes(k))) ) {
+    errors.push(`${at}metamagicRules: { whileEffect: identifier, limit?: integer ≥ 2, freePerTurn?: true }`);
+  }
   if ( ("metamagic" in entry) && !(isObject(entry.metamagic) && isId(entry.metamagic.activity) && METAMAGIC_KINDS.includes(entry.metamagic.kind)
     && Object.keys(entry.metamagic).every(k => ["activity", "kind"].includes(k))) ) errors.push(`${at}metamagic: { activity, kind: ${METAMAGIC_KINDS.join(" | ")} }`);
   // Relevé des trous : `reroll` — sans activité, le d20 relancé avec ce bonus, le nouveau jet imposé, une fois par effet de `during`.

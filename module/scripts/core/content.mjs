@@ -538,6 +538,8 @@
  *     fortitude?: true                          Robustesse de la non-vie (MM 2024, §61) : des dégâts qui font tomber le porteur à
  *                                               0 PV lui font jeter une sauvegarde de Constitution (DD 5 + dégâts subis), sauf
  *                                               dégâts radiants ou coup critique ; réussie, il reste à 1 PV (core/fortitude.mjs)
+ *     castFromBearer?: { distance, units }      la portée des sorts du lanceur se mesure aussi depuis la créature qui porte un
+ *                                               effet de l'item, à cette distance de lui ou moins (Regard de deux esprits)
  *     targetedSummon?: true                      §394 : l'activité d'invocation se vise d'un clic (Doigt de mort : le cadavre) ;
  *                                               sans elle, une invocation ne vise jamais, quoi que disent ses données
  *     placesSummons?: true                       §109 : l'invocation se place toujours, même quand l'activité dit le contraire

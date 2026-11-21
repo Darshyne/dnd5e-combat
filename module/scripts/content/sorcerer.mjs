@@ -15,6 +15,9 @@ const affinity = type => ({ on: "preDamageRoll", if: { "activity.isSpell": true,
     not: { "source.hasFeature": `elemental-affinity-${type}` } },
   do: [{ type: "damage", formula: "@abilities.cha.mod", damageType: type }] });
 
+/** Sort transmuté : les six types qui s'échangent. */
+const TRANSMUTABLE = ["acid", "cold", "fire", "lightning", "poison", "thunder"];
+
 export const SORCERER = Object.freeze({
   // C12-h : Révélation charnelle (Aberrant 14), Envol scintillant — « une Vitesse de vol égale à votre Vitesse » (la donnée : le double).
   "revelation-in-flesh": { effectChanges: { CxuVthyUWdT2ARMn: [{ key: "system.attributes.movement.fly", type: "upgrade", value: "@walk", replace: true }] } },
@@ -40,6 +43,10 @@ export const SORCERER = Object.freeze({
   // pour relancer le d20, et devez utiliser le nouveau jet ». Proposé après le jet raté (il n'est pas choisi au lancement, et vaut
   // même si une autre option de Métamagie a servi) ; l'activité de l'item paie le point.
   "seeking-spell": { rollBonus: { activity: "vudKvHh2PbAiDXSE", on: ["attack"], reroll: {}, spellAttack: true } },
+  // Sort transmuté (SRD 5.2) : « quand vous lancez un sort qui inflige un type de dégâts de la liste — acide, froid, feu, foudre,
+  // poison, tonnerre —, vous pouvez dépenser 1 point de sorcellerie pour changer ce type en l'un des autres de la liste ». Les
+  // autres types sont proposés avec celui du sort, avant le jet de dégâts ; en choisir un paie le point (l'activité de l'item).
+  "transmuted-spell": { spellDamageTypes: { types: TRANSMUTABLE, from: TRANSMUTABLE, cost: "FT1V43gRA47fCA51" } },
   // Affinité élémentaire (Draconique 6) : « + votre modificateur de Charisme à un jet de dégâts » d'un sort du type choisi.
   "elemental-affinity": { triggers: ["acid", "cold", "fire", "lightning", "poison"].map(affinity) },
   // Défenses psychiques (Aberrante 6) : Avantage aux sauvegardes contre Charmé et Effrayé.

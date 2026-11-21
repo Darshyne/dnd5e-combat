@@ -402,8 +402,14 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   if ( "spellDamageTypes" in entry ) {
     const d = entry.spellDamageTypes;
     if ( !isObject(d) || (("class" in d) && ((typeof d.class !== "string") || !d.class)) || !Array.isArray(d.types) || !d.types.length
-      || !d.types.every(t => (typeof t === "string") && t) || !Object.keys(d).every(k => ["class", "types"].includes(k)) ) {
+      || !d.types.every(t => (typeof t === "string") && t)
+      || !Object.keys(d).every(k => ["class", "types", "from", "cost"].includes(k)) ) {
       errors.push(`${at}spellDamageTypes: { class?, types } (class identifier — absent: any spell —, damage types)`);
+    }
+    // Sort transmuté : `from` — le sort doit infliger l'un de ces types ; `cost` — l'activité de l'item qui paie le changement.
+    else if ( (("from" in d) && !(Array.isArray(d.from) && d.from.length && d.from.every(t => (typeof t === "string") && t)))
+      || (("cost" in d) && !isId(d.cost)) ) {
+      errors.push(`${at}spellDamageTypes: from: [damage types], cost: activity id (16 characters)`);
     }
   }
   // Relevé des trous, §236 : listes de chaînes (états retirés en fin de tour, types de résistance, caractéristiques plancher).

@@ -2232,6 +2232,7 @@
   "DND5ECOMBAT.ChoixParCible": "Para {name}: qual efeito?",
   "DND5ECOMBAT.DistanceAucune": "Não mover",
   "DND5ECOMBAT.DistanceQuestion": "A que distância você move {name}?",
+  "DND5ECOMBAT.ToursAffilee.Jet": "{item}: {n} turnos seguidos",
   "DND5ECOMBAT.Tirer": "Puxar",
   "DND5ECOMBAT.Repousser": "Empurrar",
   "DND5ECOMBAT.SeRelever.Question": "Você está Caído: usar sua Reação para se levantar?",

@@ -538,6 +538,8 @@
  *     fortitude?: true                          Robustesse de la non-vie (MM 2024, §61) : des dégâts qui font tomber le porteur à
  *                                               0 PV lui font jeter une sauvegarde de Constitution (DD 5 + dégâts subis), sauf
  *                                               dégâts radiants ou coup critique ; réussie, il reste à 1 PV (core/fortitude.mjs)
+ *     extraTurns?: { formula }                  en combat, l'utilisation donne à son auteur ce nombre de tours d'affilée : le
+ *                                               combat revient à lui à la fin de chacun (Arrêt du temps ; core/extra-turns.mjs)
  *     targetedSummon?: true                      §394 : l'activité d'invocation se vise d'un clic (Doigt de mort : le cadavre) ;
  *                                               sans elle, une invocation ne vise jamais, quoi que disent ses données
  *     placesSummons?: true                       §109 : l'invocation se place toujours, même quand l'activité dit le contraire

@@ -1086,6 +1086,8 @@
   "DND5ECOMBAT.CoupCritique.Empoignade": "{item} : dégâts à {name}, agrippé(e)",
   "DND5ECOMBAT.ReactionDesengage": "{mover} se désengage à côté de vous. Réagir ?",
   "DND5ECOMBAT.Relance.Question": "{what} : {total} contre {needed} (d20 : {d20}). Relancer la sauvegarde avec +{bonus} ({item}, une fois par Rage) ? Le nouveau jet compte, même plus bas.",
+  "DND5ECOMBAT.Relance.QuestionPayee": "{what} : {total} contre {needed} (d20 : {d20}). Relancer avec +{bonus} ({item}) ? Le nouveau jet compte, même plus bas.",
+  "DND5ECOMBAT.Relance.QuestionAvantage": "{what} : {total} contre {needed} (d20 : {d20}). Relancer avec l'Avantage ({item}) ? Le nouveau jet compte, même plus bas.",
   "DND5ECOMBAT.Relance.Oui": "Relancer",
   "DND5ECOMBAT.Relance.Carte": "{item} : {name} relance sa {what} — nouveau total {sum}",
   "DND5ECOMBAT.EspritGarde.Question": "{what} : {total} contre {needed}. Réussir la sauvegarde à la place ({item}, {left} restante(s)) ?",

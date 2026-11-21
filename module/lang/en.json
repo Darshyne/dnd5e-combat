@@ -1086,6 +1086,8 @@
   "DND5ECOMBAT.CoupCritique.Empoignade": "{item}: damage to {name}, grappled",
   "DND5ECOMBAT.ReactionDesengage": "{mover} disengages next to you. React?",
   "DND5ECOMBAT.Relance.Question": "{what}: {total} against {needed} (d20: {d20}). Reroll the saving throw with +{bonus} ({item}, once per Rage)? The new roll stands, even if lower.",
+  "DND5ECOMBAT.Relance.QuestionPayee": "{what}: {total} against {needed} (d20: {d20}). Reroll it with +{bonus} ({item})? The new roll stands, even if lower.",
+  "DND5ECOMBAT.Relance.QuestionAvantage": "{what}: {total} against {needed} (d20: {d20}). Reroll it with Advantage ({item})? The new roll stands, even if lower.",
   "DND5ECOMBAT.Relance.Oui": "Reroll",
   "DND5ECOMBAT.Relance.Carte": "{item}: {name} rerolls their {what} — new total {sum}",
   "DND5ECOMBAT.EspritGarde.Question": "{what}: {total} against {needed}. Succeed on the saving throw instead ({item}, {left} left)?",

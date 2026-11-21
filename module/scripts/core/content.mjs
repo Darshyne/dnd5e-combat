@@ -845,8 +845,9 @@
  *                                               relevé des trous `reroll: { bonus, during }` — sans activité : le d20 relancé, `bonus`
  *                                               ajouté, le nouveau jet imposé, une fois par effet de l'item `during` (Concentration
  *                                               fanatique : sauvegarde ratée en Rage, bonus des dégâts de Rage)
- *                                               §280 : `reroll: { bonus? }` AVEC une activité — elle paie la relance d'un jet raté, le
- *                                               nouveau imposé (Inébranlable) ; `failRefund: true` — le dé ajouté à un test qui reste raté
+ *                                               §280 : `reroll: { bonus?, advantage? }` AVEC une activité — elle paie la relance
+ *                                               d'un jet raté, le nouveau imposé (Inébranlable) ; `advantage: true` — le nouveau
+ *                                               jet a l'Avantage (Contre-charme) ; `failRefund: true` — le dé ajouté à un test qui reste raté
  *                                               (DD connu) : ce que l'activité a coûté revient, l'item perd une utilisation (Fanfaronnade) ;
  *                                               `abilities` vaut aussi pour les tests (caractéristique du test)
  *     transpose?: { summon }                    échanger sa place avec l'invocation pilotée de l'item `summon` (identifiant),

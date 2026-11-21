@@ -541,6 +541,14 @@ export const ITEM_FIXES = Object.freeze({
   // Armure d'écailles de dragon (SRD 5.2) : « vous avez l'Avantage aux jets de sauvegarde contre le souffle des Dragons » — le +1
   // à la CA et la Résistance selon le dragon sont dans la donnée.
   "dragon-scale-mail-enchanted": { breathAdvantage: { types: ["dragon"] } },
+  // Anneau des étoiles filantes (SRD 5.2), Sphères de foudre : « en cas d'échec, la créature subit des dégâts de foudre selon le
+  // nombre de sphères que vous avez créées » — 1 : 4d12, 2 : 5d4, 3 : 2d6, 4 : 2d4 ; la moitié en cas de réussite. La sauvegarde
+  // de la donnée n'a aucun dégât : la ligne d'une sphère lui est donnée, et `damageByCount` prend celle du nombre créé.
+  "ring-of-shooting-stars": {
+    damageByCount: { GLyk6XaqTk5JOVQ8: { from: "sZwpvVE0OpUNXe2B", formulas: ["4d12", "5d4", "2d6", "2d4"] } },
+    dataFixes: [{ path: "system.activities.GLyk6XaqTk5JOVQ8.damage.parts", from: [],
+      value: [{ number: 4, denomination: 12, bonus: "", types: ["lightning"], custom: { enabled: false, formula: "" },
+        scaling: { mode: "", number: 1 } }] }] },
   "moon-touched-sword-enchanted": { carriedLight: MOONLIGHT },
   "flame-tongue-enchanted": { carriedLight: { bright: 40, dim: 80, units: "ft", animation: FLAMES, whileEnchanted: "MHnAqxEXBhUbnjPq" } },
   "helm-of-brilliance-enchanted": { carriedLight: { bright: 10, dim: 20, units: "ft", animation: FLAMES, whileEnchanted: "oZBFpi117yOXca3k" } },

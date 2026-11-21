@@ -541,6 +541,10 @@ export const ITEM_FIXES = Object.freeze({
   // Armure d'écailles de dragon (SRD 5.2) : « vous avez l'Avantage aux jets de sauvegarde contre le souffle des Dragons » — le +1
   // à la CA et la Résistance selon le dragon sont dans la donnée.
   "dragon-scale-mail-enchanted": { breathAdvantage: { types: ["dragon"] } },
+  // Harnois nain (SRD 5.2) : « si un effet vous déplace contre votre gré sur le sol, vous pouvez utiliser votre Réaction pour
+  // réduire la distance de 3 m au plus » — l'activité « Reduce Unwilling Movement » de la donnée ne touche pas aux poussées du
+  // moteur.
+  "dwarven-plate-enchanted": { reducesForcedMove: { distance: 10, units: "ft" } },
   "moon-touched-sword-enchanted": { carriedLight: MOONLIGHT },
   "flame-tongue-enchanted": { carriedLight: { bright: 40, dim: 80, units: "ft", animation: FLAMES, whileEnchanted: "MHnAqxEXBhUbnjPq" } },
   "helm-of-brilliance-enchanted": { carriedLight: { bright: 10, dim: 20, units: "ft", animation: FLAMES, whileEnchanted: "oZBFpi117yOXca3k" } },

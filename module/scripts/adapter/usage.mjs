@@ -24,7 +24,7 @@ import { MODULE_ID } from "../constants.mjs";
 import { usageMetamagic } from "./metamagic.mjs";
 import { OUTCOME_STEPS } from "../core/content.mjs";
 import { OUTCOME_DAMAGE, OUTCOME_GRAPPLE } from "../core/action.mjs";
-import { siblingSaveOf, sizeGateOf } from "../core/riders.mjs";
+import { siblingSaveOf, soleSaveOf, sizeGateOf } from "../core/riders.mjs";
 import { chargeOnlyEffects } from "../core/variants.mjs";
 import { variantPlanOf, useTimeVariant, advantageVariantOf } from "./variants.mjs";
 import { contentOf, castItemOf, entryOfIdentifier, rangeUnitsOf } from "./content.mjs";
@@ -180,7 +180,10 @@ function chainedSave(activity) {
   const onHit = item ? contentOf(item).entry?.onHit : null;
   // §345 : une sauvegarde qui ne vaut que sous un enchantement de l'item (la lame enduite de la Dague venimeuse).
   if ( onHit?.whileEnchanted && !enchantedBy(item, onHit.whileEnchanted).length ) return null;
-  const id = item ? (onHit?.save ?? siblingSaveOf(activitiesOf(item), item.system?.description?.value ?? "")) : null;
+  // `"sole"` : la seule sauvegarde de l'item — celle qu'un enchantement lui a ajoutée (Épée de blessure), d'id imprévisible.
+  const declared = (onHit?.save === "sole") ? soleSaveOf(activitiesOf(item)) : onHit?.save;
+  const id = item ? (declared ?? ((onHit?.save === "sole") ? null
+    : siblingSaveOf(activitiesOf(item), item.system?.description?.value ?? ""))) : null;
   const sibling = id ? activity.item.system.activities?.get(id) : null;
   if ( sibling?.type !== "save" ) return null;
   const save = saveOf(sibling);

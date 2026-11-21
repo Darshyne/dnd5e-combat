@@ -97,8 +97,8 @@ describe("validation d'une entrée", () => {
     expect(validateEntry({ aura: { radius: 10 } }, { facts })).toEqual([]);
   });
 
-  it("onHit : un id d'activité", () => {
-    expect(validateEntry({ onHit: { save: "abc" } }, { facts })).toEqual(["onHit.save: activity id (16 characters)"]);
+  it("onHit : un id d'activité, ou « sole »", () => {
+    expect(validateEntry({ onHit: { save: "abc" } }, { facts })).toEqual(['onHit.save: activity id (16 characters), or "sole"']);
     expect(validateEntry({ onHit: "udF9lrpAQMvL0b9J" }, { facts })).toHaveLength(1);
   });
 
@@ -344,6 +344,7 @@ describe("contenu livré", () => {
       "supreme-healing", "supreme-potion-of-healing",
       "supreme-sneak", "survivor-ravenloft", "swallow", "swarm", "sweeping-attack", "swift-quiver", "swoop", "sword-of-kas",
       "sword-of-life-stealing-enchanted", "sword-of-sharpness", "sword-of-sharpness-enchanted", "sword-of-vengeance-enchanted",
+      "sword-of-wounding-enchanted",
       "symbiotic-being", "symbol", "synaptic-static", "tactical-assessment", "tactical-charge", "tactical-mind", "tactical-shift",
       "talisman-of-pure-good", "talisman-of-ultimate-evil", "tashas-hideous-laughter", "tavern-brawler", "telekinesis", "telekinetic",
       "telekinetic-thrust", "teleport",

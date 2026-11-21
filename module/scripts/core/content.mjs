@@ -12,7 +12,9 @@
  *                                               `changes` : les changements de la copie, à la place de l'effet de l'item
  *                                               (effet absent, vide ou faux dans le Monster Manual, §18.12) — la copie ne
  *                                               porte alors aucun état ; `types` : seulement ces types de créature
- *     onHit?: { save: <id d'activité> }         attaque qui impose une sauvegarde (adapter/usage.mjs)
+ *     onHit?: { save: <id d'activité> | "sole" } attaque qui impose une sauvegarde (adapter/usage.mjs) ; `"sole"` : la seule
+ *                                               sauvegarde de l'item, quand son id n'est pas fixe (activité ajoutée par un
+ *                                               enchantement : Épée de blessure)
  *     choice?: { effects: "one", prompt?, pool? }  effets EXCLUSIFS : l'auteur en choisit un (Maléfice) ; `pool` :
  *                                               { <id d'activité> : [ids d'effets de l'item] } — des effets de l'item
  *                                               qu'une activité propose sans les relier (§37, Malédiction : « Curse

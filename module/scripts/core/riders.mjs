@@ -94,6 +94,17 @@ export function announcesHitSave(description) {
 }
 
 /**
+ * La seule activité de sauvegarde de l'item (`onHit.save: "sole"`) : celle qu'un enchantement ajoute à l'arme qu'il enchante arrive
+ * sous un id neuf à chaque pose (dnd5e, activity/enchant.mjs : les activités « rider »), on ne peut donc pas la nommer par son id.
+ * @param {object[]} activities  { id, type }
+ * @returns {string|null}  son id ; null s'il n'y en a aucune, ou plusieurs
+ */
+export function soleSaveOf(activities) {
+  const saves = Array.from(activities ?? []).filter(a => a?.type === "save");
+  return (saves.length === 1) ? (saves[0].id ?? saves[0]._id ?? null) : null;
+}
+
+/**
  * La sauvegarde sœur qu'une attaque impose au toucher, reconnue à sa forme et à l'amorce de sa description.
  * @param {object[]} activities  toutes les activités de l'item : { id, type, activation: { type }, target: { template: { type }, affects: { count } } }
  * @param {string} description   description de l'item (HTML)

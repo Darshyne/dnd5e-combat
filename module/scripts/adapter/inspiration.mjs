@@ -14,6 +14,7 @@ import { identifierOf, contentOf } from "./content.mjs";
 import { askChoice } from "./choices.mjs";
 import { combatantFor, readBudget, writeBudget } from "./turn.mjs";
 import { inspirationOffer } from "../core/inspiration.mjs";
+import { rerollFormula, rerollOffered, rerollQuestion } from "../core/reroll.mjs";
 
 const t = (key, data) => game.i18n.format(`DND5ECOMBAT.Inspiration.${key}`, data ?? {});
 
@@ -246,12 +247,17 @@ export async function offerRollBonus(actor, { kind, what, total, needed=null, sk
     // §280 : sans `during`, l'activité de la règle paie la relance (Inébranlable : un point de Moxie, une sauvegarde ratée).
     if ( rule.reroll && !rule.reroll.during ) {
       const left = usesLeftFor(activity);
-      if ( !activity || !(left > 0) || !Number.isInteger(d20) || !Number.isFinite(needed) || (total >= needed) ) continue;
+      if ( !activity || !(left > 0) || !rerollOffered(rule.reroll, { d20, total, needed }) ) continue;
       const bonus = rule.reroll.bonus ?? "0";
+      const fixed = Number.isInteger(rule.reroll.sets);
       const answer = await askChoice(actor, {
         actor: actor.uuid, item: item.name, ...(Number(seconds) > 0 ? { seconds } : {}),
-        prompt: game.i18n.format("DND5ECOMBAT.Relance.Question", { what, total, needed, d20, bonus, item: item.name }),
-        options: [{ id: "no", label: game.i18n.localize("DND5ECOMBAT.BonusJet.Non") }, { id: "yes", label: game.i18n.localize("DND5ECOMBAT.Relance.Oui") }]
+        // La relance qu'une activité paie n'est pas « une fois par Rage » : sa propre question, qui dit l'Avantage s'il y en a un.
+        prompt: game.i18n.format(`DND5ECOMBAT.Relance.${rerollQuestion(rule.reroll, needed)}`,
+          { what, total, needed, d20, bonus, item: item.name, sets: rule.reroll.sets }),
+        options: [{ id: "no", label: game.i18n.localize("DND5ECOMBAT.BonusJet.Non") },
+          { id: "yes", label: fixed ? game.i18n.format("DND5ECOMBAT.Relance.OuiFixe", { sets: rule.reroll.sets })
+            : game.i18n.localize("DND5ECOMBAT.Relance.Oui") }]
       });
       if ( answer?.id !== "yes" ) continue;
       const used = await activity.use({ [MODULE_ID]: { confirmed: true } }, { configure: false }, { create: false }).catch(() => null);
@@ -260,10 +266,11 @@ export async function offerRollBonus(actor, { kind, what, total, needed=null, sk
       if ( !(activity.consumption?.targets ?? []).some(t => ["itemUses", "activityUses"].includes(t.type)) && Number(item.system.uses?.max) ) {
         await item.update({ "system.uses.spent": (Number(item.system.uses.spent) || 0) + 1 });
       }
-      const roll = await new Roll(`1d20 + ${bonus}`, actor.getRollData()).evaluate();
+      const roll = await new Roll(rerollFormula(rule.reroll), actor.getRollData()).evaluate();
       const added = roll.total - d20;
       await roll.toMessage({ speaker: ChatMessage.implementation.getSpeaker({ actor }),
-        flavor: game.i18n.format("DND5ECOMBAT.Relance.Carte", { item: item.name, name: actor.name, what, sum: total + added }),
+        flavor: game.i18n.format(`DND5ECOMBAT.Relance.${fixed ? "CarteFixe" : "Carte"}`,
+          { item: item.name, name: actor.name, what, sum: total + added, sets: rule.reroll.sets }),
         flags: { [MODULE_ID]: { rollBonus: { item: identifierOf(item).id, kind, added, reroll: { old: d20, new: roll.total } } } } });
       return added;
     }

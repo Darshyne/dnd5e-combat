@@ -79,6 +79,10 @@ export const ROGUE = Object.freeze({
   // Dérobade (niveau 7) et Insaisissable (niveau 18).
   "evasion": { evasion: true },
   "elusive": { elusive: true },
+  // Coup de chance (niveau 20) — « si vous ratez un Test d20, vous pouvez faire du jet un 20 » : une fois par repos court ou long
+  // (l'utilisation de l'item, dépensée par son activité). Un 20 ainsi obtenu sur une attaque n'en fait pas un coup critique ici :
+  // le texte ne le dit pas, et rien n'est ajouté au-delà du total.
+  "stroke-of-luck": { rollBonus: { activity: "y4PG8Ow1eNEle580", on: ["attack", "save", "check"], reroll: { sets: 20 } } },
 
   // Assassin (niveau 3), Assassinat : au premier round d'un combat, Avantage contre qui n'a pas encore agi ; une Attaque sournoise
   // réussie pendant ce round ajoute autant de dégâts (type de l'arme) que le niveau de Roublard.

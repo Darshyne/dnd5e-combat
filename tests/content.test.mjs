@@ -61,7 +61,7 @@ describe("validation d'une entrée", () => {
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["save", "check"] } }, { facts })).toEqual([]);
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["attack"] } }, { facts })).toEqual([]);
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["check"], skills: ["ste"] } }, { facts })).toEqual([]);
-    expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["damage"] } }, { facts })).toEqual(["rollBonus: { activity (or reroll: { bonus, during }), on: [save | check | attack | initiative], skills?, statuses?, luck?: true, succeed?: true, abilities?, reroll?: { bonus? }, failRefund?: true }"]);
+    expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["damage"] } }, { facts })).toEqual(["rollBonus: { activity (or reroll: { bonus, during }), on: [save | check | attack | initiative], skills?, statuses?, luck?: true, succeed?: true, abilities?, reroll?: { bonus?, advantage?: true, sets?: 1–20 }, failRefund?: true }"]);
     expect(validateEntry({ rollBonus: { activity: "4A1lkH3i3azHU1YQ", on: ["check"], skills: [] } }, { facts })).toHaveLength(1);
     // Relevé des trous : `reroll` sans activité (Concentration fanatique) ; pas les deux, pas de bonus vide.
     expect(validateEntry({ rollBonus: { on: ["save"], reroll: { bonus: "@scale.barbarian.rage-damage", during: "rage" } } }, { facts })).toEqual([]);
@@ -338,7 +338,7 @@ describe("contenu livré", () => {
       "staff-of-swarming-insects", "staff-of-the-magi", "staff-of-thunder-and-lightning", "staff-of-withering", "staggering-smite",
       "starry-wisp", "steady-aim", "steel-wind-strike", "stench", "steps-of-the-fey", "stinking-cloud", "stomp",
       "stone-of-controlling-earth-elementals", "stones-endurance", "storm-of-radiance", "storm-of-vengeance", "stormborn", "storms-thunder",
-      "studied-attacks", "stunning-strike", "subtle-spell", "suggestion", "summon-aberration", "summon-beast", "summon-celestial",
+      "stroke-of-luck", "studied-attacks", "stunning-strike", "subtle-spell", "suggestion", "summon-aberration", "summon-beast", "summon-celestial",
       "summon-construct", "summon-dragon", "summon-elemental", "summon-fey", "summon-fiend", "summon-undead", "sun-blade", "sunbeam",
       "sunburst", "sunlight-weakness", "superior-defense", "superior-inspiration", "superior-potion-of-healing",
       "supreme-healing", "supreme-potion-of-healing",

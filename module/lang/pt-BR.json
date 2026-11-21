@@ -2232,6 +2232,8 @@
   "DND5ECOMBAT.ChoixParCible": "Para {name}: qual efeito?",
   "DND5ECOMBAT.DistanceAucune": "Não mover",
   "DND5ECOMBAT.DistanceQuestion": "A que distância você move {name}?",
+  "DND5ECOMBAT.AuLieu.Question": "O ataque acerta {name}: causar o dano, ou usar isto no lugar?",
+  "DND5ECOMBAT.AuLieu.Degats": "Causar o dano",
   "DND5ECOMBAT.Tirer": "Puxar",
   "DND5ECOMBAT.Repousser": "Empurrar",
   "DND5ECOMBAT.SeRelever.Question": "Você está Caído: usar sua Reação para se levantar?",

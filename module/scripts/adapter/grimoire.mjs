@@ -7,7 +7,7 @@
 
 import { contentOf } from "./content.mjs";
 import { combatantFor } from "./turn.mjs";
-import { ritualMode } from "../core/grimoire.mjs";
+import { ritualMode, recoveryUses } from "../core/grimoire.mjs";
 import { spellClassOf } from "./spell-class.mjs";
 
 /** Le lanceur a-t-il encore un emplacement (ou un emplacement de pacte) du niveau du sort ou plus ? */
@@ -48,16 +48,24 @@ export function ritualModeOf(activity) {
 }
 
 /**
- * Restauration magique de l'acteur, si elle peut servir : l'item, sa règle, le niveau de classe, les emplacements par niveau.
- * null sans item, sans utilisation restante.
+ * Restauration magique de l'acteur, si elle peut servir : l'item, sa règle, le niveau de classe, les emplacements par niveau, et
+ * où son utilisation se compte (`counter` : "activity", "item" ou null). null sans item, sans utilisation restante.
  * @param {Actor5e} actor
  */
 export function slotRecoveryOf(actor) {
-  const item = (actor?.items ?? []).find(i => contentOf(i).entry?.slotRecovery);
-  if ( !item ) return null;
-  const rule = contentOf(item).entry.slotRecovery;
-  const uses = item.system.uses;
-  if ( (uses?.max > 0) && !(uses.value > 0) ) return null;
+  // La première qui peut servir : un Magicien / Druide en a deux, chacune avec sa classe et son utilisation.
+  for ( const item of actor?.items ?? [] ) {
+    const rule = contentOf(item).entry?.slotRecovery;
+    if ( !rule ) continue;
+    const found = recoveryOf(actor, item, rule);
+    if ( found ) return found;
+  }
+  return null;
+}
+
+function recoveryOf(actor, item, rule) {
+  const counter = recoveryUses(item.system.uses, rule.activity ? item.system.activities?.get(rule.activity)?.uses : null);
+  if ( !counter.left ) return null;
   const classLevel = actor.classes?.[rule.class]?.system?.levels ?? 0;
   if ( !classLevel ) return null;
   const slots = {};
@@ -65,5 +73,5 @@ export function slotRecoveryOf(actor) {
     const s = actor.system.spells?.[`spell${level}`];
     if ( s?.max ) slots[level] = { value: Number(s.value) || 0, max: Number(s.max) || 0 };
   }
-  return { item, rule, classLevel, slots };
+  return { item, rule, classLevel, slots, counter: counter.on };
 }

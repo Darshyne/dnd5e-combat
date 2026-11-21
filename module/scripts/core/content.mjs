@@ -241,7 +241,10 @@
  *                                               comprises —, "save") avec le Désavantage quand `if` tient sur lui (`self.inSunlight`)
  *     fleeOnFailedSave?: true                   §147 : sauvegarde ratée → la cible fuit le lanceur par sa Réaction (Murmures dissonants)
  *     ritualAdept?: {class: string}           §139 : Savoir rituel — les sorts rituels de ce grimoire, non préparés, en rituel hors combat
- *     slotRecovery?: {class: string, maxLevel?: number}   §139 : Restauration magique au Repos court (moitié du niveau de la classe)
+ *     slotRecovery?: {class: string, maxLevel?: number, activity?: id}
+ *                                               §139 : Restauration magique au Repos court (moitié du niveau de la classe) ;
+ *                                               `activity` : l'activité de l'item qui compte l'utilisation, quand
+ *                                               l'item n'en a pas lui-même (Ressourcement du Druide)
  *     reactiveStrike?: true                     §136 : Attaque réactive (Maître d'hast) contre qui entre dans l'allonge de l'arme d'hast tenue
  *     opportunityDisadvantage?: true | { whileEffect }  §134 : les attaques d'opportunité contre le porteur ont le Désavantage (Rapide) ;
  *                                               O9g (§362) `whileEffect` : tant que cet effet venu de l'item est sur le porteur (Bottes de rapidité)

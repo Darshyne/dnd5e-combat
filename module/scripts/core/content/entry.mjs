@@ -690,6 +690,10 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       if ( !isObject(rule) ) { errors.push(`${at}usageLimits.${id}: an object`); continue; }
       for ( const flag of ["oncePerTurn", "lowestSlot", "noDialog", "unmoved"] ) if ( (flag in rule) && (rule[flag] !== true) ) errors.push(`${at}usageLimits.${id}.${flag}: true or absent`);
       if ( ("whenEmpty" in rule) && ((typeof rule.whenEmpty !== "string") || !rule.whenEmpty) ) errors.push(`${at}usageLimits.${id}.whenEmpty: item identifier`);
+      if ( ("light" in rule) && !(Array.isArray(rule.light) && rule.light.length
+        && rule.light.every(l => ["dark", "dim", "bright"].includes(l))) ) {
+        errors.push(`${at}usageLimits.${id}.light: list among dark, dim, bright`);
+      }
       // §298 : « free » — l'utilisation ne coûte rien au budget (Arme sacrée : « lorsque vous prenez l'action Attaque »).
       if ( ("cost" in rule) && !["action", "bonus", "reaction", "free"].includes(rule.cost) ) errors.push(`${at}usageLimits.${id}.cost: action, bonus, reaction, free`);
       // §486 : seulement sous un effet, ou hors de lui — identifiant d'item ou id d'effet, seul ou en liste non vide.
@@ -699,7 +703,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
         const ok = ((typeof v === "string") && v) || (Array.isArray(v) && v.length && v.every(x => (typeof x === "string") && x));
         if ( !ok ) errors.push(`${at}usageLimits.${id}.${key}: item identifier or effect id, or a non-empty list of them`);
       }
-      for ( const key of Object.keys(rule) ) if ( !["oncePerTurn", "whenEmpty", "lowestSlot", "noDialog", "cost", "unmoved", "whileEffect", "unlessEffect"].includes(key) ) errors.push(`${at}usageLimits.${id}.${key}: unknown key`);
+      for ( const key of Object.keys(rule) ) if ( !["oncePerTurn", "whenEmpty", "lowestSlot", "noDialog", "cost", "unmoved", "whileEffect", "unlessEffect", "light"].includes(key) ) errors.push(`${at}usageLimits.${id}.${key}: unknown key`);
     }
   }
   if ( ("effectsExpire" in entry) && !EFFECT_EXPIRIES.includes(entry.effectsExpire) ) errors.push(`${at}effectsExpire: ${EFFECT_EXPIRIES.join(", ")}`);

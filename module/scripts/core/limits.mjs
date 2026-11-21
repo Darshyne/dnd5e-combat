@@ -7,19 +7,24 @@
  *  - `unmoved` : seulement si l'on ne s'est pas déplacé ce tour (Visée stable, §20) — en combat ;
  *  - `whileEffect` (§486) : seulement sous un effet (identifiant d'item dont l'effet est porté, ou id d'effet ; une liste = l'un
  *    d'eux) — « Griffes (requiert Modification d'apparence) », armes d'une seule forme ; `unlessEffect` : seulement hors de ces
- *    effets (l'arme de la forme humanoïde). En combat ou non.
+ *    effets (l'arme de la forme humanoïde). En combat ou non ;
+ *  - `light` : seulement dans l'une de ces lumières, là où se tient l'utilisateur (Ne faire qu'un avec les ombres : « dans une
+ *    lumière faible ou les ténèbres ») ; lumière inconnue (pas de token, pas de canevas) : rien n'est reproché.
  * Fonctions pures.
  */
 
 /**
  * Ce qui cloche, en mode souple (le joueur peut passer outre).
- * @param {{oncePerTurn?: boolean, whenEmpty?: string, unmoved?: boolean}} rule
+ * @param {{oncePerTurn?: boolean, whenEmpty?: string, unmoved?: boolean, light?: string[]}} rule
  * @param {{inCombat: boolean, ownTurn: boolean, usedThisTurn: boolean, remaining: number|null, moved?: boolean,
  *   underEffect?: boolean|null, barredByEffect?: boolean|null}} state  `underEffect` : l'un des effets `whileEffect` est porté ;
- *   `barredByEffect` : l'un des effets `unlessEffect` est porté.
- * @returns {string[]}  « notOwnTurn », « oncePerTurn », « notEmpty », « moved », « needsEffect », « barredByEffect ».
+ *   `barredByEffect` : l'un des effets `unlessEffect` est porté ;
+ *   `light` : « dark », « dim », « bright », ou null si elle n'est pas connue.
+ * @returns {string[]}  « notOwnTurn », « oncePerTurn », « notEmpty », « moved », « needsEffect », « barredByEffect »,
+ *   « wrongLight ».
  */
-export function usageLimitIssues(rule, { inCombat, ownTurn, usedThisTurn, remaining, moved=false, underEffect=null, barredByEffect=null }) {
+export function usageLimitIssues(rule, { inCombat, ownTurn, usedThisTurn, remaining, moved=false, underEffect=null, barredByEffect=null,
+  light=null }) {
   const issues = [];
   if ( rule?.oncePerTurn && inCombat ) {
     if ( !ownTurn ) issues.push("notOwnTurn");
@@ -29,6 +34,7 @@ export function usageLimitIssues(rule, { inCombat, ownTurn, usedThisTurn, remain
   if ( rule?.unmoved && inCombat && moved ) issues.push("moved");
   if ( rule?.whileEffect && (underEffect === false) ) issues.push("needsEffect");
   if ( rule?.unlessEffect && (barredByEffect === true) ) issues.push("barredByEffect");
+  if ( rule?.light && light && !rule.light.includes(light) ) issues.push("wrongLight");
   return issues;
 }
 

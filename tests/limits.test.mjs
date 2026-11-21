@@ -87,3 +87,21 @@ describe("§509 (Core#98) : Rage du prédateur, une option par Rage", () => {
     expect(validateEntry({ duringRage: { oneOption: 1 } })).toHaveLength(1);
   });
 });
+
+describe("usageLimits.light : seulement dans la pénombre ou les ténèbres (Ne faire qu'un avec les ombres)", () => {
+  const rule = { light: ["dim", "dark"] };
+  const at = light => usageLimitIssues(rule, { inCombat: false, ownTurn: true, usedThisTurn: false, remaining: null, light });
+  it("lumière faible, ténèbres : rien à reprocher ; pleine lumière : « wrongLight »", () => {
+    expect(at("dim")).toEqual([]);
+    expect(at("dark")).toEqual([]);
+    expect(at("bright")).toEqual(["wrongLight"]);
+  });
+  it("lumière inconnue (pas de token sur la scène) : on ne reproche rien", () => {
+    expect(at(null)).toEqual([]);
+    expect(at(undefined)).toEqual([]);
+  });
+  it("sans la clé, la lumière ne compte pas", () => {
+    const state = { inCombat: false, ownTurn: true, usedThisTurn: false, remaining: null, light: "bright" };
+    expect(usageLimitIssues({}, state)).toEqual([]);
+  });
+});

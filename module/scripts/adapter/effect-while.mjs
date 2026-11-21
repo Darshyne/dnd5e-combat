@@ -10,7 +10,7 @@ import { lightAt } from "./illumination.mjs";
 import { LIGHT_NAMES } from "../core/illumination.mjs";
 
 /** §135 : la lumière au centre du token du porteur (« dark », « dim », « bright »), ou null sans token ni canevas. */
-function lightOfActor(actor) {
+export function lightOfActor(actor) {
   const token = actor?.getActiveTokens?.(false, true)?.[0];
   if ( !token?.parent ) return null;
   const size = token.parent.grid?.size ?? 100;

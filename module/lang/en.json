@@ -1337,6 +1337,8 @@
   "DND5ECOMBAT.BonusJet.Carte": "{item}: added to {name}'s roll",
   "DND5ECOMBAT.BonusJet.QuestionTest": "{what}: {total}. Add {formula} ({item}, {left} left)?",
   "DND5ECOMBAT.BonusJet.CarteTotal": "{item}: {name}'s {what}, {total} → {sum}",
+  "DND5ECOMBAT.Charges.Gardees": "{feature}: a 6 — {item} keeps its charges ({n})",
+  "DND5ECOMBAT.Charges.Depensees": "{feature}: {item} expends its charges ({n})",
   "DND5ECOMBAT.Chance.Question": "{what}: {total} against {needed} (d20: {d20}). Spend a Luck Point for Advantage — reroll the d20 and keep the higher ({item}, {left} left)?",
   "DND5ECOMBAT.Chance.QuestionTest": "{what}: {total} (d20: {d20}). Spend a Luck Point for Advantage — reroll the d20 and keep the higher ({item}, {left} left)?",
   "DND5ECOMBAT.Chance.Oui": "Advantage (Luck Point)",

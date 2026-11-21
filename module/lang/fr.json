@@ -1337,6 +1337,8 @@
   "DND5ECOMBAT.BonusJet.Carte": "{item} : ajouté au jet de {name}",
   "DND5ECOMBAT.BonusJet.QuestionTest": "{what} : {total}. Ajouter {formula} ({item}, {left} restante(s)) ?",
   "DND5ECOMBAT.BonusJet.CarteTotal": "{item} : {what} de {name}, {total} → {sum}",
+  "DND5ECOMBAT.Charges.Gardees": "{feature} : un 6 — {item} garde ses charges ({n})",
+  "DND5ECOMBAT.Charges.Depensees": "{feature} : {item} dépense ses charges ({n})",
   "DND5ECOMBAT.Chance.Question": "{what} : {total} contre {needed} (d20 : {d20}). Dépenser un point de chance pour l’Avantage — relancer le d20 et garder le meilleur ({item}, {left} restant(s)) ?",
   "DND5ECOMBAT.Chance.QuestionTest": "{what} : {total} (d20 : {d20}). Dépenser un point de chance pour l’Avantage — relancer le d20 et garder le meilleur ({item}, {left} restant(s)) ?",
   "DND5ECOMBAT.Chance.Oui": "Avantage (point de chance)",

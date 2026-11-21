@@ -12,6 +12,7 @@ import { fresh } from "./fresh.mjs";
 import { basicActionData } from "../../adapter/basics.mjs";
 import { scrollSpellOf } from "../../adapter/scrolls.mjs";
 import { localizeEffectNames } from "../../core/localize.mjs";
+import { DDB_IMPORTER, importerErrors, importerOf } from "../../core/importer.mjs";
 import { referenceReader, retranslationOf, applyRetranslation } from "../../adapter/retranslate.mjs";
 import { contentOf } from "../../adapter/content.mjs";
 import { dataFixPlanOf, applyDataFixes } from "../../adapter/data-fixes.mjs";
@@ -415,10 +416,42 @@ const scrolls = {
  * caractères, au moins un chiffre).
  * @returns {Promise<Array<{item: Item, official: Item|null, viaMidi: boolean}>>}
  */
-export async function ddbItemsAtRisk() {
+export const ddbItemsAtRisk = () => importedItemsAtRisk(DDB_IMPORTER.id);
+
+/**
+ * Les importeurs déclarés par d'autres modules (`registerImporter`), dans l'ordre : chacun a sa vérification, après « ddb ».
+ * @type {Map<string, {id: string, flag: string, name: string, hint: string, icon: string}>}
+ */
+const IMPORTERS = new Map();
+
+/**
+ * Un autre module déclare son importeur d'objets : le diagnostic liste ceux de ses objets dont la règle cite un id que l'objet n'a
+ * pas, et les remplace par l'objet officiel comme pour DDB Importer (même id, état de la fiche et flags de l'importeur gardés ;
+ * pas de verrou). Une seconde déclaration du même `id` par le même appelant remplace la première.
+ * @param {{id: string, flag: string, name: string, hint?: string, icon?: string}} def  voir core/importer.mjs, `importerErrors`
+ * @returns {string}  l'id de sa vérification
+ */
+export function registerImporter(def) {
+  const errors = importerErrors(def, [...IMPORTERS.values()].filter(other => other.id !== def?.id));
+  if ( errors.length ) throw new Error(`${MODULE_ID} | diagnostic.registerImporter: ${errors.join(" ; ")}`);
+  IMPORTERS.set(def.id, Object.freeze({ id: def.id, flag: def.flag, name: def.name, hint: def.hint ?? "",
+    icon: def.icon ?? "fa-solid fa-file-import" }));
+  return importedCheckId(def.id);
+}
+
+/** L'importeur n'est plus déclaré. @returns {boolean} s'il l'était */
+export function unregisterImporter(id) {
+  return IMPORTERS.delete(id);
+}
+
+const importedCheckId = id => `imported-${id}`;
+
+/** @param {string} importer  l'id de l'importeur examiné (`importerOf`) */
+async function importedItemsAtRisk(importer) {
   const out = [];
+  const declared = [...IMPORTERS.values()];
   for ( const item of allItems() ) {
-    if ( !item.flags?.ddbimporter ) continue;
+    if ( importerOf(item.flags, declared) !== importer ) continue;
     const { entry } = contentOf(item);
     if ( !entry ) continue;
     const cited = new Set(JSON.stringify(entry).match(/[A-Za-z0-9]{16}/g) ?? []);
@@ -495,6 +528,49 @@ const ddb = {
     });
   }
 };
+
+/* -------------------------------------------- */
+/*  4 ter. Objets d'un importeur déclaré          */
+/* -------------------------------------------- */
+
+/**
+ * La vérification d'un importeur déclaré par un autre module : comme « ddb », sans verrou (le moteur ne sait rien de sa
+ * synchronisation). Les flags de l'importeur restent (`midiReplacement` garde les flags de l'objet) ; un objet du monde garde son
+ * dossier. Son nom et son aide viennent de la déclaration (`name`, `hint`), pas des traductions du moteur.
+ */
+function importedCheck(def) {
+  return {
+    id: importedCheckId(def.id), icon: def.icon, name: def.name, hint: def.hint,
+    async scan() {
+      const t = tr("Ddb");
+      return (await importedItemsAtRisk(def.id)).map(({ item, official, viaMidi }) => {
+        const name = esc(item.name);
+        const where = whereOf(item);
+        const root = rootOf(item);
+        if ( viaMidi ) return { root, where, text: t("LineMidi", { name, official: esc(official.name) }) };
+        if ( !official ) return { root, where, text: t("LineNone", { name }) };
+        const target = { name, official: esc(official.name), pack: esc(official.pack ?? "") };
+        if ( !ddbRepairable(official) ) return { root, where, text: t("LineByHand", target) };
+        const text = t("LineRepair", target);
+        return { root, where, text, preselect: true,
+          apply: async () => {
+            const current = fresh(item);
+            const data = midiReplacement(current, official);
+            const parent = current.parent;
+            if ( parent ) {
+              await parent.deleteEmbeddedDocuments("Item", [current.id], replacing());
+              await parent.createEmbeddedDocuments("Item", [data], { keepId: true });
+            } else {
+              data.folder = current._source.folder ?? null;
+              await current.delete();
+              await Item.implementation.create(data, { keepId: true });
+            }
+            return text;
+          } };
+      });
+    }
+  };
+}
 
 /* -------------------------------------------- */
 /*  5. Actions de base sur les tas d'Item Piles   */
@@ -965,5 +1041,13 @@ const modifyItemCheck = {
 };
 
 /** Les vérifications, dans l'ordre où les macros les proposaient. */
-export const CHECKS = Object.freeze([cleanMidi, phbEffects, lostEffects, scrolls, ddb, pileBasics, creatures, retranslate, dataFixes,
-  magicalEffects, phb3Subclasses, phb3Items, spellDuplicatesCheck, modifyItemCheck]);
+export const CHECKS = Object.freeze([cleanMidi, phbEffects, lostEffects, scrolls, ddb, pileBasics, creatures,
+  retranslate, dataFixes, magicalEffects, phb3Subclasses, phb3Items, spellDuplicatesCheck, modifyItemCheck]);
+
+/** Les vérifications du moment : celles du moteur, et, après « ddb », celle de chaque importeur déclaré par un autre module. */
+export function allChecks() {
+  const declared = [...IMPORTERS.values()].map(importedCheck);
+  if ( !declared.length ) return CHECKS;
+  const at = CHECKS.indexOf(ddb) + 1;
+  return [...CHECKS.slice(0, at), ...declared, ...CHECKS.slice(at)];
+}

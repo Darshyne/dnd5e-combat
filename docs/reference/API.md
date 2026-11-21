@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-349 fonctions dans 35 groupes, relevées sur l'objet réel du module chargé. La description est le
+351 fonctions dans 35 groupes, relevées sur l'objet réel du module chargé. La description est le
 commentaire de la fonction dans le code (début seulement) ; le fichier est relatif à `module/scripts/`. Les valeurs non
 fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de test du connecteur, MJ seulement.
 
@@ -166,6 +166,8 @@ fonctions (`active`, `reason`…) sont l'état du module. `mcp` : fonctions de t
 | Chemin | Signature | Fichier | Description |
 |---|---|---|---|
 | `api.diagnostic.open` | `({ check=null }={})` | `ui/diagnostic.mjs` | Pour l'API et les macros : ouvrir le diagnostic, éventuellement sur une seule vérification. |
+| `api.diagnostic.registerImporter` | `(def)` | `runtime/diagnostic/checks.mjs` | Un autre module déclare son importeur d'objets : le diagnostic liste ceux de ses objets dont la règle cite un id que l'objet n'a pas, et les remplace par l'objet officiel comme pour DDB Importer (même id, état de la fic… |
+| `api.diagnostic.unregisterImporter` | `(id)` | `runtime/diagnostic/checks.mjs` | L'importeur n'est plus déclaré. @returns {boolean} s'il l'était |
 
 ## `api.ethereal`
 

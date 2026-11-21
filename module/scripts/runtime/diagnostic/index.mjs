@@ -5,7 +5,7 @@
  */
 import { MODULE_ID } from "../../constants.mjs";
 import { uniqueRoots } from "../../core/backup.mjs";
-import { CHECKS } from "./checks.mjs";
+import { CHECKS, allChecks, registerImporter, unregisterImporter } from "./checks.mjs";
 import { createBackup, listBackups, restoreBackup } from "./backup.mjs";
 import { loc, log } from "../shared.mjs";
 
@@ -15,7 +15,7 @@ let busy = false;
 export async function scanWorld(ids=null) {
   if ( !game.user.isGM ) throw new Error("only a GM can run the diagnostic");
   const out = {};
-  for ( const check of CHECKS ) {
+  for ( const check of allChecks() ) {
     if ( ids && !ids.includes(check.id) ) continue;
     try {
       out[check.id] = (await check.scan()).map((task, i) => ({ ...task, check: check.id, id: `${check.id}.${i}` }));
@@ -66,4 +66,4 @@ export async function restore(uuid) {
   finally { busy = false; }
 }
 
-export { CHECKS, listBackups };
+export { CHECKS, allChecks, registerImporter, unregisterImporter, listBackups };

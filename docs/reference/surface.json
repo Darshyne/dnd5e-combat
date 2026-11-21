@@ -83,6 +83,8 @@
     "debug.verbose",
     "debug.verboseEverywhere",
     "diagnostic.open",
+    "diagnostic.registerImporter",
+    "diagnostic.unregisterImporter",
     "drop",
     "ethereal.enabled",
     "ethereal.is",

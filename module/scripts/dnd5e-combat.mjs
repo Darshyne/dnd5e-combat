@@ -196,6 +196,7 @@ import { registerStealthUI } from "./ui/stealth.mjs";
 import { registerFactionsUI, openFactions } from "./ui/factions.mjs";
 import { registerSettingsWindow, openSettings, registerWindow } from "./ui/settings.mjs";
 import { openDiagnostic } from "./ui/diagnostic.mjs";
+import { registerImporter, unregisterImporter } from "./runtime/diagnostic/index.mjs";
 import { registerDebug, debugApi } from "./runtime/debug.mjs";
 import { registerDebugReport, openDebugReport } from "./ui/debug-report.mjs";
 import { registerConnection, testConnection } from "./runtime/connection.mjs";
@@ -247,7 +248,10 @@ import { registerConnectionTest, openConnectionTest } from "./ui/connection-test
  *   `trail(module, kind, text)`, `onError(fn)`, `clear()`, `open({ token })` (la fenêtre) ; §388 : `testConnection(user)` (MJ : allers-retours et sonde du
  *   client d'un joueur → constats), `openConnectionTest(userId)` (sa fenêtre) ; hook `dnd5e-combat.debug` au `setup`, avec cette API.
  * `welcome.open()` : l'écran d'accueil (§177) ; `diagnostic.open({ check })` : le diagnostic du monde (vérifications, réparation après
- *   sauvegarde, restauration), sur une seule vérification si `check` est donné (macros « Outils du MJ »).
+ *   sauvegarde, restauration), sur une seule vérification si `check` est donné (macros « Outils du MJ ») ;
+ *   `diagnostic.registerImporter({ id, flag, name, hint?, icon? })` : un autre module déclare son importeur d'objets, reconnu au flag
+ *   que ses objets portent — le diagnostic gagne une vérification (id rendu) qui liste ceux dont la règle cite un id que l'objet n'a
+ *   pas et les remplace par l'objet officiel ; `diagnostic.unregisterImporter(id)`.
  */
 const state = {
   active: false, reason: null, unitFactors: null, routes: describeRoutes, content: contentApi, reports: reportsApi, mastery: masteryApi,
@@ -259,7 +263,7 @@ const state = {
   flee: fleeFrom, save: requestSave, drop: dropHeldBy,
   stopWalks: stopAllWalks, budget: { issues: budgetIssues, spend: spendBudget },
   level: automationLevel, levelAtLeast, skippedRoutes,
-  welcome: { open: openWelcome }, releaseNotes: { open: openReleaseNotes }, diagnostic: { open: openDiagnostic }, debug: Object.freeze({ ...debugApi, open: openDebugReport, testConnection, openConnectionTest }), settings: { open: openSettings, registerWindow },
+  welcome: { open: openWelcome }, releaseNotes: { open: openReleaseNotes }, diagnostic: Object.freeze({ open: openDiagnostic, registerImporter, unregisterImporter }), debug: Object.freeze({ ...debugApi, open: openDebugReport, testConnection, openConnectionTest }), settings: { open: openSettings, registerWindow },
   vision: { canSee: publicCanSee, locates: publicLocates, sensed: publicSensed, cone: publicCone, canHear: publicCanHear },
   factions: { ...factionsApi,
     /** Ouvre (ou ramène devant) la fenêtre des factions sur ce client. */

@@ -3,7 +3,7 @@
  * « Sauvegardes » (restaurer une réparation). Toute l'action est dans runtime/diagnostic/ ; ici, l'affichage et les confirmations.
  */
 import { MODULE_ID } from "../constants.mjs";
-import { CHECKS, listBackups, repairTasks, restore, scanWorld } from "../runtime/diagnostic/index.mjs";
+import { allChecks, listBackups, repairTasks, restore, scanWorld } from "../runtime/diagnostic/index.mjs";
 import { uniqueRoots } from "../core/backup.mjs";
 import { loc, esc } from "../runtime/shared.mjs";
 import { replaceKeepingScroll } from "./scroll.mjs";
@@ -70,16 +70,16 @@ export const DiagnosticApp = () => DiagnosticClass ??= class DiagnosticApp exten
           <input type="checkbox" data-task="${t.id}" ${t.apply ? "" : "disabled"} ${this.#checked.has(t.id) ? "checked" : ""}>
           <span class="das-task__where">${t.where}</span><span class="das-task__text">${t.text}</span></label>`).join("");
       return `<details class="das-check" ${tasks.length ? "open" : ""}>
-        <summary><i class="${check.icon}"></i> <strong>${esc(loc(`Diagnostic.Verif.${check.id}.Nom`))}</strong>
+        <summary><i class="${check.icon}"></i> <strong>${esc(check.name ?? loc(`Diagnostic.Verif.${check.id}.Nom`))}</strong>
           <span class="das-count${tasks.length ? "" : " zero"}">${tasks.length ? esc(loc("Diagnostic.Trouves", { count: tasks.length, fixable })) : esc(loc("Diagnostic.RienATrouver"))}</span></summary>
-        <p class="das-muted">${esc(loc(`Diagnostic.Verif.${check.id}.Aide`))}</p>
+        <p class="das-muted">${esc(check.hint ?? loc(`Diagnostic.Verif.${check.id}.Aide`))}</p>
         ${fixable ? `<div class="das-row"><button type="button" class="das-link" data-all="${check.id}">${esc(loc("Diagnostic.ToutCocher"))}</button>
           <button type="button" class="das-link" data-none="${check.id}">${esc(loc("Diagnostic.ToutDecocher"))}</button></div>` : ""}
         ${options}${rows}</details>`;
     };
     // Les vérifications d'un groupe (`check.group`, ainsi « ddb » : le contenu importé de D&D Beyond) forment une section à part,
     // après les autres, sous leur titre.
-    const shown = CHECKS.filter(c => this.#scan[c.id]);
+    const shown = allChecks().filter(c => this.#scan[c.id]);
     const groups = [...new Set(shown.map(c => c.group).filter(Boolean))].map(group => `<section class="das-group">
         <h3><i class="${shown.find(c => c.group === group).icon}"></i> ${esc(loc(`Diagnostic.Groupe.${group}.Nom`))}</h3>
         <p class="das-muted">${esc(loc(`Diagnostic.Groupe.${group}.Aide`))}</p>
@@ -134,7 +134,7 @@ export const DiagnosticApp = () => DiagnosticClass ??= class DiagnosticApp exten
 
   /** Les options de chaque vérification, défauts compris, pour la réparation. */
   #allOptions() {
-    return Object.fromEntries(CHECKS.filter(c => c.options?.length)
+    return Object.fromEntries(allChecks().filter(c => c.options?.length)
       .map(c => [c.id, Object.fromEntries(c.options.map(o => [o.id, this.#option(c.id, o)]))]));
   }
 

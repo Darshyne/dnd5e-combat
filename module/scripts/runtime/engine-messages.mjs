@@ -11,7 +11,7 @@ import { resolveAttack, hitsRegardless } from "../core/attack.mjs";
 import { offerInspiration, offerRollBonus, keptD20 } from "../adapter/inspiration.mjs";
 import { readUsage } from "../adapter/usage.mjs";
 import { canResistSave, askLegendary, resistSave, legendaryLeft } from "../adapter/legendary.mjs";
-import { offerInterpose, offerPeerlessAim } from "./feats.mjs";
+import { offerInterpose, offerPeerlessAim, offerSpellDamageRerolls, offerOverchannel } from "./feats.mjs";
 import { offerHeroicD20, offerHeroicDamage } from "./heroic.mjs";
 import { hasHeroic } from "../adapter/heroic.mjs";
 import { rerolledDamage } from "../core/heroic.mjs";
@@ -156,6 +156,15 @@ export async function onDamageMessage(message) {
     const sameProps = d => (d.properties.size === heroic.properties.length) && heroic.properties.every(p => d.properties.has(p));
     const part = damage.damages.find(d => (d.type === heroic.type) && sameProps(d)) ?? damage.damages.find(d => d.type === heroic.type);
     if ( part ) part.value = rerolledDamage(part.value, heroic.old, heroic.now);
+  }
+  // Sort renforcé (Métamagie) : des dés de dégâts d'un sort relancés contre 1 point de sorcellerie ; mêmes parts de l'agrégat.
+  // Surcharge (Évocateur 14) d'abord : des dés au maximum n'ont plus rien à relancer.
+  const maxed = actor ? await offerOverchannel(actor, message, game.messages.get(damage.origin ?? "") ?? null) : [];
+  for ( const delta of [...maxed, ...((actor && !maxed.length) ? await offerSpellDamageRerolls(actor, message) : [])] ) {
+    const sameProps = d => (d.properties.size === delta.properties.length) && delta.properties.every(p => d.properties.has(p));
+    const part = damage.damages.find(d => (d.type === delta.type) && sameProps(d))
+      ?? damage.damages.find(d => d.type === delta.type);
+    if ( part ) part.value = rerolledDamage(part.value, delta.old, delta.now);
   }
   const event = { type: "damageRolled", messageId: message.id, damages: serializeDamages(damage.damages) };
   const accepts = resolution => damageFits(resolution, damage) ? event : null;

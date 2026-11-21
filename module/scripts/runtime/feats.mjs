@@ -402,11 +402,15 @@ async function eldritchStrike(resolution, source, activity) {
   }
 }
 
-/** C12-e : les marques de Défense multiattaque tombent au changement de tour. */
+/**
+ * C12-e : les marques de Défense multiattaque tombent au changement de tour ; de même ce qu'une réaction a donné « jusqu'à la fin
+ * du tour en cours » (`untilTurnChange` : la Résistance de la Défense supérieure du chasseur, runtime/reactions.mjs).
+ */
 async function dropHitDefense() {
   for ( const token of canvas?.scene?.tokens ?? [] ) {
     const actor = token.actor;
-    const ids = (actor?.effects ?? []).filter(e => e.getFlag(MODULE_ID, "hitDefense")).map(e => e.id);
+    const ids = (actor?.effects ?? []).filter(e => e.getFlag(MODULE_ID, "hitDefense") || e.getFlag(MODULE_ID, "untilTurnChange"))
+      .map(e => e.id);
     if ( ids.length ) await actor.deleteEmbeddedDocuments("ActiveEffect", ids);
   }
 }

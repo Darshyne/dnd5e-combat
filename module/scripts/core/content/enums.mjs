@@ -4,7 +4,7 @@
 /** Version du schéma. Une surcouche d'une autre version est ignorée avec un avertissement. */
 export const CONTENT_VERSION = 1;
 
-export const STEP_TYPES = Object.freeze(["lift", "disarm", "use", "replay", "damage", "move", "status", "resave", "remove", "halve", "uncrit", "consume", "advantage", "disadvantage", "ward", "attackBonus", "endCondition", "reduce", "miss", "penalty", "bonus", "absorb", "interpose", "mark", "save", "breakConcentration", "cancel", "intercept", "redirect", "banish", "revertForm", "reroll", "cancelForSelf"]);
+export const STEP_TYPES = Object.freeze(["lift", "disarm", "use", "replay", "damage", "move", "status", "resave", "remove", "halve", "uncrit", "consume", "advantage", "disadvantage", "ward", "attackBonus", "endCondition", "reduce", "miss", "penalty", "bonus", "absorb", "interpose", "mark", "save", "breakConcentration", "cancel", "intercept", "redirect", "banish", "revertForm", "reroll", "cancelForSelf", "resist"]);
 /** Les fenêtres « touché » : la créature touchée elle-même, ou une autre qui réagit pour elle (Sentinelle au seuil de la mort). */
 export const HIT_WINDOWS = Object.freeze(["isHit", "allyIsHit"]);
 /** §301 : les fenêtres de chute, où une réaction réduit (`reduce`) ou annule (`cancel`) les dégâts de chute. */

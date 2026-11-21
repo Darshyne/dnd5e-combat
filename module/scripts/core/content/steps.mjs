@@ -214,7 +214,7 @@ export function validateTrigger(declaration, at, facts, errors) {
       if ( isObject(s) && (s.type === "damage") && ("onSave" in s) && ((d.on.length !== 1) || (d.on[0] !== "failedSave") || ("to" in s)) ) errors.push(`${at}.do: "onSave" requires failedSave as the only moment, without "to"`);
       // §301 : `reduce` aussi aux fenêtres de chute (Chute ralentie), comme `cancel` (Feuille morte).
       const fallReaction = d.on.some(m => FALL_WINDOWS.includes(m)) && d.do.some(x => isObject(x) && (x.type === "use"));
-      if ( isObject(s) && ["halve", "uncrit", "reduce", "miss", "penalty", "reroll"].includes(s.type) && !((s.type === "penalty") && preAttackReaction) && !((s.type === "reduce") && fallReaction) && (!d.on.some(m => HIT_WINDOWS.includes(m)) || !d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "${s.type}" requires the isHit or allyIsHit moment and a "use" reaction`);
+      if ( isObject(s) && ["halve", "uncrit", "reduce", "miss", "penalty", "reroll", "resist"].includes(s.type) && !((s.type === "penalty") && preAttackReaction) && !((s.type === "reduce") && fallReaction) && (!d.on.some(m => HIT_WINDOWS.includes(m)) || !d.do.some(x => isObject(x) && (x.type === "use"))) ) errors.push(`${at}.do: "${s.type}" requires the isHit or allyIsHit moment and a "use" reaction`);
       // §344 : `cancel` aussi à la fenêtre `isTargeted` (Sceptre d'absorption : le sort qui vise le porteur est annulé).
       const targetedReaction = d.on.includes("isTargeted") && d.do.some(x => isObject(x) && (x.type === "use"));
       if ( isObject(s) && (s.type === "cancel") && !fallReaction && !targetedReaction ) errors.push(`${at}.do: "cancel" requires the falls, allyFalls or isTargeted moment and a "use" reaction`);

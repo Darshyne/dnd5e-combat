@@ -557,19 +557,20 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 12. curse: early end not offered _(MJ)_
 13. weapon mastery not played _(MJ)_
 14. Cunning Strikes not played _(MJ)_
-15. critical mark not placed _(MJ)_
-16. Monk: Stunning Strike or Open Hand Technique not offered _(MJ)_
-17. smite: saving throw not played _(MJ)_
-18. hit follow-up not offered _(MJ)_
-19. maneuver: promised die not cleared _(MJ)_
-20. Wails from the Grave not offered _(MJ)_
-21. attack enchantment not removed _(MJ)_
-22. concentration end when nobody is affected: not played _(MJ)_
-23. Brutal Strike: effects not applied _(MJ)_
-24. swallow: the frog doesn't spit out _(MJ)_
-25. Skulker: hiding not kept _(MJ)_
-26. imposed command: effect not placed _(MJ)_
-27. control spells: dropped items not handled _(MJ)_
+15. Superior Hunter's Prey: extra damage not offered _(MJ)_
+16. critical mark not placed _(MJ)_
+17. Monk: Stunning Strike or Open Hand Technique not offered _(MJ)_
+18. smite: saving throw not played _(MJ)_
+19. hit follow-up not offered _(MJ)_
+20. maneuver: promised die not cleared _(MJ)_
+21. Wails from the Grave not offered _(MJ)_
+22. attack enchantment not removed _(MJ)_
+23. concentration end when nobody is affected: not played _(MJ)_
+24. Brutal Strike: effects not applied _(MJ)_
+25. swallow: the frog doesn't spit out _(MJ)_
+26. Skulker: hiding not kept _(MJ)_
+27. imposed command: effect not placed _(MJ)_
+28. control spells: dropped items not handled _(MJ)_
 
 ### `dnd5e-combat.sneak`
 

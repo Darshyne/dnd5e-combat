@@ -311,6 +311,21 @@ export function validateExtras(entry, at, errors) {
     && Object.keys(entry.transpose).every(k => k === "summon")) ) errors.push(`${at}transpose: { summon } (identifier of the summoning item)`);
   if ( ("portent" in entry) && !(isObject(entry.portent) && Number.isInteger(entry.portent.dice) && (entry.portent.dice > 0)
     && Object.keys(entry.portent).every(k => k === "dice")) ) errors.push(`${at}portent: { dice } (positive integer)`);
+  // Proie supérieure du chasseur : après des dégâts à une créature portant un effet de l'item `mark` du porteur, une fois par tour,
+  // `formula` de `damageType` à une autre créature vue à `range` de la première (core/mark-splash.mjs).
+  if ( "markSplash" in entry ) {
+    const m = entry.markSplash;
+    const ok = isObject(m) && (typeof m.mark === "string") && !!m.mark && (typeof m.formula === "string") && !!m.formula.trim()
+      && (typeof m.damageType === "string") && !!m.damageType && isObject(m.range) && Number.isFinite(m.range.value)
+      && (m.range.value > 0) && (typeof m.range.units === "string") && !!m.range.units
+      && (!("upgrades" in m) || (Array.isArray(m.upgrades) && m.upgrades.length && m.upgrades.every(u => isObject(u)
+        && (typeof u.feature === "string") && !!u.feature && (typeof u.formula === "string") && !!u.formula.trim())))
+      && Object.keys(m).every(k => ["mark", "formula", "damageType", "range", "upgrades"].includes(k));
+    if ( !ok ) {
+      errors.push(`${at}markSplash: { mark: identifier, formula, damageType, range: { value, units },`
+        + " upgrades?: [{ feature, formula }] }");
+    }
+  }
   if ( ("hitRider" in entry) && !(Array.isArray(entry.hitRider)
     ? (entry.hitRider.length > 1) && entry.hitRider.every(r => validRider(r) && isId(r.name))
     : validRider(entry.hitRider)) ) {

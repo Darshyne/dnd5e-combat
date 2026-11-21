@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-947 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+948 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -161,6 +161,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `limitedAction` | 1 | `haste` |
 | `magical` | 22 | `animate-trees`, `captains-charm`, `darkness-aura`, `deathly-teleport`, `ethereal-jaunt`, `ethereal-stride`, … |
 | `magicEvasion` | 1 | `circle-of-power` |
+| `markSplash` | 1 | `superior-hunters-prey` |
 | `martialArts` | 1 | `martial-arts` |
 | `maxSpellDamageVs` | 1 | `demonomicon-of-iggwilv` |
 | `metamagic` | 6 | `careful-spell`, `distant-spell`, `heightened-spell`, `quickened-spell`, `subtle-spell`, `twinned-spell` |

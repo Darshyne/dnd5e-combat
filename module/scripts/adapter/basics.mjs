@@ -8,6 +8,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { BASIC_ACTIONS } from "../content/actions.mjs";
 import { contentOf, identifierOf } from "./content.mjs";
+import { basicKindsFor, hasPaidForm } from "../core/basic-kinds.mjs";
 import { familiarBasicKinds } from "../core/familiar.mjs";
 
 /** La clé d'action de base d'un item (« dash »…), ou null. */
@@ -20,9 +21,27 @@ export function basicActionOf(item) {
  * L'action de base que prend une activité : celle de son item d'action de base, sinon celle que le contenu déclare pour elle
  * (`basicActions` : Ruse du Roublard, « Se cacher » par une action Bonus — §20).
  */
+/** L'activité dépense-t-elle une ressource (utilisations, point de crédo…) selon sa donnée ? */
+const spendsResource = activity => (activity?.consumption?.targets ?? []).length > 0;
+
+/**
+ * Ce que le contenu déclare pour cette activité (`basicActions`), la forme payée ou gratuite choisie d'après ce qu'elle dépense
+ * (core/basic-kinds.mjs) ; null si rien.
+ */
+export function declaredBasicsOf(activity) {
+  if ( !activity?.item ) return null;
+  return basicKindsFor(contentOf(activity.item).entry?.basicActions?.[activity.id] ?? null, spendsResource(activity));
+}
+
+/** Cette utilisation est-elle la forme gratuite d'une activité qui en a deux (le Pas du vent sans point : pas de saut doublé) ? */
+export function isFreeForm(activity) {
+  if ( !activity?.item ) return false;
+  return hasPaidForm(contentOf(activity.item).entry?.basicActions?.[activity.id]) && !spendsResource(activity);
+}
+
 export function basicActionOfActivity(activity, chosen=null) {
   if ( !activity?.item ) return null;
-  const declared = contentOf(activity.item).entry?.basicActions?.[activity.id] ?? null;
+  const declared = declaredBasicsOf(activity);
   // §65 : une action au choix (Échappée agile) — celle que l'auteur a choisie à l'utilisation, sinon aucune.
   if ( declared?.choose ) return declared.choose.includes(chosen) ? chosen : null;
   return basicActionOf(activity.item) ?? declared;
@@ -30,7 +49,7 @@ export function basicActionOfActivity(activity, chosen=null) {
 
 /** §65 : les actions de base parmi lesquelles l'auteur choisit à l'utilisation de cette activité, ou null. */
 export function basicChoiceOf(activity) {
-  const declared = activity?.item ? contentOf(activity.item).entry?.basicActions?.[activity.id] : null;
+  const declared = declaredBasicsOf(activity);
   return Array.isArray(declared?.choose) ? declared.choose : null;
 }
 

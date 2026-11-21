@@ -9,7 +9,7 @@ import {
 import { usageLimitProblems, markUsedThisTurn, applyLowestSlot } from "../adapter/limits.mjs";
 import { readUnitFactors } from "../adapter/units.mjs";
 import { promptWait, htmlText } from "../adapter/dialogs.mjs";
-import { basicActionOf, basicActionOfActivity, basicChoiceOf } from "../adapter/basics.mjs";
+import { basicActionOf, basicActionOfActivity, basicChoiceOf, declaredBasicsOf } from "../adapter/basics.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { originItemOf } from "../adapter/facts.mjs";
 import { isRaging } from "../adapter/rage.mjs";
@@ -706,7 +706,7 @@ async function onUsageMessage(message) {
   // §19.6 : une activité qui prend une action de base au coût de son activation (Pas rapide : Foncer par une action Bonus).
   // §65 : une action au choix ne vaut que celle choisie à l'utilisation (notée sur la carte).
   const declared = basicChoiceOf(activity) ? basicActionOfActivity(activity, message.getFlag(MODULE_ID, "basicChoice"))
-    : (contentOf(activity.item).entry?.basicActions?.[activity.id] ?? null);
+    : declaredBasicsOf(activity);
   const request = kind ? null : monkRequest(activity, requestFor(activity, message.getFlag(MODULE_ID, "cost") ?? null,
     { attackMode: message.getFlag(MODULE_ID, "attackMode") ?? null }), before);
   // §24 : une frappe du Déluge de coups — gratuite, décomptée, et notée sur la carte (Technique de la main ouverte).

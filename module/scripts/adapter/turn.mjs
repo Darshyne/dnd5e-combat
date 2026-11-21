@@ -13,7 +13,7 @@
 import { spentMovement } from "../core/movement.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf, identifierOf, hasClassFeature } from "./content.mjs";
-import { basicActionOf } from "./basics.mjs";
+import { basicActionOf, declaredBasicsOf } from "./basics.mjs";
 import { originItemOf, comesFromItemEffect } from "./facts.mjs";
 import { spellClassOf } from "./spell-class.mjs";
 import { freshBudget, costOf } from "../core/turn.mjs";
@@ -217,7 +217,7 @@ export function requestFor(activity, costOverride=null, { attackMode=null }={}) 
     multiattack: multiattackOf(activity.actor),
     keys: useKeysOf(activity),
     opensMultiattack: !!item && isMultiattackItem(item),
-    basic: item ? (basicActionOf(item) ?? contentOf(item).entry?.basicActions?.[activity.id] ?? null) : null,   // §157 : l'action limitée de Hâte
+    basic: item ? (basicActionOf(item) ?? declaredBasicsOf(activity)) : null,   // §157 : l'action limitée de Hâte
     utilize: isUtilize(activity),
     fleetStep: fleetStepOf(activity)
   };

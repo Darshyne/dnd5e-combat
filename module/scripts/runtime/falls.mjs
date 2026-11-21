@@ -12,6 +12,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { combatantFor, readBudget, writeBudget, committedPosition } from "../adapter/turn.mjs";
 import { contentOf } from "../adapter/content.mjs";
+import { isFreeForm } from "../adapter/basics.mjs";
 import { actorOfEffect } from "../adapter/grapple.mjs";
 import { groundUnder, levelAt } from "../adapter/altitude.mjs";
 import { climbSystemOn } from "../core/climb-system.mjs";
@@ -86,7 +87,8 @@ function onEffectChange(effect) {
 /** Pas du vent par un point de focus : la distance de saut doublée pour le tour. Sur le client qui l'utilise. */
 async function onPostUse(activity) {
   const double = contentOf(activity?.item).entry?.jump?.double;
-  if ( !double?.includes(activity.id) ) return;
+  // La forme gratuite d'une activité qui en a deux (Pas du vent sans point de crédo) ne double pas le saut.
+  if ( !double?.includes(activity.id) || isFreeForm(activity) ) return;
   const combatant = combatantFor(activity.actor);
   if ( !combatant ) return;
   await writeBudget(combatant, { ...readBudget(combatant), jumpDouble: true });

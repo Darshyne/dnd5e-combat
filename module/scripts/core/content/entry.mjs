@@ -7,6 +7,7 @@ import { ORDERS } from "../orders.mjs";
 import { unknownFacts } from "../triggers.mjs";
 import { validateAbsorb, validateCarriedLight, validateChoice, validateEmanation, validateLight, validateSummon, validateTargets, validateTeleport } from "./annex.mjs";
 import { BASIC_ACTION_KINDS, BONUS_ATTACK_AFTER, BREAK_MOMENTS, EFFECT_EXPIRIES, ENDS_APART_AT, ENDS_ARMOR, ENDS_UNAFFECTED, ENTRY_KEYS, SIZES, WEAPON_KINDS, DAMAGE_TYPES, ROLL_DISADVANTAGE_ON } from "./enums.mjs";
+import { hasPaidForm } from "../basic-kinds.mjs";
 import { validateExtras } from "./extras.mjs";
 import { validateConcentrationRule } from "../concentration.mjs";
 import { SPELL_COMPONENTS } from "../spell-failure.mjs";
@@ -317,6 +318,13 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     else for ( const [id, kind] of Object.entries(b) ) {
       if ( !isId(id) ) errors.push(`${at}basicActions.${id}: activity id (16 characters)`);
       // §24 : plusieurs actions pour une activité (Défense patiente : Se désengager et Esquiver) ; §65 : une au choix.
+      // Deux formes selon ce que l'activité dépense (`{ paid, free }`, core/basic-kinds.mjs) : chacune un genre ou une liste.
+      if ( hasPaidForm(kind) ) {
+        const kindsOk = v => { const list = [v].flat(); return !!list.length && list.every(k => BASIC_ACTION_KINDS.includes(k)); };
+        const ok = Object.keys(kind).every(k => ["paid", "free"].includes(k)) && Object.values(kind).every(kindsOk);
+        if ( !ok ) errors.push(`${at}basicActions.${id}: { paid?, free? } — ${BASIC_ACTION_KINDS.join(", ")} (or a list)`);
+        continue;
+      }
       if ( isObject(kind) && !Array.isArray(kind) ) {
         const ok = Array.isArray(kind.choose) && (kind.choose.length >= 2) && kind.choose.every(k => BASIC_ACTION_KINDS.includes(k))
           && (Object.keys(kind).length === 1);

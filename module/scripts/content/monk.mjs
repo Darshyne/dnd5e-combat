@@ -36,7 +36,9 @@ export const MONK = Object.freeze({
   "martial-arts": { martialArts: true },
   // Concentration du moine : Déluge de coups (2ghJTBhilLrFn9xT) — « 1 point : deux frappes à mains nues par une action Bonus » ;
   // Défense patiente — gratuite : Se désengager (EFzidO6yAapw8d60) ; 1 point : Se désengager et Esquiver (7xj7b6e8tDznDSrE) ;
-  // Pas du vent — 1 point : Se désengager et Foncer (0MuRZ0Ur95xQTKFq ; la version gratuite, Foncer seul, n'a pas d'activité).
+  // Pas du vent — 1 point : Se désengager et Foncer ; sans point : Foncer seul. L'activité 0MuRZ0Ur95xQTKFq est la version payée
+  // dans le Manuel 2.2.0 et la version GRATUITE dans le SRD 5.2 et le Manuel 3.0.0 (le point y passe à `Iv2Y…`) : `{ paid, free }`
+  // tranche d'après ce que l'activité dépense, et le saut n'est doublé que pour la forme payée.
   // §236 : Auto-restauration (niveau 10) — « à la fin de chacun de vos tours, vous pouvez mettre fin à l'un de ces états sur vous ».
   "self-restoration": { endsOwnConditions: ["charmed", "frightened", "poisoned"] },
   // §236 : Pas véloce (Main ouverte 11) — « quand vous prenez une action Bonus autre que Pas du vent, vous pouvez aussi utiliser Pas du
@@ -48,7 +50,8 @@ export const MONK = Object.freeze({
     // §438 : Manuel 3.0.0 — à partir du niveau 10, le Déluge, la Défense patiente et le Pas du vent payés d'un point sont des activités
     // « Heightened » de cet item (`r0ou…`, `KpoK…`, `R3sq…`), et le Pas du vent payé d'un point (`Iv2Y…`) est distinct du gratuit.
     flurry: { activity: ["2ghJTBhilLrFn9xT", "r0ou3Al6Dn3tgUC6"], strikes: 2 },
-    basicActions: { EFzidO6yAapw8d60: "disengage", "7xj7b6e8tDznDSrE": ["disengage", "dodge"], "0MuRZ0Ur95xQTKFq": ["dash", "disengage"],
+    basicActions: { EFzidO6yAapw8d60: "disengage", "7xj7b6e8tDznDSrE": ["disengage", "dodge"],
+      "0MuRZ0Ur95xQTKFq": { paid: ["dash", "disengage"], free: "dash" },
       KpoKztsxm5yuJWk6: ["disengage", "dodge"], Iv2YrISquTZWEjjN: ["dash", "disengage"], R3sqnBDwAjve0FvW: ["dash", "disengage"] },
     // §208 : Pas du vent par un point de focus — « et votre distance de saut est doublée pour le tour ».
     jump: { double: ["0MuRZ0Ur95xQTKFq", "Iv2YrISquTZWEjjN", "R3sqnBDwAjve0FvW"] }

@@ -155,7 +155,8 @@ describe("§24 Moine : Parade et schéma", () => {
       .toEqual(["triggers[0].do: \"reduce\" requires the isHit or allyIsHit moment and a \"use\" reaction"]);
   });
   it("le contenu livré", () => {
-    expect(CONTENT["monks-focus"].basicActions["0MuRZ0Ur95xQTKFq"]).toEqual(["dash", "disengage"]);
+    // Deux formes : payée (Manuel 2.2.0) et gratuite (SRD 5.2, Manuel 3.0.0) — tests/basic-kinds.test.mjs.
+    expect(CONTENT["monks-focus"].basicActions["0MuRZ0Ur95xQTKFq"]).toEqual({ paid: ["dash", "disengage"], free: "dash" });
     expect(CONTENT["deflect-attacks"].triggers[0].do.map(s => s.type)).toEqual(["use", "reduce"]);
     expect(CONTENT["stunning-strike"].savedEffects).toEqual(["cj9HhBNKtF6iOsH4"]);
   });

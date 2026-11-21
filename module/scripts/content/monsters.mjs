@@ -2,6 +2,10 @@
  * K12 (SPEC §333) : défauts de la donnée du Monster Manual 2024 que le texte ne suffit pas à corriger, par identifiant dnd5e.
  * Ids d'effets relevés dans le pack `actors` du module premium.
  */
+/** « Désavantage aux jets d'attaque et aux tests de caractéristique » : une source de Désavantage par caractéristique. */
+const ATTACK_AND_CHECK_DISADVANTAGE = Object.freeze(["str", "dex", "con", "int", "wis", "cha"].flatMap(a => ["attack", "check"]
+  .map(roll => ({ key: `system.abilities.${a}.${roll}.roll.mode`, value: -1, priority: null, type: "add" }))));
+
 export const MONSTERS = Object.freeze({
   // Miasme nocif (dragons verts) : l'effet vise `system.armor.value`, sans effet sur une créature ; −2 à la CA.
   "noxious-miasma": { effectChanges: { TSWsGeApnMgxOyIF: [{ key: "system.attributes.ac.bonus", type: "add", value: "-2" }] } },
@@ -37,6 +41,13 @@ export const MONSTERS = Object.freeze({
   // Résistance supérieure à la magie (Rakshasa, SRD 5.2) : « le rakshasa réussit automatiquement ses jets de sauvegarde contre
   // les sorts et autres effets magiques, et les jets d'attaque des sorts le ratent automatiquement ».
   "greater-magic-resistance": { saveAutoSuccessAgainst: ["magic"], spellAttacksMiss: true },
+  // Gel (Élémentaire de l'eau, SRD 5.2) : « s'il subit des dégâts de froid, sa Vitesse diminue de 6 m jusqu'à la fin de son
+  // prochain tour » — l'effet est dans la donnée, rien ne le posait.
+  "freeze": { onDamageTaken: { types: ["cold"], effect: "B3otZdkyUcUlgrmk" } },
+  // Aversion au feu (Golem de chair, SRD 5.2) : « s'il subit des dégâts de feu, il a le Désavantage aux jets d'attaque et aux tests
+  // de caractéristique jusqu'à la fin de son prochain tour » — l'effet « Averse » de la donnée est vide.
+  "aversion-to-fire": { onDamageTaken: { types: ["fire"], effect: "kJYNjmfI0RpvF7CQ" },
+    dataFixes: [{ effect: "kJYNjmfI0RpvF7CQ", path: "system.changes", from: [], value: ATTACK_AND_CHECK_DISADVANTAGE }] },
   // Défense (Sanglier-garou) : la malédiction ne vise qu'un Humanoïde.
   "mm-wereboar-gore": { effectsIf: { "target.creatureType": "humanoid" } },
   // Ravenloft. Brochette psychique (Ancien) : Épuisement et Étourdi seulement pour une cible Charmée.

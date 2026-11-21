@@ -10,11 +10,29 @@
 /** « Quand vous touchez la créature marquée avec un jet d'attaque ». */
 const marked = { "activity.isAttack": true, "target.hasEffectFrom": "hunters-mark" };
 
+/** Vagabondage : les trois changements de l'effet de la donnée. */
+const ROVING = {
+  bonus: { key: "system.attributes.movement.bonus", value: 10, type: "add" },
+  climb: { key: "system.attributes.movement.speeds.climb", value: "@attributes.movement.speed", type: "upgrade" },
+  swim: { key: "system.attributes.movement.speeds.swim", value: "@attributes.movement.speed", type: "upgrade" }
+};
+
 export const RANGER = Object.freeze({
   // Voile de la nature (niveau 14) — « par une action Bonus, vous vous donnez l'état Invisible jusqu'à la fin de votre prochain
   // tour » : l'effet de l'item n'a pas de durée dans la donnée et ne cessait jamais.
   "natures-veil": { effectEnds: { NOSQczI2MCQ5Ha8F: "casterTurnEnd" } },
   // Chasseur implacable (niveau 13) : « subir des dégâts ne peut pas rompre votre concentration sur la Marque du chasseur ».
+  // Vagabondage (SRD 5.2) : « votre Vitesse augmente de 3 m tant que vous ne portez pas d'armure lourde. Vous avez aussi une
+  // Vitesse d'escalade et de nage égales à votre Vitesse ». La donnée met les trois dans un seul effet sans condition : l'escalade
+  // et la nage passent dans un effet à part, qui reste, et le +3 m suit l'armure.
+  "roving": {
+    dataFixes: [
+      { effect: "dasRovingSpeeds0", create: { name: "Roving: Climb and Swim", type: "base", transfer: true, disabled: false,
+        system: { changes: [ROVING.climb, ROVING.swim] } } },
+      { effect: "J9RWCSmYGnP0fkn1", path: "system.changes", from: [ROVING.bonus, ROVING.climb, ROVING.swim], value: [ROVING.bonus] }
+    ],
+    effectWhile: { J9RWCSmYGnP0fkn1: { if: { notArmor: ["heavy"] } } }
+  },
   "relentless-hunter": { keepsConcentration: ["hunters-mark"] },
   // Esquive des ombres (Traqueur des ténèbres 11) : en Réaction, le rôdeur donne le Désavantage à un jet d'attaque qui le vise
   // (§34 : fenêtre avant le jet) ; la téléportation de 9 m qui suit reste au joueur.

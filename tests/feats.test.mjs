@@ -1,3 +1,4 @@
+import { dataFixPlan } from "../module/scripts/core/data-fixes.mjs";
 import { describe, it, expect } from "vitest";
 import { twiceKeepHighest, rerollOnesOnce, swapPartners } from "../module/scripts/core/feats.mjs";
 import { validateEntry } from "../module/scripts/core/content.mjs";
@@ -245,5 +246,39 @@ describe("rangedFeat.cover « half » : seul l'abri partiel est ignoré (Baguett
     expect(coverLeft({ degree: "threeQuarters", bonus: 5 }, "half")).toEqual({ degree: "threeQuarters", bonus: 5 });
     expect(coverLeft({ degree: "total", bonus: null }, "half")).toEqual({ degree: "total", bonus: null });
     expect(coverLeft({ degree: "threeQuarters", bonus: 5 }, true)).toBeNull();
+  });
+});
+
+describe("effectWhile.notArmor et les vitesses qui dépendent de l'armure (SRD 5.2)", () => {
+  const worn = armor => ({ armor, shield: false, weapons: [], inCombat: false, abilities: {} });
+  it("notArmor : tient sans armure et sous une autre armure, pas sous celle-là", () => {
+    const rule = { notArmor: ["heavy"] };
+    expect(effectHolds(rule, worn(null))).toBe(true);
+    expect(effectHolds(rule, worn("light"))).toBe(true);
+    expect(effectHolds(rule, worn("medium"))).toBe(true);
+    expect(effectHolds(rule, worn("heavy"))).toBe(false);
+    // Un bouclier ne compte pas pour une armure lourde.
+    expect(effectHolds(rule, { ...worn(null), shield: true })).toBe(true);
+  });
+  it("Déplacement rapide et Vagabondage : pas d'armure lourde ; Déplacement sans armure : ni armure ni bouclier", () => {
+    expect(SHIPPED["fast-movement"].effectWhile).toEqual({ Ln2upWfCALSwthX1: { if: { notArmor: ["heavy"] } } });
+    expect(SHIPPED["roving"].effectWhile).toEqual({ J9RWCSmYGnP0fkn1: { if: { notArmor: ["heavy"] } } });
+    const monk = SHIPPED["unarmored-movement"].effectWhile.OEYjH4cLYd0VPaKm.if;
+    expect(effectHolds(monk, worn(null))).toBe(true);
+    expect(effectHolds(monk, worn("light"))).toBe(false);
+    expect(effectHolds(monk, { ...worn(null), shield: true })).toBe(false);
+    for ( const id of ["fast-movement", "roving", "unarmored-movement"] ) expect(validateEntry(SHIPPED[id]), id).toEqual([]);
+    expect(validateEntry({ effectWhile: { Ln2upWfCALSwthX1: { if: { notArmor: ["plates"] } } } }).length).toBeGreaterThan(0);
+  });
+  it("Vagabondage : l'escalade et la nage quittent l'effet conditionnel pour un effet qui reste", () => {
+    const data = [{ key: "system.attributes.movement.bonus", value: 10, type: "add", phase: "initial" },
+      { key: "system.attributes.movement.speeds.climb", value: "@attributes.movement.speed", type: "upgrade", phase: "initial" },
+      { key: "system.attributes.movement.speeds.swim", value: "@attributes.movement.speed", type: "upgrade", phase: "initial" }];
+    const item = { effects: [{ _id: "J9RWCSmYGnP0fkn1", transfer: true, system: { changes: data } }], system: {} };
+    const plan = dataFixPlan(item, SHIPPED["roving"].dataFixes);
+    expect(plan.create.map(e => e._id)).toEqual(["dasRovingSpeeds0"]);
+    expect(plan.create[0].system.changes.map(c => c.key)).toEqual(["system.attributes.movement.speeds.climb",
+      "system.attributes.movement.speeds.swim"]);
+    expect(plan.effects[0]["system.changes"].map(c => c.key)).toEqual(["system.attributes.movement.bonus"]);
   });
 });

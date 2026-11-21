@@ -16,6 +16,16 @@ export function contestOutcome(mine, theirs) {
 }
 
 /**
+ * L'issue d'un test contre un DD fixe (`contest.dc` : enrouler une Chaîne, DD 13 ; nouer une Corde, DD 10) : réussi à DD ou plus.
+ * @param {number} mine  Total de l'auteur.
+ * @param {number} dc
+ * @returns {"win"|"lose"}
+ */
+export function checkOutcome(mine, dc) {
+  return (Number.isFinite(mine) && Number.isFinite(dc) && (mine >= dc)) ? "win" : "lose";
+}
+
+/**
  * La compétence que la cible oppose : parmi celles permises, la meilleure pour elle (le plus grand bonus total).
  * @param {Record<string, number>} bonuses   Bonus total par compétence (`system.skills.<clé>.total`).
  * @param {string[]} allowed

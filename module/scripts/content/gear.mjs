@@ -18,6 +18,10 @@ const OIL = { value: 6, units: "hour" };
 const HOOD = { bright: 0, dim: 5 };
 const BULLSEYE = { bright: 60, dim: 120, units: "ft", angle: 53, burn: OIL, fuel: "oil" };
 
+/** L'effet « lié » qu'une Chaîne ou une Corde pose : Entravé, jusqu'à l'évasion. */
+const BOUND = Object.freeze({ name: "Bound", type: "base", transfer: false, disabled: false, statuses: ["restrained"],
+  system: { changes: [] } });
+
 export const GEAR = Object.freeze({
   // §52 : sources de lumière portées (Manuel des joueurs 2024) — rayon de la lumière vive, puis rayon EXTÉRIEUR de la faible.
   // Bougie : « Lumière vive sur 1,50 m et faible sur 1,50 m de plus » ; Lampe : « vive sur 4,50 m et faible sur 9 m de plus » ;
@@ -42,6 +46,17 @@ export const GEAR = Object.freeze({
   // d'un tour fait un JS de Dextérité DD 15 ou subit 1 dégât perforant et sa Vitesse tombe à 0 jusqu'au début de son prochain tour ;
   // il faut 10 minutes pour les récupérer ». Billes — « une zone de 3 m de côté à 3 m de soi ; […] DD 10 ou À terre ; 10 minutes pour
   // les récupérer ». La zone reste au sol (runtime/scatter.mjs) : qui y entre s'arrête sur sa première case, puis la sauvegarde.
+  // Chaîne (SRD 5.2) : « au prix d'une action Utiliser, vous pouvez enrouler une Chaîne autour d'une créature réticente […] si vous
+  // réussissez un test de Force (Athlétisme) DD 13 ; si ses jambes sont liées, la créature a l'état Entravé jusqu'à ce qu'elle
+  // s'échappe ». La donnée porte les trois tests ; rien ne posait l'état. Le test d'évasion se lit dans le texte de l'objet.
+  "chain": { contest: { activity: "nkqvEiPdXCyiJ9ub", skill: "ath", dc: 13, effect: "dasChainBound000" },
+    dataFixes: [{ effect: "dasChainBound000", create: BOUND },
+      { path: "system.activities.nkqvEiPdXCyiJ9ub.effects", from: [], value: [{ _id: "dasChainBound000" }] }] },
+  // Corde (SRD 5.2) : « vous pouvez faire un nœud si vous réussissez un test de Dextérité (Escamotage) DD 10 […] ; si ses jambes
+  // sont liées, la créature a l'état Entravé jusqu'à ce qu'elle s'échappe ». Lecture : le nœud réussi sur une créature la lie.
+  "rope": { contest: { activity: "Y0LvyxjfVHNbp4CG", skill: "slt", dc: 10, effect: "dasRopeBound0000" },
+    dataFixes: [{ effect: "dasRopeBound0000", create: BOUND },
+      { path: "system.activities.Y0LvyxjfVHNbp4CG.effects", from: [], value: [{ _id: "dasRopeBound0000" }] }] },
   "caltrops": { scatter: true, triggers: [{ on: "enter", do: [{ type: "replay" }] }] },
   "ball-bearings": { scatter: true, triggers: [{ on: "enter", do: [{ type: "replay" }] }] },
   // §54 : Huile — une sauvegarde de Dextérité ratée laisse la cible huilée pendant 1 minute ; tant qu'elle l'est, des dégâts de

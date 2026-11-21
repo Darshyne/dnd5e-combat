@@ -541,6 +541,10 @@ export const ITEM_FIXES = Object.freeze({
   // Armure d'écailles de dragon (SRD 5.2) : « vous avez l'Avantage aux jets de sauvegarde contre le souffle des Dragons » — le +1
   // à la CA et la Résistance selon le dragon sont dans la donnée.
   "dragon-scale-mail-enchanted": { breathAdvantage: { types: ["dragon"] } },
+  // Armure démoniaque (SRD 5.2), malédiction : « tant que vous portez l'armure, vous avez le Désavantage aux jets d'attaque contre
+  // les démons et aux jets de sauvegarde contre leurs sorts et capacités spéciales » — rien dans la donnée.
+  "demon-armor-enchanted": { saveDisadvantageAgainst: { subtypes: ["demon"] },
+    triggers: [{ on: "preAttackRoll", if: { "target.creatureSubtype": "demon" }, do: [{ type: "disadvantage" }] }] },
   "moon-touched-sword-enchanted": { carriedLight: MOONLIGHT },
   "flame-tongue-enchanted": { carriedLight: { bright: 40, dim: 80, units: "ft", animation: FLAMES, whileEnchanted: "MHnAqxEXBhUbnjPq" } },
   "helm-of-brilliance-enchanted": { carriedLight: { bright: 10, dim: 20, units: "ft", animation: FLAMES, whileEnchanted: "oZBFpi117yOXca3k" } },

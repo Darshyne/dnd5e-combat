@@ -22,6 +22,7 @@ import { readUnitFactors } from "./units.mjs";
 import { isWithinRange } from "../core/units.mjs";
 import { INCAPACITATING } from "../core/conditions.mjs";
 import { speedIsZero } from "../core/movement.mjs";
+import { subtypeMatches } from "../core/eligibility.mjs";
 import { isDeadActor } from "./death.mjs";
 import { spellClassOf } from "./spell-class.mjs";
 import { isObjectToken } from "./bodies.mjs";
@@ -365,6 +366,8 @@ const isBloodied = actor => { const hp = hpOf(actor); return !!hp && (hp.max > 0
 
 /** Le type de créature d'un acteur (« undead », « fiend »…), tel que dnd5e le range dans `details.type.value`. */
 export const creatureTypeOf = actor => actor?.system?.details?.type?.value ?? null;
+/** Le sous-type de la créature est-il celui-là (ou l'un de ceux-là) ? Sans égard à la casse ; sans sous-type : non. */
+const subtypeIs = (actor, want) => subtypeMatches(actor?.system?.details?.type?.subtype, want);
 
 /** L'acteur connaît-il une langue, ou est-il télépathe (`traits.languages` de dnd5e : langues, texte libre, télépathie) ? */
 export function speaksLanguage(actor) {
@@ -600,6 +603,9 @@ export function factsFor({ source=null, target=null, activity=null, sourceToken=
     "source.hasSense": names => [names].flat().some(n => Number(source?.system?.attributes?.senses?.ranges?.[n]) > 0),
     // §16.8 : le type de la cible (« humanoid »…) et ses immunités aux états (Sommeil : immunité à l'Épuisement).
     "target.creatureType": creatureTypeOf(target),
+    // Le sous-type de la cible (`details.type.subtype` de dnd5e : « Demon », « Devil »…), sans égard à la casse — Armure
+    // démoniaque : « Désavantage aux jets d'attaque contre les démons ».
+    "target.creatureSubtype": want => subtypeIs(target, want),
     // Sens déclarés (`sense.detects`) : la cible connaît une langue ou est télépathe ; elle est venimeuse.
     "target.speaksLanguage": want => (speaksLanguage(target) === want),
     "target.poisonous": want => (isPoisonous(target) === want),

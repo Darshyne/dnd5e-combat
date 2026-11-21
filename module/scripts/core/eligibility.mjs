@@ -49,6 +49,33 @@ export function castTargetRule(own, spellTargets, activityId) {
   return { ...(own ?? {}), ...added };
 }
 
+/**
+ * Le sous-type d'une créature (`details.type.subtype` de dnd5e, texte libre : « Demon », « Devil », « Goblinoid ») est-il celui
+ * attendu, ou l'un de ceux attendus ? Sans égard à la casse ni aux espaces autour ; sans sous-type : non.
+ * @param {string|null|undefined} subtype
+ * @param {string|string[]} want
+ */
+export function subtypeMatches(subtype, want) {
+  const own = String(subtype ?? "").trim().toLowerCase();
+  if ( !own ) return false;
+  return [want].flat().some(w => String(w ?? "").trim().toLowerCase() === own);
+}
+
+/**
+ * `saveDisadvantageAgainst: { subtypes }` : le porteur de l'objet fait avec le Désavantage les sauvegardes qu'impose une créature
+ * de l'un de ces sous-types (Armure démoniaque : « contre leurs sorts et capacités spéciales »).
+ */
+export function saveDisadvantageAgainstHolds(rule, sourceSubtype) {
+  return Array.isArray(rule?.subtypes) && subtypeMatches(sourceSubtype, rule.subtypes);
+}
+
+/** Les erreurs de la clé. Vide = valide. */
+export function validateSaveDisadvantageAgainst(rule, at) {
+  const ok = rule && (typeof rule === "object") && !Array.isArray(rule) && Array.isArray(rule.subtypes) && rule.subtypes.length
+    && rule.subtypes.every(t => (typeof t === "string") && t.trim()) && Object.keys(rule).every(k => k === "subtypes");
+  return ok ? [] : [`${at}saveDisadvantageAgainst: { subtypes: [creature subtype, …] }`];
+}
+
 /** Les états d'un effet contre lesquels la créature est immunisée (vide : l'effet peut être posé). */
 export function blockedStatuses(statuses, immunities) {
   const immune = new Set(immunities ?? []);

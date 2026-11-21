@@ -311,6 +311,15 @@ export function validateExtras(entry, at, errors) {
     && Object.keys(entry.transpose).every(k => k === "summon")) ) errors.push(`${at}transpose: { summon } (identifier of the summoning item)`);
   if ( ("portent" in entry) && !(isObject(entry.portent) && Number.isInteger(entry.portent.dice) && (entry.portent.dice > 0)
     && Object.keys(entry.portent).every(k => k === "dice")) ) errors.push(`${at}portent: { dice } (positive integer)`);
+  // Paume vibratoire : un effet de l'item qu'une seule créature porte à la fois (`single`), et que l'activité `endedBy` fait cesser
+  // une fois résolue (core/held-effect.mjs).
+  if ( ("heldEffect" in entry) && !(isObject(entry.heldEffect) && isId(entry.heldEffect.effect)
+    && (!("single" in entry.heldEffect) || (entry.heldEffect.single === true))
+    && (!("endedBy" in entry.heldEffect) || isId(entry.heldEffect.endedBy))
+    && (("single" in entry.heldEffect) || ("endedBy" in entry.heldEffect))
+    && Object.keys(entry.heldEffect).every(k => ["effect", "single", "endedBy"].includes(k))) ) {
+    errors.push(`${at}heldEffect: { effect: id, single?: true, endedBy?: activity id }`);
+  }
   if ( ("hitRider" in entry) && !(Array.isArray(entry.hitRider)
     ? (entry.hitRider.length > 1) && entry.hitRider.every(r => validRider(r) && isId(r.name))
     : validRider(entry.hitRider)) ) {
@@ -353,7 +362,7 @@ export function validateExtras(entry, at, errors) {
 /** Une faveur au toucher (`hitRider`), seule ou dans une liste (§372). */
 function validRider(r) {
   return isObject(r) && Object.keys(r).length
-    && Object.keys(r).every(k => ["damage", "effect", "status", "sizeAtMost", "slot", "weapon", "oncePerTurn", "save", "item", "pays", "weaponDamage", "whileActive", "push", "unarmed", "melee", "shield", "damageType", "sizeAbove", "name", "formula", "weapons", "perTurn"].includes(k))
+    && Object.keys(r).every(k => ["damage", "effect", "status", "sizeAtMost", "slot", "weapon", "oncePerTurn", "save", "item", "pays", "cost", "weaponDamage", "whileActive", "push", "unarmed", "melee", "shield", "damageType", "sizeAbove", "name", "formula", "weapons", "perTurn"].includes(k))
     && ["melee", "shield"].every(k => !(k in r) || (r[k] === true))
     && (!("damageType" in r) || ((typeof r.damageType === "string") && !!r.damageType))
     && (!("sizeAbove" in r) || (Number.isInteger(r.sizeAbove) && (r.sizeAbove >= 0)))
@@ -362,6 +371,7 @@ function validRider(r) {
       && (typeof r.push.units === "string") && !!r.push.units && Object.keys(r.push).every(k => ["distance", "units"].includes(k))))
     && (!("whileActive" in r) || (r.whileActive === true))
     && (!("pays" in r) || ((typeof r.pays === "string") && !!r.pays && !("slot" in r)))
+    && (!("cost" in r) || (Number.isInteger(r.cost) && (r.cost >= 2) && ("pays" in r)))
     && (!("weaponDamage" in r) || (r.weaponDamage === true))
     && (!("slot" in r) || (r.slot === "pact"))
     && (!("weapon" in r) || (typeof r.weapon === "string"))

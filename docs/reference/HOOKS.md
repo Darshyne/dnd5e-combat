@@ -211,32 +211,33 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 13. auras: recalculation requested
 14. emanation on death _(MJ)_
 15. regeneration: automatic Dead removed _(MJ)_
-16. feat effect not synced _(MJ)_
-17. effect end when Incapacitated: not played _(MJ)_
-18. features held by Rage not synced _(MJ)_
-19. Rage: end on condition not evaluated _(MJ)_
-20. swallow: effect not tracked _(MJ)_
-21. grapple: does it still hold? _(MJ)_
-22. grapple: grappler's mark _(MJ)_
-23. grapple: only one creature at a time not enforced _(MJ)_
-24. Prone: crawl mode not set or not removed _(MJ)_
-25. climbing: fall not triggered _(MJ)_
-26. fall: not triggered automatically _(MJ)_
-27. burning: flammable zone not ignited on catching fire _(MJ)_
-28. Exhaustion: level not raised by an item effect _(MJ)_
-29. Blink: permanent Ethereal not removed _(MJ)_
-30. Levitate: not lifted _(MJ)_
-31. passive perception _(MJ)_
-32. hearing: ranges to read again
-33. enchanted weapon: light not updated _(MJ)_
-34. invisibility: not suspended _(MJ)_
-35. Wild Shape: end if Incapacitated _(MJ)_
-36. floating texts: effect
-37. perception: hearing mark not drawn
-38. perception: display not refreshed
-39. ethereal: view not updated
-40. ethereal: movement action not switched _(MJ)_
-41. sneak: cones redrawn
+16. Quivering Palm: one creature at a time _(MJ)_
+17. feat effect not synced _(MJ)_
+18. effect end when Incapacitated: not played _(MJ)_
+19. features held by Rage not synced _(MJ)_
+20. Rage: end on condition not evaluated _(MJ)_
+21. swallow: effect not tracked _(MJ)_
+22. grapple: does it still hold? _(MJ)_
+23. grapple: grappler's mark _(MJ)_
+24. grapple: only one creature at a time not enforced _(MJ)_
+25. Prone: crawl mode not set or not removed _(MJ)_
+26. climbing: fall not triggered _(MJ)_
+27. fall: not triggered automatically _(MJ)_
+28. burning: flammable zone not ignited on catching fire _(MJ)_
+29. Exhaustion: level not raised by an item effect _(MJ)_
+30. Blink: permanent Ethereal not removed _(MJ)_
+31. Levitate: not lifted _(MJ)_
+32. passive perception _(MJ)_
+33. hearing: ranges to read again
+34. enchanted weapon: light not updated _(MJ)_
+35. invisibility: not suspended _(MJ)_
+36. Wild Shape: end if Incapacitated _(MJ)_
+37. floating texts: effect
+38. perception: hearing mark not drawn
+39. perception: display not refreshed
+40. ethereal: view not updated
+41. ethereal: movement action not switched _(MJ)_
+42. sneak: cones redrawn
 
 ### `createActor`
 
@@ -558,18 +559,19 @@ ne s'exécute que chez le MJ actif. **stop** : il peut annuler le hook en rendan
 13. weapon mastery not played _(MJ)_
 14. Cunning Strikes not played _(MJ)_
 15. critical mark not placed _(MJ)_
-16. Monk: Stunning Strike or Open Hand Technique not offered _(MJ)_
-17. smite: saving throw not played _(MJ)_
-18. hit follow-up not offered _(MJ)_
-19. maneuver: promised die not cleared _(MJ)_
-20. Wails from the Grave not offered _(MJ)_
-21. attack enchantment not removed _(MJ)_
-22. concentration end when nobody is affected: not played _(MJ)_
-23. Brutal Strike: effects not applied _(MJ)_
-24. swallow: the frog doesn't spit out _(MJ)_
-25. Skulker: hiding not kept _(MJ)_
-26. imposed command: effect not placed _(MJ)_
-27. control spells: dropped items not handled _(MJ)_
+16. Quivering Palm: vibrations not ended _(MJ)_
+17. Monk: Stunning Strike or Open Hand Technique not offered _(MJ)_
+18. smite: saving throw not played _(MJ)_
+19. hit follow-up not offered _(MJ)_
+20. maneuver: promised die not cleared _(MJ)_
+21. Wails from the Grave not offered _(MJ)_
+22. attack enchantment not removed _(MJ)_
+23. concentration end when nobody is affected: not played _(MJ)_
+24. Brutal Strike: effects not applied _(MJ)_
+25. swallow: the frog doesn't spit out _(MJ)_
+26. Skulker: hiding not kept _(MJ)_
+27. imposed command: effect not placed _(MJ)_
+28. control spells: dropped items not handled _(MJ)_
 
 ### `dnd5e-combat.sneak`
 

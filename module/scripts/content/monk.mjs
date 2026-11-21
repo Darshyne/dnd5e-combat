@@ -58,6 +58,13 @@ export const MONK = Object.freeze({
   // Frappe étourdissante (niveau 5) : au plus une fois par tour, sur un coup d'arme de moine ou à mains nues, 1 point impose un JS
   // de Constitution ; la cible qui le rate est Étourdie jusqu'au début du prochain tour du moine, celle qui le réussit voit sa
   // Vitesse réduite de moitié et la prochaine attaque contre elle gagne l'Avantage, sur la même durée. Effets de l'item : Stunned (échec), Slowed (réussite).
+  // Paume vibratoire (Main ouverte 17) — « quand vous touchez une créature avec une attaque à mains nues, vous pouvez dépenser 4
+  // points de crédo pour déclencher des vibrations » : proposée sur le coup, l'effet « Lethal Vibrations » de l'item posé sur la
+  // cible ; « une seule créature à la fois » ; « quand vous y mettez fin, la cible fait un jet de sauvegarde de Constitution » —
+  // l'activité de sauvegarde de l'item (10d12 de force, la moitié sur une réussite), qui retire l'effet une fois résolue. Y mettre
+  // fin sans dégâts, et à la place d'une attaque de l'action Attaque, restent au joueur.
+  "quivering-palm": { hitRider: { effect: "GnIJc9uI54mfAQz8", unarmed: true, pays: "monks-focus", cost: 4 },
+    heldEffect: { effect: "GnIJc9uI54mfAQz8", single: true, endedBy: "lBn87Q4yyJXWzLqg" } },
   "stunning-strike": {
     stunningStrike: { activity: "Xto99a8Zt46VLwaR", focus: "monks-focus" },
     savedEffects: ["cj9HhBNKtF6iOsH4"],

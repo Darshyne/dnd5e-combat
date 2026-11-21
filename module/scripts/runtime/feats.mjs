@@ -17,6 +17,7 @@ import { STEPS } from "../core/action.mjs";
 import { attackDamageTypes } from "../adapter/smite.mjs";
 import { inflict } from "../adapter/retaliation.mjs";
 import { victimsOf } from "../adapter/grapple.mjs";
+import { onHeldEffectCreated, onHeldEffectEnded } from "./held-effect.mjs";
 import { enqueue } from "./queue.mjs";
 import { contentOf, identifierOf } from "../adapter/content.mjs";
 import { factsFor } from "../adapter/facts.mjs";
@@ -509,5 +510,9 @@ export function registerFeats() {
     { executor: true, label: "Elemental Adept: type not asked" });
   route("ready", () => { for ( const actor of game.actors ) for ( const item of actor.items ) enqueue(`elemental:${item.uuid}`, () => askElementalType(item)); },
     { executor: true, label: "Elemental Adept: type not asked" });
+  route(`${MODULE_ID}.resolution`, resolution => enqueue(`heldEffect:${resolution?.id}`, () => onHeldEffectEnded(resolution)),
+    { executor: true, label: "Quivering Palm: vibrations not ended" });
+  route("createActiveEffect", effect => enqueue(`heldEffect:${effect.uuid}`, () => onHeldEffectCreated(effect)),
+    { executor: true, label: "Quivering Palm: one creature at a time" });
   route("deleteCombat", combat => Promise.all(combat.combatants.map(c => (c.actor ? dropMarks(c.actor.uuid) : null))), { executor: true, label: "critical marks not removed" });
 }

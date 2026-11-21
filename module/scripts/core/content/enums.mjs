@@ -67,7 +67,7 @@ export const ACTION_END_VERBS = Object.freeze(["wake"]);
 /** §49 : l'état que le porteur se donne en mettant fin à l'effet (feu grégeois : « en vous infligeant l'état À terre »). */
 export const ACTION_END_STATUSES = Object.freeze(["prone"]);
 /** §32 : les options de Métamagie que le moteur applique au sort suivant. */
-export const METAMAGIC_KINDS = Object.freeze(["quickened", "careful", "heightened", "distant", "subtle", "twinned"]);
+export const METAMAGIC_KINDS = Object.freeze(["quickened", "careful", "heightened", "distant", "subtle", "twinned", "extended"]);
 /** Les repos qui mettent fin aux effets d'un item (`effectsExpire`) : les événements d'expiration de dnd5e (config.mjs:4750). */
 export const EFFECT_EXPIRIES = Object.freeze(["longRest", "shortRest"]);
 

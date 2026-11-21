@@ -40,6 +40,9 @@ export const SORCERER = Object.freeze({
   // pour relancer le d20, et devez utiliser le nouveau jet ». Proposé après le jet raté (il n'est pas choisi au lancement, et vaut
   // même si une autre option de Métamagie a servi) ; l'activité de l'item paie le point.
   "seeking-spell": { rollBonus: { activity: "vudKvHh2PbAiDXSE", on: ["attack"], reroll: {}, spellAttack: true } },
+  // Sort étendu (Métamagie) — « un sort d'au moins 1 minute : sa durée doublée, 24 heures au plus ; s'il demande la Concentration,
+  // l'Avantage aux sauvegardes pour la maintenir » (runtime/cantrips.mjs à la pose des effets, runtime/feats.mjs au jet).
+  "extended-spell": meta("WGQHGHweOlSpZDHp", "extended"),
   // Affinité élémentaire (Draconique 6) : « + votre modificateur de Charisme à un jet de dégâts » d'un sort du type choisi.
   "elemental-affinity": { triggers: ["acid", "cold", "fire", "lightning", "poison"].map(affinity) },
   // Défenses psychiques (Aberrante 6) : Avantage aux sauvegardes contre Charmé et Effrayé.

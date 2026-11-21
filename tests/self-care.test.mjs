@@ -48,3 +48,24 @@ describe("§278 : regagner au jet d'initiative", () => {
     expect(v({ regainOnInitiative: { item: "x", items: ["y"], upTo: 1 } })[0]).toMatch(/regainOnInitiative/);
   });
 });
+
+describe("regainOnInitiative `{ items, activity }` — Métabolisme surnaturel (SRD 5.2, Moine 2)", () => {
+  const rule = { items: ["monks-focus"], activity: "RfyAj9VDmzAJkTL3" };
+  it("proposé quand des points sont dépensés et qu'une utilisation reste ; rien n'est écrit par le moteur", () => {
+    expect(initiativeRegain(rule, { items: { "monks-focus": { max: 5, spent: 3 } }, usesLeft: 1 }))
+      .toEqual({ spent: {}, exhaustion: null, pay: false, use: "RfyAj9VDmzAJkTL3", back: 3 });
+  });
+  it("rien à regagner, ou plus d'utilisation : pas de question", () => {
+    expect(initiativeRegain(rule, { items: { "monks-focus": { max: 5, spent: 0 } }, usesLeft: 1 })).toBe(null);
+    expect(initiativeRegain(rule, { items: { "monks-focus": { max: 5, spent: 3 } }, usesLeft: 0 })).toBe(null);
+    expect(initiativeRegain(rule, { items: {}, usesLeft: 1 })).toBe(null);
+  });
+  it("le schéma et l'entrée", async () => {
+    const { validateEntry } = await import("../module/scripts/core/content.mjs");
+    const { CONTENT } = await import("../module/scripts/content/index.mjs");
+    expect(validateEntry(CONTENT["uncanny-metabolism"])).toEqual([]);
+    expect(CONTENT["uncanny-metabolism"].regainOnInitiative).toEqual(rule);
+    expect(validateEntry({ regainOnInitiative: { items: ["monks-focus"], activity: "trop-court" } }).length).toBe(1);
+    expect(validateEntry({ regainOnInitiative: { activity: "RfyAj9VDmzAJkTL3" } }).length).toBe(1);
+  });
+});

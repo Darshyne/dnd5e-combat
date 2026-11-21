@@ -29,8 +29,12 @@ export const MONK = Object.freeze({
   // C12-g : « elle revient à la vie […] et les états Aveuglé, Assourdi, Paralysé, Empoisonné et Étourdi cessent » — Mort compris.
   "hand-of-ultimate-mercy": { ranges: { XtgmW9115BzcLiFr: { value: 5, units: "ft" } }, curesAll: ["dead", "blinded", "deafened", "paralyzed", "poisoned", "stunned"] },
   // C12-g : Concentration parfaite (Moine 15) — « quand vous jouez l'initiative et avez 3 points de concentration ou moins, vous remontez à 4 »
-  // (la condition « sans Métabolisme surnaturel » reste au joueur).
+  // (« si vous n'utilisez pas le Métabolisme surnaturel » : celui-ci est proposé d'abord, runtime/roll-bonus.mjs).
   "perfect-focus": { regainOnInitiative: { item: "monks-focus", upTo: 4 } },
+  // Métabolisme surnaturel (Moine 2) — « quand vous jouez l'initiative, vous pouvez regagner tous vos points de crédo dépensés ;
+  // vous lancez alors votre dé d'arts martiaux et regagnez autant de points de vie, plus votre niveau de Moine ; une fois par
+  // repos long ». L'activité de l'item fait les trois (points rendus, soins, utilisation) : proposée s'il y a des points à regagner.
+  "uncanny-metabolism": { regainOnInitiative: { items: ["monks-focus"], activity: "RfyAj9VDmzAJkTL3" } },
   // C12-a : Survivant discipliné (Moine 14) — « si vous ratez une sauvegarde, vous pouvez dépenser 1 point de concentration pour la relancer,
   // et vous devez utiliser le nouveau jet » (l'activité dépense le point).
   "disciplined-survivor": { rollBonus: { activity: "P38SXEOizo5QaG8h", on: ["save"], reroll: {} } },

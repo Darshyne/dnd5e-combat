@@ -419,7 +419,7 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       && ["exhaustion", "uses"].every(k => !(k in e) || (e[k] === true)) && (strings(e.statuses) || (e.exhaustion === true)));
     if ( !ok ) errors.push(`${at}endsOwnConditions: list of statuses, or { statuses?, at?: turnStart|turnEnd, exhaustion?: true, uses?: true }`);
   }
-  // §278 : { item, upTo } (§236), ou { items?, exhaustion?, uses? }.
+  // §278 : { item, upTo } (§236), ou { items?, exhaustion?, uses? }, ou { items, activity } (une activité de l'item, proposée).
   if ( "regainOnInitiative" in entry ) {
     const r = entry.regainOnInitiative;
     const legacy = isObject(r) && (typeof r.item === "string") && r.item && Number.isInteger(r.upTo) && (r.upTo > 0)
@@ -427,7 +427,11 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     const wide = isObject(r) && !("item" in r) && Object.keys(r).every(k => ["items", "exhaustion", "uses"].includes(k))
       && (!("items" in r) || strings(r.items)) && (!("exhaustion" in r) || (Number.isInteger(r.exhaustion) && (r.exhaustion > 0)))
       && (!("uses" in r) || (r.uses === true)) && (("items" in r) || ("exhaustion" in r));
-    if ( !legacy && !wide ) errors.push(`${at}regainOnInitiative: { item, upTo } or { items?, exhaustion?, uses? } (identifiers, positive integers)`);
+    const offered = isObject(r) && isId(r.activity) && strings(r.items) && (Object.keys(r).length === 2);
+    if ( !legacy && !wide && !offered ) {
+      errors.push(`${at}regainOnInitiative: { item, upTo } or { items?, exhaustion?, uses? } or { items, activity }`
+        + " (identifiers, positive integers)");
+    }
   }
   if ( "cantripRange" in entry ) {
     const r = entry.cantripRange;

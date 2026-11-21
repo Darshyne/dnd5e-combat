@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  attackModifiers, netMode, combineTargets, isAutoCritical, autoFailSave, verbalSpellBlocked
+  attackModifiers, netMode, combineTargets, isAutoCritical, autoFailSave, verbalSpellBlocked, typeAutoSave
 } from "../module/scripts/core/conditions.mjs";
 
 const attack = over => attackModifiers({ attacker: [], target: [], adjacent: true, ranged: false, ...over });
@@ -223,6 +223,8 @@ describe("§17.3 : ce que les états interdisent", () => {
 });
 
 import { breakMoments, curable, fightingAdvantage } from "../module/scripts/core/conditions.mjs";
+import { validateEntry } from "../module/scripts/core/content.mjs";
+import { CONTENT } from "../module/scripts/content/index.mjs";
 
 describe("§16.47 : règles de sorts", () => {
   it("Tentacules de Hadar : pas de Réaction", () => {
@@ -257,5 +259,30 @@ describe("§77 : une action ou une action Bonus, pas les deux", () => {
   it("rien de pris, ou sans l'effet : libre", () => {
     expect(conditionUseIssues({ statuses: [], cost: "action", actionOrBonus: true, budget: budget(1, 1) })).toEqual([]);
     expect(conditionUseIssues({ statuses: [], cost: "bonus", budget: budget(0, 1) })).toEqual([]);
+  });
+});
+
+describe("sauvegarde d'office selon le type de créature (saveAutoSuccess.types, saveAutoFail.types)", () => {
+  it("Flétrissement : une Plante rate d'office, les autres lancent", () => {
+    expect(typeAutoSave({ fail: ["plant"] }, "plant")).toEqual({ autoFail: "type:plant" });
+    expect(typeAutoSave({ fail: ["plant"] }, "undead")).toBeNull();
+    expect(typeAutoSave({ fail: ["plant"] }, "")).toBeNull();
+    expect(typeAutoSave({ fail: ["plant"] }, undefined)).toBeNull();
+  });
+  it("Pétrification : une Créature artificielle réussit d'office", () => {
+    expect(typeAutoSave({ success: ["construct"] }, "construct")).toEqual({ autoSucceed: "type:construct" });
+    expect(typeAutoSave({ success: ["construct"] }, "plant")).toBeNull();
+  });
+  it("sans règle, rien ; déclaré des deux côtés, l'échec prime", () => {
+    expect(typeAutoSave({}, "plant")).toBeNull();
+    expect(typeAutoSave(undefined, "plant")).toBeNull();
+    expect(typeAutoSave({ success: ["plant"], fail: ["plant"] }, "plant")).toEqual({ autoFail: "type:plant" });
+  });
+  it("schéma de saveAutoFail : des types de créature, rien d'autre ; Flétrissement le déclare", () => {
+    expect(validateEntry({ saveAutoFail: { types: ["plant"] } })).toEqual([]);
+    expect(validateEntry({ saveAutoFail: { types: [] } })).toEqual(["saveAutoFail: { types: [creature types] }"]);
+    expect(validateEntry({ saveAutoFail: { types: ["arbre"] } })).toHaveLength(1);
+    expect(validateEntry({ saveAutoFail: { types: ["plant"], fighting: true } })).toHaveLength(1);
+    expect(CONTENT.blight.saveAutoFail).toEqual({ types: ["plant"] });
   });
 });

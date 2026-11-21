@@ -43,6 +43,8 @@ export const SPELL_RULES = Object.freeze({
   // §43.1 : Pétrification — l'effet d'une sauvegarde réussie (Vitesse 0) tombe au début du prochain tour du lanceur.
   // §402 : Discours captivant — « les créatures que vous ou vos compagnons combattez réussissent automatiquement ».
   "enthrall": { saveAutoSuccess: { fighting: true } },
+  // Flétrissement (SRD 5.2) : « une Plante rate automatiquement la sauvegarde ».
+  "blight": { saveAutoFail: { types: ["plant"] } },
   // §402 : « une Créature artificielle réussit automatiquement » (l’effet sur réussite, Incapable de se déplacer, reste posé).
   "flesh-to-stone": { saveAutoSuccess: { types: ["construct"] }, effectEnds: { sFyjp6wt9bjyIl9W: "casterTurnStart" } },
   // §43.2 — une action met fin à l'effet.

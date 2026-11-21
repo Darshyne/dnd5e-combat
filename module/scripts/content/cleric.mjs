@@ -59,6 +59,12 @@ export const CLERIC = Object.freeze({
       do: [{ type: "use", activity: "6V4FAVqgjzctbpoC" }, { type: "disadvantage" }] }] },
   // Impacts bénis (niveau 7), option Impact divin : 1d8 radiants (au choix nécrotiques ou radiants : radiants d'office) ;
   // 2d8 avec Impacts bénis améliorés (niveau 14).
+  // Frappes bénies améliorées (niveau 14), Incantation puissante — « quand vous lancez un sort mineur de clerc et infligez des
+  // dégâts à une créature avec lui, vous pouvez donner à vous-même ou à une autre créature à 18 m ou moins des points de vie
+  // temporaires égaux à deux fois votre modificateur de Sagesse ». Seulement si l'Incantation puissante est l'option choisie
+  // (`requires`) ; l'autre moitié, l'Impact divin à 2d8, est dans l'entrée des Frappes bénies.
+  "improved-blessed-strikes": { cantripVitality: { class: "cleric", tempHp: "2 * @abilities.wis.mod",
+    range: { value: 60, units: "ft" }, requires: ["blessed-strikes-potent-spellcasting", "potent-spellcasting"] } },
   "blessed-strikes": { triggers: [divineStrike("1d8", false), divineStrike("2d8", true)] },
   "blessed-strikes-potent-spellcasting": potentSpellcasting("cleric"),   // §431 : pas `potent-spellcasting` (dnd5e 6.1 le fait seul)
   // Guérison suprême (niveau 17) : « prenez la valeur maximale pour chaque dé » d'un sort ou d'une Conduit divin qui soigne.

@@ -309,6 +309,18 @@ export function validateExtras(entry, at, errors) {
     && Object.keys(entry.rollBonus).every(k => ["activity", "on", "skills", "statuses", "luck", "succeed", "abilities", "reroll", "failRefund", "spellAttack"].includes(k))) ) errors.push(`${at}rollBonus: { activity (or reroll: { bonus, during }), on: [${ROLL_BONUS_ON.join(" | ")}], skills?, statuses?, luck?: true, succeed?: true, abilities?, reroll?: { bonus? }, failRefund?: true }`);
   if ( ("transpose" in entry) && !(isObject(entry.transpose) && (typeof entry.transpose.summon === "string") && entry.transpose.summon
     && Object.keys(entry.transpose).every(k => k === "summon")) ) errors.push(`${at}transpose: { summon } (identifier of the summoning item)`);
+  // Incantation puissante (Frappes bénies améliorées) : après un sort mineur de `class` qui a infligé des dégâts, `tempHp` points
+  // de vie temporaires au lanceur ou à une créature de son camp à `range` ; `requires` : l'option choisie (core/vitality.mjs).
+  if ( "cantripVitality" in entry ) {
+    const v = entry.cantripVitality;
+    const ok = isObject(v) && (typeof v.class === "string") && !!v.class && (typeof v.tempHp === "string") && !!v.tempHp.trim()
+      && isObject(v.range) && Number.isFinite(v.range.value) && (v.range.value > 0)
+      && (typeof v.range.units === "string") && !!v.range.units
+      && (!("requires" in v) || (Array.isArray(v.requires) && v.requires.length
+        && v.requires.every(id => (typeof id === "string") && !!id)))
+      && Object.keys(v).every(k => ["class", "tempHp", "range", "requires"].includes(k));
+    if ( !ok ) errors.push(`${at}cantripVitality: { class, tempHp: formula, range: { value, units }, requires?: [identifiers] }`);
+  }
   if ( ("portent" in entry) && !(isObject(entry.portent) && Number.isInteger(entry.portent.dice) && (entry.portent.dice > 0)
     && Object.keys(entry.portent).every(k => k === "dice")) ) errors.push(`${at}portent: { dice } (positive integer)`);
   if ( ("hitRider" in entry) && !(Array.isArray(entry.hitRider)

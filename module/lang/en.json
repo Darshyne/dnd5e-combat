@@ -1295,6 +1295,7 @@
   "DND5ECOMBAT.Robustesse.Carte": "{item}: Constitution saving throw, DC {dc}",
   "DND5ECOMBAT.Robustesse.Reussite": "{item}: 1 HP",
   "DND5ECOMBAT.Chatiment.AucuneFaveur": "Nothing",
+  "DND5ECOMBAT.LancementGratuit.Retenu": "{item}: the next spell is cast without a slot, as part of the same action",
   "DND5ECOMBAT.Metamagie.Retenue": "Metamagic chosen: {item}",
   "DND5ECOMBAT.Inspiration.VaillanceDegats": "Combat Inspiration: add your Bardic Inspiration die ({formula}) to this hit's damage?",
   "DND5ECOMBAT.Inspiration.VaillanceDefense": "Combat Inspiration: hit ({total} against AC {ac}). Take your Reaction to add your Bardic Inspiration die ({formula}) to your AC?",

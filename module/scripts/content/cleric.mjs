@@ -46,6 +46,11 @@ const TURN_UNDEAD = Object.freeze({ activities: ["aOptL5pMaj3WtR8S", SEAR_UNDEAD
   upgrade: [{ item: "sear-undead", activity: SEAR_UNDEAD }, { item: "channel-divinity-cleric", activity: SEAR_UNDEAD_61, requires: "sear-undead" }] });
 
 export const CLERIC = Object.freeze({
+  // Intervention divine (niveau 10) — « par une action Magie, un sort de clerc de niveau 5 ou moins qui ne se lance pas par une
+  // Réaction, lancé dans la même action sans emplacement ni composantes matérielles ; une fois par Repos long ». L'activité de
+  // l'item (l'action, l'utilisation) retient le lancement : le sort suivant qui convient part sans emplacement ni coût d'action.
+  // L'Intervention divine supérieure (Souhait) garde sa propre activité de lancement.
+  "divine-intervention": { freeCast: { activity: "dnd5eactivity000", maxLevel: 5, class: "cleric" } },
   // Éclat protecteur (Lumière 3) : en Réaction, le clerc donne le Désavantage au jet d'attaque d'une créature qu'il voit à 9 m ou
   // moins — contre lui ou un allié (§34 : fenêtre avant le jet). Les PV temporaires de l'Éclat
   // protecteur amélioré restent au joueur.

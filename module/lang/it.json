@@ -1293,6 +1293,7 @@
   "DND5ECOMBAT.Robustesse.Carte": "{item}: tiro salvezza su Costituzione, CD {dc}",
   "DND5ECOMBAT.Robustesse.Reussite": "{item}: 1 PF",
   "DND5ECOMBAT.Chatiment.AucuneFaveur": "Niente",
+  "DND5ECOMBAT.LancementGratuit.Retenu": "{item}: il prossimo incantesimo parte senza slot, nella stessa azione",
   "DND5ECOMBAT.Metamagie.Retenue": "Metamagia scelta: {item}",
   "DND5ECOMBAT.Inspiration.VaillanceDegats": "Ispirazione in Combattimento: aggiungere il tuo dado di Ispirazione Bardica ({formula}) ai danni di questo colpo?",
   "DND5ECOMBAT.Inspiration.VaillanceDefense": "Ispirazione in Combattimento: colpito ({total} contro CA {ac}). Usare la tua Reazione per aggiungere il tuo dado di Ispirazione Bardica ({formula}) alla tua CA?",

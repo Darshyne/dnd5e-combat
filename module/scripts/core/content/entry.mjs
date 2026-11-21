@@ -12,6 +12,7 @@ import { validateConcentrationRule } from "../concentration.mjs";
 import { SPELL_COMPONENTS } from "../spell-failure.mjs";
 import { isId, isObject } from "./shared.mjs";
 import { validateDataFixes } from "../data-fixes.mjs";
+import { validateSaveResist } from "../save-resist.mjs";
 import { validateRegeneration } from "../regeneration.mjs";
 import { validateFormLock, validateSuspends } from "../form-lock.mjs";
 import { revertAfterErrors } from "../form-revert.mjs";
@@ -105,6 +106,8 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     const v = entry.saveAutoSuccessAgainst;
     if ( !Array.isArray(v) || !v.length || !v.every(x => x === "magic") ) errors.push(`${at}saveAutoSuccessAgainst: ["magic"]`);
   }
+  if ( "saveResist" in entry ) errors.push(...validateSaveResist(entry.saveResist, at, isId));
+  if ( "saveReflect" in entry ) errors.push(...validateSaveResist(entry.saveReflect, at, isId, "saveReflect"));
   if ( "trace" in entry ) {
     const t = entry.trace;
     if ( isObject(t) ) {

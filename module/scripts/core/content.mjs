@@ -158,6 +158,13 @@
  *                                               magique (Résistance supérieure à la magie)
  *     spellAttacksMiss?: true                   les jets d'attaque des sorts ratent d'office le porteur de l'item : il est hors
  *                                               d'atteinte d'un sort à jet d'attaque (Résistance supérieure à la magie)
+ *     saveResist?: { activity, schools?, singleTarget? }
+ *                                               le porteur de l'objet peut changer en réussite une sauvegarde ratée contre un
+ *                                               sort (de ces écoles ; qui ne cible que lui), sur les utilisations de cette
+ *                                               activité de l'objet — demandé, jamais d'office (Bâton d'envoûtement)
+ *     saveReflect?: { activity, schools?, singleTarget? }
+ *                                               la même forme, pour une sauvegarde réussie : la Réaction et 1 charge de l'objet
+ *                                               retournent le sort contre son lanceur, comme si le porteur l'avait lancé
  *     onFell?: { activity?, radius, units }     quand un ennemi tombe à 0 PV sous les coups du porteur, ou à `radius` de
  *                                               lui, l'activité (défaut : le premier soin de l'item) joue (Bénédiction du
  *                                               Ténébreux, §16.25)

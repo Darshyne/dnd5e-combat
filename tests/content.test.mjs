@@ -243,7 +243,7 @@ describe("contenu livré", () => {
       "dynamite-stick", "earth-element", "earthquake", "ebonbane", "ebony-fly-rare", "echoing-soul",
       "elder-champion", "eldritch-blast", "eldritch-smite", "elemental-adept", "elemental-affinity", "elemental-attunement",
       "elemental-epitome", "elemental-fury", "elemental-fury-potent-spellcasting", "elemental-gem", "elemental-weapon",
-      "elixir-of-health", "elusive", "emerald-elemental-gem", "empowered-channeling", "empowered-evocation", "energy-drain", "engulf",
+      "elixir-of-health", "elusive", "emerald-elemental-gem", "empowered-channeling", "empowered-evocation", "empowered-spell", "energy-drain", "engulf",
       "enhance-ability", "enlarge-reduce", "ensnaring-strike", "entangle", "entangling-trail", "enthrall", "esoteric-ward",
       "essence-of-ether", "ethereal-jaunt", "ethereal-stride", "etherealness", "evards-black-tentacles", "evasion", "evasive-footwork",
       "eversmoking-bottle", "executioners-axe-enchanted", "expeditious-retreat", "eye-and-hand-of-vecna", "eye-rays", "eyebite",

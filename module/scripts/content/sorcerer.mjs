@@ -16,6 +16,10 @@ const affinity = type => ({ on: "preDamageRoll", if: { "activity.isSpell": true,
   do: [{ type: "damage", formula: "@abilities.cha.mod", damageType: type }] });
 
 export const SORCERER = Object.freeze({
+  // Sort renforcé (Métamagie) — « quand vous lancez les dégâts d'un sort, 1 point de sorcellerie pour relancer jusqu'à votre
+  // modificateur de Charisme de dés de dégâts (au moins un) ; les nouveaux jets comptent » : proposé après le jet, sur les dés bas.
+  // Il se cumule avec une autre option de Métamagie du même sort : rien ne l'en empêche ici non plus.
+  "empowered-spell": { spellDamageRerolls: { activity: "NkEwJOEFigqsdbZy", count: "max(1, @abilities.cha.mod)" } },
   // C12-h : Révélation charnelle (Aberrant 14), Envol scintillant — « une Vitesse de vol égale à votre Vitesse » (la donnée : le double).
   "revelation-in-flesh": { effectChanges: { CxuVthyUWdT2ARMn: [{ key: "system.attributes.movement.fly", type: "upgrade", value: "@walk", replace: true }] } },
   // §124 : Bastion de la loi (Magie de l'horloge) — « vous ou une autre créature que vous voyez à 9 m ou moins » ; « personnelle »

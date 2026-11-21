@@ -610,7 +610,13 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
       if ( ("cost" in t) && !(Number.isFinite(t.cost) && (t.cost > 1) && (t.cost <= 5)) ) errors.push(`${at}difficultTerrain.cost: a multiplier, more than 1, up to 5`);
       if ( ("lingers" in t) && (t.lingers !== "casterNextTurnEnd") ) errors.push(`${at}difficultTerrain.lingers: casterNextTurnEnd`);
       if ( ("enemiesOnly" in t) && (t.enemiesOnly !== true) ) errors.push(`${at}difficultTerrain.enemiesOnly: true or absent`);
-      for ( const key of Object.keys(t) ) if ( !["types", "cost", "lingers", "enemiesOnly"].includes(key) ) errors.push(`${at}difficultTerrain.${key}: unknown key`);
+      if ( ("fromPulse" in t) && !(Number.isInteger(t.fromPulse) && (t.fromPulse > 0)) ) {
+        errors.push(`${at}difficultTerrain.fromPulse: a positive integer`);
+      }
+      const terrainKeys = ["types", "cost", "lingers", "enemiesOnly", "fromPulse"];
+      for ( const key of Object.keys(t) ) {
+        if ( !terrainKeys.includes(key) ) errors.push(`${at}difficultTerrain.${key}: unknown key`);
+      }
     }
   }
   if ( "lineDash" in entry ) {
@@ -650,7 +656,11 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     }
   }
   if ( ("recast" in entry) && (entry.recast !== true) ) errors.push(`${at}recast: true or absent`);
-  for ( const flag of ["obscures", "silences", "healMax", "duplicates", "reactiveSpell", "revealsInvisible", "freeSomatic"] ) if ( (flag in entry) && (entry[flag] !== true) ) errors.push(`${at}${flag}: true or absent`);
+  // `obscures` : true, ou seulement à partir d'un rejeu du lanceur (`{ fromPulse }`, Tempête vengeresse).
+  const fog = entry.obscures;
+  const fogFromPulse = isObject(fog) && (Object.keys(fog).length === 1) && Number.isInteger(fog.fromPulse) && (fog.fromPulse > 0);
+  if ( ("obscures" in entry) && (fog !== true) && !fogFromPulse ) errors.push(`${at}obscures: true or { fromPulse }`);
+  for ( const flag of ["silences", "healMax", "duplicates", "reactiveSpell", "revealsInvisible", "freeSomatic"] ) if ( (flag in entry) && (entry[flag] !== true) ) errors.push(`${at}${flag}: true or absent`);
   if ( "light" in entry ) validateLight(entry.light, `${at}light`, errors);
   if ( "carriedLight" in entry ) validateCarriedLight(entry.carriedLight, `${at}carriedLight`, errors);
   if ( "usageLimits" in entry ) {

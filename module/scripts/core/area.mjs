@@ -113,6 +113,20 @@ export function turnKeyOf(round, turn) {
 }
 
 /**
+ * Une propriété d'une zone qui ne vaut qu'à partir d'un tour de son lanceur (`fromPulse`, §367 : Tempête vengeresse — terrain
+ * difficile, visibilité nulle et attaques à distance impossibles aux « tours 5 à 10 ») : vaut-elle déjà ? `rule` absente : non ;
+ * sans `fromPulse` (`true`, `{}`) : dès la pose ; sinon dès le rejeu `fromPulse` du lanceur (`pulses` de l'état de la zone).
+ * @param {true|{fromPulse?: number}|null|undefined} rule
+ * @param {number|null|undefined} pulses  Les rejeux du lanceur déjà faits sur cette zone.
+ * @returns {boolean}
+ */
+export function fromPulseReached(rule, pulses) {
+  if ( !rule ) return false;
+  const from = Number(rule.fromPulse) || 0;
+  return (from <= 0) || ((Number(pulses) || 0) >= from);
+}
+
+/**
  * La zone peut-elle être déplacée maintenant (§16.14) ? Rayon de lune : « lors de vos tours suivants » — pas au tour même
  * où elle a été posée. Hors combat, toujours.
  * @param {AreaState} area

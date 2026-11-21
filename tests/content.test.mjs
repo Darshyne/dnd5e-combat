@@ -569,7 +569,7 @@ describe("relance, éclat après dégâts, début de tour (§16.21) : schéma", 
 describe("brume et soins au maximum (§16.24) : schéma", () => {
   it("obscures, healMax", () => {
     expect(validateEntry({ obscures: true, healMax: true }, { facts })).toEqual([]);
-    expect(validateEntry({ obscures: 1, healMax: "oui" }, { facts })).toEqual(["obscures: true or absent", "healMax: true or absent"]);
+    expect(validateEntry({ obscures: 1, healMax: "oui" }, { facts })).toEqual(["obscures: true or { fromPulse }", "healMax: true or absent"]);
   });
 });
 

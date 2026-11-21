@@ -56,6 +56,9 @@ describe("§367 : endActivity, teleport.maxLight, noRangedWeapons", () => {
     expect(CONTENT["shade-spirit"].endActivity.fzN2X69eyByhtaYu.activity).toBe("abooAkpLL09oe1T8");
     expect(CONTENT["shadow-walk"].teleport.maxLight).toBe("dim");
     expect(CONTENT["storm-of-vengeance"].noRangedWeapons).toEqual({ fromPulse: 4 });
+    // Le texte range aussi le terrain difficile et la visibilité nulle dans les « tours 5 à 10 » : pas dès la pose.
+    expect(CONTENT["storm-of-vengeance"].difficultTerrain).toEqual({ fromPulse: 4 });
+    expect(CONTENT["storm-of-vengeance"].obscures).toEqual({ fromPulse: 4 });
     for ( const id of ["shade-spirit", "shadow-walk", "storm-of-vengeance"] ) expect(CONTENT[id]?.gmAlert, id).toBeUndefined();
   });
 });

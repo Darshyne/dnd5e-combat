@@ -108,7 +108,8 @@
  *                                               lanceur seulement, la cible exclue
  *     recast?: true                             relancer le sort tant que sa concentration tient le réutilise, sans
  *                                               emplacement ni nouvelle concentration (Appel de la foudre, §16.21)
- *     obscures?: true                           la zone posée par l'item obscurcit fortement (Nappe de brouillard, §16.24) :
+ *     obscures?: true | { fromPulse }           la zone posée par l'item obscurcit fortement (Nappe de brouillard, §16.24) —
+ *                                               `fromPulse` : à partir de ce rejeu de `casterPulse` (Tempête vengeresse) :
  *                                               la vue ne la traverse pas ; vision aveugle et perception des vibrations, si
  *                                               (§14.1, adapter/vision.mjs)
  *     silences?: true                           la zone posée par l'item fait le silence (Silence, issue #42) : aucun son n'y
@@ -821,7 +822,9 @@
  *                                               `strike` (§469) : l'activité de l'éclair quand celle de l'incantation ne
  *                                               fait que poser le nuage (Manuel 3.0.0) ; `stormStrike` : sa variante « orage
  *                                               déjà là », qui porte déjà le dé en plus (pas de `bonus` ajouté)
- *     difficultTerrain?: { types?, cost? }      la zone du sort est un terrain difficile (§69) — `cost` (§172) : un autre
+ *     difficultTerrain?: { types?, cost?, fromPulse? }
+ *                                               la zone du sort est un terrain difficile (§69) — `fromPulse` : seulement à partir
+ *                                               de ce rejeu de `casterPulse` (Tempête vengeresse) ; `cost` (§172) : un autre
  *                                               multiplicateur que ×2 (Mur d'épines : ×4), par le comportement « coût de
  *                                               déplacement » du cœur V14 à la place de celui de dnd5e ; sinon comportement
  *                                               `dnd5e.difficultTerrain` posé sur la région si les données ne l'ont pas

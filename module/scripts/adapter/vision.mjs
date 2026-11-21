@@ -30,6 +30,7 @@ import { contentOf, identifierOf, declaresKey, worldOverrides } from "./content.
 import { isPlainDarkness, discNearSegment, sensesThrough, CORE_JUDGED, DEVILS_SIGHT,
   devilsSightSees, senseReaches, senseless, countsAsSight, judgedModes } from "../core/light.mjs";
 import { MODULE_ID } from "../constants.mjs";
+import { fromPulseReached } from "../core/area.mjs";
 import { revealedInvisible, seesInvisible } from "./facts.mjs";
 import { outsideCone } from "./cone.mjs";
 import { hiddenFrom } from "./stealth.mjs";
@@ -294,7 +295,7 @@ export function blockingRegions(scene) {
     const activity = uuid ? fromUuidSync(uuid, { strict: false }) : null;
     if ( !activity?.item ) continue;
     const entry = contentOf(activity.item).entry;
-    if ( entry?.obscures === true ) out.push({ region, kind: "fog" });
+    if ( fromPulseReached(entry?.obscures, region.getFlag?.(MODULE_ID, "area")?.pulses) ) out.push({ region, kind: "fog" });
     else if ( entry?.light?.darkness === true ) out.push({ region, kind: "darkness", caster: (activity.item.type === "spell") ? (activity.item.actor ?? null) : null });
     if ( entry?.silences === true ) out.push({ region, kind: "silence" });   // issue #42 : ne bloque pas la vue, le son (adapter/hearing.mjs)
   }

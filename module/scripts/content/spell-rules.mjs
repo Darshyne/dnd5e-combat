@@ -98,14 +98,14 @@ export const SPELL_RULES = Object.freeze({
   },
   // §91 : Tempête vengeresse — la pose (Constitution, 2d6 tonnerre, Assourdi) ; puis au début des tours suivants du lanceur, sur ce
   // qui est sous le nuage : tour 2 pluie acide (4d6), tour 3 six éclairs (Dextérité, 10d6 ; les ennemis d'abord), tour 4 grêle
-  // (2d6), tours 5 à 10 bourrasque (1d6 froid). Terrain difficile, fortement obscurci ; §367 : « les attaques à distance avec une arme
-  // y sont impossibles » dès le tour 5 (le quatrième rejeu).
+  // (2d6), tours 5 à 10 bourrasque (1d6 froid). Le texte range dans ces tours 5 à 10 le terrain difficile, la visibilité nulle et,
+  // §367, « les attaques à distance avec une arme y sont impossibles » : tous trois dès le quatrième rejeu, pas dès la pose.
   "storm-of-vengeance": {
     casterPulse: { at: "turnStart", by: [
       { from: 1, activity: "WOo8u0FLAzNMpMJN" }, { from: 2, activity: "Fd8ZGgmDyNmJJuj3", max: 6 },
       { from: 3, activity: "H4uCtCkANBkttnov" }, { from: 4, to: 9, activity: "yt2oWWelZl1zV4CB" }] },
-    difficultTerrain: {},
-    obscures: true,
+    difficultTerrain: { fromPulse: 4 },
+    obscures: { fromPulse: 4 },
     noRangedWeapons: { fromPulse: 4 }
   },
   // Secouer un dormeur : « quelqu'un prend une action pour la secouer » — Sommeil (à 1,50 m), Motif hypnotique, Mauvais œil

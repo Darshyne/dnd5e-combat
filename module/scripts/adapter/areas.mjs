@@ -14,7 +14,7 @@
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf, entryOfIdentifier } from "./content.mjs";
 import { potionOfCast } from "./potions.mjs";
-import { translateShapes, shapeCenter, expiryTime, siblingsByMoment } from "../core/area.mjs";
+import { translateShapes, shapeCenter, expiryTime, siblingsByMoment, fromPulseReached } from "../core/area.mjs";
 import { stepsOf, holds } from "../core/triggers.mjs";
 import { factsFor } from "./facts.mjs";
 import { committedPosition, speakerTokenOf } from "./turn.mjs";
@@ -117,7 +117,7 @@ export function rangedBanAround(token) {
     const item = uuid ? fromUuidSync(uuid, { strict: false })?.item : null;
     const rule = item ? contentOf(item).entry?.noRangedWeapons : null;
     if ( !rule ) continue;
-    if ( rule.fromPulse && ((Number(readAreaState(region)?.pulses) || 0) < rule.fromPulse) ) continue;
+    if ( !fromPulseReached(rule, readAreaState(region)?.pulses) ) continue;
     if ( isInside(token, region) ) return item;
   }
   return null;

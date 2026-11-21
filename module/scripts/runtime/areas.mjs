@@ -9,6 +9,7 @@ import { placeAreaAt } from "../adapter/self-area.mjs";
 import { positionOf as position, committedPosition, tokenCenter } from "../adapter/turn.mjs";
 import { noteSummonExpiry, expiredSummons, replacedSummons } from "../adapter/summons.mjs";
 import { holdZoneEffects, holdDifficultTerrain, syncZoneEffects } from "../adapter/zone-effects.mjs";
+import { invalidateVision } from "../adapter/vision.mjs";
 import { wallSideRuleOf, isThinWall, crossesWallRegion } from "../adapter/wall-side.mjs";
 import { enqueue } from "./queue.mjs";
 import { route } from "./router.mjs";
@@ -117,6 +118,11 @@ function casterPulse(region, caster, at) {
     if ( !rule || (rule.at !== at) ) return;
     const n = (Number(state.pulses) || 0) + 1;
     await writeAreaState(region, { ...state, pulses: n });
+    // Ce qui ne vaut qu'à partir de ce tour du lanceur (`fromPulse`, Tempête vengeresse) : le terrain difficile se pose, la vue
+    // se recalcule (la zone obscurcit désormais).
+    const whole = contentOf(item).entry ?? {};
+    if ( whole.difficultTerrain?.fromPulse === n ) await holdDifficultTerrain(region);
+    if ( whole.obscures?.fromPulse === n ) invalidateVision();
     const entry = pulseFor(rule, n);
     const sibling = entry ? item.system.activities?.get(entry.activity) : null;
     // Tsunami : le mur s'éloigne du lanceur avant de frapper ; §158 : Brume mortelle, Nuage incendiaire ne font que dériver (les

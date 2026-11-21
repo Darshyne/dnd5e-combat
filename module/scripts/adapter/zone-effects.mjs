@@ -8,6 +8,7 @@
 
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf } from "./content.mjs";
+import { fromPulseReached } from "../core/area.mjs";
 
 /** L'activité qui a posé la région (`flags.dnd5e.activity`), ou null. */
 const activityOf = region => {
@@ -24,7 +25,16 @@ const activityOf = region => {
 export async function holdDifficultTerrain(region) {
   const activity = activityOf(region);
   const rule = contentOf(activity?.item).entry?.difficultTerrain;
-  if ( !rule || region.behaviors.some(b => ["dnd5e.difficultTerrain", "modifyMovementCost"].includes(b.type)) ) return null;
+  if ( !rule ) return null;
+  const own = region.behaviors.filter(b => ["dnd5e.difficultTerrain", "modifyMovementCost"].includes(b.type));
+  // `fromPulse` (Tempête vengeresse : « tours 5 à 10 ») : pas encore — le comportement que la donnée porterait déjà est suspendu ;
+  // le moment venu (runtime/areas.mjs, au rejeu du lanceur), il est rétabli, ou posé ci-dessous.
+  if ( rule.fromPulse ) {
+    const due = fromPulseReached(rule, region.getFlag?.(MODULE_ID, "area")?.pulses);
+    for ( const behavior of own ) if ( behavior.disabled === due ) await behavior.update({ disabled: !due });
+    if ( !due ) return null;
+  }
+  if ( own.length ) return null;
   // §172 : un autre multiplicateur que ×2 (Mur d'épines : ×4) — le comportement « coût de déplacement » du cœur V14
   // (client/data/region-behaviors/increase-movement-cost.mjs, `difficulties`). Tous les modes : le schéma ne garde que les siens (il
   // est bâti avant que dnd5e retouche `CONFIG.Token.movement.actions` — filtrer comme lui n'en laissait aucun).

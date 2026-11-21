@@ -81,7 +81,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `duringRage` | 4 | `mindless-rage`, `primal-knowledge`, `rage-of-the-wilds`, `vitality-of-the-tree` |
 | `effectChanges` | 22 | `brutal-strike`, `caltrops`, `contagion`, `elemental-epitome`, `fool`, `gaseous-form`, … |
 | `effectDurations` | 6 | `blessing-of-the-trickster`, `clairvoyant-combatant`, `dust-of-disappearance`, `intimidating-presence`, `scroll-of-protection`, `wand-of-paralysis` |
-| `effectEnds` | 48 | `aberrant-anatomy`, `brutal-strike`, `celestial-revelation`, `chill-touch`, `defensive-duelist`, `devour-intellect`, … |
+| `effectEnds` | 49 | `aberrant-anatomy`, `brutal-strike`, `celestial-revelation`, `chill-touch`, `defensive-duelist`, `devious-strikes`, … |
 | `effectsExpire` | 2 | `blessing-of-the-trickster`, `prayer-of-healing` |
 | `effectsFirst` | 2 | `aid`, `heroes-feast` |
 | `effectsIf` | 7 | `esoteric-ward`, `hammer-of-thunderbolts-enchanted`, `mm-wereboar-gore`, `psychic-skewer`, `shield-of-the-cavalier`, `silver-needle`, … |
@@ -180,6 +180,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `notOnSlippery` | 1 | `slippers-of-spider-climbing` |
 | `obscures` | 9 | `cloudkill`, `eversmoking-bottle`, `fog-cloud`, `grenade-smoke`, `incendiary-cloud`, `sleet-storm`, … |
 | `oneAttack` | 1 | `true-strike` |
+| `oneThingPerTurn` | 1 | `devious-strikes` |
 | `onFell` | 1 | `dark-ones-blessing` |
 | `onHit` | 1 | `dagger-of-venom` |
 | `onNatural1` | 6 | `aberrant-anatomy`, `echoing-soul`, `gathered-whispers`, `living-shadow`, `symbiotic-being`, `watchers` |

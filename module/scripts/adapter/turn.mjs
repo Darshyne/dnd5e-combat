@@ -11,6 +11,7 @@
  */
 
 import { spentMovement } from "../core/movement.mjs";
+import { oneThingBudget, oneThingStopsMove } from "../core/one-thing.mjs";
 import { MODULE_ID } from "../constants.mjs";
 import { contentOf, identifierOf, hasClassFeature } from "./content.mjs";
 import { basicActionOf } from "./basics.mjs";
@@ -112,7 +113,12 @@ export function readBudget(combatant) {
   // du budget au changement de tour pouvait arriver APRÈS l'effet posé au début du tour et le défaire (vu le 2026-10-12).
   if ( carriesRuleEffect(combatant.actor, "noActions") ) return { ...budget, action: 0, bonus: 0, limited: 0 };
   // §285 : Confusion — « ne peut pas prendre d'action Bonus ».
-  return carriesRuleEffect(combatant.actor, "noBonus") ? { ...budget, bonus: 0 } : budget;
+  if ( carriesRuleEffect(combatant.actor, "noBonus") ) return { ...budget, bonus: 0 };
+  // Hébétement — « une seule de ces choses : se déplacer, prendre une action ou prendre une action Bonus » (core/one-thing.mjs).
+  if ( carriesRuleEffect(combatant.actor, "oneThingPerTurn") ) {
+    return oneThingBudget(budget, freshBudgetFor(combatant), historyCosts(combatant.token).spent > 0);
+  }
+  return budget;
 }
 
 export async function writeBudget(combatant, budget) {
@@ -476,7 +482,14 @@ export function movementOf(combatant, factors) {
   // §17.2 : plus le déplacement dépensé pour se relever.
   const budget = readBudget(combatant);
   const spent = historyCosts(token).spent + (Number(budget.climbed) || 0) + (Number(budget.stood) || 0) - (Number(budget.jumped) || 0);
-  return { spent, ...speedOf(combatant.actor, factors, token._source?.movementAction ?? null, token.parent) };
+  const speed = speedOf(combatant.actor, factors, token._source?.movementAction ?? null, token.parent);
+  // Hébétement : une action ou une action Bonus prise, plus de déplacement à ce tour.
+  const stored = combatant.getFlag(MODULE_ID, "turn");
+  if ( speed && stored && carriesRuleEffect(combatant.actor, "oneThingPerTurn")
+    && oneThingStopsMove(stored, freshBudgetFor(combatant)) ) {
+    return { spent, ...speed, speed: Math.min(speed.speed, spent) };
+  }
+  return { spent, ...speed };
 }
 
 /**

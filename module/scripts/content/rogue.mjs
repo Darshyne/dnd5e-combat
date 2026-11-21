@@ -64,9 +64,13 @@ export const ROGUE = Object.freeze({
   // Frappe rusée améliorée (niveau 11) : « jusqu'à deux effets de Frappe rusée ».
   "improved-cunning-strike": { cunningStrikeMax: 2 },
   // Frappes sournoises (niveau 14). Assommer : « Inconscient pendant 1 minute ou jusqu'à ce qu'elle subisse des dégâts ; elle
-  // réitère le JS à la fin de chacun de ses tours ». Hébétement : l'effet de l'item ne fait que le montrer (au MJ).
+  // réitère le JS à la fin de chacun de ses tours ». Hébétement : « à son prochain tour, la cible ne peut faire qu'une seule de
+  // ces choses : se déplacer, prendre une action ou prendre une action Bonus » — l'effet « Dazed » de l'item le porte, jusqu'à
+  // la fin de ce tour-là.
   "devious-strikes": {
     cunningStrikes: DEVIOUS_STRIKES,
+    oneThingPerTurn: "wWFV1p8u9C1TUPg5",
+    effectEnds: { wWFV1p8u9C1TUPg5: "bearerTurnEnd" },
     triggers: [
       { on: "endOfTurn", via: "effect", fromEffect: "C2IGgt4PnRMxZVey", do: [{ type: "resave" }] },
       { on: "isDamaged", via: "effect", fromEffect: "C2IGgt4PnRMxZVey", do: [{ type: "remove" }] },

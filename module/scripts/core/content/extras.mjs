@@ -158,7 +158,7 @@ export function validateExtras(entry, at, errors) {
       && (!("disengage" in m) || (typeof m.disengage === "boolean")) && Object.keys(m).every(k => ["item", "disengage"].includes(k)));
     if ( !ok ) errors.push(`${at}movesAfter: item identifier, or { item, disengage? }`);
   }
-  for ( const key of ["limitedAction", "noActions", "blink"] ) if ( (key in entry) && !isId(entry[key]) ) errors.push(`${at}${key}: effect id (16 characters)`);
+  for ( const key of ["limitedAction", "noActions", "blink", "oneThingPerTurn"] ) if ( (key in entry) && !isId(entry[key]) ) errors.push(`${at}${key}: effect id (16 characters)`);
   if ( "hpTiers" in entry ) {
     const ok = Array.isArray(entry.hpTiers) && entry.hpTiers.length && entry.hpTiers.every(t => isObject(t)
       && (!("atMost" in t) || Number.isFinite(t.atMost)) && (!("damage" in t) || (t.damage === false))

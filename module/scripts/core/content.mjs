@@ -992,6 +992,8 @@
  *                                               question va à son joueur, sinon au MJ
  *     revivesFull?: true                        §160 : la cible revient à son maximum de PV (Résurrection, Résurrection suprême)
  *     noActions?: <id d'effet>                    §158 : le porteur de cet effet de l'item n'a ni action ni action Bonus (Nuage nauséabond)
+ *     oneThingPerTurn?: <id d'effet>              Hébétement : le porteur de cet effet de l'item ne fait à son tour qu'une chose —
+ *                                               se déplacer, une action ou une action Bonus (core/one-thing.mjs)
  *     limitedAction?: <id d'effet>                §157 : le porteur de cet effet de l'item a, à chacun de ses tours, une action limitée (Hâte :
  *                                               une seule attaque d'arme, Foncer, Se désengager ou Se cacher) — core/turn.mjs
  *     saveDisadvantageFor?: string[]            §157 : les cibles de ces types de créature font la sauvegarde de l'item avec le Désavantage

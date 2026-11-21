@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-947 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+948 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -67,7 +67,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `curesAll` | 7 | `elixir-of-health`, `hand-of-ultimate-mercy`, `heal`, `keoghtoms-ointment`, `mass-heal`, `potion-of-vitality`, … |
 | `curesOn` | 5 | `dispel-evil-and-good`, `hand-of-healing`, `lay-on-hands`, `physicians-touch`, `restoring-touch` |
 | `damageShield` | 2 | `resistance`, `ring-of-warmth` |
-| `dataFixes` | 108 | `antilife-shell`, `antimatter-rifle`, `antitoxin`, `armor-of-vulnerability`, `awareness-ioun-stone`, `baba-yagas-dancing-broom`, … |
+| `dataFixes` | 109 | `antilife-shell`, `antimatter-rifle`, `antitoxin`, `armor-of-vulnerability`, `awareness-ioun-stone`, `baba-yagas-dancing-broom`, … |
 | `devours` | 1 | `blackrazor` |
 | `difficultTerrain` | 16 | `black-tentacles`, `blade-barrier`, `conjure-minor-elementals`, `earthquake`, `entangle`, `evards-black-tentacles`, … |
 | `discharge` | 1 | `path-to-the-grave` |
@@ -117,7 +117,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `fortifiedHealing` | 1 | `boon-of-fortitude` |
 | `fortitude` | 1 | `undead-fortitude` |
 | `freeSomatic` | 1 | `war-caster` |
-| `globe` | 2 | `antimagic-field`, `globe-of-invulnerability` |
+| `globe` | 3 | `antimagic-field`, `globe-of-invulnerability`, `tiny-hut` |
 | `gmAlert` | 48 | `abjure-foes`, `antilife-shell`, `antimagic-field`, `boon-of-fate`, `compulsion`, `conjure-elemental`, … |
 | `grants` | 1 | `dragons-breath` |
 | `grantsAction` | 1 | `action-surge` |
@@ -208,7 +208,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `rage` | 1 | `rage` |
 | `rangedDefense` | 2 | `arrow-catching-shield`, `shield-of-missile-attraction` |
 | `rangedFeat` | 5 | `1-wand-of-the-war-mage-enchanted`, `crossbow-expert`, `improved-illusions`, `sharpshooter`, `spell-sniper` |
-| `ranges` | 19 | `bastion-of-law`, `dragons-breath`, `dynamite-stick`, `elder-champion`, `hand-of-healing`, `hand-of-ultimate-mercy`, … |
+| `ranges` | 20 | `bastion-of-law`, `dragons-breath`, `dynamite-stick`, `elder-champion`, `hand-of-healing`, `hand-of-ultimate-mercy`, … |
 | `reactions` | 2 | `reactive`, `reactive-heads` |
 | `reactiveSpell` | 1 | `war-caster` |
 | `reactiveStrike` | 1 | `polearm-master` |

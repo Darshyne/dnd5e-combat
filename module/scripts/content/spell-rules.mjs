@@ -490,6 +490,13 @@ export const SPELL_RULES = Object.freeze({
   // Globe d'invulnérabilité : « un sort de niveau 5 ou moins lancé de l'extérieur ne peut affecter quoi que ce soit dans l'Émanation de
   // 3 m » (la montée d'emplacement du globe : non reprise).
   "globe-of-invulnerability": { globe: { radius: 10, units: "ft", maxLevel: 5 } },
+  // Petite hutte (SRD 5.2) : « les sorts de niveau 3 ou moins ne peuvent pas être lancés à travers elle, et les effets de tels
+  // sorts ne peuvent pas s'y étendre » — le même `globe`, au niveau 3. Le sort n'a ni concentration ni effet dans la donnée : une
+  // marque créée, reliée à l'activité et posée sur le lanceur (`ranges` : sur soi) tient le globe, pour la durée du sort.
+  "tiny-hut": { globe: { radius: 10, units: "ft", maxLevel: 3 }, ranges: { dnd5eactivity000: { units: "self" } },
+    dataFixes: [{ effect: "dasTinyHut000000", create: { name: "Tiny Hut", type: "base", transfer: false, disabled: false,
+      statuses: [], duration: { value: 8, units: "hours" }, system: { changes: [] } } },
+    { path: "system.activities.dnd5eactivity000.effects", from: [], value: [{ _id: "dasTinyHut000000" }] }] },
   // Clignotement : 1d6 en fin de tour, 4–6 → Éthéré jusqu'au début du tour suivant (runtime/blink.mjs).
   "blink": { blink: "La5ofK0TnPSTL3iq" },
   // Invocation d'élémentaires mineurs : « tant que le sort dure, vos attaques infligent 2d8 dégâts de plus (acide, froid, feu ou foudre,

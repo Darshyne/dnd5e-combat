@@ -411,6 +411,17 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
   for ( const key of ["grantsResistances", "scoreFloor"] ) {
     if ( (key in entry) && !strings(entry[key]) ) errors.push(`${at}${key}: list of identifiers`);
   }
+  // Survivant (Champion 18) : une activité de soins de l'item utilisée au début de chaque tour du porteur, s'il est Ensanglanté
+  // (`bloodied`) ; le d20 à partir duquel une sauvegarde contre la mort vaut un 20 naturel (core/self-care.mjs).
+  if ( ("turnStartHeal" in entry) && !(isObject(entry.turnStartHeal) && isId(entry.turnStartHeal.activity)
+    && (!("bloodied" in entry.turnStartHeal) || (entry.turnStartHeal.bloodied === true))
+    && Object.keys(entry.turnStartHeal).every(k => ["activity", "bloodied"].includes(k))) ) {
+    errors.push(`${at}turnStartHeal: { activity, bloodied?: true }`);
+  }
+  if ( ("deathSaveCritical" in entry) && !(Number.isInteger(entry.deathSaveCritical) && (entry.deathSaveCritical >= 2)
+    && (entry.deathSaveCritical <= 19)) ) {
+    errors.push(`${at}deathSaveCritical: integer from 2 to 19 (the lowest d20 that counts as a 20)`);
+  }
   // §278 : la liste d'états, ou { statuses?, at?, exhaustion?, uses? } (core/self-care.mjs).
   if ( "endsOwnConditions" in entry ) {
     const e = entry.endsOwnConditions;

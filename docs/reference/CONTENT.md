@@ -2,7 +2,7 @@
 
 > Généré par `npm run reference` (`tools/reference.mjs`) : ne pas modifier à la main. `npm test` échoue si cette page n'est plus à jour.
 
-947 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
+948 identifiants dnd5e ont une entrée dans le contenu livré (`content/`, schéma `core/content.mjs`). Cette page
 répond à « quels items utilisent telle clé » ; ce qu'une clé veut dire est dans le schéma (`core/content/entry.mjs`). Pour un item
 précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 
@@ -68,6 +68,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `curesOn` | 5 | `dispel-evil-and-good`, `hand-of-healing`, `lay-on-hands`, `physicians-touch`, `restoring-touch` |
 | `damageShield` | 2 | `resistance`, `ring-of-warmth` |
 | `dataFixes` | 108 | `antilife-shell`, `antimatter-rifle`, `antitoxin`, `armor-of-vulnerability`, `awareness-ioun-stone`, `baba-yagas-dancing-broom`, … |
+| `deathSaveCritical` | 1 | `survivor` |
 | `devours` | 1 | `blackrazor` |
 | `difficultTerrain` | 16 | `black-tentacles`, `blade-barrier`, `conjure-minor-elementals`, `earthquake`, `entangle`, `evards-black-tentacles`, … |
 | `discharge` | 1 | `path-to-the-grave` |
@@ -286,6 +287,7 @@ précis en jeu : `api.content.of(item)`, `api.content.inspect(actor)`.
 | `trace` | 7 | `armor-of-agathys`, `blade-ward`, `dispel-evil-and-good`, `flame-blade`, `moonlight-step`, `produce-flame`, … |
 | `transpose` | 1 | `tricksters-transposition` |
 | `triggers` | 278 | `abjure-foes`, `absorb-elements`, `absorption-ioun-stone`, `acid-arrow`, `air-element`, `ancient-might`, … |
+| `turnStartHeal` | 1 | `survivor` |
 | `untypedDamage` | 3 | `freezing-sphere`, `mm-wight-life-drain`, `otilukes-freezing-sphere` |
 | `upkeep` | 1 | `crown-of-madness` |
 | `usageLimits` | 11 | `action-surge`, `flame-blade`, `indomitable`, `pact-of-the-chain`, `plant-growth`, `produce-flame`, … |

@@ -251,6 +251,9 @@
  *                                               l'item sur la cible (Sentinelle, Halte : Vitesse 0)
  *     spellDamageTypes?: { class?, types }      relevé des trous : un sort de cette classe (§447 : sans classe, tout sort) qui inflige des dégâts peut prendre l'un
  *                                               de ces types, proposé avec ses types au choix avant le jet (Sorts psychiques)
+ *     turnStartHeal?: { activity, bloodied? }   Survivant : au début de chacun de ses tours, le porteur qui a au moins 1 PV (et,
+ *                                               avec `bloodied`, la moitié de ses PV ou moins) utilise cette activité de soins
+ *     deathSaveCritical?: number                Survivant : le d20 à partir duquel une sauvegarde contre la mort vaut un 20 naturel
  *     endsOwnConditions?: string[] | { statuses?, at?, exhaustion?, uses? }
  *                                               §236 : à la fin de chacun de ses tours, le porteur met fin à l'un de ces états
  *                                               (Auto-restauration : Charmé, Effrayé, Empoisonné) ; §278 : `at: "turnStart"` (au début),

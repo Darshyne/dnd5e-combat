@@ -26,6 +26,9 @@ export const SOURCE_IDENTIFIERS = Object.freeze({
   // « commanding-presence » du Guerrier (un bonus aux tests de Charisme), dont elle portait l'entrée par homonymie.
   "mmAdultRedDragon.mmCommandingPres": "mm-commanding-presence",
   "mmAncientRedDrag.mmCommandingPres": "mm-commanding-presence",
+  // Chaîne du Diable des chaînes (SRD 5.2) : une attaque, pas la chaîne de l'équipement d'aventurier (« chain » : lier une
+  // créature), dont elle recevrait l'entrée par homonymie.
+  "mmChainDevil0000.mmChain000000000": "mm-chain-devil-chain",
   mmProtection0000: "mm-protection",
   mmPortent0000000: "mm-portent",
   mmMistyEscape000: "mm-misty-escape",

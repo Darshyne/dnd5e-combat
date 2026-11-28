@@ -15,6 +15,9 @@
  *     onHit?: { save: <id d'activité> | "sole" } attaque qui impose une sauvegarde (adapter/usage.mjs) ; `"sole"` : la seule
  *                                               sauvegarde de l'item, quand son id n'est pas fixe (activité ajoutée par un
  *                                               enchantement : Épée de blessure)
+ *     hitInstead?: { activity: <id> | "sole" }  un coup de l'item : l'auteur peut jouer cette activité sœur contre la cible au lieu
+ *                                               des dégâts (Arc d'énergie, Flèche d'entrave) — demandé à chaque coup ; `"sole"` :
+ *                                               la seule sauvegarde de l'item (activité ajoutée par un enchantement)
  *     choice?: { effects: "one", prompt?, pool? }  effets EXCLUSIFS : l'auteur en choisit un (Maléfice) ; `pool` :
  *                                               { <id d'activité> : [ids d'effets de l'item] } — des effets de l'item
  *                                               qu'une activité propose sans les relier (§37, Malédiction : « Curse

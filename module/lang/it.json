@@ -1091,6 +1091,8 @@
   "DND5ECOMBAT.RenvoyerSort.Copie": "{spell} (rimandato)",
   "DND5ECOMBAT.RenvoyerSort.Carte": "Incantesimo rimandato contro {name}",
   "DND5ECOMBAT.ToursAffilee.Jet": "{item}: {n} turni di fila",
+  "DND5ECOMBAT.AuLieu.Question": "L'attacco colpisce {name}: infliggere i danni, o usare questo al loro posto?",
+  "DND5ECOMBAT.AuLieu.Degats": "Infliggi i danni",
   "DND5ECOMBAT.Tirer": "Tira",
   "DND5ECOMBAT.Repousser": "Spingi",
   "DND5ECOMBAT.SeRelever.Question": "Sei Prono: usare la tua Reazione per rialzarti?",

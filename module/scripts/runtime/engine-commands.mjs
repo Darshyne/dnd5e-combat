@@ -73,6 +73,8 @@ import { TRANSIENT_LINGER_MS, deserializeDamages, dispatcher, healsDownedToMax, 
 import { healingTotal, withMaxRaise } from "../core/heal-raises-max.mjs";
 import { budgetIssues, spendBudget } from "./neighbours.mjs";
 import { braceCut } from "../core/forced-move.mjs";
+import { hitInsteadApplies, soleOf } from "../core/hit-instead.mjs";
+import { burstAround } from "../adapter/areas.mjs";
 
 /* -------------------------------------------- */
 /*  Commandes de la machine d'action            */
@@ -210,6 +212,11 @@ export const COMMANDS = {
         log(`${activity.item.name}: ${(await fromUuid(entry.token))?.name} — ${prism.colors.join(" + ")} (${names})`);
         const struckToken = await fromUuid(entry.token);
         if ( struckToken ) notice(struckToken, loc("Prisme.Rayons", { colors: names }), "gain");
+      }
+      // Arc d'énergie : « vous pouvez tenter d'entraver la cible au lieu de lui infliger des dégâts » (`hitInstead`) — demandé à
+      // l'auteur du coup ; choisi, ni dégâts ni effets de l'attaque, et l'activité sœur joue contre la cible.
+      if ( resolution.plan.attack && (entry.multiplier > 0) && await hitInsteadChosen(activity, source, entry, carrier) ) {
+        entry = { ...entry, multiplier: 0, effects: [], steps: [] };
       }
       const healed = (resolution.plan.heal && (entry.multiplier > 0)
         && (healsMax(patient) || healsDownedToMax(source?.actor ?? activity?.actor, activity, patient)))
@@ -646,6 +653,26 @@ async function bracedDistance(target, value, units, mode) {
   await spendBudget(actor, "reaction");
   log(`${item.name}: ${actor.name} takes a Reaction, the ${mode} is reduced by ${cut} ${units}`);
   return value - cut;
+}
+
+/** `hitInstead` : l'auteur d'un coup choisit l'activité sœur à la place des dégâts ; elle est alors jouée contre la cible. */
+async function hitInsteadChosen(activity, source, entry, carrier) {
+  const rule = activity?.item ? contentOf(activity.item).entry?.hitInstead : null;
+  // `"sole"` : la seule sauvegarde de l'item — une activité ajoutée par un enchantement change d'id à chaque pose.
+  const saves = rule ? Array.from(activity.item.system.activities ?? []).filter(x => x.type === "save") : [];
+  const sibling = !rule ? null : (rule.activity === "sole") ? soleOf(saves)
+    : (activity.item.system.activities?.get(rule.activity) ?? null);
+  const actor = source?.actor ?? activity?.actor;
+  const target = sibling ? await fromUuid(entry.token) : null;
+  const applies = hitInsteadApplies(rule, { isAttack: activity?.type === "attack", hasSibling: !!sibling });
+  if ( !applies || !actor || !target ) return false;
+  const answer = await askChoice(actor, { actor: actor.uuid, item: activity.item.name,
+    prompt: loc("AuLieu.Question", { name: target.name }),
+    options: [{ id: "damage", label: loc("AuLieu.Degats") }, { id: "instead", label: sibling.name }] });
+  if ( answer?.id !== "instead" ) return false;
+  await burstAround(carrier, [target], sibling, target);
+  log(`${activity.item.name}: ${actor.name} uses ${sibling.name} against ${target.name} instead of dealing damage`);
+  return true;
 }
 
 /**

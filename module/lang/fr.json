@@ -1093,6 +1093,8 @@
   "DND5ECOMBAT.RenvoyerSort.Copie": "{spell} (renvoyé)",
   "DND5ECOMBAT.RenvoyerSort.Carte": "Sort retourné contre {name}",
   "DND5ECOMBAT.ToursAffilee.Jet": "{item} : {n} tours d'affilée",
+  "DND5ECOMBAT.AuLieu.Question": "L'attaque touche {name} : infliger ses dégâts, ou utiliser ceci à la place ?",
+  "DND5ECOMBAT.AuLieu.Degats": "Infliger les dégâts",
   "DND5ECOMBAT.Tirer": "Tirer",
   "DND5ECOMBAT.Repousser": "Repousser",
   "DND5ECOMBAT.SeRelever.Question": "Vous êtes À terre : utiliser votre Réaction pour vous relever ?",

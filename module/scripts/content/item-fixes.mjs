@@ -575,6 +575,11 @@ export const ITEM_FIXES = Object.freeze({
     dataFixes: [{ path: "system.activities.GLyk6XaqTk5JOVQ8.damage.parts", from: [],
       value: [{ number: 4, denomination: 12, bonus: "", types: ["lightning"], custom: { enabled: false, formula: "" },
         scaling: { mode: "", number: 1 } }] }] },
+  // Arc d'énergie (SRD 5.2), Flèche d'entrave : « chaque fois que vous effectuez une attaque à distance avec cette arme contre une
+  // créature, vous pouvez tenter d'entraver la cible au lieu de lui infliger des dégâts ; si la flèche touche, la cible doit
+  // réussir un jet de sauvegarde de Force DD 15 ou avoir l'état Entravé pendant 1 minute ».
+  // L'activité que l'enchantement ajoute à l'arc change d'id à chaque pose : c'est sa seule sauvegarde (`"sole"`).
+  "energy-bow-enchanted": { hitInstead: { activity: "sole" } },
   "moon-touched-sword-enchanted": { carriedLight: MOONLIGHT },
   "flame-tongue-enchanted": { carriedLight: { bright: 40, dim: 80, units: "ft", animation: FLAMES, whileEnchanted: "MHnAqxEXBhUbnjPq" } },
   "helm-of-brilliance-enchanted": { carriedLight: { bright: 10, dim: 20, units: "ft", animation: FLAMES, whileEnchanted: "oZBFpi117yOXca3k" } },

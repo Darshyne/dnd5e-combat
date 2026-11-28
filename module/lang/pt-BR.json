@@ -2313,6 +2313,8 @@
   "DND5ECOMBAT.RenvoyerSort.Copie": "{spell} (devolvida)",
   "DND5ECOMBAT.RenvoyerSort.Carte": "Magia devolvida contra {name}",
   "DND5ECOMBAT.ToursAffilee.Jet": "{item}: {n} turnos seguidos",
+  "DND5ECOMBAT.AuLieu.Question": "O ataque acerta {name}: causar o dano, ou usar isto no lugar?",
+  "DND5ECOMBAT.AuLieu.Degats": "Causar o dano",
   "DND5ECOMBAT.Tirer": "Puxar",
   "DND5ECOMBAT.Repousser": "Empurrar",
   "DND5ECOMBAT.SeRelever.Question": "Você está Caído: usar sua Reação para se levantar?",

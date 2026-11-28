@@ -616,10 +616,16 @@ export function validateEntry(entry, { facts={}, at="" }={}) {
     else {
       if ( ("activity" in c) && !isId(c.activity) ) errors.push(`${at}contest.activity: activity id (16 characters) expected`);
       if ( !skill(c.skill) ) errors.push(`${at}contest.skill: skill key ("ins")`);
-      if ( !Array.isArray(c.against) || !c.against.length || !c.against.every(skill) ) errors.push(`${at}contest.against: list of skill keys`);
+      // `dc` : un DD fixe à la place du jet de la cible (Chaîne, Corde) — l'un ou l'autre.
+      if ( "dc" in c ) {
+        if ( !Number.isFinite(c.dc) || ("against" in c) ) errors.push(`${at}contest.dc: a number, instead of against`);
+      }
+      else if ( !Array.isArray(c.against) || !c.against.length || !c.against.every(skill) ) {
+        errors.push(`${at}contest.against: list of skill keys`);
+      }
       if ( !isId(c.effect) ) errors.push(`${at}contest.effect: effect id (16 characters) expected`);
       if ( ("exclusive" in c) && (c.exclusive !== true) ) errors.push(`${at}contest.exclusive: true or absent`);
-      for ( const key of Object.keys(c) ) if ( !["activity", "skill", "against", "effect", "exclusive"].includes(key) ) errors.push(`${at}contest.${key}: unknown key`);
+      for ( const key of Object.keys(c) ) if ( !["activity", "skill", "against", "dc", "effect", "exclusive"].includes(key) ) errors.push(`${at}contest.${key}: unknown key`);
     }
   }
   if ( ("zoneCharges" in entry) && !((Number.isInteger(entry.zoneCharges) && (entry.zoneCharges > 0)) || ((typeof entry.zoneCharges === "string") && entry.zoneCharges.trim())) ) errors.push(`${at}zoneCharges: positive integer or formula`);
